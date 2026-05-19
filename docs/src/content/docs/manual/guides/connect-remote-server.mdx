@@ -1,0 +1,108 @@
+---
+title: Connect to a remote server
+description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
+---
+
+Every client is a renderer over a `cc_server` that owns the data. The desktop can
+run one inside itself; the web app at [app.usectrl.dev](https://app.usectrl.dev)
+cannot, because a browser tab cannot host a server. Either way, this guide points
+a client at a server running elsewhere — a small box, a cloud VM, a build server.
+
+## Prerequisites
+
+- A running `cc_server`. If you don't have one, see [Run a headless server](/manual/guides/run-headless-server/).
+- Either the three pairing values the server minted — the **server URL** (`ws://…/rpc` or `wss://…/rpc`), a **device id** and a **pairing key** — **or** a one-time **invite code** from a workspace admin. Redeeming an invite provisions your user, records your membership and mints this client's credential for you, so you never handle a device id or key.
+
+### Make sure the server is reachable
+
+A local server needs nothing: `ws://localhost:9030/rpc` works from both the
+desktop and the browser, because browsers treat loopback as a trustworthy origin.
+
+A server on another machine is different. `app.usectrl.dev` is served over HTTPS,
+so the browser will only open a `wss://` socket with a certificate it already
+trusts — and `cc_server` refuses to bind a non-loopback address without TLS in
+the first place. Give it one of:
+
+- a certificate directly, with `--tls-cert` and `--tls-key`
+- a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
+- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Sharing & remote access** has the built-in tunnel opt-in.
+
+Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
+set `--public-url` to the address clients should actually dial — it defaults to
+the local bind, so without it clients try the wrong host. And if you host your
+own copy of the web build, add its origin to `--allowed-origins`, which defaults
+to `https://app.usectrl.dev` alone; loopback and native clients are always allowed.
+
+## Connect the desktop app
+
+On a fresh install:
+
+1. Launch Control Center. The first-run screen asks **How should Control Center run?**
+2. Instead of **Run in this app**, fill in the connect fields: the server URL, plus either an invite code or a device id and pairing key.
+3. Click **Connect**. Control Center dials the server and lands on the workspace inbox.
+
+On a desktop that already runs its own server:
+
+1. Open **Settings → Server → Connection & status**.
+2. Click **Add server**. Enter the server URL (`wss://host:9030/rpc`) and either an invite code or a device id and pairing key. The URL field's suffix button discovers `cc_server` instances on your LAN or tailnet.
+3. Click **Connect**, then **Switch** on the new server's row.
+
+Switching is live: the app rebuilds around the new session in place, with no
+restart. If the connect fails you stay on the current server and see the error.
+The row for the server you are on has no **Switch** action; the local server is
+the first row, labelled **Run in this app**.
+
+Once switched, the desktop owns no database. Every screen reads and writes
+through the remote server over a WebSocket.
+
+## Connect the web client
+
+The web build is always remote.
+
+1. Open [app.usectrl.dev](https://app.usectrl.dev), or your own copy of the web build.
+2. Enter the server URL plus either an invite code or a device id and pairing key.
+3. The client dials the server and renders the same interface the desktop does.
+
+If a pairing deep link is in the URL, the fields are pre-filled. The pairing key
+rides in the URL **fragment**, which browsers never send to the server hosting
+the page, so the static host never sees it.
+
+:::note[Media and security]
+Media (avatars, feed images, PR screenshots) is proxied through the connected
+server, so the browser never fetches an upstream host directly. A per-request
+Content-Security Policy, stamped from a non-sensitive cookie, allows only the
+connected server's origin.
+:::
+
+### What the browser does not do
+
+The web client reads and writes the same server as the desktop, but a few
+surfaces need a native window or the machine's own devices:
+
+- no OS notification toasts, notification sounds, or ambient banner rail (the in-app notification centre still works)
+- no LAN or tailnet server discovery in the **Add server** dialog
+- no in-app article reader — newsfeed articles open in a new tab
+- no re-running a meeting summary and no cancelling one that is processing
+
+Two behave differently rather than being missing. Meeting **recording** works in
+the browser, capturing your microphone plus a screenshare that includes an audio
+track. **Open in IDE** works too, but asks the server to launch the editor on the
+_server's_ display, so the button hides itself against a headless host with no
+editors installed.
+
+## Troubleshooting
+
+- **Connection times out**: the server must be reachable from the client. Check the bind (`--bind any`), that the port is open and that `--public-url` names the address the client can actually dial. Over the open internet, TLS is mandatory — a plaintext non-loopback bind is refused at startup unless the server was started `--insecure` behind a proxy.
+- **The browser refuses to connect but a native client works**: the browser's origin is not on the server's `--allowed-origins` list. The default allows only `https://app.usectrl.dev` (plus loopback).
+- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate that device's key, then enter the new one. A revoked device finds its credential gone and fails closed; revocation drops a live session within seconds.
+- **Wrong workspace**: the workspace is part of the URL (`/workspaces/:workspaceId/…`) and travels with every call, so switching workspaces in one client changes only your own view. You can only reach workspaces you are a member of — anything else is refused with "Not a member of this workspace". See [Workspaces and isolation](/manual/concepts/workspaces/).
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/)
+- [Pair a device](/manual/guides/pair-a-device/): the phone relay path
+
+## Related concepts
+
+- [Deployment and clients](/manual/concepts/deployment/)
+- [Remote control and mobile](/manual/concepts/remote-control/)

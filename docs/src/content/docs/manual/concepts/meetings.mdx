@@ -1,0 +1,204 @@
+---
+title: Meetings and transcription
+description: How Control Center records a call, transcribes and diarizes it on the server and where the one step that leaves the host is.
+---
+
+Control Center can record a call and hand you back a clean writeup — a summary,
+action items and decisions — with speech recognition and speaker separation
+running on your own hardware. Think Granola, but self-hosted and wired into the
+same workspace your agents live in.
+
+:::caution[Recording needs a voice model and a server restart]
+Recording and dictation are unavailable until a speech (ASR) model is installed
+**and** the server has been restarted. The server resolves its voice-model paths
+exactly once at boot, so a model installed at runtime does not register the
+`meeting.*` recording operations until the next boot — the client fails with
+"Could not start recording on the host" until then. Pick a model at
+Settings → Server → Voice & meeting models, let it download, then restart
+`cc_server`.
+:::
+
+## What a meeting is
+
+A **meeting** is a recorded, transcribed session. It is _not_ the same thing as a
+[calendar event](/manual/concepts/calendar/): an event is a scheduled commitment
+synced from Google, while a meeting is something you actually recorded. The two
+can be linked, since you can start a recording from an event, but they stay
+distinct records.
+
+Every meeting is workspace-scoped, like everything else in Control Center.
+Meetings recorded in one workspace never surface in another.
+
+## Where the work happens
+
+"On-device" is the right instinct but the wrong noun. The client captures audio
+and streams 16 kHz PCM16 frames to the **machine running `cc_server`**. That
+host does everything else: it writes the per-channel WAVs under
+`<dataDir>/meetings/<meetingId>/`, transcribes in a worker isolate, filters
+echo and diarizes after the fact. On a standalone desktop that host is the same
+machine. Pointed at a remote server, it is not — so "nothing leaves my laptop"
+is only true when the server is your laptop.
+
+There is one further exception and it is the important one.
+
+:::caution[The summary leaves the host]
+The transcript and your notes are sent to whatever model provider the
+summarizing agent is configured against. For any cloud provider that means the
+full transcript goes to that provider's API. If a transcript must not leave the
+host, point the summarizing agent at a local endpoint (Ollama, LM Studio, or
+another local server).
+:::
+
+Everything before the summary — capture, transcription, echo cancellation,
+diarization, voiceprint matching — runs on the server with no network call.
+
+## Which models and which are optional
+
+The **embedding and diarization** models are force-installed on first boot, so
+speaker separation works out of the box. The **speech (ASR) model is opt-in**:
+it is selectable and several hundred megabytes, so you choose one.
+
+Four ship in the picker, differing in size, language coverage and accuracy:
+
+- Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
+- Parakeet TDT 0.6B v2 — English (~480 MB)
+- Whisper large-v3-turbo — multilingual (~626 MB)
+- Whisper base.en — English-only, the small historical default (~198 MB)
+
+Models are the only artifacts the server fetches at runtime; every native
+library ships in the bundle.
+
+## How capture works
+
+A meeting records **two audio channels at once**:
+
+- **You ("me")**: your microphone.
+- **Them ("them")**: the meeting's audio output, captured by a driver-free
+  loopback — Core Audio process/device taps on macOS, WASAPI loopback on
+  Windows, a PipeWire / PulseAudio monitor on Linux.
+
+Because the two channels are captured separately, the transcript is
+speaker-attributed from the start: your words are tagged `me`, everyone on the
+call is tagged `them`.
+
+Your own voice bleeds from the system output back into the mic and would
+otherwise be transcribed twice. Two filters stop that. Signal-level **AEC3 runs
+on every remote-mode recording and is required** — if the native AEC library
+cannot load, the recording refuses to start rather than silently streaming an
+echo-polluted mic. (In-person mode has no far-end reference to cancel against,
+so AEC is an identity passthrough there.) On top of it, a host-side text-level
+echo filter runs on every platform.
+
+All OS-level microphone processing is deliberately disabled. Enabling the
+platform's own echo cancellation or auto-gain on macOS switches the mic to Voice
+Processing I/O, which in this build killed both the mic _and_ the system-audio
+tap.
+
+## Transcription and diarization
+
+While you record, audio is decoded in **rolling windows** — cut on a short
+trailing silence, or at a maximum window length — off the UI thread. Each window
+becomes a speaker-tagged transcript segment with millisecond offsets.
+
+Windows that never rose above an RMS threshold are skipped **without being
+decoded at all**, because a speech model renders silence as hallucinated
+non-speech tokens and the decode is wasted CPU. The practical consequence: a
+consistently very quiet speaker produces no transcript. If someone comes back
+empty, check their input level before blaming the model.
+
+After you stop, **diarization** runs offline over the recording and splits the
+remote channel into individual speakers (`Person 1`, `Person 2`, …) that you can
+rename. The number of speakers is inferred from a clustering threshold, not from
+a count you set — so it is a threshold artifact and a quiet or overlapping
+speaker can be merged into a neighbour. The transcript is rendered as
+`[mm:ss] SPEAKER: text` lines.
+
+## Voice profiles
+
+Renaming a speaker does more than label one transcript. Control Center can save
+the speaker's voiceprint as a **voice profile**, so it recognizes them
+automatically in future meetings. When you name a diarized speaker, you're asked
+whether to save the voiceprint; if you do, it's blended into a running centroid
+for that name and matched against new speakers by cosine similarity, so the same
+person shows up with their name next time without you relabeling them.
+
+Voice profiles are workspace-scoped and never cross the boundary. Renaming a
+speaker who was previously saved un-enrolls the old name and offers to enroll
+the new one; deleting a profile removes the stored voiceprint but leaves any
+names already applied to past meetings intact.
+
+## The summary pipeline
+
+When a recording stops, the server publishes a `MeetingRecordingStopped`
+[domain event](/manual/concepts/domain-events/). The built-in
+**`meeting_summary`** pipeline template is triggered by that event. The recorder
+doesn't wait on it; the meeting simply transitions through its status lifecycle:
+
+```
+recording → processing → done
+```
+
+The summary agent receives the title, your rough live notes and the transcript,
+and returns **structured JSON**. The pipeline's persist steps then write that
+JSON to discrete rows:
+
+- `enhancedNotes` and `summary` → the meeting's notes
+- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
+- each decision → a `MeetingDecision` row
+
+Action items and decisions are **never** parsed out of free-form markdown, only
+from the agent's structured arrays. If a run produces no structured output, the
+persist steps are skipped and the raw transcript is kept as a fallback, so you
+never lose the record. Nothing in the pipeline marks the meeting `done` — a
+single reconciler does that from the run's terminal event, so a sibling step
+failing cannot strand a half-written meeting that already looks finished.
+
+:::note[Agents cannot read your meetings]
+There are no meeting or calendar MCP tools. An agent connected over
+[MCP](/manual/guides/mcp-server/) cannot list meetings, read a transcript, or
+see action items and decisions — that data reaches human clients over RPC only.
+Decisions do reach agents indirectly, as memory facts in the `decisions` domain.
+:::
+
+## Where meetings show up
+
+| Surface                | What it shows                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `/meetings`            | The list of meetings, with action-item and decision counts                            |
+| `/meetings/record`     | The live recording HUD: your notes on one side, the streaming transcript on the other |
+| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action items and Decisions tabs                |
+
+## Platform support
+
+Capture is driver-free on all three desktop platforms (Core Audio taps on
+macOS, WASAPI on Windows, PipeWire on Linux).
+
+**The web client records too**, which the rest of this page's desktop framing
+can hide: the browser takes your mic through `getUserMedia` and the meeting
+audio through `getDisplayMedia` (screenshare), downsamples to 16 kHz PCM16 and
+streams to the same host. Three caveats apply there:
+
+- The shared surface **must** carry an audio track. Safari, Firefox and macOS
+  full-screen sharing yield none and the recording refuses to start.
+- There is no signal-level AEC and no input level meter; only the host-side text
+  echo filter applies.
+- "Re-run summary" and "cancel processing" are inert on web.
+
+The calendar's **Start recording & link** action is desktop-only and reports
+that plainly on web, even though the meetings screen's own record flow works
+there.
+
+:::caution[Deleting a meeting leaves its audio behind]
+Deleting a meeting removes its database rows only. The retained per-channel
+audio directory `<dataDir>/meetings/<meetingId>/` is never cleaned up — there is
+no retention policy, size cap, or GC sweep for it. Reclaiming that disk is a
+manual job on the server host.
+:::
+
+## See also
+
+- [Calendar and scheduling](/manual/concepts/calendar/): record a meeting straight from a calendar event
+- [Pipelines and automation](/manual/concepts/pipelines/): the engine behind `meeting_summary`
+- [Tickets and delegation](/manual/concepts/tickets/): link a meeting's action items to tickets
+- [Domain events](/manual/concepts/domain-events/): `MeetingRecordingStopped` and `MeetingStartingSoon`
+- [Record and summarize a meeting](/manual/guides/record-meeting/)

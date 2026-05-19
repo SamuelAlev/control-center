@@ -1,0 +1,125 @@
+---
+title: Curate your newsfeed
+description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
+dateModified: 2026-09-10
+---
+
+This guide shows you how to shape the newsfeed: which sources it pulls, how
+articles are read and what content blocking does.
+
+:::caution[The newsfeed is per-user, not workspace-scoped]
+Feeds and articles belong to the signed-in user: your feed list, read state and
+bookmarks follow you into every workspace and to every device you sign in from,
+and no other user sees them. Feeds live in the server's global database, so the
+`/newsfeed` URL carries a workspace id only because every in-app route does.
+:::
+
+## Read articles
+
+1. Click **Newsfeed** in the sidebar (or press ⌘8)
+2. Switch between **All**, **Unread** and **Saved** with the toolbar segments
+3. Narrow the list with the search box or the source picker
+4. Toggle between the magazine grid and the dense list with the layout buttons
+
+Opening an article marks it read. Use **Mark all as read** in the page header —
+it appears only while something is unread — to clear the backlog in one go and
+the bookmark control on a card to save one for later.
+
+The layout choice persists across launches.
+
+## Add a feed
+
+1. Open **Settings → You → Newsfeed** (the settings icon in the newsfeed header
+   goes straight there)
+2. Press **Add feed**
+3. Fill in a **name** and the **feed URL** (RSS or Atom)
+4. Optionally expand **Advanced** and set a custom **User-Agent** — some
+   publishers serve a different response to a default client
+5. Press **Add feed**
+
+Checkpoint: the feed appears in the **Feeds** list and its articles land after the
+first fetch. A URL that is already subscribed is refused with "feed already
+exists".
+
+Thirteen feeds are seeded for every user on first use: The Verge, TechCrunch,
+Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The Pragmatic
+Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The Engineering
+Manager, Lea Verou and CSS-Tricks.
+
+## Manage feeds
+
+Each row in the **Feeds** list gives you three controls:
+
+| Control      | Effect                                                              |
+| ------------ | ------------------------------------------------------------------- |
+| Switch       | Disable the feed. A disabled row is dimmed and is no longer fetched |
+| Refresh icon | Fetch this one feed now                                             |
+| Trash icon   | Delete the feed, after a confirmation                               |
+
+**Refresh all** at the top of the list fetches every enabled feed.
+
+A feed's subtitle shows its description and how long ago it was fetched; a feed
+that failed shows the error in its place, in warning colour.
+
+There is no edit affordance — to change a feed's name, URL or user agent, delete
+it and add it again.
+
+Fetching runs entirely on the server: once per user at boot (and on first use
+for accounts created later), then every 30 minutes.
+
+## Block ads and trackers in the reader
+
+1. In Settings → You → Newsfeed, find **Reader preferences**
+2. Leave **Open articles in app** on to use the built-in reader, or turn it off to
+   hand articles to your system browser
+3. Leave **Block ads, trackers & cookie banners** on
+
+Blocking is on by default. The reader is desktop-only: on the web build the
+browser _is_ the reader and an article opens in a new tab.
+
+Control Center does not reformat the article. It renders the publisher's page in
+an embedded webview and suppresses ads, trackers and cookie banners using cached
+filter lists.
+
+### Check or update the filter lists
+
+The **Filter lists** card shows how many cookie-hiding, ad-hiding and
+network-block rules are loaded, plus the tracking parameters it strips and when
+the lists were last updated. Press **Check for updates** to refresh them.
+
+Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
+uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
+the app runs on the bundled defaults, which the card labels as never updated.
+
+### Allowlist a site
+
+Some sites break under blocking.
+
+1. In Settings → You → Newsfeed, go to **Trusted sites**
+2. Press **Add trusted site** and enter the domain
+
+Blocking is skipped there.
+
+## Troubleshooting
+
+### A feed I added shows up in another workspace
+
+Expected. The newsfeed is per-user, not per-workspace — your feeds follow you
+everywhere you are signed in. See the caution at the top.
+
+### A feed row shows an error instead of a description
+
+The last fetch failed and the row shows the reason verbatim. Press the refresh
+icon to retry and check the URL still serves RSS or Atom. A publisher that
+rejects unknown clients may need a custom user agent, which means deleting the
+feed and re-adding it.
+
+### An article page renders badly
+
+Turn **Block ads, trackers & cookie banners** off for that domain via **Trusted sites**, or
+turn **Open articles in app** off and read it in your browser.
+
+## Related guides
+
+- [Configure notifications](/manual/guides/notifications/)
+- [Triage your inbox](/manual/guides/triage-inbox/)

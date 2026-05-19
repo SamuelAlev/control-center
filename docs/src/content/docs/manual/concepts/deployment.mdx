@@ -1,0 +1,233 @@
+---
+title: Deployment and clients
+description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
+---
+
+Control Center is not one program. It is a **thin-client architecture**: a
+headless server that owns your data and a set of clients that render an
+interface over a single RPC connection to it. Understanding this split explains
+why some things run where they do and what each client can and cannot reach.
+
+## The server owns the data
+
+A process called **`cc_server`** holds the databases — a small `global.db` for
+server-wide state plus one SQLite file per [workspace](/manual/concepts/workspaces/),
+opened lazily — and runs the long-lived work: pipeline engines, reconcilers,
+the MCP tool surface and the orchestration listener. Everything that needs to
+outlive a window, or that two clients should see identically, lives there.
+
+No client opens a database file itself. Instead, every client holds one
+**`RemoteRpcClient`** and issues repo operations and subscriptions over it. The
+server authenticates the connection against a paired-device pre-shared key —
+and then stops caring about the connection. **A session is not bound to a
+workspace.** The dispatcher is stateless: every workspace-scoped call carries
+its own `workspace_id` in its arguments and a call that omits one is refused.
+
+That is deliberate and it is what lets two clients on one server sit in
+different workspaces without a server-held "current workspace" for them to
+disagree about. Isolation is enforced per call instead, in four steps:
+
+1. The op declares whether it is workspace-scoped; if it is and no
+   `workspace_id` arrived, the call is rejected.
+2. The named id must be a **registered** workspace, checked before anything
+   opens a database — otherwise an unknown id would materialize an empty ghost
+   `workspace.db` on every request. A miss is a not-found.
+3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
+   read needs guest, mutate needs member, destructive needs admin.
+4. An op that exposes repo content additionally requires a per-repo grant at
+   the level it declares — `none` / `read` / `write` — so workspace membership
+   never silently out-privileges the forge.
+
+The sentence that matters: **holding a pairing key is not the access boundary;
+membership is.**
+
+## Why split it this way
+
+Three pressures pushed toward a server:
+
+1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
+   should see the same fleet state. If each owned its own database, they would
+   drift. A single server means every client reads the same live data.
+2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
+   local file, so a web build can never own the database or run an agent. It
+   must talk to a server that does. Rather than build a second, web-only data
+   path, the desktop was brought onto the same path.
+3. **Headless operation.** A server you can run on a small box — reachable from
+   a phone on the train or a browser anywhere — is more useful than a GUI you
+   must leave open.
+
+The trade-off is that the server is now a dependency: if it is not running,
+nothing works. The desktop's default answer to that is to **spawn one itself**.
+
+## The clients
+
+Five clients reach the server, each with a different shape and trust profile.
+
+### Desktop app
+
+The Flutter desktop application (macOS, Windows, Linux) is the full client. On
+first launch it asks how it should run, then remembers the choice:
+
+- **Local**: spawn and supervise a `cc_server` on this machine — the default,
+  self-contained, single-user setup. The desktop launches the server, which
+  owns the database under the app-support root and talks to it over loopback.
+- **Remote**: connect to a `cc_server` running elsewhere over a secure
+  WebSocket. The data lives on that server; this desktop is purely a renderer.
+
+In both cases the resulting RPC client overrides the app's data provider, so
+the entire UI — every screen, every feature — reads and writes through the
+server. The desktop never touches the database file directly.
+
+### Web client
+
+The web build is the same Flutter app compiled to run in a browser, hosted at
+[app.usectrl.dev](https://app.usectrl.dev) so there is nothing to install. A
+browser cannot spawn a subprocess, so the web client is **always** remote: it
+dials a `cc_server` over `wss://` and renders the full desktop interface. Once
+connected it shows the same screens against the same fleet, because it is the
+same code over the same RPC. The gaps are the handful of places that need a
+native capability a browser does not have — the meeting capture quality layer
+below is the main one and OS notifications are another.
+
+This is why "no download" and "no server" are different claims. The web client
+removes the install; it does not remove the server. What it dials can be a
+`cc_server` on the same laptop — `ws://localhost:9030`, which needs no
+certificate because browsers treat loopback as trustworthy — or one on another
+machine, which must be reachable over `wss://` with a certificate the browser
+trusts. `cc_server` refuses to bind a non-loopback address without TLS, so a
+remote server means either its own certificate, a TLS-terminating proxy, or a
+tunnel or VPN that supplies one.
+
+The bundle itself is hosted separately from the server it talks to. A
+standalone `cc_server` serves the RPC endpoint, the MCP surface and its
+proxies, but **not** a web bundle — the static-file path exists in the server
+but no web root is configured on the standalone binary, so it has nothing to
+serve at `/`. The published `cc-webapp` container image is what hosts
+the bundle and `scripts/build_web.sh` is what builds it. A server only accepts
+browser origins on its `--allowed-origins` list, which defaults to
+`https://app.usectrl.dev`, so self-hosting the bundle means adding its origin.
+
+Media (avatars, feed images, PR screenshots) routes through the server's proxy
+endpoint rather than hitting upstream hosts directly, so a browser never fetches
+an arbitrary origin. The deployed client stamps a per-request Content-Security
+Policy from a non-sensitive cookie so only the connected server's origin is
+allowed.
+
+### Phone companion (cc_remote)
+
+The **Remote** app is a separate, lighter client — a Flutter web PWA at
+[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
+the full app. It pairs over a brokered, end-to-end-sealed WebSocket relay and
+speaks a
+read-mostly slice of the tool surface: read tickets, messages and the newsfeed;
+send a reply or update a ticket.
+
+A phone is a **lower-privilege principal** than a local agent. A default-deny
+tool policy, a pre-shared key sealing every frame, a session capability that
+locks privileged ops (pairing, for instance) out of a companion client, the
+per-call role and repo-grant checks above and rate limiting keep an approved
+(or leaked) pairing from becoming full remote control. See
+[Remote control and mobile](/manual/concepts/remote-control/) for the full
+security model.
+
+### MCP clients
+
+External tools — editors, other agents, CLIs — that speak the Model Context
+Protocol connect to the server's MCP surface and consume the typed tool
+registry. This is the programmatic integration path; it is not a GUI. See
+[Use the MCP server](/manual/guides/mcp-server/) and the
+[MCP tools reference](/manual/reference/mcp-tools/).
+
+### Fleet executors (cc_worker)
+
+A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
+declares its host capabilities and pulls leased jobs to execute — agent runs,
+pipeline steps, code indexing, golden renders, eval batches. It streams process
+events back over the same RPC and holds **no durable state**: no database, no
+auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
+limb, not a second brain. One authoritative server, N dumb limbs; there is no
+consensus, no worker-to-worker traffic.
+
+What it advertises is the operating system, CPU architecture, core count, RAM,
+whether a Flutter SDK is reachable and which sandbox backends the host has
+(none on Windows). A dedicated worker also always advertises `alwaysOn` and
+`acceptsParallel`, which is what the pin → prefer → spill scheduler places
+against. There is no GPU or ML probe.
+
+A solo desktop notices none of this, because ordinary dispatch does not go
+through the fleet at all. There _is_ an implicit in-process worker registered
+for the server host, but it is a registration seam with no runners wired into
+it — a job actually placed on the local worker fails rather than executing.
+Today, only a real `cc_worker` executes leased jobs.
+
+## What runs where
+
+| Concern                                        | Server (`cc_server`)       | Fleet executor (`cc_worker`) | Desktop client | Web / phone client               |
+| ---------------------------------------------- | -------------------------- | ---------------------------- | -------------- | -------------------------------- |
+| Databases (Drift/SQLite)                       | owns them                  | —                            | —              | —                                |
+| Auth, approvals, budgets, identity             | owns it                    | —                            | —              | —                                |
+| Pipelines, reconcilers, orchestration listener | runs it                    | —                            | —              | —                                |
+| MCP tool surface                               | serves it                  | —                            | —              | —                                |
+| Agent execution                                | runs it (or leases it out) | executes leased jobs         | —              | —                                |
+| UI rendering                                   | —                          | —                            | full           | full (web) / read-mostly (phone) |
+| Meeting capture (mic + meeting audio)          | —                          | —                            | native capture | web only, via screenshare audio  |
+| Calendar OAuth (Google)                        | stores tokens              | —                            | —              | —                                |
+
+The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
+itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
+bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
+Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
+all.** It advertises a `sandbox` capability so the server can place jobs by
+platform, but nothing in the worker applies one: a leased job is spawned
+directly, bounded by the lease's environment and the worktree it was given.
+Leasing work out therefore moves execution outside the sandbox even on a host
+that has one. See [Sandbox and security](/manual/concepts/sandbox-security/)
+for what bounds a run in each case.
+
+Meeting capture happens on a client because it needs a microphone and the
+meeting's audio — a server in a closet cannot record your call. The recording
+is then summarized by the server's pipeline and the notes are stored where
+every client can read them.
+
+The web client records too, which the table's shape can obscure: it captures
+the microphone plus a screenshare audio track in the browser and streams 16 kHz
+PCM to the server. It _requires_ that audio track, so it fails explicitly where
+the browser will not provide one. What is genuinely desktop-only is the quality
+layer around capture — signal-level echo cancellation through the native
+processor, the input-level meter and dead-mic warning, re-running a summary,
+cancelling processing and the calendar's record-and-link action.
+
+## Pairing and trust
+
+Every client proves who it is with a **pre-shared key** provisioned once:
+
+- The desktop in local mode generates a fresh key each boot and hands it to the
+  spawned server via environment, so nothing secret is persisted on the desktop.
+- Remote clients (desktop-remote, web, phone) use a key minted by the server's
+  `pair` command and stored in the OS keychain (or, on the phone, locally).
+
+Revocation is **live**, not lazy. The server watches its paired-device table
+and drops any open session whose device has left the active set, within
+seconds — on the direct WebSocket path and the relay path alike. You do not
+have to wait for the device to reconnect to cut it off.
+
+The key never travels through a URL a static host can see. When it arrives by
+link — on the phone or in a browser — it rides in the **URL fragment**, the
+part after `#`, which the browser never sends to the server hosting the page.
+That is the invariant worth remembering and it applies to both. The web client
+has two other entry points: the connect form, where you paste a server and key
+directly and an invite code, which it redeems for a credential minted for that
+browser alone.
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/): why every RPC call carries its own workspace id and how the database split makes isolation structural
+- [Architecture](/manual/concepts/architecture/): how the codebase is structured around the server and its clients
+- [Remote control and mobile](/manual/concepts/remote-control/): the phone pairing and security model
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/): start `cc_server` and pair a client
+- [Connect to a remote server](/manual/guides/connect-remote-server/): point the desktop or web client at a server elsewhere
+- [Pair a device](/manual/guides/pair-a-device/): add a phone, a second browser, or another desktop
+- [Run a fleet worker](/manual/guides/run-fleet-worker/): add a `cc_worker` that pulls leased jobs

@@ -1,0 +1,37 @@
+{
+  "name": "control-center",
+  "compatibility_date": "2026-06-08",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "main": "./src/worker.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    // Page routes run through the worker first so it can negotiate the
+    // markdown twin (`Accept: text/markdown`) and stamp `Vary: Accept`.
+    // Binary assets (/_astro, /fonts, images, feeds, machine files) keep the
+    // free direct-asset path and never invoke the worker.
+    "run_worker_first": [
+      "/",
+      "/index.html",
+      "/about",
+      "/about/",
+      "/contact",
+      "/contact/",
+      "/developers",
+      "/developers/",
+      "/changelog",
+      "/changelog/",
+      "/compare",
+      "/compare/*",
+      "/manual",
+      "/manual/*",
+      "/privacy",
+      "/privacy/",
+      "/terms",
+      "/terms/"
+    ]
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

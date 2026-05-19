@@ -1,0 +1,151 @@
+---
+title: Configure guardrails
+description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-channel autonomy.
+---
+
+This guide shows you how to configure guardrails: the rules that decide whether
+an agent's action runs, asks for approval first, or is refused.
+
+Guardrails cover the twelve effect classes every mutating tool declares. They are
+enforced server-side at the point the tool is called, never by an instruction in
+a prompt.
+
+## Set a decision for an action class
+
+1. Go to **Settings → Workspace → Agent permissions**
+2. Pick a scope with the segmented control: **Workspace**, **Agent** (then choose
+   the agent), or **Channel** (then choose the channel)
+3. On the row for the action class, pick **Allow**, **Ask first** or **Deny**
+4. To drop a rule you set, press the reset button that appears at the end of that
+   row (**Clear to inherited**) — the decision falls back to the wider scope
+
+Each row shows the effective decision as a status tag and a badge for where it
+came from: **This scope**, **Inherited** or **Built-in default**. The matrix
+resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
+what-if probe with a read-only mode selected to see that layer.
+
+Writing a rule needs the `admin` role. Reading the matrix does not.
+
+Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then run
+the what-if probe below on `git push origin main`. The result reads `deny` with
+source `workspace`.
+
+## Understand how a decision is resolved
+
+Resolution is **specificity first, then restrictiveness**:
+
+1. **Channel** rules, then **agent**, then **workspace**. The first scope with a
+   matching rule decides and resolution stops
+2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
+   review, orchestrate) refuses ten of the twelve classes
+3. If the mode has nothing to say, the **built-in default** applies
+
+Within a single scope, a command rule resolves by longest matching prefix and an
+equally specific conflict resolves **most restrictive** — deny beats ask first
+beats allow. An action that declares several classes resolves each one
+independently and then combines them most-restrictive.
+
+:::caution[Allow does not beat deny]
+The old flat `allow > deny > prompt` precedence is gone. A narrower rule wins on
+specificity and a tie is broken by restrictiveness — so an **Allow** at the
+workspace scope no longer overrides a **Deny** anywhere.
+:::
+
+An **Ask first** decision surfaces one approval prompt covering every class that
+resolved to `prompt`. **With no approver connected it is denied**, for both shell
+commands and harness tool calls. That is deliberate: an ungated run is worse than
+a refused one.
+
+### Action classes and built-in defaults
+
+| Action class                 | Built-in default |
+| ---------------------------- | ---------------- |
+| Delete a file                | Ask first        |
+| Write outside the worktree   | Allow            |
+| Create a commit              | Allow            |
+| Push to a remote             | Ask first        |
+| Open a pull request          | Ask first        |
+| Publish a review or merge    | Ask first        |
+| Write to an external tracker | Ask first        |
+| Access the network           | Allow            |
+| Read a secret                | Allow            |
+| Install a package            | Allow            |
+| Run a process                | Allow            |
+| Change workspace structure   | Allow            |
+
+The taxonomy is closed. A new tool that ships without declaring its classes fails
+a ratchet test in CI, so nothing arrives with a silently empty effect set.
+
+## Test a rule with the what-if probe
+
+Before changing a rule, check how the current policy already resolves it.
+
+1. On the same page, scroll to **What if?**
+2. Pick an **Action** (one of the twelve classes)
+3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
+   **Channel** and **Mode**
+4. Read the result: the decision, the reason and **Source:**
+
+The probe runs the same resolver the enforcement path uses, against your live
+rules, so the answer is exact. If it surprises you, change a rule in the matrix
+above and probe again.
+
+## Set a channel's autonomy dial
+
+The dial is per agent per channel and it composes with the rules rather than
+replacing them.
+
+1. Open the channel
+2. Open **Manage participants** from the channel header
+3. Under **Autonomy** on the agent's row, pick a level:
+
+| Level                 | Effect                                                                                              |
+| --------------------- | --------------------------------------------------------------------------------------------------- |
+| **Default**           | No channel setting — behaves as **Act with approval**                                               |
+| **Propose only**      | Every gated tool is denied outright, with a message telling the agent to propose the action instead |
+| **Act with approval** | Risky actions hit the fail-closed approval gate                                                     |
+| **Act freely**        | Pre-approves anything that did not resolve to a hard deny                                           |
+
+:::caution[Act freely swallows every prompt]
+Under **Act freely** an **Ask first** decision is granted without asking you.
+Only a `deny` — from a rule, from the mode preset, or from a built-in default —
+still blocks. Reach for it when you are watching the channel, not as a default.
+:::
+
+The dial only reaches the built-in harness. An external CLI adapter runs its own
+tools outside this gate.
+
+## Know where guardrails do not reach
+
+The **Where rules are enforced** table at the bottom of the same page is the
+in-app version of this: per effect class, it says whether each runner catches it
+at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
+
+- **External CLI and ACP adapters** are not gated on their own tool calls. Claude
+  Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
+  and bash calls never pass through the guard. What is gated for those adapters
+  is the MCP tool surface they call back into and the shell command Control
+  Center spawns to launch them.
+- **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
+  and can never be denied — otherwise a mode would be structurally unable to
+  produce its only deliverable.
+- **Whether the sandbox backs these rules up depends on the host.** Where
+  `cc_server` finds a backend it wraps the external CLI and ACP transports and
+  the harness `bash` tool, so a rule you did not write still has an OS floor
+  under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
+  and `socat` there is none either — there, guardrails plus the mode's tool
+  surface are the whole enforcement, not a second line of it. Check which case
+  you are in with
+  [Configure sandbox policies](/manual/guides/sandbox-policies/).
+
+## Related guides
+
+- [Configure sandbox policies](/manual/guides/sandbox-policies/)
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Manage adapters and models](/manual/guides/adapters/)
+
+## Related concepts
+
+- [Guardrails — one policy for every mutating action](/manual/concepts/guardrails/)
+- [Modes](/manual/concepts/modes/)
+- [Sandbox and security](/manual/concepts/sandbox-security/)

@@ -1,0 +1,182 @@
+---
+title: Configure sandbox policies
+description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
+---
+
+:::caution[The controls on the sandboxing settings page are still client-only]
+Whether an agent run is sandboxed is decided entirely on the server, at boot.
+The master toggle, the backend picker and the **Default capabilities** toggles
+under **Settings → Server → Diagnostics & privacy** are preferences stored on
+your device; the server never reads any of them, so changing them does not
+change how an agent runs. Only the **Backend** card's detection result comes
+from the server and it reports what the server host _could_ do.
+
+Two controls do reach a run and this guide covers both: the per-agent
+**Sandbox permissions** below and the server's own `--sandbox` flag.
+:::
+
+## What constrains an agent run
+
+An agent is held by six things. The first is the OS sandbox and it is the one
+that is conditional — the other five hold on every host.
+
+| Boundary                 | What it does                                                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the external CLI transports, the ACP transport and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
+| Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
+| Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
+| Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
+| Environment sanitization | The spawned process gets a filtered environment, not yours                                                                                                                                        |
+| The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
+
+Three things stay weaker than they look:
+
+- Only the **built-in harness** enforces the tool gate, completion contracts and
+  structural mode rules. External CLI and ACP adapters do not get them. Claude
+  Code in particular is launched with `--dangerously-skip-permissions`, because a
+  non-interactive `claude -p` would otherwise block forever on its own prompt —
+  so Claude's own read, write, edit and bash calls are neither seen nor gated by
+  Control Center. Where the sandbox is on, it is the boundary around them.
+- The harness's in-process file tools (read, write, edit, apply patch, search,
+  find) run inside the server process, so no sandbox profile constrains them.
+  Only the `bash` tool goes through the sandboxed command runner. Those tools are
+  bounded by their own path confinement plus the action guardrails.
+- On a host with no backend the first row does not apply at all. The `bash` tool,
+  the external CLIs and ACP all fall back to environment sanitization plus the
+  command policy and the server says so in its startup log. Check yours below.
+
+## Set an agent's capabilities
+
+This is the one capability control the server reads. It is per agent and it
+decides what the credential broker puts in that agent's environment.
+
+1. Go to **Settings → Workspace → Agents**
+2. Select the agent in the list
+3. On the **Settings** tab, scroll to **Sandbox permissions**
+4. Turn the switch on — the row's caption changes from **Use workspace default**
+5. Set the four toggles:
+
+| Toggle                           | What it gates                                                                                                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Allow git push**               | With this off, the run gets `GIT_ASKPASS=/usr/bin/false` and `GIT_TERMINAL_PROMPT=0`, so a push cannot prompt for a credential                                                                                                                   |
+| **Allow GitHub API calls**       | Together with **Allow git push**, gates whether the broker injects the GitHub token as `GH_TOKEN` / `GITHUB_TOKEN`                                                                                                                               |
+| **Allow ticketing API calls**    | Gates whether the broker injects `TICKETING_API_KEY`                                                                                                                                                                                             |
+| **Allow general network access** | Where the sandbox is on, this is a real egress gate: with it off the run's allowlist is empty and every outbound request is refused at the proxy. Where there is no backend, it is recorded on the run but blocks nothing a spawned process does |
+
+6. Save
+
+Checkpoint: reopen the agent and the switch is still on with your toggles — a
+saved capability set round-trips through the server and an agent with none falls
+back to the conservative default (push off, GitHub API off, ticketing off,
+network on).
+
+:::caution[Two ways this bites]
+The caption says **Use workspace default**, but there is no workspace-level
+capability setting the server reads. An agent with the switch off gets the
+built-in conservative default.
+
+Separately, a run requested by a member who has stored their own GitHub token on
+the server has that token merged in _after_ the broker's environment, so it
+arrives regardless of the GitHub capability. There is no in-app screen that
+stores a per-member token today, so on a normal install this does not fire — but
+do not treat **Allow GitHub API calls** as a hard egress boundary.
+:::
+
+## Check whether your agent runs are sandboxed
+
+Two things decide it, both on the server: whether the host offers a backend and
+whether `--sandbox` is on. Check them in that order.
+
+1. Go to **Settings → Server → Diagnostics & privacy**
+2. Read the **Backend** card. It reports the machine `cc_server` runs on, not the
+   machine you are looking at: **Native** (Seatbelt on macOS, bubblewrap on
+   Linux and WSL2) or **None**
+3. Read the server's startup log. It prints exactly one of three lines:
+   - `agent sandbox ON` plus the backend note — runs are wrapped
+   - `no OS-native agent sandbox on this host` plus an install hint where there
+     is one — runs are not wrapped
+   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+
+`GET /healthz` does not report sandbox state, so the startup log is the check.
+
+To turn the sandbox off deliberately — a host where the profile misbehaves is
+the reason it exists — start the server with `--sandbox off`, or set
+`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
+the host has one", never "require one".
+
+Two situations never get a sandbox. On **Windows** there is no backend at all:
+the probe always reports unavailable there and there is nothing to install. On
+**Linux and WSL2** both `bwrap` and `socat` must be on the `PATH`; without them
+the probe reports unavailable and names the missing packages.
+
+## Know what a mode already forbids
+
+Mode is stored per conversation and feeds the guardrail resolver as the **mode
+preset** layer. Three of the four modes are read-only and a read-only mode
+refuses ten effect classes outright:
+
+| Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
+| ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
+| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure |
+| **Review**         | Read-only | The same ten. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
+| **Orchestrate**    | Read-only | The same ten                                                                                                                                                                     |
+
+Network access and secret access are deliberately _not_ refused by a read-only
+mode: research is the point of one.
+
+## Require approval before an action runs
+
+Approval is a guardrail decision, not a sandbox setting.
+
+1. Go to **Settings → Workspace → Agent permissions**
+2. Set the action class to **Ask first** at the workspace, agent or channel scope
+
+An **Ask first** decision interrupts the run and asks you. With no approver
+connected it fails closed and the action is denied. See
+[Configure guardrails](/manual/guides/configure-guardrails/) for the full
+resolution order.
+
+## Troubleshooting
+
+### An agent cannot push and I never denied it
+
+Check the agent's **Sandbox permissions**. An agent with no custom capability set
+gets the conservative default, which has **Allow git push** off — so the broker
+injects no GitHub token and git has no way to authenticate.
+
+### The backend card says no native sandbox is available
+
+Then agent runs on that host are not sandboxed and the remaining boundaries are
+what you have. On Linux and WSL2, install both missing tools — `sudo apt install
+bubblewrap socat` — and restart the server; the startup log should then say the
+sandbox is on. On Windows there is no backend to install, so tighten the
+guardrails instead: see
+[Configure guardrails](/manual/guides/configure-guardrails/).
+
+### An agent reached a file outside its worktree
+
+Which tool reached it decides whether this is expected.
+
+The harness's in-process file tools (read, write, edit, apply patch, search) run
+in the server process, so no sandbox profile applies to them — their bound is
+their own path confinement plus the guardrails. A `bash` command, an external
+CLI or an ACP agent _is_ wrapped where a backend exists and your registered
+checkouts are deny-write inside that wrap in every mode, including their
+symlink-resolved spellings (on macOS a path reached through `/tmp` or
+`/var/folders` resolves under `/private` and both spellings are now denied). On
+a host with no backend none of that applies. Either way, guardrails can refuse
+**Write outside the worktree** outright.
+
+## Related guides
+
+- [Configure guardrails](/manual/guides/configure-guardrails/)
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Diagnose an agent](/manual/guides/agent-diagnostics/)
+- [Sandbox backends](/manual/reference/sandbox-backends/)
+- [cc_server CLI](/manual/reference/cc-server-cli/): the `--sandbox` flag
+
+## Related concepts
+
+- [Sandbox and security](/manual/concepts/sandbox-security/)
+- [Modes](/manual/concepts/modes/)

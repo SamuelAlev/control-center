@@ -1,0 +1,132 @@
+---
+title: Chat with an agent
+description: Create a channel with an agent, send it work, steer it mid-run and stop it.
+---
+
+This guide shows you how to work with an agent in a channel.
+
+## Create a channel
+
+1. Navigate to **Channels** in the sidebar
+2. Click the **+** button beside the Channels heading
+3. Type a **name** — this is required. Leaving it empty cancels the dialog
+   silently
+4. Add one or more agents from the workspace
+5. If the workspace has more than one repo, a repo picker appears. It starts with
+   every repo selected; narrow it to the repos this channel should provision
+   worktrees for
+6. Confirm
+
+Control Center opens the channel and starts provisioning a copy-on-write worktree
+per selected repo in the background.
+
+## Send the first message
+
+Type your message in the composer and press Enter. The agent dispatches and starts
+streaming its response.
+
+If the channel is still provisioning, your message is parked rather than lost —
+the composer holds it and sends it automatically once the worktrees are ready.
+
+As the agent works you see its turn stream in: reasoning segments, tool calls
+(file reads, writes, shell commands) and answer text, all inside one agent-turn
+message.
+
+## Steer a running agent
+
+While an agent is working, plain conversational text does **not** queue a new turn.
+It is injected into the live run at the next turn boundary and you get a
+"Sent to the running agent as steering." toast.
+
+Three things change that behaviour:
+
+- A message containing an **@mention** is always sent as a message, never as
+  steering
+- A message starting with a **slash command** is always handled as that command
+- If every live run has already finished, the text falls through and is sent as a
+  normal message
+
+:::note[Steering needs the built-in harness]
+Only the built-in Control Center harness has a steering channel. On an external CLI
+or ACP adapter the injection is not delivered and your text is sent as an ordinary
+message instead.
+:::
+
+## Approve a blocked action
+
+When an agent hits an action its guardrails gate — a destructive command, a
+privileged tool — the server **blocks the run** and publishes an approval request
+to every connected client. An always-on-top panel appears in the shell listing what
+is waiting; approve or deny it inline and the agent continues.
+
+There is no timeout: a blocked agent waits until someone decides. The same request
+also appears in the inbox's attention strip and on the phone client, so you can
+unblock it from wherever you are.
+
+Agents cannot ask you free-form questions inline. The `ask_user_question` tool is
+implemented but not registered on the server, so it never reaches an agent's tool
+list — the approval panel is the only interactive prompt you will see.
+
+## Stop an agent
+
+While runs are live, the composer's send button becomes a **stop** button. Clear
+the composer and press it — this stops every agent running in that conversation.
+
+There is no stop control in the channel header and no keyboard shortcut for it. To
+stop just one run when several are live, open that run's activity tab — its header
+carries a run-scoped pause/resume and stop (the stop asks you to confirm).
+**Observability → Live** lists every running agent in the workspace with the same
+control.
+
+A stopped run is marked as stopped. Send a new message to dispatch again.
+
+## Use slash commands
+
+Type `/` in the composer to see the command list. The ones that change how the
+conversation behaves:
+
+| Command        | What it does                                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `/plan`        | Switches the channel into plan mode. A bare `/plan` just arms the mode; `/plan <request>` arms it and sends the rest as your message |
+| `/goal <text>` | Records the conversation's working goal                                                                                              |
+| `/loop <text>` | Iterates on a task until it is complete                                                                                              |
+| `/compact`     | Folds older history into an anchored summary and continues on the compacted context                                                  |
+| `/todo …`      | Views and edits this conversation's persisted todo list                                                                              |
+
+Your installed skills appear in the same list, one entry each.
+
+`/compact` and `/todo` are intercepted by the client and never persisted as
+messages — a `/compact` line in the transcript would push the next compaction's cut
+one turn back. `/plan` flips the channel's stored mode rather than travelling as
+text. So none of the three is "a message you send the agent"; do not expect to see
+them in the history.
+
+## Ask for a plan first
+
+Before a complex change, switch the channel to plan mode with `/plan`, the mode
+dropdown on the composer toolbar, or Shift+Tab. The agent then researches
+read-only and delivers a typed plan you approve before any work starts. See
+[Use plan mode](/manual/guides/plan-mode/).
+
+## Reach an agent without a dedicated channel
+
+You do not need a channel per agent. In any channel:
+
+```
+@alice can you look at the failing tests in src/auth_test.dart?
+```
+
+The mentioned agent is added to the channel and dispatched with that channel's
+context. See [@-mention agents](/manual/guides/mention-agents/) for how names are
+matched.
+
+## Related guides
+
+- [Use channels](/manual/guides/channels/)
+- [@-mention agents](/manual/guides/mention-agents/)
+- [Use plan mode](/manual/guides/plan-mode/)
+- [Set up Slack integration](/manual/guides/slack-integration/) to do the same from Slack
+
+## Related concepts
+
+- [Modes](/manual/concepts/modes/)

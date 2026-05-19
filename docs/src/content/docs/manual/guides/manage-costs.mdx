@@ -1,0 +1,101 @@
+---
+title: Manage costs
+description: See what your agents are spending, cap an autonomous run and cut token use.
+---
+
+This guide shows you how to see what agent runs cost and what you can actually do to bring the number down.
+
+:::caution[There is no per-agent budget you can set]
+An agent row carries `monthlyBudgetCents` and `budgetPolicyId` and a governance service enforces them — but neither field has a UI control, an MCP tool or a dedicated RPC op and there are no RPC ops for budget-policy rows at all. There is also no surface that lists budget incidents. Nothing on this page asks you to set a budget, because you cannot. What you _can_ cap is an autonomous run; see [Cap an autonomous run](#cap-an-autonomous-run).
+:::
+
+## How costs are recorded
+
+Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
+
+Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the usage summary. A local Ollama model or a flat-rate plan such as kimi-code therefore shows no spend at all, though its token counts are still recorded. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+
+## See what you are spending
+
+### Observability → Insights
+
+Reach it from the sidebar footer → **Observability**. The **Insights** tab opens by default and is the main cost surface for the workspace:
+
+- A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
+- Faceted filters over agent, model, status and role, as dismissible chips
+- A KPI strip: total runs, total cost, error rate, cache rate, tokens per second, average latency and time to first token, each with a change against the previous period (hidden on "All time")
+- Activity and cost charts, plus a **cost by role** breakdown splitting spend across the main agent, its subagents and its advisor
+- A per-agent table sorted by cost, top ten with a show-all toggle. Tapping a row filters every other surface to that agent
+- The granular run log, which docks a transcript drawer for a selected run
+
+:::note["All time" is not all time]
+The run feed subscribes to the 2000 most recent run logs across every workspace, then filters to the active one. On a busy multi-workspace server, older history for a quiet workspace falls out of that window.
+:::
+
+### Settings → Server → Model providers
+
+The **Usage & cost** card on this page shows the last seven days of observed spend as a single dollar figure, with a per-provider breakdown and, when a provider publishes one, the time until the next quota window resets.
+
+### A single agent's runs
+
+**Settings → Workspace → Agents** → select an agent → **Logs** lists its runs with status, duration, start and completion times, PID and adapter. This tab does **not** show cost — use the per-agent table in Observability → Insights for that.
+
+## Cap an autonomous run
+
+Two slash commands, typed in a channel composer, are the only runs with a spend cap:
+
+```
+/goal ship the auth refactor --budget 20
+/loop keep the flaky tests green
+```
+
+- Each segment of a `/goal` or `/loop` run stops when its priced spend reaches **500 cents ($5.00)**. At 80% of that the loop first steers the model to wrap up and leave a clean handoff, so it does not die mid-task.
+- A whole durable goal is capped at **5000 cents ($50.00)** unless you pass `--budget <dollars>`. The supervisor threads the goal's _remaining_ budget into each segment, so an explicit budget is never overshot by a whole segment.
+- `--days N` adds a wall-clock deadline and `--max N` a run-count ceiling. Both are opt-in; without them the goal is bounded only by cost.
+- A goal that hits its wall stops at `budgetExhausted` and can only be resumed by raising the budget.
+
+Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
+
+:::caution[A normal turn has no cost cap]
+Every other run — a message in a channel, an @-mention, a pipeline step — is unbounded. There is no turn ceiling in the harness either. A run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
+:::
+
+## Cut token use
+
+### Compact a long conversation
+
+Type `/compact` in the channel composer. The command is intercepted client-side and never lands in the transcript; the server folds older history into an anchored summary and the conversation continues on the compacted context.
+
+Compaction is refused while an agent is mid-turn and when there is nothing old enough to fold. The built-in harness also compacts on its own as history approaches the model's context window.
+
+### Choose the effort level deliberately
+
+An agent's **Reasoning effort** (Settings → Workspace → Agents) offers whatever levels the selected model publishes. Higher levels spend more reasoning tokens. Reserve the top levels for work that needs them.
+
+### Choose the model per agent
+
+Model is a per-agent field, so a formatting or triage agent can run on a cheap model while an architecture agent runs on an expensive one. Filter the per-agent table in Observability → Insights by model to see which pairing is actually costing you.
+
+### Look for runs with outsized token counts
+
+Sort the Insights run log and open the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+
+## What happens if a budget is set out of band
+
+For completeness, if `monthlyBudgetCents` or a budget policy is written directly to an agent row:
+
+- Budgets are evaluated **after** a run completes, not before dispatch. A listener on run completion compares the agent's month-to-date spend against its ceiling.
+- Crossing the soft threshold (80% by default) records a warning incident and fires a `BudgetThresholdCrossed` event you can hang a pipeline trigger on.
+- Exhausting the budget records a hard incident, fires the same event and flips the agent's lifecycle status to `paused`.
+- The pre-dispatch block exists but is consulted only by the orphan-run reaper and the stranded-ticket reconciler when scheduling recovery — a normal dispatch never reaches it and nothing on the dispatch path checks the paused status. The only visible signal is the lifecycle badge in the org chart.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Manage adapters and models](/manual/guides/adapters/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)
+- [Agent configuration reference](/manual/reference/agent-configuration/)
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

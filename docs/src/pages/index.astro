@@ -1,0 +1,33 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import Hero from '../components/landing/Hero.astro';
+import Pillars from '../components/landing/Pillars.astro';
+import RestOfDay from '../components/landing/RestOfDay.astro';
+import PlatformRows from '../components/landing/PlatformRows.astro';
+import Download from '../components/landing/Download.astro';
+import StackStrip from '../components/landing/StackStrip.astro';
+import GuideList from '../components/landing/GuideList.astro';
+import Faq from '../components/landing/Faq.astro';
+import Cta from '../components/landing/Cta.astro';
+import LandingScripts from '../components/landing/LandingScripts.astro';
+---
+
+<MarketingLayout
+  title="Control Center \\ The developer operations deck"
+  description="Dispatch and review AI coding agents, hand them disposable VMs to test in, capture and summarize meetings and keep tickets, pipelines and your calendar on one deck. Desktop on macOS, Windows and Linux, plus web and phone."
+  softwareApplication
+>
+  <main id="top">
+    <Hero />
+    <Pillars />
+    <RestOfDay />
+    <PlatformRows />
+    <Download />
+    <StackStrip />
+    <GuideList />
+    <Faq />
+    <Cta />
+  </main>
+
+  <LandingScripts />
+</MarketingLayout>

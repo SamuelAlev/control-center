@@ -1,0 +1,148 @@
+import 'package:cc_data/cc_data.dart'
+    show RemoteAgentRepository, RemoteAgentRunLogRepository;
+import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/features/agents/domain/value_objects/agent_live_state.dart';
+import 'package:cc_domain/features/governance/domain/services/org_chart_service.dart';
+import 'package:cc_domain/features/governance/domain/value_objects/agent_presence.dart';
+import 'package:cc_domain/features/governance/domain/value_objects/org_node.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Host-side agent operations that are NOT part of the repository contract:
+/// today, stopping every OS process an agent owns.
+///
+/// The processes run on the SERVER, so the action is one RPC op. The client
+/// used to loop `Process.killPid` over pids read from run logs, which killed
+/// nothing when the server was remote (and could kill an unrelated recycled pid
+/// locally).
+final remoteAgentOpsProvider = Provider<RemoteAgentRepository>(
+  (ref) => RemoteAgentRepository(ref.watch(rpcClientProvider)),
+);
+
+/// Host-side run-log operations beyond the repository contract: reading a run's
+/// raw NDJSON log, which lives in the SERVER's data directory.
+final remoteAgentRunLogOpsProvider = Provider<RemoteAgentRunLogRepository>(
+  (ref) => RemoteAgentRunLogRepository(ref.watch(rpcClientProvider)),
+);
+
+/// Watches all agents ordered by name.
+final agentsProvider = StreamProvider<List<Agent>>((ref) {
+  final repo = ref.watch(agentRepositoryProvider);
+  return repo.watchAll();
+});
+
+/// Watches agents for a specific workspace ordered by name.
+final workspaceAgentsProvider = StreamProvider.family<List<Agent>, String>((
+  ref,
+  workspaceId,
+) {
+  final repo = ref.watch(agentRepositoryProvider);
+  return repo.watchByWorkspace(workspaceId);
+});
+
+/// The agent org chart for a workspace — the strict `reportsTo` reporting tree
+/// (CEO/top-level agents at the root). Derived purely from the workspace's
+/// agent stream, so it updates live as agents are hired, fired, or re-parented.
+final orgChartProvider = Provider.family<List<OrgNode>, String>((
+  ref,
+  workspaceId,
+) {
+  final agents =
+      ref.watch(workspaceAgentsProvider(workspaceId)).asData?.value ??
+      const <Agent>[];
+  return OrgChartService.buildTreeFrom(agents);
+});
+
+/// Computed agent presence (availability × workload) for a workspace, keyed by
+/// agent id — the `agent_presence.forWorkspace` RPC read (PRD 09). The org chart
+/// surfaces each agent's presence summary (e.g. "online + working (2/3)").
+final workspacePresenceProvider =
+    FutureProvider.family<Map<String, AgentPresence>, String>((
+      ref,
+      workspaceId,
+    ) {
+      return ref
+          .watch(agentPresenceReaderProvider)
+          .presenceForWorkspace(workspaceId);
+    });
+
+/// Returns a single agent by id.
+final agentDetailProvider = FutureProvider.family<Agent?, String>((
+  ref,
+  id,
+) async {
+  final repo = ref.watch(agentRepositoryProvider);
+  return repo.getById(ref.requireWorkspaceId(), id);
+});
+
+/// Identifies an agent within a workspace, for workspace-scoped run-log
+/// queries. A record (value equality) so it works as a provider family key.
+typedef AgentRunsKey = ({String workspaceId, String agentId});
+
+/// Watches run logs for a given agent, scoped to its workspace.
+final agentRunLogsProvider =
+    StreamProvider.family<List<AgentRunLog>, AgentRunsKey>((ref, key) {
+      final repo = ref.watch(agentRunLogRepositoryProvider);
+      return repo.watchByAgent(key.workspaceId, key.agentId);
+    });
+
+/// Identifies a conversation within a workspace, for conversation-scoped run
+/// queries. A record (value equality) so it works as a provider family key.
+typedef ConversationRunsKey = ({String workspaceId, String conversationId});
+
+/// Watches the active (not-yet-completed) run logs for a conversation. Empty
+/// when no agent is currently working in the channel/ticket.
+final conversationActiveRunsProvider = StreamProvider.autoDispose
+    .family<List<AgentRunLog>, ConversationRunsKey>((ref, key) {
+      return ref
+          .watch(agentRunLogRepositoryProvider)
+          .watchActiveByConversation(key.workspaceId, key.conversationId);
+    });
+
+/// Whether any agent is currently running in the conversation. Drives the
+/// composer's stop/queue affordance.
+final conversationBusyProvider = Provider.autoDispose
+    .family<bool, ConversationRunsKey>((ref, key) {
+      final runs = ref.watch(conversationActiveRunsProvider(key)).asData?.value;
+      return runs != null && runs.isNotEmpty;
+    });
+
+/// Whether the agent has any run logs that are currently running.
+final agentIsRunningProvider = Provider.family<bool, AgentRunsKey>((ref, key) {
+  final logsAsync = ref.watch(agentRunLogsProvider(key));
+  return logsAsync.whenOrNull(
+        data: (logs) => logs.any((log) => log.isRunning),
+      ) ??
+      false;
+});
+
+/// The derived [AgentLiveState] for an agent, computed from its run logs.
+///
+/// Drives the roster's per-row presence indicator and status sort. While the
+/// logs stream is still loading, the agent reads as idle rather than flashing
+/// "no runs yet".
+final agentLiveStateProvider = Provider.family<AgentLiveState, AgentRunsKey>((
+  ref,
+  key,
+) {
+  final logs = ref.watch(agentRunLogsProvider(key)).asData?.value;
+  if (logs == null) {
+    return AgentLiveState.idle;
+  }
+  return deriveAgentLiveState(logs);
+});
+
+/// The moment an agent last showed activity, or null if it has never run.
+final agentLastActiveProvider = Provider.family<DateTime?, AgentRunsKey>((
+  ref,
+  key,
+) {
+  final logs = ref.watch(agentRunLogsProvider(key)).asData?.value;
+  if (logs == null) {
+    return null;
+  }
+  return agentLastActive(logs);
+});

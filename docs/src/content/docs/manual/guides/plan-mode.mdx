@@ -1,0 +1,140 @@
+---
+title: Use plan mode
+description: Switch a channel into plan mode, get a typed plan and approve it into running work.
+---
+
+This guide shows you how to get a structured plan out of an agent before it writes
+any code.
+
+In plan mode the agent researches read-only and its only deliverable is a **typed
+plan**: a dependency graph of steps you approve, which Control Center then compiles
+into real work. Use it when you want to see the scope of a change, get the steps
+broken down, or have risks and dependencies named before anything is touched.
+
+## Switch a channel into plan mode
+
+Any of these flips the channel's mode and the change is persisted:
+
+- Pick **Plan** from the mode dropdown on the far left of the composer toolbar
+- Press **Shift+Tab**
+- Send `/plan`. A bare `/plan` just arms the mode; `/plan <request>` arms it and
+  sends the rest as your message
+
+`/plan` never travels as text — it sets the stored mode, which is the authority the
+tool surface, the guard preset and the prompt all read. So the mode holds for this
+turn and every turn after it, until you change it back.
+
+The mode is stored on the channel, so the same agent can be in plan mode here and
+in agent mode elsewhere.
+
+## What the agent produces
+
+1. It researches read-only — memory, the code index, files
+2. It calls `submit_plan` **once**, with a `goal` plus `nodes`, each carrying a
+   stable `key`, a `title`, a `description` and the node keys it `dependsOn`
+   (which is what lets independent work run in parallel)
+3. It stops
+
+The tool validates the graph — duplicate keys, dangling dependencies, cycles — and
+returns violations for the agent to fix rather than accepting a broken plan.
+
+The plan appears **in the conversation** as a compact row showing the goal, its
+status and the step count. **Plan Studio** — the dependency graph, the per-node
+inspector and the cost estimate — opens as a tab beside the conversation: press
+**Open** on the row, or simply wait, because a plan that lands within 30 seconds
+while you are watching the conversation opens its tab itself.
+
+:::note[The read-only guarantee is structural, but only on the built-in harness]
+Control Center's own harness builds the agent's tool registry from plan mode's
+surface spec, so there simply is no write, edit or command tool to call — the
+restriction is not a prompt instruction the model could talk itself out of.
+
+External CLI and ACP adapters get no such filtering: the mode reaches them as a
+request their own runner may or may not honour and Control Center only ever sees
+their `mcp__*` calls. The enforcement badge beside the mode dropdown appears
+exactly when that is the case.
+:::
+
+:::caution[The agent cannot ask you clarifying questions]
+Plan mode's system prompt tells the agent to ask up to three blocking questions
+when the request is ambiguous, using `ask_user_question`. That tool is implemented
+but never registered on the server, so it never reaches the agent's tool list. An
+ambiguous request will be planned against the agent's own assumptions rather than
+paused for you. Front-load the scope, the target repo and the acceptance criteria
+in your first message.
+:::
+
+Prose is not a deliverable here. A run that ends without calling `submit_plan`
+posts a visible "Ended without submitting a plan (no `submit_plan` call)." line in
+the conversation and flags the run as having missed its deliverable. The run's
+status deliberately stays _completed_ — that keeps pipeline and ticket state
+machines untouched — so read the line, not the status badge.
+
+## Approve the plan
+
+From the plan's row in the conversation, press **Approve and run**. From Plan
+Studio's approval bar, press **Approve plan** (or **Reject** beside it; approval is
+disabled while the graph has a validation error).
+
+Then:
+
+1. Control Center compiles the plan into an orchestration and materializes it — the
+   tickets and the run. No model is involved in this step; it is deterministic
+2. The plan executes as the agent that wrote it. Whether to bring anyone else in is
+   that agent's call at run time — it can `delegate_task` a step to a better-suited
+   teammate, within the workspace's delegation depth cap
+3. The plan's goal becomes **the conversation's goal** and the work runs **in that
+   same conversation**: each step posts what the agent was asked and streams its
+   turn back, so you follow it (and can stop a turn) where you already are
+4. The goal row in the conversation's **General** side panel (under Todos) carries
+   the run's progress as `settled/total` and its stop button; Plan Studio shows
+   per-node state on the graph and cancels there too
+
+## Keep working without approving
+
+If you would rather stay in this conversation than approve the plan, the agent can
+call `exit_plan_mode`. That is the only sanctioned exit: it opens a durable
+approval request linked to the conversation and returns `pending` — the
+conversation stays in plan mode and the agent must not act. Once the request is
+approved, the agent's next `exit_plan_mode` call flips the conversation from plan
+to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
+request against a revised plan.
+
+:::caution[There is no approvals screen yet]
+A `plan_exit` approval is a durable governance row and nothing in the desktop or
+web client reads those rows — no client code calls any `approvals.*` operation.
+The only way to decide one today is the `decide_approval` MCP tool, which means
+another agent has to do it. The guardrail approval overlay you see for blocked tool
+calls is a different, in-memory queue and does not carry plan-exit requests.
+
+The reliable path out of plan mode is to switch the mode back yourself (dropdown,
+Shift+Tab), or to approve the plan.
+:::
+
+## Plan mode in a pipeline step
+
+A `promptAgent` pipeline step reads its conversation mode from the node config's
+`mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any other
+spelling, including `conversationMode` or `dispatchMode`, is silently ignored and
+the step falls back to its default, which is **review** mode, not chat.
+
+:::caution[There is no editor field for this yet]
+The node config editor exposes label, kind, agent, input keys, output key, prompt,
+script, reducer, timeout, retries, output schema and routing — but no conversation
+mode. The **Dispatch mode** select you can see there is a different field
+(`allParallel` / `manager` for team-dispatch nodes) and setting it does nothing to
+the conversation mode. Today, `extras['mode']` can only be set by a template that
+ships with it or by writing the node config through the API.
+:::
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Use channels](/manual/guides/channels/)
+- [Work in Plan Studio](/manual/guides/plan-studio/)
+- [Run an orchestration](/manual/guides/run-orchestration/)
+
+## Related concepts
+
+- [Modes](/manual/concepts/modes/)
+- [Orchestration](/manual/concepts/orchestration/)

@@ -1,0 +1,27 @@
+name: cc_worker
+description: "Control Center headless fleet executor — a pure-Dart `dart build cli` binary (no Flutter engine). Pairs with a cc_server, declares its capabilities, heartbeats, pulls leased jobs, executes them and streams process events back over the fleet lease protocol (PRD 20). Holds no durable state."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # Pure-Dart shared kernel: the fleet lease protocol wire types, worker
+  # capabilities, job specs and the agent-process-event codec this worker emits.
+  cc_domain:
+    path: ../../packages/cc_domain
+  # Transport-agnostic JSON-RPC client + the WebSocket channel and PSK auth
+  # handshake the worker uses to dial its cc_server. Web-safe, no dart:io here.
+  cc_rpc:
+    path: ../../packages/cc_rpc
+  # CLI flag parsing.
+  args: ^2.7.0
+  # Path joining for the on-disk materialization cache.
+  path: ^1.9.1
+
+dev_dependencies:
+  lints: any
+  test: any

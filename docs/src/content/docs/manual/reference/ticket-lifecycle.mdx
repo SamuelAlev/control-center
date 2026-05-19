@@ -1,0 +1,198 @@
+---
+title: Ticket lifecycle
+description: Ticket fields, statuses, transitions, relations and the mutation chokepoint.
+---
+
+## Ticket statuses
+
+| Status       | Storage string | Description                                     |
+| ------------ | -------------- | ----------------------------------------------- |
+| `backlog`    | `backlog`      | Captured, not yet triaged into the active queue |
+| `open`       | `open`         | Triaged and ready to be worked, not started     |
+| `inProgress` | `inProgress`   | Actively being worked                           |
+| `blocked`    | `blocked`      | Started but blocked on something external       |
+| `inReview`   | `inReview`     | Work done, awaiting review                      |
+| `done`       | `done`         | Finished successfully (terminal)                |
+| `failed`     | `failed`       | Finished with an error (terminal)               |
+| `cancelled`  | `cancelled`    | Abandoned (terminal)                            |
+
+Status values are stored as camelCase (`inProgress`, `inReview`), never `in_progress`. A null stored value parses as `open`; an unknown value throws rather than coercing.
+
+`tryParseLoose` accepts agent-supplied aliases, ignoring case and `-` / `_` / space:
+
+| Status       | Accepted aliases                              |
+| ------------ | --------------------------------------------- |
+| `open`       | `todo`, `ready`, `pending`, `new`             |
+| `inProgress` | `doing`, `started`, `active`, `wip`           |
+| `blocked`    | `stuck`                                       |
+| `inReview`   | `review`, `reviewing`                         |
+| `done`       | `closed`, `complete`, `completed`, `finished` |
+| `failed`     | `error`, `errored`                            |
+| `cancelled`  | `canceled`, `abandoned`, `dropped`            |
+
+## Status transitions
+
+```
+backlog ──→ open ──→ inProgress ──→ inReview ──→ done
+                     │    │           │
+                     │    └──→ failed ┘
+                     └──→ blocked ──→ inProgress
+
+Any non-terminal status ──→ cancelled; inReview ──→ failed
+```
+
+**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status, including reopening a terminal one.
+
+A status may always transition to itself. Terminal states have no outgoing edges.
+
+| From         | Allowed targets                                      |
+| ------------ | ---------------------------------------------------- |
+| `backlog`    | `open`, `cancelled`                                  |
+| `open`       | `inProgress`, `blocked`, `cancelled`                 |
+| `inProgress` | `blocked`, `inReview`, `done`, `failed`, `cancelled` |
+| `blocked`    | `inProgress`, `cancelled`                            |
+| `inReview`   | `inProgress`, `done`, `failed`, `cancelled`          |
+| `done`       | — (terminal)                                         |
+| `failed`     | — (terminal)                                         |
+| `cancelled`  | — (terminal)                                         |
+
+## Ticket priorities
+
+Stored as an integer on Linear's native 0–4 scale. An unknown value parses to `none`.
+
+| Priority | Stored as |
+| -------- | --------- |
+| `none`   | `0`       |
+| `urgent` | `1`       |
+| `high`   | `2`       |
+| `medium` | `3`       |
+| `low`    | `4`       |
+
+## Ticket providers
+
+An unknown or null stored value parses to `local`.
+
+| Provider  | Status                                                            |
+| --------- | ----------------------------------------------------------------- |
+| `local`   | Stored entirely in the workspace database; the default            |
+| `linear`  | Remote-owned, mirrored locally                                    |
+| `jira`    | Enum value present; documented in the enum as not yet implemented |
+| `clickup` | Enum value present; documented in the enum as not yet implemented |
+
+Sync adapters ship for Linear, GitHub Issues, Jira Cloud and ClickUp under `packages/cc_infra/lib/src/tickets/sync/`. Nothing in the product creates a `TicketSyncConfig` row, so **no vendor sync is configurable in-app**; a config row must be inserted out of band.
+
+## Ticket origin
+
+| Value             | Meaning                          |
+| ----------------- | -------------------------------- |
+| `manual`          | Created by a human (the default) |
+| `pipelineStep`    | Created by a pipeline step       |
+| `agentDelegation` | Delegated by another agent       |
+| `externalSync`    | Synced from a remote provider    |
+| `recovery`        | Created by the recovery system   |
+
+## Ticket fields
+
+The aggregate spans two concerns on one row. The **mirror** (provider, keys, title, description, priority, labels, statuses, timestamps) is a cache for a remote provider and is rewritten wholesale by a refresh. The **overlay** (assignment, delegation, channel, parent, project, linked PRs) is Control-Center-only and a refresh never touches it.
+
+| Field                    | Type                       | Description                                                                                |
+| ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
+| `id`                     | `String`                   | UUID v4. For local tickets this is also the `externalKey`                                  |
+| `workspaceId`            | `String`                   | Owning workspace                                                                           |
+| `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
+| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`)                                                       |
+| `url`                    | `String?`                  | Web URL on the remote provider                                                             |
+| `title`                  | `String`                   | Short summary; must not be empty                                                           |
+| `description`            | `String?`                  | Longer Markdown body                                                                       |
+| `priority`               | `TicketPriority`           | Default `none`                                                                             |
+| `labels`                 | `List<String>`             | Free-form labels                                                                           |
+| `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
+| `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
+| `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
+| `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
+| `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
+| `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
+| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
+| `createdById`            | `String?`                  | Creating principal's id                                                                    |
+| `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
+| `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |
+| `delegationDepth`        | `int`                      | Depth in the delegation chain; root is `0`, checked against the max-depth cap              |
+| `delegationRootTicketId` | `String?`                  | Root of the delegation chain; null for a root ticket                                       |
+| `channelId`              | `String?`                  | Conversation the ticket was spun out of, or the delegating agent's channel                 |
+| `errorMessage`           | `String?`                  | Set when `status` is `failed`                                                              |
+| `linkedPrIds`            | `List<String>`             | PR node ids this ticket is linked to                                                       |
+| `metadata`               | `Map<String, dynamic>`     | Free-form bag                                                                              |
+| `createdAt`              | `DateTime`                 | Creation time                                                                              |
+| `startedAt`              | `DateTime?`                | When work started                                                                          |
+| `blockedAt`              | `DateTime?`                | When the ticket was blocked                                                                |
+| `cancelledAt`            | `DateTime?`                | When the ticket was cancelled                                                              |
+| `completedAt`            | `DateTime?`                | When the ticket completed successfully                                                     |
+| `finishedAt`             | `DateTime?`                | When the ticket reached any terminal state                                                 |
+| `updatedAt`              | `DateTime`                 | Last mutation (mirror refresh or overlay change)                                           |
+| `version`                | `int`                      | Optimistic-concurrency counter, incremented on every mutation                              |
+| `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
+| `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
+
+Derived: `isTerminal`, `isRemote`, `isAssignedToUser` and `displayKey` (the `externalKey` when synced, else the `id`).
+
+## Ticket relations
+
+Stored edges are directional rows in `ticket_links`:
+
+| Type          | Storage string | Meaning                         |
+| ------------- | -------------- | ------------------------------- |
+| `blocks`      | `blocks`       | Source blocks target            |
+| `relatesTo`   | `relates_to`   | Symmetric relation              |
+| `duplicateOf` | `duplicate_of` | Source is a duplicate of target |
+
+The vocabulary the UI and `link_tickets` speak is `TicketRelationKind`, derived from a stored edge plus which endpoint the subject sits on:
+
+| Kind           | Derived from                                         |
+| -------------- | ---------------------------------------------------- |
+| `blockedBy`    | A `blocks` row where the subject is the target       |
+| `blocking`     | A `blocks` row where the subject is the source       |
+| `relatedTo`    | A `relates_to` row (symmetric)                       |
+| `duplicateOf`  | A `duplicate_of` row where the subject is the source |
+| `duplicatedBy` | A `duplicate_of` row where the subject is the target |
+| `subIssueOf`   | `tickets.parent_ticket_id` on the subject            |
+| `parentOf`     | `tickets.parent_ticket_id` on the other ticket       |
+
+Parent and sub-issue links are **not** `ticket_links` rows — they live on `tickets.parent_ticket_id`.
+
+## Domain events
+
+| Event                           | Fired when                                         |
+| ------------------------------- | -------------------------------------------------- |
+| `TicketCreated`                 | Ticket is created                                  |
+| `TicketAssigned`                | Ticket is assigned to a principal or team          |
+| `TicketStarted`                 | Work begins                                        |
+| `TicketCompleted`               | Work finishes successfully                         |
+| `TicketFailed`                  | Work fails                                         |
+| `TicketCancelled`               | Ticket is cancelled                                |
+| `TicketStatusChanged`           | Any status change                                  |
+| `TicketReassigned`              | Ticket reassigned                                  |
+| `TicketDelegated`               | A child ticket is created under a parent           |
+| `TicketCollaboratorAdded`       | Collaborator joins                                 |
+| `TicketDetailsUpdated`          | Title, description, or priority changes            |
+| `ExternalTicketWebhookReceived` | An external vendor webhook is verified and applied |
+
+`TicketAssigned` is an audit and notification signal and a pipeline trigger. **It starts no agent run.** There is no ticket dispatcher: assignment records ownership and agent work happens in conversations.
+
+## Mutation chokepoint
+
+`TicketWorkflowService` owns every mutation.
+
+| Mechanism              | Detail                                                                                                                                            |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single chokepoint      | All mutations route through `_mutate`, which loads the row and calls `_assertWorkspace` before applying                                           |
+| Workspace isolation    | `_assertWorkspace` throws `WorkspaceMismatchException` when the loaded row's `workspaceId` does not match the caller's                            |
+| Optimistic concurrency | `_mutate` writes with `expectedVersion` set to the `version` it just read and retries on `ConcurrencyConflictException` by re-reading fresh state |
+| Exclusive claim        | `tryCheckout` / `releaseCheckout`; a second agent claiming a checked-out ticket gets a `CheckoutConflictException`                                |
+| Transition guard       | `canTransitionTo`, applied only when `force` is false                                                                                             |
+
+## See also
+
+- [Tickets](/manual/concepts/tickets/)
+- [Manage tickets](/manual/guides/manage-tickets/)
+- [Delegate tickets](/manual/guides/delegate-tickets/)
+- [Domain events](/manual/reference/domain-events/)

@@ -1,0 +1,109 @@
+---
+title: Use channels
+description: Create channels, set their mode, manage participants and autonomy and open side conversations.
+---
+
+This guide shows you how to use channels. A **channel** is the messaging surface in
+Control Center: a workspace-scoped room with one or more participants (you and/or
+agents), owning a copy-on-write worktree per repo it was created for.
+
+One-on-one and many-agent rooms are both just channels, distinguished only by how
+many participants they have. The one exception is channels agents open to talk to
+each other — see [Agent-to-agent channels](#agent-to-agent-channels) below.
+
+## Create a channel
+
+1. Navigate to **Channels**
+2. Click the **+** button beside the Channels heading
+3. Give it a **name** — required. An empty name cancels the dialog silently
+4. Add one or more agents from the workspace
+5. When the workspace has several repos, pick which ones this channel provisions
+   worktrees for. All are selected by default
+6. Confirm
+
+Channels are workspace-scoped: you only see agents from the current workspace and
+a channel never surfaces data from another workspace.
+
+## Set the channel's mode
+
+A new channel starts in the default mode. Change it from the **mode dropdown** on
+the far left of the composer toolbar — not from the create dialog (which has no
+mode field) and not from the channel header.
+
+| Mode            | Effect                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
+| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
+| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+
+Shift+Tab toggles between plan and agent mode without opening the dropdown.
+
+A fourth mode, **review**, exists but is not offered in the dropdown — it is
+applied automatically to PR review channels.
+
+The mode is stored on the channel, so the same agent can be in plan mode in one
+channel and agent mode in another. Every conversation inside a channel shares that
+channel's mode.
+
+:::caution[Watch for the enforcement badge]
+A badge appears beside the mode dropdown when the channel's agents run on an
+adapter that cannot enforce the mode you picked. Only the built-in Control Center
+harness filters the tool surface and gates every call; external CLI and ACP
+adapters receive the mode as a request their runner may or may not honour. No badge
+means "no claim is being made", not "verified safe".
+:::
+
+See [Modes](/manual/concepts/modes/) for the full model.
+
+## Manage participants and per-agent autonomy
+
+Click the people icon in the channel header to open **Manage participants**. For
+each agent already in the channel you can:
+
+- Remove it from the channel
+- Set its **Autonomy** for this channel: **Default**, **Propose only**, **Act with
+  approval** or **Act freely**
+
+The autonomy dial is per (channel, agent), so an agent you trust in one room can be
+held to propose-only in another.
+
+## React to a message
+
+Hover a message and click the smile icon to open the reaction palette. It is a
+fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
+toggles it for you and the aggregated chips appear below the message.
+
+## Open a side conversation
+
+A channel hosts several conversations at once: a primary `main` conversation plus
+any number of **parentheses** — side conversations you open to quickly fix
+something with the same agent and worktree, then close and return. Each
+conversation keeps its own message history and agent sessions while sharing the
+channel's worktrees and its mode.
+
+Only the `main` conversation drives the sidebar's unread dot and the
+needs-attention badge. Work in a parenthesis stays quiet by design.
+
+## Agent-to-agent channels
+
+Channels that agents open to talk to each other are sectioned separately in the
+sidebar under **Agents**, collapsed by default and rendered muted. They never bump
+your unread badge and never fire an OS notification — agent chatter is quiet by
+construction, not by a setting you have to find.
+
+A channel's origin is one of five values: `user` (the default for anything you
+create), `agentDm`, `system` (pipeline-managed), `prWorkbench` (created when a PR
+surface needs a worktree anchor and hidden from the sidebar until it has
+messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
+and treated as an ordinary human conversation).
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [@-mention agents](/manual/guides/mention-agents/)
+- [Use plan mode](/manual/guides/plan-mode/)
+
+## Related concepts
+
+- [Modes](/manual/concepts/modes/)
+- [Chat bridges](/manual/concepts/chat-bridges/): how a Slack thread becomes a channel

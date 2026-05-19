@@ -1,0 +1,18 @@
+name: cc_signaling_server
+description: "Pure-Dart, stateless WebSocket signaling broker for Control Center WebRTC pairing. A dumb relay — it never interprets SDP/ICE, holds no app data and never sees the pairing PSK."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # SHA-256 admission-hash verification + coturn HMAC-SHA1 credential minting.
+  # Pure Dart — the broker still never sees a PSK or app plaintext.
+  crypto: ^3.0.7
+
+dev_dependencies:
+  test: any
+  lints: any

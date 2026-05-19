@@ -1,0 +1,62 @@
+---
+/**
+ * RestOfDay — the smaller pillars as a numbered text mosaic (X Money-style
+ * airy cells, CC voice). No visuals: these read as quick, scannable facts.
+ */
+
+const cells = [
+  {
+    n: '05',
+    title: 'Tickets',
+    body: 'One vendor-agnostic ticket carries work from request to merge: two-way Linear sync, a coupled pipeline run and an execution lock so two agents never claim the same work.',
+    href: '/manual/guides/manage-tickets/',
+  },
+  {
+    n: '06',
+    title: 'Channels & multiplayer',
+    body: 'Humans and agents share one roster as co-equal principals. DM an agent, spin up a channel per worktree, follow a teammate’s cursor and steer a run mid-flight.',
+    href: '/manual/guides/channels/',
+  },
+  {
+    n: '07',
+    title: 'Slack & chat bridges',
+    body: 'Mention an agent where you already talk and it answers in the thread. Bridges relay messages into real channels with full attribution and narrate workspace provisioning as it happens.',
+    href: '/manual/guides/slack-integration/',
+  },
+  {
+    n: '08',
+    title: 'Inbox & newsfeed',
+    body: 'A unified inbox across every pillar, a ⌘K omnibox to act from anywhere and RSS feeds folded into the same triage flow. Nothing waits in a tab you forgot.',
+    href: '/manual/guides/triage-inbox/',
+  },
+  {
+    n: '09',
+    title: 'Focus & soundscape',
+    body: 'A timed session floats a draggable countdown pill and silences every notification that can wait. Under it, a soundscape synthesized by your server follows the weather, the hour and a tune you dial in.',
+    href: '/manual/guides/focus-mode/',
+    wide: true,
+  },
+];
+---
+
+<section class="border-t border-border py-[clamp(56px,9vw,88px)]">
+  <div class="wrap">
+    <div class="reveal max-w-[62ch]">
+      <span class="eyebrow">And the rest of the day</span>
+      <h2 class="mt-4 text-[clamp(28px,4vw,48px)] font-semibold leading-[1.02] tracking-[-0.03em]">The small pillars, held to the same bar.</h2>
+    </div>
+
+    <div class="reveal mt-[clamp(28px,4vw,48px)] grid grid-cols-1 gap-px border border-border bg-border sm:grid-cols-2 xl:grid-cols-3">
+      {cells.map((c) => (
+        <div class={`group relative bg-bg p-6 transition-colors duration-150 hover:bg-hover${c.wide ? ' sm:col-span-2 xl:col-span-2' : ''}`}>
+          <div class="flex items-baseline justify-between gap-4">
+            <span class="font-mono text-[11px] tracking-[0.1em] text-idle">{c.n}</span>
+          </div>
+          <h3 class="mt-4 text-[17px] font-semibold tracking-[-0.01em]">{c.title}</h3>
+          <p class="mt-[10px] text-[14px] leading-[1.65] text-muted">{c.body}</p>
+          <a class="link-arrow mt-4" href={c.href}>Read the guide <span aria-hidden="true">→</span></a>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

@@ -1,0 +1,104 @@
+import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
+
+/// PrCodeReviewComment.
+class PrCodeReviewComment {
+  /// PrCodeReviewComment.
+  const PrCodeReviewComment({
+    required this.id,
+    required this.body,
+    required this.user,
+    required this.path,
+    required this.position,
+    required this.createdAt,
+    this.side = 'RIGHT',
+    this.inReplyToId,
+    this.startLine,
+    this.diffHunk = '',
+    this.line,
+    this.originalLine,
+    this.reactions = const [],
+    this.reviewId,
+  });
+
+  /// Identifier.
+  final int id;
+
+  /// Id of the review submission this comment was posted with (GitHub's
+  /// `pull_request_review_id`); null when unknown (legacy cache rows).
+  final int? reviewId;
+
+  /// Body.
+  final String body;
+
+  /// User who authored the comment.
+  final PrUser? user;
+
+  /// File path the comment is on.
+  final String path;
+
+  /// Position in the diff.
+  final int? position;
+
+  /// Timestamp.
+  final DateTime? createdAt;
+
+  /// Side of the diff.
+  final String side;
+
+  /// ID of the comment this replies to.
+  final int? inReplyToId;
+
+  /// Starting line of the comment.
+  final int? startLine;
+
+  /// Diff hunk.
+  final String diffHunk;
+
+  /// Line number.
+  final int? line;
+
+  /// Original line number.
+  final int? originalLine;
+
+  /// Reactions on the comment.
+  final List<ReactionGroup> reactions;
+
+  /// Anchor line for the comment.
+  int? get anchorLine => line ?? originalLine;
+
+  /// Returns a copy with [reactions] replaced.
+  ///
+  /// Reactions are the one field enrichment rewrites after the fact: a forge
+  /// returns counts, and a second call resolves who reacted so the viewer's own
+  /// reaction can be highlighted.
+  PrCodeReviewComment copyWith({List<ReactionGroup>? reactions}) =>
+      PrCodeReviewComment(
+        id: id,
+        body: body,
+        user: user,
+        path: path,
+        position: position,
+        createdAt: createdAt,
+        side: side,
+        inReplyToId: inReplyToId,
+        startLine: startLine,
+        diffHunk: diffHunk,
+        line: line,
+        originalLine: originalLine,
+        reactions: reactions ?? this.reactions,
+        reviewId: reviewId,
+      );
+
+  /// Equality comparison.
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PrCodeReviewComment &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
+
+  /// Hash code.
+  @override
+  int get hashCode => id.hashCode;
+}

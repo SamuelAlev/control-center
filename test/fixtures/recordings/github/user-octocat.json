@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "metadata": {
+    "name": "github/user-octocat",
+    "recordedAt": "2026-06-29T00:00:00.000Z",
+    "note": "Hand-authored sample GitHub API cassette (no credentials). Replayed by http_recorder_test."
+  },
+  "interactions": [
+    {
+      "transport": "http",
+      "request": {
+        "method": "GET",
+        "url": "https://api.github.com/users/octocat",
+        "headers": {
+          "accept": "application/vnd.github+json"
+        },
+        "body": ""
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "content-type": "application/json; charset=utf-8"
+        },
+        "body": "{\"login\":\"octocat\",\"id\":583231,\"type\":\"User\",\"site_admin\":false}"
+      }
+    }
+  ]
+}

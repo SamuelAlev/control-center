@@ -1,0 +1,91 @@
+---
+title: Quick start
+description: Install Control Center, configure one agent and watch it work on your repo.
+---
+
+This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
+
+You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Kimi Code, or any provider with an API key) or an agent CLI already installed. Everything else is set up along the way.
+
+## Step 1: Install and launch
+
+Install Control Center as described in [Install](/manual/install/), then open it.
+
+On first launch the desktop asks **"How should Control Center run?"** Choose **Run in this app**. Control Center spawns a headless `cc_server` on this machine, which owns your data and does all the work. You never see it; the onboarding screen opens instead.
+
+:::note[Prefer not to install anything?]
+The same app runs in the browser at [app.usectrl.dev](https://app.usectrl.dev) with the
+same features. A browser tab cannot host the server, though, so you supply one — run
+`cc_server` locally and connect to `ws://localhost:9030`, or point it at a server on
+another machine. This quick start takes the desktop path because it needs no server
+setup; see [Install](/manual/install/#use-it-in-your-browser) for the browser route.
+:::
+
+## Step 2: Work through onboarding
+
+Onboarding has five steps and they run in order — there is no skipping ahead.
+
+1. **Connect**: paste a GitHub personal access token, or leave the field empty if the `gh` CLI is already authenticated. The token goes straight into your OS keychain.
+2. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
+3. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
+4. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
+5. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
+
+Control Center then opens your workspace inbox.
+
+:::note[What bounds an agent run]
+Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own copy-on-write worktree, credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/manual/concepts/sandbox-security/).
+:::
+
+## Step 3: Add a repository
+
+Go to **Settings → Workspace → Repositories** and click **Add repository**.
+
+The dialog browses the folders on the machine running the server, not your client and it stays inside the roots that server is configured to expose (its user's home directory by default). Only git checkouts get a checkbox. Tick yours and register it.
+
+A checkout is only accepted if it is inside a git work tree, has an `origin` remote and that remote points at a supported forge — github.com, gitlab.com or bitbucket.org. Anything else is refused with the reason.
+
+Repos are workspace-scoped: registering a checkout here puts it in _this_ workspace. There is no separate linking step.
+
+## Step 4: Give an agent an adapter and a model
+
+Press ⌘5 (or go to **Settings → Workspace → Agents**). Select the `engineer` agent in the roster.
+
+On the **Settings** tab, set:
+
+- **Adapter**: `Control Center (built-in)`
+- **Model**: pick one from the provider you connected in onboarding
+
+Press **Save changes**.
+
+This step is not optional. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one and an agent with no adapter is dispatched to the `pi` CLI — which is probably not installed on the server host, so the run fails with nothing useful in the channel.
+
+## Step 5: Send the agent a task
+
+1. In the sidebar, find the **Channels** section and click the **+** button.
+2. Name the channel, add the `engineer` agent under **Add agents** and create it.
+3. Type a concrete, small task against the repo you registered and press Enter.
+
+Control Center provisions a copy-on-write worktree of the workspace's repos for this conversation, assembles a prompt from the agent's role, persona, skills and the channel's context and dispatches the run. Your source checkout is never touched.
+
+## Step 6: Watch it work
+
+You should see, in order:
+
+- The composer's send button turn into a stop button, because an agent is working in this channel
+- The agent's reasoning, tool calls and text streaming into the transcript
+- The send button come back when the run ends
+
+Then open **Settings → Workspace → Agents**, select the agent and check the **Logs** tab: one run row, with its status, duration, start and finish times and the adapter it ran on.
+
+That is the loop. Everything else in Control Center — pull-request review, pipelines, tickets, meetings, Slack — hangs off it.
+
+## Next steps
+
+- [Your first workspace](/manual/tutorials/first-workspace/): the same ground, slower, with the isolation model explained
+- [Review your first pull request](/manual/tutorials/first-pr/): take an agent's branch through review and merge
+- [The agent model](/manual/concepts/agent-model/): what an agent is made of
+- [Create and configure an agent](/manual/guides/create-agent/): the rest of the agent form
+- [Run an orchestration](/manual/guides/run-orchestration/): one goal, one approval, a generated pipeline
+- [Pair your phone](/manual/guides/pair-a-device/): follow the fleet from anywhere
+- [Deployment and clients](/manual/concepts/deployment/): how the desktop, web and phone clients relate to the server

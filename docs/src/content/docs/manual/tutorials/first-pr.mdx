@@ -1,0 +1,92 @@
+---
+title: Review your first pull request
+description: Open a PR in the workbench, read the diff, comment, approve and merge.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- Opened a pull request in Control Center's PR workbench
+- Read its diff and left an inline comment
+- Submitted a review verdict
+- Merged the PR
+
+Prerequisites: [Dispatch your first agent](/manual/tutorials/first-agent/) completed and one open pull request on a repo registered in this workspace. Any open PR works — one you pushed from an agent's branch, or one that was already there.
+
+## Step 1: Open the pull request
+
+1. Click **Pull requests** in the sidebar
+2. Find your PR and click it
+
+**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions, Review — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab.
+
+:::note[Empty queue with a "connect GitHub" prompt]
+That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → You → Profile & identity → Accounts**, then refresh the list.
+:::
+
+## Step 2: Read the diff
+
+Open the **Diff** tab. A collapsible file tree sits on the left and the strip above the diff carries a commit-range selector — narrow the diff to one commit or a span of them — plus the file count and the running additions and deletions.
+
+The settings button in the diff toolbar controls how it renders:
+
+- **Split** or **unified** view
+- **Wrap** or scroll long lines
+- Code-font ligatures
+
+Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/).
+
+## Step 3: Leave an inline comment
+
+1. Hover a line in the diff — a small `+` pill appears in the gutter
+2. Click it to comment on that line, or drag it vertically first to select a range
+3. Type your feedback and submit
+
+:::caution[Inline comments post to GitHub immediately]
+An inline comment is not held back until you submit a review. Submitting it posts it to GitHub right away: the thread shows **pending**, then **synced** and offers a retry if the post fails. Only the review _body_ you write in step 4 is a local draft.
+:::
+
+## Step 4: Submit a review
+
+1. Click **Review** in the PR header — the same button also sits in the Diff tab's toolbar
+2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
+3. Choose a verdict:
+   - **Approve** (⌘↵)
+   - **Request changes** (⌘⇧↵)
+
+There is no "Comment" verdict in the overlay: those two are the only submissions it makes.
+
+**Checkpoint.** The header button changes to read "Approved" or "Requested changes".
+
+## Step 5: Merge
+
+The **Merge** button is present whenever GitHub reports the PR mergeable — it is not gated on your own approval. Its colour reports readiness rather than permission: primary when required approvals and checks are green, secondary while a check is still running, destructive when a requested reviewer has not approved or a check is failing.
+
+1. Click **Merge**
+2. Pick a method: **Squash and merge**, **Create a merge commit**, or **Rebase and merge**
+3. For the first two, edit the prefilled commit title and message
+4. Confirm
+
+Any outstanding problems — "Checks failing", "Some reviews are pending" — are listed in the flyout before you confirm.
+
+:::caution[Merging is irreversible]
+Merging pushes commits to GitHub. It never enters Control Center's undo stack and cannot be undone from here.
+:::
+
+After merging, a `PrMerged` domain event fires; analytics and notifications consume it. See [Domain events](/manual/reference/domain-events/) for what else listens.
+
+## Reviewing with AI
+
+Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
+
+1. Open the overflow menu in the PR header and choose **Ask AI**. Control Center starts the run and navigates to the pipeline run page, so you can watch the specialists work.
+2. Reviewer agents record their findings as review nodes in the PR's channel; a final step consolidates them into one report.
+
+The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the PR's Review tab. See [Use AI-powered review](/manual/guides/ai-review/).
+
+## Recap
+
+You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment that went straight to GitHub, submitted a verdict and merged — without leaving the app.
+
+**Next:** [Build your first pipeline](/manual/tutorials/first-pipeline/) to automate multi-step workflows.

@@ -1,0 +1,24 @@
+[package]
+name = "cc_watcher"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Control Center's native recursive file watcher (FSEvents / ReadDirectoryChangesW / ignore-aware inotify) with a C ABI for Dart FFI."
+license = "MIT"
+
+[lib]
+name = "cc_watcher"
+crate-type = ["cdylib"]
+
+[dependencies]
+notify = "8"
+
+# This crate is built standalone (--manifest-path), so it is its own profile
+# root despite living inside the repo.
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+# NOT "abort": every extern "C" entry point wraps its body in catch_unwind so
+# a panic becomes an error return instead of UB across the FFI boundary.
+panic = "unwind"

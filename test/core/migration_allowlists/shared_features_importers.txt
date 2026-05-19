@@ -1,0 +1,7 @@
+# Shrinking allowlist: lib/shared files that still import lib/features (shared
+# must not depend on features). Enforced by architecture_constraints_test.dart.
+# Invert the dependency (feature passes what it needs into the shared widget) +
+# remove. No NEW entries.
+# Regenerated 2026-07-22 to the current baseline (list had drifted).
+# Drained 2026-08-22: app_shortcuts + github_link_handler take the workspace id
+# from the caller / the route instead of the workspaces feature's providers.

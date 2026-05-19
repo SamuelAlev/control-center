@@ -1,0 +1,248 @@
+---
+title: Glossary
+description: Definitions of key terms used throughout Control Center.
+---
+
+import StructuredData from "../../../../components/shared/StructuredData.astro";
+
+export const glossaryUrl = "https://usectrl.dev/manual/reference/glossary/";
+
+{/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
+pairs in sync with the prose definitions below (single page, rarely changes). */}
+export const glossaryTerms = [
+['Agent', 'An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
+['Workspace', 'The top-level isolation tenant. Groups agents, repos, channels, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file, so a cross-workspace read does not compile. Every in-app route is prefixed /workspaces/:workspaceId.'],
+['Repo', 'A Git repository registered inside one workspace. Workspace-scoped: the same checkout registered in two workspaces is two rows with two ids and repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree with a github.com origin remote.'],
+['Isolated repo', 'A workspace-scoped copy-on-write worktree of a registered repo. Provisioned per conversation so agents never mutate the source checkout.'],
+['Channel', 'A workspace-scoped messaging container with human and agent participants, a persisted Mode and a ChannelOrigin (user, agentDm, system, prWorkbench, or slack) that decides how it is sectioned, muted, badged and garbage-collected.'],
+['Ticket', 'The unit-of-work aggregate. Vendor-neutral: local by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp, though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment records ownership and dispatches nothing.'],
+['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
+['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default, Whisper variants available), diarizes speakers and summarizes into notes, action items and decisions. The model is opt-in and must be installed before recording works. Workspace-scoped.'],
+['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
+['CalendarAccount', 'A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side in a google_credentials.json file under the data directory and never reach a client; an authExpiredAt flag drives the reconnect banner.'],
+['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.'],
+['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
+['AgentCapabilities', 'Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch: agent default, then user default, with a per-conversation override. Enforced by absence, since a disabled capability means the token or egress is simply never injected.'],
+['Mode', 'chat, plan, review, or orchestrate. Stored per conversation, so one agent can be in different modes in different channels. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
+['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
+['Rig', 'A disposable VM an agent drives in real time — a headless browser, a Linux desktop, an Android device, or the machine behind an enclosed terminal. Watched live over its own full-resolution lane, take-over enforced server-side, egress deny-by-default, destroyed with its disk when it closes. Scoped to a conversation so the human tab and the agent tools address one machine.'],
+['Enclosure', 'The isolation property a rig provides: a kernel boundary, a throwaway overlay disk, a deny-by-default network gate and a credential broker that keeps durable secrets out of the guest. Driving one is its own guardrail action class (enclosureControl).'],
+['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
+['WakeReason', 'Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.'],
+['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
+['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
+['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
+['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
+['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
+['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
+['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
+['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
+['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. The transition graph it enforces binds agents and automation only; user-driven UI changes pass force true and bypass it.'],
+['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
+['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
+['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
+['CostTracker', 'Computes per-run token cost and persists it onto the run log.'],
+['BudgetEnforcementService', 'Evaluates per-scope monthly spend after each run: a soft threshold records a warning incident, exhaustion records a hard incident and flips the agent lifecycle to paused. Its pre-dispatch block is consulted only by the recovery reconcilers, not by ordinary dispatch.'],
+['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
+['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, observability, analytics.'],
+['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
+['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
+['Shared kernel', 'core/domain/ entities, value objects, ports and services shared across 3+ features.'],
+['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
+['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
+['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).'],
+['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
+['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or the brokered relay.'],
+['Per-call workspace scoping', 'The server is stateless: there is no per-session workspace binding, so multiple clients on one server never share a current workspace. Every workspace-scoped repo/call and sub/subscribe must carry workspace_id in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.'],
+['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
+['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
+['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
+['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
+['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
+['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
+['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
+['Follow-mode', 'Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").'],
+['Autonomy dial', 'A per-channel per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
+['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
+['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
+['ActionClass', 'A closed set of ~12 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
+['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
+['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
+['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
+['Plan Studio', 'The interactive planning surface: an orchestration proposal or single-agent plan rendered as an editable typed DAG, with per-step cost/time/risk estimates, plan-diff versioning and partial approval.'],
+['Review Studio', 'Semantic, multi-modal PR review: graph-derived file cohorts, typed walkthrough diagrams, in-app UI visual diffs, swagger-style API contract diffs, blast-radius map and multi-axis gates.'],
+['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash. Defined in the domain and the persisted schema only: no production code writes one today, so replay is not reachable in the product.'],
+['Golden session', 'A blessed SessionRecording pinned per agent or playbook, intended to block a prompt or model edit that regresses it. Domain and schema only: with no SessionRecording ever written, there is nothing to bless and the canary gate never runs.'],
+];
+
+<StructuredData
+  schema={{
+    "@context": "https://schema.org",
+    "@type": "DefinedTermSet",
+    name: "Control Center glossary",
+    url: glossaryUrl,
+    hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
+      "@type": "DefinedTerm",
+      name,
+      description,
+      inDefinedTermSet: glossaryUrl,
+    })),
+  }}
+/>
+
+## Core entities
+
+**Agent**: An AI worker with an identity, role, skills and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+
+**Workspace**: The top-level isolation tenant. Groups agents, repos, channels, tickets, memory and pipelines. Isolation is structural, not conventional: each workspace has its own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), so a cross-workspace read does not compile. Every in-app route is prefixed `/workspaces/:workspaceId` — see the [route map](/manual/reference/route-map/).
+
+**Forge**: A code host — **GitHub**, **GitLab** or **Bitbucket Cloud**. The forge is a property of each repo, read from its `origin` remote at registration, and it selects that repo's API adapter and credential. One workspace can hold repos on all three; aggregating surfaces (the inbox, the PR queue) fan out across every forge represented and merge the results, isolating failures so an unreachable forge never empties the others. Forges differ in what they support — see the capability table in [Connect a code host](/manual/guides/connect-forges/).
+
+**Repo**: A Git repository registered inside one workspace. **Workspace-scoped** — the same checkout registered in two workspaces is two independent rows with two ids; repo identity across workspaces is by filesystem path, never by id. Registration requires a git work tree whose `origin` remote points at a supported forge. Each repo carries that **forge** (`github` / `gitlab` / `bitbucket`), which selects the API adapter and credential used for it.
+
+**Isolated repo**: A workspace-scoped copy-on-write worktree of a registered repo. Provisioned per conversation so agents never mutate the source checkout.
+
+**Channel**: A workspace-scoped messaging container with human and agent participants, a persisted `Mode` and a `ChannelOrigin` (`user` / `agentDm` / `system` / `prWorkbench` / `slack`) that decides how it is sectioned, muted, badged and garbage-collected. Side conversations inside a channel are "parentheses".
+
+**Ticket**: The unit-of-work aggregate. Vendor-neutral: `local` by default, with sync adapters for Linear, GitHub Issues, Jira Cloud and ClickUp — though no in-app surface creates a sync connection. Supports hierarchy, links and delegation. Assignment records ownership and dispatches nothing.
+
+**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+
+## Value objects
+
+**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access and hierarchy.
+
+**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+
+**AgentCapabilities**: Four flags (push to repo, GitHub API, ticketing, network egress) resolved per dispatch — agent default → user default, with a per-conversation override. Enforced by absence: a disabled capability means the token or egress is simply never injected.
+
+**Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per conversation**, so one agent can be in different modes in different channels. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
+
+**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the external CLI and ACP transports and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+
+**Rig**: A disposable VM an agent drives in real time — a headless browser, a Linux desktop, an Android device, or the machine behind an enclosed terminal. Watched live over its own full-resolution lane, take-over enforced server-side, egress deny-by-default and destroyed with its disk when it closes. Scoped to a conversation so the human's tab and the agent's `browser_use`/`computer_use` calls address one machine. See [Rigs and enclosures](/manual/concepts/rigs/).
+
+**Enclosure**: The isolation property a rig provides — a kernel boundary, a throwaway overlay disk, a deny-by-default network gate and a credential broker that keeps durable secrets out of the guest. Driving one is its own guardrail action class (`enclosureControl`).
+
+**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+
+**WakeReason**: Why an agent was dispatched. Six values: user message, ticket assignment, recovery re-dispatch after a failure, child ticket completed, scheduled follow-up heartbeat and pipeline step.
+
+## Ports
+
+**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+
+**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+
+**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+
+**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+
+**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+
+**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+
+**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+
+## Domain services
+
+**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+
+**TicketWorkflowService**: Pure-domain ticket lifecycle engine with an optimistic-concurrency mutation chokepoint and workspace isolation enforcement. Its transition graph binds agents and automation only; user-driven UI changes pass `force: true` and bypass it. There is no ticket dispatcher — `AgentDispatchService` is the only owner of dispatch and assigning a ticket starts no run.
+
+**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+
+**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+
+**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+
+**CostTracker**: Computes per-run token cost and persists it onto the run log.
+
+**BudgetEnforcementService**: Evaluates per-scope monthly spend after each run — a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent's lifecycle to `paused`. Its pre-dispatch block (`checkInvocationBlock`) is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
+
+## Events
+
+**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+
+**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, observability, analytics.
+
+## Meetings and calendar
+
+**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with a selectable ASR model (Parakeet TDT v3 by default; Whisper large-v3-turbo and base.en are alternatives), diarizes speakers and summarizes into notes, action items and decisions. The model is opt-in and must be downloaded before recording works. Workspace-scoped; stays on the machine.
+
+**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+
+**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+
+**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+
+**CalendarAccount**: A connected Google account, per workspace and email. OAuth refresh tokens are stored server-side in `<dataDir>/google_credentials.json` and never reach a client; the device-code flow completes on the server. An `authExpiredAt` flag drives the reconnect banner.
+
+## Architecture terms
+
+**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+
+**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+
+**Shared kernel**: `core/domain/` entities, value objects, ports and services shared across 3+ features.
+
+**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+
+## Multiplayer, identity and velocity
+
+**Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
+
+**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+
+**WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
+
+**ParticipantPresence**: Ephemeral awareness for a Principal (status, locus, cursor, typing, an agent's live status and running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.
+
+**Follow-mode**: Click an avatar to ride its viewport until you act, then detach. Works for humans and for agents ("watch an agent work").
+
+**Autonomy dial**: A per-channel per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
+
+**ActionClass**: A closed set of ~12 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (channel > agent > workspace > mode preset > default).
+
+**WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
+
+**Needs me inbox**: A cross-pillar queue with a strict rule — an item appears only if it _blocks_ something (an agent, a merge, a sync) or explicitly requests the operator.
+
+**Plan Studio** / **Review Studio**: The interactive planning surface (editable typed-DAG plans with per-step cost/time/risk and partial approval) and the semantic multi-modal PR review surface (graph-derived cohorts, typed diagrams, in-app visual diffs, API contract diffs, multi-axis gates).
+
+## Fleet, evals and replay
+
+**cc_worker**: A headless pure-Dart fleet executor binary. Pairs with a `cc_server`, declares its host capabilities, pulls leased jobs, executes them and streams events back. Holds **no durable state** — one authoritative server, N dumb limbs.
+
+**JobSpec**: The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch).
+
+**SessionRecording**: An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an `AgentConfigHash`. Designed to power deterministic replay (cassettes stubbed, executes nothing) as distinct from live re-execution (real model, sandboxed).
+
+**Golden session**: A blessed `SessionRecording` pinned per agent or playbook, intended to block a prompt or model edit that regresses it.
+
+:::caution[Domain and schema only]
+Nothing in the product writes a `SessionRecording`: `EvalsRepository.upsertRecording` has no production caller, so `evals.recordings` is always empty and `evals.blessGolden` has nothing to bless. `CanaryGateService`, `DriftDetector` and `ReplayDriver` are referenced only by their own unit tests. Replay, golden blessing and the canary gate are not reachable in the product today.
+:::
+
+## Deployment and clients
+
+**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+
+**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket and runs the background services (pipelines, MCP, reconcilers).
+
+**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+
+**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or the brokered relay.
+
+**Per-call workspace scoping**: The server is stateless — there is **no** per-session workspace binding, so multiple clients on one server never share a "current workspace". Every workspace-scoped `repo/call` and `sub/subscribe` must carry `workspace_id` in its args; a missing or unregistered id is refused before any database opens. Access is then gated by workspace membership and role, not by the session.
+
+**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.
+
+**cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
+
+## See also
+
+- [Route map](/manual/reference/route-map/)
+- [Architecture](/manual/concepts/architecture/)
+- [Workspaces](/manual/concepts/workspaces/)
+- [Domain events](/manual/reference/domain-events/)

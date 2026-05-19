@@ -1,0 +1,222 @@
+# Size-budget baseline — enforced by test/tooling/size_budget_ratchet_test.dart
+#
+# AGENTS.md budgets: screens < 250 lines, widgets < 300 lines. These files were
+# already over when the budget was first MEASURED (2026-08-22). The ratchet only
+# lets this list shrink: a new offender fails, a listed file that grew fails, a
+# listed file that shrank fails until its number is lowered, and a listed file
+# that is now within budget (or deleted) fails as a stale entry.
+#
+# RAISED entries (2026-08-22, performance remediation — see
+# PERFORMANCE_REVIEW.md). Seven files grew because a per-event recomputation
+# was replaced by memoized state or by a widget that owns its own narrow
+# subscription — both of which cost lines and buy frames. Each was raised
+# deliberately, with the reason:
+#
+#   meeting_transcript_tab   754 -> 843  per-row playback widget + row memo,
+#                                        so a sub-second tick no longer
+#                                        rebuilds 2,000 rows
+#   knowledge_graph         1464 -> 1489 O(facts^2) superseded-chain rebuild
+#                                        replaced by one index + group-bys
+#   transcript_flow          527 ->  534 RepaintBoundary around the open row
+#   channel_message_feed    1108 -> 1117 highlight-pulse Timer held+cancelled
+#   pr_diff_document         891 ->  904 binary search for displayLineOfRaw
+#   unified_diff_view       2682 -> 2744 comment-highlight memo + per-file
+#                                        server-comment partition memo
+#   tickets_screen          1131 -> 1151 board flattened so the list
+#                                        virtualizes per ROW, not per column
+#
+# RAISED by one line each (2026-08-22). Three files gained a single import
+# line and nothing else:
+#
+#   klipy_gif_picker         355 -> 356  \ NetworkImage -> DiskCachedNetworkImage,
+#   user_profile_screen      374 -> 375  / so a remote-server desktop stops
+#                                          re-downloading avatars every launch
+#   channel_input_bar        596 -> 597    the messaging-port swap
+#
+# SPLIT + RELOCATED (2026-08-22, settings fan-in inversion). The agent
+# registry moved out of settings into the feature that owns it, and its logs
+# surface came out into its own file on the way:
+#
+#   agents_settings.dart 1032  ->  agent_registry_screen.dart  576
+#                              +   agent_logs_tab.dart         481
+#
+# Not new debt — 1032 lines of it became 1057 across two files, the 25 being
+# the second file's imports and doc comment. Both entries stay listed because
+# both are still over budget; the split is what makes the next one tractable.
+#
+# RAISED entries (2026-08-22, architecture remediation — see
+# ARCHITECTURE_REVIEW.md). Six files grew by 1-3 lines each, all from replacing
+# a raw `Text('$e')` error dump with the localized `InlineLoadError` widget
+# (+1 per `.when(error:)` branch) and, in fleet_section, from switching the two
+# status switches to the `WorkerStatus` enum so they became exhaustive:
+#
+#   meeting_detail_screen    669 ->  670   localized error state
+#   meetings_screen          570 ->  571   localized error state
+#   fleet_section            552 ->  555   exhaustive enum switches
+#   plan_studio_screen       665 ->  666   localized error states (x2)
+#   pr_source_control_tab    928 ->  929   localized error state
+#   model_section_shared     304 ->  305   localized error state
+#
+# Format: <repo-relative path> <line count when baselined>
+lib/features/agents/presentation/widgets/agent_roster.dart 305
+lib/features/artifacts/presentation/widgets/artifact_chart.dart 315
+lib/features/auth/presentation/screens/onboarding_screen.dart 672
+lib/features/calendar/presentation/screens/calendar_screen.dart 672
+lib/features/calendar/presentation/widgets/calendar_event_detail_panel.dart 1058
+lib/features/calendar/presentation/widgets/calendar_kalender_host.dart 862
+lib/features/calendar/presentation/widgets/calendar_sidebar.dart 520
+lib/features/calendar/presentation/widgets/google_calendar_connect_dialog.dart 372
+lib/features/chat_bridges/presentation/widgets/chat_create_app_dialog.dart 391
+lib/features/chat_bridges/presentation/widgets/sections/chat_bridges_section.dart 339
+lib/features/focus_mode/presentation/screens/focus_pill_window.dart 427
+lib/features/inbox/presentation/widgets/inbox_pr_row.dart 494
+lib/features/inbox/presentation/widgets/inbox_section_card.dart 423
+lib/features/meetings/presentation/screens/meeting_detail_screen.dart 670
+lib/features/meetings/presentation/screens/meeting_record_screen.dart 786
+lib/features/meetings/presentation/screens/meeting_toolbar_window.dart 325
+lib/features/meetings/presentation/screens/meetings_screen.dart 571
+lib/features/meetings/presentation/widgets/detail/meeting_action_items_tab.dart 301
+lib/features/meetings/presentation/widgets/detail/meeting_notes_tab.dart 396
+lib/features/meetings/presentation/widgets/detail/meeting_playback_bar.dart 411
+lib/features/meetings/presentation/widgets/detail/meeting_transcript_tab.dart 843
+lib/features/memory/presentation/widgets/facts_tab.dart 389
+lib/features/memory/presentation/widgets/knowledge_graph.dart 1489
+lib/features/memory/presentation/widgets/knowledge_graph_node_sheet.dart 447
+lib/features/memory/presentation/widgets/policies_tab.dart 302
+lib/features/messaging/presentation/widgets/channel_bubble/agent_turn.dart 517
+lib/features/messaging/presentation/widgets/channel_bubble/focusable_bubble.dart 653
+lib/features/messaging/presentation/widgets/channel_bubble/plan_bubble.dart 311
+lib/features/messaging/presentation/widgets/channel_bubble/question_bubble.dart 351
+lib/features/messaging/presentation/widgets/channel_bubble/review_node_bubble.dart 385
+lib/features/messaging/presentation/widgets/channel_bubble/transcript_flow.dart 534
+lib/features/messaging/presentation/widgets/channel_bubble/transcript_segment_row.dart 396
+lib/features/messaging/presentation/widgets/channel_header.dart 585
+lib/features/messaging/presentation/widgets/channel_hover_card.dart 422
+lib/features/messaging/presentation/widgets/channel_hover_rows.dart 550
+lib/features/messaging/presentation/widgets/channel_input_bar.dart 597
+lib/features/messaging/presentation/widgets/channel_message_feed.dart 1117
+lib/features/messaging/presentation/widgets/channel_sidebar_item.dart 464
+lib/features/messaging/presentation/widgets/conversations_sidebar_section.dart 437
+lib/features/newsfeed/presentation/screens/article_webview_screen.dart 430
+lib/features/newsfeed/presentation/screens/newsfeed_screen.dart 481
+lib/features/newsfeed/presentation/widgets/adblocker_webview.dart 485
+lib/features/newsfeed/presentation/widgets/article_grid.dart 355
+lib/features/observability/presentation/widgets/insights/insights_toolbar.dart 355
+lib/features/observability/presentation/widgets/insights_charts.dart 316
+lib/features/observability/presentation/widgets/obs_widgets.dart 329
+lib/features/observability/presentation/widgets/sections/benchmark_section.dart 326
+lib/features/observability/presentation/widgets/sections/fleet_section.dart 555
+lib/features/observability/presentation/widgets/sections/goal_section.dart 349
+lib/features/observability/presentation/widgets/sections/quota_section.dart 445
+lib/features/orchestration/presentation/widgets/orchestration_proposal_bubble.dart 391
+lib/features/pipelines/presentation/screens/pipeline_run_detail_screen.dart 451
+lib/features/pipelines/presentation/screens/pipeline_run_screen.dart 610
+lib/features/pipelines/presentation/screens/pipeline_template_editor_screen.dart 356
+lib/features/pipelines/presentation/screens/pipeline_templates_settings_screen.dart 359
+lib/features/pipelines/presentation/screens/pipelines_screen.dart 316
+lib/features/pipelines/presentation/widgets/condition_config_editor.dart 450
+lib/features/pipelines/presentation/widgets/node_config_editor.dart 789
+lib/features/pipelines/presentation/widgets/pipeline_canvas.dart 426
+lib/features/pipelines/presentation/widgets/pipeline_editor_canvas.dart 303
+lib/features/pipelines/presentation/widgets/pipeline_run_settings_dialog.dart 558
+lib/features/pipelines/presentation/widgets/pipeline_run_waterfall.dart 411
+lib/features/pipelines/presentation/widgets/pipeline_step_detail_panel.dart 732
+lib/features/pipelines/presentation/widgets/trigger_node_panel.dart 571
+lib/features/plan_studio/presentation/screens/plan_studio_screen.dart 666
+lib/features/plan_studio/presentation/screens/plans_screen.dart 341
+lib/features/plan_studio/presentation/widgets/plan_canvas.dart 749
+lib/features/plan_studio/presentation/widgets/plan_node_inspector.dart 619
+lib/features/plan_studio/presentation/widgets/plan_version_panel.dart 306
+lib/features/pr_review/presentation/screens/compose_pull_request_screen.dart 777
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_checks_tab.dart 866
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_detail_actions.dart 324
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart 425
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart 929
+lib/features/pr_review/presentation/screens/pull_request_detail_screen.dart 1211
+lib/features/pr_review/presentation/screens/pull_request_list_screen.dart 294
+lib/features/pr_review/presentation/widgets/assignee_picker_flyout.dart 362
+lib/features/pr_review/presentation/widgets/compose/compose_branch_bar.dart 387
+lib/features/pr_review/presentation/widgets/compose/compose_pr_pickers.dart 466
+lib/features/pr_review/presentation/widgets/klipy_gif_picker.dart 356
+lib/features/pr_review/presentation/widgets/mention_autocomplete_field.dart 430
+lib/features/pr_review/presentation/widgets/merge_flyout_button.dart 521
+lib/features/pr_review/presentation/widgets/open_in_ide_button.dart 588
+lib/features/pr_review/presentation/widgets/picker_flyout.dart 343
+lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart 1048
+lib/features/pr_review/presentation/widgets/pr_detail_skeleton.dart 339
+lib/features/pr_review/presentation/widgets/pr_diff_file_tree.dart 819
+lib/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart 422
+lib/features/pr_review/presentation/widgets/pr_diff_view/toolbar_chips.dart 304
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart 371
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart 302
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart 904
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart 1529
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart 2744
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart 775
+lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart 406
+lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart 1276
+lib/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart 521
+lib/features/pr_review/presentation/widgets/pr_inline_comments/inline_reply_form.dart 451
+lib/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart 316
+lib/features/pr_review/presentation/widgets/pr_meta_strip.dart 398
+lib/features/pr_review/presentation/widgets/pr_sidebar.dart 847
+lib/features/pr_review/presentation/widgets/pr_stack_popover.dart 344
+lib/features/pr_review/presentation/widgets/pr_table/pr_bulk_action_bar.dart 551
+lib/features/pr_review/presentation/widgets/pr_table/pr_repo_section_card.dart 332
+lib/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart 840
+lib/features/pr_review/presentation/widgets/reaction_bar.dart 389
+lib/features/pr_review/presentation/widgets/review_accordion_item.dart 650
+lib/features/pr_review/presentation/widgets/review_accordion_list.dart 764
+lib/features/pr_review/presentation/widgets/review_overlay.dart 709
+lib/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart 551
+lib/features/pr_review/presentation/widgets/sticky_header.dart 345
+lib/features/pr_review/presentation/widgets/workflow_job_detail.dart 1072
+lib/features/pr_review/presentation/widgets/workflow_run_canvas.dart 458
+lib/features/remote_control/presentation/widgets/server_pairing_panel.dart 399
+lib/features/repos/presentation/widgets/add_repo_dialog.dart 528
+lib/features/service_status/presentation/widgets/service_status_indicator.dart 640
+lib/features/session_review/presentation/widgets/session_file_diff_view.dart 455
+lib/features/session_review/presentation/widgets/session_review_panel.dart 459
+lib/features/settings/presentation/screens/keybindings_settings_screen.dart 291
+lib/features/settings/presentation/widgets/adapter_enforcement_section.dart 369
+lib/features/settings/presentation/widgets/adapters_settings.dart 601
+lib/features/agents/presentation/widgets/agent_form_dialog.dart 643
+lib/features/agents/presentation/screens/agent_registry_screen.dart 576
+lib/features/agents/presentation/widgets/agent_logs_tab.dart 481
+lib/features/settings/presentation/widgets/font_picker.dart 516
+lib/features/settings/presentation/widgets/harness_provider_login.dart 495
+lib/features/settings/presentation/widgets/providers_models_section.dart 932
+lib/features/repos/presentation/settings/repos_settings_view.dart 500
+lib/features/settings/presentation/widgets/sections/general/notifications_section.dart 500
+lib/features/settings/presentation/widgets/sections/integrations/server_connection_section.dart 307
+lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart 345
+lib/features/settings/presentation/widgets/sections/integrations/sso_connection_form.dart 315
+lib/features/settings/presentation/widgets/sections/integrations/sso_section.dart 424
+lib/features/settings/presentation/widgets/sections/skills/skill_browse_panel.dart 519
+lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart 390
+lib/features/settings/presentation/widgets/sections/system/agent_permissions_section.dart 388
+lib/features/settings/presentation/widgets/sections/system/audio_input_row.dart 329
+lib/features/settings/presentation/widgets/sections/system/model_section_shared.dart 305
+lib/features/settings/presentation/widgets/sections/system/sandboxing_sections.dart 445
+lib/features/newsfeed/presentation/settings/newsfeed_feeds_section.dart 485
+lib/features/settings/presentation/widgets/sections/workspace/activity_formatting.dart 339
+lib/features/settings/presentation/widgets/sections/workspace/meeting_templates_section.dart 334
+lib/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart 429
+lib/features/settings/presentation/widgets/sections/workspace/workspace_activity_section.dart 559
+lib/features/settings/presentation/widgets/skills_settings.dart 1185
+lib/features/shell/presentation/widgets/app_sidebar.dart 507
+lib/features/shell/presentation/widgets/server_shutdown_overlay.dart 436
+lib/features/shell/presentation/widgets/title_bar_workspace_chip.dart 363
+lib/features/subscriptions/presentation/widgets/subscription_usage_pill.dart 322
+lib/features/teams/presentation/widgets/team_detail_panel.dart 540
+lib/features/teams/presentation/widgets/teams_management_view.dart 331
+lib/features/ticketing/presentation/screens/project_overview_screen.dart 550
+lib/features/ticketing/presentation/screens/tickets_screen.dart 1151
+lib/features/ticketing/presentation/widgets/new_ticket_dialog.dart 572
+lib/features/ticketing/presentation/widgets/ticket_context_menu.dart 696
+lib/features/ticketing/presentation/widgets/ticket_linked_prs_card.dart 362
+lib/features/ticketing/presentation/widgets/ticket_properties_rail.dart 615
+lib/features/ticketing/presentation/widgets/ticket_relations_card.dart 385
+lib/features/ticketing/presentation/widgets/ticket_visuals.dart 320
+lib/features/user_profiles/presentation/screens/user_profile_screen.dart 375
+lib/features/workspaces/presentation/screens/workspace_list_screen.dart 1398

@@ -1,0 +1,128 @@
+---
+title: Connect a Google Calendar
+description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a token expires.
+---
+
+This guide shows you how to connect Google Calendar to a workspace. It's
+per-workspace: it syncs that workspace's events into Control Center, read-only.
+See [Calendar and scheduling](/manual/concepts/calendar/) for the full picture.
+
+## Connect an account
+
+1. Open **Calendar** in the sidebar.
+2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → You → Profile & identity**, under **Google Calendar**.)
+3. Choose how to authorize:
+   - **Use Control Center's Google app** — nothing to set up. This is the default when your build ships with one.
+   - **Use my own Google Cloud client** — paste a client id and secret from your own project (see [Bring your own Google client](#bring-your-own-google-client-forks-and-self-hosting)).
+4. Click **Connect Google Calendar**. The dialog shows a short code and a link to Google's device page.
+5. Open that page on any device, enter the code and approve the requested access. The dialog closes on its own and your events begin syncing.
+
+The server, not your device, runs this exchange and keeps the resulting refresh
+token — which is why the code is approved on "any device" rather than in this app
+specifically.
+
+The account is connected **to the active workspace only**. Switch workspaces and
+you'll see that workspace's calendars instead.
+
+:::caution[RSVP does not work for accounts connected this way]
+Control Center requests `calendar.readonly` plus your email, so it reads events
+and nothing more. The event panel shows a **Going?** control with **Yes** / **No**
+/ **Maybe**, but for an account connected through the built-in device-code flow
+Google rejects the write with a 403 and the app reports "Couldn't update your
+response". RSVP needs the `calendar.events` write scope, which this flow does not
+request. To make it work you must bring your own Google client and add that scope
+— see below.
+:::
+
+## How syncing works
+
+The **server** owns the schedule: it sweeps every workspace's connected accounts
+every two minutes and writes the events into the workspace's database. Clients
+never talk to Google — they read what the server wrote.
+
+The sweep is incremental. The first pass per calendar fetches a rolling window
+(60 days back, 90 days ahead) and captures Google's sync token; later passes
+present that token and receive only what changed, which is what makes a
+two-minute cadence affordable. The window is re-anchored with a full sync every
+24 hours and whenever Google invalidates the token.
+
+Refresh tokens live server-side in `google_credentials.json` under the server's
+data directory, written owner-only (`0600`) — not in the OS keychain and never
+on a client device.
+
+## Connect multiple accounts
+
+A workspace can connect several Google accounts (for example work and personal).
+Repeat the connect step for each; their events merge into the same month / week /
+agenda views. Each account syncs and refreshes independently and each can be
+disconnected on its own.
+
+## Reconnect an expired account
+
+If Google permanently invalidates an account's token (a revoked or long-expired
+session), syncing stops and Control Center shows a **Reconnect** banner on the
+calendar, plus a desktop notification. Click **Reconnect** and approve a new code;
+the banner clears on the next successful sync.
+
+## Disconnect an account
+
+From the calendar sidebar (or **Settings → You → Profile & identity**), click
+**Disconnect** on the account. This deletes its synced events and clears its
+stored tokens on the server.
+
+## Connect from a headless server
+
+A server with no GUI attached connects the same account from its own terminal:
+
+```bash
+cc_server calendar connect --data-dir <dir> --workspace <workspace-id> \
+  --google-client-id <id> --google-client-secret <secret>
+```
+
+It prints a code and a URL, waits for approval, then stores the tokens and syncs
+on the next sweep.
+
+A build from source ships **no** Google client, so the id and secret are
+required — pass them as flags, or set `CC_GOOGLE_OAUTH_CLIENT_ID` and
+`CC_GOOGLE_OAUTH_CLIENT_SECRET`. Without them the command exits with a
+missing-client error.
+
+## Bring your own Google client (forks and self-hosting)
+
+Released builds ship with a Google client, so most people never touch this. Bring
+your own if you build from source, run your own server, want the consent screen
+to name your own project, or need RSVP to work.
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. Add `https://www.googleapis.com/auth/calendar.events` as well if you want RSVP writes to succeed. While the app is unverified, add yourself as a **test user**.
+2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
+3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `CC_GOOGLE_OAUTH_CLIENT_ID` and `CC_GOOGLE_OAUTH_CLIENT_SECRET` (equivalently `--google-client-id` / `--google-client-secret`).
+
+A server-wide pair replaces the built-in one everywhere, including behind the
+"use Control Center's Google app" option — so on your own server, that option is
+your app.
+
+The client secret never leaves the server: no RPC response carries it and an
+account connected through the server's own client stores a marker rather than a
+copy of the pair, so rotating it is a matter of restarting with a new value.
+
+### Troubleshooting
+
+| Symptom                                             | Likely cause                                                                                                                                          |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The dialog offers no built-in option                | This build ships no Google client (a source build), or the server was started with only one half of the pair. Both the id and the secret are required |
+| `invalid_scope` when starting the flow              | Calendar is not permitted for a device-code client in that Cloud project. Use a loopback or web client project instead                                |
+| `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
+| Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
+| The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
+| "Couldn't update your response" on an RSVP          | The account was connected without the `calendar.events` scope — expected for the built-in flow                                                        |
+| Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
+
+## Related guides
+
+- [Record and summarize a meeting](/manual/guides/record-meeting/): turn an event into a recording
+- [Run a headless server](/manual/guides/run-headless-server/): where the tokens and the sync schedule live
+- [Set up GitHub integration](/manual/guides/github-integration/)
+
+## Related concepts
+
+- [Calendar and scheduling](/manual/concepts/calendar/)

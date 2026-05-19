@@ -1,0 +1,93 @@
+---
+title: Organize work with projects
+description: Group tickets into projects from the sidebar, track progress and archive a project when it is done.
+---
+
+A project is a workspace-scoped grouping of tickets toward a shared goal.
+Projects are Control Center-only — they never sync to an external provider such
+as Linear.
+
+## Create a project
+
+1. Expand the **Tickets** group in the workspace sidebar. It lists
+   **All tickets**, one row per non-archived project, then **New project**.
+2. Click **New project**.
+3. Fill in **Project name**, an optional **Description** and pick a **Color**.
+4. Press **Create project**.
+
+You land on the new project's overview and the project appears as a sidebar
+row under **Tickets**.
+
+## Add tickets to a project
+
+Project is a single-ticket field, set in either of two places:
+
+- Open the ticket and set **Project** in its properties rail.
+- Right-click the ticket in the list and use the **Project** submenu.
+
+The properties-rail picker also offers **New project**, so you can file a ticket
+into a project you create on the spot. **No project** clears the field.
+
+A ticket belongs to at most one project.
+
+:::note[Project is not a bulk action]
+The floating bar that appears when you select several tickets covers status,
+priority, assignee, labels and delete. It has no project chip, so filing many
+tickets means doing them one at a time.
+:::
+
+You can also start from the project: **New ticket** on the project overview
+creates a ticket and files it there.
+
+## Read project progress
+
+Open a project from its sidebar row, or go to
+`/workspaces/<workspace-id>/projects/<project-id>`.
+
+The overview shows the project's glyph and name, a status badge, the
+description and a done-of-total progress bar. Below that, the project's
+tickets are grouped by status.
+
+It does not aggregate anything else — there is no assignee breakdown and no
+priority distribution. For those, filter the main ticket list instead.
+
+## Change project status
+
+Projects have three states:
+
+| Status        | Meaning              |
+| ------------- | -------------------- |
+| **Active**    | Work is ongoing      |
+| **Completed** | All work is done     |
+| **Archived**  | Historical reference |
+
+Use the **⋯** menu on the project header. It offers **Edit project**,
+**Mark completed** / **Mark active**, **Archive** / **Restore** and
+**Delete project**.
+
+Archiving hides the project from the sidebar list and from the ticket pickers.
+It is reversible — **Restore** puts the project back to active — but the project
+is only reachable by URL while archived.
+
+## Projects created for you
+
+Approving an orchestration creates a project and files every generated
+sub-ticket under it, alongside anything you filed by hand. That is the only
+automated path: no pipeline node creates tickets, so a pipeline cannot populate
+a project. See [Run an orchestration](/manual/guides/run-orchestration/).
+
+:::note[Agents cannot manage projects]
+The project MCP tools are implemented but registered nowhere, so no agent can
+create, list, update or delete a project, or set a ticket's project. Projects
+are an operator surface today.
+:::
+
+## Related guides
+
+- [Create and manage tickets](/manual/guides/manage-tickets/)
+- [Delegate work to agents](/manual/guides/delegate-tickets/)
+- [Run an orchestration](/manual/guides/run-orchestration/)
+
+## Related concepts
+
+- [Tickets](/manual/concepts/tickets/)

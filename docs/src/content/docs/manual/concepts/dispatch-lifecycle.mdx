@@ -1,0 +1,156 @@
+---
+title: Agent dispatch lifecycle
+description: What happens between a message arriving and a run log closing — prompt assembly, worktrees, identity, what bounds a run and how its outcome is recorded honestly.
+---
+
+## What a dispatch is
+
+A dispatch is one run of one agent, in one conversation, on one adapter. Everything about it happens on `cc_server`: the client sends a message and then watches events stream back. There is no dispatch path in any client.
+
+Agents are woken for six reasons, which the run carries as its **wake context** so the agent knows _why_ it is awake:
+
+| Wake reason      | Trigger                                                      |
+| ---------------- | ------------------------------------------------------------ |
+| `userMessage`    | Somebody sent a message in a channel, or mentioned the agent |
+| `assignment`     | A ticket was assigned to the agent                           |
+| `pipelineStep`   | A pipeline step dispatched it                                |
+| `childCompleted` | A child ticket finished                                      |
+| `followUp`       | A scheduled follow-up heartbeat                              |
+| `recovery`       | The recovery path re-dispatched after a failure              |
+
+The wake context carries the ids that go with the reason — ticket, channel, message, pipeline run — and they are injected into the agent's environment and prompt.
+
+## Prompt assembly
+
+The prompt is built in layers, each one a labelled section:
+
+- **Identity** — the agent's own id, name and workspace id, with an explicit instruction to pass those exact UUIDs to workspace-scoped tools. The workspace is intrinsic to the agent, so it is always present.
+- **Tool catalogue and resource protocols**, then the **workspace layout**.
+- **System prompt override**, if the agent has one, then **persona** (parameterized by role) and the **team brief**.
+- **Skills** — the names on the agent.
+- **Execution contract and procedure** for the current mode.
+- **Wake context** and **mention context**: who summoned the agent and the roster around it.
+- **Mode block** — generated from the mode's capability profile _and its materialized tool list_, so a prompt can never name a tool the run does not actually have.
+- **Memory context** — facts retrieved for the task.
+- **Conversation context** — recent channel history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_channel_messages` and semantically relevant older messages still surface.
+
+:::note[Slash commands are parsed from the raw user text]
+The layered prompt starts with a context block, so it does not begin with a slash. Commands are therefore parsed from the user's message verbatim and the command is then spliced out of the tail of the layered prompt so every context layer survives. Parsing the built prompt instead is exactly the bug that once made `/plan`, `/goal`, `/loop` and `/<skill>` silently inert on the channel path.
+:::
+
+Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the channel's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/<skill>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget and any other name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. An unrecognized name simply falls through as plain text.
+
+## Worktree provisioning
+
+Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR channel — or a channel created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the channel is deleted.
+
+Copy-on-write is the **only** implementation, backed by the bundled `rift` native. Plain `git worktree` is a second _backend_, not a degraded mode and it is reached in exactly two situations, both environmental: a filesystem that cannot do copy-on-write (not APFS or reflink-capable, or source and destination on different volumes) and Windows, where there is no copy-on-write backend to build. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+
+## Identity and credentials
+
+Two identities are resolved per run, before any process launches.
+
+**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <slug@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+
+**Forge identity.** If the requesting member stored their own GitHub token, it _overrides_ the credential broker's token in the merged environment. A member-requested run therefore acts under that member's GitHub identity, not the server owner's — which is what you want for attribution and worth knowing when a run's permissions differ from what the server itself can do.
+
+**Model provider credentials** resolve in a fixed order and the order matters:
+
+1. a per-adapter environment override,
+2. the caller's environment,
+3. the server's credential store (refreshing an OAuth token if it is near expiry),
+4. the process environment.
+
+Because the per-adapter override comes first, it silently beats a provider account connected in the app. If a run is billing to the wrong account, that override is the first place to look. Provider credentials are host-global — shared across every workspace on the install.
+
+Capability-gated tokens (GitHub, ticketing) come from the credential broker, which injects only what the run's capabilities allow. See [The agent model](/manual/concepts/agent-model/).
+
+## Launch
+
+The run is spawned with a sanitized environment, its worktree as the working directory and — for external CLIs — a generated MCP config so the agent can reach Control Center's tool surface.
+
+:::note[The OS sandbox wraps a run only where the host has a backend]
+`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because the transports do not share one: the external CLIs (`pi`, `claude`, `codex`) go through the sandbox port and the ACP transport plus the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+
+Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+
+Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+
+The remaining bounds hold on every host, sandbox or not: the run's own copy-on-write worktree, environment sanitization, capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows.
+:::
+
+## Streaming
+
+The run streams a typed event sequence back, which the stream processor persists as message deltas, folds into transcript segments and turns into messaging events:
+
+| Event              | What it carries                                                                                                  |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `thinking`         | Reasoning output, rendered inline                                                                                |
+| `text`             | Visible output                                                                                                   |
+| `toolCall`         | A tool invocation, with its id and structured arguments                                                          |
+| `toolResult`       | The matching result, flagged when it errored or is a partial stream                                              |
+| `usage`            | Token counts and cost for a measurement window                                                                   |
+| `error`            | An error, with the adapter's structured code when it reported one                                                |
+| `sandboxViolation` | The OS denied a syscall. Only ever emitted where a sandbox is actually wrapping the process — see the note above |
+| `debug`            | Runtime diagnostics (launch markers, guard decisions, contract nudges)                                           |
+| `done`             | The run finished                                                                                                 |
+
+## What bounds a run
+
+There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
+
+- **the model stops** on its own;
+- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — external CLI runs, which have no safe boundary, are stopped instead);
+- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the external CLI and ACP transports — **not** the built-in harness, which spawns nothing;
+- **a cost cap bites** — but only for autonomous commands.
+
+The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach, which is the bound that replaced a turn ceiling.
+
+:::note[A normal turn has no cost cap]
+The in-session cost guard is wired only for `/goal` and `/loop`; every other run passes no budget at all. For those commands, one unattended segment may burn 500 cents ($5.00) by default, with a soft steer at 80% asking the agent to wrap up cleanly before the hard stop and a durable goal budget of 5000 cents ($50.00) across segments. An explicit `/goal --budget` is never overshot by a whole segment.
+:::
+
+Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
+
+Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; external CLI and ACP transports have none of them.
+
+## How a run is recorded
+
+Every dispatch writes an `AgentRunLog`: start and end time, summary, token counts and estimated cost (including cost rolled up from subagents), adapter and model, process id and log path, the conversation and any ticket or pipeline run it belongs to, plus two classification fields that carry most of the truth.
+
+- **Status** is coarse: `pending`, `running`, `completed`, `error`.
+- **Liveness** is the finer read: `alive`, `productive`, `completed`, `blocked`, `empty`, `looping`, `failed`, `stalled`, `dead`.
+- **Error family** groups failures usefully: `transientUpstream`, `sandboxInfrastructure`, `budgetExceeded`, `processLost`, `silentRun`, `unknown`.
+
+:::note[`completed` does not mean "delivered"]
+When a run ends without the deliverable its mode required — a plan-mode run that never called `submit_plan`, an orchestrate run that never proposed — the status stays `completed`, because the process did exit cleanly. The honest signal rides on liveness (`empty`), error family (`silentRun`) and a summary saying exactly what was not produced. That summary is protected: finalization will not overwrite it with the model's last chatter.
+
+This is deliberate. Flipping the status would move ticket and pipeline state machines that have nothing to do with the missing artifact. It also means "status: completed" alone is never enough to conclude a run succeeded — read the summary.
+:::
+
+Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notification frame and its durable feed entry, the live forwarder that pushes it to connected clients, pipeline cost roll-up, resuming a pipeline step that was waiting on the run, completing the backing ticket, mapping an orchestration to a terminal state, the goal supervisor's continue-or-stop decision, the checker role and the post-run budget evaluation. The presence roster follows separately, by watching the recent run logs rather than the event.
+
+## Budgets, after the fact
+
+Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused`.
+
+:::caution[Both halves of that are hard to use today]
+No dispatch path checks lifecycle status, so a `paused` agent still runs — the pause is visible in the org chart and nowhere else. The pre-dispatch budget block that _would_ stop a run exists but is called only by the orphan-run reaper and the stranded-ticket reconciler when they consider scheduling recovery. And budget incidents have no RPC operation and no screen, so a hard stop's only visible symptoms are the status change and a `BudgetThresholdCrossed` pipeline trigger.
+:::
+
+## Retry lineage
+
+Every run log has room for retry lineage — a parent run id, an attempt counter and a continuation summary that would let a follow-up run resume with context instead of starting cold. The conversation run tree renders the attempt number when it is non-zero.
+
+:::caution[Nothing currently advances it]
+No production code increments the attempt counter or writes a continuation summary. The orphan-run reaper checks the attempt count and a budget block, then only logs that a run is "eligible for recovery" — it does not re-dispatch. A "try again" from chat is a plain new dispatch with a fresh run log and no lineage. Treat these fields as schema, not behaviour.
+:::
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/): what the adapter can and cannot enforce
+- [Modes](/manual/concepts/modes/): where the tool surface and the completion contract come from
+- [Guardrails](/manual/concepts/guardrails/): the effect-class policy every gated call passes
+- [Sandbox and security](/manual/concepts/sandbox-security/): the isolation story in full
+- [Multiplayer](/manual/concepts/multiplayer/): steering, take-over and the autonomy dial
+- [Domain events](/manual/concepts/domain-events/): what `AgentRunCompleted` sets off

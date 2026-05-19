@@ -1,0 +1,69 @@
+---
+/**
+ * Cta — the closing moment and the page's earned-warmth spend: one dark ink
+ * panel carrying the golden-hour brand gradient, then three quiet wayfinding
+ * cards (source, manual, changelog).
+ */
+
+const cards = [
+  {
+    title: 'GitHub',
+    body: 'Source, issues and releases. Star the repo to follow along.',
+    cta: 'Star on GitHub',
+    href: 'https://github.com/SamuelAlev/control-center',
+  },
+  {
+    title: 'Documentation',
+    body: 'The full manual: guides, concepts and the MCP tool reference.',
+    cta: 'Open the manual',
+    href: '/manual/',
+  },
+  {
+    title: 'Changelog',
+    body: 'What shipped, release by release, with the reasoning attached.',
+    cta: 'Read the changelog',
+    href: '/changelog',
+  },
+];
+---
+
+<section class="border-t border-border py-[clamp(56px,9vw,96px)]">
+  <div class="wrap">
+    <!-- The sunset panel: the one place gold floods, earned at the close. -->
+    <div class="reveal from-scale relative overflow-hidden rounded-lg bg-inverse-surface px-[clamp(24px,5vw,64px)] py-[clamp(48px,7vw,88px)] text-center">
+      <img
+        src="/favicon.svg"
+        alt=""
+        aria-hidden="true"
+        class="pointer-events-none absolute -right-[72px] -top-[72px] w-[220px] rotate-[8deg] rounded-[28px] opacity-90 shadow-golden max-md:hidden"
+      />
+      <span class="eyebrow reveal" style="color: color-mix(in oklab, var(--color-accent-on) 60%, transparent);">Start today</span>
+      <h2 class="reveal mx-auto mt-4 max-w-[20ch] text-[clamp(30px,5vw,64px)] font-semibold leading-[1.02] tracking-[-0.03em] text-accent-on">
+        Take command of the fleet today.
+      </h2>
+      <p class="reveal mx-auto mt-4 max-w-[44ch] text-[clamp(15px,1.3vw,17px)]" style="color: color-mix(in oklab, var(--color-accent-on) 70%, transparent);">
+        Free and open source. Desktop on macOS, Windows and Linux; the same app in your browser and on your phone.
+      </p>
+      <div class="reveal mt-[30px] flex flex-wrap justify-center gap-3">
+        <a class="btn btn-accent" href="#install">Download</a>
+        <a class="btn border border-accent-on/25 text-accent-on hover:border-accent-on/60" href="/manual/quick-start/">Quick start</a>
+      </div>
+    </div>
+
+    <div class="mt-5 grid grid-cols-1 gap-5 md:grid-cols-3">
+      {cards.map((c) => (
+        <div class="reveal rounded-lg border border-border bg-panel p-6">
+          <h3 class="text-[16px] font-semibold tracking-[-0.01em]">{c.title}</h3>
+          <p class="mt-2 text-[13.5px] leading-[1.6] text-muted">{c.body}</p>
+          <a
+            class="link-arrow mt-4"
+            href={c.href}
+            {...(c.href.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          >
+            {c.cta} <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

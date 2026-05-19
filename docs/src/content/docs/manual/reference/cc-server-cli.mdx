@@ -1,0 +1,137 @@
+---
+title: cc_server CLI
+description: Every flag, environment variable, subcommand and data-directory path of the headless server.
+---
+
+Every setting takes a CLI flag or an environment variable; the flag wins, then the
+environment, then the default.
+
+:::caution[Unknown flags are ignored silently]
+The argument parser is hand-rolled and skips anything it does not recognise, so a typo
+(`--tls-key-file`, `--bindany`) produces no error — the server just starts with the
+default. Check the startup log lines when a flag seems to have no effect.
+:::
+
+## Core
+
+| Flag            | Env                    | Default                                          | Meaning                                                                                                        |
+| --------------- | ---------------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `--data-dir`    | `CC_SERVER_DATA_DIR`   | the OS per-user application-data dir (see below) | Databases, secrets, models and cached media                                                                    |
+| `--port`        | `CC_SERVER_PORT`       | `9030`                                           | TCP port (`0` = ephemeral)                                                                                     |
+| `--bind`        | `CC_SERVER_BIND`       | `loopback`                                       | `loopback`, or `any`/`all`/`0.0.0.0` for every interface (needs TLS or `--insecure`)                           |
+| `--repo-roots`  | `CC_SERVER_REPO_ROOTS` | the server user's home directory                 | Comma-separated base directories a client may browse when registering a repo. Browsing above a root is refused |
+| `--log-level`   | `CC_SERVER_LOG_LEVEL`  | `warning`                                        | `debug`, `info`, `warning`, or `error`. The booting/ready lines always print                                   |
+| `--server-name` | `CC_SERVER_NAME`       | the machine hostname                             | Name shown in pickers, discovery and pairing surfaces                                                          |
+
+## Reachability and TLS
+
+| Flag                | Env                         | Default                       | Meaning                                                                                                                                                      |
+| ------------------- | --------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `--tls-cert`        | `CC_SERVER_TLS_CERT`        | unset                         | PEM certificate chain. Serves `wss://` in-process when set together with the key                                                                             |
+| `--tls-key`         | `CC_SERVER_TLS_KEY`         | unset                         | PEM private key matching the cert                                                                                                                            |
+| `--insecure`        | `CC_SERVER_INSECURE`        | off                           | Allow a plaintext non-loopback bind. Only behind a TLS-terminating proxy on a trusted network; ignored when TLS is configured                                |
+| `--public-url`      | `CC_SERVER_PUBLIC_URL`      | derived from the bind         | The RPC URL this server advertises to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** — the default is only a guess at the local bind |
+| `--allowed-origins` | `CC_SERVER_ALLOWED_ORIGINS` | `https://app.usectrl.dev`     | Comma-separated browser origins allowed to dial `/rpc` cross-origin. Loopback and native clients are always allowed                                          |
+| `--web-client-url`  | `CC_SERVER_WEB_CLIENT_URL`  | unset                         | Origin of the hosted web client that single sign-on callbacks bounce back to                                                                                 |
+| `--signaling-url`   | `CC_SERVER_SIGNALING_URL`   | `wss://signaling.usectrl.dev` | The relay broker this server joins so a phone can reach it with no direct path                                                                               |
+| `--mdns`            | `CC_SERVER_MDNS`            | `auto`                        | LAN advertisement: `auto` (only when bound beyond loopback), `on`, `off`. Discovery advertises existence only — joining still needs pairing                  |
+| `--tunnel`          | `CC_SERVER_TUNNEL`          | `off`                         | Managed tunnel provider: `off`, `cloudflared`, `ngrok`, `tailscale`. Public exposure is opt-in                                                               |
+| `--tunnel-binary`   | `CC_SERVER_TUNNEL_BINARY`   | resolved from `PATH`          | Explicit tunnel binary path                                                                                                                                  |
+| `--tunnel-sha256`   | `CC_SERVER_TUNNEL_SHA256`   | unset                         | Expected SHA-256 of that binary, verified before every spawn                                                                                                 |
+| `--tunnel-args`     | `CC_SERVER_TUNNEL_ARGS`     | empty                         | Comma-separated extra arguments for the tunnel invocation                                                                                                    |
+
+## Indexing and third-party credentials
+
+| Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
+| ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
+| `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
+| `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
+| `--google-client-id`     | `CC_GOOGLE_OAUTH_CLIENT_ID`     | the client baked into a release build | Google device-code client for calendar sync. Empty disables calendar                                                        |
+| `--google-client-secret` | `CC_GOOGLE_OAUTH_CLIENT_SECRET` | as above                              | The secret for that client                                                                                                  |
+| `--klipy-app-key`        | `CC_KLIPY_APP_KEY`              | the key baked into a release build    | Klipy GIF key. Empty disables the `gif.*` ops                                                                               |
+
+An empty value for a credential reads as unset, so the built-in fallback still applies.
+A build from source carries no built-in credentials at all.
+
+### `--sandbox`
+
+The server probes the host once at boot and wraps agent command execution in the
+OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
+`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
+those tools — runs fall back to environment sanitization, the command policy and the
+action guardrails and the startup log says which state applies.
+
+`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
+the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
+warning for the life of the process so the state is never silent.
+
+## Subcommands
+
+| Command                                       | What it does                                                                                        |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
+| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Run it while no server holds the data dir    |
+| `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
+| `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
+| `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
+
+### `pair`
+
+| Flag           | Default                                                   | Meaning                                                                                                                                                              |
+| -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
+| `--label`      | derived from the platform                                 | Display name in the devices list                                                                                                                                     |
+| `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
+| `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
+
+Re-running `pair` for the same `--device` rotates its key. A credential minted here has
+**no expiry**, unlike the 30 days an in-app pairing sets.
+
+:::caution[The `--client-url` QR is not the phone QR]
+`pair --client-url` emits a v1 deep link for the web client. The phone pairs with a
+different v2 payload minted from the in-app pairing panel. The two are not
+interchangeable — see [Pair a device](/manual/guides/pair-a-device/).
+:::
+
+### `update`
+
+`--apply` replaces the install; it is refused while a server still answers on the
+configured port unless you pass `--force`. `--allow-downgrade` permits an older release.
+
+The command refuses outright, with an explanation rather than an error, for installs it
+does not own:
+
+| Environment                   | Detected by                                 | What it says                                                |
+| ----------------------------- | ------------------------------------------- | ----------------------------------------------------------- |
+| The desktop's embedded server | `CC_EMBEDDED=1` or `CC_BOOTSTRAP_DEVICE_ID` | Update the app instead — the installer swaps the whole tree |
+| A `dart run` source checkout  | the script path ends in `.dart`             | Update it with git                                          |
+| Docker                        | container markers                           | Pull a newer image                                          |
+
+## Data directory layout
+
+The default data dir is `~/Library/Application Support/control-center` on macOS,
+`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
+`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only used when
+no home or app-data directory resolves.
+
+| Path                              | Contents                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------- |
+| `global.db`                       | The workspace registry, users, paired devices, the newsfeed and the fleet queue |
+| `<workspaceId>/workspace.db`      | One database per workspace — agents, channels, tickets, memory, the code graph  |
+| `<workspaceId>/chat_credentials/` | Chat bot tokens, as plain JSON, so they go with the workspace                   |
+| `paired_device_psks.json`         | Pairing keys (`0600`)                                                           |
+| `google_credentials.json`         | Google OAuth tokens (`0600`)                                                    |
+| `models/`                         | On-device embedding, diarization and speech models                              |
+| `meetings/<meetingId>/`           | Retained meeting audio                                                          |
+| `rigs/images/`                    | Imported rig disk images (the QEMU desktop surface)                             |
+| `rigs/smolvm/<rigId>/`            | Per-rig microVM runtime state (the broker secret, `0600`)                       |
+| `rigs/smolvm-packs/`              | Pre-extracted machine packs — the cache that makes repeat rig boots fast        |
+| `rigs/tls/`                       | The dev-domain certificate authority for rig HTTPS (keys `0600`)                |
+| `rigs/run/<rigId>/`               | QEMU overlays, seed images and per-VM keys (`0600`)                             |
+
+## See also
+
+- [Run a headless server](/manual/guides/run-headless-server/) — the setup recipe these flags belong to
+- [Connect to a remote server](/manual/guides/connect-remote-server/) — pointing a client at one
+- [Deployment and clients](/manual/concepts/deployment/) — why the server owns everything

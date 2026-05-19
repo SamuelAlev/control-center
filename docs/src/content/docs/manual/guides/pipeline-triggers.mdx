@@ -1,0 +1,151 @@
+---
+title: Set up pipeline triggers
+description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the Trigger node in the template editor.
+---
+
+A trigger is what starts a pipeline. Every trigger a template has — including
+the one that makes it manually runnable — lives on the **Trigger** entry node in
+the template editor. There is no triggers tab and no triggers screen.
+
+## Open the trigger panel
+
+1. Go to **Settings → Workspace → Pipeline templates**.
+2. Press the pencil on the template's row to open the editor.
+3. Click the **Trigger** node on the canvas. The right panel switches from the
+   normal node form to the trigger panel.
+
+The panel has two parts: a **Manual run** switch at the top and an
+**Automatic triggers** list below it.
+
+## Allow manual runs
+
+Turn on the **Manual run** switch to make the template appear in the run
+launcher. It is not a special case — the switch inserts and deletes an ordinary
+trigger row whose event type is `manual`. It persists immediately; there is
+nothing to save.
+
+## Add an automatic trigger
+
+1. Press **Add trigger** under **Automatic triggers**.
+2. Pick a **Trigger type**: **On an event**, **On a schedule**, or
+   **Via a webhook**.
+3. Fill in that type's fields (below).
+4. Press **Add**.
+
+The trigger is live the moment you press **Add** — there is no separate enable
+step. Use the switch on its row to turn it off later, or the bin icon to delete
+it.
+
+:::note[One trigger per event type]
+`pipeline_triggers` is unique on workspace, event type and template. An event
+type you have already wired disappears from the picker and once you have used
+them all the dialog says "All available events are already wired." Every webhook
+trigger shares the synthetic event type `webhook`, so a template can hold at
+most one webhook.
+:::
+
+### On an event
+
+Pick the domain event from the **Event** dropdown. These twelve carry a payload
+and can fire:
+
+| Picker label              | Event                      |
+| ------------------------- | -------------------------- |
+| External PR opened        | `ExternalPrDetected`       |
+| PR published              | `PullRequestPublished`     |
+| PR status changed         | `PullRequestStatusChanged` |
+| PR merged                 | `PrMerged`                 |
+| Message received          | `MessageReceived`          |
+| Ticket assigned           | `TicketAssigned`           |
+| Ticket completed          | `TicketCompleted`          |
+| Ticket failed             | `TicketFailed`             |
+| Ticket cancelled          | `TicketCancelled`          |
+| Budget threshold crossed  | `BudgetThresholdCrossed`   |
+| Repository added          | `RepoAdded`                |
+| `MeetingRecordingStopped` | `MeetingRecordingStopped`  |
+
+The last one has no display label yet, so it shows its raw type name.
+
+:::caution[Two offered events can never fire]
+`TicketCreated` and `TicketStatusChanged` also appear in the picker, but neither
+has a payload mapping. The dispatcher gives up before it even looks for matching
+triggers, so a trigger on either is selectable, saveable and permanently inert.
+:::
+
+For the payload keys each event carries, see the
+[domain events reference](/manual/reference/domain-events/).
+
+#### Filter an event trigger
+
+The only filter the dialog can author is the status chip set and it appears
+only when the event is **PR status changed**. Tap any of `merged`, `closed`,
+`approved`, `opened`, `reopened`; the trigger then fires only when the event's
+`status` matches one of them. Leaving every chip unselected means no filter.
+
+There is no free-form JSON filter field. A filter key that the event's payload
+does not carry never matches, so do not hand-author one against a key you have
+not confirmed in the domain events reference.
+
+### On a schedule
+
+| Field                                | Description                                                                                                                                                                         |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Schedule (cron or every:seconds)** | A five-field cron expression such as `0 9 * * 1`, or an interval such as `every:86400`. A bare number is coerced to `every:<n>`.                                                    |
+| **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
+| **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
+
+The trigger row's summary line only spells out the interval for the
+`every:<seconds>` form; a cron expression shows as just "Schedule".
+
+### Via a webhook
+
+Choosing **Via a webhook** takes no fields — pressing **Add** mints a random
+token for the trigger.
+
+The endpoint is `POST /webhooks/<token>` on the server. The token is also the
+HMAC secret: the request must carry
+`X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
+A delivery that fails verification is rejected and logged and is not
+replayable. Duplicates are ignored by their dedupe key.
+
+:::caution[The token and URL are never shown]
+Nothing in the app displays the generated token or builds the URL for you —
+there is no copy affordance anywhere in the pipelines UI and the trigger's row
+just reads "webhook". Until that ships, the value has to be read out of the
+`pipeline_triggers` table directly.
+:::
+
+## How a trigger reaches a run
+
+An enabled trigger whose event type and filter both match starts a run with the
+event's payload as the run's trigger payload — that is what `{{key}}` in a
+step's prompt or script resolves against. Events that carry a natural key are
+de-duplicated, so the same event firing twice does not start two runs.
+
+A disabled _template_ is refused even when its trigger matches. Eight of the
+thirteen built-in templates ship disabled, so their seeded triggers fire into
+nothing until you turn the template on.
+
+## Useful patterns
+
+- **Review every new PR** — event **PR published** on the `pr_review` template.
+- **Clean up after a merge** — event **PR merged**. The built-in
+  `pr_merged_cleanup` template already ships wired this way, plus a daily
+  schedule that is force-enabled on every re-seed because it is garbage
+  collection.
+- **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
+  first node is a bash script.
+- **React to an external system** — a webhook trigger, with the calling system
+  signing its request body as above.
+
+## Related guides
+
+- [Create a pipeline template](/manual/guides/create-pipeline/)
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/)
+- [Domain events reference](/manual/reference/domain-events/)
+
+## Related concepts
+
+- [Pipelines](/manual/concepts/pipelines/)
+- [Domain events](/manual/concepts/domain-events/)

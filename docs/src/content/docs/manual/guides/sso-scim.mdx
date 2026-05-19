@@ -1,0 +1,57 @@
+---
+title: Provision users with SCIM
+description: Let your IdP create, update and deprovision Control Center accounts automatically.
+---
+
+Use this guide when you want lifecycle control — offboarding must revoke
+access automatically, not just block future logins. SCIM is the push
+protocol IdPs (Okta, Entra ID and others) use for exactly that.
+
+## Prerequisites
+
+- SSO already working (the [SSO tutorial](/manual/tutorials/sso) or the
+  [OIDC guide](/manual/guides/sso-oidc)),
+- **a server the IdP can reach over HTTPS** — SCIM calls come from the IdP,
+  not the user's browser. Use the built-in tunnel
+  (Settings → Server → Sharing → cloudflared/ngrok) or a public URL. A
+  server reachable only through the WebSocket relay cannot receive SCIM
+  pushes; JIT provisioning still works there, this guide does not.
+
+## Steps
+
+1. Open **Settings → Server → Single sign-on** → the
+   **User provisioning (SCIM)** card. The card shows the endpoint, e.g.
+   `https://<your-server>/scim/v2/Users`.
+2. Press **Regenerate token** — the bearer token appears once in a dialog
+   and is copied to the clipboard. Store it in your password manager; the
+   server only keeps a constant-time-verifiable copy.
+3. In your IdP's provisioning settings, enable SCIM with:
+   - **Base URL**: the endpoint above
+   - **Authentication**: `Authorization: Bearer <token>`
+   - **User id**: `userName` (email) or `externalId` — both match
+4. Test with one user: push them from the IdP, confirm they appear (SCIM
+   create pins the provider's `externalId` onto the account, the same pin a
+   first SSO login sets).
+
+## What deprovisioning does
+
+When the IdP sends `active: false` (or `DELETE`):
+
+1. every device credential is revoked first — live sessions drop within
+   seconds,
+2. every workspace membership is removed,
+3. the account is stamped deactivated (it can never log in, whatever the
+   IdP says later until explicitly reactivated).
+
+The user row itself survives — attribution on tickets, messages and
+commits is permanent. Reactivation (SCIM `active: true`) restores login but
+**not** memberships: those need a fresh invite or the login-time auto-member
+policy.
+
+## Troubleshooting
+
+- **401 on every call** — the token changed; regenerate and update the IdP.
+- **The endpoint is not reachable** — the tunnel is down, or the server is
+  relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.
+- **Group push errors (501)** — intentional: group→role mapping happens at
+  login from the SAML/OIDC group attributes, not from pushed groups.

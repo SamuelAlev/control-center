@@ -1,0 +1,20 @@
+# Enforced by architecture_constraints_test.dart
+# ("UI vendor isolation — Material components").
+#
+# Material component widgets are banned under lib/ — every one of them has a
+# cc_ui counterpart (CcButton, CcCard, CcChip, CcDivider, CcTile, CcSpinner,
+# CcProgressBar, CcSlider, CcGauge, …). Unlike the material_importers.txt
+# ratchet, this one is not about imports: it forbids the WIDGETS, so a file that
+# still needs `Theme.of(context)` cannot quietly grow a new raw `TextButton`.
+#
+# An entry here is NOT a migration to-do — it is a documented exception where
+# cc_ui has no equivalent primitive. Give the reason inline. If you build the
+# missing cc_ui primitive, migrate the file and delete its line (a stale entry
+# fails the test).
+
+# The root Material theme itself. Per CLAUDE.md, Material 3 stays the ROOT app
+# theme (MaterialApp, light/dark) with cc_ui rendering on top of it, so this
+# file exists precisely to configure Material's own widget themes from the
+# design-system tokens. `IconButton.styleFrom` here is the point, not a leak —
+# this is the single seam where the design system meets the Material root.
+lib/core/theme/app_theme.dart

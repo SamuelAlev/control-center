@@ -1,0 +1,76 @@
+---
+/**
+ * PlatformRows — the four systems under the hood, as big-index hairline rows.
+ * Numbers + spec chips; no visuals (the platform is invisible by design).
+ */
+
+const rows = [
+  {
+    n: '01',
+    name: 'Memory',
+    head: 'Memory that compounds across runs.',
+    body: 'Every workspace keeps facts, policies and domains in one hybrid store: full-text and vector search over a knowledge graph. An agent opens its run with the context the last run earned, gated to exactly what its role may read.',
+    chips: ['FTS5', 'Vector · 384-dim', 'Role-gated'],
+  },
+  {
+    n: '02',
+    name: 'Code graph',
+    head: 'Your codebase, read as a graph.',
+    body: 'A tree-sitter symbol-and-edge index per repo lets an agent jump from a symbol to its callers, callees and blast radius before it edits a line: the same impact view you get when you review the result.',
+    chips: ['Tree-sitter', 'Callers + callees', 'Impact radius'],
+  },
+  {
+    n: '03',
+    name: 'Open tool surface',
+    head: 'One hundred tools, one open protocol.',
+    body: 'A JSON-RPC server exposes agents, review, the code graph, memory and ticketing to any MCP client. Mode gating and approval prompts sit in front of every call, so a tool never outruns the policy you set.',
+    chips: ['100+ tools', 'JSON-RPC', 'Mode-gated'],
+  },
+  {
+    n: '04',
+    name: 'Agent runtime',
+    head: 'One loop, eight runners.',
+    body: 'The built-in runtime is a pure-Dart agent loop (streaming, tool calls, compaction, steering, subagents) that runs inside cc_server, so it needs no external CLI. Seven more adapters wrap the CLIs you already have: Claude Code, Codex, Pi, OpenCode, Gemini CLI, Goose and Cursor. Model providers connect by browser sign-in or API key and any OpenAI- or Anthropic-compatible endpoint joins as a custom provider.',
+    chips: ['Built-in loop', '8 adapters', 'Custom providers'],
+  },
+  {
+    n: '05',
+    name: 'Sandbox',
+    head: 'Secure by construction.',
+    body: 'Each channel runs inside an OS-native sandbox (Seatbelt on macOS, bubblewrap on Linux) over copy-on-write worktrees. Credentials are minted per launch, capability-gated, brokered in memory and revoked on teardown.',
+    chips: ['Seatbelt / bubblewrap', 'CoW worktrees', 'Ephemeral credentials'],
+  },
+];
+---
+
+<section id="under-hood" class="border-t border-border py-[clamp(56px,9vw,88px)]">
+  <div class="wrap">
+    <div class="reveal max-w-[62ch]">
+      <span class="eyebrow">The platform</span>
+      <h2 class="mt-4 text-[clamp(28px,4vw,48px)] font-semibold leading-[1.02] tracking-[-0.03em]">The systems that keep a fleet legible.</h2>
+      <p class="mt-[18px] max-w-[48ch] text-[clamp(16px,1.4vw,18px)] text-muted">Agents, review and pipelines all sit on the same foundation. Each system exists so a run starts with more context and you keep more control, than the run before it.</p>
+    </div>
+
+    <div class="mt-[clamp(28px,4vw,48px)] border-t border-border">
+      {rows.map((r) => (
+        <div class="reveal grid grid-cols-1 gap-4 border-b border-border py-[clamp(24px,3.5vw,40px)] md:grid-cols-[110px_1fr_1.2fr] md:gap-[clamp(24px,4vw,56px)]">
+          <div class="flex items-baseline gap-4 md:flex-col md:items-start md:gap-2">
+            <span class="num text-[clamp(26px,3vw,40px)] font-semibold leading-none tracking-[-0.02em] text-idle">{r.n}</span>
+            <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-muted">{r.name}</span>
+          </div>
+          <h3 class="m-0 max-w-[20ch] text-[clamp(19px,2.2vw,28px)] font-semibold leading-[1.1] tracking-[-0.01em]">
+            {r.head}
+          </h3>
+          <div>
+            <p class="m-0 max-w-[52ch] text-[14.5px] leading-[1.65] text-muted">{r.body}</p>
+            <div class="mt-4 flex flex-wrap gap-[6px]">
+              {r.chips.map((chip) => (
+                <span class="rounded-sm border border-border bg-surface px-[8px] py-[4px] font-mono text-[10.5px] text-muted">{chip}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>

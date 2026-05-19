@@ -1,0 +1,31 @@
+{
+  // Utilisez IntelliSense pour en savoir plus sur les attributs possibles.
+  // Pointez pour afficher la description des attributs existants.
+  // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
+  //
+  // Native multi-window (RegularWindow / ViewCollection used by AppWindows + the
+  // HUDs) needs the windowing feature, which is gated to Flutter's `main`
+  // channel. Enable it ONCE — `flutter config --enable-windowing` — after which
+  // the flutter tool injects FLUTTER_ENABLED_FEATURE_FLAGS automatically on every
+  // run/build. Do NOT pass it via --dart-define (the tool rejects that key).
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "control-center",
+      "request": "launch",
+      "type": "dart"
+    },
+    {
+      "name": "control-center (profile mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile"
+    },
+    {
+      "name": "control-center (release mode)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release"
+    }
+  ]
+}

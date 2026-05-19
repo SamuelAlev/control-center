@@ -1,0 +1,136 @@
+---
+title: Set up GitHub integration
+description: Authenticate GitHub on the server so the PR surface, repo registration and agent runs work.
+---
+
+This guide covers the GitHub-specific parts of the setup. GitHub is one of three
+supported code hosts — see [Connect a code host](/manual/guides/connect-forges/)
+for connecting GitLab or Bitbucket, and for how a workspace mixes them.
+
+## Prerequisites
+
+- A GitHub account with access to the repos you want to work on
+- Either a personal access token with `repo` and `read:org`, **or** the
+  [`gh` CLI](https://cli.github.com) installed and authenticated on the server
+  host — for the desktop app that is your own machine
+
+## Authenticate the server
+
+Paste a token in **Settings → You → Profile & identity → Code hosting**, on the
+**GitHub** row. It applies to the next request; there is nothing to restart.
+
+GitHub is also the one forge with a CLI shortcut. If the server host already has
+`gh` logged in, that login is used automatically when no token is stored and no
+environment variable is set:
+
+1. On the machine running `cc_server`, run `gh auth login` and complete the flow
+2. Confirm with `gh auth status`
+
+Checkpoint: the **GitHub** row under **Code hosting** reads "Signed in as
+_your-username_", with a suffix naming the source when it is not your stored
+token.
+
+:::note[Precedence is fixed]
+A token stored in Settings beats `GITHUB_TOKEN` / `GH_TOKEN` in the server
+environment, which beats the `gh` CLI. If the row's subtitle says "from the
+environment" or "from the gh CLI" while you expected your own token, your token
+was not saved.
+:::
+
+## Store a personal access token
+
+A PAT is optional and does something narrower than you might expect: it is kept in
+your device's secure store and used by _your client_, mainly to fetch private
+attachments embedded in PR descriptions and comments. It is not sent to the
+server and does not authenticate the server's GitHub calls.
+
+1. Go to **Settings → You → Profile & identity**
+2. On the **GitHub personal access token** row, press **Set**
+3. Paste a token with `repo` and `read:org` and save
+
+The token is stored exactly as typed — nothing probes it, so a typo surfaces later
+as a failed request rather than as an error in the dialog. Press **Clear** to
+remove it.
+
+Onboarding's first step offers the same two cards, so you can do this on the way
+in.
+
+## What the integration gives you
+
+| Feature             | How                                                                                                            |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| PR list and detail  | The GitHub REST API, from the server, using the `gh` token                                                     |
+| Check runs          | The GitHub Checks API                                                                                          |
+| Review publishing   | A user-gated step that posts your review to the PR                                                             |
+| Repo registration   | A checkout is accepted if its `origin` remote points at github.com — or at gitlab.com / bitbucket.org          |
+| Agent GitHub access | The credential broker injects the token as `GH_TOKEN` / `GITHUB_TOKEN`, gated by the agent's capabilities      |
+| Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested" |
+| User profiles       | Profile hover cards and per-author PR filtering                                                                |
+
+Some paths use the GraphQL API instead of REST where it is cheaper — branch
+activity for the compose-PR picker and the live review state that decides
+whether a review-requested notification is still pending.
+
+## Watch for GitHub outages
+
+The title bar shows a status chip when a provider is degraded, covering GitHub,
+Claude, OpenAI and Kimi. **It is hidden while everything is healthy** — presence
+reports trouble, not its absence.
+
+Click the chip to open a flyout with each provider's state and a refresh button.
+The statuses refresh on their own every two minutes.
+
+## Know how agents act on GitHub
+
+- An agent gets a GitHub token only if it has **Allow GitHub API calls** or
+  **Allow git push**. See
+  [Configure sandbox policies](/manual/guides/sandbox-policies/)
+- Commits an agent makes are authored **as the agent** — the display name plus
+  ` (agent)`, at a synthetic address keyed by the agent's id — never as a human.
+  The person who asked is credited with a `Co-Authored-By` trailer
+- When a `GITHUB_APP_ID` / `GITHUB_APP_PRIVATE_KEY` / `GITHUB_APP_INSTALLATION_ID`
+  triple is present in the server environment, the broker mints fine-grained,
+  repo-scoped, roughly one-hour installation tokens per launch instead of handing
+  over the raw PAT. Without it, agents receive the environment token
+- A run requested by a member who has their own GitHub token stored on the server
+  acts under **that member's** GitHub identity — the member token is merged in
+  after the broker's environment. No in-app screen stores such a token today, so
+  this does not fire on a normal install
+
+## Troubleshooting
+
+### The PR list is empty and says GitHub is not connected
+
+The server has no GitHub credential. Paste a token under **Code hosting**, or run
+`gh auth login` on the server host. Repos on other forges are unaffected — only
+GitHub's contribute nothing.
+
+### `gh` is authenticated but the row says not installed
+
+The server resolves `gh` from its own `PATH`. A GUI-launched desktop app spawns
+its server with a minimal `PATH`, so a `gh` installed only under a shell-specific
+path may be invisible. The resolver probes the common locations (Homebrew, Nix)
+before giving up.
+
+### Adding a repo is rejected
+
+Registration requires all three: the path is inside a git work tree, it has an
+`origin` remote, and that remote points at a supported forge (github.com,
+gitlab.com or bitbucket.org). See
+[Add repos to a workspace](/manual/guides/add-repos/).
+
+### Everything stops working for a while after heavy use
+
+That is the rate-limit circuit breaker. GitHub signals its primary limit with a
+`403` carrying `x-ratelimit-remaining: 0` and a reset time; on seeing one, the
+client fails further requests locally without a network call until the window
+elapses, so a retry storm cannot deepen the limit. Transient failures are retried
+up to three times with exponential backoff, honouring `retry-after`.
+
+## Related guides
+
+- [Connect a code host](/manual/guides/connect-forges/)
+- [Manage API keys](/manual/guides/api-keys/)
+- [Add repos to a workspace](/manual/guides/add-repos/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Set up Slack integration](/manual/guides/slack-integration/)

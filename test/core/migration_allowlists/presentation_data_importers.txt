@@ -1,0 +1,8 @@
+# Shrinking allowlist: presentation-layer files that still import a feature
+# data/ layer directly (should go through a Riverpod provider → repository).
+# Enforced by architecture_constraints_test.dart. Migrate + remove. No NEW entries.
+# Seeded 2026-07-06 to the current baseline (CI was red; the check was a hard
+# expect(empty) that nobody could keep green — the ratchet forbids growth).
+# 2026-08-22: EMPTY. The last entry (editor_theme_section importing the VS Code
+# theme parser out of `data/`) was cleared by moving that pure parser to the
+# feature's `domain/` layer, where a parser belongs. Keep it empty.

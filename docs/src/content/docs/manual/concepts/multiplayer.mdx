@@ -1,0 +1,214 @@
+---
+title: Multiplayer — identity, membership and presence
+description: How Control Center models humans and agents as co-equal participants, what actually gates access to a workspace and why live awareness and shared records travel on two different lanes.
+---
+
+Control Center works for a single operator, but the model underneath it is
+multi-actor from the start. Humans and agents message in the same channels,
+edit the same tickets and appear on the same roster. Making that safe and
+comprehensible comes down to three decisions: **who counts as an actor**,
+**what gates access** and **which state is shared durably versus merely
+broadcast live**.
+
+## Principals: users and agents are co-equal actors
+
+Everything that records "who did this" — messages, tickets, reviews, plans,
+run logs, audit entries — resolves through a **Principal**, a sealed union of
+`UserPrincipal` and `AgentPrincipal` with a compact wire form
+(`user:<id>` / `agent:<id>`). Attribution never collapses N humans (or N
+agents) into one sentinel account, so a review left by an agent and a review
+left by a person are distinguishable everywhere they surface.
+
+Because the principal is the unit of identity, it is also the unit of
+containment:
+
+- **Rate limits are per principal, not per session.** The flood guard on
+  remote tool calls budgets by user, not by connection: all of a member's
+  devices draw from one shared sliding window (120 calls a minute, of which at
+  most 30 may mutate), so opening three devices doesn't triple anyone's
+  allowance and one noisy member can't starve the others.
+- **Undo is per principal.** Each client's action journal records only the
+  mutations _its_ principal performed. You can ⌘Z your own ticket edit; you
+  can't undo a teammate's — by the time you see it, the durable lane has
+  already resolved it (see below).
+
+## Membership is the access boundary — not the pairing key
+
+Two separate credentials answer two separate questions. The **pairing key**
+(see [Remote control and mobile](/manual/concepts/remote-control/))
+authenticates a _device_ to the server. **Membership** authorizes that
+device's user to act inside a _workspace_. A paired device whose user holds
+no membership in a workspace can neither read nor mutate it.
+
+Membership is one row per (workspace, user), stored in **that workspace's own
+database file** — so "who is in this workspace?" is an ordinary scoped read,
+while the inverse question, "which workspaces am I in?", necessarily spans
+files and is one of the few sanctioned cross-workspace fan-outs. It is what the
+workspace picker runs before any workspace has been chosen.
+
+Each row carries a role from a five-level, rank-ordered ladder:
+
+| Role     | May                                                                                                        |
+| -------- | ---------------------------------------------------------------------------------------------------------- |
+| `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
+| `admin`  | Manage members, invites, settings, destructive operations                                                  |
+| `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
+| `viewer` | Read-only across the workspace                                                                             |
+| `guest`  | Read-only like viewer, plus secret-exclusion globs and per-repo grant checks on every code-bearing surface |
+
+Every access decision reduces to "is the caller's role at least X". The floor
+is derived from the operation's kind unless it declares one explicitly: a read
+needs `guest`, a mutation needs `member`, a destructive operation needs
+`admin`. Per-object ACLs beyond the per-repo grants below are deliberately out
+of scope.
+
+**Invites** are how membership is granted, from Settings → Workspace →
+Members & roles. An admin mints a single-use code (as a link or QR) that
+expires after seven days by default; the server stores only the code's SHA-256
+hash and the code itself is shown exactly once. Redeeming it JIT-provisions
+the user, records membership at the invite's role (never `owner` — ownership is
+transferred explicitly, never granted by invite) and hands off to device
+pairing. Device credentials minted in the app are themselves time-boxed to 30
+days, so a leaked QR is not a permanent key.
+
+**Repo grants** sit beneath membership. Because the server holds full
+checkouts, workspace membership alone must never out-privilege the forge:
+every code-bearing surface — files, diffs, PR review, code search — checks
+the member's grant on _that repo_. Grants are per (workspace, user, repo) and
+ranked `none` → `read` → `review` → `write`, where `write` means driving
+agent runs that write to the repo. Absence of a row means `none`; owners and
+admins implicitly hold `write` on every linked repo and carry no rows at all.
+
+## Two lanes of collaboration state
+
+Control Center splits shared state into two lanes with opposite durability
+rules, because the two kinds of state fail in opposite ways.
+
+### The ephemeral presence lane
+
+Presence — who is online, where they are, what they're typing, what an agent
+is doing right now — is worthless the moment it is stale. If it were
+persisted, every reconnect would have to reconcile "the database says Sam is
+editing this ticket" against reality. So presence is **never written to the
+database**. It lives in an in-memory **presence hub** on the server: clients
+publish with `presence.update`, peers subscribe with `presence.watch` and
+entries expire automatically after three missed heartbeats (heartbeats run
+every 10 seconds; the hub sweeps every 5). There is nothing to reconcile —
+only to let lapse.
+
+Two properties keep the lane trustworthy:
+
+- **Identity comes from the session, never from client arguments.** The
+  server maps the connection's authenticated device to a user id; a client
+  can only ever update its own presence, so nobody can spoof another
+  participant's status or locus. An explicit `offline` update (disconnect or
+  the invisible toggle) removes the entry immediately.
+- **The roster is server-hubbed.** Peers never exchange presence directly,
+  so every participant sees the same roster regardless of topology. Agents
+  have no client, so the server _synthesizes_ their entries from live run
+  state — thinking, running, blocked on an approval gate, done — with a
+  single representative run deciding an agent's state and locus so
+  concurrent runs don't make the roster flap.
+
+Fan-out is tiered per consumer: desktop and web ride a full tier (at most
+one roster emission per 100 ms), the phone a summary tier (per 500 ms), so
+cursor-cadence updates can't melt the PWA.
+
+A participant's **locus** — where they currently are, down to the artifact —
+is a sealed union: `Channel`, `File` (repo + path + optional line), `Pr`,
+`Ticket`, `PlanNode`. Not every locus has somewhere to jump to: there is no
+file-viewer route, so a `File` locus renders as a label rather than a
+destination. The lane also carries **soft claims** ("Sam is editing this
+ticket", "an agent holds this worktree"): conflict _visibility_, not locks.
+Unknown locus kinds parse to null, so an old client simply doesn't render what
+it doesn't understand.
+
+### The durable shared lane
+
+Records that must survive — tickets, the shared channel Notes doc, messages —
+take the opposite path: authoritative, ordered and persisted. Concurrent
+edits resolve by **last-writer-wins in server receipt order**, never by
+client clocks. The resolution is deliberately fine-grained: ticket edits are
+_per-column_, so two people editing different fields of the same ticket both
+land and neither clobbers the other (workflow transitions keep optimistic
+locking instead); the channel Notes doc is one column, so the whole doc is
+LWW with soft claims on the presence lane making concurrent editing visible
+instead of locked. It is deliberately not a CRDT — the burden of proof is on
+the CRDT and receipt-order LWW plus visible claims covers the actual
+collaboration patterns.
+
+"Last writer" means **server receipt order**, never a client clock — a laptop
+with a skewed clock cannot win an edit it lost. Behind the durable lane sits
+the **sync feed**: SQLite triggers append every mutation to a per-workspace
+change log _inside the writing transaction_, allocating a monotonic
+per-workspace sequence number in the same transaction as the mutation itself.
+A server service tails that log into versioned delta frames in sequence order.
+Clients evolve from full snapshots to deltas; a gap in the sequence drops that
+store back to snapshot mode rather than misapplying frames.
+
+## Follow, steer, take over, hand back
+
+The presence lane isn't just a roster — it drives the collaboration verbs:
+
+- **Follow mode.** Click a participant and your client rides their locus,
+  navigating as they navigate. Follow is "until you act": the moment you
+  navigate under your own steam, follow detaches. A dismissible banner
+  announces when another participant is spotlighting (presenting) a channel
+  you're in.
+- **Steer.** A message to a running agent is queued as steering; the agent
+  re-reads it before resuming its next turn, so you can nudge a run
+  mid-flight without killing it.
+- **Take over.** Assuming control of a conversation pauses every active run
+  at its next clean turn boundary (external CLI runs, which have no safe
+  boundary, are stopped) behind a per-turn git snapshot, so the take-over is
+  reversible. A durable marker blocks new dispatches into the channel and
+  survives a server restart — the server never auto-resumes into a human's
+  half-finished edit. One live editor per worktree is a soft claim: a second
+  take-over is visible and refused, not silently merged.
+- **Hand back.** Returning control posts a structured diff summary of the
+  worktree to the channel, queues it as steering for the paused runs,
+  resumes them and clears the marker.
+
+## The autonomy dial
+
+Steering and take-over are interventions after the fact. The **autonomy dial**
+is the standing setting: per channel, per agent, set from the channel header,
+it decides what happens when an agent reaches a gated action.
+
+| Level             | Wire value        | Effect on a gated tool call                                                                                   |
+| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| Propose only      | `proposeOnly`     | Denied outright, with a reason the agent is told to relay — it can describe the action but not take it        |
+| Act with approval | `actWithApproval` | The fail-closed approval gate: one confirmation surfaces to a connected operator and no approver means denied |
+| Act freely        | `actFreely`       | Pre-approved, except where a hard `deny` guardrail rule applies — a deny rule always wins                     |
+| (unset)           | `null`            | Same as act-with-approval: the server's default                                                               |
+
+Two things sit outside the dial in both directions. A mode's own output verb is
+pinned and can never be denied, whatever the dial says — orchestrate mode was
+once structurally unable to emit its only deliverable because a preset denied
+the effect class that verb declares. And a hard `deny` from the action
+guardrails is not overridable by `actFreely`.
+
+:::note[The dial gates the built-in harness only]
+It is consulted by the harness loop's approval callback. An agent running on an
+external CLI or ACP adapter makes its own tool calls inside its own process,
+where Control Center has nothing to gate — see
+[The agent model](/manual/concepts/agent-model/).
+:::
+
+## Solo zero-regression
+
+All of this is additive. A solo operator's workflow is unchanged: with one
+human and no agents the presence hub has nothing to broadcast, so the lane
+emits its initial snapshot and then idles at zero traffic; the LWW and sync
+machinery is the same single-writer path it always was; and the pairing key
+remains the device credential it has always been — membership only starts
+governing access the moment a second principal joins.
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/): the boundary membership enforces
+- [Remote control and mobile](/manual/concepts/remote-control/): the pairing key and device credential side of identity
+- [The agent model](/manual/concepts/agent-model/): the agent half of the principal union
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/): the runs that steering and take-over pause and resume
+- [Guardrails](/manual/concepts/guardrails/): the effect-class policy the autonomy dial composes with
+- [Domain events](/manual/concepts/domain-events/): the bus that live updates ride

@@ -1,0 +1,1375 @@
+import 'package:cc_ui/src/tokens/design_system_palette.dart';
+import 'package:flutter/widgets.dart';
+
+/// design system semantic design tokens.
+///
+/// Names mirror the CSS variables in the design source (`--color-bg-primary`
+/// → [bgPrimary], `--color-text-secondary_hover` → [textSecondaryHover], …)
+/// so a token written by a designer maps to exactly one field here.
+///
+/// Read tokens inside widgets via the `context.designSystem` [BuildContext]
+/// extension (defined alongside `CcTheme`), which resolves the active
+/// [DesignSystemTokens] from the nearest `CcTheme` ancestor.
+final class DesignSystemTokens {
+  /// Creates [DesignSystemTokens].
+  const DesignSystemTokens({
+    // Backgrounds.
+    required this.bgPrimary,
+    required this.bgPrimaryHover,
+    required this.bgPrimaryAlt,
+    required this.bgPrimarySolid,
+    required this.bgSecondary,
+    required this.bgSecondaryHover,
+    required this.bgSecondaryAlt,
+    required this.bgSecondarySolid,
+    required this.bgTertiary,
+    required this.bgQuaternary,
+    required this.bgActive,
+    required this.bgDisabled,
+    required this.bgOverlay,
+    required this.bgBrandPrimary,
+    required this.bgBrandPrimaryAlt,
+    required this.bgBrandSecondary,
+    required this.bgBrandSolid,
+    required this.bgBrandSolidHover,
+    required this.bgBrandSection,
+    required this.bgBrandSectionSubtle,
+    required this.bgErrorPrimary,
+    required this.bgErrorSecondary,
+    required this.bgErrorSolid,
+    required this.bgErrorSolidHover,
+    required this.bgWarningPrimary,
+    required this.bgWarningSecondary,
+    required this.bgWarningSolid,
+    required this.bgSuccessPrimary,
+    required this.bgSuccessSecondary,
+    required this.bgSuccessSolid,
+    // Text.
+    required this.textPrimary,
+    required this.textSecondary,
+    required this.textSecondaryHover,
+    required this.textTertiary,
+    required this.textTertiaryHover,
+    required this.textQuaternary,
+    required this.textQuaternaryOnBrand,
+    required this.textPlaceholder,
+    required this.textDisabled,
+    required this.textWhite,
+    required this.textBrandPrimary,
+    required this.textBrandSecondary,
+    required this.textBrandSecondaryHover,
+    required this.textBrandTertiary,
+    required this.textBrandTertiaryAlt,
+    required this.textPrimaryOnBrand,
+    required this.textSecondaryOnBrand,
+    required this.textTertiaryOnBrand,
+    required this.textErrorPrimary,
+    required this.textErrorPrimaryHover,
+    required this.textWarningPrimary,
+    required this.textSuccessPrimary,
+    // Foreground (icons & decorative).
+    required this.fgPrimary,
+    required this.fgSecondary,
+    required this.fgSecondaryHover,
+    required this.fgTertiary,
+    required this.fgTertiaryHover,
+    required this.fgQuaternary,
+    required this.fgQuaternaryHover,
+    required this.fgDisabled,
+    required this.fgWhite,
+    required this.fgBrandPrimary,
+    required this.fgBrandPrimaryAlt,
+    required this.fgBrandSecondary,
+    required this.fgBrandSecondaryAlt,
+    required this.fgBrandSecondaryHover,
+    required this.fgErrorPrimary,
+    required this.fgErrorSecondary,
+    required this.fgWarningPrimary,
+    required this.fgWarningSecondary,
+    required this.fgSuccessPrimary,
+    required this.fgSuccessSecondary,
+    required this.fgMergedPrimary,
+    // Borders.
+    required this.borderPrimary,
+    required this.borderSecondary,
+    required this.borderSecondaryAlt,
+    required this.borderTertiary,
+    required this.borderDisabled,
+    required this.borderBrand,
+    required this.borderBrandAlt,
+    required this.borderBrandSolid,
+    required this.borderBrandSolidHover,
+    required this.borderError,
+    required this.borderErrorSubtle,
+    // Focus rings.
+    required this.focusRing,
+    required this.focusRingError,
+    // Design-system aliases (near-white / ink-black / orange system).
+    required this.canvas,
+    required this.surface,
+    required this.panel,
+    required this.sidebar,
+    required this.topbar,
+    required this.rail,
+    required this.fg,
+    required this.muted,
+    required this.idle,
+    required this.borderSoft,
+    required this.lineStrong,
+    required this.hover,
+    required this.hoverStrong,
+    required this.accent,
+    required this.accentOn,
+    required this.accentHover,
+    required this.accentActive,
+    required this.accentSoft,
+    required this.success,
+    required this.successSoft,
+    required this.warn,
+    required this.warnSoft,
+    required this.danger,
+    required this.dangerSoft,
+    required this.sunshine900,
+    required this.sunshine700,
+    required this.sunshine500,
+    required this.sunshine300,
+    required this.brightYellow,
+    required this.blockEdge,
+    required this.chartCategorical,
+  });
+
+  /// design system tokens for a light theme.
+  factory DesignSystemTokens.light() => const DesignSystemTokens(
+    bgPrimary: DesignSystemPalette.white,
+    // Hover wash on a white surface — the warm-neutral surface (#f2f0e9),
+    // a clearly-visible ~5% step. (gray50 = the page canvas, which made
+    // row/card hovers blend into the background.)
+    bgPrimaryHover: DesignSystemPalette.gray100,
+    bgPrimaryAlt: DesignSystemPalette.white,
+    bgPrimarySolid: DesignSystemPalette.gray950,
+    bgSecondary: DesignSystemPalette.gray50,
+    bgSecondaryHover: DesignSystemPalette.gray100,
+    bgSecondaryAlt: DesignSystemPalette.gray50,
+    bgSecondarySolid: DesignSystemPalette.gray600,
+    bgTertiary: DesignSystemPalette.gray100,
+    bgQuaternary: DesignSystemPalette.gray200,
+    bgActive: DesignSystemPalette.gray50,
+    bgDisabled: DesignSystemPalette.gray100,
+    bgOverlay: DesignSystemPalette.gray950,
+    bgBrandPrimary: DesignSystemPalette.brand50,
+    bgBrandPrimaryAlt: DesignSystemPalette.brand50,
+    bgBrandSecondary: DesignSystemPalette.brand100,
+    // a11y: solid brand fill darkened so white text clears 4.5:1 (5.9:1);
+    // bright brand600 was only 3.3:1 with white.
+    bgBrandSolid: DesignSystemPalette.brand850,
+    bgBrandSolidHover: DesignSystemPalette.brand900,
+    bgBrandSection: DesignSystemPalette.brand800,
+    bgBrandSectionSubtle: DesignSystemPalette.brand800,
+    bgErrorPrimary: DesignSystemPalette.red50,
+    bgErrorSecondary: DesignSystemPalette.red100,
+    // a11y: solid status fills darkened so white text clears 4.5:1
+    // (red600 was 4.0:1, green600 was 3.3:1 with white).
+    bgErrorSolid: DesignSystemPalette.red700,
+    bgErrorSolidHover: DesignSystemPalette.red800,
+    bgWarningPrimary: DesignSystemPalette.yellow50,
+    bgWarningSecondary: DesignSystemPalette.yellow100,
+    bgWarningSolid: DesignSystemPalette.yellow600,
+    bgSuccessPrimary: DesignSystemPalette.green50,
+    bgSuccessSecondary: DesignSystemPalette.green100,
+    bgSuccessSolid: DesignSystemPalette.green700,
+    textPrimary: DesignSystemPalette.gray900,
+    textSecondary: DesignSystemPalette.gray700,
+    textSecondaryHover: DesignSystemPalette.gray800,
+    textTertiary: DesignSystemPalette.gray600,
+    textTertiaryHover: DesignSystemPalette.gray700,
+    // a11y: quaternary/placeholder darkened from gray500 (#8C8578, 3.5:1 —
+    // sub-AA) to a warm mid gray that clears 4.5:1 on canvas/surface/panel.
+    textQuaternary: DesignSystemPalette.gray550,
+    textQuaternaryOnBrand: DesignSystemPalette.brand50,
+    textPlaceholder: DesignSystemPalette.gray550,
+    textDisabled: DesignSystemPalette.gray500,
+    textWhite: DesignSystemPalette.white,
+    textBrandPrimary: DesignSystemPalette.brand900,
+    // a11y: brand text darkened so colored labels/links clear 4.5:1 on the
+    // near-white canvas (bright #FA520F was only 3.2:1).
+    textBrandSecondary: DesignSystemPalette.brand900,
+    textBrandSecondaryHover: DesignSystemPalette.brand800,
+    textBrandTertiary: DesignSystemPalette.brand850,
+    textBrandTertiaryAlt: DesignSystemPalette.brand850,
+    textPrimaryOnBrand: DesignSystemPalette.white,
+    // a11y: light peach clears 4.5:1 on the darkened solid brand fill
+    // (bright brand200 was 2.2:1).
+    textSecondaryOnBrand: DesignSystemPalette.brand50,
+    textTertiaryOnBrand: DesignSystemPalette.brand50,
+    // a11y: status text darkened one step so it clears 4.5:1 on its own
+    // soft tint (yellow/green were 2.7–2.8:1).
+    textErrorPrimary: DesignSystemPalette.red700,
+    textErrorPrimaryHover: DesignSystemPalette.red700,
+    textWarningPrimary: DesignSystemPalette.yellow800,
+    textSuccessPrimary: DesignSystemPalette.green700,
+    fgPrimary: DesignSystemPalette.gray900,
+    fgSecondary: DesignSystemPalette.gray700,
+    fgSecondaryHover: DesignSystemPalette.gray800,
+    fgTertiary: DesignSystemPalette.gray600,
+    fgTertiaryHover: DesignSystemPalette.gray700,
+    fgQuaternary: DesignSystemPalette.gray500,
+    fgQuaternaryHover: DesignSystemPalette.gray600,
+    fgDisabled: DesignSystemPalette.gray400,
+    fgWhite: DesignSystemPalette.white,
+    // a11y: brand icons darkened to the accessible burnt accent so they
+    // clear the 3:1 non-text floor on canvas/panel with margin (bright
+    // brand500/600 were 2.9–3.2:1). Bright #FA520F is reserved for the
+    // bounded brand graphics (logo mosaic, golden-hour horizon).
+    fgBrandPrimary: DesignSystemPalette.brand850,
+    fgBrandPrimaryAlt: DesignSystemPalette.brand850,
+    fgBrandSecondary: DesignSystemPalette.brand850,
+    fgBrandSecondaryAlt: DesignSystemPalette.brand850,
+    fgBrandSecondaryHover: DesignSystemPalette.brand900,
+    fgErrorPrimary: DesignSystemPalette.red600,
+    fgErrorSecondary: DesignSystemPalette.red500,
+    // a11y: warning icon darkened to a gold that clears 3:1 on canvas
+    // (bright yellow was ~1.9:1 — near-invisible on near-white).
+    fgWarningPrimary: DesignSystemPalette.yellow650,
+    fgWarningSecondary: DesignSystemPalette.yellow650,
+    fgSuccessPrimary: DesignSystemPalette.green600,
+    fgSuccessSecondary: DesignSystemPalette.green500,
+    // Merged PR status — purple (GitHub's "merged" semantics).
+    fgMergedPrimary: DesignSystemPalette.purple600,
+    borderPrimary: DesignSystemPalette.gray300,
+    borderSecondary: DesignSystemPalette.gray200,
+    borderSecondaryAlt: Color(0x1A1F1F1F), // fg @ 10% (warm, never pure black)
+    borderTertiary: DesignSystemPalette.gray100,
+    borderDisabled: DesignSystemPalette.gray200,
+    // a11y: brand borders + focus ring darkened to the accessible burnt
+    // accent so state boundaries clear the 3:1 non-text floor with margin
+    // (bright brand500/600 were 2.9–3.2:1 on canvas).
+    borderBrand: DesignSystemPalette.brand850,
+    borderBrandAlt: DesignSystemPalette.brand850,
+    borderBrandSolid: DesignSystemPalette.brand850,
+    borderBrandSolidHover: DesignSystemPalette.brand900,
+    borderError: DesignSystemPalette.red500,
+    borderErrorSubtle: DesignSystemPalette.red300,
+    focusRing: DesignSystemPalette.brand850,
+    focusRingError: DesignSystemPalette.red500,
+    // Design-system aliases.
+    canvas: DesignSystemPalette.gray50,
+    surface: DesignSystemPalette.gray100,
+    panel: DesignSystemPalette.white,
+    sidebar: Color(0xFFF7F5F0),
+    topbar: DesignSystemPalette.gray25,
+    rail: Color(0xFFFAF9F5),
+    fg: DesignSystemPalette.gray900,
+    muted: DesignSystemPalette.gray600,
+    idle: Color(0x611F1F1F),
+    borderSoft: Color(0xFFEFECE4),
+    lineStrong: Color(0x291F1F1F),
+    hover: Color(0x0D1F1F1F),
+    hoverStrong: Color(0x141F1F1F),
+    // a11y (Option A): the functional accent is the brand's accessible
+    // burnt orange (#B0390C) — white on it clears 4.5:1 (5.9:1) and it
+    // clears 4.5:1 as colored text on the canvas. The bright signal
+    // #FA520F is reserved for the bounded brand graphics (logo mosaic,
+    // golden-hour horizon), where it is large/decorative.
+    accent: DesignSystemPalette.brand850,
+    accentOn: DesignSystemPalette.white,
+    accentHover: DesignSystemPalette.brand800,
+    accentActive: DesignSystemPalette.brand900,
+    accentSoft: Color(0x1FB0390C),
+    success: DesignSystemPalette.green600,
+    successSoft: Color(0x2417A34A),
+    // a11y: warn darkened to a gold so the status dot/icon clears the 3:1
+    // non-text floor on the near-white canvas (bright yellow was 1.9:1).
+    warn: DesignSystemPalette.yellow650,
+    warnSoft: Color(0x33B8780A),
+    danger: DesignSystemPalette.red600,
+    dangerSoft: Color(0x1FDC2626),
+    sunshine900: DesignSystemPalette.sunshine900,
+    sunshine700: DesignSystemPalette.sunshine700,
+    sunshine500: DesignSystemPalette.sunshine500,
+    sunshine300: DesignSystemPalette.sunshine300,
+    brightYellow: DesignSystemPalette.brightYellow,
+    blockEdge: DesignSystemPalette.blockEdge,
+    chartCategorical: [
+      DesignSystemPalette.brand600,
+      DesignSystemPalette.indigo600,
+      DesignSystemPalette.green600,
+      DesignSystemPalette.amber600,
+      DesignSystemPalette.purple600,
+      DesignSystemPalette.pink600,
+    ],
+  );
+
+  /// design system tokens for a dark theme — mirrors the design source verbatim.
+  factory DesignSystemTokens.dark() => const DesignSystemTokens(
+    bgPrimary: DesignSystemPalette.gray950,
+    bgPrimaryHover: DesignSystemPalette.gray900,
+    bgPrimaryAlt: DesignSystemPalette.gray900,
+    bgPrimarySolid: DesignSystemPalette.gray900,
+    bgSecondary: DesignSystemPalette.gray900,
+    bgSecondaryHover: DesignSystemPalette.gray800,
+    bgSecondaryAlt: DesignSystemPalette.gray950,
+    bgSecondarySolid: DesignSystemPalette.gray600,
+    bgTertiary: DesignSystemPalette.gray800,
+    bgQuaternary: DesignSystemPalette.gray700,
+    bgActive: DesignSystemPalette.gray800,
+    bgDisabled: DesignSystemPalette.gray800,
+    bgOverlay: DesignSystemPalette.gray800,
+    // a11y: the "subtle brand background" role must be a dark tint in dark
+    // mode (like error/warn/success use their 950), NOT a solid flame. This
+    // was brand500 — a saturated fill that made every selected surface
+    // (server picker, agent roster, log-level, pipeline/graph nodes) stack
+    // near-white/muted text at 1.5–3.1:1. brand950 restores AAA text.
+    bgBrandPrimary: DesignSystemPalette.brand950,
+    bgBrandPrimaryAlt: DesignSystemPalette.gray900,
+    bgBrandSecondary: DesignSystemPalette.brand900,
+    // a11y: solid brand fill darkened so white text clears 4.5:1 (5.3:1);
+    // brand600 was 3.3:1 and brand500 was 3.0:1 with white.
+    bgBrandSolid: DesignSystemPalette.brand800,
+    bgBrandSolidHover: DesignSystemPalette.brand900,
+    bgBrandSection: DesignSystemPalette.gray900,
+    bgBrandSectionSubtle: DesignSystemPalette.gray950,
+    bgErrorPrimary: DesignSystemPalette.red950,
+    bgErrorSecondary: DesignSystemPalette.red600,
+    bgErrorSolid: DesignSystemPalette.red600,
+    // a11y: darker hover so white clears 4.5:1 (red500 was 3.7:1).
+    bgErrorSolidHover: DesignSystemPalette.red700,
+    bgWarningPrimary: DesignSystemPalette.yellow950,
+    bgWarningSecondary: DesignSystemPalette.yellow600,
+    bgWarningSolid: DesignSystemPalette.yellow600,
+    bgSuccessPrimary: DesignSystemPalette.green950,
+    bgSuccessSecondary: DesignSystemPalette.green600,
+    // a11y: darker so white clears 4.5:1 (green600 was 3.3:1).
+    bgSuccessSolid: DesignSystemPalette.green700,
+    textPrimary: DesignSystemPalette.gray50,
+    textSecondary: DesignSystemPalette.gray300,
+    textSecondaryHover: DesignSystemPalette.gray200,
+    textTertiary: DesignSystemPalette.gray400,
+    textTertiaryHover: DesignSystemPalette.gray300,
+    textQuaternary: DesignSystemPalette.gray400,
+    // a11y: light peach clears 4.5:1 on the darkened solid brand fill.
+    textQuaternaryOnBrand: DesignSystemPalette.brand50,
+    // a11y: placeholder lightened so it clears 4.5:1 on the dark field fill
+    // (gray500 was 4.2:1).
+    textPlaceholder: DesignSystemPalette.gray450,
+    textDisabled: DesignSystemPalette.gray500,
+    textWhite: DesignSystemPalette.white,
+    textBrandPrimary: DesignSystemPalette.gray50,
+    textBrandSecondary: DesignSystemPalette.gray300,
+    textBrandSecondaryHover: DesignSystemPalette.gray200,
+    textBrandTertiary: DesignSystemPalette.gray400,
+    textBrandTertiaryAlt: DesignSystemPalette.gray50,
+    textPrimaryOnBrand: DesignSystemPalette.gray50,
+    textSecondaryOnBrand: DesignSystemPalette.brand50,
+    textTertiaryOnBrand: DesignSystemPalette.brand50,
+    textErrorPrimary: DesignSystemPalette.red400,
+    textErrorPrimaryHover: DesignSystemPalette.red300,
+    textWarningPrimary: DesignSystemPalette.yellow400,
+    textSuccessPrimary: DesignSystemPalette.green400,
+    fgPrimary: DesignSystemPalette.white,
+    fgSecondary: DesignSystemPalette.gray300,
+    fgSecondaryHover: DesignSystemPalette.gray200,
+    fgTertiary: DesignSystemPalette.gray400,
+    fgTertiaryHover: DesignSystemPalette.gray300,
+    fgQuaternary: DesignSystemPalette.gray600,
+    fgQuaternaryHover: DesignSystemPalette.gray500,
+    fgDisabled: DesignSystemPalette.gray500,
+    fgWhite: DesignSystemPalette.white,
+    fgBrandPrimary: DesignSystemPalette.brand500,
+    fgBrandPrimaryAlt: DesignSystemPalette.gray300,
+    fgBrandSecondary: DesignSystemPalette.brand500,
+    fgBrandSecondaryAlt: DesignSystemPalette.gray600,
+    fgBrandSecondaryHover: DesignSystemPalette.gray500,
+    fgErrorPrimary: DesignSystemPalette.red500,
+    fgErrorSecondary: DesignSystemPalette.red400,
+    fgWarningPrimary: DesignSystemPalette.yellow500,
+    fgWarningSecondary: DesignSystemPalette.yellow400,
+    fgSuccessPrimary: DesignSystemPalette.green500,
+    fgSuccessSecondary: DesignSystemPalette.green400,
+    fgMergedPrimary: DesignSystemPalette.purple500,
+    borderPrimary: DesignSystemPalette.gray700,
+    borderSecondary: DesignSystemPalette.gray800,
+    borderSecondaryAlt: DesignSystemPalette.gray800,
+    borderTertiary: DesignSystemPalette.gray800,
+    borderDisabled: DesignSystemPalette.gray700,
+    borderBrand: DesignSystemPalette.brand400,
+    borderBrandAlt: DesignSystemPalette.gray700,
+    borderBrandSolid: DesignSystemPalette.brand600,
+    borderBrandSolidHover: DesignSystemPalette.brand500,
+    borderError: DesignSystemPalette.red400,
+    borderErrorSubtle: DesignSystemPalette.red500,
+    focusRing: DesignSystemPalette.brand500,
+    focusRingError: DesignSystemPalette.red500,
+    // Design-system aliases (warm dark derivation of the light system).
+    canvas: DesignSystemPalette.gray950,
+    surface: DesignSystemPalette.gray800,
+    panel: DesignSystemPalette.gray900,
+    sidebar: Color(0xFF121110),
+    topbar: DesignSystemPalette.gray950,
+    rail: Color(0xFF1B1A17),
+    fg: DesignSystemPalette.gray50,
+    muted: DesignSystemPalette.gray400,
+    idle: Color(0x61FCFBF9),
+    borderSoft: DesignSystemPalette.gray800,
+    lineStrong: Color(0x29FCFBF9),
+    hover: Color(0x0DFCFBF9),
+    hoverStrong: Color(0x14FCFBF9),
+    accent: DesignSystemPalette.brand500,
+    accentOn: DesignSystemPalette.white,
+    accentHover: DesignSystemPalette.brand400,
+    accentActive: DesignSystemPalette.brand600,
+    accentSoft: Color(0x1FFB6424),
+    success: DesignSystemPalette.green400,
+    successSoft: Color(0x2447CD89),
+    warn: DesignSystemPalette.yellow400,
+    warnSoft: Color(0x33FAC515),
+    danger: DesignSystemPalette.red400,
+    dangerSoft: Color(0x1FF97066),
+    sunshine900: DesignSystemPalette.sunshine900,
+    sunshine700: DesignSystemPalette.sunshine700,
+    sunshine500: DesignSystemPalette.sunshine500,
+    sunshine300: DesignSystemPalette.sunshine300,
+    brightYellow: DesignSystemPalette.brightYellow,
+    blockEdge: DesignSystemPalette.blockEdge,
+    chartCategorical: [
+      DesignSystemPalette.brand500,
+      DesignSystemPalette.indigo400,
+      DesignSystemPalette.green500,
+      DesignSystemPalette.amber500,
+      DesignSystemPalette.purple400,
+      DesignSystemPalette.pink500,
+    ],
+  );
+
+  // Backgrounds.
+  /// bgPrimary — background color.
+  final Color bgPrimary;
+
+  /// bgPrimaryHover — background color.
+  final Color bgPrimaryHover;
+
+  /// bgPrimaryAlt — background color.
+  final Color bgPrimaryAlt;
+
+  /// bgPrimarySolid — background color.
+  final Color bgPrimarySolid;
+
+  /// bgSecondary — background color.
+  final Color bgSecondary;
+
+  /// bgSecondaryHover — background color.
+  final Color bgSecondaryHover;
+
+  /// bgSecondaryAlt — background color.
+  final Color bgSecondaryAlt;
+
+  /// bgSecondarySolid — background color.
+  final Color bgSecondarySolid;
+
+  /// bgTertiary — background color.
+  final Color bgTertiary;
+
+  /// bgQuaternary — background color.
+  final Color bgQuaternary;
+
+  /// bgActive — background color.
+  final Color bgActive;
+
+  /// bgDisabled — background color.
+  final Color bgDisabled;
+
+  /// bgOverlay — background color.
+  final Color bgOverlay;
+
+  /// bgBrandPrimary — background color.
+  final Color bgBrandPrimary;
+
+  /// bgBrandPrimaryAlt — background color.
+  final Color bgBrandPrimaryAlt;
+
+  /// bgBrandSecondary — background color.
+  final Color bgBrandSecondary;
+
+  /// bgBrandSolid — background color.
+  final Color bgBrandSolid;
+
+  /// bgBrandSolidHover — background color.
+  final Color bgBrandSolidHover;
+
+  /// bgBrandSection — background color.
+  final Color bgBrandSection;
+
+  /// bgBrandSectionSubtle — background color.
+  final Color bgBrandSectionSubtle;
+
+  /// bgErrorPrimary — background color.
+  final Color bgErrorPrimary;
+
+  /// bgErrorSecondary — background color.
+  final Color bgErrorSecondary;
+
+  /// bgErrorSolid — background color.
+  final Color bgErrorSolid;
+
+  /// bgErrorSolidHover — background color.
+  final Color bgErrorSolidHover;
+
+  /// bgWarningPrimary — background color.
+  final Color bgWarningPrimary;
+
+  /// bgWarningSecondary — background color.
+  final Color bgWarningSecondary;
+
+  /// bgWarningSolid — background color.
+  final Color bgWarningSolid;
+
+  /// bgSuccessPrimary — background color.
+  final Color bgSuccessPrimary;
+
+  /// bgSuccessSecondary — background color.
+  final Color bgSuccessSecondary;
+
+  /// bgSuccessSolid — background color.
+  final Color bgSuccessSolid;
+  // Text.
+  /// textPrimary — text color.
+  final Color textPrimary;
+
+  /// textSecondary — text color.
+  final Color textSecondary;
+
+  /// textSecondaryHover — text color.
+  final Color textSecondaryHover;
+
+  /// textTertiary — text color.
+  final Color textTertiary;
+
+  /// textTertiaryHover — text color.
+  final Color textTertiaryHover;
+
+  /// textQuaternary — text color.
+  final Color textQuaternary;
+
+  /// textQuaternaryOnBrand — text color.
+  final Color textQuaternaryOnBrand;
+
+  /// textPlaceholder — text color.
+  final Color textPlaceholder;
+
+  /// textDisabled — text color.
+  final Color textDisabled;
+
+  /// textWhite — text color.
+  final Color textWhite;
+
+  /// textBrandPrimary — text color.
+  final Color textBrandPrimary;
+
+  /// textBrandSecondary — text color.
+  final Color textBrandSecondary;
+
+  /// textBrandSecondaryHover — text color.
+  final Color textBrandSecondaryHover;
+
+  /// textBrandTertiary — text color.
+  final Color textBrandTertiary;
+
+  /// textBrandTertiaryAlt — text color.
+  final Color textBrandTertiaryAlt;
+
+  /// textPrimaryOnBrand — text color.
+  final Color textPrimaryOnBrand;
+
+  /// textSecondaryOnBrand — text color.
+  final Color textSecondaryOnBrand;
+
+  /// textTertiaryOnBrand — text color.
+  final Color textTertiaryOnBrand;
+
+  /// textErrorPrimary — text color.
+  final Color textErrorPrimary;
+
+  /// textErrorPrimaryHover — text color.
+  final Color textErrorPrimaryHover;
+
+  /// textWarningPrimary — text color.
+  final Color textWarningPrimary;
+
+  /// textSuccessPrimary — text color.
+  final Color textSuccessPrimary;
+  // Foreground.
+  /// fgPrimary — foreground color.
+  final Color fgPrimary;
+
+  /// fgSecondary — foreground color.
+  final Color fgSecondary;
+
+  /// fgSecondaryHover — foreground color.
+  final Color fgSecondaryHover;
+
+  /// fgTertiary — foreground color.
+  final Color fgTertiary;
+
+  /// fgTertiaryHover — foreground color.
+  final Color fgTertiaryHover;
+
+  /// fgQuaternary — foreground color.
+  final Color fgQuaternary;
+
+  /// fgQuaternaryHover — foreground color.
+  final Color fgQuaternaryHover;
+
+  /// fgDisabled — foreground color.
+  final Color fgDisabled;
+
+  /// fgWhite — foreground color.
+  final Color fgWhite;
+
+  /// fgBrandPrimary — foreground color.
+  final Color fgBrandPrimary;
+
+  /// fgBrandPrimaryAlt — foreground color.
+  final Color fgBrandPrimaryAlt;
+
+  /// fgBrandSecondary — foreground color.
+  final Color fgBrandSecondary;
+
+  /// fgBrandSecondaryAlt — foreground color.
+  final Color fgBrandSecondaryAlt;
+
+  /// fgBrandSecondaryHover — foreground color.
+  final Color fgBrandSecondaryHover;
+
+  /// fgErrorPrimary — foreground color.
+  final Color fgErrorPrimary;
+
+  /// fgErrorSecondary — foreground color.
+  final Color fgErrorSecondary;
+
+  /// fgWarningPrimary — foreground color.
+  final Color fgWarningPrimary;
+
+  /// fgWarningSecondary — foreground color.
+  final Color fgWarningSecondary;
+
+  /// fgSuccessPrimary — foreground color.
+  final Color fgSuccessPrimary;
+
+  /// fgSuccessSecondary — foreground color.
+  final Color fgSuccessSecondary;
+
+  /// fgMergedPrimary — foreground color for the "merged" PR status (purple).
+  final Color fgMergedPrimary;
+  // Borders.
+  /// borderPrimary — border color.
+  final Color borderPrimary;
+
+  /// borderSecondary — border color.
+  final Color borderSecondary;
+
+  /// borderSecondaryAlt — border color.
+  final Color borderSecondaryAlt;
+
+  /// borderTertiary — border color.
+  final Color borderTertiary;
+
+  /// borderDisabled — border color.
+  final Color borderDisabled;
+
+  /// borderBrand — border color.
+  final Color borderBrand;
+
+  /// borderBrandAlt — border color.
+  final Color borderBrandAlt;
+
+  /// borderBrandSolid — border color.
+  final Color borderBrandSolid;
+
+  /// borderBrandSolidHover — border color.
+  final Color borderBrandSolidHover;
+
+  /// borderError — border color.
+  final Color borderError;
+
+  /// borderErrorSubtle — border color.
+  final Color borderErrorSubtle;
+  // Focus rings.
+  /// focusRing — focus ring color.
+  final Color focusRing;
+
+  /// focusRingError — focus ring color.
+  final Color focusRingError;
+
+  // ── Design-system aliases (near-white / ink-black / orange) ──
+  /// canvas — the near-white page background.
+  final Color canvas;
+
+  /// surface — warm-neutral secondary fill (chips, secondary buttons).
+  final Color surface;
+
+  /// panel — pure-white data surface (cards, panels, popovers).
+  final Color panel;
+
+  /// sidebar — the app-shell rail surface.
+  final Color sidebar;
+
+  /// topbar — the app-shell top bar surface.
+  final Color topbar;
+
+  /// rail — the in-panel group-header rail.
+  final Color rail;
+
+  /// fg — ink black, primary text/chrome.
+  final Color fg;
+
+  /// muted — secondary text & metadata.
+  final Color muted;
+
+  /// idle — disabled / faint dots / tertiary meta (fg @ 38%).
+  final Color idle;
+
+  /// borderSoft — the softest hairline.
+  final Color borderSoft;
+
+  /// lineStrong — dividers & DAG edges that must show (fg @ 16%).
+  final Color lineStrong;
+
+  /// hover — row / nav hover wash (fg @ 5%).
+  final Color hover;
+
+  /// hoverStrong — count chips / pressed wash (fg @ 8%).
+  final Color hoverStrong;
+
+  /// accent — the single orange signal.
+  final Color accent;
+
+  /// accentOn — text/icon on accent.
+  final Color accentOn;
+
+  /// accentHover — accent hover warm-up (Flame).
+  final Color accentHover;
+
+  /// accentActive — accent pressed state.
+  final Color accentActive;
+
+  /// accentSoft — accent @ 12% (tinted backgrounds, active chips).
+  final Color accentSoft;
+
+  /// success — status success.
+  final Color success;
+
+  /// successSoft — success pill background.
+  final Color successSoft;
+
+  /// warn — status warning.
+  final Color warn;
+
+  /// warnSoft — warning pill background.
+  final Color warnSoft;
+
+  /// danger — status danger / error.
+  final Color danger;
+
+  /// dangerSoft — danger pill background.
+  final Color dangerSoft;
+
+  /// sunshine900 — golden-hour brand graphics only.
+  final Color sunshine900;
+
+  /// sunshine700 — golden-hour brand graphics only.
+  final Color sunshine700;
+
+  /// sunshine500 — golden-hour brand graphics only.
+  final Color sunshine500;
+
+  /// sunshine300 — golden-hour brand graphics only.
+  final Color sunshine300;
+
+  /// brightYellow — top note of the brand mosaic.
+  final Color brightYellow;
+
+  /// blockEdge — burnt-orange terminus of the brand mosaic.
+  final Color blockEdge;
+
+  /// Categorical series ramp for charts, in assignment order.
+  ///
+  /// The first shared chart palette in the app: every existing chart hard-codes
+  /// `theme.colorScheme.primary`, which cannot distinguish two series. Hues are
+  /// spaced far enough apart to stay separable at small sizes and in both
+  /// themes and charts pair them with labelled legends — color is never the
+  /// only channel carrying the series identity (WCAG: no status-by-color-alone).
+  final List<Color> chartCategorical;
+
+  /// A copy of this token set with the given fields replaced.
+  ///
+  /// Note the result is a NEW instance: token equality is by value (see
+  /// `operator ==`), which is what keeps `CcTheme.updateShouldNotify` honest
+  /// for a derived set.
+  DesignSystemTokens copyWith({
+    Color? bgPrimary,
+    Color? bgPrimaryHover,
+    Color? bgPrimaryAlt,
+    Color? bgPrimarySolid,
+    Color? bgSecondary,
+    Color? bgSecondaryHover,
+    Color? bgSecondaryAlt,
+    Color? bgSecondarySolid,
+    Color? bgTertiary,
+    Color? bgQuaternary,
+    Color? bgActive,
+    Color? bgDisabled,
+    Color? bgOverlay,
+    Color? bgBrandPrimary,
+    Color? bgBrandPrimaryAlt,
+    Color? bgBrandSecondary,
+    Color? bgBrandSolid,
+    Color? bgBrandSolidHover,
+    Color? bgBrandSection,
+    Color? bgBrandSectionSubtle,
+    Color? bgErrorPrimary,
+    Color? bgErrorSecondary,
+    Color? bgErrorSolid,
+    Color? bgErrorSolidHover,
+    Color? bgWarningPrimary,
+    Color? bgWarningSecondary,
+    Color? bgWarningSolid,
+    Color? bgSuccessPrimary,
+    Color? bgSuccessSecondary,
+    Color? bgSuccessSolid,
+    Color? textPrimary,
+    Color? textSecondary,
+    Color? textSecondaryHover,
+    Color? textTertiary,
+    Color? textTertiaryHover,
+    Color? textQuaternary,
+    Color? textQuaternaryOnBrand,
+    Color? textPlaceholder,
+    Color? textDisabled,
+    Color? textWhite,
+    Color? textBrandPrimary,
+    Color? textBrandSecondary,
+    Color? textBrandSecondaryHover,
+    Color? textBrandTertiary,
+    Color? textBrandTertiaryAlt,
+    Color? textPrimaryOnBrand,
+    Color? textSecondaryOnBrand,
+    Color? textTertiaryOnBrand,
+    Color? textErrorPrimary,
+    Color? textErrorPrimaryHover,
+    Color? textWarningPrimary,
+    Color? textSuccessPrimary,
+    Color? fgPrimary,
+    Color? fgSecondary,
+    Color? fgSecondaryHover,
+    Color? fgTertiary,
+    Color? fgTertiaryHover,
+    Color? fgQuaternary,
+    Color? fgQuaternaryHover,
+    Color? fgDisabled,
+    Color? fgWhite,
+    Color? fgBrandPrimary,
+    Color? fgBrandPrimaryAlt,
+    Color? fgBrandSecondary,
+    Color? fgBrandSecondaryAlt,
+    Color? fgBrandSecondaryHover,
+    Color? fgErrorPrimary,
+    Color? fgErrorSecondary,
+    Color? fgWarningPrimary,
+    Color? fgWarningSecondary,
+    Color? fgSuccessPrimary,
+    Color? fgSuccessSecondary,
+    Color? fgMergedPrimary,
+    Color? borderPrimary,
+    Color? borderSecondary,
+    Color? borderSecondaryAlt,
+    Color? borderTertiary,
+    Color? borderDisabled,
+    Color? borderBrand,
+    Color? borderBrandAlt,
+    Color? borderBrandSolid,
+    Color? borderBrandSolidHover,
+    Color? borderError,
+    Color? borderErrorSubtle,
+    Color? focusRing,
+    Color? focusRingError,
+    Color? canvas,
+    Color? surface,
+    Color? panel,
+    Color? sidebar,
+    Color? topbar,
+    Color? rail,
+    Color? fg,
+    Color? muted,
+    Color? idle,
+    Color? borderSoft,
+    Color? lineStrong,
+    Color? hover,
+    Color? hoverStrong,
+    Color? accent,
+    Color? accentOn,
+    Color? accentHover,
+    Color? accentActive,
+    Color? accentSoft,
+    Color? success,
+    Color? successSoft,
+    Color? warn,
+    Color? warnSoft,
+    Color? danger,
+    Color? dangerSoft,
+    Color? sunshine900,
+    Color? sunshine700,
+    Color? sunshine500,
+    Color? sunshine300,
+    Color? brightYellow,
+    Color? blockEdge,
+    List<Color>? chartCategorical,
+  }) {
+    return DesignSystemTokens(
+      bgPrimary: bgPrimary ?? this.bgPrimary,
+      bgPrimaryHover: bgPrimaryHover ?? this.bgPrimaryHover,
+      bgPrimaryAlt: bgPrimaryAlt ?? this.bgPrimaryAlt,
+      bgPrimarySolid: bgPrimarySolid ?? this.bgPrimarySolid,
+      bgSecondary: bgSecondary ?? this.bgSecondary,
+      bgSecondaryHover: bgSecondaryHover ?? this.bgSecondaryHover,
+      bgSecondaryAlt: bgSecondaryAlt ?? this.bgSecondaryAlt,
+      bgSecondarySolid: bgSecondarySolid ?? this.bgSecondarySolid,
+      bgTertiary: bgTertiary ?? this.bgTertiary,
+      bgQuaternary: bgQuaternary ?? this.bgQuaternary,
+      bgActive: bgActive ?? this.bgActive,
+      bgDisabled: bgDisabled ?? this.bgDisabled,
+      bgOverlay: bgOverlay ?? this.bgOverlay,
+      bgBrandPrimary: bgBrandPrimary ?? this.bgBrandPrimary,
+      bgBrandPrimaryAlt: bgBrandPrimaryAlt ?? this.bgBrandPrimaryAlt,
+      bgBrandSecondary: bgBrandSecondary ?? this.bgBrandSecondary,
+      bgBrandSolid: bgBrandSolid ?? this.bgBrandSolid,
+      bgBrandSolidHover: bgBrandSolidHover ?? this.bgBrandSolidHover,
+      bgBrandSection: bgBrandSection ?? this.bgBrandSection,
+      bgBrandSectionSubtle: bgBrandSectionSubtle ?? this.bgBrandSectionSubtle,
+      bgErrorPrimary: bgErrorPrimary ?? this.bgErrorPrimary,
+      bgErrorSecondary: bgErrorSecondary ?? this.bgErrorSecondary,
+      bgErrorSolid: bgErrorSolid ?? this.bgErrorSolid,
+      bgErrorSolidHover: bgErrorSolidHover ?? this.bgErrorSolidHover,
+      bgWarningPrimary: bgWarningPrimary ?? this.bgWarningPrimary,
+      bgWarningSecondary: bgWarningSecondary ?? this.bgWarningSecondary,
+      bgWarningSolid: bgWarningSolid ?? this.bgWarningSolid,
+      bgSuccessPrimary: bgSuccessPrimary ?? this.bgSuccessPrimary,
+      bgSuccessSecondary: bgSuccessSecondary ?? this.bgSuccessSecondary,
+      bgSuccessSolid: bgSuccessSolid ?? this.bgSuccessSolid,
+      textPrimary: textPrimary ?? this.textPrimary,
+      textSecondary: textSecondary ?? this.textSecondary,
+      textSecondaryHover: textSecondaryHover ?? this.textSecondaryHover,
+      textTertiary: textTertiary ?? this.textTertiary,
+      textTertiaryHover: textTertiaryHover ?? this.textTertiaryHover,
+      textQuaternary: textQuaternary ?? this.textQuaternary,
+      textQuaternaryOnBrand:
+          textQuaternaryOnBrand ?? this.textQuaternaryOnBrand,
+      textPlaceholder: textPlaceholder ?? this.textPlaceholder,
+      textDisabled: textDisabled ?? this.textDisabled,
+      textWhite: textWhite ?? this.textWhite,
+      textBrandPrimary: textBrandPrimary ?? this.textBrandPrimary,
+      textBrandSecondary: textBrandSecondary ?? this.textBrandSecondary,
+      textBrandSecondaryHover:
+          textBrandSecondaryHover ?? this.textBrandSecondaryHover,
+      textBrandTertiary: textBrandTertiary ?? this.textBrandTertiary,
+      textBrandTertiaryAlt: textBrandTertiaryAlt ?? this.textBrandTertiaryAlt,
+      textPrimaryOnBrand: textPrimaryOnBrand ?? this.textPrimaryOnBrand,
+      textSecondaryOnBrand: textSecondaryOnBrand ?? this.textSecondaryOnBrand,
+      textTertiaryOnBrand: textTertiaryOnBrand ?? this.textTertiaryOnBrand,
+      textErrorPrimary: textErrorPrimary ?? this.textErrorPrimary,
+      textErrorPrimaryHover:
+          textErrorPrimaryHover ?? this.textErrorPrimaryHover,
+      textWarningPrimary: textWarningPrimary ?? this.textWarningPrimary,
+      textSuccessPrimary: textSuccessPrimary ?? this.textSuccessPrimary,
+      fgPrimary: fgPrimary ?? this.fgPrimary,
+      fgSecondary: fgSecondary ?? this.fgSecondary,
+      fgSecondaryHover: fgSecondaryHover ?? this.fgSecondaryHover,
+      fgTertiary: fgTertiary ?? this.fgTertiary,
+      fgTertiaryHover: fgTertiaryHover ?? this.fgTertiaryHover,
+      fgQuaternary: fgQuaternary ?? this.fgQuaternary,
+      fgQuaternaryHover: fgQuaternaryHover ?? this.fgQuaternaryHover,
+      fgDisabled: fgDisabled ?? this.fgDisabled,
+      fgWhite: fgWhite ?? this.fgWhite,
+      fgBrandPrimary: fgBrandPrimary ?? this.fgBrandPrimary,
+      fgBrandPrimaryAlt: fgBrandPrimaryAlt ?? this.fgBrandPrimaryAlt,
+      fgBrandSecondary: fgBrandSecondary ?? this.fgBrandSecondary,
+      fgBrandSecondaryAlt: fgBrandSecondaryAlt ?? this.fgBrandSecondaryAlt,
+      fgBrandSecondaryHover:
+          fgBrandSecondaryHover ?? this.fgBrandSecondaryHover,
+      fgErrorPrimary: fgErrorPrimary ?? this.fgErrorPrimary,
+      fgErrorSecondary: fgErrorSecondary ?? this.fgErrorSecondary,
+      fgWarningPrimary: fgWarningPrimary ?? this.fgWarningPrimary,
+      fgWarningSecondary: fgWarningSecondary ?? this.fgWarningSecondary,
+      fgSuccessPrimary: fgSuccessPrimary ?? this.fgSuccessPrimary,
+      fgSuccessSecondary: fgSuccessSecondary ?? this.fgSuccessSecondary,
+      fgMergedPrimary: fgMergedPrimary ?? this.fgMergedPrimary,
+      borderPrimary: borderPrimary ?? this.borderPrimary,
+      borderSecondary: borderSecondary ?? this.borderSecondary,
+      borderSecondaryAlt: borderSecondaryAlt ?? this.borderSecondaryAlt,
+      borderTertiary: borderTertiary ?? this.borderTertiary,
+      borderDisabled: borderDisabled ?? this.borderDisabled,
+      borderBrand: borderBrand ?? this.borderBrand,
+      borderBrandAlt: borderBrandAlt ?? this.borderBrandAlt,
+      borderBrandSolid: borderBrandSolid ?? this.borderBrandSolid,
+      borderBrandSolidHover:
+          borderBrandSolidHover ?? this.borderBrandSolidHover,
+      borderError: borderError ?? this.borderError,
+      borderErrorSubtle: borderErrorSubtle ?? this.borderErrorSubtle,
+      focusRing: focusRing ?? this.focusRing,
+      focusRingError: focusRingError ?? this.focusRingError,
+      canvas: canvas ?? this.canvas,
+      surface: surface ?? this.surface,
+      panel: panel ?? this.panel,
+      sidebar: sidebar ?? this.sidebar,
+      topbar: topbar ?? this.topbar,
+      rail: rail ?? this.rail,
+      fg: fg ?? this.fg,
+      muted: muted ?? this.muted,
+      idle: idle ?? this.idle,
+      borderSoft: borderSoft ?? this.borderSoft,
+      lineStrong: lineStrong ?? this.lineStrong,
+      hover: hover ?? this.hover,
+      hoverStrong: hoverStrong ?? this.hoverStrong,
+      accent: accent ?? this.accent,
+      accentOn: accentOn ?? this.accentOn,
+      accentHover: accentHover ?? this.accentHover,
+      accentActive: accentActive ?? this.accentActive,
+      accentSoft: accentSoft ?? this.accentSoft,
+      success: success ?? this.success,
+      successSoft: successSoft ?? this.successSoft,
+      warn: warn ?? this.warn,
+      warnSoft: warnSoft ?? this.warnSoft,
+      danger: danger ?? this.danger,
+      dangerSoft: dangerSoft ?? this.dangerSoft,
+      sunshine900: sunshine900 ?? this.sunshine900,
+      sunshine700: sunshine700 ?? this.sunshine700,
+      sunshine500: sunshine500 ?? this.sunshine500,
+      sunshine300: sunshine300 ?? this.sunshine300,
+      brightYellow: brightYellow ?? this.brightYellow,
+      blockEdge: blockEdge ?? this.blockEdge,
+      chartCategorical: chartCategorical ?? this.chartCategorical,
+    );
+  }
+
+  /// Every token, in declaration order — the basis for [==] and [hashCode].
+  ///
+  /// Kept as a list rather than 117 hand-written comparisons so a field cannot
+  /// be silently omitted; `design_system_tokens_equality_test.dart` re-parses
+  /// this file and fails if a declared field is missing from it, because a
+  /// missing field would make two DIFFERENT token sets compare EQUAL — worse
+  /// than having no equality at all.
+  List<Object?> get _props => [
+    bgPrimary,
+    bgPrimaryHover,
+    bgPrimaryAlt,
+    bgPrimarySolid,
+    bgSecondary,
+    bgSecondaryHover,
+    bgSecondaryAlt,
+    bgSecondarySolid,
+    bgTertiary,
+    bgQuaternary,
+    bgActive,
+    bgDisabled,
+    bgOverlay,
+    bgBrandPrimary,
+    bgBrandPrimaryAlt,
+    bgBrandSecondary,
+    bgBrandSolid,
+    bgBrandSolidHover,
+    bgBrandSection,
+    bgBrandSectionSubtle,
+    bgErrorPrimary,
+    bgErrorSecondary,
+    bgErrorSolid,
+    bgErrorSolidHover,
+    bgWarningPrimary,
+    bgWarningSecondary,
+    bgWarningSolid,
+    bgSuccessPrimary,
+    bgSuccessSecondary,
+    bgSuccessSolid,
+    textPrimary,
+    textSecondary,
+    textSecondaryHover,
+    textTertiary,
+    textTertiaryHover,
+    textQuaternary,
+    textQuaternaryOnBrand,
+    textPlaceholder,
+    textDisabled,
+    textWhite,
+    textBrandPrimary,
+    textBrandSecondary,
+    textBrandSecondaryHover,
+    textBrandTertiary,
+    textBrandTertiaryAlt,
+    textPrimaryOnBrand,
+    textSecondaryOnBrand,
+    textTertiaryOnBrand,
+    textErrorPrimary,
+    textErrorPrimaryHover,
+    textWarningPrimary,
+    textSuccessPrimary,
+    fgPrimary,
+    fgSecondary,
+    fgSecondaryHover,
+    fgTertiary,
+    fgTertiaryHover,
+    fgQuaternary,
+    fgQuaternaryHover,
+    fgDisabled,
+    fgWhite,
+    fgBrandPrimary,
+    fgBrandPrimaryAlt,
+    fgBrandSecondary,
+    fgBrandSecondaryAlt,
+    fgBrandSecondaryHover,
+    fgErrorPrimary,
+    fgErrorSecondary,
+    fgWarningPrimary,
+    fgWarningSecondary,
+    fgSuccessPrimary,
+    fgSuccessSecondary,
+    fgMergedPrimary,
+    borderPrimary,
+    borderSecondary,
+    borderSecondaryAlt,
+    borderTertiary,
+    borderDisabled,
+    borderBrand,
+    borderBrandAlt,
+    borderBrandSolid,
+    borderBrandSolidHover,
+    borderError,
+    borderErrorSubtle,
+    focusRing,
+    focusRingError,
+    canvas,
+    surface,
+    panel,
+    sidebar,
+    topbar,
+    rail,
+    fg,
+    muted,
+    idle,
+    borderSoft,
+    lineStrong,
+    hover,
+    hoverStrong,
+    accent,
+    accentOn,
+    accentHover,
+    accentActive,
+    accentSoft,
+    success,
+    successSoft,
+    warn,
+    warnSoft,
+    danger,
+    dangerSoft,
+    sunshine900,
+    sunshine700,
+    sunshine500,
+    sunshine300,
+    brightYellow,
+    blockEdge,
+    chartCategorical,
+  ];
+
+  /// Value equality.
+  ///
+  /// Without it, `CcThemeData` compared token sets by IDENTITY and every path
+  /// happened to use the canonicalized `const` factories, so it worked by
+  /// accident. The moment anything builds a set per frame — a `copyWith`, the
+  /// [lerp] used for animated theme transitions — identity comparison makes
+  /// `updateShouldNotify` fire for every token-dependent widget on every
+  /// parent rebuild. (`appMarkdownStyle`'s memo keys on identity for the same
+  /// reason and gets the same protection.)
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) {
+      return true;
+    }
+    if (other is! DesignSystemTokens) {
+      return false;
+    }
+    final a = _props;
+    final b = other._props;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x is List && y is List) {
+        if (x.length != y.length) {
+          return false;
+        }
+        for (var j = 0; j < x.length; j++) {
+          if (x[j] != y[j]) {
+            return false;
+          }
+        }
+        continue;
+      }
+      if (x != y) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+    for (final p in _props)
+      if (p is List) Object.hashAll(p) else p,
+  ]);
+
+  /// Linearly interpolates between two token sets (used by `CcTheme` for
+  /// animated light/dark transitions).
+  DesignSystemTokens lerp(DesignSystemTokens other, double t) {
+    Color l(Color a, Color b) => Color.lerp(a, b, t)!;
+    return DesignSystemTokens(
+      bgPrimary: l(bgPrimary, other.bgPrimary),
+      bgPrimaryHover: l(bgPrimaryHover, other.bgPrimaryHover),
+      bgPrimaryAlt: l(bgPrimaryAlt, other.bgPrimaryAlt),
+      bgPrimarySolid: l(bgPrimarySolid, other.bgPrimarySolid),
+      bgSecondary: l(bgSecondary, other.bgSecondary),
+      bgSecondaryHover: l(bgSecondaryHover, other.bgSecondaryHover),
+      bgSecondaryAlt: l(bgSecondaryAlt, other.bgSecondaryAlt),
+      bgSecondarySolid: l(bgSecondarySolid, other.bgSecondarySolid),
+      bgTertiary: l(bgTertiary, other.bgTertiary),
+      bgQuaternary: l(bgQuaternary, other.bgQuaternary),
+      bgActive: l(bgActive, other.bgActive),
+      bgDisabled: l(bgDisabled, other.bgDisabled),
+      bgOverlay: l(bgOverlay, other.bgOverlay),
+      bgBrandPrimary: l(bgBrandPrimary, other.bgBrandPrimary),
+      bgBrandPrimaryAlt: l(bgBrandPrimaryAlt, other.bgBrandPrimaryAlt),
+      bgBrandSecondary: l(bgBrandSecondary, other.bgBrandSecondary),
+      bgBrandSolid: l(bgBrandSolid, other.bgBrandSolid),
+      bgBrandSolidHover: l(bgBrandSolidHover, other.bgBrandSolidHover),
+      bgBrandSection: l(bgBrandSection, other.bgBrandSection),
+      bgBrandSectionSubtle: l(bgBrandSectionSubtle, other.bgBrandSectionSubtle),
+      bgErrorPrimary: l(bgErrorPrimary, other.bgErrorPrimary),
+      bgErrorSecondary: l(bgErrorSecondary, other.bgErrorSecondary),
+      bgErrorSolid: l(bgErrorSolid, other.bgErrorSolid),
+      bgErrorSolidHover: l(bgErrorSolidHover, other.bgErrorSolidHover),
+      bgWarningPrimary: l(bgWarningPrimary, other.bgWarningPrimary),
+      bgWarningSecondary: l(bgWarningSecondary, other.bgWarningSecondary),
+      bgWarningSolid: l(bgWarningSolid, other.bgWarningSolid),
+      bgSuccessPrimary: l(bgSuccessPrimary, other.bgSuccessPrimary),
+      bgSuccessSecondary: l(bgSuccessSecondary, other.bgSuccessSecondary),
+      bgSuccessSolid: l(bgSuccessSolid, other.bgSuccessSolid),
+      textPrimary: l(textPrimary, other.textPrimary),
+      textSecondary: l(textSecondary, other.textSecondary),
+      textSecondaryHover: l(textSecondaryHover, other.textSecondaryHover),
+      textTertiary: l(textTertiary, other.textTertiary),
+      textTertiaryHover: l(textTertiaryHover, other.textTertiaryHover),
+      textQuaternary: l(textQuaternary, other.textQuaternary),
+      textQuaternaryOnBrand: l(
+        textQuaternaryOnBrand,
+        other.textQuaternaryOnBrand,
+      ),
+      textPlaceholder: l(textPlaceholder, other.textPlaceholder),
+      textDisabled: l(textDisabled, other.textDisabled),
+      textWhite: l(textWhite, other.textWhite),
+      textBrandPrimary: l(textBrandPrimary, other.textBrandPrimary),
+      textBrandSecondary: l(textBrandSecondary, other.textBrandSecondary),
+      textBrandSecondaryHover: l(
+        textBrandSecondaryHover,
+        other.textBrandSecondaryHover,
+      ),
+      textBrandTertiary: l(textBrandTertiary, other.textBrandTertiary),
+      textBrandTertiaryAlt: l(textBrandTertiaryAlt, other.textBrandTertiaryAlt),
+      textPrimaryOnBrand: l(textPrimaryOnBrand, other.textPrimaryOnBrand),
+      textSecondaryOnBrand: l(textSecondaryOnBrand, other.textSecondaryOnBrand),
+      textTertiaryOnBrand: l(textTertiaryOnBrand, other.textTertiaryOnBrand),
+      textErrorPrimary: l(textErrorPrimary, other.textErrorPrimary),
+      textErrorPrimaryHover: l(
+        textErrorPrimaryHover,
+        other.textErrorPrimaryHover,
+      ),
+      textWarningPrimary: l(textWarningPrimary, other.textWarningPrimary),
+      textSuccessPrimary: l(textSuccessPrimary, other.textSuccessPrimary),
+      fgPrimary: l(fgPrimary, other.fgPrimary),
+      fgSecondary: l(fgSecondary, other.fgSecondary),
+      fgSecondaryHover: l(fgSecondaryHover, other.fgSecondaryHover),
+      fgTertiary: l(fgTertiary, other.fgTertiary),
+      fgTertiaryHover: l(fgTertiaryHover, other.fgTertiaryHover),
+      fgQuaternary: l(fgQuaternary, other.fgQuaternary),
+      fgQuaternaryHover: l(fgQuaternaryHover, other.fgQuaternaryHover),
+      fgDisabled: l(fgDisabled, other.fgDisabled),
+      fgWhite: l(fgWhite, other.fgWhite),
+      fgBrandPrimary: l(fgBrandPrimary, other.fgBrandPrimary),
+      fgBrandPrimaryAlt: l(fgBrandPrimaryAlt, other.fgBrandPrimaryAlt),
+      fgBrandSecondary: l(fgBrandSecondary, other.fgBrandSecondary),
+      fgBrandSecondaryAlt: l(fgBrandSecondaryAlt, other.fgBrandSecondaryAlt),
+      fgBrandSecondaryHover: l(
+        fgBrandSecondaryHover,
+        other.fgBrandSecondaryHover,
+      ),
+      fgErrorPrimary: l(fgErrorPrimary, other.fgErrorPrimary),
+      fgErrorSecondary: l(fgErrorSecondary, other.fgErrorSecondary),
+      fgWarningPrimary: l(fgWarningPrimary, other.fgWarningPrimary),
+      fgWarningSecondary: l(fgWarningSecondary, other.fgWarningSecondary),
+      fgSuccessPrimary: l(fgSuccessPrimary, other.fgSuccessPrimary),
+      fgSuccessSecondary: l(fgSuccessSecondary, other.fgSuccessSecondary),
+      fgMergedPrimary: l(fgMergedPrimary, other.fgMergedPrimary),
+      borderPrimary: l(borderPrimary, other.borderPrimary),
+      borderSecondary: l(borderSecondary, other.borderSecondary),
+      borderSecondaryAlt: l(borderSecondaryAlt, other.borderSecondaryAlt),
+      borderTertiary: l(borderTertiary, other.borderTertiary),
+      borderDisabled: l(borderDisabled, other.borderDisabled),
+      borderBrand: l(borderBrand, other.borderBrand),
+      borderBrandAlt: l(borderBrandAlt, other.borderBrandAlt),
+      borderBrandSolid: l(borderBrandSolid, other.borderBrandSolid),
+      borderBrandSolidHover: l(
+        borderBrandSolidHover,
+        other.borderBrandSolidHover,
+      ),
+      borderError: l(borderError, other.borderError),
+      borderErrorSubtle: l(borderErrorSubtle, other.borderErrorSubtle),
+      focusRing: l(focusRing, other.focusRing),
+      focusRingError: l(focusRingError, other.focusRingError),
+      canvas: l(canvas, other.canvas),
+      surface: l(surface, other.surface),
+      panel: l(panel, other.panel),
+      sidebar: l(sidebar, other.sidebar),
+      topbar: l(topbar, other.topbar),
+      rail: l(rail, other.rail),
+      fg: l(fg, other.fg),
+      muted: l(muted, other.muted),
+      idle: l(idle, other.idle),
+      borderSoft: l(borderSoft, other.borderSoft),
+      lineStrong: l(lineStrong, other.lineStrong),
+      hover: l(hover, other.hover),
+      hoverStrong: l(hoverStrong, other.hoverStrong),
+      accent: l(accent, other.accent),
+      accentOn: l(accentOn, other.accentOn),
+      accentHover: l(accentHover, other.accentHover),
+      accentActive: l(accentActive, other.accentActive),
+      accentSoft: l(accentSoft, other.accentSoft),
+      success: l(success, other.success),
+      successSoft: l(successSoft, other.successSoft),
+      warn: l(warn, other.warn),
+      warnSoft: l(warnSoft, other.warnSoft),
+      danger: l(danger, other.danger),
+      dangerSoft: l(dangerSoft, other.dangerSoft),
+      sunshine900: l(sunshine900, other.sunshine900),
+      sunshine700: l(sunshine700, other.sunshine700),
+      sunshine500: l(sunshine500, other.sunshine500),
+      sunshine300: l(sunshine300, other.sunshine300),
+      brightYellow: l(brightYellow, other.brightYellow),
+      blockEdge: l(blockEdge, other.blockEdge),
+      // Lerp the ramp per index so an animated light↔dark transition keeps a
+      // series on its own hue instead of snapping at the midpoint. Length is
+      // fixed by the palette, so a zip is safe.
+      chartCategorical: [
+        for (var k = 0; k < chartCategorical.length; k++)
+          l(
+            chartCategorical[k],
+            other.chartCategorical[k < other.chartCategorical.length
+                ? k
+                : other.chartCategorical.length - 1],
+          ),
+      ],
+    );
+  }
+}

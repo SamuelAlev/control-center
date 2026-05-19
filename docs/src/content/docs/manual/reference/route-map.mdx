@@ -1,0 +1,121 @@
+---
+title: Route map
+description: Every route Control Center registers, with its screen and query parameters.
+---
+
+## App shell
+
+The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding` and the bare `/workspaces` picker, all full-screen and outside the shell.
+
+The auth guard redirects to `/onboarding` until GitHub auth (PAT or `gh` CLI) and at least one workspace exist.
+
+## Unprefixed routes
+
+| Path                       | Screen                                           |
+| -------------------------- | ------------------------------------------------ |
+| `/splash`                  | Startup splash that resolves the onboarding gate |
+| `/onboarding`              | API keys plus first-workspace setup              |
+| `/workspaces`              | Workspace list and picker                        |
+| `/workspaces/:workspaceId` | Redirects to `/workspaces/:workspaceId/inbox`    |
+
+## Workspace routes
+
+Paths below omit the `/workspaces/:workspaceId` prefix.
+
+| Path                                    | Query params                   | Screen                                                                                                                                                                   |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/inbox`                                | —                              | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator. The post-guard landing route; a bare `/workspaces/:workspaceId` redirects here |
+| `/channels`                             | —                              | Conversation surface, no channel selected                                                                                                                                |
+| `/channels/:channelId`                  | `?m=<messageId>`, `?tab=<key>` | One channel; `m` deep-links to a message and is consumed once on open                                                                                                    |
+| `/tickets`                              | —                              | Ticket board                                                                                                                                                             |
+| `/tickets/:ticketId`                    | —                              | Ticket master-detail                                                                                                                                                     |
+| `/projects/:projectId`                  | —                              | Project overview                                                                                                                                                         |
+| `/pull-requests`                        | —                              | PR list                                                                                                                                                                  |
+| `/pull-requests/compose`                | `?channel=<channelId>`         | Compose a new pull request; `channel` names the conversation whose isolated worktree supplies the branch                                                                 |
+| `/pull-requests/:owner/:repo/:prNumber` | `?tab=<key>`                   | PR detail with diff viewer                                                                                                                                               |
+| `/pipelines`                            | —                              | Pipeline run list                                                                                                                                                        |
+| `/pipelines/run`                        | `?templateId=<id>`             | Manual run launcher                                                                                                                                                      |
+| `/pipelines/:runId`                     | —                              | Pipeline run detail (step timeline)                                                                                                                                      |
+| `/plans`                                | —                              | Plan Studio hub: active plans, plan documents, playbooks                                                                                                                 |
+| `/plans/:kind/:id`                      | —                              | Plan Studio for one plan; `kind` is `orchestration` or `document`                                                                                                        |
+| `/meetings`                             | —                              | Meetings list                                                                                                                                                            |
+| `/meetings/record`                      | —                              | Live meeting recording screen                                                                                                                                            |
+| `/meetings/:meetingId`                  | —                              | Meeting detail: notes, transcript, action items, decisions                                                                                                               |
+| `/calendar`                             | —                              | Calendar: month, week and agenda views                                                                                                                                   |
+| `/calendar/:eventId`                    | —                              | Calendar event detail (sibling route; shares the calendar page key)                                                                                                      |
+| `/newsfeed`                             | —                              | Newsfeed list                                                                                                                                                            |
+| `/newsfeed/settings`                    | —                              | Feed management                                                                                                                                                          |
+| `/newsfeed/article/:articleId`          | —                              | Article reader                                                                                                                                                           |
+| `/observability`                        | —                              | Observability hub: live Agent Hub plus cost, usage, quota and behaviour analytics. Defaults to the Agent Hub tab                                                         |
+| `/users/:login`                         | —                              | GitHub user profile                                                                                                                                                      |
+| `/api-keys`                             | —                              | API key management. **No navigation entry point** — reachable only by URL                                                                                                |
+| `/settings/…`                           | —                              | Settings screens (below)                                                                                                                                                 |
+
+There is **no `/dashboard` route** and no dashboard screen. The analytics surface is `/observability`, reached from the sidebar footer.
+
+There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from the plan's row in the conversation that produced it; `/plans` and `/plans/:kind/:id` are deep links.
+
+`/observability` and `/pull-requests/compose` have no entry in the route-title or breadcrumb registries, so both show the bare app name in the window title and no breadcrumb trail.
+
+## Settings routes
+
+`/settings` redirects to `/settings/you/profile`. The sidebar's settings button navigates to `/settings/you/appearance` instead, so the two entry points land on different pages. `Cmd/Ctrl + ,` goes to `/settings` and therefore to the profile page.
+
+Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Three paths predate the namespacing and are not scoped in the URL: `/settings/teams`, `/settings/memory` and `/settings/pipelines`.
+
+### You
+
+| Path                          | Screen                                      |
+| ----------------------------- | ------------------------------------------- |
+| `/settings/you/profile`       | Profile and identity (the settings landing) |
+| `/settings/you/appearance`    | Theme, language, typography, editor theme   |
+| `/settings/you/notifications` | Per-event toggles, quiet hours              |
+| `/settings/you/keybindings`   | Keyboard shortcut reference (read-only)     |
+| `/settings/you/devices`       | Paired phones and remote control            |
+
+### Workspace
+
+| Path                               | Screen                                                                                              |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
+| `/settings/workspace/members`      | Roster, invites, audit trail                                                                        |
+| `/settings/teams`                  | Team management                                                                                     |
+| `/settings/workspace/agents`       | Registered agent identities                                                                         |
+| `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
+| `/settings/workspace/skills`       | Skill configuration                                                                                 |
+| `/settings/memory`                 | Workspace memory: facts, policies, knowledge graph                                                  |
+| `/settings/workspace/permissions`  | Agent permissions: guardrail matrix and what-if probe                                               |
+| `/settings/pipelines`              | Pipeline templates                                                                                  |
+| `/settings/pipelines/:templateId`  | Pipeline template editor (drag-and-drop canvas)                                                     |
+
+### Server
+
+| Path                           | Screen                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------- |
+| `/settings/server/connection`  | Connection and status                                                                 |
+| `/settings/server/sharing`     | Sharing and remote access (mDNS, tunnel opt-in)                                       |
+| `/settings/server/sso`         | Single sign-on (SAML, OIDC, SCIM provisioning)                                        |
+| `/settings/server/providers`   | Model providers and adapters                                                          |
+| `/settings/server/mcp`         | Built-in and external MCP servers                                                     |
+| `/settings/server/rigs`        | Enclosures: what this host can boot, base images, custom images, running machines     |
+| `/settings/server/voice`       | Voice and meeting models (ASR, diarization)                                           |
+| `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, sync engine, logging, crash reporting |
+| `/settings/server/about`       | About and updates                                                                     |
+
+`kSettingsNav` in `lib/features/settings/settings_nav.dart` is the single source of truth for this list; a test asserts every registered `/settings/` route appears there exactly once.
+
+## Route configuration
+
+| Concern             | File                                                    |
+| ------------------- | ------------------------------------------------------- |
+| Router              | `lib/router/app_router.dart`                            |
+| Route builders      | `lib/router/routes.dart`                                |
+| Auth guards         | `lib/router/guards.dart`                                |
+| Onboarding gate     | `lib/features/auth/providers/onboarding_providers.dart` |
+| Settings navigation | `lib/features/settings/settings_nav.dart`               |
+
+## See also
+
+- [Workspaces](/manual/concepts/workspaces/)
+- [Architecture](/manual/concepts/architecture/)
+- [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/)

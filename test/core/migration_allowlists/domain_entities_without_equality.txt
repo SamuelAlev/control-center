@@ -1,0 +1,19 @@
+# Shrinking allowlist: cc_domain ENTITY files that do not override both
+# `==` and `hashCode`, contrary to AGENTS.md ("All entities have ==/hashCode
+# overrides"). Enforced by architecture_constraints_test.dart.
+#
+# Seeded 2026-08-22, when the guard was re-aimed at packages/cc_domain: it had
+# been scanning `lib/core/domain/entities` + `lib/features/*/domain/entities`,
+# both emptied by the backend exodus, and RETURNED on the missing directory —
+# so it passed vacuously and the kernel's entities were never checked at all.
+#
+# The list only shrinks: a new entity without equality fails, and an entry that
+# now overrides both (or was deleted) fails as stale. Add equality, remove line.
+#
+# It seeded with exactly TWO offenders (`code_file_ingest.dart` and the five
+# classes in `evals_entities.dart`), and both were fixed rather than baselined —
+# so this list is EMPTY, which is the state to keep it in.
+#
+# Note the check is per-FILE, not per-class: a file with several classes passes
+# once any of them overrides. That soft edge is documented in the review; it is
+# still far stronger than not scanning the directory at all.

@@ -1,0 +1,180 @@
+---
+title: Inspect a PR in Review Studio
+description: Use Review Studio's cohorts, walkthrough diagrams, contract and visual diffs and per-axis gates to review a PR.
+---
+
+This guide shows you how to inspect a pull request in Review Studio, the semantic
+multi-modal review surface.
+
+## Open Review Studio on a PR
+
+1. Navigate to **Pull requests** in the sidebar and select a PR
+2. Open the **Review** tab
+3. Click the **Review studio** chip (next to **Findings**)
+
+Opening Review Studio computes the PR's cohorts and deterministic axes
+server-side. If the PR's head changed since your last visit, click **Recompute**
+to rebuild them.
+
+The surface has a verdict header and a multi-axis dashboard on top, four center
+panes (**Walkthrough**, **API contract**, **Visual diff**, **Blast radius**), a
+cohort list on the left and a context rail with AI summaries on the right. Below
+900px of width the two rails are dropped and only the center pane is shown.
+
+## Navigate cohorts
+
+Review Studio groups the PR's changed files into **cohorts** — content-derived
+buckets of files that belong together by meaning, ranked by impact so you read the
+riskiest group first.
+
+- Cohorts are recomputed when the PR opens and on every head-SHA change and
+  replaced wholesale. Each cohort has a push-stable key, so its summary and review
+  progress survive a rebase.
+- Select a cohort in the left rail to see its files and its AI summary in the
+  context rail.
+
+If the repo is not code-indexed, cohorts fall back to path grouping and the rail
+labels them **Grouped by path (repo not indexed)**.
+
+:::caution[The label is informational, not a button]
+The one-click "Index repo" affordance exists in the widget but is never given a
+callback, so it does not render. To get semantic cohorts, index the repo from
+**Settings → Workspace → Repositories** — each repo row carries an **Index code**
+action that runs the `index_code` pipeline and reports progress in place. Then
+return here and press **Recompute**.
+
+The code graph only parses Dart, JavaScript, TypeScript, TSX and PHP. A repo in
+any other language can never produce semantic cohorts, however often you index it.
+:::
+
+## Read the walkthrough diagram
+
+A **walkthrough diagram** is a structured illustration a reviewer agent attaches to
+a cohort: a sequence, entity-relation, or state-machine diagram of how the changed
+code fits together. An agent adds one with the `add_review_diagram` MCP tool, which
+takes a typed diagram object — never mermaid text. Every edge is cross-checked
+against the real code graph; an edge the graph cannot corroborate is rendered
+dashed and flagged as unverified, so the diagram never shows invented call flows.
+
+An agent can also record a markdown summary for a cohort with `set_cohort_summary`;
+the context rail renders it as a "read this first" narrative.
+
+To read them:
+
+1. Stay on the **Walkthrough** pane
+2. Select a cohort in the left rail
+3. Read the cohort summary in the context rail, then the diagram in the center pane
+4. If an edge renders dashed, treat that call flow as unverified and confirm it in
+   the diff yourself
+
+If a cohort has no summary or diagram yet, dispatch a reviewer agent to produce one
+(see [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)).
+
+## Check the API-contract diff
+
+The contract axis diffs only **explicit** spec files. It matches the six default
+names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` — plus any changed file whose name contains
+`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract inferred
+from handler code is out of scope and GraphQL schemas are not diffed.
+
+1. Switch to the **API contract** pane
+2. Review each classified change — endpoint, parameter, schema and response
+   additions, removals and modifications
+3. Note the severity: **Breaking** (removed endpoint or param, tightened type, new
+   required param), non-breaking (additive), or informational
+4. **Approve** or **Reject** each change
+
+Any change you **reject** fails the contract gate, as does a **breaking** change
+left undecided. Breaking-but-approved warns. No breaking changes at all passes. A
+diff marked **Derived (advisory)** never gates whatever its changes say. If the
+pane shows **No API contract changes in this PR**, no matching spec file changed.
+
+## Inspect visual diffs
+
+If the PR changes UI components in a Flutter repo with a Widgetbook app, Review
+Studio renders the changed components before and after via a headless `flutter test`
+golden pass in the PR's base and head worktrees, then diffs the pixels.
+
+:::note[This needs a Flutter SDK on the server host]
+The pure-Dart server cannot render Flutter widgets in-process, so it shells out to
+`flutter test`. The SDK has to be installed on the machine running `cc_server` —
+not on your client. Without it the axis reports **unavailable** with the reason
+"no Flutter SDK on host". It never reports a pass it did not earn.
+:::
+
+1. Switch to the **Visual diff** pane
+2. For each snapshot, compare the before/after render and the changed-region
+   percentage
+3. If a change is intended, click **Approve intended change**
+
+Snapshots marked **Changed** or **Removed** hold the visual gate until approved;
+**Unchanged**, **Added** and **Approved** snapshots clear it. If the pane shows
+**Visual diff unavailable**, the reason is one of: no Flutter SDK on host, no
+Widgetbook app in repo, no golden-testable use-cases, or a golden harness error.
+
+## Read the per-axis gates
+
+The multi-axis dashboard shows one result per review axis:
+
+| Axis         | Driven by                      |
+| ------------ | ------------------------------ |
+| Correctness  | Reviewer agents (tokens)       |
+| Security     | Reviewer agents (tokens)       |
+| Test gap     | Reviewer agents (tokens)       |
+| Visual       | Deterministic (golden harness) |
+| API contract | Deterministic (spec diff)      |
+
+The three token axes are recorded when a lead agent calls `finalize_review`; the
+two deterministic axes are recorded by the studio's compute pass.
+
+:::note[There is no performance axis today]
+A `performance` axis exists in the taxonomy and has a display label, but nothing in
+the product computes a performance result, so it never appears on the dashboard.
+:::
+
+Each axis reports one of:
+
+| State           | Meaning                                            |
+| --------------- | -------------------------------------------------- |
+| **Pass**        | Ran, nothing blocking found                        |
+| **Warn**        | Ran, non-blocking concerns                         |
+| **Fail**        | Ran, found a blocking problem                      |
+| **Partial**     | Ran but could not complete; results are incomplete |
+| **Unavailable** | Could not run at all                               |
+
+Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable** are
+deliberately distinct from **fail** and neither of them clears a gate.
+
+## Understand a held verdict
+
+The verdict header aggregates the axes into **Ship**, **Hold**, or **Block**. The
+axes can only make the verdict _more_ severe — it is never downgraded:
+
+- A gated axis that **fails** forces **Block**
+- A gated axis that is **partial** or **unavailable** forces at least **Hold**
+
+So a blocking axis that could not run _holds_ the verdict. Absence of evidence never
+greens a gate.
+
+To clear a held verdict:
+
+- **Held by an unavailable axis** — read the axis note for the reason (no Flutter
+  SDK on host, no Widgetbook app, no matching spec file), fix the cause on the
+  server host or in the repo, then press **Recompute**.
+- **Held by a partial axis** — the token pass did not finish. Re-dispatch the
+  reviewers for that axis (see
+  [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)) and press
+  **Recompute**. There is no per-PR review token budget to raise; the only
+  fan-out knob is `review_concurrency` at Settings → Workspace → General.
+- **Held by a failing axis** — resolve the finding, or approve the contract or
+  visual change if it was intended.
+
+To act on the verdict, see [Review and merge a PR](/manual/guides/review-merge-pr/).
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Search code with the code graph](/manual/guides/code-search/)

@@ -1,0 +1,74 @@
+name: Workflow audit
+
+# Static security analysis of the CI itself: zizmor (https://docs.zizmor.sh)
+# audits every workflow under .github/workflows/ and every composite action
+# under .github/actions/ for template injection, credential persistence,
+# excessive permissions, unpinned/retagged action uses and related GitHub
+# Actions pitfalls. The sibling dependency-audit.yml watches what the app
+# ships; this one watches what CI executes.
+#
+# The action runs zizmor from a digest-pinned container image, fails the job
+# on any finding AND uploads SARIF to code scanning (its advanced-security
+# mode), so findings are both a blocking check and a triage queue.
+#
+# The zizmor version is a required exact pin — the action resolves it through
+# a version→digest map shipped inside each of its own releases, where `latest`
+# is only a snapshot that can silently drift between runs. Bumping the pin
+# picks up new audit rules (expect new findings when you do).
+#
+# Fork PRs: the SARIF upload step inside the action needs a writable
+# security-events token, which fork PRs don't get. Same-repo branches (the
+# norm here) upload fine; a fork PR would fail at the upload, after zizmor
+# itself has already reported its findings inline.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - ".github/actions/**"
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/actions/**"
+  # The audit surface drifts without this repo changing — action releases get
+  # retagged, upstream audit rules tighten — so re-audit weekly like
+  # dependency-audit.yml does for packages.
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: workflow-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  zizmor:
+    name: zizmor (${{ github.event_name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      security-events: write # upload the SARIF report to code scanning
+      contents: read
+      actions: read # online audits (impostor-commit) via the GitHub API
+    steps:
+      - name: Harden runner
+        # audit, not block: the action runs zizmor in a Docker container whose
+        # egress (ghcr.io image pull, api.github.com online audits) leaves
+        # through the daemon's network namespace, which block mode cannot
+        # govern — a block policy here would be a false sense of coverage.
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@3dc1ecc9bcb9e94e9b2c709687979e1298497054 # v0.6.2
+        with:
+          version: "1.29.0"

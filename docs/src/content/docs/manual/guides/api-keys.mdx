@@ -1,0 +1,116 @@
+---
+title: Manage API keys
+description: Where each credential lives — your device, the server, or an external CLI — and how to set, rotate and remove it.
+---
+
+This guide shows you where each credential Control Center uses is stored and how
+to change it.
+
+Credentials sit in three different places and which one a key lands in decides
+what it can do. Getting this wrong is the usual reason a token "does not work".
+
+| Credential                           | Stored                                                    | Who uses it                                                |
+| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------- |
+| Your GitHub PAT                      | Your device's secure store                                | Your client, to fetch private attachments in PR bodies     |
+| The server's GitHub auth             | `gh auth token` on the server host                        | The server: PR list, checks, review publishing, agent runs |
+| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install   |
+| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                         |
+| External CLI credentials             | Whatever that CLI uses                                    | Claude Code and friends, on the server host                |
+
+## GitHub: two credentials, not one
+
+GitHub is the one place the split above bites hardest, because the two
+credentials look interchangeable and are not.
+
+- **The server's** GitHub auth comes from `gh auth token` on the server host,
+  resolved once at boot. It is what drives the PR list, checks, review publishing
+  and the token brokered into agent runs
+- **Your** personal access token is stored on your device and used by your client
+  for a much narrower job. It never reaches the server
+
+Both are set and inspected in the **Accounts** card at **Settings → You → Profile
+& identity**. [Set up GitHub integration](/manual/guides/github-integration/) has
+the procedure for each and the scopes.
+
+:::note[There is also a URL-only screen]
+`/workspaces/<workspaceId>/api-keys` renders the same panel as onboarding's first
+step — the `gh` CLI card, the PAT card, a ticketing provider picker and a
+ticketing API key. It has **no navigation entry anywhere in the UI**; it is
+reachable only by typing the URL. Use Settings → You → Profile & identity
+instead.
+:::
+
+## Set model provider keys
+
+The built-in adapter authenticates providers itself and those credentials live
+on the server.
+
+1. Go to **Settings → Server → Model providers**
+2. Scroll to **Providers & models**
+3. Connect the provider — browser OAuth for Anthropic, OpenAI and Kimi Code; an
+   API key for the rest
+
+See [Manage adapters and models](/manual/guides/adapters/) for the full list and
+for adding a custom endpoint.
+
+These credentials are **host-global**: one key serves every workspace on the
+install. OAuth tokens are refreshed before they expire.
+
+External adapter CLIs keep their own credentials, in their own configuration, on
+the server host — Control Center does not manage them. Authenticate each CLI the
+way its own documentation says, on the machine `cc_server` runs on.
+
+The per-adapter **Environment variables** dialog looks like a place to put a key
+for one of them, but it is not: it writes to your device, while the server reads
+its own copy and nothing bridges the two. See
+[Manage adapters and models](/manual/guides/adapters/).
+
+## Set the ticketing API key
+
+The **Ticketing API key** row sits beside the GitHub rows on the profile page.
+The key it stores is kept on your device and is not sent to the server.
+
+Server-side, the ticketing key an agent receives comes from the server's own
+environment (`CC_TICKETING_API_KEY`) and it is only injected when the agent has
+the **Allow ticketing API calls** capability. See
+[Set up Linear integration](/manual/guides/linear-integration/) for what is and is
+not wired.
+
+## Rotate or revoke
+
+- **GitHub PAT**: press **Clear**, then **Set** with the new value. Revoke the old
+  one on GitHub
+- **`gh` CLI**: run `gh auth login` on the server host, then restart `cc_server`
+- **A model provider**: on its row, sign out (OAuth) or remove the key, then
+  connect again
+- **Slack**: re-paste the tokens in the connect dialog. See
+  [Set up Slack integration](/manual/guides/slack-integration/)
+
+## Troubleshooting
+
+### Keychain access denied on macOS
+
+The app asks for keychain access on first use. If you declined, grant it in
+Keychain Access and restart the app.
+
+### The PR list is empty but my token works in `curl`
+
+You are testing the wrong credential. The PR surface uses the server's `gh auth
+token`, not your stored PAT.
+
+### A token I just pasted is not working
+
+Nothing validated it — there is no verification step anywhere in the app, so a
+truncated or expired value is accepted silently and fails later as a request.
+Check the scopes and the expiry and check you pasted the whole thing:
+
+```bash
+curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
+```
+
+## Related guides
+
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Manage adapters and models](/manual/guides/adapters/)
+- [Set up Slack integration](/manual/guides/slack-integration/)
+- [Set up Linear integration](/manual/guides/linear-integration/)

@@ -1,0 +1,178 @@
+---
+title: Install
+description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
+---
+
+Control Center runs two ways: as a **web app** at
+[app.usectrl.dev](https://app.usectrl.dev), with nothing to download, or as a **desktop
+app** you install. They are the same application with the same features. The only
+difference is where the server runs — and the web app cannot run one for you.
+
+## Use it in your browser
+
+[app.usectrl.dev](https://app.usectrl.dev) is this application compiled for the browser.
+Nothing to install, nothing to update. Open it and connect.
+
+What a browser tab cannot do is _be_ the server. Every client — desktop, web, phone — is
+a thin renderer over a headless `cc_server` that owns the database and does the work, so
+the web app always talks to a server you run. Two ways to give it one:
+
+**A server on your own machine.** Start `cc_server` locally and point the web app at
+`ws://localhost:9030`. Browsers treat `localhost` as trustworthy, so this needs no
+certificate and no tunnel. It is the quickest way to try the web app and your data never
+leaves your machine.
+
+**A server on another machine.** Because `app.usectrl.dev` is served over HTTPS, a
+non-local server has to be reachable over `wss://` with a certificate the browser already
+trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choose one of:
+
+- give it a certificate directly, with `--tls-cert` and `--tls-key`
+- put it behind a TLS-terminating reverse proxy and start it with `--insecure`
+- expose it through a tunnel or VPN that supplies the certificate — Tailscale,
+  cloudflared, or similar. **Settings → Server → Sharing & remote access** has the
+  built-in tunnel opt-in.
+
+Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
+address clients should actually dial. It defaults to the local bind, so without it
+clients try the wrong host.
+
+:::note[Hosting your own copy of the web client?]
+`cc_server` only accepts browser origins on its `--allowed-origins` list, which defaults
+to `https://app.usectrl.dev`. Add your own origin there if you self-host the web build.
+Loopback and native clients are always allowed regardless of that list.
+:::
+
+A few things stay desktop-only, because they need a native window or the machine's own
+audio devices: the floating focus-mode pill, OS notification toasts (the in-app
+notification centre works everywhere), "start recording & link" from a calendar event,
+and re-running a meeting summary. Everything else — channels, agents, pull-request
+review, pipelines, tickets, memory and meeting recording itself — behaves the same.
+
+To connect the web app to a server, follow
+[Connect to a remote server](/manual/guides/connect-remote-server/). To host the server,
+follow [Run a headless server](/manual/guides/run-headless-server/).
+
+## Desktop system requirements
+
+| Requirement  | macOS                                                 | Windows     | Linux                                        |
+| ------------ | ----------------------------------------------------- | ----------- | -------------------------------------------- |
+| OS version   | macOS 13+ (Ventura)                                   | Windows 10+ | A modern distro with a graphical environment |
+| Architecture | Apple Silicon (arm64)                                 | x64         | x86_64                                       |
+| Git          | Required                                              | Required    | Required                                     |
+| Disk space   | ~200 MB for the app, plus the server's data directory | ~200 MB     | ~200 MB                                      |
+
+Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
+
+The server's data directory outgrows the app. On its first start `cc_server` downloads about 125 MB of on-device models (text embeddings and speaker diarization) and an embedded code-server build and every agent conversation gets a copy-on-write worktree of the repos it works on. A speech model for dictation and meeting transcription is optional and adds 198–626 MB depending on which one you install.
+
+The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
+
+## Download
+
+Every artifact below comes from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+
+### macOS (Apple Silicon)
+
+Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally.
+
+### Windows (x64)
+
+- `Control-Center-<version>-x64-setup.exe`: a per-user installer.
+- `Control-Center-<version>-windows-x64.zip`: a portable andt.
+
+:::caution[Windows has not been through a validated release]
+The Windows build job runs and ships both files, but no Windows artifact has yet been checked by hand before publishing. Treat the first one you download as a validation run. Windows also has no copy-on-write worktrees (plain `git worktree` is the backend there) and no embedded code-server.
+:::
+
+### Linux (x86_64)
+
+- `Control-Center-<version>-x86_64.AppImage`
+- `Control-Center-<version>-linux-x64.tar.gz`
+
+### Standalone server
+
+Each release also carries the headless server on its own — `cc_server-<version>-macos-arm64.tar.gz`, `cc_server-<version>-linux-x64.tar.gz`, `cc_server-<version>-windows-x64.zip` — alongside the `cc-server`, `cc-webapp` and `cc-remote` images on GHCR. See [Run a headless server](/manual/guides/run-headless-server/).
+
+## Agent backend
+
+Control Center dispatches agents through **adapters**. There are eight of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+
+The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. Anthropic, OpenAI and Kimi Code offer a browser sign-in; OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+
+The other seven adapters wrap an external CLI:
+and
+
+- **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
+- **Codex** (`codex`): `npm install -g @openai/codex`
+- **Pi** (`pi`), **OpenCode** (`opencode`), **Gemini CLI** (`gemini`), **Goose** (`goose`) and **Cursor** (`cursor-agent`): install each per its own documentation
+
+Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install external CLIs there, not on the client. The **Refresh** button on that page re-runs the probe.
+
+Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/manual/guides/adapters/).
+
+## GitHub authentication
+
+Control Center stores a GitHub personal access token in the OS keychain (macOS Keychain, Windows Credential Store, Linux libsecret). The token is stored as you type it — nothing probes it first, so a typo shows up as a failed request later.
+
+Scopes:
+
+- `repo`: repository and pull-request access
+- `read:org`: organization repos, team membership, and reviewer routing
+
+Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+
+If the `gh` CLI is installed and authenticated (`gh auth login`), Control Center detects and uses it, and the token field becomes optional.
+and
+Onboarding asks for the token on its first step. After that it lives under **Settings → You → Profile & identity → Accounts**, where you can replace or clear it and re-probe the `gh` CLI.
+
+## Choose where the server runs
+
+and
+Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/manual/concepts/deployment/) explains what that split means for the desktop, web and phone.
+
+On first launch the desktop asks **"How should Control Center run?"**:
+
+- **Run in this app**: the desktop spawns and supervises a `cc_server` on this machine and talks to it over loopback. Nothing else to configure. This is the setup the [quick start](/manual/quick-start/) assumes.
+- **Connect to a remote instance**: point the desktop at a `cc_server` running elsewhere with its WebSocket URL, a device id, and either a pairing key or a one-time invite code. That server owns the data; this desktop only renders it.
+
+Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/manual/guides/connect-remote-server/).
+
+To host a server yourself, follow [Run a headless server](/manual/guides/run-headless-server/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
+and
+
+## Verify your setup
+
+1. **Settings → Server → Model providers** lists all eight adapters. "Control Center (built-in)" reads found with version `built-in`; any external CLI you installed on the server host should read found as well. Press **Refresh** if one is missing.
+2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders. and
+3. **Settings → Workspace → Agents** (⌘5) lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
+4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
+
+## Build from source
+
+and
+Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
+and
+
+```bash
+git clone https://github.com/SamuelAlev/control-center.git
+cd control-center
+scripts/natives/build_natives.sh
+fvm flutter pub get
+fvm flutter pub run build_runner build --delete-conflicting-outputs
+fvm flutter gen-l10n
+fvm flutter run -d macos  # or -d windows, -d linux
+```
+
+On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signed by an Apple team — a free Apple ID is enough, and it is a one-time setup described under [local development signing](https://github.com/SamuelAlev/control-center/blob/main/RELEASING.md#local-development-signing-macos). Without it the app still launches; only secure storage is unavailable. Windows and Linux need no signing.
+
+To build the headless server binary, stage the natives the same way first, then:
+
+```bash
+cd apps/cc_server and
+fvm dart build cli
+```
+
+The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
+
+For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
+and

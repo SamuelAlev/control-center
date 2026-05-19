@@ -1,0 +1,259 @@
+---
+title: Rigs
+description: Every rig surface, backend, action verb, lifecycle state, port, default and contract — the complete factual catalog.
+---
+
+Facts only. For the model behind them, read [Rigs and
+enclosures](/manual/concepts/rigs/); to open a machine, follow [the
+guide](/manual/guides/use-rigs/).
+
+## Surfaces and backends
+
+| Surface | Drives | Backend | Value | Contained egress |
+| --- | --- | --- | --- | --- |
+| Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
+| Browser | Headless Chromium over CDP | microVM | `smolvm` | Yes |
+| Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
+| Mobile | Android over adb | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
+
+The terminal and the `computer_use` surface share the `computer` surface
+value; the terminal is distinguished by its exec image marker and is never
+reused as a drivable desktop (or vice versa). One conversation reuses one
+terminal machine.
+
+## Machine images
+
+| Surface | Image | Fetched |
+| --- | --- | --- |
+| Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
+| Browser | `chromedp/headless-shell:stable`, digest-pinned | Automatically on first boot |
+| Computer | A qcow2 desktop image | **Import** under Settings → Server → Enclosures (checksum-pinned downloads where published) |
+| Mobile | Google's system images | Through the Android SDK |
+
+After the first boot of each microVM kind the server caches a pre-extracted
+copy under the data directory and boots every later machine from it —
+including a pre-warmed terminal image with `git`, `curl` and `socat` already
+installed.
+
+### Per-workspace custom images
+
+| Setting key | Overrides |
+| --- | --- |
+| `rigs.smolvm.execImage` | The Terminal (VM) image |
+| `rigs.smolvm.browserImage` | The Browser (VM) image |
+
+Written through the admin-gated workspace settings store (Settings → Server →
+Enclosures → Custom images). The value must be a registry reference — local
+paths, archives and flag-like strings are refused, both at the field and
+again at boot. An invalid stored value is ignored loudly and the default
+boots instead. The image's own registry (plus known blob-CDN companions for
+Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
+for the pull.
+
+**Terminal image contract** — `bash` present; `git`, `curl`, `socat`
+preinstalled *or* a Debian/Ubuntu apt base (they are installed on first
+start).
+
+**Browser image contract** — the headless-shell layout: Chromium at
+`/headless-shell/headless-shell`, plus `bash` and `socat`. The server
+launches the browser itself with DevTools on guest loopback `9223`, relayed
+to guest port `9222`. Build `FROM chromedp/headless-shell:stable` to keep the
+layout.
+
+## Action verbs
+
+Every action is parsed totally: a malformed payload returns a message naming
+the field, never an exception. Observation verbs (marked ○) stay allowed
+while a human holds control; mutating verbs are refused.
+
+### `computer_use`
+
+`screenshot`○, `cursor_position`○, `mouse_move`, `left_click`,
+`right_click`, `middle_click`, `double_click`, `triple_click`,
+`left_mouse_down`, `left_mouse_up`, `left_click_drag`, `scroll`, `key`,
+`hold_key` (0–60 s), `type`, `wait`○ (0–60 s), `set_display`,
+`clipboard_read`○, `clipboard_write`.
+
+Coordinates are guest pixels in the guest's current mode; every screenshot
+states the display size. Key combinations use X11 spellings (`ctrl+s`,
+`alt+Tab`, `Return`).
+
+`clipboard_read` takes a `selection`: `clipboard` (what ctrl+C fills, the
+default), `primary` (X11 select-to-copy) or `xdnd` (a drag in flight). An
+empty result is a normal answer for all three. `clipboard_write` takes
+`text` only — images and files travel on the file lane, because an action's
+arguments are persisted to the audit log and image bytes have no business
+there. Clipboard content comes back fenced as untrusted data.
+
+### `browser_use`
+
+`navigate` (http/https only), `click` (selector or coordinate), `fill`,
+`key` (DOM key names), `scroll`, `extract`○ (`a11y` | `dom` | `console`),
+`screenshot`○ (`full_page` optional), `set_viewport` (min 320×240),
+`history`, `wait_for` (0.1–30 s), `clipboard_read`○, `clipboard_write`.
+
+Extracted page content returns fenced as untrusted data.
+
+The browser has exactly one clipboard, so `clipboard_read` takes no
+`selection`. Both clipboard verbs need a **secure context**: a page served
+over plain `http://` has no clipboard API at all, and the verb says so rather
+than reporting an empty one — use `type` there, which inserts at the caret
+without going through a clipboard.
+
+### `mobile_use`
+
+`tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
+`recents`, `enter`, `delete`, `tab`, `escape`, `volume_up`, `volume_down`,
+`power`, or any `KEYCODE_*`), `screenshot`○, `ui_dump`○, `install_apk`
+(confined to the rig's worktree and the server data directory), `start_app`.
+
+No clipboard verbs, and that is a property of Android rather than a gap:
+since Android 10 only the *focused app* may read the clipboard, and no ADB
+command, shell service call or permission changes it. Relaying it would need
+an app installed inside the device, which this product does not ship.
+
+### Management tools
+
+| Tool | Description |
+| --- | --- |
+| `rig_list` | List a workspace's rigs with surface, status, display and controller |
+| `rig_close` | Destroy a rig and discard its disk |
+
+## Lifecycle
+
+| Phase | Meaning |
+| --- | --- |
+| `provisioning` | Booting; the status detail carries the current step verbatim |
+| `ready` | Reachable and accepting actions |
+| `parked` | Idle-parked: vCPUs stopped, RAM still resident; the next action wakes it |
+| `closing` | Shutting down |
+| `closed` | Gone; the row survives for the audit trail |
+| `failed` | Died or never came up; distinguishable so the UI can offer retry |
+
+| Close reason | Fired when |
+| --- | --- |
+| `requested` | A person or agent asked |
+| `idleTimeout` | Idle past 2× the idle window, or evicted for memory |
+| `ttlExpired` | The hard lifetime ran out |
+| `conversationEnded` | The owning conversation ended |
+| `workspaceGone` | The workspace was deleted or membership was lost |
+| `serverShutdown` | The server is stopping |
+| `backendFailure` | The hypervisor died underneath it |
+
+## Defaults and ceilings
+
+| Value | Terminal | Browser | Computer | Mobile |
+| --- | --- | --- | --- | --- |
+| Memory | 512 MB | 2048 MB | 4096 MB | 4096 MB |
+| vCPUs | 2 | 2 | 4 | 4 |
+| Hard TTL | 8 h | 2 h | 2 h | 2 h |
+| Idle window | 45 min | 15 min | 15 min | 15 min |
+| Boot display | — | 1280×800 | 1280×800 | 1080×1920 |
+
+- Agent-lane stills are capped at **1280×800**; the human lane negotiates up
+  to **2560×1600**.
+- The host's resident-memory budget for all rigs defaults to **12 GB**,
+  counted in resident megabytes (a parked VM still holds its RAM). Eviction
+  is least-recently-used and never takes a machine someone is driving,
+  watching, or has a terminal open in.
+- An open terminal or watch lane pins the rig against parking and idle
+  reaping; the hard TTL still applies.
+
+## Ports and dev domains
+
+| Port | Where | Reserved for |
+| --- | --- | --- |
+| `7911` | Terminal guest | The port multiplexer every forward rides |
+| `9222`, `9223` | Browser guest | The DevTools relay and endpoint |
+| `80`, `443` | Browser guest loopback | The dev-domain HTTP/HTTPS lanes |
+
+- Discovery polls the terminal guest's listening TCP ports every ~4 s,
+  server-side.
+- At most **16** ports are auto-forwarded per rig; more are listed in the
+  log, not forwarded.
+- The host-side forward binds loopback, preferring the guest's own port
+  number; **Share on local network** adds an OS-assigned LAN port.
+- Dev domains must match `name.test` or `name.localhost` (lower-case,
+  max 63-character label). One domain maps to one port.
+- Dev-domain HTTPS uses a server-local CA (EC P-256, under
+  `<dataDir>/rigs/tls/`, keys 0600 and never in a guest) with one wildcard
+  leaf for `*.test` / `*.localhost`. No `openssl` on the host means no HTTPS
+  lane; plain HTTP still routes.
+
+## Egress defaults
+
+| Surface | Default allowlist |
+| --- | --- |
+| Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
+| Browser | The home page's host only |
+| Computer | Empty — deny everything — until a caller grants hosts |
+| Mobile | Not enforced (emulator-managed networking) |
+
+Every microVM additionally gets its image's registry hosts, for the pull
+only. The credential broker's allowed-hosts set is derived from the same
+allowlist: no token is minted for a host the guest cannot reach.
+
+## Clipboard and file transfer
+
+Both directions of copy/paste, and dragging files in and out. Available to a
+person driving a rig; an agent gets the clipboard through the verbs above and
+no file transfer at all (it already has a shell inside the enclosure).
+
+| Lane | Route | Carries |
+| --- | --- | --- |
+| Clipboard | `GET`/`POST /rig/clipboard/<rigId>` | Text, one PNG/JPEG (≤16 MB), and the guest paths of files on the clipboard |
+| Files | `POST /rig/files/<rigId>` | Up to 64 files, ≤256 MB each and ≤512 MB per drop, with an optional guest-pixel drop point |
+| Files | `GET /rig/files/<rigId>?p=<base64url path>` | One file's bytes, back out |
+
+- **HTTP, not RPC.** The RPC socket closes a connection on an inbound frame
+  over 256 KB — a DoS guard that is right for JSON commands and fatal for a
+  pasted screenshot. Bytes ride the same kind of route rig frames and meeting
+  audio already do.
+- **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
+  workspace membership — a target of its own, so a URL minted to *watch* a
+  machine cannot also write files into it.
+- **Take-over applies.** Writing the clipboard and dropping files are
+  mutating and are refused while someone else holds control; reading the
+  clipboard and reading a file out are observation and are not.
+- **Where drops land:** `~/Drops` (desktop), `~/drops` (terminal — beside the
+  worktree, never inside it, so a drop never appears as an untracked change),
+  `/tmp/cc-drops` (browser). The server picks the directory; a caller cannot
+  name it. Existing files are never overwritten — a colliding name lands as
+  `2-name.ext`.
+- **What the guest is told:** a browser page gets a real drop event at the
+  requested point (`Input.dispatchDragEvent`); a desktop gets the files plus
+  their URIs on its clipboard, because no host can synthesize an XDND drag
+  into an arbitrary toolkit without a privileged in-guest daemon. The reply
+  states which of the two happened.
+- **Dragging out** is desktop-only and reads the guest's `XdndSelection`
+  while a drag is live. A payload identical to what the guest was already
+  holding when the press began is treated as a stale selection from a
+  finished drag, not a new one — X has no "the drag is over" step.
+- **Image requirements:** the desktop image must be protocol 2 or later
+  (built after clipboard support landed). An older image answers 404 and the
+  app says to rebuild it rather than reporting a broken machine.
+- **The audit log records the shape, never the content**: `clipboard_read`,
+  `clipboard_write`, `drop_files` and `read_file` rows carry counts, sizes
+  and paths. A clipboard is where credentials live for a few seconds at a
+  time, and none of it is written down.
+
+## Guardrails, events, storage
+
+- Rig tools declare the **`enclosureControl`** action class (plus
+  `networkEgress` and `processSpawn` on the use tools). Allowed by default;
+  read-only modes deny it wholesale; the per-channel autonomy dial can
+  demote it to ask-first.
+- Domain events: `RigOpened`, `RigClosedEvent` (with its close reason),
+  `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
+  memory eviction, with the driving agent). See [domain
+  events](/manual/reference/domain-events/).
+- Storage: `rig_sessions` and `rig_action_log` in each workspace database.
+  The action log records every input event with its principal and a
+  monotonic per-rig sequence; typed text is redacted to a length and hash
+  before it is written.
+- Data directory: `rigs/images/` (imported qcow2 images), `rigs/smolvm/`
+  (per-rig runtime state), `rigs/smolvm-packs/` (pre-extracted machine
+  packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
+  seeds).
+- Routes: the live view is a tab in a channel or PR page;
+  `/settings/server/rigs` is the Enclosures settings screen.

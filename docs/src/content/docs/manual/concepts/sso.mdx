@@ -1,0 +1,101 @@
+---
+title: Single sign-on
+description: How SAML and OIDC logins work, what they verify and how accounts stay safe.
+---
+
+Single sign-on lets an external identity provider (IdP) decide who may sign
+in to your Control Center server. Two protocols are supported — SAML 2.0
+and OpenID Connect — and both land in the same place: a freshly minted
+device credential that is indistinguishable from an invite or QR pairing
+everywhere downstream.
+
+## The shape of a login
+
+SAML logins are **browser-mediated**. The IdP never opens a connection to
+your server; the user's browser carries everything:
+
+```
+browser ──> /saml/login ──> IdP ──POST SAMLResponse──> /saml/acs
+                                                          │  verify
+                                                          ▼
+                                              provision user (maybe)
+                                                          │
+                                                          ▼
+                                  browser handoff: device PSK in the URL
+                                  fragment (never a query parameter)
+```
+
+Because the browser is the courier, **a server behind NAT works fine** for
+logins: localhost, LAN, Tailscale, VPN, or a tunnel all serve — only the
+user's browser must reach the ACS URL. The WebSocket relay used by
+phone remote control cannot carry the HTTP round-trip, which is why SSO
+entry points always target the server's HTTP origin.
+
+OpenID Connect follows the same shape with an authorization-code + PKCE
+round-trip; claims are read from the issuer's token endpoint over TLS, so
+the browser never supplies identity data at all.
+
+## The adapters
+
+Control Center splits the responsibility deliberately:
+
+| Piece                         | Where                              | Owns                                                                                                                                       |
+| ----------------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `cc_saml` native              | `packages/cc_natives/native/saml/` | XML-DSig verification, canonicalization, SAML profile validation — delegated to the pinned pure-Rust `saml` crate behind a stateless C ABI |
+| `SamlService` / `OidcService` | `cc_server_core`                   | login state (pending request trackers, replay dedupe), validation policy knobs, the shared provisioning call                               |
+| `SsoProvisioner`              | `cc_server_core`                   | find-or-create the user, pin the provider subject, grant memberships under the auto-member policy                                          |
+| `ScimService`                 | `cc_server_core`                   | the SCIM 2.0 push surface (provision/deprovision lifecycle)                                                                                |
+| `SsoSettingsService`          | `cc_server_core`                   | the saved connection rows, env seeding, live re-apply, the SCIM token                                                                      |
+
+There is deliberately **no pure-Dart SAML crypto fallback**: hand-rolled
+XML-DSig/canonicalization is exactly where signature-wrapping
+vulnerabilities live, so a missing `cc_saml` library refuses both SAML
+login and server boot. The native is stateless by design — cross-request
+state lives in the Dart services, single-use and short-lived.
+
+## What a login verifies
+
+Inside the verified native and the service, in order:
+
+1. the assertion's **signature** (always required; the response envelope's
+   is optional per configuration) — structurally resistant to
+   signature-wrapping because the validated payload is bound to the
+   verified element,
+2. the **issuer** matches the configured IdP,
+3. the **audience** names this service provider,
+4. the **destination** is our ACS URL,
+5. `InResponseTo` matches a pending AuthnRequest we issued (unsolicited,
+   IdP-initiated responses are off by default),
+6. the **lifetime** windows hold within the clock skew (default 90s) and
+7. the **assertion id** was never seen before (replay cache).
+
+Failures come back as typed codes — signature, expired, audience,
+destination, request-match — and the endpoints answer with generic errors,
+so an attacker learns nothing about why a forgery failed.
+
+## Accounts and subject pinning
+
+The first SSO login pins the provider's immutable subject (`issuer` +
+NameID, or SCIM externalId) onto the account. From then on, the subject —
+not the email — identifies the login. If someone else later presents the
+same email from the same or another IdP, the pinned account refuses them.
+This is what stops a recycled email at a provider from becoming an account
+takeover.
+
+## Provisioning and deprovisioning
+
+JIT provisioning (at login) and SCIM pushes share the same provisioner, so
+behavior is identical. Deprovisioning — SCIM `active: false` or `DELETE` —
+revokes every device credential first (sessions drop within seconds through
+the device watch), removes every workspace membership and stamps the
+account deactivated. The user row survives: attribution is permanent.
+Reactivation restores login but never re-grants memberships.
+
+## What stays out
+
+- **Group→role mapping happens at login** from the SAML attributes / OIDC
+  claims — pushed SCIM groups are not stored.
+- **The owner role is unreachable from SSO** — neither as a default role nor
+  through a group mapping.
+- The WebSocket relay is never an SSO channel; phones that reach the server
+  only through the relay cannot complete a browser round-trip against it.

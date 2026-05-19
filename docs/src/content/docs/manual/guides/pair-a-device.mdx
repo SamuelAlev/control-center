@@ -1,0 +1,95 @@
+---
+title: Pair a device
+description: Pair your phone (or a second browser or desktop) with your Control Center server so you can follow the fleet remotely.
+---
+
+This guide shows you how to pair a phone with Control Center, so you can read
+messages and tickets and reply from anywhere. The same flow pairs a second
+browser or desktop app. See
+[Remote control and mobile](/manual/concepts/remote-control/) for how the link
+works and its security model.
+
+## Prerequisites
+
+- A desktop or web client connected to your server and a workspace set up. Pairing operations require a full client, so a paired phone can never pair — or revoke — another device.
+- The server reachable from the device you're pairing. On the same network this just works; from further away the brokered relay carries the traffic. If the panel answers **Not reachable** instead of a QR or credentials, publish a path first — the tunnel opt-in at **Settings → Server → Sharing & remote access**, or the server's `--public-url` (see [Run a headless server](/manual/guides/run-headless-server/)).
+- For a phone: nothing to install. The QR opens the **Remote** web app ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+
+**Self-hosting.** Remote and the relay broker are open source in this repo: the
+phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Pages
+via its `wrangler.jsonc`, to the `docker/cc_remote` nginx image, or to any static
+host with HTTPS — service workers and IndexedDB are secure-context-gated) and the
+relay (`apps/cc_signaling_server`, a single stateless Dart binary that holds no
+app data and never sees the pairing secret — it forwards only
+end-to-end-sealed frames). See their READMEs for build and run steps.
+
+## Step 1: Open the pairing panel
+
+Open **Settings → You → Your devices**. The **Your devices** section lists the
+clients paired to your account on this server. (The server owner sees every
+device on the server; everyone else sees only their own.)
+
+## Step 2: Pair a new client
+
+Click **Pair a new client** in the page header, give it a label (e.g. "My
+phone"), pick the type — **Web browser**, **Desktop app**, or **Phone** — and
+click **Pair**.
+
+- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy the link and open it in any browser. It points the Remote app at your server and carries the credential.
+- For a **browser** or **desktop**, copy the shown link (or the device id and pairing key) into the new client instead. The one-tap link is only offered when you are pairing from the web client, since a desktop binary has no web origin to build one from.
+
+The phone QR and the link `cc_server pair --client-url` prints on the CLI are
+**different payloads and are not interchangeable**: the CLI link fills in the web
+client's connect form, while this QR carries the server's full connection
+descriptor and identity fingerprint for the Remote PWA.
+
+On the phone side, opening a pairing link does not pair silently. Remote shows
+the server's advertised name and asks you to confirm before it stores anything,
+so a forged link cannot hijack the app onto someone else's server.
+
+:::caution[A scanned QR grants access immediately]
+There is no pending-then-approve step: a minted device is active from the
+moment it is created and the connect gate checks only that the credential is
+active and unexpired. Treat the QR and the pairing key like a password and
+revoke anything you did not mean to hand out.
+:::
+
+## Manage paired devices
+
+From **Settings → You → Your devices** you can:
+
+- **Rename** a device
+- **Revoke** a device you no longer trust. Revoking destroys its credential and drops its live session within seconds, so it fails closed on reconnect
+
+Revoking is the right move for a lost or replaced phone. It is immediate and
+irreversible from the device's perspective.
+
+Credentials minted from this panel are time-boxed: they expire 30 days after they
+are issued and the connect gate fails them closed after that. A credential
+minted with `cc_server pair` on the command line carries **no expiry at all** —
+revoke it by hand when the machine it was for is retired.
+
+## Switch workspaces from the phone
+
+A paired phone can switch between workspaces independently of the desktop. The
+phone sends the workspace with every call and the server checks your membership
+and role in that workspace on each one — so the phone reaches only workspaces you
+are a member of and switching there never changes what the desktop shows.
+
+A phone session is additionally restricted to a small allow-list of read-heavy
+tools: it can list and read tickets, agents, channels, messages and feed
+articles and it can update or assign a ticket, send a channel message and mark
+an article read or saved. Anything outside that set is refused before it reaches
+the server's dispatcher.
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/): make the server reachable in the first place
+- [Connect to a remote server](/manual/guides/connect-remote-server/): point a full client at it
+- [Use channels](/manual/guides/channels/): what you'll mostly do from the phone
+- [Create and manage tickets](/manual/guides/manage-tickets/): triage from the road
+
+## Related concepts
+
+- [Remote control and mobile](/manual/concepts/remote-control/)
+- [Deployment and clients](/manual/concepts/deployment/)

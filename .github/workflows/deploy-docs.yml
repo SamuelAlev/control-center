@@ -1,0 +1,114 @@
+name: Deploy docs
+
+# Builds the documentation + marketing site (docs/, Astro + Starlight) and
+# deploys it to the Cloudflare Worker named in docs/wrangler.jsonc — the same
+# model as the web client, the phone client and the design-system gallery.
+# Published at https://usectrl.dev.
+#
+# This REPLACES Cloudflare's git-integration auto-build. The point of moving it
+# here is that the docs then deploy on the same terms as everything else: a
+# pinned toolchain, a pinned pnpm (via the `packageManager` field), an egress
+# allowlist and a build that can be reproduced locally with `pnpm build`.
+# Leaving the Cloudflare-side build enabled as well would mean two builders
+# racing for one Worker, so disable it once this workflow has deployed green.
+#
+# Setup — reuses the existing repository secret:
+#   CLOUDFLARE_API_TOKEN  A Cloudflare API token scoped to "Edit Cloudflare
+#                         Workers" for the account below.
+# The account id is not sensitive, so it is inlined. `wrangler deploy` creates
+# the Worker on first run if it does not already exist.
+
+# A pull_request run builds and tests the site but stops short of deploying —
+# the deploy step is `push`-only. Without it a broken Astro build (a bad MDX
+# frontmatter, a dead internal link, a dependency bump) only ever surfaced
+# AFTER merge, on the branch that publishes, where the fix costs a second PR.
+on:
+  push:
+    branches: [main]
+    # Only redeploy when the site itself changes. Nothing under docs/ is built
+    # from the Flutter tree, so the app's own paths are deliberately absent.
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  # PR runs are keyed per-ref so a push supersedes its own earlier run without
+  # cancelling the main-branch deploy.
+  group: deploy-docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: ${{ github.event_name == 'pull_request' && 'build (no deploy)' || 'build and deploy' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_ACCOUNT_ID: d7dccdb80e94309a90054ed9c182ba05
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          # The site self-hosts its fonts (docs/public/fonts/), so the build
+          # fetches nothing but npm packages — keep it that way. A build-time
+          # font/CDN fetch would show up here as a blocked request rather than
+          # as a silently third-party-dependent page.
+          allowed-endpoints: >
+            github.com:443
+            registry.npmjs.org:443
+            api.cloudflare.com:443
+            sparrow.cloudflare.com:443
+            workers.cloudflare.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        working-directory: docs
+        run: corepack enable pnpm && pnpm --version
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pnpm install --frozen-lockfile
+
+      - name: Test
+        working-directory: docs
+        run: pnpm test
+
+      - name: Build site
+        working-directory: docs
+        run: pnpm build
+
+      # Cloudflare rejects the whole deploy if ANY asset exceeds 25 MiB.
+      - name: Check asset size budget
+        working-directory: docs
+        run: |
+          source "$GITHUB_WORKSPACE/scripts/lib/common.sh"
+          assert_asset_budget dist 24
+
+      # The repo's own wrangler (docs/package.json pins ^4.122.0 and
+      # pnpm-workspace.yaml holds it out of the minimum-release-age gate), not
+      # an `npx wrangler@<version>` that could disagree with the adapter the
+      # site was just built against.
+      - name: Deploy to Cloudflare
+        if: github.event_name != 'pull_request'
+        working-directory: docs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: pnpm exec wrangler deploy

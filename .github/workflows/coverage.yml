@@ -1,0 +1,75 @@
+name: Coverage
+
+# A weekly, NON-GATING line-coverage report for every workspace member.
+#
+# ci.yml deliberately drops `--coverage` and says why: nothing consumed the
+# output, and a percentage threshold on a merge gate rewards testing the easy
+# half of a codebase. That reasoning holds for a gate and not for visibility —
+# with 20 workspace members and no number published anywhere, a package with no
+# tests at all looks exactly like a package with good ones. This workflow
+# publishes the number and does nothing else: no threshold, no failure, no
+# required check.
+#
+# Weekly rather than per-PR because it re-runs every suite with instrumentation
+# (roughly the cost of the whole test matrix again) to answer a question that
+# does not change between Tuesday and Wednesday.
+
+on:
+  schedule:
+    # Mondays, 06:00 UTC — a number waiting at the start of the week.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: coverage
+  cancel-in-progress: true
+
+jobs:
+  report:
+    name: line coverage (informational)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            release-assets.githubusercontent.com:443
+            storage.googleapis.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      # Globally activated rather than added as a dev_dependency to 17
+      # pubspecs: it is a reporting tool, not something any package's code or
+      # tests import, and a dependency in the lockfile is a dependency the
+      # resolver has to satisfy forever.
+      - name: Install coverage formatter
+        run: |
+          dart pub global activate coverage
+          echo "$HOME/.pub-cache/bin" >> "$GITHUB_PATH"
+
+      # A failing suite does not fail this job: the point is the number, and a
+      # break is already reported — loudly, and as itself — by ci.yml.
+      - name: Measure
+        run: scripts/ci/coverage_report.sh build/coverage
+
+      - name: Upload lcov
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: coverage-lcov
+          path: build/coverage/*.lcov
+          if-no-files-found: warn
+          retention-days: 30

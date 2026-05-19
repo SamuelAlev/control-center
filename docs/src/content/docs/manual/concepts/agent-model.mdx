@@ -1,0 +1,129 @@
+---
+title: The agent model
+description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
+---
+
+## What is an agent?
+
+An agent is a named actor with a persona, a set of skills, an adapter to run on and a set of capabilities. Agents are principals in the same sense humans are: they author messages, own tickets, leave reviews and appear on the same roster. They are the things that do work.
+
+Each agent belongs to exactly one workspace. This is a hard invariant — `agent.workspaceId` is non-null, the agent's own workspace is what picks the database file its rows land in and creating a workspace-less agent is refused.
+
+An agent is also a directory. Its definition lives at `agents/<slug>/AGENTS.md` under the workspace's data directory, with the skills it holds symlinked into `agents/<slug>/.agents/skills`. The database row and the file are written together and a stale workspace is repaired by re-writing the files on the next launch.
+
+## What an agent carries
+
+| Attribute               | What it does                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| `name`                  | Short slug-like identifier (`architect`, `qa`). Also what `@mentions` resolve against |
+| `title`                 | Human-readable job title                                                              |
+| `persona`               | Free-text personality and behavioural instructions, injected as a prompt section      |
+| `systemPrompt`          | Optional full system-prompt override                                                  |
+| `skills`                | Case-insensitive set of skill names, mirrored as skill links on disk                  |
+| `adapterId`             | Which runner the agent dispatches to. **Null falls back to the `pi` CLI**             |
+| `modelId`               | Which model within that adapter                                                       |
+| `effort`                | Reasoning level, drawn from the selected model's own vocabulary                       |
+| `contextSize`           | Context window override                                                               |
+| `capabilities`          | Credential and egress flags, checked at launch                                        |
+| `silenceTimeoutMinutes` | Per-agent override (1–240) for the silence watchdog                                   |
+| `reportsTo`             | Parent agent id — the reporting chain the org chart draws                             |
+| `role`                  | Enumerated specialty. See the caveat below                                            |
+
+You edit all of these at Settings → Workspace → Agents. "Add agent" creates an unnamed agent that you then fill in; there is no hiring wizard and no role picker.
+
+:::caution[Fields that are stored but change nothing]
+Several persisted fields round-trip through the database and the wire without any code reading them. Do not plan around them:
+
+- **`strictMode`** (the "Strict identity check" toggle in the agent form) is written to the row and to the agent's `AGENTS.md` and is read by no dispatch, prompt, or policy code.
+- **Visibility** (workspace versus private) round-trips but filters nothing — no roster, no peer discovery — and there is no control that sets it.
+- **`runtimeProfileId`** is persisted and travels over the wire, but no dispatch code reads it. Runtime profiles do not affect how an agent launches.
+- **`maxConcurrentTasks`** is not a concurrency limit. Its only reader is the presence roster's workload model, where it is a capacity number.
+- **Lifecycle status** (`active` / `paused` / `archived`) is written — a budget hard stop flips an agent to `paused` — and it is rendered in the org chart, but no dispatch path consults it. A paused agent still runs.
+- **Per-agent budgets** (`monthlyBudgetCents`, a linked budget policy) _are_ read, by the post-run budget evaluator that records incidents and does the auto-pause above. But they have no field in the agent form, no MCP tool and no dedicated RPC operation — the only way to set one is a raw `agents.upsert` write — and the incidents they record have no screen either.
+  :::
+
+## Roles
+
+`role` is an enumerated specialty: **CEO**, **coder**, **reviewer**, **QA**, **designer**, **security**, **devops**, **PM**, **general**.
+
+Where it is read, it does two things: it parameterizes the persona block in the assembled prompt and it is the key that memory access grants are written against — `propose_policy` refuses when the author's role lacks write permission on the target memory domain.
+
+:::caution[Role is not settable from the app]
+No screen writes `role` and neither the CEO seed nor the specialist seeds set one, so in practice every agent's role is null. The pre-built role templates in the codebase (coder, reviewer, QA, designer and so on, each with a persona and default skills) have no production caller at all — nothing surfaces them. Treat roles as a modelling concept that is only partly wired.
+:::
+
+## Skills
+
+Skills are case-insensitive names on the agent entity. Two separate things happen with them:
+
+- The names are listed in the assembled prompt under a "Skills" heading. That is all the entity's set does by itself — there is no per-skill prompt library keyed off it.
+- Each named skill's directory (`skills/<slug>/SKILL.md` in the workspace) is linked into the agent's own folder. On the built-in harness, the linked skills' frontmatter is autoloaded into the system prompt and the agent reads a body on demand; typing `/<skill-name>` in a conversation loads that body as a directive for the turn.
+
+Skills fetched from outside pass a fail-closed supply-chain scan between fetch and write — no skill content reaches disk or a prompt without a verdict. Manage them at Settings → Workspace → Skills.
+
+## Capabilities
+
+Capabilities gate what a run is _handed_, not what its filesystem lets it touch. The credential broker checks them at launch: if a capability is off, the matching token is simply not injected.
+
+- **Push to repo** — gates injection of the GitHub token used for `git push`.
+- **GitHub API** — gates `GH_TOKEN` injection and egress to api.github.com.
+- **Ticketing** — gates the ticketing provider's API key and egress to its domains.
+- **Network egress** — arbitrary outbound requests.
+
+A run resolves them from the agent's own row. When the agent has none, a fixed conservative default applies: the three credential flags off, network egress on. The agent form's "Sandbox permissions" toggle chooses between that fallback and a custom set stored on the agent; the values it pre-fills come from a client-local preference, so the label "use workspace default" describes an intention rather than a workspace-scoped server setting. There is no per-conversation capability override in effect today.
+
+See [Sandbox and security](/manual/concepts/sandbox-security/) for the other half of the story, including what is and is not enforced at the filesystem level.
+
+## The adapter decides what can be enforced
+
+The single most consequential field on an agent is its adapter, because the adapter's transport determines how much of Control Center's policy is actually enforceable.
+
+| Transport        | Adapters                                   | What Control Center enforces                                                                                                                                                                                                                                               |
+| ---------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Built-in harness | Control Center (built-in)                  | Everything. The tool surface is _built_ from the mode, so a disallowed tool is invisible rather than merely denied; every call passes the approval gate and the action guardrails; the completion contract can nudge and then fail a run that ends without its deliverable |
+| Claude CLI       | Claude Code                                | Only the `mcp__*` tools it is served. Claude's own read, write, edit and shell tools live in its process and run unseen — and it is launched with `--dangerously-skip-permissions`, because non-interactive `claude -p` would otherwise block forever on its own prompt    |
+| Structured CLI   | Pi                                         | Prompt only. No flag tells a structured-JSON CLI it is in a read-only mode, so the mode reaches it as text; only its `mcp__*` calls pass a gate                                                                                                                            |
+| ACP              | OpenCode, Gemini CLI, Goose, Cursor, Codex | The least. Control Center implements no `session/request_permission` handler, so there is no permission negotiation at all — `session/new` carries a working directory, a model and an MCP config path and nothing about mode                                              |
+
+Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** The other transports get none of those.
+
+:::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
+The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the external CLI and ACP transports in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitization, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own copy-on-write worktree.
+
+What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/manual/concepts/sandbox-security/).
+:::
+
+An agent with **no** adapter falls back to the `pi` CLI. Every seeded agent is created without one, so a fresh workspace's five agents all dispatch to `pi` until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+
+## Where agents come from
+
+- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/manual/concepts/workspaces/).
+- **Added by hand** at Settings → Workspace → Agents.
+
+:::caution[Hiring by chat is not wired]
+`hire_agent`, `fire_agent`, `propose_hire` and `update_agent` exist as MCP tool implementations but are not registered on the server's tool surface, so an agent cannot call them. Asking the CEO to hire someone will not create an agent. Likewise, importing agents by scanning `AGENTS.md` files found on disk exists as a provider with no screen behind it.
+:::
+
+## Live state
+
+An agent has no stored status column. Its live state is derived from its most recent run logs each time it is read:
+
+| State      | Meaning                                                              |
+| ---------- | -------------------------------------------------------------------- |
+| `neverRun` | No run log exists                                                    |
+| `running`  | At least one run is currently in progress                            |
+| `failed`   | The latest run errored, or its liveness is failed or dead            |
+| `blocked`  | The latest run's liveness is blocked, stalled, or looping            |
+| `idle`     | Everything else — the agent has run before and has nothing in flight |
+
+Two further states, `queued` and `succeeded`, exist for individual runs in the conversation run tree; the roster never produces them, because a finished run being green is a fact about the run, not about the agent.
+
+The presence roster shows a parallel, coarser picture synthesized server-side from live run events — thinking, running, blocked on approval, done — which is what makes agents appear beside humans. See [Multiplayer](/manual/concepts/multiplayer/).
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/): what happens when an agent is actually run
+- [Modes](/manual/concepts/modes/): the per-conversation setting that shapes an agent's tool surface
+- [Multiplayer](/manual/concepts/multiplayer/): agents as principals, presence and the autonomy dial
+- [Sandbox and security](/manual/concepts/sandbox-security/): what constrains a run today
+- [Agent configuration reference](/manual/reference/agent-configuration/): the full field list

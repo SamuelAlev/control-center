@@ -1,0 +1,107 @@
+---
+title: Manage workspace memory
+description: Review, correct and prune the facts and policies agents have written into a workspace.
+---
+
+This guide shows you how to work with a workspace's knowledge store.
+
+The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through the `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy` and `remember` tools, plus automatic harvesting from completed runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+
+Memory lives at **Settings → Workspace → Memory** (`/settings/memory`, or press ⌘7). It is not a top-level sidebar destination.
+
+## The three tabs
+
+The page has exactly three tabs, each showing a live count:
+
+- **Facts** — every fact in the workspace, with a count of the ones that are not superseded
+- **Policies** — normative rules grouped by domain, with a count of the active ones
+- **Knowledge graph** — an interactive canvas of domains, topics, facts and policies
+
+Domains are not a thing you create. A domain comes into existence when an agent writes the first fact or policy into it; there is no domain-creation control anywhere in the UI.
+
+## Review and correct a fact
+
+1. Open the **Facts** tab.
+2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
+3. Use the sort toggle to order by recency or by confidence.
+4. Click a fact's edit control.
+
+The edit dialog lets you change:
+
+- **Domain** — moving a fact between domains
+- **Topic** — its short label
+- **Content** — the knowledge text
+- **Confidence** — a slider in 5% steps
+
+Save to write it back. There is no **Add fact** button; the dialog only opens on an existing row.
+
+## See superseded facts
+
+The Facts tab has a **Show superseded** switch. Superseded facts are hidden by default and revealed by that switch, which is where the audit trail lives — superseding never deletes.
+
+## Delete a fact
+
+Use a fact's delete control and confirm. This is a real delete, not a supersede: use it for facts that were simply wrong to record and let agents supersede facts whose _content_ has moved on.
+
+## Manage policies
+
+The **Policies** tab groups active policies by domain and demotes inactive ones to a trailing section. Per policy you can:
+
+- **Edit** it
+- **Delete** it
+- **Deactivate** / **Activate** it — the reversible option and usually the right one. Only active policies reach agent prompts.
+
+As with facts, there is no create control.
+
+## Explore the knowledge graph
+
+The **Knowledge graph** tab lays domains, topics, facts and policies out as a navigable node canvas — pan, zoom, drag nodes. Tapping a node opens its detail sheet, from which the same edit dialogs are reachable. It is the fastest way to see which domains are actually populated.
+
+## Edit an agent's working memory
+
+Working memory is a private scratchpad per agent, injected into its prompt at dispatch time. Agents write it themselves with `record_observation` and `update_my_notes`, but you can read and edit it directly:
+
+**Settings → Workspace → Agents** (⌘5) → select the agent → the **Memory** tab.
+
+## Access grants
+
+Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain.
+
+:::caution[Grants have no user interface]
+There is no screen for access grants. The role-by-domain matrix editor exists in the codebase but nothing mounts it, so grants are reachable only over the `memory_access_grant.*` RPC ops. You cannot restrict who reads a memory domain from the app today.
+:::
+
+Two things to understand about how they resolve, whichever way a grant is written:
+
+- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. Only writes are hard-enforced and a write without `write` permission throws. Memory is not read-denied by default.
+- **Grants are keyed on the agent's role.** Agents created through the app have no role — the agent form has no role field — so role-keyed grants do not apply to them.
+
+## Search is not the same everywhere
+
+Three different things are called "memory search" and they do not agree:
+
+| Where                               | What it does                                                                                                 |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
+| The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
+| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default), fusing lexical and vector recall                            |
+
+So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
+
+## Embeddings
+
+Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**.
+
+:::caution[There is no retroactive backfill]
+The embedding backfill job is a stub that always reports zero. Facts written before the model was installed stay keyword-only permanently. If semantic recall matters, install the model before agents start writing memory.
+:::
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Use the MCP server](/manual/guides/mcp-server/)
+
+## Related concepts
+
+- [Memory and knowledge](/manual/concepts/memory-knowledge/)
+- [Workspaces and isolation](/manual/concepts/workspaces/)

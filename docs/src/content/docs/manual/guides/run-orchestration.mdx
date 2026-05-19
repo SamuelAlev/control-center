@@ -1,0 +1,122 @@
+---
+title: Run an orchestration
+description: Ask an orchestrator for a plan, review and edit it in Plan Studio, approve it once and let a generated pipeline do the work.
+---
+
+This guide shows you how to turn one big goal into a whole-team plan that runs
+itself. See [Orchestration](/manual/concepts/orchestration/) for how it works.
+
+## When to use an orchestration
+
+Reach for an orchestration when the ask is bigger than one agent and you don't
+already know the exact steps. For a single task, message an agent in a
+[channel](/manual/guides/chat-with-agent/); for a process you can spell out by
+hand, build a [pipeline template](/manual/guides/create-pipeline/).
+
+## Step 1: Ask for the plan
+
+1. Open (or create) a channel and, if you want one, open the ticket the work
+   belongs to. Every proposal is anchored on a ticket.
+2. Optionally switch the composer's mode dropdown to **Orchestrate**. That mode
+   narrows the agent to reading and proposing — memory, the code graph, repo and
+   ticket reads and `propose_orchestration` — so it cannot start writing code
+   instead of planning.
+3. @-mention your orchestrator (usually the CEO agent) and state the goal in
+   plain language:
+
+> @ceo Research the competitive landscape for an offline-first meeting recorder
+> and write a one-page positioning doc.
+
+The orchestrator answers with a structured **proposal** card in the channel: the
+roles it needs, the work broken into sub-tickets, an optional research and
+discussion phase, a synthesis step that produces the deliverable and a budget.
+
+Because the proposal is a typed object, the app validates it (well-formed roles,
+declared output schemas, a DAG with no cycles) before anything runs. A proposal
+that fails validation cannot be approved.
+
+## Step 2: Review and edit the proposal
+
+The in-chat card offers three actions: **Approve plan**, **Reject** and
+**Open** — which opens the plan in Plan Studio as an editor tab. The card
+itself cannot be edited.
+
+To change anything, press **Open** and work in the right-hand inspector:
+
+- **Roles** — each is either an existing agent or a **new hire** the
+  orchestration creates on approval. Swap a role for an agent you trust, or
+  point a hire at an existing agent.
+- **Title**, **description**, **dependencies** and **output schema** of any
+  sub-ticket.
+
+Two things are read-only: structural nodes (research, discussion, synthesis) and
+any node whose work has already run. Editing is possible only while the
+orchestration is still `proposed`.
+
+Press **Estimate** in the approval bar for cost, duration and blast-radius
+ranges before you commit. See
+[Work in Plan Studio](/manual/guides/plan-studio/) for the full editor.
+
+:::note[The budget is not a spending limit]
+A proposal's budget is compared against the _estimate_ in the approval bar: when
+the estimate's high end exceeds it, the total turns red with an over-budget
+warning. Nothing checks spend while the plan executes, so it will not stop or
+fail a run. For an actual spend stop, use per-agent budget policies — see
+[Manage costs](/manual/guides/manage-costs/).
+:::
+
+## Step 3: Approve
+
+Approve the plan, from the chat card or from Plan Studio's approval bar.
+**This is the only decision you make.** Approving is operator-only — there is no
+MCP tool for it, so an agent can propose and revise but never approve its own
+plan.
+
+From here a deterministic materializer (a pure function, no LLM) turns the
+proposal into a real [pipeline](/manual/concepts/pipelines/) and creates the
+scaffolding:
+
+- hires any new roles (and records them)
+- groups the roles into a **team**
+- files the sub-tickets under a **project**
+- starts the **pipeline run** that drives it all
+
+The status moves to `approved`, then `executing`.
+
+## Step 4: Watch it run
+
+The sub-tickets execute as pipeline steps; if you enabled a discussion round,
+each role posts a position first. Progress surfaces where you already look:
+
+- the **parent ticket** the orchestration was anchored on
+- the shared **channel** the team talks in, where the plan's row tracks each
+  node's state
+- the **pipeline run** detail, with its usual waterfall and per-step cost — see
+  [Monitor pipeline runs](/manual/guides/monitor-pipelines/)
+- the **project** the sub-tickets were filed under
+
+Once the sub-tickets are done, the status moves to `synthesizing` and the
+synthesis step produces the deliverable onto the parent ticket, then
+`completed`.
+
+## Stop it early
+
+Press **Cancel orchestration** on the in-chat card, or **Cancel run** in Plan
+Studio's approval bar. Cancellation tears down the in-flight work.
+
+An orchestration fails when its generated pipeline run fails — which one failing
+step is enough to cause, unless that node is set to continue on fail. There is
+no budget-exceeded failure path and no "every sub-ticket failed" threshold.
+
+## Related guides
+
+- [Work in Plan Studio](/manual/guides/plan-studio/): edit, estimate, diff and approve the plan
+- [Create and manage tickets](/manual/guides/manage-tickets/): the sub-tickets an orchestration creates
+- [Organize work with projects](/manual/guides/projects/): where those sub-tickets are filed
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/): what a materialized orchestration looks like in the engine
+- [Build an agent team](/manual/guides/build-team/): the roles an orchestration fills or hires
+
+## Related concepts
+
+- [Orchestration](/manual/concepts/orchestration/)
+- [Modes](/manual/concepts/modes/)

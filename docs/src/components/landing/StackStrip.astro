@@ -1,0 +1,48 @@
+---
+/**
+ * StackStrip — "works with the tools you already run", E2B logo-strip style.
+ * Reuses the vendored brand SVGs.
+ */
+import BitbucketIcon from '../../assets/bitbucket-icon.svg';
+import ClaudeIcon from '../../assets/claude-icon.svg';
+import GitLabIcon from '../../assets/gitlab-icon.svg';
+import LinearIcon from '../../assets/linear-icon.svg';
+import McpIcon from '../../assets/model-context-protocol-icon.svg';
+import PiIcon from '../../assets/pi-icon.svg';
+---
+
+<section class="border-y border-border py-[clamp(28px,4vw,44px)]">
+  <div class="wrap flex flex-wrap items-center gap-x-[clamp(24px,4vw,56px)] gap-y-5">
+    <span class="font-mono text-[11px] uppercase tracking-[0.1em] text-idle">Speaks the tools you already run</span>
+    <div class="flex flex-wrap items-center gap-x-[clamp(20px,3vw,44px)] gap-y-4">
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <svg class="h-[18px] w-[18px] text-fg opacity-85" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.6 0 0 3.6 0 8c0 3.5 2.3 6.5 5.5 7.6.4.1.5-.2.5-.4v-1.4C3.8 14 3.3 12.7 3.3 12.7c-.3-.8-.8-1-.8-1-.6-.4 0-.4 0-.4.7 0 1.1.7 1.1.7.6 1.1 1.7.8 2.1.6 0-.5.3-.8.5-1-1.8-.2-3.6-.9-3.6-3.9 0-.9.3-1.6.8-2.1 0-.2-.3-1 .1-2.1 0 0 .7-.2 2.2.8.6-.2 1.3-.3 2-.3s1.4.1 2 .3c1.5-1 2.2-.8 2.2-.8.4 1.1.1 1.9.1 2.1.5.5.8 1.2.8 2.1 0 3-1.8 3.7-3.6 3.9.3.3.6.8.6 1.6v2.3c0 .2.1.5.5.4A8 8 0 0016 8c0-4.4-3.6-8-8-8Z"/></svg>
+        GitHub
+      </span>
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <GitLabIcon class="h-[18px] w-[18px]" aria-hidden="true" />
+        GitLab
+      </span>
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <BitbucketIcon class="h-[18px] w-[18px]" aria-hidden="true" />
+        Bitbucket
+      </span>
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <LinearIcon class="h-[18px] w-[18px] text-fg opacity-85" aria-hidden="true" />
+        Linear
+      </span>
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <McpIcon class="h-[18px] w-[18px] text-fg opacity-85" aria-hidden="true" />
+        MCP · 100+ tools
+      </span>
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <ClaudeIcon class="h-[18px] w-[18px] opacity-85" aria-hidden="true" />
+        Claude&nbsp;Code
+      </span>
+      <span class="inline-flex items-center gap-[9px] text-[15px] font-semibold tracking-[-0.01em] text-muted">
+        <PiIcon class="h-[18px] w-[18px] opacity-85" aria-hidden="true" />
+        Pi
+      </span>
+    </div>
+  </div>
+</section>

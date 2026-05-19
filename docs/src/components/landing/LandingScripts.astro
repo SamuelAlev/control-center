@@ -1,0 +1,50 @@
+---
+/**
+ * Landing-page client behavior: reveal-on-scroll and offset-aware smooth
+ * anchors. (Sticky-nav scroll state is owned by MarketingNav.)
+ * Reduced-motion safe.
+ */
+---
+
+<script>
+  (function () {
+    "use strict";
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var nav = document.getElementById("nav");
+    var navH = nav ? nav.offsetHeight : 64;
+
+    /* smooth in-page anchors — manual scrollTo with sticky-nav offset */
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        var id = a.getAttribute("href");
+        if (id === "#" || id === "#top") {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+          return;
+        }
+        var target = document.querySelector(id);
+        if (!target) return;
+        e.preventDefault();
+        var y = target.getBoundingClientRect().top + window.scrollY - navH - 12;
+        window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
+      });
+    });
+
+    /* reveal on scroll */
+    var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+    if (reduce || !("IntersectionObserver" in window)) {
+      reveals.forEach(function (el) { el.classList.add("in"); });
+    } else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+        });
+      // threshold 0: any intersection reveals — ratio thresholds are
+      // unreachable for .reveal elements taller than the viewport.
+      }, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
+      reveals.forEach(function (el) { io.observe(el); });
+    }
+
+    window.addEventListener("resize", function () { navH = nav ? nav.offsetHeight : 64; }, { passive: true });
+  })();
+</script>

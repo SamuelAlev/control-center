@@ -1,0 +1,333 @@
+---
+title: Chat bridge
+description: Providers, commands, credentials, capabilities, RPC operations and storage for the chat bridge.
+---
+
+## Providers
+
+| Provider | Wire value | Transport                  | Channel origin |
+| -------- | ---------- | -------------------------- | -------------- |
+| Slack    | `slack`    | Socket Mode (outbound WSS) | `slack`        |
+
+**Slack is the only provider.** `ChatProvider` is a single-valued enum and `cc_server` registers one plugin. The schema, every lookup and every unique index are keyed by `provider`, so ids never cross providers and adding one is a server-only change.
+
+One provider-side app per **workspace × provider**.
+
+## Chat commands
+
+The command name is per app (`cc` by default, so `/cc`). An admin can rename it; the bridge then uses whatever it was last invoked with.
+
+| Command                               | Effect                                                        |
+| ------------------------------------- | ------------------------------------------------------------- |
+| `/cc help` (or `/cc` with no verb)    | Lists what the bot can do                                     |
+| `/cc link <code>`                     | Redeems a one-time code and links the sender's chat identity  |
+| `/cc ticket <title>`                  | Files a local ticket reported by the linked member            |
+| `/cc ticket <title> \| <description>` | Same, with everything after the first `\|` as the description |
+| Unknown verb                          | Reports the unknown verb plus the help text                   |
+
+Ways to reach an agent:
+
+| Gesture                    | Behavior                                                                                                               |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `@bot …` in a channel      | Opens a thread and a matching Control Center channel; the agent replies in the thread                                  |
+| Reply in a bridged thread  | Continues the same Control Center channel — no mention needed                                                          |
+| Plain message in a channel | Ignored (not addressed to the bot and not in a bridged thread)                                                         |
+| DM to the bot              | One Control Center channel per DM conversation; sets a thread title and an "is thinking…" status while the agent works |
+
+## Credential fields (Slack)
+
+Declared by the provider descriptor, which is what generates the connect dialog and validates the submission.
+
+| Field id             | Label                           | Required | Prefix  | Where it lives                                                  |
+| -------------------- | ------------------------------- | -------- | ------- | --------------------------------------------------------------- |
+| `botToken`           | Bot user OAuth token            | Yes      | `xoxb-` | OAuth & Permissions                                             |
+| `appToken`           | App-level token                 | Yes      | `xapp-` | Basic Information → App-Level Tokens, scope `connections:write` |
+| `configRefreshToken` | App configuration refresh token | No       | `xoxe`  | App configuration tokens on api.slack.com/apps                  |
+
+`configRefreshToken` is the app-management credential: without it the connection works, but the bot cannot be created or edited from Control Center. It rotates on every use and the rotated value is stored immediately.
+
+Values are trimmed, undeclared keys are dropped and a prefix mismatch is refused with the same sentence on the client and the server. Required fields must be present on every connect; an optional field left empty keeps whatever was already stored.
+
+## Slack app requirements
+
+Bot token scopes:
+
+```text
+app_mentions:read
+assistant:write
+channels:history
+chat:write
+commands
+groups:history
+im:history
+users:read
+users:read.email
+```
+
+Bot event subscriptions:
+
+```text
+app_home_opened
+app_mention
+message.channels
+message.groups
+message.im
+```
+
+Structural settings Control Center asserts when it creates or edits the app: Socket Mode enabled, no request URL, Messages tab enabled and writable, bot `always_online`, the required scopes and events merged into whatever the app already has (never subtracted) and one slash command carrying the description `File a ticket or link your Control Center account` — the marker that identifies Control Center's own command in an exported manifest.
+
+## Connection states
+
+| State            | Wire           | Meaning                                                         |
+| ---------------- | -------------- | --------------------------------------------------------------- |
+| Not connected    | `disconnected` | No credentials stored for this workspace × provider             |
+| Connecting…      | `connecting`   | Credentials stored, transport dialing or re-dialing             |
+| Live             | `connected`    | Transport up and receiving events                               |
+| Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
+
+Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+
+## Provider capabilities (Slack)
+
+The bridge is written against the richest surface and degrades per capability.
+
+| Capability                | Slack  | Effect when absent                                                                             |
+| ------------------------- | ------ | ---------------------------------------------------------------------------------------------- |
+| `streaming`               | yes    | The whole reply is posted once, at the end                                                     |
+| `streamingRequiresThread` | yes    | A reply target with no thread anchor posts whole replies                                       |
+| `ephemeralMessages`       | yes    | A slash-command answer with no usable reply handle is dropped (refusals always post in-thread) |
+| `threadStatus`            | yes    | No transient "is thinking…" line                                                               |
+| `threadTitle`             | yes    | The chat thread keeps its default title                                                        |
+| `slashCommands`           | yes    | No `/cc` surface                                                                               |
+| `taskCards`               | yes    | Text only — no card above the reply and no "View in Control Center" link                       |
+| `maxMessageLength`        | 39,000 | Longer replies are truncated with a pointer to Control Center                                  |
+| `maxStreamChunkLength`    | 3,800  | Appends are split at a paragraph, line, or space boundary                                      |
+
+Streaming advertised is not streaming promised: Slack's needs the Agents & AI Apps feature on a paid plan. A refusal at call time (`streaming_not_supported`, `feature_not_enabled`, `paid_only`, …) is remembered for the life of the connection and surfaced as `streamingAvailable: false`. Slack's task cards ride the same call, so a Slack that refuses the card's display mode keeps its stream and loses only the card, once, for the life of the connection.
+
+A stream also has to name the reader it is for. Slack requires both a recipient user and their team to open one in a **channel** (a DM does not) and refuses with `missing_recipient_user_id` / `missing_recipient_team_id` otherwise — a per-call refusal, so the bridge keeps trying and the turn arrives as one posted reply meanwhile. The recipient is whoever asked, taken from the inbound message (their team, not the app's, so a Slack Connect channel resolves correctly). For a turn nobody started from chat — work kicked off in Control Center on an already-bridged conversation — it is the member whose link created the bridge; if they have since unlinked their chat account, that turn posts whole rather than streaming.
+
+## Task cards
+
+One grouped card per agent turn (`task_display_mode: plan`), with a row per step. Each row is a `task_update` of `id` + `title` + `status`, plus a one-shot `details` when the thought is ready. Same-id `details` and `output` concatenate with no separator, so `details` are sent once and `output` is never streamed. The plan's title is the request; the answer is a separate later append carrying a `markdown_text` chunk.
+
+| Part           | Content                                                                                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plan title     | What was asked                                                                                                                                                |
+| Setup row      | `Working on it…`, then `Cloning …`, then `Starting the agent…` — one row, title replaced                                                                      |
+| Thinking row   | `Thinking…`, added when the agent starts reasoning; the thought is this row's `details`, sent once when reasoning finishes                                    |
+| Tool rows      | One per tool (`Bash which swift`), unique id so they sit side by side                                                                                         |
+| Status         | In progress while that row runs; complete when the next row starts or the turn finishes; error for failed, interrupted and turn-limit                         |
+| Call to action | `View in Control Center` as a trailing row when the turn finishes — absent while work is still running and absent when the server has no reachable public URL |
+
+What a card never carries: tool output, an argument outside that allow-list, or anything read from the database. Reasoning prose is only the `Thinking…` row's details (capped at 256 characters), not the message body. A card that would say nothing new is not resent. A mention opens the stream immediately so the thread is not silent; a turn that then produced no text at all finishes that same card with a short note rather than posting a second message. A wordless turn on a channel that never opened a stream (no cards, or streaming already refused) still posts one message carrying the finished card and the note.
+
+Streamed and posted cards are different payloads:
+
+| Form     | Shape                                                | Prose                                            |
+| -------- | ---------------------------------------------------- | ------------------------------------------------ |
+| Streamed | `plan_update` plus `task_update` chunks keyed `id`   | Plain string, capped at 256 characters per chunk |
+| Posted   | A `plan` block wrapping `task_card`s keyed `task_id` | Rich text                                        |
+
+Failure handling:
+
+| Situation                                    | Behavior                                                                                                                    |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Provider refuses the card on an append       | The append is retried immediately without it; prose still arrives live and cards are dropped for the life of the connection |
+| Provider refuses the prose too               | The stream is closed and the reply is posted whole                                                                          |
+| Stream breaks after part of the reply landed | The stream is closed and nothing is re-posted                                                                               |
+
+See [Chat bridges](/manual/concepts/chat-bridges/) for why the payload is split this way.
+
+### Setup, before there is a turn
+
+The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `ChannelProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the channel row.
+
+| Provisioning state          | Narration                                                 |
+| --------------------------- | --------------------------------------------------------- |
+| Mention accepted            | `Working on it…`                                          |
+| Step `repo`                 | `Cloning <repo>…`                                         |
+| Step `prCheckout`           | `Checking out the pull request in <repo>…`                |
+| Step `agent`                | `Setting up <agent>…`                                     |
+| `provisioning`, no step yet | `Preparing the workspace…`                                |
+| `ready`                     | `Starting the agent…`                                     |
+| Agent reasoning             | `Thinking…`                                               |
+| `failed`                    | `Workspace setup failed — details are in Control Center.` |
+
+Setup narration requires all four conditions:
+
+| Condition                                 |
+| ----------------------------------------- |
+| The provider renders cards                |
+| Streaming is available on this connection |
+| The channel has a chat request in flight  |
+| No card is already reporting a turn there |
+
+The request stays in flight until a turn starts or setup fails. A `ready` event with no card already open is a warm channel and is left quiet and provisioning nobody in chat is waiting for — a conversation opened in the app, a stranded one resumed at boot — produces no card at all.
+
+## The `/open` bounce page
+
+Chat products accept `http(s)` in a link and nothing else, so a call to action cannot name the desktop's scheme directly.
+
+| Property   | Value                                                                                                                                       |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Route      | `GET /open/workspaces/<workspaceId>/(channels\|tickets)/<id>`                                                                               |
+| Origin     | Derived from the server's public URL (`ws` → `http`, `wss` → `https`); loopback is kept                                                     |
+| Response   | A small no-store HTML page that navigates to `control-center://workspaces/<workspaceId>/(channels\|tickets)/<id>` and shows a manual button |
+| Validation | Ids must match `[A-Za-z0-9_.-]{1,128}`; anything else is a 404                                                                              |
+| Access     | Public and inert — it reads no database, so it is not an existence oracle; the app it opens does the authorization                          |
+
+## Bot profile fields
+
+| Field              | Limit       | Notes                                                                                             |
+| ------------------ | ----------- | ------------------------------------------------------------------------------------------------- |
+| `appName`          | 1–35 chars  | Defaults to `Control Center · <workspace name>`                                                   |
+| `botDisplayName`   | 1–80 chars  | Defaults to `control-center`                                                                      |
+| `description`      | ≤ 140 chars |                                                                                                   |
+| `agentDescription` | ≤ 300 chars | Shown above a DM with the bot                                                                     |
+| `command`          | ≤ 32 chars  | Normalized: leading slashes stripped, lowercased, `[^a-z0-9_-]` removed, empty falls back to `cc` |
+| `agentEnabled`     | —           | Whether the DM/agent experience is exposed                                                        |
+
+An empty box means "leave it alone", not "clear it". Limits are Slack's, which are the tightest of the products modelled.
+
+## Link codes
+
+| Property | Value                                                                                    |
+| -------- | ---------------------------------------------------------------------------------------- |
+| Length   | 6 characters                                                                             |
+| Alphabet | `23456789ABCDEFGHJKLMNPQRSTVWXYZ` (no `0`/`O`, `1`/`I`, `U`)                             |
+| Lifetime | 15 minutes                                                                               |
+| Uses     | One                                                                                      |
+| Storage  | In memory — a server restart invalidates outstanding codes                               |
+| Scope    | One workspace and one provider; minting a new code invalidates the member's previous one |
+
+Redemption is matched case-insensitively. Unknown, expired, foreign-workspace and wrong-provider codes all fail identically on purpose.
+
+## Link methods
+
+| Method | Wire    | How                                                                            |
+| ------ | ------- | ------------------------------------------------------------------------------ |
+| Code   | `code`  | The member redeemed `/cc link <code>`                                          |
+| Email  | `email` | The provider's verified email matched a user who is already a workspace member |
+
+## RPC operations
+
+All are workspace-scoped. The server is stateless, so each call carries its own `workspace_id` in args; the dispatcher refuses a workspace-scoped op that omits it, before any database opens. Credentials travel _in_ only — status reads never return them.
+
+| Operation               | Kind        | Min role                                       | Action classes                  |
+| ----------------------- | ----------- | ---------------------------------------------- | ------------------------------- |
+| `chat.providers`        | read        | `guest`                                        | —                               |
+| `chat.status`           | read        | `guest`                                        | —                               |
+| `chat.connect`          | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.disconnect`       | destructive | `admin`                                        | `secretAccess`                  |
+| `chat.listUserLinks`    | read        | `guest`                                        | —                               |
+| `chat.beginUserLink`    | mutate      | `member`                                       | —                               |
+| `chat.unlinkUser`       | mutate      | `member` for yourself, `admin` for anyone else | —                               |
+| `chat.createApp`        | mutate      | `admin`                                        | `secretAccess`, `networkEgress` |
+| `chat.setupLink`        | read        | `admin`                                        | —                               |
+| `chat.botProfile`       | read        | `admin`                                        | `networkEgress`                 |
+| `chat.updateBotProfile` | mutate      | `admin`                                        | `networkEgress`                 |
+
+Read operations inherit the `guest` floor from their kind; mutations without an explicit floor require `member`.
+
+`chat.setupLink` composes a provider app-creation URL from the bot profile. It declares no action class because it reads no secret and dials nothing — the user's own browser makes the only call.
+
+One reactive query completes the surface:
+
+| Query                 | Kind  | Emits                                                    |
+| --------------------- | ----- | -------------------------------------------------------- |
+| `chat.watchUserLinks` | watch | The roster, re-pushed whenever a link is made or removed |
+
+It exists because the linking happens on the _other_ side: a member types the one-time code into the bot, so no client response can carry the answer back. The settings roster and the open "link my account" dialog both follow it and the dialog switches to a confirmation the moment the member's own link lands.
+
+`chat.beginUserLink` always mints a code for the caller's own identity. `chat.updateBotProfile` returns a `remaining_step` only when a step is left (typically a reinstall); its absence means the edit is live.
+
+`chat.providers` returns one entry per offered provider — the descriptor plus, when there is one, the connection status. Everything the settings UI renders comes from that payload, which is why adding a provider is a server-only change.
+
+## Storage
+
+| What                       | Where                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
+| Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
+| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
+
+Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
+
+## Database tables
+
+Both live in the workspace database — added in schema version 4; the workspace database is at version 6 — so a cross-workspace read does not compile.
+
+`chat_channel_links` — one external conversation ↔ one Control Center channel:
+
+| Column                                                 | Notes                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------- |
+| `id`                                                   | UUID v4                                                                    |
+| `workspace_id`                                         | Workspace scope                                                            |
+| `provider`                                             | `ChatProvider.wire`                                                        |
+| `external_team_id`                                     | Slack team `T…`, empty for providers without the concept                   |
+| `external_channel_id`                                  | Slack channel `C…`, group `G…`, DM `D…`                                    |
+| `external_thread_id`                                   | Thread anchor, or null when the whole conversation is the anchor (bot DMs) |
+| `cc_channel_id`                                        | `REFERENCES channels(id) ON DELETE CASCADE`                                |
+| `created_by_user_id`, `created_at`, `last_activity_at` |                                                                            |
+
+Unique on `(workspace_id, provider, external_channel_id, external_thread_id)`, with a partial index enforcing the same for null thread ids (SQLite treats NULLs as distinct).
+
+`chat_user_links` — one external member ↔ one Control Center user:
+
+| Column                                 | Notes                                           |
+| -------------------------------------- | ----------------------------------------------- |
+| `id`                                   | UUID v4                                         |
+| `workspace_id`                         | Workspace scope                                 |
+| `provider`                             | `ChatProvider.wire`                             |
+| `external_team_id`, `external_user_id` | Slack member `U…`                               |
+| `user_id`                              | Control Center user (global, so no foreign key) |
+| `method`                               | `code` or `email`                               |
+| `linked_at`                            |                                                 |
+
+Unique on `(workspace_id, provider, external_team_id, external_user_id)` and on `(workspace_id, provider, user_id)` — single-valued attribution in both directions, while one person can be linked on several providers.
+
+A link is identity resolution, **not** an access grant: membership is re-checked on every inbound event, so a link to a member who has since been removed resolves to a refusal.
+
+## Channel origin and message metadata
+
+A bridged channel is created with the provider's `ChannelOrigin` (`slack`). It behaves like an ordinary human-facing channel — notified and sectioned like `user` — and `isExternalChat` is the check every behavior (mirroring, badging, retention) goes through.
+
+Every message the bridge brings in carries a `metadata['chat']` stamp:
+
+```json
+{
+  "chat": {
+    "provider": "slack",
+    "teamId": "T024BE7LD",
+    "channelId": "C0G9QF9GW",
+    "threadId": "1700000000.000100",
+    "messageId": "1700000000.000200",
+    "userId": "U024BE7LH",
+    "userLabel": "sam"
+  }
+}
+```
+
+The stamp is also the echo guard: the outbound mirror skips any message that carries it, which is what stops an inbound chat message from being posted straight back.
+
+## Relay behavior
+
+| Behavior                               | Detail                                                                                                         |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| What is relayed out                    | Agent **text** only, plus the task card's status line. Reasoning prose and tool output stay in Control Center  |
+| Streaming cadence                      | Throttled to one flush per second while a turn runs; the card and the text it explains travel in the same call |
+| Human messages typed in Control Center | Mirrored to the linked thread, prefixed with the author's display name                                         |
+| Empty turns                            | Reported as a short note (run failed, interrupted, or stopped at its turn limit) rather than silence           |
+| Deduplication                          | Keyed on the provider's own event id; the last 512 are remembered                                              |
+| Front-door agent                       | A new bridged conversation wakes the workspace's CEO agent, else its first agent, else nobody                  |
+| Channel naming                         | `#channel · <request>` for a channel thread, `Slack DM · <request>` for a DM, titles capped at 48 characters   |
+| Failure isolation                      | One bad event never takes the bridge down; the connection keeps serving every other conversation               |
+
+## See also
+
+- [Set up Slack integration](/manual/guides/slack-integration/)
+- [Link your Slack account](/manual/guides/link-chat-account/)
+- [Customize the chat bot](/manual/guides/customize-chat-bot/)
+- [Chat bridges](/manual/concepts/chat-bridges/)
+- [Guardrails](/manual/concepts/guardrails/) for the action classes the ops declare

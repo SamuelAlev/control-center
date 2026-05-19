@@ -1,0 +1,4 @@
+# Shrinking allowlist: files still importing package:flutter/cupertino.dart.
+# Enforced by architecture_constraints_test.dart. Migrate to cc_ui + remove.
+# Regenerated 2026-07-06 to the current baseline.
+lib/core/theme/app_theme.dart

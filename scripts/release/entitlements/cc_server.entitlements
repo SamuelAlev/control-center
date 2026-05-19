@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime exception for the cc_server executable (Dart AOT, built by
+  `dart build cli`).
+
+  NB: no double hyphen may appear anywhere in this comment. XML forbids the
+  sequence inside comments and while plutil tolerates it, the AMFI parser
+  inside codesign does not: "Failed to parse entitlements: AMFIUnserializeXML:
+  syntax error". So codesign flags are written here with a single dash.
+
+  The standalone Dart runtime maps the AOT snapshot embedded in its own binary
+  as executable memory at startup. The hardened runtime forbids that mapping
+  without this exception and the kernel kills the process on its first
+  snapshot instruction:
+
+    Termination Reason: CODESIGNING 2 Invalid Page
+    signal: SIGKILL (Code Signature Invalid)
+
+  The cruel part: such a binary passes codesign's strict verification
+  (-verify -strict), sails through notarization and then dies instantly on
+  every launch. v0.0.1 shipped exactly that; the desktop sat in the Dock with
+  no window, waiting forever on a server that was SIGKILLed at spawn. Verified
+  A/B on the shipped binary: hardened + bare = SIGKILL, hardened + this
+  entitlement = runs. This is the documented signing requirement for
+  standalone Dart AOT executables, not a bypass.
+
+  Applied to the cc_server executable only. Entitlements are read from a
+  process's main executable, so the dylibs beside it take none. The JIT and
+  library-validation exceptions node needs (code_server.entitlements) are NOT
+  needed here: Dart AOT never JITs and cc_server only loads dylibs signed
+  with the same Developer ID.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+</dict>
+</plist>

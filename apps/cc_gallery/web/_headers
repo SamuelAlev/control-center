@@ -1,0 +1,9 @@
+# Cross-origin isolation lets the gallery's SkWasm renderer use its worker and
+# SharedArrayBuffer. All gallery assets are same-origin; the Wasm build retains
+# CanvasKit as a compatibility fallback for browsers without WasmGC.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Embedder-Policy: credentialless

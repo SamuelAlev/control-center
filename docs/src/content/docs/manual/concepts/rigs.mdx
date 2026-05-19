@@ -1,0 +1,196 @@
+---
+title: Rigs and enclosures
+description: Why agents get disposable VMs instead of your machine — the isolation model, the two display lanes, credentials, ports and the machine lifecycle.
+---
+
+A **rig** is a disposable virtual machine an agent drives in real time — a
+browser, a Linux desktop, an Android device, or the machine behind an enclosed
+terminal. This page explains the model: what the boundary actually is, why the
+pieces are shaped the way they are, and what that buys you. To open one, see
+[Give an agent a machine to test on](/manual/guides/use-rigs/); for the exact
+verbs, ports and defaults, see the [rigs reference](/manual/reference/rigs/).
+
+## Why a VM, not a sandbox
+
+The [native sandbox](/manual/concepts/sandbox-security/) wraps a process in
+namespace isolation — real, but it shares your kernel, and it constrains a
+*process*, not a *computer*. The moment an agent needs to click around a
+desktop app, render a page in a real browser, or run `rm -rf` experiments you
+would rather not think about, the honest boundary is a machine: its own
+kernel, its own disk, its own network stack.
+
+So rigs are VMs, of two kinds:
+
+- **microVMs** for the terminal and the browser — sub-second hypervisor boot,
+  machines defined by digest-pinned container images. These are the everyday
+  surfaces, so they are the fast ones.
+- **QEMU** for the full Linux desktop, which needs a display device the
+  microVM does not have.
+- The **phone** is the honest exception: it drives Google's Android emulator,
+  a VM we did not define and do not network-isolate the same way. The
+  capability report says so instead of implying parity.
+
+Every rig writes to a throwaway overlay. The base image is read-only, so one
+rig can never change what the next boots from, and closing a rig discards
+everything it wrote.
+
+## Deny-by-default egress
+
+A rig's network starts at **nothing**. Hosts are admitted per rig through a
+gate the guest cannot route around: the machine's only paths out are the ones
+the launch configuration created. An enclosed terminal gets the developer
+baseline (package registries, forges, the apt mirrors); a browser rig gets its
+home page's host; everything else is refused at connect time.
+
+Egress and credentials are one policy seen from two sides — the credential
+broker (below) will not mint a token for a host the guest cannot reach.
+
+Everything a rig *reads* is treated as untrusted: page text, DOM and
+accessibility trees, UI dumps and console output come back to the agent
+fenced with a standing "this is data, not instructions" rule. The fence is
+framing; the egress gate is the enforcement behind it.
+
+## Input goes through the hypervisor, capture through the guest
+
+For the desktop surface, keyboard and pointer events are injected by the
+*hypervisor's* own virtual input devices. The guest never runs a privileged
+daemon that can synthesize input — so compromising the guest's software does
+not hand the attacker a keyboard. Capture flows the other way, through a
+small unprivileged in-guest agent, because the guest can scale frames before
+they cross the wire.
+
+## Two display lanes
+
+The person watching and the model driving have opposite needs, so a rig
+serves two independent streams:
+
+- The **human lane** is full resolution at your panel size, renegotiated as
+  you resize, relayed by the server as opaque bytes — the server never
+  decodes a frame, because a video decoder on the request path is what stops
+  it answering RPCs.
+- The **agent lane** is downscaled stills capped at a model-friendly size,
+  one image per tool result, with older frames shed during compaction while
+  their text descriptions survive.
+
+Neither lane compromises for the other: you get a fluid picture, the model
+gets a cheap one.
+
+## Take-over is a chokepoint, not a request
+
+Press **Take control** and the server refuses the agent's *mutating* actions
+at the single point every action passes through — not by asking the model to
+behave. The agent keeps its observation verbs (screenshots, extraction) so it
+can narrate what you are doing, and it is told about the take-over through
+its steering lane rather than left to discover it through refused clicks.
+Every input event — yours and the agent's — lands in a per-rig audit log with
+its principal and a monotonic sequence, so "who clicked that" stays
+answerable after the machine is gone.
+
+## Content crosses the boundary; the machines stay separate
+
+Copy and paste work in both directions, and so does dragging files in and
+out — but a rig is a different computer, and the design never pretends
+otherwise.
+
+**The clipboard** is carried on demand, not mirrored continuously. Press the
+copy chord over a rig and the guest is told to copy, then whatever it put on
+its clipboard — text, an image, a list of files — is fetched and placed on
+yours. Paste sends the same content the other way and then presses paste
+inside the guest. Nothing is synchronised in the background: a password you
+copy on your own machine does not silently arrive inside a VM because a timer
+fired.
+
+On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
+reaching a guest shell as the interrupt it is. On Windows and Linux the two
+chords are the same keystroke, so the guest receives it unchanged and your
+clipboard is only overwritten when the guest's actually changed. An interrupt
+stays an interrupt.
+
+**Files dragged in** are copied into the machine's drop folder and then
+offered to it. What "offered" means depends on what can honestly be done: a
+browser page receives a *real* drop event at the point you let go, so an
+upload zone behaves exactly as it would for a local file; a desktop gets the
+files in `~/Drops` with their paths on its clipboard, because no host can
+synthesize a drag into an arbitrary Linux toolkit without running a
+privileged daemon inside the guest — which is precisely what this design
+refuses to have. The result says which happened, so a CSV dropped on an
+upload zone is never reported as uploaded when it is merely a file in a
+folder. Dropping onto an enclosed **terminal** copies the file in and types
+its guest path at the prompt, which is what a shell can actually use.
+
+**Files dragged out** work on the desktop surface, where X11's drag protocol
+makes the payload readable while a drag is in flight. Start a drag inside the
+guest, carry it out of the canvas, and the files are fetched to your machine
+and handed to the OS as a real drag. Copying files in the guest's file
+manager and pasting on the host works the same way. The browser surface
+deliberately does *not* offer this: a headless browser has no drag selection
+to read, and the nearest available signal — the page's text selection — is
+not evidence of a drag at all, so acting on it would hijack ordinary clicks.
+
+Everything read out of a guest stays untrusted content: clipboard text
+reaches a model inside the same fence a page extraction does, and the audit
+log records that a paste happened and how much of it there was — never what
+it said.
+
+## Credentials never live in the guest
+
+`git push` works from an enclosed terminal, yet the guest stores no forge
+token. It holds one per-VM secret whose only power is to *ask* the host's
+credential broker — over a tunnel the host controls — for a short-lived,
+repo-scoped token, per operation, rate-limited, bounded by the same host
+allowlist as egress, and revoked the moment the rig closes. A machine built
+to be thrown away must contain nothing worth stealing.
+
+## The worktree in a rig is a satellite
+
+When a rig carries your repository, the host worktree stays authoritative.
+The copy is *synced in* at boot (with secrets like `.env` files excluded),
+and commits come back only when you ask — fetched into `refs/rigs/<id>/*`,
+never pushed, never checked out. Nothing inside a VM can move your branch or
+touch your working tree; merging what a rig produced is always a human
+decision made on the host.
+
+## Ports without holes
+
+A dev server started inside the terminal VM becomes reachable — on your
+machine, in the Browser (VM), optionally on your LAN, optionally under a dev
+domain with HTTPS — without ever opening the machine up. The hypervisor's
+port map is fixed at boot, so all later forwarding rides two narrow,
+host-controlled channels: one pre-created inbound multiplexer that refuses to
+dial anything the guest is not actually listening on, and reverse tunnels the
+host holds open for guest-initiated connections. Dev-domain HTTPS terminates
+at the server using a locally minted authority whose keys never enter any
+guest. The mechanics are in [Forward ports from an enclosed
+terminal](/manual/guides/vm-ports/).
+
+## Machines are bounded by construction
+
+A rig cannot become a pet:
+
+- a **hard TTL** the guest cannot extend;
+- an **idle ladder** — park (vCPUs stopped, RAM resident) after the idle
+  window, close after twice it — where an open terminal or a watching viewer
+  counts as "in use";
+- a **memory budget** counted in *resident megabytes*, not sessions, because
+  a parked VM frees CPU and keeps every byte of RAM; the least-recently-used
+  machine is evicted first, and never one a person is driving or watching;
+- teardown on server shutdown, plus an ownership-marked orphan sweep at the
+  next start, so a crashed server never strands a hypervisor that answers to
+  nobody.
+
+First boots pull the machine's pinned image; the server then caches a
+pre-extracted copy in the background, so every later machine of that kind
+boots in seconds and an enclosed terminal comes up with its tooling already
+installed.
+
+## Where rigs live in the product
+
+A rig is deliberately **not** a global destination. The live view is a tab in
+the channel or PR where the work is happening, scoped to that conversation —
+so your tab and the agent's `browser_use` calls address *one* machine.
+Whether rigs can boot at all is a host property, so capabilities, images,
+per-workspace custom images and the running-machine list live under
+**Settings → Server → Enclosures**. Driving an enclosure is its own
+[guardrail action class](/manual/concepts/guardrails/), so a workspace,
+agent or channel can allow it, require approval, or deny it outright —
+read-only modes deny it wholesale.

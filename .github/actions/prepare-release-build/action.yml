@@ -1,0 +1,134 @@
+name: Prepare release build
+description: >
+  Code generation, native libraries, built-in credentials, and the build
+  identity stamp — everything the three release build jobs do identically
+  before their platform's `flutter build`.
+
+# The macOS, Windows and Linux jobs ran these five steps in the same order with
+# the same comments, differing only in which natives script builds the libraries
+# and whether code-server is fetched. That was ~15 steps of copy-paste in an
+# 810-line workflow, and it made the three platforms hard to diff against each
+# other — which is exactly how they drift.
+#
+# Ordering here is load-bearing, in both directions:
+#   * credentials BEFORE any `dart build cli`, because that command has no `-D`
+#     flag, so they must be real source constants by the time cc_server compiles;
+#   * natives staged BEFORE any `dart build cli`, because
+#     apps/cc_server/hook/build.dart bundles build/natives into the server's
+#     lib/ and hard-fails when it is empty — staged by cache restore when the
+#     natives-cache action hits (seeded from main by natives.yml), built from
+#     source when it misses, and verified either way;
+#   * the identity stamp before every client build, since BuildInfo is compiled
+#     in rather than read at runtime.
+
+inputs:
+  os:
+    description: macos | linux | windows
+    required: true
+  version:
+    description: The release version, used for the build-identity stamp.
+    required: true
+  fetch-code-server:
+    description: >
+      Fetch the pinned code-server archive. No-op on Windows (code-server ships
+      no native Windows host), so the release job skips it there.
+    required: false
+    default: "true"
+  google-client-id:
+    required: false
+    default: ""
+    description: CC_BUILTIN_GOOGLE_CLIENT_ID secret.
+  google-client-secret:
+    required: false
+    default: ""
+    description: CC_BUILTIN_GOOGLE_CLIENT_SECRET secret.
+  klipy-app-key:
+    required: false
+    default: ""
+    description: CC_BUILTIN_KLIPY_APP_KEY secret.
+
+runs:
+  using: composite
+  steps:
+    - name: Code generation (drift / json_serializable)
+      shell: bash
+      run: dart run build_runner build --delete-conflicting-outputs
+
+    # The natives compile from pinned third-party refs plus rarely-changing
+    # in-repo sources, so an exact-key cache hit stands in for the longest
+    # build step here. The cache is seeded by natives.yml on pushes to main —
+    # a tag run can only READ default-branch caches, so the save this step
+    # schedules on a release run lands on a never-again-read ref, which is
+    # fine. Key definition (and the no-restore-keys invariant) live in the
+    # natives-cache action.
+    - name: Restore native FFI libraries from cache
+      id: natives-cache
+      uses: ./.github/actions/natives-cache
+
+    # FATAL on failure: every native is required. cc_server's boot preflight
+    # refuses to start without any one of them and the packaging scripts refuse
+    # to produce an artifact, so tolerating a failure here would only ship a
+    # build that dies on the user's machine instead of on the runner.
+    #
+    # Skipped on a cache hit: byte-identical inputs were already compiled by a
+    # trusted push-to-main run of natives.yml (PR-scoped caches are invisible
+    # to tags, so no other origin is possible).
+    - name: Build native FFI libraries
+      if: steps.natives-cache.outputs.cache-hit != 'true'
+      shell: bash
+      # inputs.os/version reach these scripts through env, never a ${{ }}
+      # interpolation inside run: — composite-action inputs are caller-supplied
+      # strings and interpolating them into a shell script is injection-shaped
+      # (zizmor's template-injection audit). The same pattern applies to the
+      # verify and stamp steps below.
+      env:
+        OS: ${{ inputs.os }}
+      run: |
+        if [ "$OS" = "windows" ]; then
+          # No rift on Windows: no MSVC copy-on-write backend, so `git worktree`
+          # is the backend there rather than a degradation.
+          bash scripts/release/windows_natives.sh
+        else
+          bash scripts/natives/build_natives.sh build/natives
+        fi
+
+    # Runs on hit AND miss. The desktop and server roles together are the
+    # complete contents of build/natives (desktop adds aec_ffi; server adds
+    # the boot-preflight set), so a bad restore and a bad build both die here,
+    # before anything is embedded or signed. The packaging scripts re-verify
+    # their own bundles later; this is the earlier, cheaper chokepoint.
+    - name: Verify staged natives
+      shell: bash
+      env:
+        OS: ${{ inputs.os }}
+      run: |
+        bash scripts/release/verify_natives.sh build/natives "$OS" desktop
+        bash scripts/release/verify_natives.sh build/natives "$OS" server
+
+    # Server-side only: no client build reads these. Missing secrets are not an
+    # error; the build simply ships none, exactly like a build from a fork.
+    - name: Inject built-in app credentials
+      shell: bash
+      env:
+        CC_BUILTIN_GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
+        CC_BUILTIN_GOOGLE_CLIENT_SECRET: ${{ inputs.google-client-secret }}
+        CC_BUILTIN_KLIPY_APP_KEY: ${{ inputs.klipy-app-key }}
+      run: bash scripts/release/builtin_credentials.sh inject
+
+    # The shared const BOTH the app and the embedded/standalone cc_server
+    # compile in: `cc_server --version`, /healthz, the RPC handshake, and the
+    # About page all read it.
+    - name: Stamp build identity
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: dart run tool/gen_build_info.dart --version "$VERSION"
+
+    # Vendored VS Code-in-the-browser, extracted into build/code-server/<platform>/
+    # for cc_server_package.sh to stage. Non-fatal: the server falls back to an
+    # on-demand download at runtime.
+    - name: Fetch code-server standalone archive
+      if: inputs.fetch-code-server == 'true' && inputs.os != 'windows'
+      shell: bash
+      continue-on-error: true
+      run: bash scripts/release/fetch_code_server.sh

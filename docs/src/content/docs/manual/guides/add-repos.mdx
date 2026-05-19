@@ -1,0 +1,78 @@
+---
+title: Add repos to a workspace
+description: Register Git checkouts into a workspace so agents can work on them.
+---
+
+This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+
+Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
+
+## Before you start
+
+A folder can only be registered if all three of these hold:
+
+1. It is inside a **git work tree**.
+2. That work tree has an **`origin` remote**.
+3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
+
+Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree", "No `origin` remote configured for this repository", or "The `origin` remote is not hosted on a supported forge". There is no local-only mode.
+
+The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
+
+The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+
+## Register a checkout
+
+1. Open **Settings → Workspace → Repositories** (`/settings/workspace/repositories`).
+2. Click **Add repository**.
+
+The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
+
+3. Navigate within the server's configured roots. Folders that are git checkouts are flagged.
+4. Tick any number of them. The selection persists as you navigate, so you can collect checkouts from several folders.
+5. Register them in one batch.
+
+One failed pick never drops the rest of the batch — you get the ids that were created plus a per-path error for each that was refused. Re-registering a path already present in this workspace returns the existing repo rather than minting a duplicate.
+
+Each registered repo appears in the list with its `owner/name`, a badge naming its forge, and its path on the server. GitHub repos also show the owner's avatar; the other forges have no guessable owner-avatar URL, so they fall back to initials.
+
+The forge badge matters in a mixed workspace: two repos can both be called `acme/web` on different forges, and they behave differently — what a review can do, and where a link goes.
+
+## What happens next
+
+Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
+
+Only Dart, JavaScript, TypeScript, TSX and PHP files are indexed. See [Search code with the code graph](/manual/guides/code-search/).
+
+## Re-index a repo
+
+Each row carries an **Index code** button. Click it to re-run the indexer for that checkout; while it runs the button becomes a progress readout showing files done over total, with a cancel control. When it finishes it settles into a check with the symbol count, or a warning if the run failed.
+
+## Reorder repos
+
+Drag the handle on a row. The order you set is the order every repo list in the app reads back.
+
+## Fix the GitHub link
+
+The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+
+## Remove a repo
+
+1. Open **Settings → Workspace → Repositories**.
+2. Click the trash icon on the row.
+3. Confirm "Remove repository from workspace?"
+
+The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
+
+Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it. There is no separate unlink, because there is no shared global repo left to unlink from. The same checkout registered in another workspace is an independent row and is unaffected.
+
+## Related guides
+
+- [Search code with the code graph](/manual/guides/code-search/)
+- [Run agents in parallel](/manual/guides/parallel-agents/)
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Your first workspace](/manual/tutorials/first-workspace/)
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/)

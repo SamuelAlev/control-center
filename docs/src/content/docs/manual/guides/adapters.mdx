@@ -1,0 +1,171 @@
+---
+title: Manage adapters and models
+description: Connect model providers, pick the model an agent runs on and check which agent runner CLIs the server host has.
+---
+
+This guide shows you how to connect model providers and choose what an agent
+runs on.
+
+Everything here lives on one page: **Settings → Server → Model providers**. The
+sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
+
+## What an adapter is
+
+An adapter is the _runner_ that executes an agent turn. There are eight and the
+list is fixed — you cannot add a ninth.
+
+| Adapter                   | CLI            | Transport                                           |
+| ------------------------- | -------------- | --------------------------------------------------- |
+| Control Center (built-in) | none           | In-process agent loop, talks to providers over HTTP |
+| Pi                        | `pi`           | Structured JSON CLI                                 |
+| Claude Code               | `claude`       | `claude -p --output-format stream-json`             |
+| OpenCode                  | `opencode`     | Agent Client Protocol (`opencode acp`)              |
+| Gemini CLI                | `gemini`       | Agent Client Protocol (`gemini --acp`)              |
+| Goose                     | `goose`        | Agent Client Protocol (`goose acp`)                 |
+| Cursor                    | `cursor-agent` | Agent Client Protocol (`cursor-agent --acp`)        |
+| Codex                     | `codex`        | Agent Client Protocol, via the `acpx` bridge        |
+
+What you _can_ add is a **provider** for the built-in adapter — any
+OpenAI- or Anthropic-compatible endpoint. That is the next section.
+
+:::note[Detection probes the server, not your machine]
+The **Detected runners** card lists what `cc_server` found on the _server host's_
+`PATH`. On a thin or web client that is a different machine from the one you are
+looking at. Installing a CLI on your laptop does nothing for a remote server.
+:::
+
+## Connect a model provider
+
+The built-in adapter needs at least one connected provider before it can run.
+Eleven ship in the catalogue.
+
+1. Go to **Settings → Server → Model providers**
+2. Scroll to **Providers & models**
+3. Find your provider and connect it:
+
+| Provider                                                                           | How to connect                                                                                |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Anthropic, OpenAI                                                                  | Browser OAuth login (PKCE with a loopback callback), or an API key                            |
+| Kimi Code                                                                          | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, Moonshot (Kimi API) | API key                                                                                       |
+
+Checkpoint: the row's badge changes to connected and expanding it lists the
+models that provider serves, each with its price per million tokens and context
+window.
+
+OAuth tokens land in the server's own credential store and are refreshed before
+they expire. Provider credentials are **host-global** — they are shared by every
+workspace on the install, not scoped to one.
+
+### Add a custom provider
+
+Use this for Ollama, LM Studio, vLLM, or a private deployment.
+
+1. In **Providers & models**, under **Custom providers**, press **Add provider**
+2. Fill in a **name**, pick the **API type** (OpenAI-compatible or
+   Anthropic-compatible) and give the **base URL** (for example
+   `http://localhost:11434/v1`)
+3. Add an **API key** if the endpoint needs one, then press **Add provider**
+
+A custom provider appears in the same list, with a delete button its built-in
+siblings do not have.
+
+## Pick a model for an agent
+
+1. Go to **Settings → Workspace → Agents** and select the agent
+2. On the **Settings** tab, choose the **adapter**
+3. Choose the **model** from the dropdown beside it
+
+For the built-in adapter the dropdown is assembled live from every connected
+provider's own catalogue. A provider with no stored credential contributes zero
+models, which is why an empty dropdown almost always means "nothing connected
+yet" rather than "nothing available".
+
+:::note[models.dev is enrichment, never a source of ids]
+The bundled [models.dev](https://models.dev) catalogue supplies price and context
+window for a model that is already in the live list. It never adds a model id. If
+a model you expect is missing, the provider's endpoint is not returning it.
+:::
+
+Model ids for the built-in adapter are qualified `provider/model` and may carry
+a `|`-separated fallback chain. Under a fallback, cost is priced against the model
+that actually served the turn, not the one you asked for.
+
+:::caution[An agent with no adapter falls back to the `pi` CLI]
+Every workspace seeds five agents — a CEO plus `qa`, `architect`, `engineer` and
+`librarian` — with no adapter and no model. Dispatch then falls back to the CLI
+named `pi`: not to the built-in harness and not to the **Default runners**
+setting on this page, which is a client preference the dispatch path never reads.
+
+The one exception: leaving onboarding's adapter step back-patches any agent named
+`ceo` whose adapter or model is unset, so the first workspace's CEO gets one. The
+four specialists never do and every workspace created later has all five unset.
+Set the adapter and model explicitly on every agent you intend to use.
+:::
+
+## Install a runner CLI
+
+The built-in adapter needs no installation. For any other adapter, install its
+CLI **on the server host** with that tool's own package manager, for example:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+npm install -g @openai/codex
+```
+
+Then press **Refresh** at the top of the page. Each detected row shows the
+resolved version and path, plus chips for whether it supports JSON mode and model
+selection.
+
+An external CLI keeps its own credentials, in its own configuration, on the
+server host. Control Center does not manage them.
+
+:::caution[The per-adapter Arguments and Environment variables fields do not reach the server]
+Each adapter row offers an **Arguments** field and an **Environment variables**
+dialog. The server does read per-adapter argv and env overrides at launch — but
+it reads them from its own settings store and the client writes them to your
+device instead. Nothing bridges the two and there is no client call that writes
+the server's copy. Do not put an API key there and expect a run to see it.
+:::
+
+## Restrict which providers a workspace may use
+
+Provider governance is per workspace and is evaluated last-match-wins.
+
+1. In **Providers & models**, flip the **allow** switch on a provider row off
+
+That writes a `deny` statement for that provider in the active workspace and its
+models drop out of the catalogue for that workspace. Turning the switch back on
+removes the statement.
+
+## Troubleshooting
+
+### A runner shows as not found
+
+- Check the CLI is on the **server host's** `PATH`, not just yours
+- A GUI-launched desktop app spawns its server with a minimal `PATH`; a CLI
+  installed under a shell-only path may be invisible to it
+- Press **Refresh** after installing
+
+### The model dropdown is empty
+
+- The adapter is the built-in one and no provider is connected — connect one in
+  **Providers & models**
+- Or the provider is connected but denied by this workspace's governance switch
+
+### A model runs but the price shows as unknown
+
+The live model list carries the id; price and context come from models.dev. A
+brand-new model, or one from a custom provider, has no catalogue entry yet.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Manage API keys](/manual/guides/api-keys/)
+- [Diagnose an agent](/manual/guides/agent-diagnostics/)
+- [Manage costs](/manual/guides/manage-costs/)
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/)
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

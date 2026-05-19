@@ -1,0 +1,31 @@
+name: cc_server
+description: "Control Center headless server — a pure-Dart `dart build cli` binary (no Flutter engine). Serves the repo-RPC catalog (tickets/messaging/newsfeed) over WebSocket from the cc_persistence database. Paired devices, the web build and (Fork A) the desktop all connect here."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # The entire backend composition is pure-Dart in cc_server_core (which pulls
+  # cc_host + cc_persistence + cc_domain + cc_rpc). No flutter, no control_center.
+  cc_server_core:
+    path: ../../packages/cc_server_core
+  # Direct dep for the CLI entrypoint: the CI-stamped build identity printed
+  # by `cc_server --version` (cc_domain is the one shared const both the
+  # client and the server compile in).
+  cc_domain:
+    path: ../../packages/cc_domain
+  # Build-hook deps for hook/build.dart (bundles the prebuilt native dylibs as
+  # DynamicLoadingBundled code assets, the same mechanism sqlite3/sqlite_vector
+  # use). Hooks import these as libraries, so they are regular dependencies.
+  # Pinned to the hooks 1.x line — sqlite_vector requires it.
+  hooks: ^1.0.3
+  code_assets: ^1.0.0
+  path: ^1.9.1
+
+dev_dependencies:
+  lints: any
+  test: any

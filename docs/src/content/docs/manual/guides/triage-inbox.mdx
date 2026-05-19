@@ -1,0 +1,162 @@
+---
+title: Triage your inbox
+description: Work the unified inbox — clear what blocks you, review what waits on you and track your own PRs.
+---
+
+This guide shows you how to work the inbox: the one surface that collects
+everything that blocks you or explicitly asks for you — pending agent
+approvals, failed ticket syncs and every pull request that involves you as
+reviewer or author.
+
+## Open the inbox
+
+1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
+   failed syncs and open PRs awaiting your review.
+2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
+3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+
+The sidebar entry always shows the live count, so you can see triage work
+accumulate without opening the page.
+
+## Read severity at a glance
+
+Scan top to bottom; the inbox is already ordered by urgency:
+
+1. The pinned **Needs your attention** strip sits above the PR sections. Every
+   card carries a severity chip. Today every card is **Blocked** — both
+   registered sources (an agent stuck on a confirmation prompt, a ticket sync
+   whose vendor mirror is stale) emit that tier. The **Waiting** and **Info**
+   tiers exist for sources not yet wired, so a strip of all-**Blocked** cards is
+   correct, not a bug.
+2. Within the strip, the most urgent severity comes first; ties go to the item
+   that has been waiting longest.
+3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
+   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
+   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
+   author**. The top sections are what needs _you_; the rest are where _your_
+   PRs stand. **Needs your review** includes PRs that still request a team or
+   group you belong to on forges that have them (the team drops off once any
+   teammate reviews).
+
+An item only lands in the inbox when it blocks something or explicitly
+requests you, so an empty strip plus an empty section list ("You're all caught
+up") genuinely means nothing is waiting on you.
+
+## One inbox across every forge
+
+If the workspace holds repos on more than one code host, the inbox merges them
+into a single stream — a GitHub pull request and a Bitbucket pull request sit in
+the same section, ordered by time rather than grouped by vendor. The row's
+`repo #number` meta is what tells them apart.
+
+"Yours" is resolved **per forge**, because you are a different account on each.
+A pull request only counts as yours, or as requesting your review, when it
+matches your identity on the forge that repo actually lives on.
+
+A forge that is down or not connected contributes nothing and leaves the rest of
+the inbox intact — one broken connection never empties the whole list. When a
+forge's identity has not resolved, the empty state says so rather than claiming
+you are all caught up.
+
+## Clear the attention strip
+
+Each strip card has one next action:
+
+1. If a card says an agent is asking to run a command, click **Review** — you
+   land in that agent's channel with its pending confirmation. Approve or
+   reject there (see [Chat with an agent](/manual/guides/chat-with-agent/)).
+2. If a card says **Sync failed** for a vendor, click **Open** — you land on
+   **Settings → Workspace → General**, whose **Sync health** card shows each
+   connection's last sync, consecutive-failure streak and latest outcome. Only
+   the latest failure per vendor appears in the inbox, so a recovered sync
+   clears the card.
+3. Cards disappear on their own once the underlying state resolves (the agent
+   is answered, the sync recovers) — there is nothing to dismiss manually.
+
+:::note[These are per-turn confirmations, not governance approvals]
+An "agent approval" card is a running agent pausing to ask permission for one
+action, in its own conversation. It is a different thing from the governance
+`Approval` record agents create with the approval MCP tools — those have no
+human screen anywhere in the app and never appear here.
+:::
+
+:::caution[Sync health is read-only]
+The card reports on ticket-sync connections; apart from a **Sync now** button it
+cannot create, edit or reconnect one and there is no other screen that can
+either. With no connection configured it simply reads "No sync connections yet",
+which is what a fresh workspace shows.
+:::
+
+## Filter to what is blocking
+
+1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
+   click the filter button in the toolbar.
+2. Pick any combination of status, author, reviewers, content, repo
+   owner/name, date windows, or quick-to-review. Facet counts in the menu show
+   how many inbox items each option matches.
+3. Active filters appear as chips in the bar above the list; click a chip's
+   ✕ to drop that criterion.
+4. Use the left rail to jump between sections — each entry shows its live
+   count and the highlight tracks your scroll position. Click a section
+   header to collapse sections you don't triage (for example **Drafts** while
+   clearing reviews).
+5. Click a column header (title, changes, or updated) to sort every section;
+   click the active column again to flip direction. The display-options button
+   controls draft visibility, row properties, ordering and grouping by
+   author.
+
+Filters here are independent of the PR queue — narrowing the inbox never
+changes the queue's filters and vice versa.
+
+## Act on a PR item
+
+1. Click any row to open the PR detail page.
+2. If the PR is in **Needs your review**, review it and submit your decision —
+   see [Review and merge a PR](/manual/guides/review-merge-pr/).
+3. If the PR is in **Returned to you** (changes requested or CI failed), push
+   fixes from your checkout or hand the follow-up to an agent.
+4. If the PR is in **Approved**, merge it from the detail page.
+5. If you'd rather delegate a review than do it yourself, see
+   [Dispatch reviewers](/manual/guides/dispatch-reviewers/) and
+   [the dispatch lifecycle](/manual/concepts/dispatch-lifecycle/).
+
+Once the underlying state changes (your review lands, the PR merges), the
+classifier re-files the PR into its new section automatically.
+
+## Undo a mistaken action
+
+1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
+2. If a text field is focused, ⌘Z edits the field's text instead — click out
+   of the field first to undo an app-level action.
+
+## Look up shortcuts in place
+
+Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
+sheet. It lists every binding active on the current route, including the
+inbox's <kbd>f</kbd> filter shortcut. The full map is in the
+[keyboard shortcuts reference](/manual/reference/keyboard-shortcuts/).
+
+## Drive it from the command palette
+
+1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
+2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
+   matching pull requests and opens the one you pick.
+3. From anywhere else in the app, use the palette's **Copy link** command to
+   copy the current inbox URL for sharing.
+
+## Refresh on demand
+
+The inbox updates live, but if you suspect stale data, click the refresh
+control in the toolbar — it forces an immediate server-side sweep of every
+connected forge and refetches the merged/reviewed overlays. The icon spins until
+every fetch settles.
+
+## Related guides
+
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Dispatch reviewers](/manual/guides/dispatch-reviewers/)
+
+## Related concepts
+
+- [Dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

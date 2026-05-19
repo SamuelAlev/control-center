@@ -1,0 +1,163 @@
+---
+title: Pipelines and automation
+description: Why pipelines separate scheduling from work, what actually starts one and which of the built-in templates are live out of the box.
+---
+
+Pipelines are the deterministic half of Control Center. An agent decides what to
+say; a pipeline decides what happens next, the same way every time. A pipeline
+is a DAG of steps that can dispatch agents, run scripts, branch on a condition,
+fan out over a collection and pass data between steps — persisted, resumable,
+and costed.
+
+They exist for three reasons: to chain a repetitive multi-step process, to
+coordinate several agents in sequence or in parallel and to react to something
+that happened without a human being there.
+
+## Templates and runs
+
+A **template** (`PipelineDefinition`) is the declarative DAG: steps, declared
+inputs and configuration. It lives in the workspace's own database. A **run**
+(`PipelineRun`) is one execution of that template, carrying a mutable state bag,
+cost and token totals and per-step status.
+
+One template has many runs. Runs survive a restart: the engine reloads
+in-flight runs and picks them up where they stopped.
+
+Two backstops deliberately fail the whole run rather than resume a step, because
+resuming would be worse than stopping:
+
+- A step that has been `suspended` longer than `suspendedStepTimeout` (24 hours
+  by default) is waiting on tickets that will never reach a terminal state, so
+  it is failed to free the run. Approval gates are exempt — waiting days for a
+  human is their job.
+- A step declared `extras: {'idempotent': false}` that was mid-flight when the
+  server stopped may already have applied its side effect (a squash merge, a
+  worktree cleanup). Re-running it could double-apply, so the engine fails it
+  and leaves the retry to you.
+
+## Kind schedules, body works
+
+A step has two orthogonal parts and keeping them apart is what lets the engine
+stay small.
+
+The **kind** (`StepKind`) tells the engine _when_ a step becomes runnable
+relative to its upstream steps — that is the only thing the scheduler needs to
+know. There are six: `trigger`, `listen`, `join`, `router`, `forEach` and
+`terminal`. The **body** (`bodyKey`) is the _work_ the step performs once it is
+scheduled. Bodies are closures registered by key at server startup, so many
+steps of different kinds can share one body: several `listen` steps all running
+`pipeline.promptAgent`, for instance.
+
+Because scheduling semantics live in six kinds, the catalog of behaviours can
+grow without anyone touching the scheduler. See
+[Pipeline steps](/manual/reference/pipeline-steps/) for the complete catalog of
+kinds, bodies and their configuration.
+
+Two consequences of the registry design are worth knowing before you author a
+template by hand:
+
+- A step whose `bodyKey` is not registered produces a **warning at template
+  load** and then never executes. Nothing fails loudly at runtime. (`trigger`
+  and `terminal` steps are exempt — they are scheduler sentinels and carry no
+  body.)
+- Keys in a node's `extras` map are **exact-match and silently ignored
+  otherwise**. Only `extras['channelId']` puts a step's work in an existing
+  conversation and only `extras['mode']` sets that conversation's mode. Any
+  other spelling gets a hidden conversation and the body's default mode.
+
+## State and data flow
+
+Steps do not call each other. They read from and write to a shared state bag on
+the run: a step reads its inputs by key, executes and writes its output back
+under its own `outputKey`. A `StateReducer` merges concurrent writes when
+parallel branches target the same key and a `TemplateRenderer` substitutes
+`{{...}}` placeholders in prompts and scripts from that same state.
+
+This is why a pipeline is inspectable after the fact — the state bag is the
+whole story of the run.
+
+## What starts a run
+
+`PipelineTrigger` rows declare when a template auto-starts. There are four
+kinds:
+
+| Trigger          | Starts a run when                                                                                                         |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| **Domain event** | A matching [domain event](/manual/concepts/domain-events/) fires — for example `PullRequestPublished` or `TicketAssigned` |
+| **Schedule**     | A cron/interval expression comes due                                                                                      |
+| **Manual**       | You run it by hand; the presence of an enabled manual trigger is what puts the template in the run picker                 |
+| **Webhook**      | An external system POSTs to `/webhooks/<token>` on the server's HTTP port                                                 |
+
+Event triggers are a closed set: 14 event types are known to the dispatcher and
+offered in the picker and nothing else can start a pipeline. Two of those 14 —
+`TicketCreated` and `TicketStatusChanged` — have no payload mapping behind them
+yet, so a trigger on either sits enabled and never fires. See
+[Domain events](/manual/concepts/domain-events/) for the full list.
+
+The webhook token doubles as the HMAC secret: the request's
+`X-Hub-Signature-256: sha256=<hex>` header is verified against
+`HMAC-SHA256(body, token)`, unverified deliveries are rejected and not
+replayable and duplicates are dropped by `dedupe_key`. Because trigger rows are
+unique on (workspace, event type, template), a template can hold at most one
+webhook trigger and one trigger per domain event type.
+
+The built-in templates seed their **manual and event triggers enabled**;
+**scheduled triggers seed disabled**, so a recurring sweep is always opt-in.
+
+## The templates that ship disabled
+
+Thirteen pipeline templates are seeded into every workspace and **eight of them
+ship disabled**: `external_pr_welcome`, `cross_review`, `ticket_to_pr`,
+`pr_triage`, `pre_merge_gate`, `release_notes`, `dep_audit` and `pr_digest`.
+
+This is the part that surprises people. Their triggers are seeded _enabled_, but
+`PipelineEngine.start` refuses a disabled template and returns null — so the
+trigger fires into nothing and no run appears. **The template, not the trigger,
+is the switch.** Enable it at Settings → Workspace → Pipelines before expecting
+any of those eight to do anything.
+
+Re-seeding a workspace preserves whatever you chose: your `isEnabled` setting
+and your existing trigger rows survive. There is exactly one deliberate
+exception — `pr_merged_cleanup`'s daily schedule is force-enabled even if it was
+previously off, because it is garbage collection. Worktree rows, code-graph
+partitions and copy-on-write copies accumulate without it and that was never
+meant to be a user choice.
+
+One more asymmetry worth knowing: the `pr_review` built-in deliberately no
+longer posts to GitHub. Publishing a review is a separate, user-gated step and
+a pipeline that posted directly would double-publish. `cross_review`,
+`ticket_to_pr` and `pr_triage` do still post a comment straight to GitHub when
+they run.
+
+## What the engine knows
+
+`PipelineEngine` creates the run record, schedules the trigger step and then
+walks the DAG: as steps complete it evaluates downstream triggers, resolves
+router branches, waits on joins, applies retry policies and continue-on-fail,
+and persists state, cost and errors at every step.
+
+What it does _not_ know is anything about ticketing, dispatch, GitHub, or
+messaging. Its only extension seam is the `PipelineBodyRegistry`. The bodies
+registered there are what hold `AgentDispatchPort`, `MessagingPort` and their
+siblings — which is why adding a capability to pipelines never means changing
+the scheduler.
+
+## Error handling
+
+A failing step records its error message and moves to `failed`. If the step
+declares `continueOnFail`, downstream steps proceed and the error is stashed in
+the run state; otherwise the run fails. A step with a `StepRetryPolicy` is
+retried first, with linear or exponential backoff, before either of those
+applies.
+
+## See also
+
+- [Domain events](/manual/concepts/domain-events/): what an event trigger listens to
+- [Orchestration](/manual/concepts/orchestration/): a plan you approve, compiled into one of these pipelines
+- [Tickets and delegation](/manual/concepts/tickets/): what pipeline steps create and complete
+- [Pipeline steps](/manual/reference/pipeline-steps/): the complete catalog of kinds, bodies and config
+- [Build your first pipeline](/manual/tutorials/first-pipeline/)
+- [Create a pipeline template](/manual/guides/create-pipeline/)
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)

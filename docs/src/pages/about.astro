@@ -1,0 +1,9 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import SectionedPage from '../components/shared/SectionedPage.astro';
+import { aboutPage } from '../data/pages';
+---
+
+<MarketingLayout title={aboutPage.title} description={aboutPage.description} breadcrumbName="About">
+  <SectionedPage eyebrow={aboutPage.eyebrow} title={aboutPage.heading} intro={aboutPage.intro} sections={aboutPage.sections} />
+</MarketingLayout>

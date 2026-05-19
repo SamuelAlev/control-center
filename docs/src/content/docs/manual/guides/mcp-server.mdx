@@ -1,0 +1,156 @@
+---
+title: Use the MCP server
+description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+---
+
+This guide shows you how to connect an external MCP client — Claude Code, an
+editor, the MCP Inspector — to Control Center's own tool server.
+
+Control Center registers **103** tools and serves them over the Model Context
+Protocol at protocol version `2024-11-05`. Whole tool families you might expect
+are absent: there are no meeting or calendar tools and no project tools.
+
+## Find the endpoint
+
+The MCP surface shares the main `cc_server` listener. There is no separate MCP
+port.
+
+| Endpoint | Method   | Purpose                                                  |
+| -------- | -------- | -------------------------------------------------------- |
+| `/mcp`   | `POST`   | Streamable HTTP transport — this is what a client speaks |
+| `/mcp`   | `DELETE` | End a session                                            |
+| `/sse`   | `GET`    | Server-sent notification stream                          |
+
+So a default local install is at `http://127.0.0.1:9030/mcp`.
+
+1. Go to **Settings → Server → MCP servers**
+2. Read the **MCP server** card — it shows running or stopped and the port it is
+   listening on
+
+The surface is on by default on a fresh install, so a loopback client works with
+no settings trip. **Start on app launch** controls whether it comes back after a
+restart; **Start** / **Stop** are session controls that do not change that
+preference.
+
+The server binds loopback by default, so the endpoint is only reachable from the
+machine `cc_server` runs on unless you started it with `--bind any`.
+
+## Connect a client
+
+Point your client at the Streamable HTTP endpoint. The exact configuration shape
+is your client's business; the URL is the same either way.
+
+```json
+{
+  "mcpServers": {
+    "control-center": {
+      "type": "http",
+      "url": "http://127.0.0.1:9030/mcp"
+    }
+  }
+}
+```
+
+### Claude Code
+
+Claude Code will not pick this up from a project `.mcp.json` — it gates
+project-scoped MCP servers behind an approval prompt that a non-interactive
+`claude -p` never answers. Pass the config explicitly:
+
+```bash
+claude --mcp-config /path/to/mcp.json --strict-mcp-config
+```
+
+`--strict-mcp-config` makes Claude use only that file, so the same server is not
+also discovered from the project and registered twice.
+
+Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
+covering tickets, channels, memory, code graph and review.
+
+## Serve MCP beyond the host
+
+1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
+   press **Set** and paste a token
+2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+
+A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
+by design: the token is what makes off-host service possible at all.
+
+Token changes apply to the live surface immediately — no restart.
+
+:::caution[`GET /sse` is not token-checked]
+The notification stream deliberately skips the bearer check, because a browser
+`EventSource` cannot send headers. Once a token is configured, the listener's
+off-host guard lets any request through, so a client that can reach the port can
+open the SSE stream without presenting the token. Treat exposing the MCP port
+off-host as exposing that stream.
+:::
+
+## Scope every call to a workspace
+
+Every tool that touches workspace-scoped data requires `workspace_id` and a call
+without it is refused rather than resolved against some "current" workspace:
+
+```json
+{
+  "workspace_id": "acme",
+  "title": "Fix login bug",
+  "priority": "high"
+}
+```
+
+The id is the one in your browser or app URL: `/workspaces/<workspace_id>/…`. The
+only exemptions are tools that genuinely span workspaces, such as
+`list_workspaces` and the newsfeed tools — the newsfeed is per-user and an agent
+has no user of its own, so those tools operate on the server owner's feeds.
+
+Repo-scoped tools additionally check that the repo is linked to that workspace.
+
+## Know what the surface will refuse
+
+- **Mode gating.** A call is resolved against the mode of the calling agent's
+  conversation, server-side. An agent in a read-only mode cannot reach a write
+  tool by omitting `channel_id` — the mode is looked up from its active run
+  instead.
+- **Action guardrails.** Mutating tools declare their effect classes and go
+  through the same policy the rest of the product uses. See
+  [Configure guardrails](/manual/guides/configure-guardrails/).
+- **Confirmation.** Some destructive tools build a confirmation payload that has
+  to be approved before the call proceeds.
+
+The full catalogue is advertised in `tools/list` with no discovery gating — an
+external MCP client refuses to call a tool that is not in its cached list, so
+hiding tools breaks them rather than tidying them.
+
+## Troubleshooting
+
+### The client sees no tools
+
+- Check the **MCP server** card says running
+- Check the port matches your `cc_server` port
+- On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
+
+### 403 from a machine that is not the server
+
+No bearer token is configured. Set one and send it.
+
+### A tool call fails with "Missing or invalid argument: workspace_id"
+
+Add `workspace_id`. There is no implicit workspace.
+
+### A tool you read about is not there
+
+20 tool classes exist in the codebase but are registered nowhere, so they are not
+callable — among them `create_workspace`, the project tools, `hire_agent`,
+`fire_agent`, `doctor`, `ask_user_question` and `start_ai_review`.
+[MCP tools](/manual/reference/mcp-tools/) lists what is actually registered.
+
+## Related guides
+
+- [MCP tools](/manual/reference/mcp-tools/)
+- [Configure guardrails](/manual/guides/configure-guardrails/)
+- [Run a headless server](/manual/guides/run-headless-server/)
+
+## Related concepts
+
+- [Architecture](/manual/concepts/architecture/)

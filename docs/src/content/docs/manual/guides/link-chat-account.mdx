@@ -1,0 +1,100 @@
+---
+title: Link your Slack account
+description: Prove that a Slack identity is yours so agents act on your messages and your work is attributed to you.
+---
+
+This guide shows you how to link your chat identity to your Control Center user and how to unlink one.
+
+Every member does this once per chat provider. It is separate from connecting the app: the connection makes the bot reachable for the whole workspace, the link makes _you_ recognizable inside it.
+
+## Why linking is required
+
+The bridge refuses to act for a chat account it cannot resolve to a workspace member. That is deliberate — without a link, every message from Slack would have to be attributed to whoever installed the app and the audit trail, per-principal rate limits and ticket reporters would all name the wrong person.
+
+An unlinked member who mentions the bot gets a reply in that thread explaining how to link. Nothing is dispatched.
+
+## Link with a code
+
+1. Go to **Settings → You → Profile & identity** and scroll to the **Linked chat
+   accounts** card
+2. On the Slack block, click **Link my Slack account**
+3. Copy the command it shows, for example:
+
+```text
+/cc link K7M2QP
+```
+
+4. In Slack, send that command to the bot — a DM is the easiest place
+5. The bot confirms with the Control Center user you are now linked to and the dialog you left open updates to say so at the same moment — you do not have to close it and look
+
+The code:
+
+- Is single-use and expires **15 minutes** after it is minted
+- Is always minted for _you_, never for a teammate
+- Replaces any code you already hold, so pressing the button again invalidates the previous one
+- Lives in memory only, so a server restart invalidates outstanding codes — press the button again
+
+A code that is unknown, expired, or minted for a different workspace fails the same indistinguishable way: "that code is not valid (or has expired)".
+
+## Automatic linking by email
+
+If your Slack profile carries a verified email that matches a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
+
+Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
+
+Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
+
+## See who is linked
+
+The roster is workspace administration, so it lives on the other half of the
+surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
+lists every linked member in the workspace, with the Slack account each maps to
+and how the link was made.
+
+Your own state is on your profile page: the **Link my Slack account** row reads
+"Linked as _your-slack-id_" once you are linked and tells you to link when you
+are not.
+
+The roster is a live subscription, because the change happens on the other side —
+you type the code in Slack, so no request from the app can carry the answer back.
+
+## Unlink
+
+Click **Unlink** on a row in the workspace roster.
+
+- Anyone can unlink themselves
+- Only an admin can unlink another member
+- Unlinking also revokes any outstanding link code for that member
+
+After unlinking, that Slack account can no longer drive agents until it links again. Existing channels, transcripts and tickets keep their original attribution — unlinking is not a retraction of past work.
+
+## Troubleshooting
+
+### The bot says I am not a member of this workspace
+
+Your Slack account is linked to a Control Center user, but that user holds no membership in this workspace. Ask an admin to invite you; see [Multiplayer — identity, membership and presence](/manual/concepts/multiplayer/).
+
+### The bot says my role is read-only
+
+`viewer` and `guest` roles cannot start work. An admin has to raise your role to `member` or above.
+
+### `/cc link` does nothing
+
+Check that the slash command exists in Slack and that you are sending the command the settings dialog showed you — an admin may have renamed it, in which case the dialog shows the current name.
+
+### Slack tells me to go to "Settings → Accounts → Chat bridges"
+
+That path no longer exists. The bot's refusal and instruction copy still names
+the old location. Go to **Settings → You → Profile & identity** instead and use
+the **Linked chat accounts** card.
+
+## Related guides
+
+- [Set up Slack integration](/manual/guides/slack-integration/)
+- [Customize the chat bot](/manual/guides/customize-chat-bot/)
+- [Chat bridge](/manual/reference/chat-bridge/)
+
+## Related concepts
+
+- [Chat bridges](/manual/concepts/chat-bridges/)
+- [Multiplayer — identity, membership and presence](/manual/concepts/multiplayer/)
