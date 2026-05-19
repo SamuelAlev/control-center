@@ -1,0 +1,126 @@
+import 'package:control_center/features/settings/providers/settings_providers.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:forui/forui.dart';
+
+/// Placeholder shown when a dropdown cannot render (no adapter selected,
+/// loading, error, or empty model list).
+class FieldPlaceholder extends StatelessWidget {
+  const FieldPlaceholder({super.key, required this.text, required this.colors});
+
+  final String text;
+  final FColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 38,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        border: Border.all(color: colors.border),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: colors.mutedForeground, fontSize: 13),
+      ),
+    );
+  }
+}
+
+/// Autocomplete-based model selector for an adapter. Supports free-text
+/// entry for model IDs not in the advertised list.
+class ModelSelect extends ConsumerStatefulWidget {
+  const ModelSelect({
+    super.key,
+    required this.adapterId,
+    required this.selectedModelId,
+    required this.onChange,
+  });
+
+  final String? adapterId;
+  final String? selectedModelId;
+  final ValueChanged<String?> onChange;
+
+  @override
+  ConsumerState<ModelSelect> createState() => _ModelSelectState();
+}
+
+class _ModelSelectState extends ConsumerState<ModelSelect> {
+  late FAutocompleteController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = FAutocompleteController(text: widget.selectedModelId ?? '');
+    _controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant ModelSelect old) {
+    super.didUpdateWidget(old);
+    if (widget.selectedModelId != old.selectedModelId &&
+        widget.selectedModelId != _controller.text) {
+      _controller.text = widget.selectedModelId ?? '';
+    }
+  }
+
+  void _onControllerChanged() {
+    final newValue = _controller.text.isEmpty ? null : _controller.text;
+    // Normalize '' to null so the listener doesn't fire a no-op change when
+    // the managed autocomplete syncs its empty controller text against a
+    // null selectedModelId during the parent's build phase.
+    if (newValue == widget.selectedModelId) {
+      return;
+    }
+    widget.onChange(newValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final l10n = AppLocalizations.of(context);
+    if (widget.adapterId == null) {
+      return FieldPlaceholder(
+        text: l10n.selectAdapterFirst,
+        colors: colors,
+      );
+    }
+    final modelsAsync = ref.watch(adapterModelsProvider(widget.adapterId));
+    return modelsAsync.when(
+      loading: () => FieldPlaceholder(
+        text: l10n.loadingModels,
+        colors: colors,
+      ),
+      error: (e, _) => FieldPlaceholder(
+        text: l10n.failedWithError('$e'),
+        colors: colors,
+      ),
+      data: (models) {
+        if (models.isEmpty) {
+          return FieldPlaceholder(
+            text: l10n.noModelsAdvertised,
+            colors: colors,
+          );
+        }
+        return SizedBox(
+          width: double.infinity,
+          child: FAutocomplete.text(
+            items: models.map((m) => m.id).toList(),
+            hint: l10n.searchOrTypeModel,
+            control: FAutocompleteControl.managed(controller: _controller),
+          ),
+        );
+      },
+    );
+  }
+}

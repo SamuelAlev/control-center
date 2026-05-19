@@ -1,0 +1,89 @@
+---
+title: Manage adapters and models
+description: Configure agent CLI backends and select models for inference.
+---
+
+This guide shows you how to manage adapters and models.
+
+## What are adapters?
+
+An adapter is a CLI backend that Control Center uses to dispatch agents. Each adapter wraps a specific AI CLI tool:
+
+| Adapter | CLI name | Description |
+|---|---|---|
+| Claude Code | `claude` | Anthropic's Claude CLI |
+| Codex | `codex` | OpenAI's Codex CLI |
+| Pi | `pi` | Pi agent runner |
+
+## View detected adapters
+
+1. Navigate to **Settings → Adapters**
+2. The list shows all detected adapters with:
+   - Detection status (found/not found)
+   - CLI version
+   - Installation path
+
+Control Center auto-detects CLIs in your `PATH` on startup.
+
+## Install an adapter
+
+Install the CLI using its package manager:
+
+```bash
+# Claude Code
+npm install -g @anthropic-ai/claude-code
+
+# Codex
+npm install -g @openai/codex
+```
+
+After installation, refresh the adapter list in Settings.
+
+## Select a model
+
+Each adapter offers multiple models. When configuring an agent:
+
+1. Select the adapter
+2. The model dropdown shows available models for that adapter
+3. Pick the model based on your needs:
+
+| Model tier | Use for |
+|---|---|
+| Fast/cheap | Simple tasks, formatting, quick fixes |
+| Mid-tier | Typical coding, bug fixes |
+| Top-tier | Complex architecture, critical code, security review |
+
+Model availability depends on your adapter and API key.
+
+## Custom adapters
+
+Register custom adapters in Settings:
+
+1. Click **Add adapter**
+2. Enter the CLI name and path
+3. Control Center probes the CLI for version and capabilities
+4. The adapter appears in the agent configuration dropdown
+
+## ACP models
+
+Control Center also supports ACP-compatible agent runners. Advertised models are keyed by adapter ID and shown in the model selector.
+
+## Troubleshooting
+
+### Adapter not detected
+
+- Ensure the CLI is in your `PATH` (`which claude`)
+- Restart Control Center after installing a new CLI
+- Check the adapter settings for the expected CLI name
+
+### Model not available
+
+- Verify your API key has access to the model
+- Check the adapter's documentation for supported models
+- Some models require specific CLI versions
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)
+- [Manage API keys](/manual/guides/api-keys/)

@@ -1,0 +1,98 @@
+---
+title: Domain events
+description: Complete catalog of domain events published by Control Center.
+---
+
+## Event bus
+
+The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Features call `publish(event)` to emit; subscribers consume a typed `on<T>()` stream. Every event has `occurredAt`.
+
+## Workspace, agent, and repo events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `WorkspaceCreated` | `workspaceId` | Workspace is created |
+| `AgentRunCompleted` | `agentId`, `workspaceId`, `runId`, `status`, `cost` | Agent finishes a run |
+| `RepoAdded` | `repoId` | A repo is registered |
+
+## PR and review events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `PullRequestPublished` | `prNumber`, `repoFullName`, `author` | Agent opens a PR |
+| `PullRequestStatusChanged` | `prNumber`, `repoFullName`, `oldStatus`, `newStatus` | PR merged/closed/opened/reopened |
+| `PrMerged` | `prNumber`, `repoFullName` | PR is merged |
+| `ExternalPrDetected` | `prNumber`, `repoFullName`, `author` | Non-agent PR found via polling |
+
+## Messaging events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `MessageReceived` | `channelId`, `senderId`, `senderType` | New message arrives |
+| `ConversationDeleted` | `channelId` | Conversation is deleted |
+
+## Ticketing events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `TicketCreated` | `ticketId`, `workspaceId` | Ticket is created |
+| `TicketAssigned` | `ticketId`, `agentId` | Ticket assigned to an agent |
+| `TicketStarted` | `ticketId`, `agentId` | Agent begins work |
+| `TicketCompleted` | `ticketId`, `outputJson` | Work finishes |
+| `TicketFailed` | `ticketId`, `errorMessage` | Agent fails |
+| `TicketCancelled` | `ticketId` | Ticket cancelled |
+| `TicketStatusChanged` | `ticketId`, `oldStatus`, `newStatus` | Any status change |
+| `TicketReassigned` | `ticketId`, `oldAgentId`, `newAgentId` | Ticket reassigned |
+| `TicketDelegated` | `ticketId`, `delegatedByAgentId` | Agent delegates |
+| `TicketCollaboratorAdded` | `ticketId`, `agentId` | Collaborator joins |
+| `TicketDetailsUpdated` | `ticketId` | Metadata changes |
+
+## Pipeline events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `PipelineRunStarted` | `runId`, `templateId`, `workspaceId` | Run begins |
+| `PipelineStepStarted` | `runId`, `stepId` | Step begins |
+| `PipelineStepCompleted` | `runId`, `stepId`, `outputJson` | Step finishes |
+| `PipelineStepFailed` | `runId`, `stepId`, `errorMessage` | Step fails |
+| `PipelineRunCompleted` | `runId`, `totalCostCents`, `totalTokens` | Run finishes |
+| `PipelineRunFailed` | `runId`, `errorMessage` | Run fails |
+
+## Observability events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `ActivityLogged` | `activityType`, `workspaceId`, `agentId` | Audit trail entry created |
+| `WorktreeMerged` | `worktreePath`, `branch` | Worktree merge completes |
+| `BudgetThresholdCrossed` | `agentId`, `scope`, `currentSpend`, `threshold` | Spend exceeds threshold |
+
+## Analytics events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `AchievementUnlocked` | `agentId`, `badgeKey`, `metadata` | Agent earns a badge |
+
+## Subscribing to events
+
+Features subscribe to events in their initialization (wired in `main.dart`):
+
+- `ceoAgentSeedProvider` → `WorkspaceCreated`
+- `NotificationEventMapper` → all notification-producing events
+- `PipelineTriggerDispatcher` → all triggerable events
+- `TicketDispatcher` → `TicketAssigned`
+- `SnapshotAggregator` → `AgentRunCompleted` (hourly rollup)
+
+## Notification mapping
+
+`NotificationEventMapper` maps events to `AppNotification` instances:
+
+| Category | Source events |
+|---|---|
+| `agentRunCompleted` | `AgentRunCompleted` |
+| `pullRequestPublished` | `PullRequestPublished` |
+| `prMerged` | `PrMerged` |
+| `newMessage` | `MessageReceived` |
+| `externalPr` | `ExternalPrDetected` |
+| `pipelineCompleted` | `PipelineRunCompleted` |
+| `taskCompleted` | `TicketCompleted` |
+| `achievementUnlocked` | `AchievementUnlocked` |

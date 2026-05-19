@@ -1,0 +1,72 @@
+---
+---
+
+<script>
+  (function () {
+    "use strict";
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* sticky nav scroll state */
+    var nav = document.getElementById("nav");
+    function onScroll() {
+      if (nav) {
+        if (window.scrollY > 8) nav.classList.add("scrolled");
+        else nav.classList.remove("scrolled");
+      }
+    }
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    /* smooth in-page anchors */
+    var navH = nav ? nav.offsetHeight : 64;
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        var id = a.getAttribute("href");
+        if (id === "#" || id === "#top") {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+          return;
+        }
+        var target = document.querySelector(id);
+        if (!target) return;
+        e.preventDefault();
+        var y = target.getBoundingClientRect().top + window.scrollY - navH - 16;
+        window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
+      });
+    });
+
+    /* reveal on scroll */
+    var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+    if (reduce || !("IntersectionObserver" in window)) {
+      reveals.forEach(function (el) { el.classList.add("in"); });
+    } else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+      reveals.forEach(function (el) { io.observe(el); });
+    }
+
+    /* scrollspy — highlight the active release in the jump-nav */
+    var entries = Array.prototype.slice.call(document.querySelectorAll(".entry"));
+    var spies = Array.prototype.slice.call(document.querySelectorAll(".cl-jump a[data-spy]"));
+    function spyMap(id) {
+      spies.forEach(function (s) {
+        s.classList.toggle("active", s.getAttribute("data-spy") === id);
+      });
+    }
+    function onSpy() {
+      if (!entries.length) return;
+      var line = navH + 100;
+      var current = entries[0].id;
+      entries.forEach(function (en) {
+        if (en.getBoundingClientRect().top <= line) current = en.id;
+      });
+      spyMap(current);
+    }
+    onSpy();
+    window.addEventListener("scroll", onSpy, { passive: true });
+    window.addEventListener("resize", function () { navH = nav ? nav.offsetHeight : 64; onSpy(); }, { passive: true });
+  })();
+</script>

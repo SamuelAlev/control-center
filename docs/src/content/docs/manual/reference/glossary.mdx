@@ -1,0 +1,86 @@
+---
+title: Glossary
+description: Definitions of key terms used throughout Control Center.
+---
+
+## Core entities
+
+**Agent** — An AI worker with an identity, role, skills, and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+
+**Workspace** — The top-level isolation tenant. Groups agents, repos, channels, tickets, memory, and pipelines. All workspace-scoped data is hard-isolated.
+
+**Repo** — A Git repository registered in the system. Global across workspaces but linkable to multiple workspaces for worktree provisioning.
+
+**Isolated repo** — A workspace-scoped copy-on-write worktree of a registered repo. Provisioned per conversation so agents never mutate the source checkout.
+
+**Channel** — A messaging container. Either a DM (two participants) or a group. Workspace-scoped. Carries a conversation mode.
+
+**Ticket** — The unit-of-work aggregate. Vendor-agnostic (local or synced with Linear). Supports hierarchy, links, and delegation.
+
+**Pipeline** — A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+
+## Value objects
+
+**AgentRole** — Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access, and hierarchy.
+
+**AgentSkills** — Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+
+**AgentCapabilities** — Per-conversation flags (push to repo, GitHub API, ticketing, network egress) gated by the credential broker.
+
+**ConversationMode** — `chat`, `plan`, or `review`. Gates the system prompt, sandbox writes, and MCP tool allowlist.
+
+**SandboxBackend** — `native` (OS-native Seatbelt/bubblewrap) or `none` (no isolation).
+
+**RunCost** — Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+
+**WakeReason** — Why an agent was dispatched: user message, ticket assignment, pipeline step, or review dispatch.
+
+## Ports
+
+**SandboxPort** — Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+
+**CredentialBrokerPort** — Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+
+**GitRepoInspectorPort** — Extracts metadata (owner, repo, branch) from a local Git repo path.
+
+**EmbeddingPort** — Produces unit-norm text embedding vectors for semantic search.
+
+**NotificationPort** — Shows native desktop notifications respecting category/route gating.
+
+**TicketProviderPort** — Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+
+**PipelineEnginePort** — Starts a pipeline run from a template, decoupling callers from the concrete engine.
+
+## Domain services
+
+**AgentDispatchService** — Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+
+**TicketWorkflowService** — Pure-domain ticket lifecycle engine with optimistic-concurrency mutation chokepoint and workspace isolation enforcement.
+
+**TicketDispatcher** — Sole owner of assigned-ticket to agent dispatch: on `TicketAssigned`, checks readiness, ensures channel, transitions status, dispatches once.
+
+**PipelineEngine** — Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+
+**PipelineTriggerDispatcher** — Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+
+**MemoryAccessPolicy** — Resolves and enforces agent role memory permissions on domains.
+
+**CostTracker** — Computes per-run token cost and persists it onto the run log.
+
+**BudgetEnforcementService** — Enforces per-scope monthly spend budgets, blocking dispatch when exhausted.
+
+## Events
+
+**DomainEventBus** — In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+
+**DomainEvent** — Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, observability, analytics.
+
+## Architecture terms
+
+**Clean Architecture** — Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+
+**Ports and adapters** — Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+
+**Shared kernel** — `core/domain/` entities, value objects, ports, and services shared across 3+ features.
+
+**Feature-first** — Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.

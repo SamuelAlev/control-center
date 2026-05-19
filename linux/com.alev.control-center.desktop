@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=Control Center
+Comment=Multi-Agent Developer Control Center
+Exec=control_center %U
+Icon=control_center
+Type=Application
+Terminal=false
+Categories=Development;IDE;
+MimeType=x-scheme-handler/control-center;
+NoDisplay=false
+StartupNotify=true
+StartupWMClass=control_center

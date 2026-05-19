@@ -1,0 +1,43 @@
+
+import 'dart:typed_data';
+
+import 'package:control_center/core/domain/ports/embedding_port.dart';
+import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/features/messaging/domain/repositories/messaging_repository.dart';
+
+class BackfillMessageEmbeddingsUseCase {
+  BackfillMessageEmbeddingsUseCase({
+    required MessagingRepository messagingRepository,
+    EmbeddingPort? embeddingService,
+  })  : _messagingRepository = messagingRepository,
+        _embeddingService = embeddingService;
+
+  final MessagingRepository _messagingRepository;
+  final EmbeddingPort? _embeddingService;
+
+  Future<int> execute() async {
+    if (_embeddingService == null || !_embeddingService.isReady) {
+      return 0;
+    }
+
+    final messages =
+        await _messagingRepository.getMessagesWithoutEmbedding(limit: 200);
+    if (messages.isEmpty) {
+      return 0;
+    }
+
+    var count = 0;
+    for (final m in messages) {
+      try {
+        final embedding = await _embeddingService.embed(m.content);
+        final blob = Uint8List.view(embedding.buffer);
+        await _messagingRepository.updateMessageEmbedding(m.id, blob);
+        count++;
+      } catch (e) {
+        AppLog.e('BackfillMessageEmbeddings', 'failed for ${m.id}: $e', e);
+      }
+    }
+
+    return count;
+  }
+}

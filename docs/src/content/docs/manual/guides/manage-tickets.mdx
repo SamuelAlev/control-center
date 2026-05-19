@@ -1,0 +1,113 @@
+---
+title: Create and manage tickets
+description: Create tickets, update their status, and organize work in your workspace.
+---
+
+This guide shows you how to create and manage tickets.
+
+## Create a ticket
+
+### Via the UI
+
+1. Navigate to **Tickets** in the sidebar
+2. Click **Create ticket**
+3. Fill in:
+   - **Title**: short summary
+   - **Description**: detailed description in Markdown
+   - **Priority**: low, medium, high, critical
+   - **Project**: optional project grouping
+   - **Provider**: local (default) or Linear
+4. Click **Create**
+
+The ticket is created in the `open` status.
+
+### Via MCP tool
+
+```
+create_ticket(
+  workspace_id: "...",
+  title: "Fix login timeout on slow connections",
+  description: "...",
+  priority: "high"
+)
+```
+
+### Via agent
+
+Ask an agent in a channel:
+
+> Create a ticket for fixing the login timeout issue on slow connections.
+
+The agent uses the `create_ticket` MCP tool.
+
+## Update ticket status
+
+Tickets follow this lifecycle:
+
+```
+open → in_progress → done
+                   → failed
+                   → cancelled
+      → blocked → in_progress
+```
+
+To update:
+
+1. Open the ticket
+2. Click the status dropdown
+3. Select the new status
+4. The `TicketWorkflowService` validates the transition
+
+Status changes emit domain events (e.g. `TicketStarted`, `TicketCompleted`) that can trigger pipelines.
+
+## Assign a ticket
+
+1. Open the ticket
+2. Click **Assign**
+3. Select an agent or team
+
+Assignment fires `TicketAssigned`, which triggers the `TicketDispatcher` to:
+
+1. Check if the agent is available
+2. Create a conversation channel for the agent + ticket
+3. Transition the ticket to `in_progress`
+4. Dispatch the agent
+
+## Add labels
+
+Labels help categorize and filter tickets:
+
+1. Open the ticket
+2. Click **Add label**
+3. Type a label name (e.g. "bug", "feature", "tech-debt")
+
+Labels are free-form strings. They're stored on the ticket and displayed in the ticket list.
+
+## Link tickets
+
+Create dependencies between tickets:
+
+1. Open a ticket
+2. Click **Add link**
+3. Select the target ticket
+4. Choose the link type:
+
+| Type | Description |
+|---|---|
+| `blocks` | This ticket blocks the target |
+| `relatesTo` | The tickets are related |
+| `duplicateOf` | This ticket is a duplicate |
+
+## Add collaborators
+
+Invite agents or yourself to collaborate:
+
+1. Open the ticket
+2. Click **Add collaborator**
+3. Select an agent and assign a role (owner, contributor)
+
+## Related guides
+
+- [Delegate work to agents](/manual/guides/delegate-tickets/)
+- [Organize work with projects](/manual/guides/projects/)
+- [Ticket lifecycle reference](/manual/reference/ticket-lifecycle/)

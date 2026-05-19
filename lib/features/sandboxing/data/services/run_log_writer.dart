@@ -1,0 +1,165 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:control_center/core/domain/value_objects/agent_capabilities.dart';
+import 'package:control_center/core/security/command_redaction.dart';
+import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/features/dispatch/domain/entities/agent_process_event.dart';
+
+class RunLogWriter {
+  RunLogWriter({
+    this.coalesceableLogTypes = const {'thinking', 'text'},
+    this.logCoalesceWindow = const Duration(milliseconds: 1000),
+    this.logCoalesceMaxChars = 4000,
+  });
+
+  final Set<String> coalesceableLogTypes;
+  final Duration logCoalesceWindow;
+  final int logCoalesceMaxChars;
+
+  IOSink? _sink;
+  String? _logPath;
+
+  String? get logPath => _logPath;
+
+  String? _bufType;
+  DateTime? _bufFirstTs;
+  final StringBuffer _bufContent = StringBuffer();
+  Timer? _bufFlushTimer;
+
+  Future<void> open({
+    required String agentDirHostPath,
+    String? agentId,
+    String? workspaceId,
+    String? conversationId,
+    String? ticketId,
+    required String cliName,
+    String? modelId,
+    required AgentCapabilities capabilities,
+  }) async {
+    try {
+      _bufFlushTimer?.cancel();
+      _bufFlushTimer = null;
+      _bufType = null;
+      _bufFirstTs = null;
+      _bufContent.clear();
+
+      final runsDir = Directory('$agentDirHostPath/runs');
+      if (!runsDir.existsSync()) {
+        runsDir.createSync(recursive: true);
+      }
+      final runId = '${DateTime.now().millisecondsSinceEpoch}-'
+          '${agentId ?? "agent"}';
+      _logPath = '${runsDir.path}/$runId.ndjson';
+      _sink = File(_logPath!).openWrite(mode: FileMode.write);
+      _sink!.writeln(jsonEncode({
+        'type': 'start',
+        'ts': DateTime.now().toIso8601String(),
+        'runId': runId,
+        'agentId': agentId,
+        'workspaceId': workspaceId,
+        'conversationId': conversationId,
+        'ticketId': ticketId,
+        'cliName': cliName,
+        'modelId': modelId,
+        'capabilities': capabilities.toJson(),
+      }));
+    } catch (_) {
+      await _sink?.close();
+      _sink = null;
+      _logPath = null;
+    }
+  }
+
+  void logEvent(AgentProcessEvent event) {
+    final sink = _sink;
+    if (sink == null) return;
+    final type = event.type.name;
+    final content = redactSecrets(event.content);
+
+    if (!coalesceableLogTypes.contains(type)) {
+      flushBuffer();
+      try {
+        sink.writeln(jsonEncode({
+          'type': 'event',
+          'ts': DateTime.now().toIso8601String(),
+          'eventType': type,
+          'content': content,
+          if (event.metadata != null && event.metadata!.isNotEmpty)
+            'metadata': event.metadata,
+        }));
+      } catch (_) {
+        AppLog.w('RunLogWriter', 'Failed to write log event');
+      }
+      return;
+    }
+
+    if (_bufType != null) {
+      final firstTs = _bufFirstTs;
+      final tooOld = firstTs != null &&
+          DateTime.now().difference(firstTs) >= logCoalesceWindow;
+      final tooLong = _bufContent.length + content.length > logCoalesceMaxChars;
+      if (_bufType != type || tooOld || tooLong) {
+        flushBuffer();
+      }
+    }
+
+    if (_bufType == null) {
+      _bufType = type;
+      _bufFirstTs = DateTime.now();
+    }
+    _bufContent.write(content);
+
+    _bufFlushTimer?.cancel();
+    _bufFlushTimer = Timer(logCoalesceWindow, flushBuffer);
+  }
+
+  void flushBuffer() {
+    _bufFlushTimer?.cancel();
+    _bufFlushTimer = null;
+    final type = _bufType;
+    final firstTs = _bufFirstTs;
+    if (type == null || firstTs == null || _bufContent.isEmpty) {
+      _bufType = null;
+      _bufFirstTs = null;
+      _bufContent.clear();
+      return;
+    }
+    final content = _bufContent.toString();
+    _bufType = null;
+    _bufFirstTs = null;
+    _bufContent.clear();
+    final sink = _sink;
+    if (sink == null) return;
+    try {
+      sink.writeln(jsonEncode({
+        'type': 'event',
+        'ts': firstTs.toIso8601String(),
+        'eventType': type,
+        'content': content,
+      }));
+    } catch (_) {
+      AppLog.w('RunLogWriter', 'Failed to flush log buffer');
+    }
+  }
+
+  Future<void> close({int? exitCode, Object? error}) async {
+    flushBuffer();
+    final sink = _sink;
+    _sink = null;
+    if (sink == null) return;
+    try {
+      sink.writeln(jsonEncode({
+        'type': 'end',
+        'ts': DateTime.now().toIso8601String(),
+        'exitCode': exitCode,
+        if (error != null) 'error': error.toString(),
+      }));
+      await sink.flush();
+      await sink.close();
+    } catch (_) {
+      AppLog.w('RunLogWriter', 'Failed to close run log');
+    }
+  }
+}

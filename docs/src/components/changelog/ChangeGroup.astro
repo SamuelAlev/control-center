@@ -1,0 +1,23 @@
+---
+interface Props {
+  type: 'new' | 'improved' | 'fixed';
+  items: string[];
+}
+const { type, items } = Astro.props;
+const cls = type === 'new' ? 'new' : type === 'improved' ? 'imp' : 'fix';
+
+const icons: Record<string, string> = {
+  new: '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+  improved: '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 17l6-6 4 4 7-7"/><path d="M17 7h4v4"/></svg>',
+  fixed: '<svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+};
+
+const labels: Record<string, string> = { new: 'New', improved: 'Improved', fixed: 'Fixed' };
+---
+
+<div class:list={['cgroup', cls]}>
+  <span class="cgroup-h inline-flex items-center gap-[9px] font-mono text-[11px] tracking-[0.12em] uppercase [.new_&]:text-accent [.imp_&]:text-success [.fix_&]:text-muted [&_.gi]:w-[14px] [&_.gi]:h-[14px] [&_.gi]:flex-none"><Fragment set:html={icons[type]} />{labels[type]}</span>
+  <ul class="clist list-none mt-[13px] mb-0 mx-0 p-0 flex flex-col gap-3 [&_b]:font-normal [&_b]:text-fg [&_code]:font-mono [&_code]:text-[0.85em] [&_code]:bg-surface [&_code]:border [&_code]:border-border [&_code]:rounded-sm [&_code]:py-px [&_code]:px-[5px] [&_code]:text-fg">
+    {items.map((item) => <li class="relative pl-[22px] text-[15px] leading-[1.55] text-muted max-w-[64ch] before:content-[''] before:absolute before:left-[5px] before:top-[9px] before:w-[5px] before:h-[5px] before:bg-line-strong"><Fragment set:html={item} /></li>)}
+  </ul>
+</div>

@@ -1,0 +1,114 @@
+---
+title: Pipeline step kinds
+description: Reference for all available pipeline step kinds and their configuration.
+---
+
+## Step kinds
+
+### Trigger
+
+The entry point of a pipeline. Every pipeline has exactly one trigger step.
+
+**Configuration:** none by default. Accepts manual runs and event/schedule triggers.
+
+### Prompt agent
+
+Dispatches an agent with a prompt.
+
+| Config field | Type | Description |
+|---|---|---|
+| `agent` | `String?` | Agent ID (or null to use pipeline input) |
+| `prompt` | `String` | Instruction text. Supports `{{inputKey}}` placeholders. |
+| `mode` | `ConversationMode` | Chat, plan, or review |
+| `timeout` | `int?` | Wall-clock timeout in seconds |
+| `retry` | `StepRetryPolicy?` | Retry configuration |
+| `continueOnFail` | `bool` | Whether downstream steps proceed on failure |
+| `outputKey` | `String?` | Key for writing output to state |
+| `outputSchema` | `String?` | JSON Schema for validating output |
+
+### Bash script
+
+Runs a shell command.
+
+| Config field | Type | Description |
+|---|---|---|
+| `script` | `String` | Shell command to execute |
+| `workingDir` | `String?` | Working directory |
+| `env` | `Map<String, String>?` | Additional environment variables |
+| `timeout` | `int?` | Wall-clock timeout in seconds |
+| `retry` | `StepRetryPolicy?` | Retry configuration |
+| `continueOnFail` | `bool` | Whether downstream steps proceed on failure |
+
+### Dispatch reviewers
+
+Fans out PR review to matched reviewer agents.
+
+| Config field | Type | Description |
+|---|---|---|
+| `prUrl` | `String` | PR URL (can reference `{{inputKey}}`) |
+| `reviewerRoles` | `List<String>` | Roles to dispatch (e.g. ["reviewer", "security"]) |
+
+### Router / Conditional
+
+Routes to different downstream steps based on a condition.
+
+| Config field | Type | Description |
+|---|---|---|
+| `condition` | `String` | Expression that evaluates to a route key |
+| `routes` | `Map<String, String>` | Route key to downstream step ID |
+
+Each outgoing edge from the router has a `routeKey`. The engine evaluates the condition and follows the matching edge.
+
+### Join
+
+Waits for all upstream steps to complete before proceeding.
+
+**Configuration:** none. The join step implicitly waits for all connected upstream steps.
+
+Use join to synchronize parallel branches before continuing.
+
+### Sub-pipeline
+
+Executes another pipeline template as a step.
+
+| Config field | Type | Description |
+|---|---|---|
+| `templateId` | `String` | The template to execute |
+| `inputs` | `Map<String, dynamic>?` | Inputs to pass to the sub-pipeline |
+
+The sub-pipeline runs as a child run with `parentPipelineRunId` set.
+
+## StepRetryPolicy
+
+| Field | Type | Description |
+|---|---|---|
+| `maxAttempts` | `int` | Maximum retry attempts |
+| `backoff` | `RetryBackoff` | `linear` or `exponential` |
+| `initialDelayMs` | `int` | Initial delay before first retry |
+
+## Step result types
+
+A step body returns a `StepResult`:
+
+| Result | Description |
+|---|---|
+| `ok` | Success with optional output |
+| `route` | Router result — follow a specific edge |
+| `suspendUntilEvent` | Pause until a domain event arrives |
+| `suspendUntilTasks` | Pause until child tasks complete |
+| `terminal` | End the pipeline run immediately |
+| `failed` | Step failed with an error |
+
+## PipelineNodeConfig
+
+Per-step configuration carried inside the step definition:
+
+- `prompt`, `script`, `agentId`, `teamId` — what to execute
+- `inputKey`, `outputKey` — state data flow keys
+- `outputSchema` — JSON Schema for output validation
+- `reducer` — how to merge parallel branch outputs
+- `retry` — `StepRetryPolicy`
+- `continueOnFail` — proceed on failure
+- `timeout` — wall-clock timeout
+- `dispatchMode` — conversation mode for agent dispatches
+- `extras` — arbitrary extra configuration

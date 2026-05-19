@@ -1,0 +1,65 @@
+---
+title: "@-mention agents"
+description: Mention agents in channels to dispatch them or include them in conversations.
+---
+
+This guide shows you how to @-mention agents.
+
+## How @-mentions work
+
+When you type `@agent-name` in a message, Control Center:
+
+1. Parses the mention tokens from the message text
+2. Resolves each mention to a unique agent in the workspace
+3. Injects the mention context (who mentioned whom, the channel roster) into the dispatched agent's prompt
+
+Mentioned agents are dispatched with the conversation context.
+
+## Mention syntax
+
+```
+@alice fix the login bug
+```
+
+The mention is the `@` symbol followed by the agent's name (case-insensitive). The agent name must match exactly.
+
+## Mention multiple agents
+
+```
+@alice refactor the auth module. @bob write tests for it.
+```
+
+Both agents dispatch in parallel, each receiving the full message as context plus their own isolated worktree.
+
+## Mention in a group channel
+
+In a group channel, all participants can see the message. Mentioned agents respond; unmentioned agents observe but don't dispatch.
+
+## Resolution
+
+The `MentionResolver` resolves @-mention tokens:
+
+1. Exact match on agent name (case-insensitive)
+2. If ambiguous, resolves to the top-level agent (not one buried in the hierarchy)
+3. Unresolved mentions are left as plain text
+
+The `AgentLoopGuard` prevents infinite dispatch loops:
+
+- **Self-trigger guard**: an agent can't dispatch itself via mention
+- **Recent-participant guard**: suppresses re-dispatch if the agent already participated recently
+
+## Mention context
+
+When an agent is dispatched via mention, it receives `MentionContext`:
+
+- Who mentioned it (user or another agent)
+- The full channel roster (who else is in the conversation)
+- The message that triggered the dispatch
+
+This context helps the agent understand its role in the conversation.
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Use channels and DMs](/manual/guides/channels/)
+- [Run agents in parallel](/manual/guides/parallel-agents/)

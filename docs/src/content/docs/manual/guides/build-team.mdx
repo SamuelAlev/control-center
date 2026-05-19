@@ -1,0 +1,85 @@
+---
+title: Build an agent team
+description: Group agents into teams for coordinated dispatch and shared context.
+---
+
+This guide shows you how to create and manage agent teams.
+
+## What are teams?
+
+A team is a named group of agents within a workspace. Teams enable:
+
+- **Coordinated dispatch** — send a task to the team and have it distributed among members
+- **Shared context** — team members share a conversation channel
+- **Role-based assignment** — the team lead (CEO or designated agent) can delegate to the right specialist
+
+## Create a team
+
+1. Navigate to **Settings → Teams**
+2. Click **Create team**
+3. Enter a name (e.g. "backend-team", "review-squad")
+4. Add agents to the team
+
+Teams are workspace-scoped — agents from different workspaces cannot be on the same team.
+
+## Team dispatch
+
+When you dispatch a task to a team:
+
+1. The team lead (first member or designated CEO) receives the task
+2. The lead can delegate subtasks to team members
+3. Each subtask creates a ticket and a conversation channel
+4. Team members report back to the team channel
+
+This mimics how a real engineering team operates — a tech lead breaks down the work and delegates to specialists.
+
+## Team channels
+
+Teams can have dedicated group channels where all members participate. This is useful for:
+
+- Coordinating on complex tasks
+- Sharing findings and blockers
+- Asking questions across specializations
+
+Create a team channel from **Messaging** by creating a group channel and adding all team members.
+
+## Reporting hierarchy
+
+Agents have a `reportsTo` field that establishes a reporting chain. Set this when hiring:
+
+- Coders report to the CEO
+- Reviewers report to the CEO
+- Specialist agents can report to a lead agent
+
+The hierarchy is used for:
+
+- Memory access — role-based grants follow the hierarchy
+- Delegation — agents can delegate to subordinates
+- Analytics — roll up metrics by team and hierarchy
+
+## Team composition examples
+
+### Full-stack team
+
+- **CEO** (lead) — coordination and delegation
+- **Coder** — implementation
+- **Reviewer** — code review
+- **QA** — testing
+
+### Security review team
+
+- **CEO** (lead)
+- **Security** — security audit
+- **Reviewer** — code review
+
+### DevOps team
+
+- **DevOps** (lead)
+- **Coder** — infrastructure-as-code
+- **QA** — integration testing
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Run agents in parallel](/manual/guides/parallel-agents/)
+- [Delegate work to agents](/manual/guides/delegate-tickets/)

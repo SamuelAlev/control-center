@@ -1,0 +1,52 @@
+---
+title: Quick start
+description: Go from zero to dispatching your first agent in five minutes.
+---
+
+## Prerequisites
+
+- **macOS 12+** (Apple Silicon or Intel), **Windows 10+**, or **Linux** with a graphical environment
+- **Git** installed and configured
+- At least one AI agent CLI installed (e.g. Claude Code, Codex CLI, or Pi)
+- A **GitHub personal access token** with repo and PR permissions
+
+## Step 1: Install Control Center
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+
+On first launch, Control Center opens the onboarding screen.
+
+## Step 2: Connect GitHub
+
+Provide your GitHub personal access token. Control Center validates it and stores it securely in your system keychain (macOS Keychain, Windows Credential Store, or Linux libsecret).
+
+If you have the `gh` CLI installed and authenticated, Control Center detects it automatically.
+
+## Step 3: Create a workspace
+
+A workspace is your top-level container — it groups agents, repos, channels, and memory. Give it a name and optionally a logo.
+
+The first workspace also seeds a **CEO agent** that can hire and coordinate other agents.
+
+## Step 4: Add a repository
+
+Add a Git repository to your workspace. Control Center inspects the repo and detects its GitHub remote. The repo becomes available for **worktree isolation** — each agent conversation gets its own copy-on-write branch.
+
+## Step 5: Dispatch an agent
+
+Open a channel with an agent (or mention `@agent` in any channel). Type your instructions. The agent:
+
+1. Gets its own isolated worktree
+2. Receives a prompt assembled from its role, persona, skills, and conversation context
+3. Executes in a sandbox with capability-gated access to your repos and APIs
+4. Streams its thinking and output back to the channel in real time
+
+## Step 6: Review the PR
+
+When the agent finishes, it opens a pull request. Open the PR in Control Center's diff viewer, review the changes, and merge — all without leaving the app.
+
+## Next steps
+
+- [Your first workspace](/manual/tutorials/first-workspace/) — a guided walkthrough
+- [The agent model](/manual/concepts/agent-model/) — understand how agents work
+- [Create and configure an agent](/manual/guides/create-agent/) — customize your team

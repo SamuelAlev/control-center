@@ -1,0 +1,46 @@
+---
+// Tickets — "One ticket carries the work from request to merge."
+// Converted from landing.html #tickets section to Tailwind v4 utilities
+// wired to the Control Center design system tokens.
+---
+
+<section id="tickets" class="py-[clamp(56px,9vw,80px)]">
+  <div class="wrap">
+    <div class="grid items-center gap-[clamp(28px,5vw,64px)] lg:grid-cols-[0.9fr_1.1fr]">
+      <div class="reveal from-left">
+        <span class="eyebrow">Unit of work</span>
+        <h2 class="mt-4 max-w-[18ch] text-[clamp(28px,3.8vw,48px)] leading-[1.0] tracking-[-0.03em]">One ticket carries the work from request to merge.</h2>
+        <p class="mt-[18px] max-w-[40ch] text-muted">A ticket is the single unit of work the whole fleet shares — vendor-agnostic, synced with Linear both ways, and coupled to the pipeline that delivers it. An execution lock means exactly one agent owns a ticket at a time, so two never grab the same work.</p>
+        <ul class="mt-[22px] flex list-none flex-col gap-3 p-0">
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Bidirectional Linear sync — status, assignee and comments stay in step.</li>
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Coupled to a pipeline run, so a ticket can drive the work end to end.</li>
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>An execution lock — one owner at a time, never a double-claim.</li>
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Vendor-agnostic aggregate — bring your own tracker.</li>
+        </ul>
+      </div>
+      <div class="reveal from-right overflow-hidden rounded-lg border border-border bg-panel shadow-soft">
+        <div class="flex items-center gap-[10px] border-b border-border px-[15px] py-3">
+          <span class="text-[12.5px]">Ticket</span>
+          <span class="mono ml-auto text-[11px] text-muted">CC-318</span>
+        </div>
+        <div class="px-4 pt-[14px] pb-4">
+          <div class="flex items-center gap-[10px]">
+            <span class="mono text-[11px] text-muted">design-system</span>
+            <span class="ml-auto inline-flex items-center gap-[7px] whitespace-nowrap rounded-sm border border-success/30 bg-success-soft px-[9px] py-[4px] font-mono text-[11px] tracking-[0.02em] text-success"><svg class="h-[11px] w-[11px] shrink-0" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="currentColor"/></svg>In progress</span>
+          </div>
+          <div class="mt-[6px] text-sm tracking-[-0.01em]">Cache parsed Drift schema on open</div>
+          <div class="mt-[14px] flex flex-wrap gap-[6px]">
+            <span class="rounded-sm border border-border bg-surface px-[7px] py-[3px] font-mono text-[10px] text-muted">Linear · synced</span>
+            <span class="rounded-sm border border-border bg-surface px-[7px] py-[3px] font-mono text-[10px] text-muted">pipeline · #run_8f3a</span>
+            <span class="rounded-sm border border-border bg-surface px-[7px] py-[3px] font-mono text-[10px] text-muted">priority · P2</span>
+          </div>
+          <div class="mt-4 flex items-center gap-[10px] border-t border-border-soft pt-[14px] text-[12.5px]">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" class="shrink-0 text-accent"><rect x="3" y="7" width="10" height="6.5" rx="1"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7"/></svg>
+            <span>Execution lock</span>
+            <span class="mono ml-auto text-muted">held by Engineer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

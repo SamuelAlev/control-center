@@ -1,0 +1,319 @@
+name: Release
+
+# Builds signed (ad-hoc, unless Developer-ID/Authenticode secrets are present)
+# desktop binaries for macOS (DMG), Windows (Inno Setup exe) and Linux
+# (AppImage), attaches them to a DRAFT GitHub Release with SHA-256 checksums,
+# and attaches an OIDC SLSA build-provenance attestation to each artifact.
+#
+# Trigger by pushing a version tag (e.g. `git tag v1.0.0 && git push --tags`),
+# or run manually from the Actions tab (workflow_dispatch) supplying a version.
+# The release is created as a DRAFT — review the artifacts, then publish.
+#
+# The heavy lifting lives in scripts/ so this file stays readable:
+#   scripts/build_natives.sh            build rift + fff + tree-sitter (macOS/Linux)
+#   scripts/release/windows_natives.sh  build fff + tree-sitter (Windows)
+#   scripts/release/macos_package.sh    embed + sign + DMG + notarize
+#   scripts/release/linux_package.sh    bundle + AppImage + tarball
+#   scripts/release/make_release.sh     assemble + notes + draft release
+# Native builds are non-fatal: a failure degrades the feature at runtime
+# (git-worktree fallback / Dart file search / no code graph). rift is not built
+# on Windows.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, e.g. 1.0.0 (defaults to pubspec version)"
+        required: false
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Resolve version
+        id: v
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
+          else
+            version="${{ github.event.inputs.version }}"
+            if [ -z "$version" ]; then
+              version="$(grep -m1 '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)"
+            fi
+            tag="v${version}"
+          fi
+          echo "Resolved version=$version tag=$tag"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  build-macos:
+    needs: prepare
+    runs-on: macos-14 # Apple Silicon (arm64)
+    permissions:
+      contents: read
+      id-token: write # OIDC for build-provenance attestation
+      attestations: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: "3.44.0" # pin to the project's local Flutter; avoid `stable` drift
+          cache: true
+
+      - name: Use CocoaPods (disable Swift Package Manager for a reliable clean build)
+        run: flutter config --no-enable-swift-package-manager
+
+      - name: Install create-dmg
+        run: brew install create-dmg
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Code generation (drift / json_serializable)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build native FFI libraries (rift + fff + tree-sitter)
+        continue-on-error: true
+        run: bash scripts/build_natives.sh build/natives
+
+      - name: Build macOS release
+        run: flutter build macos --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+
+      - name: Package (embed + sign + DMG + notarize)
+        env:
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+        run: bash scripts/release/macos_package.sh "$VERSION"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: Control-Center-${{ env.VERSION }}-arm64.dmg
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: macos
+          path: |
+            Control-Center-*-arm64.dmg
+            Control-Center-*-arm64.dmg.sha256
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  build-windows:
+    needs: prepare
+    runs-on: windows-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+      # Pinned native sources — keep in sync with scripts/build_fff.sh + scripts/build_tree_sitter.sh.
+      FFF_REF: 8092cfa3faf3471d29b3e11049e921d7e759d789 # dmtrKovalenko/fff v0.9.3
+      TREE_SITTER_REF: 7f534862c3ec939c3a6ee147f7600ef5c1bf900f # tree-sitter v0.26.9
+      TS_DART_REF: a9bdfa3db2fbc9b9f12c93450d04a671f33a5102 # tree-sitter-dart (master)
+      TS_JAVASCRIPT_REF: 44c892e0be055ac465d5eeddae6d3e194424e7de # tree-sitter-javascript v0.25.0
+      TS_TYPESCRIPT_REF: f975a621f4e7f532fe322e13c4f79495e0a7b2e7 # tree-sitter-typescript v0.23.2
+      TS_PHP_REF: 5b5627faaa290d89eb3d01b9bf47c3bb9e797dea # tree-sitter-php v0.24.2
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: "3.44.0" # pin to the project's local Flutter; avoid `stable` drift
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Code generation (drift / json_serializable)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build native FFI libraries (fff + tree-sitter; no rift on Windows)
+        continue-on-error: true
+        shell: bash
+        run: bash scripts/release/windows_natives.sh
+
+      - name: Build Windows release
+        run: flutter build windows --release --build-name="$env:VERSION" --build-number="$env:BUILD_NUMBER"
+
+      - name: Bundle native DLLs beside the executable
+        shell: bash
+        run: |
+          set -e
+          OUT="build/windows/x64/runner/Release"
+          shopt -s nullglob
+          for f in build/natives/*.dll; do echo "  bundling $(basename "$f")"; cp -f "$f" "$OUT/"; done
+
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress }
+          & $iscc "/DAppVersion=$env:VERSION" "windows/installer/control_center.iss"
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed ($LASTEXITCODE)" }
+
+      - name: Authenticode sign (only when a code-signing cert is present)
+        shell: pwsh
+        env:
+          WINDOWS_CERT: ${{ secrets.WINDOWS_CERT }}
+          WINDOWS_CERT_PWD: ${{ secrets.WINDOWS_CERT_PWD }}
+        run: |
+          if (-not $env:WINDOWS_CERT) { Write-Host "No Authenticode cert — installer ships unsigned (SmartScreen will warn)."; exit 0 }
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP\cert.pfx", [Convert]::FromBase64String($env:WINDOWS_CERT))
+          $exe = Get-ChildItem dist -Filter *-setup.exe | Select-Object -First 1
+          & signtool sign /f "$env:RUNNER_TEMP\cert.pfx" /p $env:WINDOWS_CERT_PWD `
+            /tr http://timestamp.digicert.com /td sha256 /fd sha256 $exe.FullName
+
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem dist -Filter *-setup.exe | Select-Object -First 1
+          $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
+          "$hash  $($exe.Name)" | Out-File -Encoding ascii "$($exe.FullName).sha256"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: dist/Control-Center-*-x64-setup.exe
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows
+          path: |
+            dist/Control-Center-*-x64-setup.exe
+            dist/Control-Center-*-x64-setup.exe.sha256
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+      ARCH: x86_64
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          # System libs required by the plugins' Linux CMake (pkg_check_modules)
+          # plus curl/zlib for the bundled sentry-native build.
+          sudo apt-get install -y \
+            clang cmake ninja-build pkg-config \
+            libgtk-3-dev liblzma-dev libblkid-dev libfuse2 \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            libsecret-1-dev \
+            libkeybinder-3.0-dev libnotify-dev \
+            libcurl4-openssl-dev zlib1g-dev
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: "3.44.0" # pin to the project's local Flutter; avoid `stable` drift
+          cache: true
+
+      - name: Resolve dependencies
+        run: flutter pub get
+      - name: Code generation (drift / json_serializable)
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Build native FFI libraries (rift + fff + tree-sitter)
+        continue-on-error: true
+        run: bash scripts/build_natives.sh build/natives
+
+      - name: Build Linux release
+        run: flutter build linux --release --build-name="$VERSION" --build-number="$BUILD_NUMBER"
+
+      - name: Package (bundle + AppImage + tarball + checksums)
+        run: bash scripts/release/linux_package.sh "$VERSION"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: |
+            Control-Center-${{ env.VERSION }}-x86_64.AppImage
+            Control-Center-${{ env.VERSION }}-linux-x64.tar.gz
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux
+          path: |
+            Control-Center-*-x86_64.AppImage
+            Control-Center-*-linux-x64.tar.gz
+            Control-Center-*.sha256
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  release:
+    needs: [prepare, build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: artifacts
+
+      - name: Create draft release (assemble + checksums + notes)
+        run: bash scripts/release/make_release.sh

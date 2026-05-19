@@ -1,0 +1,71 @@
+---
+title: Add repos to a workspace
+description: Register Git repositories and link them to workspaces for agent access.
+---
+
+This guide shows you how to add repositories and link them to workspaces.
+
+## Register a repository
+
+Repos are registered globally — they exist independently of workspaces.
+
+1. Navigate to **Settings → Repositories**
+2. Click **Add repository**
+3. Enter the local path to your Git repository (e.g. `~/dev/my-project`)
+4. Control Center inspects the repo:
+   - Reads `.git/config` for the remote origin URL
+   - Extracts owner and repo name for GitHub integration
+   - Detects the current branch
+5. Click **Add** to register
+
+The repo appears in the global repository list with its name, path, and GitHub remote info.
+
+## Link a repo to a workspace
+
+Linking makes the repo available for worktree isolation within a workspace.
+
+1. Navigate to your workspace
+2. Click **Link repo**
+3. Select from the list of registered repos
+4. The repo is linked via the `WorkspaceRepo` join table
+
+A single repo can be linked to multiple workspaces. Each workspace gets its own worktrees.
+
+## How worktree isolation works
+
+When an agent in a workspace needs to work on a linked repo:
+
+1. The `RepoWorkspaceProvisioner` creates a copy-on-write clone using the `rift` FFI (or `git worktree` fallback)
+2. The clone is on its own branch, in a per-conversation working root
+3. The source checkout is never mounted into the sandbox
+4. When the conversation ends, the worktree is cleaned up
+
+This means multiple agents can work on the same repo simultaneously, each on their own branch, without conflicts.
+
+## Remove a repo
+
+1. Navigate to **Settings → Repositories**
+2. Click the context menu on the repo
+3. Select **Remove**
+
+Removing a repo removes it globally. Active worktrees are cleaned up first.
+
+To unlink a repo from a workspace (without removing it globally):
+
+1. Navigate to the workspace
+2. Click **Unlink** on the repo
+
+## GitHub remote detection
+
+Control Center automatically detects GitHub remotes from the repo's `.git/config`. If your repo has a GitHub remote:
+
+- PRs can be opened and managed directly
+- The PR polling service checks for external PRs
+- CI checks are shown in the PR detail view
+
+If your repo doesn't have a GitHub remote, agents can still work on it locally — they just won't be able to open PRs to GitHub.
+
+## Related guides
+
+- [Your first workspace](/manual/tutorials/first-workspace/)
+- [Search code with the code graph](/manual/guides/code-search/)

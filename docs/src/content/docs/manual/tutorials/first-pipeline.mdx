@@ -1,0 +1,97 @@
+---
+title: Build your first pipeline
+description: Create a pipeline template, add steps, and run it.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- A pipeline template with three steps: trigger → agent task → bash verification
+- A manual run of that pipeline
+- An understanding of how pipelines connect agents, scripts, and conditional logic
+
+Prerequisites: [Dispatch your first agent](/manual/tutorials/first-agent/) completed.
+
+## What are pipelines?
+
+Pipelines are DAG-based workflows that chain steps together. Each step has a kind (prompt an agent, run a script, dispatch reviewers, route conditionally, join parallel branches) and can pass data to downstream steps via state.
+
+Templates define the graph; runs are executions. Triggers can auto-start pipelines on domain events or schedules.
+
+For background, see [Pipelines and automation](/manual/concepts/pipelines/).
+
+## Step 1: Create a pipeline template
+
+1. Navigate to **Pipelines** in the sidebar
+2. Click **Create template**
+3. Name it "code-quality-check"
+4. Add a description: "Run code quality checks on a branch"
+
+The template editor opens with a blank canvas.
+
+## Step 2: Add a trigger step
+
+Every pipeline starts with a **Trigger** step. This is the entry point.
+
+1. The canvas already has a trigger node. Click it.
+2. Leave the default configuration — it accepts manual runs.
+
+## Step 3: Add an agent step
+
+1. Click **Add step** on the canvas
+2. Select **Prompt agent** as the step kind
+3. Configure it:
+   - **Agent**: pick your coder agent
+   - **Prompt**: "Review the code in the current branch for common quality issues. List any problems you find."
+   - **Mode**: chat
+4. Connect the trigger step to this agent step (drag from trigger's output to agent's input)
+
+## Step 4: Add a bash script step
+
+1. Add another step, kind **Bash script**
+2. Configure it:
+   - **Script**: `echo "Quality check complete"`
+   - This is a simple verification step — in practice you'd run linting or test commands
+3. Connect the agent step to this script step
+
+Your pipeline now has three connected steps: trigger → agent → script.
+
+## Step 5: Run the pipeline
+
+1. Click **Run pipeline** in the header
+2. If the template declares inputs, fill them in (our template has none)
+3. Click **Start run**
+
+The pipeline engine:
+
+1. Creates a `PipelineRun` record
+2. Starts the trigger step
+3. When the trigger completes, schedules the agent step
+4. The agent dispatches, works, and completes
+5. When the agent step completes, schedules the script step
+6. The script runs and completes
+7. The run status moves to **Completed**
+
+Watch the run progress in the pipeline run detail view. Each step shows its status, input, and output.
+
+## Step 6: Inspect the results
+
+Click any step in the run to see:
+
+- **Input**: the data passed into the step
+- **Output**: what the step produced
+- **Status**: completed, failed, or skipped
+- **Duration**: how long it took
+
+The agent step's output contains the agent's response. The script step's output contains the stdout.
+
+## Recap
+
+You created a three-step pipeline, ran it manually, and inspected the results. Pipelines can be much more complex — conditional routing, parallel branches, join nodes, error handling — but the basic pattern is the same: steps connected in a DAG, passing data through shared state.
+
+**Next steps:**
+
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/) to auto-start pipelines on events
+- [Pipelines and automation](/manual/concepts/pipelines/) for a deeper conceptual understanding
+- [Pipeline step kinds](/manual/reference/pipeline-steps/) for all available step types

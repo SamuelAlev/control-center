@@ -1,0 +1,101 @@
+---
+title: Create a pipeline template
+description: Define a DAG-based workflow template with steps and configuration.
+---
+
+This guide shows you how to create a pipeline template.
+
+## Create a template
+
+1. Navigate to **Pipelines** in the sidebar
+2. Click **Create template**
+3. Enter a name and description
+4. The template editor opens with a blank canvas
+
+## Add steps
+
+Click **Add step** and choose a step kind:
+
+| Kind | Description |
+|---|---|
+| **Trigger** | Entry point (one per pipeline) |
+| **Prompt agent** | Dispatch an agent with a prompt |
+| **Bash script** | Run a shell command |
+| **Dispatch reviewers** | Fan out PR review |
+| **Router** | Conditional branching |
+| **Join** | Wait for parallel steps |
+| **Sub-pipeline** | Execute another template |
+
+## Configure a step
+
+Click a step to configure it:
+
+### Prompt agent
+
+- **Agent**: which agent to dispatch (or "use pipeline input" to select at run time)
+- **Prompt**: the instruction text. Use `{{inputKey}}` to reference pipeline inputs or upstream outputs.
+- **Mode**: chat, plan, or review
+- **Timeout**: wall-clock timeout in seconds
+- **Retry policy**: max attempts, backoff strategy
+- **Continue on fail**: whether downstream steps proceed if this step fails
+
+### Bash script
+
+- **Script**: the shell command to run
+- **Working directory**: where to run it
+- **Environment variables**: additional env vars
+- **Timeout**: wall-clock timeout
+
+### Router
+
+- **Condition**: a JavaScript expression that evaluates to a route key
+- Routes map to different downstream steps
+
+### Join
+
+- No configuration — it waits for all upstream steps to complete
+
+## Connect steps
+
+Steps must be connected to form a DAG:
+
+1. Drag from a step's output port to another step's input port
+2. The connection defines the execution order
+3. Unconnected branches run in parallel
+
+Rules:
+
+- Every pipeline has exactly one trigger step
+- Steps can have multiple downstream connections (fan-out)
+- The join step waits for all its upstream connections (fan-in)
+- No cycles — the graph must be a DAG
+
+## Declare inputs
+
+Inputs are form fields rendered when someone runs the pipeline:
+
+1. In the template editor, click **Inputs**
+2. Add input fields:
+
+| Field | Description |
+|---|---|
+| **Key** | Variable name (used in `{{...}}` references) |
+| **Label** | Display label |
+| **Type** | text, number, boolean, select |
+| **Required** | Whether the input is mandatory |
+| **Default** | Default value |
+| **Help text** | Helper text shown below the input |
+
+Reference inputs in steps with `{{keyName}}`.
+
+## Save and enable
+
+1. Click **Save** to persist the template
+2. Enable it with the toggle in the header
+3. The template is now available for manual runs or triggers
+
+## Related guides
+
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+- [Pipeline step kinds](/manual/reference/pipeline-steps/)

@@ -1,0 +1,112 @@
+---
+title: Agent dispatch lifecycle
+description: How agents are launched, run, and finalized in Control Center.
+---
+
+## Overview
+
+Dispatching an agent means starting a new execution run. The dispatch lifecycle covers everything from receiving the user's message to persisting the final run log.
+
+## The dispatch sequence
+
+When you send a message to an agent (or a pipeline step triggers one), the following happens:
+
+### 1. Prompt assembly
+
+`BuildAgentPromptUseCase` assembles the agent's prompt from:
+
+- **Role persona** — the agent's configured personality and behavioral instructions
+- **Conversation mode prompt** — a mode-specific system prompt (chat, plan, or review)
+- **Conversation context** — recent messages from the channel, compacted to fit context limits
+- **Memory context** — relevant memory facts retrieved via vector/FTS search
+- **Mention context** — who summoned the agent and the channel's participant roster
+- **Skill injections** — mode- and skill-specific prompt blocks
+
+### 2. Isolated repo provisioning
+
+The `RepoWorkspaceProvisioner` creates a copy-on-write worktree for each linked repo in the workspace. This uses the `rift` FFI for efficient CoW clones, falling back to `git worktree` if rift is unavailable.
+
+Each conversation gets its own working root. The source checkout is never mutated.
+
+### 3. Sandbox launch
+
+`SandboxPort.launch` starts an OS-native sandbox:
+
+- **macOS**: Seatbelt (Apple's sandboxing mechanism)
+- **Linux**: bubblewrap
+- **None**: opt-out (no isolation, for development)
+
+The sandbox receives:
+
+- Bind mounts for the isolated worktree and workspace files
+- Environment variables with capability-gated credentials from the `CredentialBroker`
+- The assembled prompt and conversation mode
+
+### 4. Process execution
+
+The agent CLI process starts inside the sandbox. It streams events back to Control Center:
+
+| Event type | Description |
+|---|---|
+| `thinking` | The agent's reasoning (shown inline in chat) |
+| `text` | Visible output to the user |
+| `toolCall` | A tool invocation (file read, write, shell command) |
+| `toolResult` | The result of a tool call |
+| `error` | An error from the agent process |
+| `sandboxViolation` | The sandbox denied a capability |
+| `done` | The agent finished |
+
+These events are consumed by `AgentStreamProcessor`, which persists message deltas, embeds content for memory search, and emits messaging events.
+
+### 5. Run finalization
+
+When the agent finishes (or fails, or is stopped), `AgentDispatchService` finalizes the run:
+
+- **Completion**: records the end time, summary, and token cost
+- **Failure**: records the error family and liveness classification
+- **Stop**: user-initiated stop, records the interruption
+
+The `AgentRunCompleted` domain event fires, triggering:
+
+- Analytics aggregation (daily stats, XP, achievements)
+- Cost tracking and budget enforcement
+- Desktop notifications
+- Dashboard state refresh
+
+## Run logs
+
+Every dispatch creates an `AgentRunLog` — an immutable record with:
+
+- Token cost (input tokens, output tokens, estimated cost in cents)
+- Liveness classification (healthy, stale, dead)
+- Error family (timeout, auth, rate limit, unknown)
+- Retry lineage (parent run ID, attempt counter)
+- Process metadata (PID, log path, adapter)
+
+Run logs are workspace-scoped and can be inspected in the agent detail view.
+
+## Retry and continuation
+
+Failed runs can be retried. The retry system:
+
+- Tracks lineage via `RetryMeta` (parent run ID + attempt counter)
+- Creates a new run with a `continuationSummary` from the previous run
+- Carries over the conversation context so the agent doesn't start from scratch
+
+## Wake reasons
+
+Agents are dispatched for different reasons, tracked by `WakeReason`:
+
+- **User message** — the user sent a message in a channel
+- **Ticket assignment** — a ticket was assigned to the agent
+- **Pipeline step** — a pipeline step triggered the agent
+- **Review dispatch** — a PR review was requested
+
+Each reason carries different context (ticket ID, pipeline run ID, PR info) injected into the agent's environment.
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/) — agent identity and configuration
+- [Conversation modes](/manual/concepts/conversation-modes/) — how mode affects the prompt
+- [Sandbox and security](/manual/concepts/sandbox-security/) — sandbox isolation details
+- [Domain events](/manual/concepts/domain-events/) — events triggered by dispatch

@@ -1,0 +1,30 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import Hero from '../components/landing/Hero.astro';
+import ProofStrip from '../components/landing/ProofStrip.astro';
+import Install from '../components/landing/Install.astro';
+import ProblemStatement from '../components/landing/ProblemStatement.astro';
+import Capabilities from '../components/landing/Capabilities.astro';
+import Tickets from '../components/landing/Tickets.astro';
+import Platform from '../components/landing/Platform.astro';
+import Philosophy from '../components/landing/Philosophy.astro';
+import LandingScripts from '../components/landing/LandingScripts.astro';
+---
+
+<MarketingLayout
+  title="Control Center \\\\ Command a fleet of coding agents"
+  description="The cockpit for multi-agent software development. Spawn and direct autonomous coding agents, watch their work in real time, and review and merge what they ship — from one quiet, well-instrumented deck. Native desktop, macOS today."
+>
+  <main id="top">
+    <Hero />
+    <ProofStrip />
+    <Install />
+    <ProblemStatement />
+    <Capabilities />
+    <Tickets />
+    <Platform />
+    <Philosophy />
+  </main>
+
+  <LandingScripts />
+</MarketingLayout>

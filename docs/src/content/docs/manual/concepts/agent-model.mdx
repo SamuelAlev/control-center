@@ -1,0 +1,86 @@
+---
+title: The agent model
+description: How agents are defined, configured, and instantiated in Control Center.
+---
+
+## What is an agent?
+
+An agent is an AI worker with an identity, skill set, role, persona, and capabilities. Agents are the primary actors in the system — they write code, review PRs, run pipelines, and respond to messages.
+
+Each agent belongs to exactly one workspace. This is a hard invariant: `agent.workspaceId` is non-null.
+
+## Agent identity
+
+Every agent has:
+
+| Attribute | Description |
+|---|---|
+| `name` | Short identifier (e.g. "alice", "reviewer-bot") |
+| `title` | Human-readable role title (e.g. "Senior coder") |
+| `role` | Enumerated role: CEO, coder, reviewer, QA, designer, security, devops, PM, general |
+| `persona` | Free-text personality and behavioral instructions |
+| `skills` | Case-insensitive set of skill identifiers (e.g. "flutter", "rest-api") |
+| `adapterId` | Which CLI backend to use (e.g. Claude Code, Codex, Pi) |
+| `modelId` | Which model within the adapter (e.g. Claude Sonnet, GPT-4o) |
+| `effort` | Reasoning effort: low, medium, or high |
+| `capabilities` | Per-conversation capability flags (push to repo, GitHub API, ticketing, network egress) |
+| `reportsTo` | Optional parent agent ID for reporting hierarchy |
+
+## Agent roles
+
+Roles serve three purposes:
+
+1. **Behavior** — the role influences the system prompt and default persona
+2. **Memory access** — roles gate which memory domains an agent can read or write
+3. **Hierarchy** — the `reportsTo` field builds a reporting chain (e.g. a coder reports to the CEO)
+
+Available roles: **CEO** (coordination, hiring), **coder** (implementation), **reviewer** (PR review), **QA** (testing), **designer** (UI/UX), **security** (security review), **devops** (infrastructure), **PM** (product management), **general** (flexible).
+
+## Agent skills
+
+Skills are case-insensitive identifiers that determine which prompts and tool configurations are injected at runtime. For example, an agent with the "flutter" skill receives Flutter-specific context and conventions in its prompt.
+
+Skills are stored as an immutable set on the agent entity and matched during prompt assembly.
+
+## Agent capabilities
+
+Capabilities are per-conversation flags that the credential broker checks at sandbox launch:
+
+- **Push to repo** — can the agent push commits to the remote?
+- **GitHub API** — can the agent call GitHub APIs?
+- **Ticketing** — can the agent create/update tickets?
+- **Network egress** — can the agent make outbound network requests?
+
+These are separate from the sandbox's filesystem isolation — capabilities control API and network access, not file access.
+
+## Discovery and hiring
+
+Agents can be:
+
+1. **Seeded automatically** — the CEO agent is created when a workspace is created
+2. **Hired via the UI** — navigate to Agents and click "Hire agent"
+3. **Hired via chat** — ask the CEO agent to hire a new agent
+4. **Imported from disk** — Control Center scans for `AGENTS.md` files that define agent configurations
+
+Discovered agents (found on disk but not yet registered) are surfaced for import in the agent registry.
+
+## Agent lifecycle states
+
+An agent's live state is derived from its most recent run logs:
+
+| State | Meaning |
+|---|---|
+| `neverRun` | The agent has never been dispatched |
+| `idle` | The agent has completed its last run |
+| `running` | The agent is currently executing |
+| `blocked` | The agent is waiting for user input or a resource |
+| `failed` | The agent's last run ended with an error |
+
+This state is computed from `AgentRunLog` records, not stored directly.
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/) — how agents are launched and managed
+- [Conversation modes](/manual/concepts/conversation-modes/) — how mode affects agent behavior
+- [Sandbox and security](/manual/concepts/sandbox-security/) — how agents are isolated at runtime
+- [Agent configuration reference](/manual/reference/agent-configuration/) — full configuration schema

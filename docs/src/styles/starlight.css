@@ -1,0 +1,441 @@
+/* ───────────────────────────────────────────────────────────────────
+   Control Center — Starlight (manual) theme
+   ───────────────────────────────────────────────────────────────────
+   Makes the /manual docs match the marketing design system
+   (see src/styles/global.css): warm near-white surfaces, ink-black
+   text, a single orange accent, Manrope + JetBrains Mono.
+
+   HOW THIS WINS THE CASCADE
+   Starlight ships every default token and component rule inside
+   `@layer starlight.*`. This file is injected by Starlight's
+   `customCss` option WITHOUT a cascade layer, and unlayered styles
+   always beat layered ones regardless of specificity or source order.
+   So plain `:root { --sl-…: … }` here overrides Starlight's dark
+   (`:root`) AND light (`:root[data-theme='light']`) values at once.
+
+   THEMING. The brand tokens (`--cc-*`) below are the LIGHT defaults, set
+   unconditionally on `:root`. The `:root[data-theme='dark']` block at the
+   END of this file redeclares the primitives (surfaces, fg, borders,
+   accent, status) with the warm-dark palette from the Flutter app's
+   DesignSystemTokens.dark(). The `--sl-*` mappings mostly reference `--cc-*`,
+   so they flip automatically; only the intermediate gray ladder is restated
+   for dark. Starlight's own ThemeProvider sets `data-theme` before paint and
+   the ThemeSelect override renders the shared system/light/dark chooser.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ─── Self-hosted fonts (same files as the marketing site) ───────── */
+@font-face {
+  font-family: Manrope;
+  src: url("/fonts/Manrope-Variable.woff2") format("woff2-variations");
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* ─── Brand tokens (mirrors global.css @theme) ───────────────────── */
+:root {
+  --cc-bg: #fcfbf9;
+  --cc-surface: #f2f0e9;
+  --cc-panel: #ffffff;
+  --cc-sidebar: #f6f5f0;
+  --cc-rail: #faf9f5;
+
+  --cc-fg: #1f1f1f;
+  --cc-muted: #3d3d3d;
+  --cc-idle: color-mix(in oklab, #1f1f1f 62%, transparent); /* AA (4.5:1) when used as text */
+
+  --cc-border: #e8e5dc;
+  --cc-border-soft: #efece4;
+  --cc-line-strong: color-mix(in oklab, #1f1f1f 16%, transparent);
+  --cc-hover: color-mix(in oklab, #1f1f1f 5%, transparent);
+  --cc-hover-strong: color-mix(in oklab, #1f1f1f 8%, transparent);
+
+  --cc-accent: #fa520f;          /* vivid — marks, focus, hover, decoration */
+  --cc-accent-hover: #fb6424;
+  --cc-accent-strong: #c0400f;   /* block-edge — readable accent TEXT (AA on bg) */
+  --cc-accent-on: #ffffff;
+  --cc-accent-soft: color-mix(in oklab, #fa520f, white 88%);
+
+  /* Sunshine scale — brand mark only */
+  --cc-sunshine-900: #ff8a00;
+  --cc-sunshine-700: #ffa110;
+  --cc-sunshine-500: #ffb83e;
+  --cc-sunshine-300: #ffd06a;
+  --cc-block-edge: #c0400f;
+
+  /* Status */
+  --cc-success: #17a34a;
+  --cc-success-strong: #0c7a37;
+  --cc-success-soft: color-mix(in oklab, #17a34a, white 88%);
+  --cc-warn: #eab308;
+  --cc-warn-strong: #8a6a00;
+  --cc-warn-soft: color-mix(in oklab, #eab308, white 86%);
+  --cc-danger: #dc2626;
+  --cc-danger-strong: #b21f1f;
+  --cc-danger-soft: color-mix(in oklab, #dc2626, white 90%);
+
+  --cc-radius: 2px;
+  --cc-radius-lg: 4px;
+
+  --cc-shadow-soft: 0 1px 2px rgba(127, 99, 21, 0.05), 0 6px 18px rgba(127, 99, 21, 0.05);
+  --cc-shadow-golden:
+    -8px 16px 39px rgba(127, 99, 21, 0.12),
+    -28px 56px 64px rgba(127, 99, 21, 0.08),
+    -64px 120px 88px rgba(127, 99, 21, 0.04);
+
+  --cc-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  color-scheme: light;
+}
+
+/* ─── Map brand tokens → Starlight tokens (unlayered = wins) ──────── */
+:root {
+  /* Fonts */
+  --sl-font: Manrope, ui-sans-serif, system-ui, sans-serif;
+  --sl-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Gray ladder. Starlight inverts this for light mode: `white` is the
+     strongest text/heading color, `black` is the page background. */
+  --sl-color-white: var(--cc-fg);          /* headings, strong text, th */
+  --sl-color-gray-1: #262626;
+  --sl-color-gray-2: #2e2d2a;               /* = --sl-color-text (body)   */
+  --sl-color-gray-3: #56544d;               /* secondary text, TOC links  */
+  --sl-color-gray-4: #7c7a71;               /* dim text, icons            */
+  --sl-color-gray-5: #ded9cd;               /* borders: pre, table, cards */
+  --sl-color-gray-6: var(--cc-border);
+  --sl-color-gray-7: var(--cc-sidebar);
+  --sl-color-black: var(--cc-bg);           /* page background            */
+
+  /* Semantic */
+  --sl-color-text: var(--sl-color-gray-2);
+  --sl-color-text-accent: var(--cc-accent-strong);   /* prose links (AA)  */
+  --sl-color-text-invert: var(--cc-accent-on);
+  --sl-color-bg: var(--cc-bg);
+  --sl-color-bg-nav: var(--cc-rail);                 /* see .header below */
+  --sl-color-bg-sidebar: var(--cc-sidebar);
+  --sl-color-bg-inline-code: var(--cc-surface);
+  --sl-color-bg-accent: var(--cc-accent);
+  --sl-color-accent: var(--cc-accent);
+  --sl-color-accent-low: var(--cc-accent-soft);
+  --sl-color-accent-high: var(--cc-accent-strong);
+  --sl-color-hairline: var(--cc-border);
+  --sl-color-hairline-light: var(--cc-border-soft);
+  --sl-color-hairline-shade: var(--cc-border);
+  --sl-color-backdrop-overlay: color-mix(in oklab, var(--cc-fg) 45%, transparent);
+
+  /* Callout / aside hue families remapped to our status palette:
+     note → accent · tip → success · caution → warn · danger → danger.
+     (Starlight maps note=blue, tip=purple, caution=orange, danger=red.) */
+  --sl-color-blue-low: var(--cc-accent-soft);
+  --sl-color-blue: var(--cc-accent);
+  --sl-color-blue-high: var(--cc-accent-strong);
+  --sl-color-purple-low: var(--cc-success-soft);
+  --sl-color-purple: var(--cc-success);
+  --sl-color-purple-high: var(--cc-success-strong);
+  --sl-color-green-low: var(--cc-success-soft);
+  --sl-color-green: var(--cc-success);
+  --sl-color-green-high: var(--cc-success-strong);
+  --sl-color-orange-low: var(--cc-warn-soft);
+  --sl-color-orange: var(--cc-warn);
+  --sl-color-orange-high: var(--cc-warn-strong);
+  --sl-color-red-low: var(--cc-danger-soft);
+  --sl-color-red: var(--cc-danger);
+  --sl-color-red-high: var(--cc-danger-strong);
+
+  /* Shadows — warm + soft, like the marketing surfaces */
+  --sl-shadow-sm: 0 1px 2px rgba(127, 99, 21, 0.05);
+  --sl-shadow-md: var(--cc-shadow-soft);
+  --sl-shadow-lg: var(--cc-shadow-golden);
+
+  /* Layout — a touch more room for our denser tables/code */
+  --sl-content-width: 48rem;
+  --sl-line-height: 1.7;
+}
+
+::selection {
+  background: var(--cc-accent-soft);
+  color: var(--cc-fg);
+}
+
+/* ─── Top navigation ─────────────────────────────────────────────── */
+/* Match the marketing nav: translucent, blurred, hairline underline. */
+/* Only target the outer <header> element — the inner .header div must
+   not get its own border-bottom or backdrop-filter. */
+header.header {
+  background-color: color-mix(in oklab, var(--cc-bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  backdrop-filter: blur(12px) saturate(160%);
+  border-bottom: 1px solid var(--cc-border);
+}
+/* Ensure the inner .header div never carries a border — it would duplicate
+   the outer header's border-bottom. */
+.header:not(header) {
+  border-bottom: none;
+}
+/* Divider before the right-hand group → soft hairline, not gray. */
+.header .social-icons::after {
+  border-inline-end-color: var(--cc-border);
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────── */
+.sidebar-pane {
+  border-inline-end-color: var(--cc-border);
+}
+
+/* Group headings ("Getting started", "Concepts", …) become the same
+   mono / uppercase eyebrow used across the marketing site. */
+.sidebar-content .group-label > .large {
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;       /* 11px */
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cc-idle);
+}
+
+/* Sidebar links — quiet by default, ink on hover. */
+.sidebar-content a {
+  color: var(--cc-muted);
+  border-radius: var(--cc-radius);
+  transition: color 0.15s var(--cc-ease), background-color 0.15s var(--cc-ease);
+}
+.sidebar-content a:hover,
+.sidebar-content a:focus-visible {
+  color: var(--cc-fg);
+  background-color: var(--cc-hover);
+}
+
+/* Current page — soft accent fill + ink-readable accent text + left bar.
+   (Starlight's default is white-on-vivid-orange, which fails AA.) */
+.sidebar-content a[aria-current="page"],
+.sidebar-content a[aria-current="page"]:hover,
+.sidebar-content a[aria-current="page"]:focus {
+  font-weight: 600;
+  color: var(--cc-accent-strong);
+  background-color: var(--cc-accent-soft);
+  box-shadow: inset 2px 0 0 var(--cc-accent);
+}
+
+/* Sidebar scrollbar — thin and warm. */
+.sidebar-pane {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cc-line-strong) transparent;
+}
+.sidebar-pane::-webkit-scrollbar { width: 9px; }
+.sidebar-pane::-webkit-scrollbar-thumb {
+  background-color: var(--cc-line-strong);
+  border: 3px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+/* ─── Table of contents ("On this page") ─────────────────────────── */
+.right-sidebar-panel h2 {
+  font-family: var(--sl-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cc-idle);
+}
+.right-sidebar-panel a {
+  color: var(--cc-muted);
+  transition: color 0.15s var(--cc-ease);
+}
+.right-sidebar-panel a:hover {
+  color: var(--cc-fg);
+}
+.right-sidebar-panel a[aria-current="true"] {
+  color: var(--cc-accent-strong);
+  font-weight: 600;
+}
+
+/* ─── Page title + prose headings ────────────────────────────────── */
+main .sl-markdown-content :is(h1, h2, h3, h4, h5, h6),
+.content-panel h1 {
+  letter-spacing: -0.012em;
+}
+/* h2 gets a quiet rule above it for rhythm, like the marketing sections.
+   Skip the first h2 — it sits right after the content-panel border-top
+   so a double border would appear.
+
+   Note: Starlight wraps every h2 in .sl-heading-wrapper, so :first-of-type
+   on the h2 itself would match *every* h2 (each is the first h2 in its
+   parent wrapper). We target the wrapper instead. */
+.sl-markdown-content .sl-heading-wrapper:not(:first-of-type) h2:not(:where(.not-content *)) {
+  padding-top: 0.35em;
+  border-top: 1px solid var(--cc-border-soft);
+}
+
+/* ─── Prose links — accent + underline (never color alone) ───────── */
+.sl-markdown-content a:not(:where(.not-content *)) {
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--cc-accent), transparent 55%);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  transition: color 0.15s var(--cc-ease), text-decoration-color 0.15s var(--cc-ease);
+}
+.sl-markdown-content a:hover:not(:where(.not-content *)) {
+  color: var(--cc-accent);
+  text-decoration-color: var(--cc-accent);
+}
+
+/* ─── Inline code ────────────────────────────────────────────────── */
+.sl-markdown-content code:not(:where(.not-content *)) {
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius);
+  color: var(--cc-fg);
+  font-family: var(--sl-font-mono);
+}
+
+/* Plain (non-Expressive-Code) <pre> blocks. */
+.sl-markdown-content pre:not(:where(.not-content *)) {
+  background-color: var(--cc-rail);
+  border-color: var(--cc-border);
+  border-radius: var(--cc-radius);
+}
+
+/* ─── Tables ─────────────────────────────────────────────────────── */
+.sl-markdown-content :is(th, td):not(:where(.not-content *)) {
+  border-bottom-color: var(--cc-border);
+}
+.sl-markdown-content th:not(:where(.not-content *)) {
+  color: var(--cc-fg);
+  border-bottom: 2px solid var(--cc-line-strong);
+  font-family: var(--sl-font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ─── Blockquote ─────────────────────────────────────────────────── */
+.sl-markdown-content blockquote:not(:where(.not-content *)) {
+  border-inline-start: 2px solid var(--cc-accent);
+  color: var(--cc-muted);
+}
+
+/* ─── Pagination (prev / next) — marketing card treatment ────────── */
+.pagination-links a {
+  border-color: var(--cc-border);
+  border-radius: var(--cc-radius-lg);
+  background-color: var(--cc-panel);
+  box-shadow: var(--cc-shadow-soft);
+  transition: border-color 0.15s var(--cc-ease), box-shadow 0.15s var(--cc-ease);
+}
+.pagination-links a:hover {
+  border-color: var(--cc-accent);
+}
+.pagination-links .link-title {
+  color: var(--cc-fg);
+}
+
+/* ─── Search trigger ─────────────────────────────────────────────── */
+site-search button {
+  border: 1px solid var(--cc-border);
+  background-color: var(--cc-panel);
+  border-radius: var(--cc-radius);
+  color: var(--cc-muted);
+  transition: border-color 0.15s var(--cc-ease), color 0.15s var(--cc-ease);
+}
+site-search button:hover {
+  border-color: var(--cc-line-strong);
+  color: var(--cc-fg);
+}
+site-search button kbd {
+  font-family: var(--sl-font-mono);
+}
+
+/* ─── Mobile menu button — fixed appearance (theme-independent) ───── */
+starlight-menu-button button,
+[data-theme="light"] starlight-menu-button button {
+  background-color: var(--cc-fg);
+  color: var(--cc-bg);
+}
+starlight-menu-button [aria-expanded="true"] button,
+[data-theme="light"] starlight-menu-button [aria-expanded="true"] button {
+  background-color: color-mix(in oklab, var(--cc-fg), black 18%);
+}
+
+/* ─── Hero (splash pages, if ever used) ──────────────────────────── */
+.hero h1 {
+  letter-spacing: -0.02em;
+}
+.hero .tagline {
+  color: var(--cc-muted);
+}
+
+/* ─── Dark theme ────────────────────────────────────────────────────
+   Warm-dark derivation mirroring the Flutter app's DesignSystemTokens.dark()
+   (lib/core/theme/design_system_tokens.dart). Redeclares the `--cc-*`
+   primitives; the `--sl-*` tokens that reference them flip automatically, so
+   only the intermediate Starlight gray ladder is restated here. Selector
+   `:root[data-theme='dark']` (0,2,0, unlayered) beats both the light `:root`
+   above and every layered Starlight default. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces — warm near-black canvas → ink → deep panels. */
+  --cc-bg: #171614;          /* gray950 */
+  --cc-surface: #262522;     /* gray800 */
+  --cc-panel: #1f1f1f;       /* gray900 */
+  --cc-sidebar: #121110;
+  --cc-rail: #1b1a17;
+
+  /* Foreground */
+  --cc-fg: #fcfbf9;          /* gray50 */
+  --cc-muted: #b8b2a4;       /* gray400 */
+  --cc-idle: color-mix(in oklab, #fcfbf9 55%, transparent); /* AA on the dark canvas */
+
+  /* Borders / washes — derived from the light foreground (near-white). */
+  --cc-border: #322f2a;
+  --cc-border-soft: #262522;
+  --cc-line-strong: color-mix(in oklab, #fcfbf9 18%, transparent);
+  --cc-hover: color-mix(in oklab, #fcfbf9 6%, transparent);
+  --cc-hover-strong: color-mix(in oklab, #fcfbf9 9%, transparent);
+
+  /* Accent — Flame (brand 500) for marks; a lighter tier for readable text. */
+  --cc-accent: #fb6424;
+  --cc-accent-hover: #fd8a5c;
+  --cc-accent-strong: #fd8a5c;   /* readable accent TEXT on dark (links, current) */
+  --cc-accent-soft: color-mix(in oklab, #fb6424 22%, transparent);
+
+  /* Status — 400-tier so colored fills/text stay legible on dark. */
+  --cc-success: #47cd89;
+  --cc-success-strong: #75e0a7;
+  --cc-success-soft: color-mix(in oklab, #47cd89 20%, transparent);
+  --cc-warn: #fac515;
+  --cc-warn-strong: #fde272;
+  --cc-warn-soft: color-mix(in oklab, #fac515 20%, transparent);
+  --cc-danger: #f97066;
+  --cc-danger-strong: #fda29b;
+  --cc-danger-soft: color-mix(in oklab, #f97066 20%, transparent);
+
+  /* Elevation — black-based; the warm-brown shadows vanish on dark. */
+  --cc-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.45), 0 6px 18px rgba(0, 0, 0, 0.4);
+  --cc-shadow-golden:
+    -8px 16px 39px rgba(0, 0, 0, 0.5),
+    -28px 56px 64px rgba(0, 0, 0, 0.36),
+    -64px 120px 88px rgba(0, 0, 0, 0.22);
+
+  /* Starlight gray ladder — light-on-dark intermediates. `--sl-color-white`
+     (= --cc-fg) and `--sl-color-black` (= --cc-bg) already flip via the
+     primitives above; these are the body/secondary/border steps between. */
+  --sl-color-gray-1: #e7e4db;
+  --sl-color-gray-2: #d4d0c5;   /* = --sl-color-text (body) */
+  --sl-color-gray-3: #b8b2a4;   /* secondary text, TOC links */
+  --sl-color-gray-4: #8c8578;   /* dim text, icons */
+  --sl-color-gray-5: #3a3833;   /* borders: pre, table, cards */
+}

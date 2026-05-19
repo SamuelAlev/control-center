@@ -1,0 +1,138 @@
+---
+title: MCP tools
+description: Complete catalog of Control Center's MCP server tools.
+---
+
+Control Center exposes 70+ typed tools via its MCP server. This reference catalogs them by domain.
+
+## Common parameters
+
+### `workspace_id`
+
+**Required** on all tools that touch workspace-scoped data. Omit only for genuinely global tools (`list_workspaces`, `create_workspace`).
+
+## Agent tools
+
+| Tool | Description |
+|---|---|
+| `list_agents` | List agents in a workspace |
+| `hire_agent` | Create a new agent |
+| `update_agent` | Update agent configuration |
+| `fire_agent` | Remove an agent from the workspace |
+| `kill_agent` | Terminate a running agent process |
+| `agent_run_logs` | Get run logs for an agent |
+
+## Skill tools
+
+| Tool | Description |
+|---|---|
+| `list_skills` | List available skills |
+| `scan_skills` | Scan disk for skill definitions |
+
+## Workspace tools
+
+| Tool | Description |
+|---|---|
+| `list_workspaces` | List all workspaces (global) |
+| `create_workspace` | Create a new workspace (global) |
+
+## Messaging tools
+
+| Tool | Description |
+|---|---|
+| `create_channel` | Create a group channel |
+| `create_dm` | Create a direct message channel |
+| `list_channels` | List channels in a workspace |
+| `send_message` | Send a message to a channel |
+| `reply_to_thread` | Reply to a specific message |
+
+## PR and review tools
+
+| Tool | Description |
+|---|---|
+| `list_pull_requests` | List PRs for a repo |
+| `get_pull_request` | Get PR details |
+| `start_ai_review` | Start AI-powered review |
+| `add_review_node` | Add a review finding |
+| `get_review_verdict` | Get the review verdict |
+| `dispatch_reviewers` | Dispatch reviewer agents |
+| `finalize_review` | Finalize and submit a review |
+| `merge_pull_request` | Merge a PR |
+
+## Memory tools
+
+| Tool | Description |
+|---|---|
+| `create_fact` | Create a memory fact |
+| `update_fact` | Update a fact |
+| `list_facts` | List facts in a domain |
+| `search_memory` | Search facts by query |
+| `create_policy` | Create a memory policy |
+| `list_policies` | List policies in a domain |
+| `create_domain` | Create a memory domain |
+| `list_domains` | List domains in a workspace |
+| `add_observation` | Add an observation (used to derive facts) |
+
+## Code graph tools
+
+| Tool | Description |
+|---|---|
+| `search_code` | Search code symbols by query |
+| `code_symbol` | Get a symbol's details |
+| `code_callers` | Find callers of a symbol |
+| `code_callees` | Find callees of a symbol |
+| `code_impact` | Impact-radius analysis from a symbol |
+
+## Resource tools
+
+| Tool | Description |
+|---|---|
+| `read` | Read a file or resource |
+
+## User interaction tools
+
+| Tool | Description |
+|---|---|
+| `ask_user_question` | Ask the user a question (with options) |
+| `request_confirmation` | Request approval for a destructive action |
+| `suggest_tasks` | Suggest tasks based on context |
+
+## Diagnostic tools
+
+| Tool | Description |
+|---|---|
+| `doctor` | Run agent environment diagnostics |
+
+## Ticketing and project tools
+
+| Tool | Description |
+|---|---|
+| `create_ticket` | Create a ticket |
+| `get_ticket` | Get ticket details |
+| `list_tickets` | List tickets in a workspace |
+| `update_ticket` | Update a ticket |
+| `assign_ticket` | Assign a ticket to an agent |
+| `transition_ticket` | Change ticket status |
+| `create_ticket_link` | Link two tickets |
+| `create_project` | Create a project |
+| `list_projects` | List projects in a workspace |
+| `update_project` | Update a project |
+
+## Tool gating
+
+Tools are gated by conversation mode via `ConversationModeToolGuard`:
+
+- **Chat mode**: full tool access
+- **Plan mode**: read-only tools (no file writes)
+- **Review mode**: review-specific tools only
+
+## Destructive action confirmation
+
+Some tools require explicit user approval:
+
+- `kill_agent`
+- `merge_pull_request`
+- `fire_agent`
+- Destructive bash commands
+
+The tool returns an `ApprovalPayload`; the client must confirm before execution proceeds.
