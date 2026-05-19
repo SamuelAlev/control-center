@@ -1,0 +1,74 @@
+---
+title: Use plan mode
+description: Switch to plan mode for structured analysis before execution.
+---
+
+This guide shows you how to use plan mode to get structured analysis from agents.
+
+## What is plan mode?
+
+Plan mode is a conversation mode where agents analyze the codebase and produce a structured plan instead of writing code. The agent's sandbox is restricted to read-only — it cannot modify files.
+
+Use plan mode when you want to:
+
+- Understand the scope of a change before committing
+- Get a detailed implementation plan
+- Break down a complex task into steps
+- Have the agent identify risks and dependencies
+
+## Switch to plan mode
+
+### In a channel
+
+1. Open a channel with an agent
+2. Click the mode selector in the channel header
+3. Select **Plan**
+
+### Via message
+
+Tell the agent to plan:
+
+> Plan how to implement user authentication for this API. Don't write code yet.
+
+### Via pipeline
+
+Set the dispatch mode on a `promptAgent` step to `plan`.
+
+## What the agent produces
+
+In plan mode, the agent:
+
+1. Reads relevant files from the codebase (read-only)
+2. Analyzes the request
+3. Produces a structured plan message with:
+   - Summary of the approach
+   - Step-by-step implementation plan
+   - Files that will be affected
+   - Risks and considerations
+   - Estimated complexity
+
+The plan is rendered as a structured message in the channel.
+
+## Execute the plan
+
+After reviewing the plan:
+
+1. Switch the channel back to **Chat** mode
+2. Tell the agent to execute the plan:
+
+   > Execute the plan you just created.
+
+3. The agent dispatches in chat mode and starts implementing
+
+## Plan mode in pipelines
+
+Use plan mode in pipeline steps for analysis-only stages:
+
+1. Add a `promptAgent` step with mode set to `plan`
+2. The agent's output is the plan text
+3. Downstream steps can use the plan as input (e.g. a router step that decides whether to proceed)
+
+## Related guides
+
+- [Conversation modes](/manual/concepts/conversation-modes/)
+- [Chat with an agent](/manual/guides/chat-with-agent/)

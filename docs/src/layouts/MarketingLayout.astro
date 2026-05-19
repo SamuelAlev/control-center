@@ -1,0 +1,160 @@
+---
+import MarketingNav from '../components/shared/MarketingNav.astro';
+import Footer from '../components/shared/Footer.astro';
+import StructuredData from '../components/shared/StructuredData.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Path to the social-share image, resolved against the site origin. */
+  ogImage?: string;
+  /** Alt text for the social-share image. */
+  ogImageAlt?: string;
+  /** Emit SoftwareApplication JSON-LD (the landing page only). */
+  softwareApplication?: boolean;
+  /** Leaf name for a 2-level BreadcrumbList (Home → name), e.g. "Privacy policy". */
+  breadcrumbName?: string;
+}
+
+const {
+  title,
+  description =
+    'Control Center is the cockpit for multi-agent software development — spawn, direct, and review a fleet of autonomous coding agents from one native desktop deck.',
+  ogImage = '/og.png',
+  ogImageAlt = 'Control Center — command a fleet of coding agents.',
+  softwareApplication = false,
+  breadcrumbName,
+} = Astro.props;
+
+// Absolute URLs for canonical + social cards. Astro.site comes from
+// astro.config.mjs (`site`).
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
+const siteHref = new URL('/', Astro.site).href;
+
+// JSON-LD structured data. Organization + WebSite ship on every marketing
+// page; SoftwareApplication is the landing-only product card; BreadcrumbList
+// is emitted for the legal/changelog leaves. Starlight doc pages get their
+// own TechArticle/BreadcrumbList via the Head override.
+const SITE_NAME = 'Control Center';
+const GITHUB_URL = 'https://github.com/SamuelAlev/control-center';
+const schemas: Record<string, unknown>[] = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE_NAME,
+    url: siteHref,
+    logo: new URL('/favicon.svg', Astro.site).href,
+    sameAs: [GITHUB_URL],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: siteHref,
+  },
+];
+
+if (softwareApplication) {
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: SITE_NAME,
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'macOS',
+    url: siteHref,
+    description,
+    image: ogImageUrl,
+    softwareHelp: new URL('/manual/', Astro.site).href,
+    isAccessibleForFree: true,
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  });
+}
+
+if (breadcrumbName) {
+  schemas.push({
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteHref },
+      { '@type': 'ListItem', position: 2, name: breadcrumbName, item: canonical },
+    ],
+  });
+}
+---
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="sitemap" href="/sitemap-index.xml" />
+  <link
+    rel="alternate"
+    type="application/rss+xml"
+    title="Control Center changelog"
+    href="/rss.xml"
+  />
+
+  {/* Theme color tracks the active surface (near-white / warm near-black). */}
+  <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#171614" media="(prefers-color-scheme: dark)" />
+
+  {/* Open Graph */}
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Control Center" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImageUrl} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content={ogImageAlt} />
+
+  {/* Twitter */}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={title} />
+  <meta name="twitter:description" content={description} />
+  <meta name="twitter:image" content={ogImageUrl} />
+  <meta name="twitter:image:alt" content={ogImageAlt} />
+
+  {/* Structured data (JSON-LD) for rich results + AI answer engines. */}
+  <StructuredData schema={schemas} />
+
+  {/* Preload the self-hosted fonts to avoid a flash of fallback text. */}
+  <link rel="preload" href="/fonts/Manrope-Variable.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/JetBrainsMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+
+  {/* Resolve the theme before first paint to avoid a flash, and flag that JS is
+      live so reveal animations can hide-then-reveal. Without this class the
+      content renders visible and in place (see global.css `html.js .reveal`).
+      Shares the localStorage key + <html data-theme> contract with the
+      Starlight docs (see components/shared/ThemeToggle.astro). */}
+  <script is:inline>
+    (() => {
+      document.documentElement.classList.add('js');
+      try {
+        const pref = localStorage.getItem('starlight-theme');
+        const dark =
+          pref === 'dark' ||
+          (pref !== 'light' &&
+            matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch {
+        document.documentElement.dataset.theme = 'light';
+      }
+    })();
+  </script>
+</head>
+<body>
+  <MarketingNav currentPath={Astro.url.pathname} />
+  <slot />
+  <Footer />
+</body>
+</html>

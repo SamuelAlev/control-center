@@ -1,0 +1,114 @@
+---
+title: Architecture
+description: How Control Center is structured — feature-first Clean Architecture with ports and adapters.
+---
+
+## Overview
+
+Control Center follows feature-first Clean Architecture with a ports and adapters pattern. The codebase is organized around business domains (features), with strict dependency rules enforced by an automated architecture test.
+
+## Dependency rule
+
+```
+Presentation → Application/Providers → Domain ← Infrastructure
+```
+
+- **Domain layer**: pure Dart — entities, value objects, repository interfaces, ports, domain services. Zero infrastructure imports (no dio, drift, or network models).
+- **Presentation layer**: screens, widgets, notifiers. No direct drift/DAO/data-layer access — everything goes through Riverpod providers → repositories.
+- **Infrastructure layer**: concrete implementations of domain ports and repository interfaces. Depends on domain, never the other way around.
+
+## Feature structure
+
+Each feature follows this structure:
+
+```
+feature_name/
+├── data/          # Repository implementations, data sources, services, DTOs, mappers
+├── domain/        # Entities, repository interfaces, ports, use cases
+├── presentation/  # Screens, widgets, notifiers
+└── providers/     # Riverpod providers
+```
+
+Two deliberate exceptions:
+
+- **`mcp`** uses `application/` instead of `presentation/` — MCP tools are use-case logic invoked by external clients, not UI screens.
+- **`ticketing`** adds `mcp_tools/` for its ticket/project tools that register into the shared MCP registry.
+
+## Shared kernel
+
+`core/domain/` holds entities and repositories shared across 3+ features:
+
+- Core entities: `Agent`, `AgentRunLog`, `Workspace`, `Repo`, `ReviewChannelAssociation`
+- Memory entities: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
+- Shared value objects: `AgentCapabilities`, `AgentSkills`, `AgentRole`, `ConversationMode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
+- Shared ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
+- Domain services: `MemoryAccessPolicy`, `ActivityLogger`, `AgentLoopGuard`
+- `DomainEventBus` + event types
+
+## Ports and adapters
+
+Ports are abstract interfaces in the domain layer. Adapters are concrete implementations in infrastructure:
+
+| Port | Adapter location |
+|---|---|
+| `SandboxPort` | `features/sandboxing/data/adapters/` |
+| `CredentialBrokerPort` | `features/sandboxing/data/` |
+| `GitRepoInspectorPort` | `features/repos/data/` |
+| `EmbeddingPort` | `core/infrastructure/` |
+| `NotificationPort` | `core/notifications/` |
+| `AgentBackend` | `features/dispatch/data/` |
+| `TicketProviderPort` | `features/ticketing/data/` |
+| `PipelineEnginePort` | `features/pipelines/data/` |
+
+The composition root (`di/providers.dart`) binds ports to implementations via Riverpod providers.
+
+## State management
+
+**Riverpod** for all state:
+
+- `Notifier<T>` and `AsyncNotifier<T>` for mutable state
+- `FutureProvider<T>` for async data
+- Database-backed state returns `AsyncValue<List<T>>` from Drift `.watch()` streams
+- MCP tools receive dependencies as typed constructor parameters, never `Ref`
+
+## Database
+
+**Drift** (SQLite) with:
+
+- Tables defined in `core/database/tables/`, DAOs in `core/database/daos/`
+- Domain entities are separate from Drift table classes — mapping happens in feature data layers
+- FTS5 for full-text search, `sqlite_vector` for embeddings
+- `PRAGMA foreign_keys=ON`, WAL journal mode
+
+## Routing
+
+**go_router** with:
+
+- `ShellRoute` wrapping the app shell
+- Auth guard redirects to `/onboarding` until GitHub auth + workspace exist
+- Route constants in `router/routes.dart`
+- Onboarding gate in `features/auth/providers/`
+
+## Networking
+
+**dio** HTTP client with:
+
+- Specialized clients: `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphqlClient`, `LinearApiClient`, `GoogleCalendarApiClient`
+- Auth token injection via interceptors (including a per-account Google OAuth interceptor that refreshes tokens on 401)
+- All errors mapped through `core/network/error_mapper.dart` → typed `AppException` subclasses
+
+## Security
+
+- API tokens in `flutter_secure_storage` (keychain/keystore/libsecret)
+- `shared_preferences` for non-sensitive preferences only
+- `SecureCredentialsRepository` abstracts storage from providers
+
+## Architecture enforcement
+
+Architecture constraints are validated by `test/core/architecture_constraints_test.dart` — this test fails if dependency rules are violated.
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/) — how isolation is enforced
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/) — the dispatch flow
+- [Domain events](/manual/concepts/domain-events/) — cross-feature communication

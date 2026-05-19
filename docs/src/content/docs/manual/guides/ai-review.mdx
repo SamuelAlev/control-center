@@ -1,0 +1,84 @@
+---
+title: Use AI-powered review
+description: Dispatch reviewer agents to automatically analyze PRs with structured findings.
+---
+
+This guide shows you how to use AI-powered PR review.
+
+## What is AI-powered review?
+
+AI-powered review dispatches one or more reviewer agents to analyze a PR. Reviewer agents produce:
+
+- **Review nodes** — structured findings with severity, file/line anchors, and suggested fixes
+- **Review verdict** — an aggregate assessment (ship, hold, or block)
+
+## Start an AI review
+
+1. Open a PR in Control Center
+2. Click **Start AI review** (or use the `start_ai_review` MCP tool)
+3. Control Center:
+   - Selects reviewer agents based on the PR's language and domain
+   - Creates a review channel for each reviewer
+   - Dispatches the agents in review mode with the PR diff as context
+
+You can also start a review from a channel by mentioning a reviewer agent.
+
+## Review findings
+
+Each reviewer produces findings as **review nodes**:
+
+| Field | Description |
+|---|---|
+| Finding kind | bug, security, performance, style, suggestion |
+| Priority | P0 (critical) → P3 (nit) |
+| File and line | Where the finding is located |
+| Original code | The problematic code |
+| Suggested code | The proposed fix |
+| Confidence | How confident the reviewer is |
+| Resolved | Whether the finding has been addressed |
+
+Findings appear in the review channel as structured messages.
+
+## Review verdict
+
+After analyzing all files, the reviewer produces a **verdict**:
+
+| Verdict | Meaning |
+|---|---|
+| **Ship** | No significant issues found |
+| **Hold** | Issues that should be addressed before merge |
+| **Block** | Critical issues that must be fixed |
+
+The verdict includes an overall confidence score and per-priority finding counts.
+
+## Disagreement detection
+
+If multiple reviewers disagree on the same finding (e.g. one says P0, another says P3), Control Center flags the disagreement. This helps you focus attention where opinions diverge.
+
+## Finalize a review
+
+When you're satisfied with the review:
+
+1. Click **Finalize review**
+2. The review summary is posted to GitHub as a PR review comment
+3. Findings are posted as inline comments (optional)
+
+## Dispatch reviewers manually
+
+For more control, use the `dispatch_reviewers` MCP tool:
+
+```
+dispatch_reviewers(
+  workspace_id: "...",
+  pr_url: "https://github.com/owner/repo/pull/123",
+  reviewer_roles: ["security", "reviewer"]
+)
+```
+
+This lets you specify exactly which roles should review the PR.
+
+## Related guides
+
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Use focus mode](/manual/guides/focus-mode/)

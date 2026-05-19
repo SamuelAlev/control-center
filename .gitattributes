@@ -1,0 +1,3 @@
+# Mark newsfeed assets as vendored so GitHub Linguist ignores them in language stats
+assets/newsfeed/*.css linguist-vendored
+assets/newsfeed/*.js linguist-vendored

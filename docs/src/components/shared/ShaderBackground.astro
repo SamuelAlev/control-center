@@ -1,0 +1,393 @@
+---
+/**
+ * Animated cloudscape — the web port of the app's dashboard background shaders
+ * (lib/shared/widgets/shader_background.dart). Light mode renders the
+ * golden-hour cloudscape (`dashboard_background_light.frag`); dark mode renders
+ * the ember cloudscape (`dashboard_background_dark.frag`). Both ports live in
+ * the same fragment program and are selected by a `u_dark` uniform driven off
+ * `<html data-theme>`, so switching theme swaps the scene live.
+ *
+ * Renders a slow warped-FBM cloudscape on a WebGL2 canvas. Same uniforms as the
+ * Flutter shaders (u_resolution, u_time) and the same scene maths, so the hero
+ * breathes in lockstep with the dashboard greeting hero.
+ *
+ * `prefers-reduced-motion`: KEEP THE SHAPES at speed 0 — render a single frame
+ * at `u_time = 0` and never start the animation loop. (The app's dashboard hero
+ * does the same via ShaderBackground(animate: false).)
+ *
+ * Position/veil it from the parent via `class` (e.g. `absolute inset-0`,
+ * `opacity-*`, a mask). When WebGL2 is unavailable the canvas falls back to a
+ * static CSS gradient in the same palette (per theme), so the section never
+ * flashes empty.
+ */
+interface Props {
+  /** Positioning / veil classes applied to the canvas (sizing is handled here). */
+  class?: string;
+}
+
+const { class: className = '' } = Astro.props;
+---
+
+<canvas class:list={['cc-shader', className]} aria-hidden="true"></canvas>
+
+<style>
+  .cc-shader {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Fallback wash if WebGL2 is missing — same palette, no shapes. */
+    background:
+      radial-gradient(120% 90% at 78% 112%, var(--color-sunshine-500), transparent 60%),
+      linear-gradient(180deg, transparent 0%, var(--color-sunshine-300) 140%);
+  }
+  /* Dark fallback — the ember palette of dashboard_background_dark.frag. */
+  :global(html[data-theme="dark"]) .cc-shader {
+    background:
+      radial-gradient(120% 90% at 78% 112%, #eb8c52, transparent 58%),
+      linear-gradient(180deg, transparent 0%, #2a1d14 130%);
+  }
+</style>
+
+<script>
+  type Field = {
+    canvas: HTMLCanvasElement;
+    gl: WebGL2RenderingContext;
+    program: WebGLProgram;
+    uRes: WebGLUniformLocation | null;
+    uTime: WebGLUniformLocation | null;
+    uDark: WebGLUniformLocation | null;
+    dark: boolean;
+    running: boolean;
+    visible: boolean;
+    lastDraw: number;
+  };
+
+  // Which scene to render — driven off <html data-theme>.
+  const isDark = () => document.documentElement.dataset.theme === 'dark';
+
+  const VERT = `#version 300 es
+  in vec2 a_pos;
+  void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }`;
+
+  // Ported verbatim from assets/shaders/dashboard_background_light.frag.
+  // FlutterFragCoord() (top-left origin) → gl_FragCoord (bottom-left), so uv.y
+  // is flipped to keep the warm gold low on the canvas, matching the app.
+  const FRAG = `#version 300 es
+  precision highp float;
+  uniform vec2 u_resolution;
+  uniform float u_time;
+  uniform float u_dark; // 0.0 = golden (light), 1.0 = ember (dark)
+  out vec4 fragColor;
+
+  float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
+  }
+  float noise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+  }
+  float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    for (int i = 0; i < 4; i++) {
+      v += a * noise(p);
+      p = 0.8 * p * 2.0 + vec2(1.7, 9.2);
+      a *= 0.5;
+    }
+    return v;
+  }
+  float warpedFbm(vec2 p, float t) {
+    vec2 q = vec2(
+      fbm(p + vec2(0.0, 0.0) + t * 0.05),
+      fbm(p + vec2(5.2, 1.3) - t * 0.04)
+    );
+    vec2 r = vec2(
+      fbm(p + 4.0 * q + vec2(1.7, 9.2) + t * 0.03),
+      fbm(p + 4.0 * q + vec2(8.3, 2.8) - t * 0.02)
+    );
+    return fbm(p + 4.0 * r);
+  }
+  // Golden-hour cloudscape — port of dashboard_background_light.frag.
+  vec3 sceneColorLight(vec2 uv) {
+    float aspect = u_resolution.x / u_resolution.y;
+    vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
+
+    float t = u_time * 0.20;
+    vec2 q = p * 1.6 + vec2(t * 0.15, -t * 0.05);
+    float n = warpedFbm(q, t);
+
+    vec3 nearWhite  = vec3(0.988, 0.984, 0.976);
+    vec3 warmCream  = vec3(0.972, 0.930, 0.860);
+    vec3 lightGold  = vec3(0.965, 0.855, 0.640);
+    vec3 goldAmber  = vec3(0.980, 0.720, 0.380);
+    vec3 brightWisp = vec3(1.000, 0.992, 0.960);
+
+    vec3 base = mix(nearWhite, warmCream, smoothstep(0.0, 0.55, uv.y));
+    base = mix(base, lightGold, smoothstep(0.40, 0.95, uv.y));
+    base = mix(base, goldAmber, smoothstep(0.70, 1.05, uv.y) * 0.6);
+
+    float cloud = smoothstep(0.35, 0.75, n);
+    float band  = smoothstep(0.15, 0.55, uv.y) * smoothstep(0.95, 0.45, uv.y);
+    float glow  = cloud * band;
+
+    vec3 color = base;
+    color = mix(color, brightWisp, glow * 0.55);
+    color = mix(color, brightWisp, pow(glow, 3.0) * 0.45);
+
+    float wisp = smoothstep(0.45, 0.15, n) * smoothstep(0.55, 0.0, uv.y);
+    vec3 warmShadow = vec3(0.86, 0.78, 0.64);
+    color = mix(color, warmShadow, wisp * 0.30);
+
+    return color;
+  }
+  // Ember cloudscape — port of dashboard_background_dark.frag.
+  vec3 sceneColorDark(vec2 uv) {
+    float aspect = u_resolution.x / u_resolution.y;
+    vec2 p = vec2((uv.x - 0.5) * aspect, uv.y - 0.5);
+
+    float t = u_time * 0.20;
+    vec2 q = p * 1.6 + vec2(t * 0.15, -t * 0.05);
+    float n = warpedFbm(q, t);
+
+    vec3 nearBlack = vec3(0.090, 0.082, 0.072);
+    vec3 warmBrown = vec3(0.200, 0.170, 0.140);
+    vec3 dustyRose = vec3(0.55, 0.38, 0.36);
+    vec3 ember     = vec3(0.92, 0.55, 0.32);
+    vec3 hot       = vec3(1.00, 0.78, 0.55);
+
+    vec3 base = mix(nearBlack, warmBrown, smoothstep(0.0, 0.55, uv.y));
+    base = mix(base, dustyRose, smoothstep(0.35, 0.85, uv.y) * 0.55);
+
+    float cloud = smoothstep(0.35, 0.75, n);
+    float band  = smoothstep(0.15, 0.55, uv.y) * smoothstep(0.95, 0.45, uv.y);
+    float glow  = cloud * band;
+
+    vec3 color = base;
+    color = mix(color, ember, glow * 0.85);
+    color = mix(color, hot, pow(glow, 3.0) * 0.65);
+
+    float wisp = smoothstep(0.45, 0.15, n) * smoothstep(0.55, 0.0, uv.y);
+    color = mix(color, nearBlack * 0.7, wisp * 0.35);
+
+    return color;
+  }
+  void main() {
+    vec2 uv = vec2(gl_FragCoord.x, u_resolution.y - gl_FragCoord.y) / u_resolution.xy;
+
+    bool dark = u_dark > 0.5;
+    vec3 color = dark ? sceneColorDark(uv) : sceneColorLight(uv);
+
+    vec2 vp = uv - 0.5;
+    vp.x *= u_resolution.x / u_resolution.y;
+    float vignette = smoothstep(1.0, 0.35, length(vp));
+    color *= mix(dark ? 0.82 : 0.94, 1.0, vignette);
+
+    float grain = (hash(gl_FragCoord.xy + u_time) - 0.5) * (dark ? 0.02 : 0.012);
+    color += grain;
+
+    fragColor = vec4(clamp(color, 0.0, 1.0), 1.0);
+  }`;
+
+  // Throttle to ~30 FPS — the shader drifts very slowly, so 30 is visually
+  // identical to 60 but halves GPU work on Retina (mirrors the Flutter ticker).
+  const FRAME_MS = 33;
+  // Soft clouds hide resolution loss; cap effective DPR to keep the large hero
+  // canvas cheap.
+  const MAX_DPR = 1.5;
+
+  function compile(gl: WebGL2RenderingContext, type: number, src: string) {
+    const sh = gl.createShader(type)!;
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+      console.error('cc-shader compile failed:', gl.getShaderInfoLog(sh));
+      gl.deleteShader(sh);
+      return null;
+    }
+    return sh;
+  }
+
+  function resize(f: Field): boolean {
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const w = Math.max(1, Math.round(f.canvas.clientWidth * dpr));
+    const h = Math.max(1, Math.round(f.canvas.clientHeight * dpr));
+    if (f.canvas.width !== w || f.canvas.height !== h) {
+      f.canvas.width = w;
+      f.canvas.height = h;
+      return true;
+    }
+    return false;
+  }
+
+  function draw(f: Field, timeSeconds: number) {
+    const { gl } = f;
+    gl.viewport(0, 0, f.canvas.width, f.canvas.height);
+    gl.useProgram(f.program);
+    gl.uniform2f(f.uRes, f.canvas.width, f.canvas.height);
+    gl.uniform1f(f.uTime, timeSeconds);
+    gl.uniform1f(f.uDark, f.dark ? 1 : 0);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  function init(canvas: HTMLCanvasElement): Field | null {
+    const gl = canvas.getContext('webgl2', {
+      antialias: false,
+      alpha: true,
+      depth: false,
+      premultipliedAlpha: false,
+    }) as WebGL2RenderingContext | null;
+    if (!gl) return null; // No WebGL2 → CSS fallback gradient stays.
+
+    const vs = compile(gl, gl.VERTEX_SHADER, VERT);
+    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return null;
+
+    const program = gl.createProgram()!;
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('cc-shader link failed:', gl.getProgramInfoLog(program));
+      return null;
+    }
+
+    // Single full-clip-space triangle covers the viewport.
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 3, -1, -1, 3]),
+      gl.STATIC_DRAW,
+    );
+    const loc = gl.getAttribLocation(program, 'a_pos');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+    return {
+      canvas,
+      gl,
+      program,
+      uRes: gl.getUniformLocation(program, 'u_resolution'),
+      uTime: gl.getUniformLocation(program, 'u_time'),
+      uDark: gl.getUniformLocation(program, 'u_dark'),
+      dark: isDark(),
+      running: false,
+      visible: true,
+      lastDraw: 0,
+    };
+  }
+
+  function start(fields: Field[]) {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    // Speed 0 — a single frame at u_time = 0. Shapes stay, no motion.
+    const renderFrozen = (f: Field) => {
+      f.dark = isDark();
+      resize(f);
+      draw(f, 0);
+    };
+
+    // Re-render the frozen frame(s) when the theme flips (golden ↔ ember).
+    const onThemeChange = (redraw: () => void) => {
+      const mo = new MutationObserver(redraw);
+      mo.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      });
+      return mo;
+    };
+
+    // ── Reduced motion: one frozen frame, no loop. Keeps the shapes. ──
+    if (reduce.matches) {
+      fields.forEach(renderFrozen);
+      const ro = new ResizeObserver(() => fields.forEach(renderFrozen));
+      fields.forEach((f) => ro.observe(f.canvas));
+      const themeMo = onThemeChange(() => fields.forEach(renderFrozen));
+      // Re-arm the live loop if the user turns motion back on.
+      reduce.addEventListener('change', () => {
+        if (!reduce.matches) {
+          ro.disconnect();
+          themeMo.disconnect();
+          start(fields);
+        }
+      });
+      return;
+    }
+
+    // ── Live: throttled rAF, paused when hidden or scrolled out of view. ──
+    let raf = 0;
+    let startTs = 0;
+
+    const frame = (ts: number) => {
+      raf = requestAnimationFrame(frame);
+      if (startTs === 0) startTs = ts;
+      const seconds = (ts - startTs) / 1000;
+      const dark = isDark();
+      for (const f of fields) {
+        if (!f.visible) continue;
+        if (ts - f.lastDraw < FRAME_MS) continue;
+        f.lastDraw = ts;
+        f.dark = dark;
+        resize(f);
+        // Raw elapsed seconds — identical clock to the Flutter ticker, which
+        // feeds u_time = elapsed seconds (shader scales by 0.20 internally).
+        draw(f, seconds);
+      }
+    };
+
+    const play = () => {
+      if (raf === 0) {
+        startTs = 0;
+        raf = requestAnimationFrame(frame);
+      }
+    };
+    const pause = () => {
+      if (raf !== 0) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          const f = fields.find((x) => x.canvas === e.target);
+          if (f) f.visible = e.isIntersecting;
+        }
+        if (fields.some((f) => f.visible) && !document.hidden) play();
+        else pause();
+      },
+      { threshold: 0 },
+    );
+    fields.forEach((f) => io.observe(f.canvas));
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) pause();
+      else if (fields.some((f) => f.visible)) play();
+    });
+
+    reduce.addEventListener('change', () => {
+      if (reduce.matches) {
+        pause();
+        io.disconnect();
+        fields.forEach(renderFrozen);
+      }
+    });
+
+    play();
+  }
+
+  const canvases = Array.from(
+    document.querySelectorAll<HTMLCanvasElement>('canvas.cc-shader'),
+  );
+  const fields = canvases.map(init).filter((f): f is Field => f !== null);
+  if (fields.length) start(fields);
+</script>

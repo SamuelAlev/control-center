@@ -1,0 +1,87 @@
+---
+title: Conversation modes
+description: How chat, plan, and review modes control agent behavior and sandbox policies.
+---
+
+## What are conversation modes?
+
+A conversation mode is an enum (`chat`, `plan`, `review`) that gates three things:
+
+1. **System prompt** — each mode has a distinct prompt template
+2. **Sandbox writes** — whether the agent can modify files
+3. **MCP tool allowlist** — which tools the agent can access
+
+Modes are set per-channel and can be changed during a conversation.
+
+## Chat mode
+
+The default mode. The agent has full access to its tools and can read and write files in its isolated worktree.
+
+Use chat mode for:
+
+- General coding tasks
+- Bug fixes and feature implementation
+- Asking questions about the codebase
+- Ad-hoc requests
+
+The system prompt for chat mode is general-purpose — it instructs the agent to be helpful, precise, and to produce working code.
+
+## Plan mode
+
+Plan mode restricts the agent to analysis and planning. The agent **cannot write files** — it reads the codebase, analyzes the problem, and produces a structured plan.
+
+Use plan mode when you want to:
+
+- Get a detailed implementation plan before committing to code
+- Understand the scope of a change
+- Have the agent break down a complex task into steps
+
+The plan is rendered as a structured message in the channel. You can then switch to chat mode and tell the agent to execute the plan.
+
+Plan mode is useful for expensive or risky changes where you want to review the approach before the agent writes any code.
+
+## Review mode
+
+Review mode is designed for PR review. The agent receives the PR's diff as context and produces structured findings.
+
+In review mode:
+
+- The agent's system prompt is tailored for code review
+- It produces **review nodes** — structured findings with:
+  - Finding kind (bug, security, performance, style, suggestion)
+  - Priority (P0 critical → P3 nit)
+  - File and line anchor
+  - Original code and suggested fix
+  - Confidence score
+- It produces a **review verdict** — an aggregate assessment:
+  - **Ship** — no significant issues
+  - **Hold** — issues that should be addressed before merge
+  - **Block** — critical issues that must be fixed
+
+Review mode also gates the MCP tool allowlist to review-relevant tools.
+
+## Mode resolution
+
+The `ConversationModeResolver` resolves the mode for a given conversation:
+
+1. If a channel has an explicit mode set, use that
+2. If the conversation was started by a pipeline step with a mode, use that
+3. Default to `chat`
+
+The mode is also serialized into the wake context so the dispatch service knows which prompt template to use.
+
+## Changing modes
+
+You can change the mode of a channel at any time. This affects subsequent messages — the agent will use the new mode's prompt and policies for its next response.
+
+Some contexts set the mode automatically:
+
+- Opening a PR review channel sets mode to `review`
+- Starting a planning session sets mode to `plan`
+- Regular DMs and group channels default to `chat`
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/) — how modes affect prompt assembly
+- [Sandbox and security](/manual/concepts/sandbox-security/) — how modes gate sandbox writes
+- [Use plan mode](/manual/guides/plan-mode/) — practical guide to planning

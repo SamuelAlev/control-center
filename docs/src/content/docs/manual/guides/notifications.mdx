@@ -1,0 +1,87 @@
+---
+title: Configure notifications
+description: Set up desktop notifications for agent events, PRs, and messages.
+---
+
+This guide shows you how to configure desktop notifications.
+
+## How notifications work
+
+Control Center maps domain events to desktop notifications via `NotificationEventMapper`:
+
+| Event | Notification |
+|---|---|
+| `AgentRunCompleted` | Agent finished a run |
+| `PullRequestPublished` | Agent opened a PR |
+| `PrMerged` | PR was merged |
+| `MessageReceived` | New message in a channel |
+| `ExternalPr` | External PR detected |
+| `PipelineCompleted` | Pipeline run finished |
+| `TaskCompleted` | Ticket completed |
+| `AchievementUnlocked` | Agent earned a badge |
+
+Notifications appear as native desktop alerts (via `local_notifier`).
+
+## Notification settings
+
+Navigate to **Settings → Notifications** to configure:
+
+### Global toggle
+
+Enable or disable all notifications.
+
+### Per-category settings
+
+Each notification category can be individually enabled or disabled:
+
+- Agent run completed
+- Pull request published
+- PR merged
+- New message
+- External PR
+- Pipeline completed
+- Task completed
+- Achievement unlocked
+
+### Batch delivery
+
+Instead of showing each notification immediately, batch them:
+
+- **Immediate**: show each notification as it arrives
+- **Batched**: collect notifications and show them at intervals
+
+### Quiet hours
+
+Set quiet hours to suppress notifications during specific times:
+
+- **Start time**: when quiet hours begin
+- **End time**: when quiet hours end
+
+During quiet hours, notifications are queued and delivered when quiet hours end.
+
+### Sound
+
+Choose a notification sound:
+
+- Select from built-in sounds (bundled as MP3 assets)
+- Adjust volume
+- Disable sound entirely
+
+## Route gating
+
+Some notifications include a navigation route. Clicking the notification opens the relevant screen:
+
+- Agent completed → agent detail
+- New message → channel
+- PR published → PR detail
+
+This is handled by the notification category system, not manual configuration.
+
+## Notification preferences port
+
+All settings are read and written through `NotificationPreferencesPort`, which uses `shared_preferences` for non-sensitive storage.
+
+## Related guides
+
+- [Domain events](/manual/concepts/domain-events/)
+- [Manage API keys](/manual/guides/api-keys/)

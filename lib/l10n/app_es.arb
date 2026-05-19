@@ -1,0 +1,3362 @@
+{
+  "navCalendar": "Calendario",
+  "calendarViewMonth": "Mes",
+  "calendarViewWeek": "Semana",
+  "calendarViewAgenda": "Agenda",
+  "calendarConnectGoogle": "Conectar Google Calendar",
+  "calendarConnectDescription": "Sincroniza tu Google Calendar para ver los eventos aquí y recibir avisos antes de que empiecen las reuniones.",
+  "calendarDisconnect": "Desconectar",
+  "calendarReconnect": "Volver a conectar",
+  "calendarEmptyNoEvents": "No hay eventos en este intervalo",
+  "calendarStartRecording": "Empezar a grabar",
+  "calendarStartRecordingAndLink": "Grabar y vincular",
+  "calendarJoinMeet": "Unirse a la reunión",
+  "calendarFromCalendar": "Desde el calendario",
+  "calendarLinkedMeeting": "Reunión vinculada",
+  "calendarToday": "Hoy",
+  "calendarAllDay": "Todo el día",
+  "calendarWeekNumber": "Semana {number}",
+  "@calendarWeekNumber": { "placeholders": { "number": { "type": "int" } } },
+  "calendarPreviousPeriod": "Anterior",
+  "calendarNextPeriod": "Siguiente",
+  "calendarLastSynced": "Sincronizado {time}",
+  "@calendarLastSynced": { "placeholders": { "time": { "type": "String" } } },
+  "calendarNeverSynced": "Aún no sincronizado",
+  "calendarSyncing": "Sincronizando…",
+  "calendarViewDay": "Día",
+  "calendarSectionCalendars": "Calendarios",
+  "calendarShow": "Mostrar",
+  "calendarHide": "Ocultar",
+  "calendarRsvpGoing": "¿Asistirás?",
+  "calendarRsvpYes": "Sí",
+  "calendarRsvpNo": "No",
+  "calendarRsvpMaybe": "Quizás",
+  "calendarRsvpFailed": "No se pudo actualizar tu respuesta",
+  "calendarAddAccount": "Añadir cuenta de calendario",
+  "calendarSettingsTitle": "Google Calendar",
+  "calendarSettingsDescription": "Conecta una cuenta de Google para sincronizar los eventos en este espacio de trabajo.",
+  "calendarNotConnected": "Ninguna cuenta de Google conectada",
+  "calendarConnecting": "Conectando…",
+  "calendarSyncNow": "Sincronizar ahora",
+  "calendarNoWorkspace": "Selecciona un espacio de trabajo para ver su calendario",
+  "calendarConnectError": "No se pudo conectar Google Calendar",
+  "notificationMeetingStartsSoon": "Reunión a punto de empezar",
+  "notifyMeetingStartsSoon": "Cuando una reunión del calendario está a punto de empezar",
+  "notificationCalendarAuthExpiredTitle": "Calendario desconectado",
+  "notificationCalendarAuthExpiredBody": "Vuelve a conectar {email} para reanudar la sincronización",
+  "notificationCalendarAuthExpiredBodyNoEmail": "Vuelve a conectar tu calendario para reanudar la sincronización",
+  "notifyCalendarAuthExpired": "Cuando una cuenta de calendario necesita volver a conectarse",
+  "calendarAlertLeadTime": "Antelación del aviso",
+  "calendarAlertLeadTimeSubtitle": "Cuánto tiempo antes de una reunión avisarte",
+  "calendarConnectedAs": "Conectado como {email}",
+  "calendarAttendeesCount": "{count} asistentes",
+  "calendarEventLabel": "Evento",
+  "calendarRecurring": "Evento recurrente",
+  "calendarGoogleMeet": "Google Meet",
+  "calendarOrganizer": "Organizador",
+  "calendarYou": "Tú",
+  "calendarShowFewer": "Mostrar menos",
+  "calendarRsvpAwaiting": "Pendiente",
+  "calendarParticipantsCount": "{count} participantes",
+  "calendarSeeAllParticipants": "Ver los {count} participantes",
+  "calendarRsvpCountYes": "{count} sí",
+  "calendarRsvpCountNo": "{count} no",
+  "calendarRsvpCountMaybe": "{count} quizás",
+  "calendarRsvpCountAwaiting": "{count} pendientes",
+  "calendarLeadMinutesOption": "{count} minutos",
+  "openInEditorPrompt": "¿En qué editor abrir?",
+  "ideNotInstalled": "No instalado",
+  "openInIde": "Abrir en {editor}",
+  "failedToOpenInIde": "No se pudo abrir {editor}: {error}",
+  "profileSearchHint": "Buscar pull requests…",
+  "profileClickToLoad": "Clic para cargar",
+  "profileStateOpenHint": "Actualmente abiertas",
+  "profileStateMergedHint": "Historial fusionado",
+  "profileStateClosedHint": "Cerradas, no fusionadas",
+  "profileNoPrsForFilter": "No hay pull requests para los estados seleccionados",
+  "byAuthorPrefix": "por",
+  "youLabel": "tú",
+  "readyToMerge": "Listo para fusionar",
+  "laneReadyHint": "Comprobaciones en verde",
+  "laneReviewHint": "Esperándote",
+  "inProgress": "En curso",
+  "laneInProgressHint": "Abierto · en curso",
+  "needsAttention": "Requiere atención",
+  "laneAttentionHint": "Con fallos u obsoleto",
+  "drafts": "Borradores",
+  "laneDraftsHint": "Aún sin abrir",
+  "allOpenPrs": "Todas las PR abiertas",
+  "showAllCount": "Mostrar todas ({count})",
+  "sortOldest": "Más antiguas",
+  "sortLargest": "Más grandes",
+  "selectAction": "Seleccionar",
+  "mergeCountReady": "Fusionar {count} listas",
+  "countSelected": "{count, plural, =1{1 seleccionada} other{{count} seleccionadas}}",
+  "mergeReadyAction": "Fusionar listas",
+  "nothingInLane": "Nada en este carril",
+  "nothingInLaneHint": "Elige otro carril arriba o muestra todas las PR abiertas.",
+  "summary": "Resumen",
+  "openFullDiff": "Abrir diff completo",
+  "viewFiles": "Ver archivos",
+  "checksLabel": "Comprobaciones",
+  "commentsLabel": "Comentarios",
+  "mergeReadyConfirmTitle": "¿Fusionar las PR listas?",
+  "mergeReadyConfirmBody": "{count, plural, =1{¿Fusionar con squash 1 PR lista? No se puede deshacer.} other{¿Fusionar con squash {count} PR listas? No se puede deshacer.}}",
+  "mergedCountPrs": "{count, plural, =1{1 PR fusionada} other{{count} PR fusionadas}}",
+  "keybindingSelectPr": "Seleccionar PR",
+  "keybindingMergePr": "Fusionar PR",
+  "keybindingPeekPr": "Vista rápida de PR",
+  "keybindingToggleSelectionOfTheFocusedPullRequestDescription": "Alternar la selección de la PR enfocada",
+  "keybindingMergeTheFocusedPullRequestDescription": "Fusionar la PR enfocada si está lista",
+  "keybindingExpandOrCollapseTheFocusedPullRequestPeekDescription": "Expandir o contraer el panel de vista rápida de la PR enfocada",
+  "kbMove": "mover",
+  "kbSelect": "seleccionar",
+  "kbMerge": "fusionar",
+  "kbOpen": "abrir",
+  "kbPeek": "vista",
+  "kbTabs": "pestañas",
+  "kbSearch": "buscar",
+  "kbViewed": "visto",
+  "kbCollapse": "contraer",
+  "appearance": "Apariencia",
+  "appearanceSettingsDescription": "Tema, idioma y tipografía.",
+  "notificationsSettingsDescription": "Elige qué eventos de agentes y espacios de trabajo te notifican.",
+  "integrationsSettingsDescription": "Conecta GitHub, la gestión de tickets y el servidor MCP.",
+  "advanced": "Avanzado",
+  "advancedSettingsDescription": "Nomenclatura de ramas, voz, búsqueda semántica, privacidad y registro.",
+  "agentRegistry": "Registro de agentes",
+  "settingsGroupGeneral": "General",
+  "settingsGroupAgents": "Agentes",
+  "settingsGroupResources": "Recursos",
+  "filterSettingsHint": "Filtrar ajustes",
+  "needsSetupLabel": "Requiere configuración",
+  "noSettingsMatch": "Ningún ajuste coincide con «{query}»",
+  "privacy": "Privacidad",
+  "sendDiffContentTitle": "Enviar el contenido del diff al adaptador de IA",
+  "diffSharingOnSubtitle": "Las líneas de diff sin procesar se incluyen en las indicaciones de los agentes para una revisión más profunda.",
+  "diffSharingOffSubtitle": "Los agentes solo usan metadatos estructurados (rutas de archivos, números de línea, descripción de la PR); ningún código sin procesar sale de la aplicación.",
+  "errorReportingTitle": "Compartir informes de fallos",
+  "errorReportingOnSubtitle": "Se envían diagnósticos de fallos, errores y rendimiento para ayudar a corregir errores (solo en versiones de producción).",
+  "errorReportingOffSubtitle": "Los diagnósticos están desactivados. No se envía ningún informe de fallos ni de errores.",
+  "onboardingDiagnosticsTitle": "Ayuda a mejorar Control Center",
+  "onboardingDiagnosticsSubtitle": "Envía diagnósticos de fallos, errores y rendimiento para ayudarnos a solucionar problemas más rápido (solo en versiones de producción). Puedes cambiar esto en cualquier momento en Ajustes → Privacidad.",
+  "blocked": "Bloqueado",
+  "idle": "Inactivo",
+  "noRunsYet": "Sin ejecuciones",
+  "runsInLastSixMonths": "{count} ejecuciones en los últimos 6 meses",
+  "lastActiveAgo": "Activo hace {duration}",
+  "reportsToNobody": "Sin responsable",
+  "copyPath": "Copiar ruta",
+  "pathCopied": "Ruta copiada al portapapeles",
+  "editAgent": "Editar agente",
+  "nameRequired": "El nombre es obligatorio",
+  "titleRequired": "El título es obligatorio",
+  "import": "Importar",
+  "discoverAgentsFound": "{count, plural, =1{1 definición de agente encontrada} other{{count} definiciones de agente encontradas}}",
+  "noAgentsToDiscover": "No hay nuevos agentes para importar",
+  "noAgentsToDiscoverHint": "Las definiciones de agente de este espacio de trabajo ya están importadas.",
+  "sortByStatus": "Estado",
+  "sortByName": "Nombre",
+  "noMatchingAgents": "Ningún agente coincide con tu filtro",
+  "selectAnAgentHint": "Elige un agente para ver su estado, actividad y detalles.",
+  "watchVideoOn": "Ver vídeo en {provider}",
+  "@@locale": "es",
+  "branchTemplate": "Plantilla de nombre de rama",
+  "branchTemplateDescription": "Patrón de la rama creada al iniciar un ticket en un worktree aislado.",
+  "branchTemplatePreview": "Ejemplo: {example}",
+  "deletePipelineRun": "Eliminar ejecución del pipeline",
+  "deletePipelineRunConfirm": "¿Eliminar esta ejecución de «{template}»? Esta acción no se puede deshacer.",
+  "errorDeletingPipelineRun": "Error al eliminar la ejecución del pipeline: {error}",
+  "deleteTicket": "Eliminar ticket",
+  "deleteTicketConfirm": "¿Eliminar «{title}»? Esta acción no se puede deshacer.",
+  "errorDeletingTicket": "Error al eliminar el ticket: {error}",
+  "deleteWorkspaceConfirm": "¿Eliminar «{name}»? Los repositorios vinculados en el disco no se modifican.",
+  "errorDeletingWorkspace": "Error al eliminar el espacio de trabajo: {error}",
+  "indexCode": "Indexar código",
+  "indexing": "Indexando…",
+  "indexNoGrammars": "Gramáticas de código no instaladas",
+  "indexFailed": "Error de indexación",
+  "indexedSymbolsCount": "{count} símbolos indexados",
+  "nodeConfigAdvanced": "Avanzado",
+  "nodeConfigReducer": "Reductor",
+  "nodeConfigReducerHelp": "Cómo fusionar cuando esta clave de salida ya tiene un valor",
+  "nodeConfigTimeoutMs": "Tiempo de espera (ms)",
+  "nodeConfigRetryAttempts": "Reintentos",
+  "nodeConfigContinueOnFail": "Continuar si este paso falla",
+  "nodeConfigTeamId": "ID de equipo",
+  "nodeConfigDispatchMode": "Modo de despacho",
+  "nodeConfigOutputSchema": "Esquema de salida (JSON)",
+  "nodeConfigOutputSchemaHelp": "Esquema JSON que debe cumplir la salida del paso",
+  "diffLineDisplay": "Líneas largas en los diffs",
+  "diffLineDisplayDescription": "Ajustar las líneas largas o desplazarlas horizontalmente",
+  "diffLineWrap": "Ajustar",
+  "diffLineScroll": "Desplazar horizontalmente",
+  "acrossNRepos": "{count, plural, =1{En 1 repo} other{En {count} repos}}",
+  "@acrossNRepos": {
+    "description": "Summary label showing how many repos the filters cover",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "actions": "Acciones",
+  "@actions": {
+    "description": "Actions"
+  },
+  "activate": "Activar",
+  "@activate": {
+    "description": "Button to activate a policy"
+  },
+  "activity": "Actividad",
+  "activityLabel": "ACTIVIDAD",
+  "adRulesCount": "{count} reglas de anuncios",
+  "@adRulesCount": {
+    "description": "Locale string for adRulesCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adapter": "Adaptador",
+  "adapterLabel": "Adaptador",
+  "adapters": "Adaptadores",
+  "adaptersAutoDetected": "Ejecutores de agentes detectados automáticamente disponibles en esta máquina. Instala las herramientas CLI que falten para habilitar ejecutores adicionales.",
+  "add": "Añadir",
+  "addAComment": "Añadir un comentario",
+  "addAReaction": "Añadir una reacción",
+  "addASuggestion": "Añadir una sugerencia",
+  "addAgent": "Añadir agente",
+  "addAgents": "Añadir agentes",
+  "addAgentsToEnable": "Añade agentes para activar la orquestación multi-agente",
+  "addEmoji": "Añadir emoji",
+  "addFeed": "Añadir fuente",
+  "addFromFile": "Añadir desde archivo",
+  "addGif": "Añadir GIF",
+  "addGithubRepoPrompt": "Añade al menos un repositorio de GitHub para ver pull requests",
+  "addLocalCheckoutDescription": "Añade un checkout local para empezar a dirigirlo desde este espacio de trabajo.",
+  "@addLocalCheckoutDescription": {
+    "description": "Add a local checkout to start targeting it from this workspace."
+  },
+  "addRepository": "Añadir repositorio",
+  "addToken": "Añadir token",
+  "@addToken": {
+    "description": "Add token"
+  },
+  "addWorkspace": "Añadir espacio de trabajo",
+  "addWorkspaceEllipsis": "Añadir espacio de trabajo…",
+  "added": "Añadido",
+  "addingEllipsis": "Añadiendo...",
+  "@addingEllipsis": {
+    "description": "Locale string for addingEllipsis"
+  },
+  "advancedLabel": "Avanzado",
+  "agent": "Agente",
+  "@agent": {
+    "description": "Agent"
+  },
+  "agentCount": "{count} agente{plural, plural, =1{} other{s}}",
+  "@agentCount": {
+    "description": "Agent count label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "int"
+      }
+    }
+  },
+  "agentMdPath": "Ruta MD del agente",
+  "agentName": "Nombre del agente",
+  "agentTitle": "Título del agente",
+  "agentUpdated": "Agente actualizado.",
+  "agents": "Agentes",
+  "@agents": {
+    "description": "Agents"
+  },
+  "agentsCount": "Agentes ({count})",
+  "@agentsCount": {
+    "description": "Locale string for agentsCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentsLabel": "AGENTES",
+  "agentsMentionSection": "Agentes",
+  "aiReview": "Revisión IA",
+  "all": "Todo",
+  "allAgentsAlreadyInChannel": "Todos los agentes ya están en este canal.",
+  "@allAgentsAlreadyInChannel": {
+    "description": "All agents are already in this channel."
+  },
+  "allAgentsCount": "Todos los agentes · {count}",
+  "allCommits": "Todos los commits",
+  "allSessionsReset": "Todas las sesiones de sandbox restablecidas.",
+  "allSources": "Todas las fuentes",
+  "@allSources": {
+    "description": "Locale string for allSources"
+  },
+  "allStarBadge": "All-Star",
+  "allTimeLabel": "Todo",
+  "allow": "Permitir",
+  "allowGitPush": "Permitir git push",
+  "allowGithubApi": "Permitir llamadas a la API de GitHub",
+  "allowNetwork": "Permitir acceso general a la red",
+  "apiKeys": "Claves API",
+  "appFont": "Fuente de la app",
+  "appLogLevelDebugDescription": "Añade trazas detalladas - para desarrollo.",
+  "@appLogLevelDebugDescription": {
+    "description": "Description for the debug app log level"
+  },
+  "appLogLevelDebugLabel": "Depuración",
+  "@appLogLevelDebugLabel": {
+    "description": "Label for the debug app log level"
+  },
+  "appLogLevelErrorDescription": "Solo errores y excepciones inesperadas.",
+  "@appLogLevelErrorDescription": {
+    "description": "Description for the error app log level"
+  },
+  "appLogLevelErrorLabel": "Error",
+  "@appLogLevelErrorLabel": {
+    "description": "Label for the error app log level"
+  },
+  "appLogLevelInfoDescription": "Añade mensajes de ciclo de vida y estado.",
+  "@appLogLevelInfoDescription": {
+    "description": "Description for the info app log level"
+  },
+  "appLogLevelInfoLabel": "Información",
+  "@appLogLevelInfoLabel": {
+    "description": "Label for the info app log level"
+  },
+  "appLogLevelNoneDescription": "Sin salida de consola.",
+  "@appLogLevelNoneDescription": {
+    "description": "Description for the none app log level"
+  },
+  "appLogLevelNoneLabel": "Ninguno",
+  "@appLogLevelNoneLabel": {
+    "description": "Label for the none app log level"
+  },
+  "appLogLevelVerboseDescription": "Todo. Extremadamente verboso - usar solo para depuración.",
+  "@appLogLevelVerboseDescription": {
+    "description": "Description for the verbose app log level"
+  },
+  "appLogLevelVerboseLabel": "Verboso",
+  "@appLogLevelVerboseLabel": {
+    "description": "Label for the verbose app log level"
+  },
+  "appLogLevelWarningDescription": "Añade advertencias y problemas recuperables.",
+  "@appLogLevelWarningDescription": {
+    "description": "Description for the warning app log level"
+  },
+  "appLogLevelWarningLabel": "Advertencia",
+  "@appLogLevelWarningLabel": {
+    "description": "Label for the warning app log level"
+  },
+  "appTitle": "Control Center",
+  "appearanceLanguage": "Apariencia e idioma",
+  "apply": "Aplicar",
+  "approve": "Aprobar",
+  "approveAndCompact": "Aprobar y compactar contexto",
+  "approveAndExecute": "Aprobar y ejecutar",
+  "approveAndHire": "Aprobar y contratar",
+  "approved": "Aprobado",
+  "articlesSubscribed": "Artículos de tus fuentes suscritas.",
+  "askAi": "Ask AI",
+  "askAiReview": "Solicitar revisión IA",
+  "askAiReviewDescription": "Pedir a la IA que revise esta PR",
+  "askAnything": "Pregunta lo que quieras… (@ para mencionar agentes, / para comandos)",
+  "assignees": "ASIGNADOS",
+  "attachFiles": "Adjuntar archivos",
+  "attachImage": "Adjuntar imagen",
+  "attachedAgents": "Agentes adjuntos",
+  "audioInput": "Entrada de audio",
+  "authentication": "Autenticación",
+  "authenticationToken": "Token de autenticación",
+  "authoredByLabel": "Por: {role}",
+  "@authoredByLabel": {
+    "description": "Authored by role label",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "authorsLabel": "Autores",
+  "authorsWithCount": "Autores · {count}",
+  "autoRecommended": "Auto (recomendado)",
+  "available": "Disponible",
+  "avgDuration": "Duración media",
+  "awaitingYourApproval": "Esperando tu aprobación",
+  "awaitingYourReview": "Esperando tu revisión",
+  "back": "Atrás",
+  "backLabel": "Atrás",
+  "backend": "Backend",
+  "blockAdsDescription": "Bloquear anuncios, rastreadores y banners de cookies",
+  "blockAdsTrackers": "Bloquear anuncios, rastreadores y banners de cookies",
+  "blocking": "Bloqueando",
+  "blockingLabel": "Bloqueando",
+  "bookmarkLabel": "Marcador",
+  "briefDescription": "Descripción breve",
+  "bugLabel": "BUG",
+  "bundledDefaultsNeverUpdated": "Predefinidos incluidos - nunca actualizados",
+  "@bundledDefaultsNeverUpdated": {
+    "description": "Locale string for bundledDefaultsNeverUpdated"
+  },
+  "cached": "En caché",
+  "cancel": "Cancelar",
+  "cancelEdit": "Cancelar edición",
+  "@cancelEdit": {
+    "description": "Tooltip to cancel editing a suggestion"
+  },
+  "categoryCreation": "Creación",
+  "categoryDeletion": "Eliminación",
+  "@categoryDeletion": {
+    "description": "Locale string for categoryDeletion"
+  },
+  "categoryEditing": "Edición",
+  "categoryNavigation": "Navegación",
+  "categorySystem": "Sistema",
+  "categoryView": "Vista",
+  "@categoryView": {
+    "description": "Locale string for categoryView"
+  },
+  "centurionBadge": "Centurión",
+  "change": "Cambiar",
+  "changesRequested": "Cambios solicitados",
+  "changesSummary": "Resumen de cambios",
+  "channelsMentionSection": "Canales",
+  "checkForUpdates": "Buscar actualizaciones",
+  "checking": "Comprobando",
+  "checkingEllipsis": "Comprobando…",
+  "checkingGhCli": "Comprobando gh CLI…",
+  "chooseAppFont": "Elige la fuente de la app",
+  "chooseCodeFont": "Elige la fuente de código",
+  "chooseRunner": "Elige tu ejecutor de agentes.",
+  "clear": "Limpiar",
+  "clearAllFilters": "× Borrar todo",
+  "@clearAllFilters": {
+    "description": "Button to clear all active PR list filters"
+  },
+  "clickToRetry": "Haz clic para reintentar",
+  "@clickToRetry": {
+    "description": "Tooltip for retry button when posting fails"
+  },
+  "close": "Cerrar",
+  "closeEsc": "Cerrar (Esc)",
+  "closeKeyboardHint": "Cerrar atajos de teclado",
+  "@closeKeyboardHint": {
+    "description": "Locale string for closeKeyboardHint"
+  },
+  "closePanel": "Cerrar panel",
+  "closeReader": "Cerrar lector",
+  "closeThread": "Cerrar hilo",
+  "closed": "Cerrado",
+  "codeFont": "Fuente de código",
+  "collapse": "Colapsar",
+  "commandPalette": "Paleta de comandos",
+  "commandPaletteBrowseTeam": "Browse team",
+  "commandPaletteBrowseTeamDesc": "View all organization members",
+  "commandPaletteOrgMembers": "Organization members",
+  "commandsMentionSection": "Comandos",
+  "comment": "Comentario",
+  "commentOnFile": "Comentar este archivo",
+  "commentOnThisFile": "Comentar este archivo",
+  "commentSelected": "Comentar selección",
+  "commented": "Comentado",
+  "commits": "Commits",
+  "commitsShowingLatest": "Mostrando los últimos {loaded} de {total} commits",
+  "prCloneProgressCloningTitle": "Clonando repositorio",
+  "prCloneProgressCloningSubtitle": "Esta PR modifica {fileCount} archivos, superando el límite de la API de GitHub. Clonando el repositorio localmente…",
+  "prCloneProgressCloningSubtitleNoCount": "Esta PR supera el límite de archivos de la API de GitHub. Clonando el repositorio localmente…",
+  "prCloneProgressFetchingTitle": "Obteniendo refs",
+  "prCloneProgressFetchingSubtitle": "Obteniendo la rama base y la ref de la PR…",
+  "prCloneProgressComputingTitle": "Calculando diff",
+  "prCloneProgressComputingSubtitle": "Ejecutando git diff localmente…",
+  "prCloneProgressErrorTitle": "Error al cargar el diff",
+  "prCloneProgressErrorSubtitle": "Se produjo un error al clonar o calcular el diff.",
+  "prCloneProgressElapsed": "Trabajando aún… {elapsed} transcurridos",
+  "confidenceLabel": "Confianza: {percent}%",
+  "@confidenceLabel": {
+    "description": "Confidence percentage label",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "configureAgentIdentities": "Configura identidades de agentes, prompts, habilidades y ve ejecuciones.",
+  "configureDefaultRunners": "Configura qué adaptador y modelo se usan para las conversaciones nuevas y la generación de títulos.",
+  "configuredLabel": "Configurado.",
+  "confirmedBy": "Confirmado por",
+  "@confirmedBy": {
+    "description": "Label showing who confirmed a review"
+  },
+  "consensus": "Consenso",
+  "contentBlockingDescription": "Bloquear anuncios, rastreadores y banners de cookies",
+  "@contentBlockingDescription": {
+    "description": "Locale string for contentBlockingDescription"
+  },
+  "contentHint": "Lo que debe recordarse",
+  "@contentHint": {
+    "description": "Hint text for fact content field"
+  },
+  "contentLabel": "Contenido",
+  "@contentLabel": {
+    "description": "Label for fact content field"
+  },
+  "contentMarkdown": "Contenido (Markdown)",
+  "contextWindowSize": "Tamaño de la ventana de contexto",
+  "@contextWindowSize": {
+    "description": "Locale string for contextWindowSize"
+  },
+  "continueLabel": "Continuar",
+  "conversationMode": "Modo de conversación",
+  "convertToGroup": "¿Convertir en grupo?",
+  "convertToGroupBody": "Añadir otro agente convierte esta conversación en una conversación de grupo.",
+  "@convertToGroupBody": {
+    "description": "Adding another agent turns this into a group conversation."
+  },
+  "cookieRulesCount": "{count} reglas de cookies",
+  "@cookieRulesCount": {
+    "description": "Locale string for cookieRulesCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "copied": "¡Copiado!",
+  "copy": "Copiar",
+  "copyBaseBranchTooltip": "Copiar el nombre de la rama de destino",
+  "copyHeadBranchTooltip": "Copiar el nombre de la rama de origen",
+  "couldNotCheckGhCli": "No se pudo comprobar gh CLI.",
+  "couldNotListDevices": "No se pudieron listar los dispositivos: {error}",
+  "@couldNotListDevices": {
+    "description": "Could not list devices error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "create": "Crear",
+  "createFirstAgent": "Crea tu primer agente para empezar.",
+  "@createFirstAgent": {
+    "description": "Create your first agent to get started."
+  },
+  "createOrSelectWorkspace": "Crea o selecciona un espacio de trabajo antes de añadir repositorios.",
+  "createPr": "Crear PR",
+  "createPullRequest": "Crear pull request",
+  "createdByMe": "Creadas por mí",
+  "createdLabel": "Creado: {date}",
+  "@createdLabel": {
+    "description": "Created date label with value",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "currentParticipants": "Participantes actuales",
+  "@currentParticipants": {
+    "description": "Current participants"
+  },
+  "customCapabilitiesDescription": "Capacidades personalizadas para este agente",
+  "@customCapabilitiesDescription": {
+    "description": "Locale string for customCapabilitiesDescription"
+  },
+  "customSystemPrompt": "Prompt del sistema personalizado para este agente...",
+  "daysAgo": "{count, plural, =1{hace 1 día} other{hace {count} días}}",
+  "deactivate": "Desactivar",
+  "@deactivate": {
+    "description": "Button to deactivate a policy"
+  },
+  "defaultCapabilities": "Capacidades predeterminadas · conversaciones nuevas",
+  "defaultChat": "Chat predeterminado",
+  "defaultPort": "Predeterminado: {port}.",
+  "@defaultPort": {
+    "description": "Default port label",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "defaultPortHint": "Predeterminado: {port}.",
+  "defaultRunners": "Ejecutores predeterminados",
+  "delete": "Eliminar",
+  "deleteAgent": "Eliminar agente",
+  "deleteAgentConfirm": "¿Eliminar \"{name}\"? Esta acción no se puede deshacer.",
+  "deleteChannel": "Eliminar canal",
+  "deleteConfirmName": "¿Eliminar \"{name}\"?",
+  "deleteConversation": "Eliminar conversación",
+  "deleteConversationConfirm": "¿Eliminar esta conversación? Se perderán todos los mensajes.",
+  "deleteFact": "Eliminar hecho",
+  "deleteFeedBody": "Esto elimina la fuente y todos sus artículos en caché. Los artículos marcados de esta fuente también se eliminarán.",
+  "deleteFeedConfirm": "¿Eliminar \"{name}\"?",
+  "deleteNamedConversation": "¿Eliminar \"{name}\"? Se perderán todos los mensajes.",
+  "@deleteNamedConversation": {
+    "description": "Delete \"{name}\"? All messages will be lost.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePolicy": "Eliminar política",
+  "deletePolicyConfirm": "¿Eliminar esta política? Esta acción no se puede deshacer.",
+  "deleteTopicConfirm": "¿Eliminar \"{topic}\"? Esta acción no se puede deshacer.",
+  "@deleteTopicConfirm": {
+    "description": "Delete fact confirmation with topic name",
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteWorkspace": "Eliminar espacio de trabajo",
+  "deny": "Denegar",
+  "descriptionLabel": "Descripción",
+  "@descriptionLabel": {
+    "description": "Description"
+  },
+  "detailsLabel": "Detalles",
+  "detectedBackend": "Detectado: {label}",
+  "detectedRunners": "Ejecutores detectados ({count})",
+  "detectingAdapters": "Detectando adaptadores…",
+  "detectingGhCli": "Detectando gh CLI…",
+  "detectingInputDevices": "Detectando dispositivos de entrada…",
+  "@detectingInputDevices": {
+    "description": "Detecting input devices…"
+  },
+  "detectionFailed": "Error de detección: {error}",
+  "diffFailed": "Error en diff: {message}",
+  "diffWorkerPool": "Pool de workers",
+  "directMessage": "Mensaje directo",
+  "@directMessage": {
+    "description": "Direct message"
+  },
+  "directMessages": "Mensajes directos",
+  "disabled": "Desactivado",
+  "@disabled": {
+    "description": "Status label for disabled state"
+  },
+  "discover": "Descubrir",
+  "discoverAgents": "Descubrir agentes",
+  "discoverAgentsDescription": "El descubrimiento de agentes busca archivos AGENTS.md y TEAM.md en las rutas del espacio de trabajo, analizándolos en el registro de agentes.\n\nConfigura primero un espacio de trabajo y luego usa esta función para poblar agentes automáticamente.",
+  "@discoverAgentsDescription": {
+    "description": "Description of the agent discovery feature"
+  },
+  "acceptAndResolve": "Aceptar y resolver",
+  "dismiss": "Descartar",
+  "@dismiss": {
+    "description": "Button label to dismiss a banner or notice"
+  },
+  "dismissed": "Descartado",
+  "domainHint": "ej: api-performance",
+  "@domainHint": {
+    "description": "Hint text for domain field in fact edit"
+  },
+  "domainLabel": "Dominio",
+  "download": "Descargar",
+  "downloadingLabel": "Descargando",
+  "downloadingModel": "Descargando modelo… {pct}%",
+  "draft": "Borrador",
+  "draftLabel": "Borrador",
+  "earnTiersDescription": "Gana niveles al usar el Control Center",
+  "edit": "Editar",
+  "editFact": "Editar hecho",
+  "@editFact": {
+    "description": "Dialog title for editing a fact"
+  },
+  "editPolicy": "Editar política",
+  "@editPolicy": {
+    "description": "Dialog title for editing a policy"
+  },
+  "editSuggestedCodeHint": "Editar código sugerido...",
+  "@editSuggestedCodeHint": {
+    "description": "Placeholder text in the suggested code editor"
+  },
+  "editSuggestion": "Editar sugerencia",
+  "@editSuggestion": {
+    "description": "Tooltip to start editing a suggestion"
+  },
+  "editTheSuggestedCodeHint": "Editar el código sugerido...",
+  "@editTheSuggestedCodeHint": {
+    "description": "Placeholder text in the fast diff suggestion code editor"
+  },
+  "egArchitect": "ej. arquitecto",
+  "egControlCenter": "ej: control-center",
+  "@egControlCenter": {
+    "description": "e.g. control-center"
+  },
+  "egPlatform": "ej: macOS",
+  "@egPlatform": {
+    "description": "Locale string for egPlatform"
+  },
+  "egSamuelAlev": "ej: SamuelAlev",
+  "@egSamuelAlev": {
+    "description": "e.g. SamuelAlev"
+  },
+  "egSoftwareArchitect": "ej. Arquitecto de Software",
+  "egTheVerge": "ej. The Verge",
+  "egTokenLimit": "ej: 128000",
+  "@egTokenLimit": {
+    "description": "Locale string for egTokenLimit"
+  },
+  "embeddingInstallFailed": "Error de instalación: {error}",
+  "embeddingInstalled": "Modelo de embeddings local instalado. La búsqueda híbrida está activada.",
+  "embeddingModel": "Modelo de embeddings (ONNX)",
+  "embeddingNotInstalled": "No instalado. La búsqueda recurre solo a palabras clave hasta que se active.",
+  "embeddingRedownloadBody": "Los archivos del modelo existente se eliminarán y se descargarán de nuevo. La búsqueda semántica no estará disponible hasta que se complete la descarga.",
+  "embeddingRemoveBody": "La búsqueda semántica se desactivará hasta que la vuelvas a instalar. Puedes instalarla de nuevo en cualquier momento.",
+  "speakerDiarization": "Diarización de hablantes",
+  "diarizationModel": "Modelo de diarización",
+  "diarizationInstalled": "Instalado — nombra a cada hablante en las transcripciones de reuniones",
+  "diarizationNotInstalled": "No instalado — los hablantes de las reuniones no se separarán",
+  "diarizationInstallFailed": "Error de instalación: {error}",
+  "@diarizationInstallFailed": {
+    "description": "Diarization model install failure",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "redownloadDiarizationModel": "Volver a descargar el modelo de diarización",
+  "diarizationRedownloadBody": "Esto elimina los modelos de diarización actuales y los descarga de nuevo.",
+  "removeDiarizationModel": "Eliminar el modelo de diarización",
+  "diarizationRemoveBody": "Esto elimina los modelos de diarización del dispositivo. Las transcripciones de reuniones ya producidas no se ven afectadas.",
+  "onboardingDiarizationTitle": "Diarización de hablantes (opcional)",
+  "onboardingDiarizationSubtitle": "Descárgalo para etiquetar a cada hablante (Persona 1, Persona 2…) en las notas de reunión. Puedes añadirlo más tarde en los ajustes.",
+  "enableMcpServer": "Activar servidor MCP",
+  "enableNotifications": "Activar notificaciones",
+  "enableSandboxing": "Activar sandboxing",
+  "enabled": "Activado",
+  "@enabled": {
+    "description": "Status label for enabled state"
+  },
+  "enterToken": "Introduce el token de {name}",
+  "enterTokenToAuth": "Introduce un token para requerir autenticación",
+  "errorCreatingAgent": "Error al crear el agente: {error}",
+  "errorDeletingAgent": "Error al eliminar el agente: {error}",
+  "errorLoadingAgents": "Error al cargar agentes",
+  "@errorLoadingAgents": {
+    "description": "Error message when agents fail to load"
+  },
+  "errorWithDetail": "Error: {error}",
+  "@errorWithDetail": {
+    "description": "Error message with detail",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errored": "Con errores",
+  "erroredLabel": "Con errores",
+  "exitSelection": "Salir de la selección",
+  "expand": "Expandir",
+  "extractingLabel": "Extrayendo",
+  "extractingModel": "Extrayendo modelo… {pct}%",
+  "fact": "Hecho",
+  "factCount": "{count} hecho",
+  "@factCount": {
+    "description": "Single fact count in topic node",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "factCountPlural": "{count} hechos",
+  "@factCountPlural": {
+    "description": "Plural fact count in topic node",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "facts": "Hechos",
+  "factsPoliciesCount": "{factCount} hechos · {policyCount} políticas",
+  "@factsPoliciesCount": {
+    "description": "Fact and policy count in domain node",
+    "placeholders": {
+      "factCount": {
+        "type": "int"
+      },
+      "policyCount": {
+        "type": "int"
+      }
+    }
+  },
+  "failed": "Fallido",
+  "failedToDispatch": "Error al enviar: {error}",
+  "failedToLoad": "Error al cargar",
+  "failedToLoadAgents": "Error al cargar los agentes: {error}",
+  "failedToLoadFeeds": "Error al cargar las fuentes: {error}",
+  "failedToLoadGifs": "Error al cargar GIFs",
+  "@failedToLoadGifs": {
+    "description": "Error message when GIF loading fails"
+  },
+  "failedToLoadLogs": "Error al cargar los registros: {error}",
+  "failedToLoadRepos": "Error al cargar los repositorios",
+  "failedToLoadWorkspaces": "Error al cargar los espacios de trabajo",
+  "failedToStartAiReview": "Error al iniciar la revisión IA: {error}",
+  "failedToStartMicTest": "Error al iniciar la prueba del micrófono.",
+  "@failedToStartMicTest": {
+    "description": "Failed to start mic test."
+  },
+  "failedToSubmitReview": "Error al enviar la revisión: {error}",
+  "failedToUpload": "Error al subir {name}: {error}",
+  "failedWithError": "Error: {error}",
+  "failure": "Fallo",
+  "feedAlreadyExists": "Ya existe una fuente con esta URL.",
+  "feedUrl": "URL de la fuente",
+  "feedUrlExample": "ej: https://example.com/feed.xml",
+  "@feedUrlExample": {
+    "description": "Locale string for feedUrlExample"
+  },
+  "feedUrlExists": "Ya existe una fuente con esta URL.",
+  "feedUrlLabel": "URL de la fuente",
+  "feedsCount": "Fuentes ({count})",
+  "@feedsCount": {
+    "description": "Locale string for feedsCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "feedsLabel": "Fuentes",
+  "filesChanged": "Archivos modificados",
+  "filesCount": "{count} archivo(s)",
+  "@filesCount": {
+    "description": "Locale string for filesCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesMentionSection": "Archivos",
+  "filterAgents": "Filtrar agentes...",
+  "filterAgentsPlaceholder": "Filtrar agentes…",
+  "filterFilesHint": "Filtrar archivos...",
+  "@filterFilesHint": {
+    "description": "Placeholder text in the file filter field"
+  },
+  "filterLists": "Listas de filtros",
+  "filterSkillsPlaceholder": "Filtrar habilidades…",
+  "finish": "Finalizar",
+  "firstReviewBadge": "Primera revisión",
+  "fix": "Corregir",
+  "fixSelected": "Corregir selección",
+  "flawlessBadge": "Impecable",
+  "focusModeActiveTooltip": "Modo de enfoque activo — toca para finalizar",
+  "@focusModeActiveTooltip": {
+    "description": "Tooltip on the focus mode chip in title bar"
+  },
+  "focusModeBlockNotifications": "Bloquear notificaciones",
+  "@focusModeBlockNotifications": {
+    "description": "Toggle label for blocking notifications during focus"
+  },
+  "focusModeConfigTitle": "Iniciar sesión de enfoque",
+  "@focusModeConfigTitle": {
+    "description": "Title of the focus mode configuration dialog"
+  },
+  "focusModeDurationLabel": "Duración",
+  "@focusModeDurationLabel": {
+    "description": "Label for the session duration selector"
+  },
+  "focusModeEndSession": "Finalizar sesión",
+  "@focusModeEndSession": {
+    "description": "Tooltip/button to end the current focus session"
+  },
+  "focusModeExpand": "Expandir aplicación",
+  "@focusModeExpand": {
+    "description": "Tooltip to expand from compact focus bar back to full app"
+  },
+  "focusModeFloat": "Minimizar a barra",
+  "@focusModeFloat": {
+    "description": "Tooltip to minimize app to compact focus bar"
+  },
+  "focusModeGoalHint": "¿En qué estás trabajando?",
+  "@focusModeGoalHint": {
+    "description": "Placeholder hint for the goal text field"
+  },
+  "focusModeGoalLabel": "Objetivo",
+  "@focusModeGoalLabel": {
+    "description": "Label for the focus session goal field"
+  },
+  "focusModeStart": "Iniciar sesión de enfoque",
+  "@focusModeStart": {
+    "description": "Button label to open focus mode config dialog"
+  },
+  "focusModeStartButton": "Iniciar",
+  "@focusModeStartButton": {
+    "description": "Confirm button in focus mode config dialog"
+  },
+  "forks": "Forks",
+  "forward": "Reenviar",
+  "gatesGithubPatPush": "Controla la inyección del PAT de GitHub. Necesario para que el agente pueda hacer push.",
+  "general": "General",
+  "generalSettingsDescription": "Apariencia, tipografía, integraciones y servidor MCP.",
+  "ghCliAuthButPatOverrideBody": "GitHub CLI está autenticado y listo, pero un token de acceso personal está definido abajo y se usará en su lugar. Borra el PAT para usar la autenticación gh CLI.",
+  "@ghCliAuthButPatOverrideBody": {
+    "description": "GitHub CLI is authenticated and ready, but a personal access token is set below and will be used instead. Clear the PAT to use gh CLI auth."
+  },
+  "ghCliInstalledAuth": "Instalado. Ejecuta `gh auth login` y luego pulsa Actualizar.",
+  "ghCliNotInstalled": "gh CLI no instalado — instálalo desde cli.github.com.",
+  "ghCliNotInstalledLabel": "gh CLI no instalado",
+  "@ghCliNotInstalledLabel": {
+    "description": "gh CLI not installed"
+  },
+  "githubCli": "GitHub CLI",
+  "githubCliIntegration": "Integración con GitHub CLI",
+  "githubCliReady": "GitHub CLI está autenticado y listo.",
+  "githubLink": "Enlace de GitHub",
+  "githubPersonalAccessToken": "Token de acceso personal de GitHub",
+  "githubStatusAllOperational": "Todos los sistemas operativos",
+  "githubStatusComponents": "Componentes",
+  "githubStatusFetchFailed": "No se pudo contactar con githubstatus.com",
+  "githubStatusIncidents": "Incidentes activos",
+  "githubStatusOpenInBrowser": "Abrir githubstatus.com",
+  "githubStatusRefresh": "Actualizar",
+  "githubStatusTitle": "Estado de GitHub",
+  "githubStatusUpdated": "Actualizado {time}",
+  "lastChecked": "Comprobado {time}",
+  "lastCheckedRecently": "Comprobado hace poco",
+  "githubToken": "Token de GitHub",
+  "giveAgentsAMemory": "Dales memoria a los agentes.",
+  "giveYourWorkAHome": "Dale un hogar a tu trabajo.",
+  "goBack": "Volver",
+  "goForward": "Avanzar",
+  "googleFonts": "Google Fonts",
+  "groupLabel": "Grupo",
+  "groupName": "Nombre del grupo",
+  "@groupName": {
+    "description": "Group name"
+  },
+  "groups": "Grupos",
+  "hideContainerTerminal": "Ocultar terminal del contenedor",
+  "@hideContainerTerminal": {
+    "description": "Hide container terminal"
+  },
+  "high": "Alto",
+  "@high": {
+    "description": "Locale string for high"
+  },
+  "hotStreakBadge": "Racha caliente",
+  "hoursAgo": "{count, plural, =1{hace 1 hora} other{hace {count} horas}}",
+  "idleStatus": "Inactivo",
+  "images": "Imágenes",
+  "inFlightLabel": "En progreso",
+  "@inFlightLabel": {
+    "description": "Locale string for inFlightLabel"
+  },
+  "inactive": "Inactivo",
+  "@inactive": {
+    "description": "Label for inactive policies"
+  },
+  "install": "Instalar",
+  "installGhCliBody": "Instala gh desde https://cli.github.com/ y ejecuta `gh auth login`, luego pulsa Actualizar.",
+  "@installGhCliBody": {
+    "description": "Install gh from https://cli.github.com/ and run `gh auth login`, then tap Refresh."
+  },
+  "installRequired": "Instalación necesaria",
+  "@installRequired": {
+    "description": "Locale string for installRequired"
+  },
+  "installedNotSignedIn": "Instalado - no autenticado",
+  "@installedNotSignedIn": {
+    "description": "Installed - not signed in"
+  },
+  "installedVersion": "Instalado {version}",
+  "@installedVersion": {
+    "description": "Installed version label",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "integrations": "Integraciones",
+  "invite": "Invitar",
+  "inviteAgent": "Invitar agente",
+  "@inviteAgent": {
+    "description": "Invite agent"
+  },
+  "isolateAgentExecution": "Aísla la ejecución de agentes.",
+  "jobCount": "{count} tarea{count, plural, =1{} other{s}}",
+  "@jobCount": {
+    "description": "Locale string for jobCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "justNow": "ahora mismo",
+  "keepMessages": "Conservar mensajes",
+  "keepSandboxing": "Mantener sandboxing",
+  "keybindingAdapters": "Adaptadores",
+  "@keybindingAdapters": {
+    "description": "Locale string for keybindingAdapters"
+  },
+  "keybindingAddARepositoryDescription": "Añadir un repositorio",
+  "@keybindingAddARepositoryDescription": {
+    "description": "Locale string for keybindingAddARepositoryDescription"
+  },
+  "keybindingAddRepository": "Añadir repositorio",
+  "@keybindingAddRepository": {
+    "description": "Locale string for keybindingAddRepository"
+  },
+  "keybindingAgents": "Agentes",
+  "@keybindingAgents": {
+    "description": "Locale string for keybindingAgents"
+  },
+  "keybindingApprove": "Aprobar",
+  "@keybindingApprove": {
+    "description": "Locale string for keybindingApprove"
+  },
+  "keybindingApproveThePeerReviewDescription": "Aprobar la revisión por pares",
+  "@keybindingApproveThePeerReviewDescription": {
+    "description": "Locale string for keybindingApproveThePeerReviewDescription"
+  },
+  "keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": "Marcar o desmarcar el artículo seleccionado",
+  "@keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": {
+    "description": "Locale string for keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription"
+  },
+  "keybindingCollapseOrExpandTheFocusedFileDescription": "Colapsar o expandir el archivo enfocado",
+  "@keybindingCollapseOrExpandTheFocusedFileDescription": {
+    "description": "Locale string for keybindingCollapseOrExpandTheFocusedFileDescription"
+  },
+  "keybindingCommandPalette": "Paleta de comandos",
+  "@keybindingCommandPalette": {
+    "description": "Locale string for keybindingCommandPalette"
+  },
+  "keybindingConversationTab": "Pestaña conversación",
+  "@keybindingConversationTab": {
+    "description": "Locale string for keybindingConversationTab"
+  },
+  "keybindingCreateANewAgentDescription": "Crear un nuevo agente",
+  "@keybindingCreateANewAgentDescription": {
+    "description": "Locale string for keybindingCreateANewAgentDescription"
+  },
+  "keybindingCreateANewGroupChannelDescription": "Crear un nuevo canal de grupo",
+  "@keybindingCreateANewGroupChannelDescription": {
+    "description": "Locale string for keybindingCreateANewGroupChannelDescription"
+  },
+  "keybindingCreateANewWorkspaceDescription": "Crear un nuevo espacio de trabajo",
+  "@keybindingCreateANewWorkspaceDescription": {
+    "description": "Locale string for keybindingCreateANewWorkspaceDescription"
+  },
+  "keybindingDeleteAgent": "Eliminar agente",
+  "@keybindingDeleteAgent": {
+    "description": "Locale string for keybindingDeleteAgent"
+  },
+  "keybindingDeleteChannel": "Eliminar canal",
+  "@keybindingDeleteChannel": {
+    "description": "Locale string for keybindingDeleteChannel"
+  },
+  "keybindingDeleteTheSelectedAgentDescription": "Eliminar el agente seleccionado",
+  "@keybindingDeleteTheSelectedAgentDescription": {
+    "description": "Locale string for keybindingDeleteTheSelectedAgentDescription"
+  },
+  "keybindingDeleteTheSelectedChannelDescription": "Eliminar el canal seleccionado",
+  "@keybindingDeleteTheSelectedChannelDescription": {
+    "description": "Locale string for keybindingDeleteTheSelectedChannelDescription"
+  },
+  "keybindingDeleteTheSelectedWorkspaceDescription": "Eliminar el espacio de trabajo seleccionado",
+  "@keybindingDeleteTheSelectedWorkspaceDescription": {
+    "description": "Locale string for keybindingDeleteTheSelectedWorkspaceDescription"
+  },
+  "keybindingDeleteWorkspace": "Eliminar espacio de trabajo",
+  "@keybindingDeleteWorkspace": {
+    "description": "Locale string for keybindingDeleteWorkspace"
+  },
+  "keybindingFilesChangedTab": "Pestaña archivos modificados",
+  "@keybindingFilesChangedTab": {
+    "description": "Locale string for keybindingFilesChangedTab"
+  },
+  "keybindingFocusSearch": "Enfocar búsqueda",
+  "@keybindingFocusSearch": {
+    "description": "Locale string for keybindingFocusSearch"
+  },
+  "keybindingFocusThePullRequestSearchFieldDescription": "Enfocar el campo de búsqueda de pull requests",
+  "@keybindingFocusThePullRequestSearchFieldDescription": {
+    "description": "Locale string for keybindingFocusThePullRequestSearchFieldDescription"
+  },
+  "keybindingGeneral": "General",
+  "@keybindingGeneral": {
+    "description": "Locale string for keybindingGeneral"
+  },
+  "keybindingGoToAgents": "Ir a agentes",
+  "@keybindingGoToAgents": {
+    "description": "Locale string for keybindingGoToAgents"
+  },
+  "keybindingGoToAnalytics": "Ir a análisis",
+  "@keybindingGoToAnalytics": {
+    "description": "Locale string for keybindingGoToAnalytics"
+  },
+  "keybindingGoToDashboard": "Ir al panel",
+  "@keybindingGoToDashboard": {
+    "description": "Locale string for keybindingGoToDashboard"
+  },
+  "keybindingGoToMemory": "Ir a memoria",
+  "@keybindingGoToMemory": {
+    "description": "Locale string for keybindingGoToMemory"
+  },
+  "keybindingGoToNewsfeed": "Ir a noticias",
+  "@keybindingGoToNewsfeed": {
+    "description": "Locale string for keybindingGoToNewsfeed"
+  },
+  "keybindingGoToPipelines": "Ir a pipelines",
+  "@keybindingGoToPipelines": {
+    "description": "Locale string for keybindingGoToPipelines"
+  },
+  "keybindingGoToPullRequests": "Ir a pull requests",
+  "@keybindingGoToPullRequests": {
+    "description": "Locale string for keybindingGoToPullRequests"
+  },
+  "keybindingGoToTickets": "Ir a tickets",
+  "@keybindingGoToTickets": {
+    "description": "Locale string for keybindingGoToTickets"
+  },
+  "keybindingKeybindings": "Atajos",
+  "@keybindingKeybindings": {
+    "description": "Locale string for keybindingKeybindings"
+  },
+  "keybindingMarkTheFocusedFileAsViewedOrUnviewedDescription": "Marcar el archivo enfocado como visto o no visto",
+  "@keybindingMarkTheFocusedFileAsViewedOrUnviewedDescription": {
+    "description": "Locale string for keybindingMarkTheFocusedFileAsViewedOrUnviewedDescription"
+  },
+  "keybindingNavigateToTheAgentsRegistryDescription": "Navegar al registro de agentes",
+  "@keybindingNavigateToTheAgentsRegistryDescription": {
+    "description": "Locale string for keybindingNavigateToTheAgentsRegistryDescription"
+  },
+  "keybindingNavigateToTheAnalyticsDashboardDescription": "Navegar al panel de análisis",
+  "@keybindingNavigateToTheAnalyticsDashboardDescription": {
+    "description": "Locale string for keybindingNavigateToTheAnalyticsDashboardDescription"
+  },
+  "keybindingNavigateToTheGlobalDashboardDescription": "Navegar al panel global",
+  "@keybindingNavigateToTheGlobalDashboardDescription": {
+    "description": "Locale string for keybindingNavigateToTheGlobalDashboardDescription"
+  },
+  "keybindingNavigateToTheMemoryDescription": "Ir a la base de conocimiento de memoria",
+  "@keybindingNavigateToTheMemoryDescription": {
+    "description": "Locale string for keybindingNavigateToTheMemoryDescription"
+  },
+  "keybindingNavigateToTheNewsfeedDescription": "Navegar al feed de noticias",
+  "@keybindingNavigateToTheNewsfeedDescription": {
+    "description": "Locale string for keybindingNavigateToTheNewsfeedDescription"
+  },
+  "keybindingNavigateToThePipelinesListDescription": "Ir a la lista de pipelines",
+  "@keybindingNavigateToThePipelinesListDescription": {
+    "description": "Locale string for keybindingNavigateToThePipelinesListDescription"
+  },
+  "keybindingNavigateToThePullRequestListDescription": "Navegar a la lista de pull requests",
+  "@keybindingNavigateToThePullRequestListDescription": {
+    "description": "Locale string for keybindingNavigateToThePullRequestListDescription"
+  },
+  "keybindingNavigateToTheTicketsBoardDescription": "Ir al tablero de tickets",
+  "@keybindingNavigateToTheTicketsBoardDescription": {
+    "description": "Locale string for keybindingNavigateToTheTicketsBoardDescription"
+  },
+  "keybindingNewAgent": "Nuevo agente",
+  "@keybindingNewAgent": {
+    "description": "Locale string for keybindingNewAgent"
+  },
+  "keybindingNewDirectMessage": "Nuevo mensaje directo",
+  "@keybindingNewDirectMessage": {
+    "description": "Locale string for keybindingNewDirectMessage"
+  },
+  "keybindingNewGroup": "Nuevo grupo",
+  "@keybindingNewGroup": {
+    "description": "Locale string for keybindingNewGroup"
+  },
+  "keybindingNewWorkspace": "Nuevo espacio de trabajo",
+  "@keybindingNewWorkspace": {
+    "description": "Locale string for keybindingNewWorkspace"
+  },
+  "keybindingNextArticle": "Artículo siguiente",
+  "@keybindingNextArticle": {
+    "description": "Locale string for keybindingNextArticle"
+  },
+  "keybindingNextChannel": "Canal siguiente",
+  "@keybindingNextChannel": {
+    "description": "Locale string for keybindingNextChannel"
+  },
+  "keybindingNextPr": "PR siguiente",
+  "@keybindingNextPr": {
+    "description": "Locale string for keybindingNextPr"
+  },
+  "keybindingNextWorkspace": "Espacio de trabajo siguiente",
+  "@keybindingNextWorkspace": {
+    "description": "Locale string for keybindingNextWorkspace"
+  },
+  "keybindingOpenArticle": "Abrir artículo",
+  "@keybindingOpenArticle": {
+    "description": "Locale string for keybindingOpenArticle"
+  },
+  "keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": "Abrir o cerrar el popup del selector de espacio en la barra lateral",
+  "@keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": {
+    "description": "Locale string for keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription"
+  },
+  "keybindingOpenPr": "Abrir PR",
+  "@keybindingOpenPr": {
+    "description": "Locale string for keybindingOpenPr"
+  },
+  "keybindingOpenSettings": "Abrir ajustes",
+  "@keybindingOpenSettings": {
+    "description": "Locale string for keybindingOpenSettings"
+  },
+  "keybindingOpenTheAdaptersSettingsPageDescription": "Abrir la página de ajustes de adaptadores",
+  "@keybindingOpenTheAdaptersSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheAdaptersSettingsPageDescription"
+  },
+  "keybindingOpenTheAgentsSettingsPageDescription": "Abrir la página de ajustes de agentes",
+  "@keybindingOpenTheAgentsSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheAgentsSettingsPageDescription"
+  },
+  "keybindingOpenTheApplicationSettingsDescription": "Abrir los ajustes de la aplicación",
+  "@keybindingOpenTheApplicationSettingsDescription": {
+    "description": "Locale string for keybindingOpenTheApplicationSettingsDescription"
+  },
+  "keybindingOpenTheCommandPaletteDescription": "Abrir la paleta de comandos",
+  "@keybindingOpenTheCommandPaletteDescription": {
+    "description": "Locale string for keybindingOpenTheCommandPaletteDescription"
+  },
+  "keybindingOpenTheGeneralSettingsPageDescription": "Abrir la página de ajustes generales",
+  "@keybindingOpenTheGeneralSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheGeneralSettingsPageDescription"
+  },
+  "keybindingOpenTheKeybindingsSettingsPageDescription": "Abrir la página de ajustes de atajos",
+  "@keybindingOpenTheKeybindingsSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheKeybindingsSettingsPageDescription"
+  },
+  "keybindingOpenTheRepositoriesSettingsPageDescription": "Abrir la página de ajustes de repositorios",
+  "@keybindingOpenTheRepositoriesSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheRepositoriesSettingsPageDescription"
+  },
+  "keybindingOpenTheSelectedArticleDescription": "Abrir el artículo seleccionado",
+  "@keybindingOpenTheSelectedArticleDescription": {
+    "description": "Locale string for keybindingOpenTheSelectedArticleDescription"
+  },
+  "keybindingOpenTheSelectedPullRequestDescription": "Abrir la pull request seleccionada",
+  "@keybindingOpenTheSelectedPullRequestDescription": {
+    "description": "Locale string for keybindingOpenTheSelectedPullRequestDescription"
+  },
+  "keybindingOpenTheSelectedWorkspaceDescription": "Abrir el espacio de trabajo seleccionado",
+  "@keybindingOpenTheSelectedWorkspaceDescription": {
+    "description": "Locale string for keybindingOpenTheSelectedWorkspaceDescription"
+  },
+  "keybindingOpenTheSkillsSettingsPageDescription": "Abrir la página de ajustes de habilidades",
+  "@keybindingOpenTheSkillsSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheSkillsSettingsPageDescription"
+  },
+  "keybindingOpenWorkspace": "Abrir espacio de trabajo",
+  "@keybindingOpenWorkspace": {
+    "description": "Locale string for keybindingOpenWorkspace"
+  },
+  "keybindingPreviousArticle": "Artículo anterior",
+  "@keybindingPreviousArticle": {
+    "description": "Locale string for keybindingPreviousArticle"
+  },
+  "keybindingPreviousChannel": "Canal anterior",
+  "@keybindingPreviousChannel": {
+    "description": "Locale string for keybindingPreviousChannel"
+  },
+  "keybindingPreviousPr": "PR anterior",
+  "@keybindingPreviousPr": {
+    "description": "Locale string for keybindingPreviousPr"
+  },
+  "keybindingPreviousWorkspace": "Espacio de trabajo anterior",
+  "@keybindingPreviousWorkspace": {
+    "description": "Locale string for keybindingPreviousWorkspace"
+  },
+  "keybindingRefresh": "Actualizar",
+  "@keybindingRefresh": {
+    "description": "Locale string for keybindingRefresh"
+  },
+  "keybindingRefreshAllFeedsDescription": "Actualizar todas las fuentes",
+  "@keybindingRefreshAllFeedsDescription": {
+    "description": "Locale string for keybindingRefreshAllFeedsDescription"
+  },
+  "keybindingRefreshAnalyticsDataDescription": "Actualizar datos de análisis",
+  "@keybindingRefreshAnalyticsDataDescription": {
+    "description": "Locale string for keybindingRefreshAnalyticsDataDescription"
+  },
+  "keybindingRefreshDashboardDataDescription": "Actualizar datos del panel",
+  "@keybindingRefreshDashboardDataDescription": {
+    "description": "Locale string for keybindingRefreshDashboardDataDescription"
+  },
+  "keybindingRefreshThePullRequestListDescription": "Actualizar la lista de pull requests",
+  "@keybindingRefreshThePullRequestListDescription": {
+    "description": "Locale string for keybindingRefreshThePullRequestListDescription"
+  },
+  "keybindingRemoveRepository": "Quitar repositorio",
+  "@keybindingRemoveRepository": {
+    "description": "Locale string for keybindingRemoveRepository"
+  },
+  "keybindingRemoveTheSelectedRepositoryDescription": "Quitar el repositorio seleccionado",
+  "@keybindingRemoveTheSelectedRepositoryDescription": {
+    "description": "Locale string for keybindingRemoveTheSelectedRepositoryDescription"
+  },
+  "keybindingRepositories": "Repositorios",
+  "@keybindingRepositories": {
+    "description": "Locale string for keybindingRepositories"
+  },
+  "keybindingRequestChanges": "Solicitar cambios",
+  "@keybindingRequestChanges": {
+    "description": "Locale string for keybindingRequestChanges"
+  },
+  "keybindingRequestChangesOnThePeerReviewDescription": "Solicitar cambios en la revisión por pares",
+  "@keybindingRequestChangesOnThePeerReviewDescription": {
+    "description": "Locale string for keybindingRequestChangesOnThePeerReviewDescription"
+  },
+  "keybindingRescanForAdaptersDescription": "Reescanear adaptadores",
+  "@keybindingRescanForAdaptersDescription": {
+    "description": "Locale string for keybindingRescanForAdaptersDescription"
+  },
+  "keybindingSearchInDiff": "Buscar en diff",
+  "@keybindingSearchInDiff": {
+    "description": "Locale string for keybindingSearchInDiff"
+  },
+  "keybindingSearchWithinTheDiffViewDescription": "Buscar en la vista de diff",
+  "@keybindingSearchWithinTheDiffViewDescription": {
+    "description": "Locale string for keybindingSearchWithinTheDiffViewDescription"
+  },
+  "keybindingSelectTheNextArticleDescription": "Seleccionar el artículo siguiente",
+  "@keybindingSelectTheNextArticleDescription": {
+    "description": "Locale string for keybindingSelectTheNextArticleDescription"
+  },
+  "keybindingSelectTheNextChannelDescription": "Seleccionar el canal siguiente",
+  "@keybindingSelectTheNextChannelDescription": {
+    "description": "Locale string for keybindingSelectTheNextChannelDescription"
+  },
+  "keybindingSelectTheNextPullRequestDescription": "Seleccionar la pull request siguiente",
+  "@keybindingSelectTheNextPullRequestDescription": {
+    "description": "Locale string for keybindingSelectTheNextPullRequestDescription"
+  },
+  "keybindingSelectThePreviousArticleDescription": "Seleccionar el artículo anterior",
+  "@keybindingSelectThePreviousArticleDescription": {
+    "description": "Locale string for keybindingSelectThePreviousArticleDescription"
+  },
+  "keybindingSelectThePreviousChannelDescription": "Seleccionar el canal anterior",
+  "@keybindingSelectThePreviousChannelDescription": {
+    "description": "Locale string for keybindingSelectThePreviousChannelDescription"
+  },
+  "keybindingSelectThePreviousPullRequestDescription": "Seleccionar la pull request anterior",
+  "@keybindingSelectThePreviousPullRequestDescription": {
+    "description": "Locale string for keybindingSelectThePreviousPullRequestDescription"
+  },
+  "keybindingSendMessage": "Enviar mensaje",
+  "@keybindingSendMessage": {
+    "description": "Locale string for keybindingSendMessage"
+  },
+  "keybindingSendTheCurrentMessageDescription": "Enviar el mensaje actual",
+  "@keybindingSendTheCurrentMessageDescription": {
+    "description": "Locale string for keybindingSendTheCurrentMessageDescription"
+  },
+  "keybindingSkills": "Habilidades",
+  "@keybindingSkills": {
+    "description": "Locale string for keybindingSkills"
+  },
+  "keybindingStartANewDirectMessageDescription": "Iniciar un nuevo mensaje directo",
+  "@keybindingStartANewDirectMessageDescription": {
+    "description": "Locale string for keybindingStartANewDirectMessageDescription"
+  },
+  "keybindingSwitchBetweenLightAndDarkModeDescription": "Cambiar entre modo claro y oscuro",
+  "@keybindingSwitchBetweenLightAndDarkModeDescription": {
+    "description": "Locale string for keybindingSwitchBetweenLightAndDarkModeDescription"
+  },
+  "keybindingSwitchToTheConversationTabDescription": "Cambiar a la pestaña de conversación",
+  "@keybindingSwitchToTheConversationTabDescription": {
+    "description": "Locale string for keybindingSwitchToTheConversationTabDescription"
+  },
+  "keybindingSwitchToTheEighthWorkspaceDescription": "Cambiar al octavo espacio de trabajo",
+  "@keybindingSwitchToTheEighthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheEighthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheFifthWorkspaceDescription": "Cambiar al quinto espacio de trabajo",
+  "@keybindingSwitchToTheFifthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheFifthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheFilesChangedTabDescription": "Cambiar a la pestaña de archivos modificados",
+  "@keybindingSwitchToTheFilesChangedTabDescription": {
+    "description": "Locale string for keybindingSwitchToTheFilesChangedTabDescription"
+  },
+  "keybindingSwitchToTheFirstWorkspaceDescription": "Cambiar al primer espacio de trabajo",
+  "@keybindingSwitchToTheFirstWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheFirstWorkspaceDescription"
+  },
+  "keybindingSwitchToTheFourthWorkspaceDescription": "Cambiar al cuarto espacio de trabajo",
+  "@keybindingSwitchToTheFourthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheFourthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheNextWorkspaceDescription": "Cambiar al espacio de trabajo siguiente",
+  "@keybindingSwitchToTheNextWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheNextWorkspaceDescription"
+  },
+  "keybindingSwitchToTheNinthWorkspaceDescription": "Cambiar al noveno espacio de trabajo",
+  "@keybindingSwitchToTheNinthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheNinthWorkspaceDescription"
+  },
+  "keybindingSwitchToThePreviousWorkspaceDescription": "Cambiar al espacio de trabajo anterior",
+  "@keybindingSwitchToThePreviousWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToThePreviousWorkspaceDescription"
+  },
+  "keybindingSwitchToTheSecondWorkspaceDescription": "Cambiar al segundo espacio de trabajo",
+  "@keybindingSwitchToTheSecondWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheSecondWorkspaceDescription"
+  },
+  "keybindingSwitchToTheSeventhWorkspaceDescription": "Cambiar al séptimo espacio de trabajo",
+  "@keybindingSwitchToTheSeventhWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheSeventhWorkspaceDescription"
+  },
+  "keybindingSwitchToTheSixthWorkspaceDescription": "Cambiar al sexto espacio de trabajo",
+  "@keybindingSwitchToTheSixthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheSixthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheThirdWorkspaceDescription": "Cambiar al tercer espacio de trabajo",
+  "@keybindingSwitchToTheThirdWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheThirdWorkspaceDescription"
+  },
+  "keybindingToggleBookmark": "Marcar/desmarcar",
+  "@keybindingToggleBookmark": {
+    "description": "Locale string for keybindingToggleBookmark"
+  },
+  "keybindingToggleCollapse": "Alternar colapsar",
+  "@keybindingToggleCollapse": {
+    "description": "Locale string for keybindingToggleCollapse"
+  },
+  "keybindingToggleTheme": "Cambiar tema",
+  "@keybindingToggleTheme": {
+    "description": "Locale string for keybindingToggleTheme"
+  },
+  "keybindingToggleViewed": "Alternar visto",
+  "@keybindingToggleViewed": {
+    "description": "Locale string for keybindingToggleViewed"
+  },
+  "keybindingToggleWorkspaceSwitcher": "Cambiar selector de espacio",
+  "@keybindingToggleWorkspaceSwitcher": {
+    "description": "Locale string for keybindingToggleWorkspaceSwitcher"
+  },
+  "keybindingWorkspace1": "Workspace1",
+  "@keybindingWorkspace1": {
+    "description": "Locale string for keybindingWorkspace1"
+  },
+  "keybindingWorkspace2": "Workspace2",
+  "@keybindingWorkspace2": {
+    "description": "Locale string for keybindingWorkspace2"
+  },
+  "keybindingWorkspace3": "Workspace3",
+  "@keybindingWorkspace3": {
+    "description": "Locale string for keybindingWorkspace3"
+  },
+  "keybindingWorkspace4": "Workspace4",
+  "@keybindingWorkspace4": {
+    "description": "Locale string for keybindingWorkspace4"
+  },
+  "keybindingWorkspace5": "Workspace5",
+  "@keybindingWorkspace5": {
+    "description": "Locale string for keybindingWorkspace5"
+  },
+  "keybindingWorkspace6": "Workspace6",
+  "@keybindingWorkspace6": {
+    "description": "Locale string for keybindingWorkspace6"
+  },
+  "keybindingWorkspace7": "Workspace7",
+  "@keybindingWorkspace7": {
+    "description": "Locale string for keybindingWorkspace7"
+  },
+  "keybindingWorkspace8": "Workspace8",
+  "@keybindingWorkspace8": {
+    "description": "Locale string for keybindingWorkspace8"
+  },
+  "keybindingWorkspace9": "Workspace9",
+  "@keybindingWorkspace9": {
+    "description": "Locale string for keybindingWorkspace9"
+  },
+  "keybindings": "Atajos de teclado",
+  "keybindingsDescription": "Todos los atajos de teclado. Los atajos son fijos y no se pueden reasignar.",
+  "killRunning": "Detener en ejecución",
+  "klipyNotConfigured": "KLIPY_APP_KEY no configurada",
+  "@klipyNotConfigured": {
+    "description": "Title when Klipy API key is missing"
+  },
+  "klipyNotConfiguredHint": "Pasa --dart-define=KLIPY_APP_KEY=...\no defínela en .env antes de ejecutar.",
+  "@klipyNotConfiguredHint": {
+    "description": "Instructions for configuring Klipy API key"
+  },
+  "languageDutch": "Nederlands",
+  "languageEnglish": "English",
+  "languageFrench": "Français",
+  "languageGerman": "Deutsch",
+  "languageItalian": "Italiano",
+  "languagePortuguese": "Português",
+  "languageSpanish": "Español",
+  "languageSystem": "Sistema",
+  "lastMonths": "Últimos {count} meses",
+  "latestLabel": "Recientes",
+  "leaderboardLabel": "CLASIFICACIÓN",
+  "leaderboardLabelShort": "Clasificación",
+  "leaveACommentEllipsis": "Dejar un comentario...",
+  "@leaveACommentEllipsis": {
+    "description": "Placeholder text in the comment composer"
+  },
+  "legendLabel": "Leyenda",
+  "@legendLabel": {
+    "description": "Legend heading in knowledge graph"
+  },
+  "lessLabel": "Menos",
+  "letsPluginTools": "Vamos a conectar tus herramientas.",
+  "level": "Nivel",
+  "levelLabel": "Nivel {level}",
+  "liveDiff": "Diff en vivo",
+  "liveSync": "Sincronización en vivo",
+  "loadingAgents": "Cargando agentes…",
+  "loadingModels": "Cargando modelos…",
+  "lockedLabel": "Bloqueado",
+  "logLevel": "Nivel de registro",
+  "logs": "Registros",
+  "low": "Bajo",
+  "@low": {
+    "description": "Locale string for low"
+  },
+  "maintenance": "Mantenimiento",
+  "manageParticipants": "Gestionar participantes",
+  "manageWorkspaces": "Gestionar espacios de trabajo",
+  "masterToggle": "Interruptor maestro",
+  "matchOsAppearance": "Adaptar la apariencia al sistema operativo o elegir un modo fijo.",
+  "mcpActiveAccepting": "El servidor MCP está activo y aceptando conexiones.",
+  "mcpAuthToken": "Token de autenticación MCP",
+  "mcpAuthentication": "Autenticación",
+  "mcpAutoStartDescription": "Si está desactivado, el servidor permanece detenido hasta que lo inicies.",
+  "mcpDefaultPort": "Predeterminado: {port}",
+  "mcpListeningOn": "Escuchando en 127.0.0.1:{port}",
+  "mcpListeningOnPort": "Escuchando en 127.0.0.1:{port}.",
+  "mcpNotRunning": "El servidor no está en ejecución. Inícialo para habilitar las conexiones MCP.",
+  "mcpRestartPortChanges": "Debes reiniciar el servidor para aplicar los cambios de puerto.",
+  "mcpServer": "Servidor MCP",
+  "mcpServerStopped": "El servidor está detenido",
+  "mcpStatus": "Estado",
+  "medium": "Medio",
+  "@medium": {
+    "description": "Locale string for medium"
+  },
+  "memoryDataHint": "Los hechos y políticas aparecerán aquí a medida que los agentes trabajen.",
+  "@memoryDataHint": {
+    "description": "Hint text for empty knowledge graph"
+  },
+  "memoryLabel": "Memoria",
+  "merge": "Merge",
+  "mergeMasterBadge": "Maestro de merges",
+  "merged": "Fusionado",
+  "messagePlaceholder": "Mensaje… (@ para mencionar, / para comandos)",
+  "messagingLabel": "Mensajería",
+  "microphonePermissionDenied": "Permiso del micrófono denegado.",
+  "@microphonePermissionDenied": {
+    "description": "Microphone permission denied."
+  },
+  "minutesAgo": "{count, plural, =1{hace 1 minuto} other{hace {count} minutos}}",
+  "modelLabel": "Modelo",
+  "modified": "Modificado",
+  "monthsAgo": "{count, plural, =1{hace 1 mes} other{hace {count} meses}}",
+  "more": "Más",
+  "moreLabel": "Más",
+  "mozillaUserAgent": "Mozilla/5.0 …",
+  "name": "Nombre",
+  "nameAndTitleRequired": "El nombre y el título son obligatorios.",
+  "nameAndUrlRequired": "Nombre y URL son obligatorios",
+  "@nameAndUrlRequired": {
+    "description": "Locale string for nameAndUrlRequired"
+  },
+  "nameLabel": "Nombre",
+  "nativeSandboxAvailable": "Sandbox nativo disponible en {platform}.",
+  "@nativeSandboxAvailable": {
+    "description": "Locale string for nativeSandboxAvailable",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "nativeSandboxNeedsInstall": "Instalación necesaria para sandbox nativo",
+  "@nativeSandboxNeedsInstall": {
+    "description": "Locale string for nativeSandboxNeedsInstall"
+  },
+  "navAnalytics": "Analíticas",
+  "navDashboard": "Panel",
+  "navSaved": "Guardados",
+  "navSettings": "Ajustes",
+  "navigateLabel": "Navegar",
+  "@navigateLabel": {
+    "description": "Locale string for navigateLabel"
+  },
+  "networkBlockCount": "{count} bloqueos de red",
+  "@networkBlockCount": {
+    "description": "Locale string for networkBlockCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "neutral": "Neutral",
+  "newAgent": "Nuevo agente",
+  "newCommitsPushed": "Se han enviado nuevos commits — haz clic para recargar el diff",
+  "newFact": "Nuevo hecho",
+  "@newFact": {
+    "description": "Dialog title for creating a new fact"
+  },
+  "newGroup": "Nuevo grupo",
+  "newLabel": "Nuevo",
+  "newMessage": "Nuevo mensaje",
+  "newPolicy": "Nueva política",
+  "@newPolicy": {
+    "description": "Dialog title for creating a new policy"
+  },
+  "newPrToReview": "Nueva PR para revisar",
+  "@newPrToReview": {
+    "description": "New PR to review"
+  },
+  "newsfeed": "Noticias",
+  "newsfeedLabel": "Fuente de noticias",
+  "newsfeedSettingsDescription": "Gestiona tus fuentes suscritas y preferencias del lector.",
+  "newsfeedSettingsTitle": "Ajustes de noticias",
+  "nextMatch": "Siguiente coincidencia (↵)",
+  "noAccessGrants": "No hay permisos de acceso configurados",
+  "@noAccessGrants": {
+    "description": "Empty state for access matrix when no grants"
+  },
+  "noActiveWorkspace": "No hay espacio de trabajo o repositorio activo.",
+  "noActiveWorkspaceCreate": "No hay espacio de trabajo activo",
+  "noActiveWorkspaceGithub": "No hay espacio de trabajo activo con un repositorio de GitHub.",
+  "noAgentAssigned": "Ningún agente asignado",
+  "@noAgentAssigned": {
+    "description": "Locale string for noAgentAssigned"
+  },
+  "noAgentProcessesRunning": "No hay procesos de agentes en ejecución",
+  "noAgents": "Sin agentes",
+  "noAgentsConfigured": "No hay agentes configurados",
+  "noAgentsDiscovered": "Ningún agente descubierto",
+  "@noAgentsDiscovered": {
+    "description": "Message when no agents have been discovered"
+  },
+  "noAgentsDiscoveredHint": "Haz clic en \"Descubrir\" para buscar archivos AGENTS.md o \"Añadir agente\" para configurar uno manualmente",
+  "@noAgentsDiscoveredHint": {
+    "description": "Hint text for when no agents are discovered"
+  },
+  "noAgentsMatchSearch": "Ningún agente coincide con tu búsqueda",
+  "noAgentsRegisteredYet": "Aún no hay agentes registrados",
+  "noArticlesYet": "Aún no hay artículos",
+  "@noArticlesYet": {
+    "description": "Locale string for noArticlesYet"
+  },
+  "noArticlesYetBody": "Los artículos de tus fuentes aparecerán aquí.",
+  "@noArticlesYetBody": {
+    "description": "Locale string for noArticlesYetBody"
+  },
+  "noData": "Sin datos",
+  "noDirectMessagesYet": "Aún no hay mensajes directos",
+  "noDomains": "Aún no hay dominios",
+  "@noDomains": {
+    "description": "Empty state for access matrix when no domains"
+  },
+  "noExecutionLogsYet": "Aún no hay registros de ejecución",
+  "@noExecutionLogsYet": {
+    "description": "No execution logs yet"
+  },
+  "noFacts": "Aún no hay hechos",
+  "@noFacts": {
+    "description": "Empty state for facts tab"
+  },
+  "noFeedsYet": "Aún no hay fuentes",
+  "@noFeedsYet": {
+    "description": "Locale string for noFeedsYet"
+  },
+  "noFileAnchor": "Sin ancla de archivo — no se puede publicar comentario en línea.",
+  "noFileChangesInScope": "No hay cambios de archivo en este ámbito",
+  "@noFileChangesInScope": {
+    "description": "Empty state when no file changes exist in the selected scope"
+  },
+  "noGifsFound": "No se encontraron GIFs",
+  "@noGifsFound": {
+    "description": "Empty state when no GIFs match the search"
+  },
+  "noGroupsYet": "Aún no hay grupos",
+  "noInputDevicesDetected": "No se detectaron dispositivos de entrada — usando el predeterminado del sistema.",
+  "@noInputDevicesDetected": {
+    "description": "No input devices detected — using system default."
+  },
+  "noMatchingFiles": "No hay archivos coincidentes",
+  "@noMatchingFiles": {
+    "description": "Empty state when no files match the filter"
+  },
+  "noMatchingGoogleFonts": "No hay fuentes de Google Fonts coincidentes.",
+  "noMemoryData": "Aún no hay datos de memoria",
+  "@noMemoryData": {
+    "description": "Empty state for knowledge graph"
+  },
+  "noMessagesYet": "Aún no hay mensajes",
+  "noModelsAdvertised": "Este adaptador no ofrece modelos.",
+  "noOpenPullRequests": "No hay pull requests abiertas",
+  "noPolicies": "Aún no hay políticas",
+  "@noPolicies": {
+    "description": "Empty state for policies tab"
+  },
+  "noPrsByUserInWorkspace": "Sin PRs de @{login} en este espacio de trabajo",
+  "@noPrsByUserInWorkspace": {
+    "description": "Empty state on user profile screen when the user has no PRs in the current workspace",
+    "placeholders": {
+      "login": {
+        "type": "String"
+      }
+    }
+  },
+  "noReposInWorkspaceYet": "Aún no hay repositorios en este espacio de trabajo",
+  "@noReposInWorkspaceYet": {
+    "description": "No repositories in this workspace yet"
+  },
+  "noRunnersDetected": "No se han detectado ejecutores. Actualiza para volver a escanear.",
+  "noSavedArticles": "Aún no hay artículos guardados",
+  "@noSavedArticles": {
+    "description": "Locale string for noSavedArticles"
+  },
+  "noSavedArticlesBody": "Los artículos que guardes aparecerán aquí.",
+  "@noSavedArticlesBody": {
+    "description": "Locale string for noSavedArticlesBody"
+  },
+  "noShortcutsMatch": "Ningún atajo coincide con \"{query}\"",
+  "noSystemFonts": "No se detectaron fuentes del sistema.",
+  "noTokenSet": "No se ha configurado ningún token — el acceso es irrestringido.",
+  "@noTokenSet": {
+    "description": "No token set — access is unrestricted."
+  },
+  "noTokenSetUnrestricted": "No hay token configurado — el acceso es libre.",
+  "noTokenUnrestricted": "Sin token — el acceso es libre",
+  "noWorkingMemory": "Aún no hay notas de memoria de trabajo.",
+  "@noWorkingMemory": {
+    "description": "Empty state for agent working memory"
+  },
+  "noneAllRoles": "Ninguno (todos los roles)",
+  "notAvailable": "No disponible",
+  "@notAvailable": {
+    "description": "Not available status label"
+  },
+  "notConfiguredLabel": "No configurado.",
+  "notDetected": "No detectado",
+  "@notDetected": {
+    "description": "Not detected status label"
+  },
+  "notEarnedYet": "Aún no obtenido",
+  "@notEarnedYet": {
+    "description": "Locale string for notEarnedYet"
+  },
+  "notFoundLabel": "No encontrado",
+  "@notFoundLabel": {
+    "description": "Not found status label"
+  },
+  "notYetSpawned": "Aún no iniciado",
+  "@notYetSpawned": {
+    "description": "Locale string for notYetSpawned"
+  },
+  "notes": "Notas",
+  "notificationAgentFinished": "Agente finalizado",
+  "notificationExternalPr": "PRs externas",
+  "notificationNewMessages": "Nuevos mensajes",
+  "notificationPrMerged": "PR fusionada",
+  "notificationPrPublished": "PR publicada",
+  "notificationSound": "Sonido de notificación",
+  "@notificationSound": {
+    "description": "Label for the notification sound setting"
+  },
+  "notificationSoundCff": "CFF",
+  "@notificationSoundCff": {
+    "description": "CFF notification sound option"
+  },
+  "notificationSoundChime": "Chime",
+  "@notificationSoundChime": {
+    "description": "Chime notification sound option"
+  },
+  "notificationSoundDescription": "Sonido reproducido cuando se muestra una notificación.",
+  "@notificationSoundDescription": {
+    "description": "Description for the notification sound setting"
+  },
+  "notificationSoundDing": "Ding",
+  "@notificationSoundDing": {
+    "description": "Ding notification sound option"
+  },
+  "notificationSoundFfs": "FFS",
+  "@notificationSoundFfs": {
+    "description": "FFS notification sound option"
+  },
+  "notificationSoundMigrosHard": "Migros (hard)",
+  "@notificationSoundMigrosHard": {
+    "description": "Migros hard notification sound option"
+  },
+  "notificationSoundMigrosSoft": "Migros (soft)",
+  "@notificationSoundMigrosSoft": {
+    "description": "Migros soft notification sound option"
+  },
+  "notificationSoundNone": "Ninguno",
+  "@notificationSoundNone": {
+    "description": "No notification sound option"
+  },
+  "notificationSoundPing": "Ping",
+  "@notificationSoundPing": {
+    "description": "Ping notification sound option"
+  },
+  "notificationSoundPop": "Pop",
+  "@notificationSoundPop": {
+    "description": "Pop notification sound option"
+  },
+  "notificationSoundPost": "Post",
+  "@notificationSoundPost": {
+    "description": "Post notification sound option"
+  },
+  "notificationSoundSbb": "SBB",
+  "@notificationSoundSbb": {
+    "description": "SBB notification sound option"
+  },
+  "notificationSoundTest": "Probar",
+  "@notificationSoundTest": {
+    "description": "Button to preview the selected notification sound"
+  },
+  "notificationVolume": "Volumen",
+  "@notificationVolume": {
+    "description": "Label for the notification sound volume slider"
+  },
+  "notificationSoundWhoosh": "Whoosh",
+  "@notificationSoundWhoosh": {
+    "description": "Whoosh notification sound option"
+  },
+  "notifications": "Notificaciones",
+  "notifyAgentRunCompleted": "Notificar cuando un agente complete una ejecución.",
+  "notifyExternalPr": "Notificar cuando se detecte una nueva PR mediante sondeo.",
+  "notifyNewMessages": "Notificar sobre nuevos mensajes de agentes en otros canales.",
+  "notifyPrMerged": "Notificar cuando se fusione una pull request.",
+  "notifyPrPublished": "Notificar cuando un agente publique una pull request.",
+  "onboardingLinuxDescription": "Control Center puede usar contenedores Linux para aislar la ejecución de agentes.",
+  "@onboardingLinuxDescription": {
+    "description": "Locale string for onboardingLinuxDescription"
+  },
+  "onboardingMacosDescription": "Control Center utiliza sandbox nativo en macOS para aislar la ejecución de agentes.",
+  "@onboardingMacosDescription": {
+    "description": "Locale string for onboardingMacosDescription"
+  },
+  "onboardingUnsupportedDescription": "Sandbox no disponible en esta plataforma. La ejecución de agentes será sin aislamiento.",
+  "@onboardingUnsupportedDescription": {
+    "description": "Locale string for onboardingUnsupportedDescription"
+  },
+  "openAction": "Abrir",
+  "openApplicationSettings": "Abrir ajustes de la aplicación",
+  "openArticlesBrowserFallback": "Abrir artículo en el navegador",
+  "@openArticlesBrowserFallback": {
+    "description": "Locale string for openArticlesBrowserFallback"
+  },
+  "openArticlesInApp": "Abrir artículos en la app",
+  "openContainerTerminal": "Abrir terminal del contenedor",
+  "@openContainerTerminal": {
+    "description": "Open container terminal"
+  },
+  "openFolder": "Abrir carpeta",
+  "openInBrowser": "Abrir en el navegador",
+  "openLabel": "Abierto",
+  "openOnGithub": "Abrir en GitHub",
+  "openStatus": "Abierto",
+  "optionalPersonaDescription": "Descripción de persona opcional",
+  "otherLabel": "Otros",
+  "ownerOrganization": "Propietario / Organización",
+  "@ownerOrganization": {
+    "description": "Owner / Organization"
+  },
+  "p0": "P0",
+  "p1": "P1",
+  "p2": "P2",
+  "p3": "P3",
+  "parsingDiff": "Analizando diff…",
+  "passed": "Aprobado",
+  "pasteTokenHere": "Pegar token aquí",
+  "pasteValueHere": "Pegar valor aquí",
+  "patNotNeededGhCli": "No necesario — gh CLI tiene sesión iniciada.",
+  "patOverridesGhCli": "Configurado — prevalece sobre gh CLI.",
+  "pathLabel": "Ruta",
+  "pendingApproval": "Pendiente de tu aprobación",
+  "perfectionistBadge": "Perfeccionista",
+  "persona": "Persona",
+  "@persona": {
+    "description": "Locale string for persona"
+  },
+  "personaColon": "Persona:",
+  "@personaColon": {
+    "description": "Persona label with colon"
+  },
+  "personaOptional": "Persona (opcional)",
+  "personalAccessTokenOptional": "Token de acceso personal (opcional)",
+  "planLabel": "Plan",
+  "policies": "Políticas",
+  "policiesHint": "Las políticas aparecerán aquí una vez que los agentes promuevan hechos.",
+  "@policiesHint": {
+    "description": "Hint text for empty policies tab"
+  },
+  "policy": "Política",
+  "popular": "Populares",
+  "port": "Puerto",
+  "portLabel": "Puerto",
+  "@portLabel": {
+    "description": "Port"
+  },
+  "postingEllipsis": "Publicando...",
+  "@postingEllipsis": {
+    "description": "Badge text while a comment is being posted"
+  },
+  "prCommits": "Commits",
+  "prDescriptionPlaceholder": "Descripción de la PR en Markdown...",
+  "prDraftCreated": "Borrador de PR creado",
+  "prMachineBadge": "Máquina de PRs",
+  "prMergedBody": "Se ha fusionado una pull request",
+  "@prMergedBody": {
+    "description": "A pull request was merged"
+  },
+  "prMoreActions": "More actions",
+  "prTitle": "Título de la PR",
+  "previewLabel": "Vista previa",
+  "previousArticle": "Artículo anterior",
+  "previousChannel": "Canal anterior",
+  "previousMatch": "Coincidencia anterior (⇧↵)",
+  "previousPr": "PR anterior",
+  "previousWorkspace": "Espacio anterior",
+  "priorityReviews": "Revisiones prioritarias",
+  "priorityReviewsDescription": "Revisiones prioritarias y resumen del repositorio.",
+  "progressLabel": "Progreso",
+  "proposeToCreateDomain": "Proponga un hecho o política para crear uno.",
+  "@proposeToCreateDomain": {
+    "description": "Hint text when no domains in access matrix"
+  },
+  "prsCreated": "PRs creadas",
+  "prsCreatedLabel": "PRs creadas",
+  "prsMerged": "PRs fusionadas",
+  "publishToGithub": "Publicar en GitHub",
+  "published": "Publicado",
+  "pullRequestApproved": "Pull request aprobada",
+  "pullRequests": "Pull requests",
+  "pullRequestsLabel": "PRs",
+  "@pullRequestsLabel": {
+    "description": "Short label for pull requests used in filter summary"
+  },
+  "questionLabel": "PREGUNTA",
+  "queued": "En cola",
+  "react": "Reaccionar",
+  "readPrsIssuesMetadata": "Permite al agente leer PRs, issues y metadatos del repositorio.",
+  "readerPreferences": "Preferencias del lector",
+  "reasoningEffort": "Esfuerzo de razonamiento",
+  "@reasoningEffort": {
+    "description": "Locale string for reasoningEffort"
+  },
+  "recommendLabel": "RECOMENDAR",
+  "recordingFromDevice": "Grabando desde {device}.",
+  "@recordingFromDevice": {
+    "description": "Recording from a specific device",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "redownload": "Descargar de nuevo",
+  "redownloadEmbeddingModel": "¿Descargar de nuevo el modelo de embeddings?",
+  "redownloadVoiceModel": "¿Descargar de nuevo el modelo de voz?",
+  "refinePlan": "Refinar plan",
+  "refiningPlan": "Refinando plan…",
+  "refresh": "Actualizar",
+  "refreshAll": "Actualizar todo",
+  "refreshAllFeeds": "Actualizar todas las fuentes",
+  "refreshLabel": "Actualizar",
+  "refreshPrData": "Actualizar datos de la PR",
+  "reject": "Rechazar",
+  "rejected": "Rechazado",
+  "reload": "Recargar",
+  "remove": "Quitar",
+  "removeBookmark": "Quitar marcador",
+  "removeEmbeddingModel": "¿Eliminar el modelo de embeddings?",
+  "removeLogo": "Quitar logo",
+  "removeRepoFromWorkspace": "¿Quitar repositorio del espacio de trabajo?",
+  "removeRepository": "Quitar repositorio",
+  "removeRepositoryConfirm": "¿Quitar repositorio del espacio de trabajo?",
+  "removeVoiceModel": "¿Eliminar el modelo de voz?",
+  "removed": "Eliminado",
+  "renamed": "Renombrado",
+  "reopen": "Reabrir",
+  "replyEllipsis": "Responder…",
+  "repoRemovedFromWorkspace": "{name} se eliminará de este espacio de trabajo. Los archivos locales en disco no se modifican.",
+  "reportsTo": "Reporta a",
+  "reportsToOptional": "Reporta a (opcional)",
+  "reposCount": "Repositorios ({count})",
+  "reposDescription": "Los checkouts locales a los que apunta este espacio de trabajo.",
+  "repositories": "Repositorios",
+  "repositoriesSettings": "Ajustes de repositorios",
+  "repositoryName": "Nombre del repositorio",
+  "@repositoryName": {
+    "description": "Repository name"
+  },
+  "requestChanges": "Solicitar cambios",
+  "requested": "Solicitado",
+  "requestedChanges": "Cambios solicitados",
+  "requiredIfGhCliUnavailable": "Necesario si gh CLI no está disponible",
+  "@requiredIfGhCliUnavailable": {
+    "description": "Required if gh CLI is not available"
+  },
+  "requiredRoleLabel": "Rol requerido: {role}",
+  "@requiredRoleLabel": {
+    "description": "Required role label with value",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "requiredRoleOptional": "Rol requerido (opcional)",
+  "@requiredRoleOptional": {
+    "description": "Label for required role dropdown in policy edit"
+  },
+  "requirements": "Requisitos",
+  "reset": "Restablecer",
+  "resetAllSandboxes": "Restablecer todos los sandboxes",
+  "resolve": "Resolver",
+  "resolved": "Resuelto",
+  "restartServerToApply": "Reinicia el servidor para aplicar los cambios.",
+  "@restartServerToApply": {
+    "description": "Restart the server to apply changes."
+  },
+  "restartShell": "Reiniciar shell",
+  "restartToApply": "Reinicia el servidor para aplicar los cambios.",
+  "retry": "Reintentar",
+  "review": "Revisar",
+  "reviewChanges": "Revisar cambios",
+  "reviewFatigueWarning": "Parece que estás haciendo muchas revisiones seguidas. ¡Tómate un descanso!",
+  "@reviewFatigueWarning": {
+    "description": "Warning shown when a PR review session exceeds 60 minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewedByMe": "Revisadas por mí",
+  "reviewers": "REVISORES",
+  "reviewersActive": "Revisores activos",
+  "reviewsLabel": "Revisiones",
+  "roleLabel": "Rol",
+  "@roleLabel": {
+    "description": "Table header for role column in access matrix"
+  },
+  "ruleHint": "La regla de la política (markdown soportado)",
+  "@ruleHint": {
+    "description": "Hint text for policy rule field"
+  },
+  "ruleLabel": "Regla",
+  "@ruleLabel": {
+    "description": "Label for policy rule field"
+  },
+  "runCompleted": "Ejecución completada",
+  "@runCompleted": {
+    "description": "Run completed"
+  },
+  "runGhAuthLoginBody": "Ejecuta `gh auth login` en tu terminal y luego pulsa Actualizar.",
+  "@runGhAuthLoginBody": {
+    "description": "Run `gh auth login` in your terminal, then tap Refresh."
+  },
+  "running": "En ejecución",
+  "runningLabel": "en ejecución",
+  "@runningLabel": {
+    "description": "running label"
+  },
+  "runningStatus": "En ejecución",
+  "runs": "Ejecuciones",
+  "runsAcrossAllAgents": "Ejecuciones en todos los agentes",
+  "runsLabel": "Ejecuciones",
+  "@runsLabel": {
+    "description": "Runs label"
+  },
+  "sandboxBackendNativeLabel": "Native sandbox",
+  "@sandboxBackendNativeLabel": {
+    "description": "Label for the native sandbox backend"
+  },
+  "sandboxBackendNoneLabel": "No isolation",
+  "@sandboxBackendNoneLabel": {
+    "description": "Label for the no isolation sandbox backend"
+  },
+  "sandboxLinuxInstall": "El sandbox nativo en Linux/WSL2 utiliza bubblewrap. Instálalo con:\\n\\n  sudo apt-get install bubblewrap socat ripgrep   # Debian/Ubuntu\\n  sudo dnf install bubblewrap socat ripgrep       # Fedora/RHEL\\n  sudo pacman -S bubblewrap socat ripgrep         # Arch",
+  "@sandboxLinuxInstall": {
+    "description": "Native sandbox on Linux/WSL2 uses bubblewrap. Install with package manager."
+  },
+  "sandboxMacosBuiltIn": "El sandbox nativo está integrado en macOS — utiliza Apple Seatbelt (`sandbox-exec`). No requiere instalación.",
+  "@sandboxMacosBuiltIn": {
+    "description": "Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required."
+  },
+  "sandboxPermissions": "Permisos del sandbox",
+  "@sandboxPermissions": {
+    "description": "Locale string for sandboxPermissions"
+  },
+  "sandboxUnsupported": "El sandbox nativo aún no es compatible con esta plataforma. Vuelve a \"Sin aislamiento\".",
+  "@sandboxUnsupported": {
+    "description": "Native sandbox is not supported on this platform yet. Falls back to No isolation."
+  },
+  "sandboxing": "Sandboxing",
+  "sandboxingDescription": "Ejecuta agentes dentro de un sandbox a nivel de SO para que no puedan tocar tu carpeta de inicio, claves SSH o tokens que no hayas concedido.",
+  "@sandboxingDescription": {
+    "description": "Run agents inside an OS-level sandbox so they can't touch your home folder, SSH keys, or tokens you haven't granted."
+  },
+  "sandboxingDisabledDescription": "Los agentes se ejecutan directamente en el host con entorno completo — no recomendado.",
+  "@sandboxingDisabledDescription": {
+    "description": "Agents run directly on the host with full env - not recommended."
+  },
+  "sandboxingEnabledDescription": "Todas las invocaciones de agentes se enrutan a través de {backend}.",
+  "@sandboxingEnabledDescription": {
+    "description": "All agent invocations route through a backend.",
+    "placeholders": {
+      "backend": {
+        "type": "String"
+      }
+    }
+  },
+  "save": "Guardar",
+  "saveChanges": "Guardar cambios",
+  "@saveChanges": {
+    "description": "Locale string for saveChanges"
+  },
+  "savedArticlesDescription": "Artículos que has guardado.",
+  "savedLabel": "Guardados",
+  "savingChanges": "Guardando cambios...",
+  "@savingChanges": {
+    "description": "Locale string for savingChanges"
+  },
+  "savingEllipsis": "Guardando…",
+  "scopeDiffToCommits": "Filtrar diff por commits — Mayús-clic para rango",
+  "searchAgents": "Buscar agentes",
+  "searchAuthors": "Buscar autores…",
+  "searchPullRequestsHint": "Buscar… p. ej. author:@user",
+  "noPrsMatchSearch": "No hay pull requests coincidentes",
+  "noPrsMatchSearchHint": "Ninguna PR abierta coincide con tu búsqueda. Prueba otros términos o borra la búsqueda.",
+  "searchAuthorsPlaceholder": "Buscar autores…",
+  "searchFactsHint": "Buscar hechos...",
+  "@searchFactsHint": {
+    "description": "Search field hint in facts tab"
+  },
+  "searchFonts": "Buscar fuentes…",
+  "searchGifs": "Buscar GIFs",
+  "@searchGifs": {
+    "description": "Title of the GIF search picker"
+  },
+  "searchGifsHint": "Buscar GIFs...",
+  "@searchGifsHint": {
+    "description": "Placeholder text in the GIF search field"
+  },
+  "searchInDiff": "Buscar en el diff",
+  "searchInDiffHint": "Buscar en diff...",
+  "@searchInDiffHint": {
+    "description": "Placeholder text in the diff search field"
+  },
+  "searchOrTypeModel": "Busca o escribe un nombre de modelo…",
+  "searchPlaceholder": "Buscar...",
+  "@searchPlaceholder": {
+    "description": "Locale string for searchPlaceholder"
+  },
+  "searchShortcuts": "Buscar atajos…",
+  "searching": "Buscando...",
+  "@searching": {
+    "description": "Locale string for searching"
+  },
+  "secondsAgo": "{count, plural, =1{hace 1 segundo} other{hace {count} segundos}}",
+  "selectAdapter": "Seleccionar adaptador",
+  "selectAdapterFirst": "Selecciona un adaptador primero",
+  "selectAgentToReportTo": "Selecciona un agente al que reportar…",
+  "selectAnAgent": "Seleccionar un agente",
+  "@selectAnAgent": {
+    "description": "Select an agent"
+  },
+  "selectConversation": "Seleccionar una conversación",
+  "selectEffortLevel": "Selecciona el nivel de esfuerzo",
+  "selectLabel": "Seleccionar",
+  "selectRunner": "Seleccionar un ejecutor",
+  "semanticSearch": "Búsqueda semántica",
+  "send": "Enviar",
+  "sendFirstMessage": "Enviar el primer mensaje",
+  "sendMessage": "Enviar mensaje",
+  "sentFindingsToAgent": "Se enviaron {count} hallazgo(s) al agente.",
+  "serverRunning": "Servidor en ejecución",
+  "serverStopped": "Servidor detenido",
+  "setGithubLinkDescription": "Establece el propietario de GitHub y el nombre del repositorio para {name}. Esto se usa para resolver referencias de PR e issues como #123 en contenido markdown.",
+  "@setGithubLinkDescription": {
+    "description": "Set the GitHub owner and repository name for {name}. This is used to resolve PR and issue references like #123 in markdown content.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setLabel": "Establecer",
+  "@setLabel": {
+    "description": "Generic set button label"
+  },
+  "setToken": "Establecer token",
+  "@setToken": {
+    "description": "Button to set an auth token"
+  },
+  "settingsGeneralDescription": "Apariencia, tipografía, integraciones y servidor MCP.",
+  "settingsLabel": "Ajustes",
+  "settingsLanguage": "Idioma",
+  "settingsLanguageDescription": "Elegir el idioma de la aplicación.",
+  "sharedSecretToken": "Token secreto compartido",
+  "sharpshooterBadge": "Tirador certero",
+  "shortTask": "Tarea corta",
+  "showNativeNotifications": "Mostrar notificaciones nativas de macOS para eventos.",
+  "showSuperseded": "Mostrar sustituidos",
+  "@showSuperseded": {
+    "description": "Checkbox label to show superseded facts"
+  },
+  "signInWithGhAuth": "Inicia sesión con gh auth login o añade un token en Ajustes > Claves API",
+  "signedIn": "Sesión iniciada.",
+  "signedInAs": "Sesión iniciada como {username}.",
+  "skillEditor": "Editor de habilidades",
+  "skillNameRequired": "El nombre de la habilidad es obligatorio.",
+  "skillSaved": "Habilidad \"{name}\" guardada.",
+  "skills": "Habilidades",
+  "skillsColon": "Habilidades:",
+  "@skillsColon": {
+    "description": "Skills label with colon"
+  },
+  "skillsCommaSeparated": "Habilidades (separadas por comas)",
+  "skillsLabel": "HABILIDADES",
+  "skipAcceptRisk": "Saltar — Acepto el riesgo",
+  "skipForNow": "Omitir por ahora",
+  "skipSandboxing": "Saltar sandboxing",
+  "skipSandboxingDialogContent": "¿Estás seguro de que quieres omitir el sandbox? Esto permite que los agentes ejecuten código en tu sistema sin aislamiento.",
+  "@skipSandboxingDialogContent": {
+    "description": "Locale string for skipSandboxingDialogContent"
+  },
+  "somethingWentWrong": "Algo salió mal",
+  "sourceCount": "{count} fuente",
+  "@sourceCount": {
+    "description": "Locale string for sourceCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceCountPlural": "{count} fuentes",
+  "@sourceCountPlural": {
+    "description": "Locale string for sourceCountPlural",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceFacts": "Hechos de origen:",
+  "@sourceFacts": {
+    "description": "Label for source fact IDs in policy detail"
+  },
+  "splitDiff": "Diff en paralelo",
+  "startDmWithAgent": "Iniciar mensaje directo con agente",
+  "@startDmWithAgent": {
+    "description": "Locale string for startDmWithAgent"
+  },
+  "startFresh": "Empezar de cero",
+  "startLabel": "Iniciar",
+  "startOnAppLaunch": "Iniciar al abrir la app",
+  "startServerToAccept": "Inicia el servidor para aceptar conexiones MCP.",
+  "stats": "Estadísticas",
+  "statusLabel": "Estado",
+  "stepConnect": "Paso {number} · Conectar",
+  "stop": "Detener",
+  "stopped": "Detenido",
+  "@stopped": {
+    "description": "Status label for stopped state"
+  },
+  "streaks": "Rachas",
+  "streaksLabel": "Rachas",
+  "strictIdentityCheck": "Verificación estricta de identidad",
+  "@strictIdentityCheck": {
+    "description": "Locale string for strictIdentityCheck"
+  },
+  "success": "Éxito",
+  "successLabel": "Éxito",
+  "successLabelShort": "Éxito",
+  "successRate": "Tasa de éxito",
+  "suggestAChange": "Sugerir un cambio",
+  "@suggestAChange": {
+    "description": "Header label for the suggestion composer"
+  },
+  "suggestAChangeEllipsis": "Sugerir un cambio...",
+  "@suggestAChangeEllipsis": {
+    "description": "Placeholder text in the suggestion composer"
+  },
+  "suggestLabel": "SUGERIR",
+  "superseded": "Sustituido",
+  "@superseded": {
+    "description": "Label for superseded facts"
+  },
+  "synced": "Sincronizado",
+  "systemDefault": "Valor predeterminado del sistema",
+  "@systemDefault": {
+    "description": "System default option label"
+  },
+  "systemFonts": "Fuentes del sistema",
+  "systemPrompt": "Prompt del sistema",
+  "systemPromptLabel": "Prompt del sistema",
+  "talkToControlCenter": "Habla con Control Center.",
+  "tapBadgeDescription": "Toca una insignia para ver cómo subir de nivel",
+  "tapBadgeToLevelUp": "Toca una insignia para ver cómo subir de nivel",
+  "taskMentionSection": "Tarea",
+  "testLabel": "Probar",
+  "@testLabel": {
+    "description": "Generic test button label"
+  },
+  "theme": "Tema",
+  "themeDark": "Oscuro",
+  "@themeDark": {
+    "description": "Locale string for themeDark"
+  },
+  "themeLight": "Claro",
+  "@themeLight": {
+    "description": "Locale string for themeLight"
+  },
+  "themeSystem": "Sistema",
+  "@themeSystem": {
+    "description": "Locale string for themeSystem"
+  },
+  "thisCannotBeUndone": "Esta acción no se puede deshacer.",
+  "thisConversation": "esta conversación",
+  "@thisConversation": {
+    "description": "this conversation"
+  },
+  "threadLabel": "Hilo",
+  "throughput": "Rendimiento",
+  "ticketLabel": "TICKET",
+  "tierLabel": "Nivel {tier}",
+  "@tierLabel": {
+    "description": "Locale string for tierLabel",
+    "placeholders": {
+      "tier": {
+        "type": "String"
+      }
+    }
+  },
+  "titleDescription": "Descripción",
+  "titleLabel": "Título",
+  "todayLabel": "Hoy",
+  "toggleBookmark": "Marcar/desmarcar",
+  "toggleTheme": "Cambiar tema",
+  "toggleWorkspaceSwitcher": "Cambiar selector de espacio",
+  "tokenConfigured": "Configurado — los clientes deben presentar este token.",
+  "@tokenConfigured": {
+    "description": "Configured — clients must present this token."
+  },
+  "tokenConfiguredClients": "Configurado — los clientes deben presentar este token.",
+  "tokenName": "Token de {name}",
+  "topPerformerLabel": "MEJOR RESULTADO",
+  "topPerformersDescription": "Mejores resultados, rendimiento y salud del espacio de trabajo.",
+  "topic": "Tema",
+  "topicHint": "ej: Tech Stack, Design System",
+  "@topicHint": {
+    "description": "Hint text for topic field in fact edit"
+  },
+  "totalRuns": "Ejecuciones totales",
+  "totalRunsLabel": "Ejecuciones totales",
+  "trackingParamsCount": "{count} parámetros de seguimiento",
+  "@trackingParamsCount": {
+    "description": "Locale string for trackingParamsCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "typeCommandOrSearch": "Escribe un comando o busca…",
+  "typography": "Tipografía",
+  "unavailable": "No disponible",
+  "unexpectedError": "Ocurrió un error inesperado.",
+  "unifiedDiff": "Diff unificado",
+  "unknownAuthor": "Desconocido",
+  "unnamedAgent": "Agente sin nombre",
+  "updateKey": "Actualizar clave",
+  "updateLabel": "Actualizar",
+  "@updateLabel": {
+    "description": "Generic update button label"
+  },
+  "updateToken": "Actualizar token",
+  "@updateToken": {
+    "description": "Update token"
+  },
+  "updatedDaysAgo": "Actualizado hace {count} d",
+  "@updatedDaysAgo": {
+    "description": "Locale string for updatedDaysAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updatedHoursAgo": "Actualizado hace {count} h",
+  "@updatedHoursAgo": {
+    "description": "Locale string for updatedHoursAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updatedJustNow": "Actualizado ahora",
+  "@updatedJustNow": {
+    "description": "Locale string for updatedJustNow"
+  },
+  "updatedMinutesAgo": "Actualizado hace {count} min",
+  "@updatedMinutesAgo": {
+    "description": "Locale string for updatedMinutesAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "useSandbox": "Usar sandbox",
+  "@useSandbox": {
+    "description": "Locale string for useSandbox"
+  },
+  "useWorkspaceDefault": "Usar valor por defecto del espacio de trabajo",
+  "@useWorkspaceDefault": {
+    "description": "Locale string for useWorkspaceDefault"
+  },
+  "userAgent": "Agente de usuario",
+  "userAgentDescription": "Déjalo vacío para usar el agente de usuario predeterminado de la app. Algunos sitios bloquean agentes de usuario que no son de navegador.",
+  "usersLabel": "Usuarios",
+  "@usersLabel": {
+    "description": "Breadcrumb label for the users section"
+  },
+  "usingSystemDefaultMicrophone": "Usando el micrófono predeterminado del sistema.",
+  "@usingSystemDefaultMicrophone": {
+    "description": "Using the system default microphone."
+  },
+  "viewAll": "Ver todo",
+  "viewLabel": "Vista",
+  "viewLog": "Ver registro",
+  "viewLogs": "Ver registros",
+  "viewProfile": "Ver perfil",
+  "@viewProfile": {
+    "description": "Link to open a user's full profile page"
+  },
+  "voiceInstallFailed": "Error de instalación: {error}",
+  "voiceModelNotInstalled": "No instalado. Descarga ~200 MB una vez; se ejecuta completamente en el dispositivo.",
+  "voiceModelNotInstalledLabel": "Modelo de voz no instalado.",
+  "voiceRedownloadBody": "Los archivos del modelo existente se eliminarán y se descargará de nuevo el archivo de ~200 MB. La transcripción de voz no estará disponible hasta que se complete la descarga.",
+  "voiceRemoveBody": "La transcripción de voz se desactivará hasta que la reinstales. Puedes reinstalarla en cualquier momento.",
+  "@voiceRemoveBody": {
+    "description": "Voice transcription will be disabled until you reinstall it. You can install it again at any time."
+  },
+  "voiceTranscription": "Transcripción de voz",
+  "weakIsolationDescription": "Aislamiento débil — solo límite de namespace, sin límite de kernel.",
+  "@weakIsolationDescription": {
+    "description": "Weak isolation - namespace boundary only, no kernel boundary."
+  },
+  "whenOffNoDefaultRoute": "Cuando está desactivado, el sandbox arranca sin ruta predeterminada.",
+  "whenOffServerStaysStopped": "Cuando está desactivado, el servidor permanece detenido hasta que lo inicies.",
+  "whisperBaseEn": "Whisper base.en (sherpa-onnx)",
+  "whisperInstalled": "Whisper base.en instalado. Se usa con el botón de micrófono del compositor.",
+  "workerLabel": "Worker {index}",
+  "@workerLabel": {
+    "description": "Locale string for workerLabel",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workersCount": "{count} workers",
+  "@workersCount": {
+    "description": "Locale string for workersCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workingMemory": "Memoria de trabajo",
+  "workspaceName": "Nombre del espacio de trabajo",
+  "workspaceNotFound": "Espacio de trabajo no encontrado",
+  "workspaceNotesScratchpad": "Notas y borrador del espacio de trabajo",
+  "workspacePulse": "PULSO DEL ESPACIO",
+  "workspaceScopedSkills": "Archivos de habilidades del espacio de trabajo adjuntos a los agentes.",
+  "workspaceTitle": "Espacio de trabajo: {name}",
+  "workspaces": "Espacios de trabajo",
+  "writeLabel": "Escribir",
+  "writePrivateNotes": "Escribe notas privadas, observaciones, planes...",
+  "writeSkillContent": "Escribe el contenido de la habilidad aquí (Markdown)…",
+  "xp": "XP",
+  "yearsAgo": "{count, plural, =1{hace 1 año} other{hace {count} años}}",
+  "yesterday": "ayer",
+  "yourAchievements": "TUS LOGROS",
+  "mergePullRequest": "Merge pull request",
+  "@mergePullRequest": {
+    "description": "Button label to merge a pull request"
+  },
+  "forceMergePullRequest": "Force merge pull request",
+  "@forceMergePullRequest": {
+    "description": "Button label to force-merge a pull request despite failing checks or pending reviews"
+  },
+  "closePullRequest": "Close pull request",
+  "@closePullRequest": {
+    "description": "Button label to close a pull request"
+  },
+  "closePullRequestConfirm": "Are you sure you want to close this pull request?",
+  "@closePullRequestConfirm": {
+    "description": "Confirmation dialog for closing a pull request"
+  },
+  "squashAndMerge": "Squash and merge",
+  "@squashAndMerge": {
+    "description": "Merge method: squash all commits into one"
+  },
+  "createMergeCommit": "Create a merge commit",
+  "@createMergeCommit": {
+    "description": "Merge method: create a merge commit"
+  },
+  "rebaseAndMerge": "Rebase and merge",
+  "@rebaseAndMerge": {
+    "description": "Merge method: rebase commits onto the base branch"
+  },
+  "commitTitle": "Commit title",
+  "@commitTitle": {
+    "description": "Label for the commit title field in the merge flyout"
+  },
+  "commitDescription": "Commit description",
+  "@commitDescription": {
+    "description": "Label for the commit description field in the merge flyout"
+  },
+  "pullRequestMerged": "Pull request merged",
+  "@pullRequestMerged": {
+    "description": "Success message after merging a pull request"
+  },
+  "pullRequestClosed": "Pull request closed",
+  "@pullRequestClosed": {
+    "description": "Success message after closing a pull request"
+  },
+  "failedToMergePr": "Failed to merge: {error}",
+  "@failedToMergePr": {
+    "description": "Error message when merging a pull request fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToClosePr": "Failed to close: {error}",
+  "@failedToClosePr": {
+    "description": "Error message when closing a pull request fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "checksFailing": "Comprobaciones fallidas",
+  "@checksFailing": {
+    "description": "Warning that CI checks are not all passing"
+  },
+  "reviewsPending": "Some reviews are pending",
+  "@reviewsPending": {
+    "description": "Warning that not all reviewers have approved"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button label"
+  },
+  "trustedSitesSectionTitle": "Sitios de confianza",
+  "@trustedSitesSectionTitle": {
+    "description": "Section header for the per-domain content-blocker allowlist"
+  },
+  "trustedSitesEmpty": "Sin sitios de confianza. Añade un dominio para desactivar el bloqueo en él.",
+  "@trustedSitesEmpty": {
+    "description": "Empty-state copy when no domains are on the per-domain allowlist"
+  },
+  "addTrustedSite": "Añadir sitio de confianza",
+  "@addTrustedSite": {
+    "description": "Button label to add a domain to the per-domain allowlist"
+  },
+  "removeTrustedSite": "Eliminar",
+  "@removeTrustedSite": {
+    "description": "Tooltip on the per-domain allowlist row delete button"
+  },
+  "disableBlockingForThisSite": "Desactivar bloqueo en este sitio",
+  "@disableBlockingForThisSite": {
+    "description": "Tooltip on the article reader shield button when blocking is currently on"
+  },
+  "enableBlockingForThisSite": "Activar bloqueo en este sitio",
+  "@enableBlockingForThisSite": {
+    "description": "Tooltip on the article reader shield button when blocking is currently off for this site"
+  },
+  "enterDomainHint": "ej. ejemplo.com",
+  "@enterDomainHint": {
+    "description": "Placeholder text in the add-trusted-site domain input"
+  },
+  "invalidDomain": "Introduce un dominio válido (ej. ejemplo.com)",
+  "@invalidDomain": {
+    "description": "Validation message when the add-trusted-site domain input is invalid"
+  },
+  "pageLoadTimedOut": "Tiempo de carga agotado. Recarga o abre en el navegador.",
+  "@pageLoadTimedOut": {
+    "description": "Banner shown in the article reader when page load exceeds the 15s timeout"
+  },
+  "pipelinesScreenTitle": "Pipelines",
+  "@pipelinesScreenTitle": {
+    "description": "Title for the pipelines screen"
+  },
+  "pipelinesScreenSubtitle": "Declarative multi-step agent workflows",
+  "@pipelinesScreenSubtitle": {
+    "description": "Subtitle for the pipelines screen"
+  },
+  "pipelinesRunHello": "Run hello pipeline",
+  "@pipelinesRunHello": {
+    "description": "Button text to run the hello demo pipeline"
+  },
+  "pipelinesRunPipeline": "Ejecutar pipeline",
+  "pipelineRunLauncherTitle": "Ejecutar pipeline",
+  "pipelineRunSubtitle": "Elige un pipeline y completa sus entradas para iniciar una ejecución.",
+  "pipelineRunNoInputsBadge": "Sin entradas",
+  "pipelineRunInputsCount": "{count, plural, =1{1 entrada} other{{count} entradas}}",
+  "pipelineRunNoInputs": "Este pipeline no requiere entradas.",
+  "pipelineRunSubmit": "Ejecutar pipeline",
+  "pipelineRunCouldNotStart": "No se pudo iniciar la ejecución.",
+  "pipelineRunStarted": "{name} iniciado",
+  "pipelineRunEmptyTitle": "Ningún pipeline listo para ejecutar",
+  "pipelineRunEmptyHint": "Habilita un pipeline y activa la ejecución manual en su editor para lanzarlo aquí.",
+  "pipelineRunManageTemplates": "Gestionar pipelines",
+  "pipelineRunSettingsTitle": "Ejecución manual",
+  "pipelineRunSettingsAllow": "Permitir ejecución manual",
+  "pipelineRunSettingsAllowHelp": "Mostrar este pipeline en la página de ejecución para poder iniciarlo manualmente.",
+  "pipelineRunSettingsInputsTitle": "Entradas",
+  "pipelineRunSettingsAddInput": "Añadir entrada",
+  "pipelineRunSettingsNoInputs": "Aún no hay entradas.",
+  "pipelineInputEditTitle": "Campo de entrada",
+  "pipelineInputKeyLabel": "Clave",
+  "pipelineInputKeyHelp": "Clave de estado bajo la que se guarda el valor (p. ej. repoFullName).",
+  "pipelineInputLabelLabel": "Etiqueta",
+  "pipelineInputTypeLabel": "Tipo",
+  "pipelineInputOptionsLabel": "Opciones (separadas por comas)",
+  "pipelineInputDefaultLabel": "Valor predeterminado",
+  "pipelineInputPlaceholderLabel": "Marcador de posición",
+  "pipelineInputHelpLabel": "Texto de ayuda",
+  "pipelineInputRequiredLabel": "Obligatorio",
+  "pipelineInputTypeText": "Texto",
+  "pipelineInputTypeMultiline": "Texto multilínea",
+  "pipelineInputTypeNumber": "Número",
+  "pipelineInputTypeBoolean": "Interruptor",
+  "pipelineInputTypeSelect": "Selección",
+  "pipelinesEmpty": "No pipeline runs yet",
+  "@pipelinesEmpty": {
+    "description": "Empty state message when no pipelines have been run"
+  },
+  "pipelinesEmptyHint": "Haz clic en «Ejecutar pipeline» para iniciar uno.",
+  "@pipelinesEmptyHint": {
+    "description": "Hint text in the empty pipelines state"
+  },
+  "pipelinesSelectRun": "Select a pipeline run to view steps",
+  "@pipelinesSelectRun": {
+    "description": "Placeholder when no pipeline run is selected"
+  },
+  "pipelinesNoSteps": "No steps recorded yet",
+  "@pipelinesNoSteps": {
+    "description": "Placeholder when a pipeline run has no steps"
+  },
+  "pipelinesNoActiveWorkspace": "Selecciona un espacio de trabajo para ver sus pipelines",
+  "@pipelinesNoActiveWorkspace": {
+    "description": "Shown on the pipelines screen when no workspace is active"
+  },
+  "pipelinesLoadError": "Error al cargar los pipelines: {error}",
+  "@pipelinesLoadError": {
+    "description": "Error state on the pipelines screen",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelinesRunFailed": "Error al iniciar el pipeline: {error}",
+  "@pipelinesRunFailed": {
+    "description": "Snackbar when starting a pipeline fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineStatusPending": "Pending",
+  "@pipelineStatusPending": {
+    "description": "Pipeline status: pending"
+  },
+  "pipelineStatusRunning": "Running",
+  "@pipelineStatusRunning": {
+    "description": "Pipeline status: running"
+  },
+  "pipelineStatusSuspended": "Suspended",
+  "@pipelineStatusSuspended": {
+    "description": "Pipeline status: suspended"
+  },
+  "pipelineStatusCompleted": "Completed",
+  "@pipelineStatusCompleted": {
+    "description": "Pipeline status: completed"
+  },
+  "pipelineStatusFailed": "Failed",
+  "@pipelineStatusFailed": {
+    "description": "Pipeline status: failed"
+  },
+  "pipelineStatusCancelled": "Cancelled",
+  "@pipelineStatusCancelled": {
+    "description": "Pipeline status: cancelled"
+  },
+  "pipelineStatusSkipped": "Skipped",
+  "@pipelineStatusSkipped": {
+    "description": "Pipeline status: skipped"
+  },
+  "pipelineRunDuration": "{seconds}s",
+  "@pipelineRunDuration": {
+    "description": "Duration of a pipeline run in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineStepDuration": "{seconds}s",
+  "@pipelineStepDuration": {
+    "description": "Duration of a pipeline step in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineRunStepProgress": "{completed} de {total} pasos",
+  "@pipelineRunStepProgress": {
+    "description": "Run header progress: completed vs total steps",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineStepStarted": "Iniciado",
+  "@pipelineStepStarted": {
+    "description": "Step detail label: when the step started"
+  },
+  "pipelineStepFinished": "Finalizado",
+  "@pipelineStepFinished": {
+    "description": "Step detail label: when the step finished"
+  },
+  "pipelineStepDurationLabel": "Duración",
+  "@pipelineStepDurationLabel": {
+    "description": "Step detail label: run duration"
+  },
+  "pipelineStepBranch": "Rama",
+  "@pipelineStepBranch": {
+    "description": "Step detail label: parallel branch index"
+  },
+  "pipelineStepError": "Error",
+  "@pipelineStepError": {
+    "description": "Step detail section header: error"
+  },
+  "pipelineStepInput": "Entrada",
+  "@pipelineStepInput": {
+    "description": "Step detail section header: input payload"
+  },
+  "pipelineStepOutput": "Salida",
+  "@pipelineStepOutput": {
+    "description": "Step detail section header: output payload"
+  },
+  "pipelineStepNotExecuted": "Aún no ejecutado",
+  "@pipelineStepNotExecuted": {
+    "description": "Step detail placeholder when the step has not run yet"
+  },
+  "pipelineRunViewTimeline": "Cronología",
+  "pipelineRunViewGraph": "Gráfico",
+  "pipelineRunFailedAtStep": "Falló en {step}",
+  "pipelineRunTriggerManual": "Manual",
+  "pipelineRunTriggerAuto": "Automático",
+  "pipelineStepSkippedReason": "Omitido",
+  "pipelineRunFilterAll": "Todos",
+  "pipelineRunFilterEmpty": "Ninguna ejecución coincide con este filtro",
+  "relativeJustNow": "ahora mismo",
+  "relativeMinutesAgo": "{count, plural, =1{hace 1 min} other{hace {count} min}}",
+  "relativeHoursAgo": "{count, plural, =1{hace 1 hora} other{hace {count} horas}}",
+  "relativeDaysAgo": "{count, plural, =1{hace 1 día} other{hace {count} días}}",
+  "tasksTitle": "Tasks",
+  "@tasksTitle": {
+    "description": "Title for the tasks screen"
+  },
+  "taskStatusPending": "Pending",
+  "@taskStatusPending": {
+    "description": "Ticket status: pending"
+  },
+  "taskStatusInProgress": "In progress",
+  "@taskStatusInProgress": {
+    "description": "Ticket status: in progress"
+  },
+  "taskStatusCompleted": "Completed",
+  "@taskStatusCompleted": {
+    "description": "Ticket status: completed"
+  },
+  "taskStatusFailed": "Failed",
+  "@taskStatusFailed": {
+    "description": "Ticket status: failed"
+  },
+  "taskStatusCancelled": "Cancelled",
+  "@taskStatusCancelled": {
+    "description": "Ticket status: cancelled"
+  },
+  "tasksNoTasks": "Sin tickets",
+  "@tasksNoTasks": {
+    "description": "Empty state for tickets list"
+  },
+  "teamsTitle": "Teams",
+  "@teamsTitle": {
+    "description": "Title for the teams settings screen"
+  },
+  "teamsNoTeams": "No teams configured",
+  "@teamsNoTeams": {
+    "description": "Empty state for teams list"
+  },
+  "teamsAddTeam": "Add team",
+  "@teamsAddTeam": {
+    "description": "Button to add a new team"
+  },
+  "pipelineRunTitle": "Pipeline run",
+  "@pipelineRunTitle": {
+    "description": "Title for the pipeline run detail screen"
+  },
+  "pipelineNotFound": "Pipeline run not found",
+  "@pipelineNotFound": {
+    "description": "Message when pipeline run ID is invalid"
+  },
+  "pipelineTemplatesNav": "Plantillas de pipeline",
+  "pipelineTemplatesTitle": "Plantillas de pipeline",
+  "pipelineTemplatesSubtitle": "Editor arrastrar y soltar para los pipelines que orquestan tus agentes.",
+  "pipelineTemplatesNew": "Nueva plantilla",
+  "pipelineTemplatesEmpty": "Aún no hay plantillas de pipeline. Crea una para empezar.",
+  "pipelineTemplateIdLabel": "ID de plantilla",
+  "pipelineTemplateBuiltInBadge": "Integrada",
+  "pipelineTemplateDeleteConfirmTitle": "¿Eliminar plantilla?",
+  "pipelineTemplateDeleteConfirmBody": "¿Eliminar la plantilla de pipeline {name}? Esta acción no se puede deshacer.",
+  "pipelineTemplateSaved": "Plantilla de pipeline guardada",
+  "pipelineTemplateEditorTitle": "Editar pipeline",
+  "pipelineTemplateEditorSubtitle": "Arrastra tipos de nodos desde la barra lateral al lienzo y conéctalos.",
+  "unsavedChanges": "Cambios sin guardar",
+  "nodeLibraryTitle": "Biblioteca de nodos",
+  "nodeLibraryHint": "Arrastra cualquier entrada al lienzo para añadir un nodo.",
+  "editorDragHint": "Arrastra desde la biblioteca, haz clic en un nodo para editarlo",
+  "editorEmptyCanvas": "Arrastra un nodo desde la biblioteca para empezar.",
+  "nodeConfigTitle": "Configuración del nodo",
+  "nodeConfigKind": "Tipo",
+  "nodeConfigLabel": "Etiqueta",
+  "nodeConfigInputKeys": "Claves de entrada (separadas por comas)",
+  "nodeConfigInputKeysHelp": "Claves de estado que consume este nodo. Usadas para la sustitución de placeholders en el prompt.",
+  "nodeConfigOutputKey": "Clave de salida",
+  "nodeConfigPrompt": "Plantilla del prompt",
+  "nodeConfigPromptHelp": "Usa marcadores con doble llave para insertar valores desde el estado en tiempo de ejecución.",
+  "nodeConfigTriggers": "Activado por",
+  "nodeConfigNoUpstream": "No hay otros nodos para conectar.",
+  "nodeConfigAgent": "Agente",
+  "nodeConfigAgentHint": "Elige un agente…",
+  "nodeConfigScript": "Script bash",
+  "nodeConfigScriptHelp": "Se ejecuta con bash -c. GITHUB_TOKEN está disponible. Los placeholders se sustituyen antes de ejecutar.",
+  "nodeConfigRouteKeys": "Claves de ruta",
+  "nodeConfigRouteKeyFrom": "Clave de ruta desde {source}",
+  "conditionSectionTitle": "Condición",
+  "conditionMode": "Modo",
+  "conditionModeFilesAny": "Archivo(s) existe(n) — alguno",
+  "conditionModeFilesAll": "Archivos existen — todos",
+  "conditionModeComparison": "Comparación",
+  "conditionModeSwitch": "Conmutador",
+  "conditionFilePaths": "Rutas de archivo",
+  "conditionFilePathsAnyHelp": "Una ruta por línea, relativa al directorio base. Devuelve true si existe alguna.",
+  "conditionFilePathsAllHelp": "Una ruta por línea, relativa al directorio base. Devuelve true solo si existen todas.",
+  "conditionBaseKey": "Clave del directorio base",
+  "conditionBaseKeyHelp": "Clave de estado con el directorio donde se resuelven las rutas (por defecto repoLocalPath).",
+  "conditionRecursive": "Buscar en subdirectorios",
+  "conditionNegate": "Invertir: devuelve true si falta",
+  "conditionLeft": "Valor izquierdo",
+  "conditionOperator": "Operador",
+  "conditionRight": "Valor derecho",
+  "conditionSwitchKey": "Conmutar según la clave de estado",
+  "conditionCases": "Casos (separados por comas)",
+  "conditionCasesHelp": "Claves de ruta para comparar con el valor, en orden.",
+  "conditionDefaultCase": "Caso por defecto",
+  "triggerPanelTitle": "Disparadores",
+  "triggerPanelHelp": "Qué inicia este pipeline.",
+  "triggerManualHelp": "Mostrar en la página de ejecución e iniciar a mano.",
+  "triggerSectionAutomatic": "Disparadores automáticos",
+  "triggerAddButton": "Añadir disparador",
+  "triggerNoneYet": "Aún no hay disparadores automáticos.",
+  "triggerAddDialogTitle": "Añadir disparador",
+  "triggerKindLabel": "Tipo de disparador",
+  "triggerKindEvent": "Por un evento",
+  "triggerKindSchedule": "Según una programación",
+  "triggerIntervalLabel": "Ejecutar cada (segundos)",
+  "triggerEventFieldLabel": "Evento",
+  "triggerNoMoreEvents": "Todos los eventos disponibles ya están configurados.",
+  "triggerMatchStatusLabel": "Solo cuando el estado es",
+  "triggerSummaryNone": "Sin disparadores",
+  "triggerEverySeconds": "Cada {seconds}s",
+  "triggerEventManual": "Ejecución manual",
+  "triggerEventSchedule": "Programación",
+  "triggerEventPrStatusChanged": "Estado de la PR cambiado",
+  "triggerEventExternalPr": "PR externa abierta",
+  "triggerEventPrPublished": "PR publicada",
+  "triggerEventPrMerged": "PR fusionada",
+  "triggerEventRepoAdded": "Repositorio añadido",
+  "triggerEventMessageReceived": "Mensaje recibido",
+  "triggerEventTicketCompleted": "Tarea completada",
+  "triggerEventTicketFailed": "Tarea fallida",
+  "triggerEventBudgetCrossed": "Umbral de presupuesto superado",
+  "automationsTitle": "Automatizaciones",
+  "@automationsTitle": {
+    "description": "Title for the automations settings screen"
+  },
+  "automationsSubtitle": "Iniciar automáticamente pipelines cuando se disparan eventos de dominio",
+  "@automationsSubtitle": {
+    "description": "Subtitle for the automations settings screen"
+  },
+  "automationsNoTriggers": "No hay disparadores configurados para este evento.",
+  "@automationsNoTriggers": {
+    "description": "Empty state for an event section with no triggers"
+  },
+  "automationsAddTrigger": "Añadir disparador",
+  "@automationsAddTrigger": {
+    "description": "Button to add a new automation trigger"
+  },
+  "automationsManagedHint": "Los disparadores se configuran por pipeline en su editor. Actívalos o desactívalos aquí.",
+  "automationsEditInPipeline": "Editar en el pipeline",
+  "nodeLibrarySearchHint": "Buscar nodos",
+  "nodeLibraryNoMatches": "No hay nodos coincidentes",
+  "nodeCategoryFlow": "Flujo y lógica",
+  "nodeCategoryPr": "Revisión de PR",
+  "nodeCategoryAgents": "Agentes",
+  "nodeCategoryMessaging": "Mensajería",
+  "nodeCategoryCode": "Código",
+  "nodeCategoryDemo": "Demo",
+  "triggerDisabledTag": "desactivado",
+  "pipelineInputTypeRepo": "Repositorio",
+  "pipelineRunNoRepos": "Aún no hay repositorios en este espacio de trabajo.",
+  "allowTicketingApi": "Permitir llamadas a la API de tickets",
+  "ticketingApiKey": "Clave de API de tickets",
+  "ticketingApiKeySubtitle": "Inyecta la clave de API del proveedor de tickets en el sandbox.",
+  "ticketingProvider": "Proveedor de tickets",
+  "connectGitHubAndTicketing": "Conecta GitHub para que Control Center pueda leer tus pull requests, incidencias y revisiones. Conecta opcionalmente un proveedor de tickets. Nada sale de esta máquina.",
+  "triggerEventTicketAssigned": "Ticket asignado",
+  "navTickets": "Tickets",
+  "ticketsTitle": "Tickets",
+  "newTicket": "Nuevo ticket",
+  "noTicketsYet": "Aún no hay tickets",
+  "assignTicket": "Asignar ticket",
+  "addCollaborator": "Añadir colaborador",
+  "noCollaborators": "Aún no hay colaboradores",
+  "linkedPullRequests": "Pull requests vinculadas",
+  "noLinkedPullRequests": "Aún no hay pull requests vinculadas",
+  "ticketActivity": "Actividad",
+  "ticketDispatchHint": "@menciona a un agente para activarlo…",
+  "stopAgent": "Detener agente",
+  "removeQueuedMessage": "Eliminar mensaje en cola",
+  "ticketProperties": "Propiedades",
+  "ticketTabIssue": "Ticket",
+  "ticketTabActivity": "Actividad",
+  "ticketTabChanges": "Cambios",
+  "ticketTabTerminal": "Terminal",
+  "ticketSelectPrompt": "Selecciona un ticket para ver sus detalles",
+  "ticketNoChanges": "Aún no hay cambios en los repositorios vinculados",
+  "ticketTerminalNoAgent": "Asigna un agente para abrir un terminal",
+  "unassigned": "Sin asignar",
+  "ticketStatusBacklog": "Backlog",
+  "ticketStatusOpen": "Por hacer",
+  "ticketStatusInProgress": "En progreso",
+  "ticketStatusInReview": "En revisión",
+  "ticketStatusDone": "Hecho",
+  "ticketStatusBlocked": "Bloqueado",
+  "ticketStatusFailed": "Fallido",
+  "ticketStatusCancelled": "Cancelado",
+  "notificationTicketAssigned": "Ticket asignado",
+  "notificationTicketStatusChanged": "Estado del ticket cambiado",
+  "notificationTicketCollaboratorAdded": "Colaborador añadido",
+  "priority": "Prioridad",
+  "status": "Estado",
+  "assignee": "Asignado a",
+  "ticketDescription": "Descripción",
+  "ticketPriorityNone": "Ninguna",
+  "ticketPriorityUrgent": "Urgente",
+  "ticketPriorityHigh": "Alta",
+  "ticketPriorityMedium": "Media",
+  "ticketPriorityLow": "Baja",
+  "ticketViewList": "Lista",
+  "ticketViewBoard": "Tablero",
+  "ticketTitlePlaceholder": "Título del ticket",
+  "ticketDescriptionPlaceholder": "Añadir una descripción…",
+  "createMore": "Crear más",
+  "selectedCount": "{count} seleccionados",
+  "clearSelection": "Borrar selección",
+  "bulkDeleteTitle": "Eliminar tickets",
+  "bulkDeleteMessage": "¿Eliminar {count} tickets seleccionados? Esta acción no se puede deshacer.",
+  "assignTo": "Asignar a…",
+  "sectionMembers": "Miembros",
+  "sectionAgents": "Agentes",
+  "sidebarGroupWork": "Trabajo",
+  "sidebarGroupTeam": "Equipo",
+  "notificationsTitle": "Notificaciones",
+  "notificationsTooltip": "Notificaciones",
+  "notificationsEmpty": "Estás al día",
+  "markAllRead": "Marcar todo como leído",
+  "toggleThemeLabel": "Cambiar tema",
+  "teamsNav": "Equipos",
+  "dashboardGreeting": "Grüezi",
+  "dashboardSubtitle": "Esto es en lo que están trabajando tus agentes.",
+  "recentActivityTitle": "Actividad reciente",
+  "noRecentActivity": "Aún no hay actividad reciente",
+  "noRecentActivitySubtitle": "Las ejecuciones de agentes, las pull requests y los mensajes aparecerán aquí.",
+  "noWorkspace": "Sin espacio de trabajo",
+  "allAgentsIdle": "Todos los agentes inactivos",
+  "statWorkspaces": "Espacios de trabajo",
+  "statAgents": "Agentes",
+  "statRunning": "En ejecución",
+  "activeAgentsTitle": "Agentes activos",
+  "noAgentProcessesSubtitle": "La actividad de los agentes aparecerá aquí cuando se inicie una ejecución.",
+  "agentIdShort": "ID {id}",
+  "runningProcessesLabel": "En ejecución · {count}",
+  "noneLabel": "Ninguno",
+  "sidebarGroupKnowledge": "Conocimiento",
+  "navMemory": "Memoria",
+  "memoryTabFacts": "Hechos",
+  "memoryTabPolicies": "Políticas",
+  "memoryTabGraph": "Grafo de conocimiento",
+  "memoryNoWorkspace": "Selecciona un espacio de trabajo para ver su memoria.",
+  "topStory": "Destacado",
+  "searchArticles": "Buscar artículos",
+  "filterAll": "Todos",
+  "filterUnread": "No leídos",
+  "saveArticle": "Guardar artículo",
+  "removeFromSaved": "Quitar de guardados",
+  "filterBySource": "Filtrar por fuente",
+  "viewAsList": "Vista de lista",
+  "viewAsGrid": "Vista de cuadrícula",
+  "filterSaved": "Guardados",
+  "noMatchingArticles": "No hay artículos coincidentes",
+  "noMatchingArticlesBody": "Prueba con otra búsqueda o filtro de fuente.",
+  "allCaughtUp": "Todo al día",
+  "allCaughtUpBody": "No hay artículos sin leer; vuelve más tarde.",
+  "openArticlesInAppDescription": "Abrir los enlaces en el lector integrado en lugar de tu navegador predeterminado.",
+  "blockAdsTrackersDescription": "Eliminar anuncios, rastreadores y banners de cookies de los artículos que abras en el lector.",
+  "agentQuestionHeader": "Pregunta para ti",
+  "agentQuestionAnsweredLabel": "Respondido",
+  "agentQuestionSubmit": "Enviar respuesta",
+  "agentQuestionFreeformHint": "Escribe tu respuesta…",
+  "agentQuestionAnswerLabel": "Tu respuesta",
+  "reviewRequested": "Revisión solicitada",
+  "loadMorePrs": "Cargar más",
+  "loadingMorePrs": "Cargando más…",
+  "noPrsMatchFilters": "Ninguna pull request coincide con los filtros en este repositorio",
+  "connectGitHubToLoadPrs": "Conecta GitHub para cargar las pull requests",
+  "noRepositoriesConfigured": "No hay repositorios configurados",
+  "noAuthors": "Sin autores",
+  "noAuthorMatches": "Sin coincidencias",
+  "openedAgo": "Abierto {age}",
+  "@openedAgo": {
+    "description": "Relative-time suffix for when a PR was opened",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "updatedAgo": "Actualizado {age}",
+  "checksPassing": "Comprobaciones correctas",
+  "checksRunning": "Comprobaciones en curso",
+  "needsYourReview": "Necesita tu revisión",
+  "diffSummary": "+{additions} −{deletions} líneas",
+  "checks": "Comprobaciones",
+  "noReviewersAssigned": "Sin revisores asignados",
+  "noAssignees": "Sin asignados",
+  "noChecksYet": "Aún no se han ejecutado comprobaciones",
+  "checksFailingCount": "{count} con errores",
+  "showMore": "Mostrar más",
+  "showLess": "Mostrar menos",
+  "backToPullRequests": "Volver a las pull requests",
+  "pullRequestNotFound": "Pull request no encontrada",
+  "pullRequestNotFoundBody": "Es posible que se haya fusionado, cerrado o movido.",
+  "couldntLoadPullRequest": "No se pudo cargar esta pull request",
+  "showDetails": "Mostrar detalles",
+  "loadingPullRequestNumber": "Cargando la pull request n.º {number}…",
+  "noDescriptionProvided": "No se proporcionó ninguna descripción.",
+  "factsHint": "Los hechos aparecerán aquí a medida que tus agentes aprendan.",
+  "noFactsMatch": "Ningún hecho coincide con tu búsqueda",
+  "memoryLoadError": "No se pudo cargar la memoria",
+  "sortRecent": "Reciente",
+  "sortConfidence": "Confianza",
+  "confidenceTooltip": "Qué tan seguros están los agentes de que este hecho es cierto, de 0 a 100 %.",
+  "supersededTooltip": "Un hecho más reciente ha reemplazado a este.",
+  "domain": "Dominio",
+  "fitToView": "Ajustar a la vista",
+  "project": "Proyecto",
+  "projects": "Proyectos",
+  "newProject": "Nuevo proyecto",
+  "editProject": "Editar proyecto",
+  "deleteProject": "Eliminar proyecto",
+  "noProject": "Sin proyecto",
+  "allTickets": "Todos los tickets",
+  "projectNamePlaceholder": "Nombre del proyecto",
+  "projectDescriptionPlaceholder": "Descripción (opcional)",
+  "projectColorLabel": "Color",
+  "noProjectsYet": "Aún no hay proyectos",
+  "projectTicketsEmpty": "Aún no hay tickets en este proyecto",
+  "createProject": "Crear proyecto",
+  "projectProgress": "{done} de {total} completados",
+  "deleteProjectConfirm": "¿Eliminar «{name}»? Sus tickets se conservan y se quitan del proyecto.",
+  "projectStatusActive": "Activo",
+  "projectStatusCompleted": "Completado",
+  "projectStatusArchived": "Archivado",
+  "markProjectCompleted": "Marcar como completado",
+  "markProjectActive": "Marcar como activo",
+  "archiveProject": "Archivar",
+  "restoreProject": "Restaurar",
+  "relations": "Relaciones",
+  "relateTo": "Relacionar con",
+  "relationSubIssueOf": "Subtarea de…",
+  "relationParentOf": "Padre de…",
+  "relationBlockedBy": "Bloqueado por…",
+  "relationBlocking": "Bloquea…",
+  "relationRelatedTo": "Relacionado con…",
+  "relationDuplicateOf": "Duplicado de…",
+  "relationGroupParent": "Padre",
+  "relationGroupSubIssues": "Subtareas",
+  "relationGroupBlockedBy": "Bloqueado por",
+  "relationGroupBlocking": "Bloquea",
+  "relationGroupRelated": "Relacionado",
+  "relationGroupDuplicateOf": "Duplicado de",
+  "relationGroupDuplicatedBy": "Duplicado por",
+  "copyId": "Copiar ID",
+  "ticketIdCopied": "ID del ticket copiado",
+  "selectTicket": "Seleccionar un ticket",
+  "searchTicketsHint": "Buscar tickets…",
+  "noMatchingTickets": "Ningún ticket coincide",
+  "addToProject": "Añadir al proyecto",
+  "activeFleet": "Flota activa",
+  "agentsCountLabel": "{count, plural, =1{1 agente} other{{count} agentes}}",
+  "blockedStatus": "Bloqueado",
+  "failedStatus": "Fallido",
+  "neverRunStatus": "Nunca ejecutado",
+  "noActiveRun": "Sin ejecución activa",
+  "allPullRequests": "Todas las pull requests",
+  "clearAll": "Borrar todo",
+  "needsYouNow": "Te necesita ahora",
+  "pipelinesSectionTitle": "Pipelines",
+  "allRuns": "Todas las ejecuciones",
+  "triage": "Clasificar",
+  "agentsRunningCount": "{count, plural, =1{1 agente en ejecución} other{{count} agentes en ejecución}}",
+  "blockedCountLabel": "{count} bloqueados",
+  "needsYouCountLabel": "{count} para ti",
+  "reviewSummary": "{prs, plural, =1{1 PR pendiente} other{{prs} PR pendientes}} de tu revisión en {repos, plural, =1{1 repositorio} other{{repos} repositorios}}",
+  "reviewsAwaitingYou": "{count, plural, =1{1 revisión} other{{count} revisiones}} pendientes",
+  "reviewsOverTwoDays": "{count, plural, =1{1 con más de 2 días} other{{count} con más de 2 días}}",
+  "agentBlockedTitle": "{name} está bloqueado",
+  "agentBlockedSubtitle": "Esperando tu confirmación",
+  "pipelineFailedTitle": "Pipeline fallido",
+  "prStaleTitle": "PR {number} obsoleta",
+  "prStaleSubtitle": "Sin actividad reciente",
+  "reviewRequestedBadge": "Revisión solicitada",
+  "draftBadge": "Borrador",
+  "staleLabel": "Obsoleta",
+  "stepsProgress": "{done} de {total} pasos",
+  "allCaughtUpSubtitle": "Ninguna revisión, bloqueo o fallo te necesita ahora mismo.",
+  "dashboardGreetingNamed": "Grüezi, {name}",
+  "workspaceEyebrow": "Espacio {name}",
+  "pipelineTriggerNode": "Disparador",
+  "priorityReviewsTooltip": "PR abiertas que solicitan tu revisión y llevan esperando más de 24 horas.",
+  "workspaceSettings": "Ajustes del espacio de trabajo",
+  "manageWorkspacesSubtitle": "Cambia el nombre de un espacio de trabajo y su marca: selecciona uno a la izquierda para editarlo.",
+  "workspaceCount": "{count, plural, =0{Sin espacios de trabajo} =1{1 espacio de trabajo} other{{count} espacios de trabajo}}",
+  "workspaceReposAgents": "{repos, plural, =0{Sin repos} =1{1 repo} other{{repos} repos}} · {agents, plural, =0{0 agentes} =1{1 agente} other{{agents} agentes}}",
+  "identity": "Identidad",
+  "uploadImage": "Subir imagen",
+  "workspaceLogoHint": "PNG, JPG o GIF de hasta 2 MB. De lo contrario, usaremos la inicial del espacio de trabajo.",
+  "workspaceNameFieldHelp": "Se muestra en el selector, la ruta de navegación y en cada pantalla.",
+  "dangerZone": "Zona de peligro",
+  "deleteThisWorkspace": "Eliminar este espacio de trabajo",
+  "deleteWorkspaceLongDescription": "Elimina permanentemente {name}, sus conexiones de repositorio, agentes y memoria. Esto no se puede deshacer.",
+  "discard": "Descartar",
+  "discardChangesQuestion": "¿Descartar los cambios sin guardar de {name}?",
+  "workspaceUpdated": "Espacio de trabajo actualizado",
+  "editTitle": "Editar título",
+  "editDescription": "Editar descripción",
+  "addDescription": "Añadir una descripción",
+  "prTitlePlaceholder": "Título",
+  "prBodyPlaceholder": "Escribe una descripción",
+  "write": "Escribir",
+  "diff": "Diff",
+  "preview": "Vista previa",
+  "prTemplateLabel": "Plantilla",
+  "prTemplateDefault": "Predeterminada",
+  "addReviewers": "Añadir revisores",
+  "addAssignees": "Añadir asignados",
+  "searchUsers": "Buscar personas…",
+  "searchReviewers": "Buscar personas y equipos…",
+  "usersSectionLabel": "Personas",
+  "teamsSectionLabel": "Equipos",
+  "noMatchingUsers": "No hay personas coincidentes",
+  "noMatchingReviewers": "Sin coincidencias",
+  "addCount": "Añadir ({count})",
+  "requiredByCodeOwners": "Requerido por los propietarios del código",
+  "reviewedOnBehalfOf": "vía {login}",
+  "team": "Equipo",
+  "markdownBold": "Negrita",
+  "markdownItalic": "Cursiva",
+  "markdownHeading": "Encabezado",
+  "markdownBulletList": "Lista con viñetas",
+  "markdownChecklist": "Lista de tareas",
+  "markdownCode": "Código",
+  "markdownLink": "Enlace",
+  "markdownQuote": "Cita",
+  "failedToUpdateTitle": "No se pudo actualizar el título: {error}",
+  "failedToUpdateDescription": "No se pudo actualizar la descripción: {error}",
+  "failedToUpdateReviewers": "No se pudieron actualizar los revisores: {error}",
+  "failedToUpdateAssignees": "No se pudieron actualizar los asignados: {error}",
+  "discardChangesConfirm": "¿Descartar los cambios?",
+  "newPr": "Nueva PR",
+  "openPullRequest": "Abrir una pull request",
+  "composePrSubtitle": "Desde una rama que has subido — sin agentes ni tickets",
+  "createAsDraft": "Crear como borrador",
+  "createPullRequest": "Crear pull request",
+  "composePrNoRepo": "Ningún repositorio de GitHub seleccionado",
+  "composePrNoRepoHint": "Selecciona un espacio de trabajo con un repositorio vinculado a GitHub para abrir una pull request.",
+  "composePrPickBranches": "Elige una rama base y una rama de comparación para previsualizar los cambios.",
+  "composePrNothingToCompare": "No hay cambios entre estas ramas.",
+  "repository": "Repositorio",
+  "baseBranchLabel": "Base",
+  "compareBranchLabel": "Comparar",
+  "selectBranch": "Selecciona una rama",
+  "navMeetings": "Reuniones",
+  "meetingsNoWorkspace": "Selecciona un espacio de trabajo para ver las reuniones.",
+  "meetingsEmpty": "Aún no hay reuniones. Inicia una grabación para capturar una.",
+  "meetingsStartRecording": "Iniciar grabación",
+  "meetingsStopRecording": "Detener grabación",
+  "meetingsProcessing": "Resumiendo…",
+  "meetingEnhancedNotes": "Notas mejoradas",
+  "meetingYourNotes": "Tus notas",
+  "meetingNotesHint": "Anota notas rápidas: el agente las ampliará tras la reunión.",
+  "meetingTranscriptTitle": "Transcripción",
+  "meetingNoTranscriptYet": "La transcripción aparece aquí a medida que la gente habla.",
+  "meetingSpeakerMe": "Tú",
+  "meetingSpeakerThem": "Ellos",
+  "meetingStatusRecording": "Grabando",
+  "meetingStatusProcessing": "Procesando",
+  "meetingStatusDone": "Listo",
+  "meetingStatusFailed": "Error",
+  "keybindingGoToMeetings": "Ir a reuniones",
+  "keybindingNavigateToTheMeetingsDescription": "Navegar a la lista de reuniones",
+  "meetingsOverlineKnowledge": "Conocimiento",
+  "meetingsOverlineEngine": "En el dispositivo · Whisper base.en",
+  "meetingsSubtitle": "Captura local de tus reuniones. Captamos el audio de la reunión y tu micrófono, transcribimos en el dispositivo y dejamos que un agente convierta tus notas dispersas en decisiones y tareas — ningún bot se une nunca a la llamada.",
+  "meetingsRecordMeeting": "Grabar reunión",
+  "meetingsProcessingNow": "{count, plural, =1{1 procesándose ahora} other{{count} procesándose ahora}}",
+  "meetingsStatThisWeek": "Esta semana",
+  "meetingsStatThisWeekUnit": "reuniones capturadas",
+  "meetingsStatRecorded": "Grabado",
+  "meetingsStatRecordedUnit": "transcrito localmente",
+  "meetingsStatOpen": "Abiertas",
+  "meetingsStatOpenUnit": "tareas pendientes",
+  "meetingsStatLogged": "Registradas",
+  "meetingsStatLoggedUnit": "decisiones extraídas",
+  "meetingsCaptureTitle": "La captura de audio del sistema sin controladores está lista.",
+  "meetingsCaptureBody": "Control Center capta la salida de altavoz de la aplicación en la que estés — Slack Huddle, Meet, Zoom, Tuple — además de tu micrófono, y decodifica ambos flujos en este dispositivo.",
+  "meetingsCapturePermission": "Permiso concedido",
+  "meetingsCaptureOnDevice": "100 % en el dispositivo",
+  "meetingsCaptureNoBot": "Ningún bot se une",
+  "meetingsScopeAll": "Todas las reuniones",
+  "meetingsFilterAll": "Todas",
+  "meetingsFilterDone": "Completadas",
+  "meetingsFilterProcessing": "En proceso",
+  "meetingsSearchHint": "Filtrar por título, persona, aplicación…",
+  "meetingsBucketToday": "Hoy",
+  "meetingsBucketYesterday": "Ayer",
+  "meetingsBucketEarlierThisWeek": "Antes esta semana",
+  "meetingsBucketLastWeek": "La semana pasada",
+  "meetingsBucketOlder": "Más antiguas",
+  "meetingsDecisionsCount": "{count, plural, =1{1 decisión} other{{count} decisiones}}",
+  "meetingsActionItemsProgress": "{done} / {total} tareas",
+  "meetingsEnhancedPill": "mejorada",
+  "meetingsTranscribing": "transcribiendo y resumiendo…",
+  "meetingsOpenAction": "Abrir",
+  "meetingsStopProcessing": "Detener",
+  "meetingsStillTranscribing": "Aún transcribiendo — el resumen aparecerá cuando termine.",
+  "meetingsNoMatch": "Ninguna reunión coincide",
+  "meetingsNoMatchHint": "Prueba con otro filtro o término de búsqueda.",
+  "meetingBackAllMeetings": "Todas las reuniones",
+  "meetingPeopleCount": "{count, plural, =1{1 persona} other{{count} personas}}",
+  "meetingReRunSummary": "Rehacer resumen",
+  "meetingExport": "Exportar",
+  "meetingAugmentingBanner": "Mejorando tus notas a partir de la transcripción — extrayendo decisiones y tareas…",
+  "meetingTabNotes": "Notas",
+  "meetingTabTranscript": "Transcripción",
+  "meetingTabActionItems": "Tareas",
+  "meetingTabDecisions": "Decisiones",
+  "meetingNotesEnhancedToggle": "Mejoradas",
+  "meetingNotesYoursToggle": "Tus notas",
+  "meetingEnhancedByAgent": "Mejorado por el agente · a partir de la transcripción",
+  "meetingEnhancedPending": "El agente aún está trabajando en este resumen.",
+  "meetingNotesEmpty": "Aún no hay notas mejoradas.",
+  "meetingNotesSavedLocally": "Guardado localmente",
+  "meetingNotesSaving": "Guardando…",
+  "meetingViewFullTranscript": "Ver transcripción completa",
+  "meetingTranscriptSearchHint": "Buscar en la transcripción…",
+  "meetingSpeakerEveryone": "Todos",
+  "meetingSpeakerOthers": "Otros",
+  "meetingTranscriptEmpty": "Aún no hay transcripción.",
+  "meetingActionItemsEmpty": "No se extrajeron tareas.",
+  "meetingActionItemFrom": "de esta reunión",
+  "meetingCreateTicket": "Crear ticket",
+  "meetingTicketCreated": "Ticket {key} creado y enviado.",
+  "meetingTicketFailed": "No se pudo crear el ticket.",
+  "meetingDecisionsEmpty": "No hay decisiones registradas.",
+  "meetingReRunStarted": "Rehaciendo el resumen sobre la transcripción…",
+  "meetingReRunDone": "Resumen actualizado.",
+  "meetingReRunNoTranscript": "Todavía no hay transcripción para resumir.",
+  "meetingExportCopied": "Notas copiadas al portapapeles en Markdown.",
+  "meetingExportNothing": "Aún no hay nada que exportar.",
+  "meetingsRecordingCrumb": "Grabando…",
+  "meetingRecordTitleHint": "Título de la reunión",
+  "meetingRecordTappingLabel": "Captando:",
+  "meetingRecordMic": "Micrófono",
+  "meetingRecordSystemAudio": "Audio del sistema",
+  "meetingRecordPause": "Pausar",
+  "meetingRecordResume": "Reanudar",
+  "meetingRecordStop": "Detener y resumir",
+  "meetingRecordYourNotes": "Tus notas",
+  "meetingRecordNotesTagline": "anota lo justo — el agente completa el resto",
+  "meetingRecordNotesPlaceholder": "Escribe mientras escuchas. Unos pocos fragmentos bastan — tras detener, el agente los amplía con la transcripción.",
+  "meetingRecordLiveTranscript": "Transcripción en vivo",
+  "meetingRecordDecoding": "decodificando en el dispositivo",
+  "meetingRecordListening": "Escuchando… el habla aparecerá aquí en uno o dos segundos, etiquetada como Tú / Otros.",
+  "meetingRecordPausedHint": "En pausa — el audio se ignora hasta que reanudes.",
+  "meetingRecordNotActive": "No hay grabación activa.",
+  "meetingHudRecording": "grabando",
+  "meetingHudPaused": "en pausa",
+  "meetingHudOpen": "Abrir",
+  "meetingHudStop": "Detener"
+}

@@ -1,0 +1,81 @@
+PODS:
+  - desktop_multi_window (0.0.1):
+    - FlutterMacOS
+  - flutter_inappwebview_macos (0.0.1):
+    - FlutterMacOS
+    - OrderedSet (~> 6.0.3)
+  - flutter_pty (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+  - HotKey (0.2.1)
+  - hotkey_manager_macos (0.0.1):
+    - FlutterMacOS
+    - HotKey
+  - local_notifier (0.1.0):
+    - FlutterMacOS
+  - onnxruntime_v2 (0.0.1):
+    - FlutterMacOS
+  - OrderedSet (6.0.3)
+  - screen_retriever_macos (0.0.1):
+    - FlutterMacOS
+  - sherpa_onnx_macos (1.13.2):
+    - FlutterMacOS
+  - system_audio_capture (0.0.1):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - desktop_multi_window (from `Flutter/ephemeral/.symlinks/plugins/desktop_multi_window/macos`)
+  - flutter_inappwebview_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_inappwebview_macos/macos`)
+  - flutter_pty (from `Flutter/ephemeral/.symlinks/plugins/flutter_pty/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
+  - local_notifier (from `Flutter/ephemeral/.symlinks/plugins/local_notifier/macos`)
+  - onnxruntime_v2 (from `Flutter/ephemeral/.symlinks/plugins/onnxruntime_v2/macos`)
+  - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
+  - sherpa_onnx_macos (from `Flutter/ephemeral/.symlinks/plugins/sherpa_onnx_macos/macos`)
+  - system_audio_capture (from `Flutter/ephemeral/.symlinks/plugins/system_audio_capture/macos`)
+
+SPEC REPOS:
+  trunk:
+    - HotKey
+    - OrderedSet
+
+EXTERNAL SOURCES:
+  desktop_multi_window:
+    :path: Flutter/ephemeral/.symlinks/plugins/desktop_multi_window/macos
+  flutter_inappwebview_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_inappwebview_macos/macos
+  flutter_pty:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_pty/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  hotkey_manager_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
+  local_notifier:
+    :path: Flutter/ephemeral/.symlinks/plugins/local_notifier/macos
+  onnxruntime_v2:
+    :path: Flutter/ephemeral/.symlinks/plugins/onnxruntime_v2/macos
+  screen_retriever_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos
+  sherpa_onnx_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/sherpa_onnx_macos/macos
+  system_audio_capture:
+    :path: Flutter/ephemeral/.symlinks/plugins/system_audio_capture/macos
+
+SPEC CHECKSUMS:
+  desktop_multi_window: 566489c048b501134f9d7fb6a2354c60a9126486
+  flutter_inappwebview_macos: bdf207b8f4ebd58e86ae06cd96b147de99a67c9b
+  flutter_pty: 41b6f848ade294be726a6b94cdd4a67c3bc52f59
+  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  HotKey: 400beb7caa29054ea8d864c96f5ba7e5b4852277
+  hotkey_manager_macos: 1e2edb0c7ae4fe67108af44a9d3445de41404160
+  local_notifier: e9506bc66fc70311e8bc7291fb70f743c081e4ff
+  onnxruntime_v2: 6139ce3ad878306be6ceec6a9974891ab1d34658
+  OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
+  screen_retriever_macos: 776e0fa5d42c6163d2bf772d22478df4b302b161
+  sherpa_onnx_macos: 1272b4f725a73a6de453f9b47c98f78c937c2bd2
+  system_audio_capture: 9f3ed91aff276f8f4ca92391d1de61bd1d931b41
+
+PODFILE CHECKSUM: 89c84cf5c2351c1e554c6dea18d31a879fc3a19e
+
+COCOAPODS: 1.16.2

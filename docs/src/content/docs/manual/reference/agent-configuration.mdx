@@ -1,0 +1,95 @@
+---
+title: Agent configuration
+description: Complete reference for agent configuration fields and options.
+---
+
+This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/manual/guides/create-agent/).
+
+## Agent entity fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `name` | `String` | Yes | Short identifier for @-mentions |
+| `title` | `String` | No | Human-readable role title |
+| `role` | `AgentRole` | Yes | Agent role (see below) |
+| `persona` | `String` | No | Free-text behavioral instructions |
+| `systemPrompt` | `String` | No | Override the default system prompt |
+| `adapterId` | `String` | Yes | CLI backend identifier |
+| `modelId` | `String` | Yes | Model identifier within the adapter |
+| `skills` | `AgentSkills` | No | Set of skill identifiers |
+| `effort` | `AgentEffort` | No | Reasoning effort level |
+| `capabilities` | `AgentCapabilities` | No | Per-conversation capability flags |
+| `reportsTo` | `String?` | No | Parent agent ID |
+| `monthlyBudgetCents` | `int?` | No | Monthly spending cap |
+| `strictMode` | `bool` | No | Strict prompt adherence |
+| `contextSize` | `int?` | No | Max context window size |
+| `workspaceId` | `String` | Yes | Owning workspace (non-null) |
+| `agentMdPath` | `String?` | No | Path to the source AGENTS.md file |
+
+## AgentRole enum
+
+| Role | Label | Description |
+|---|---|---|
+| `ceo` | CEO | Coordination, hiring, delegation |
+| `coder` | Coder | Code implementation |
+| `reviewer` | Reviewer | PR review and analysis |
+| `qa` | QA | Testing and quality assurance |
+| `designer` | Designer | UI/UX implementation |
+| `security` | Security | Security review and auditing |
+| `devops` | DevOps | Infrastructure and deployment |
+| `pm` | PM | Product management |
+| `general` | General | Flexible, multi-purpose |
+
+## AgentEffort enum
+
+| Value | Description |
+|---|---|
+| `low` | Fast, less thorough |
+| `medium` | Balanced (default) |
+| `high` | Thorough, detailed |
+
+## AgentCapabilities flags
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `canPushToRepo` | `bool` | `true` | Push commits to remote |
+| `canUseGitHubApi` | `bool` | `true` | Call GitHub APIs |
+| `canUseTicketing` | `bool` | `true` | Create/update tickets |
+| `canEgressNetwork` | `bool` | `true` | Outbound network requests |
+
+## AgentSkills
+
+An immutable, case-insensitive set of skill identifiers. Skills are matched at prompt assembly time to inject relevant context.
+
+```
+{'flutter', 'dart', 'rest-api'}
+```
+
+## AgentLiveState (derived)
+
+Not stored — computed from the most recent `AgentRunLog`:
+
+| State | Condition |
+|---|---|
+| `neverRun` | No run logs exist |
+| `idle` | Last run completed |
+| `running` | Last run is active (process alive) |
+| `blocked` | Agent is waiting for input |
+| `failed` | Last run ended with an error |
+
+## DiscoveredAgent
+
+An agent definition found on disk (`AGENTS.md`) but not yet registered:
+
+| Field | Description |
+|---|---|
+| `name` | Agent name from the file |
+| `path` | Path to the AGENTS.md |
+| `role` | Parsed role |
+| `skills` | Parsed skills |
+
+## See also
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [The agent model](/manual/concepts/agent-model/)
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

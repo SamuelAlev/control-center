@@ -1,0 +1,136 @@
+name: control_center
+description: "Multi-Agent Developer Control Center"
+publish_to: "none"
+
+version: 0.0.1+1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+dependencies:
+  sentry_flutter: ^9.21.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+  # UI
+  forui: ^0.22.3
+  lucide_icons_flutter: ^3.1.14+2
+  flutter_markdown_plus: ^1.0.7
+  markdown: ^7.3.1
+  highlight: ^0.7.0
+  google_fonts: ^8.1.0
+  flutter_emoji: ^2.5.1
+  flutter_smooth_markdown: ^0.7.2
+
+  # Routing
+  go_router: ^17.3.0
+
+  # State Management
+  flutter_riverpod: ^3.3.1
+  # Database
+  drift: ^2.33.0
+  sqlite3_flutter_libs: ^0.6.0
+  sqlite3: ^3.3.2
+  path_provider: ^2.1.5
+  # Direct dep so we can subclass PathProviderPlatform for the font cache redirect
+  # (see core/storage/font_cache_path_provider.dart).
+  path_provider_platform_interface: ^2.1.2
+  path: ^1.9.1
+  uuid: ^4.5.3
+
+  # Network
+  dio: ^5.9.2
+  json_annotation: ^4.12.0
+
+  # Diff
+  diff_match_patch: ^0.4.1
+
+  # Charts
+  fl_chart: ^1.2.0
+
+  # YAML parsing (AGENTS.md/TEAM.md)
+  yaml: ^3.1.3
+
+  # Desktop
+  window_manager: ^0.5.1
+  desktop_multi_window: ^0.3.0
+  local_notifier: ^0.1.6
+  file_selector: ^1.1.0
+  hotkey_manager: ^0.2.3
+
+  # FFI (fff file finder bindings — see lib/core/infrastructure/file_search/fff_file_search.dart)
+  ffi: ^2.2.0
+
+  # Utils
+  logger: ^2.7.0
+  crypto: ^3.0.7
+  collection: ^1.19.1
+  pool: ^1.5.2
+  shared_preferences: ^2.5.5
+  flutter_secure_storage: ^10.3.1
+  url_launcher: ^6.3.2
+  archive: ^4.0.9
+  rss_dart: ^1.0.14
+  any_date: ^1.2.2
+  html: ^0.15.6
+  flutter_inappwebview: ^6.1.5
+  record: ^7.0.0
+  # Driver-free system-output (loopback) audio capture for meeting notes.
+  # Local plugin: Core Audio taps (macOS), WASAPI loopback (Windows),
+  # PipeWire/PulseAudio monitor (Linux).
+  system_audio_capture:
+    path: packages/system_audio_capture
+  sherpa_onnx: ^1.13.2
+  onnxruntime_v2: ^1.23.2+2
+  sqlite_vector: ^1.0.0
+  dart_wordpiece: ^1.2.0
+  video_player: ^2.11.1
+  audioplayers: ^6.7.1
+  chewie: ^1.14.1
+  flutter_svg: ^2.3.0
+
+  # Terminal emulator (xterm.dart) + host-side PTY
+  xterm: ^4.0.0
+  flutter_pty: ^0.4.2
+  flutter_flow_chart: ^4.1.1
+
+  meta: any
+  kalender: ^0.18.6
+dev_dependencies:
+  sentry_dart_plugin: ^3.4.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code Generation
+  build_runner: ^2.15.0
+  json_serializable: ^6.14.0
+  drift_dev: ^2.33.0
+  mockito: ^5.6.4
+
+  test: any
+  riverpod: any
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - google_fonts/
+    - assets/code_index/queries/
+    - assets/ide_logos/
+    - assets/logo.svg
+    - assets/sandbox/seccomp/
+    - assets/sounds/
+  shaders:
+    - assets/shaders/login_background_dark.frag
+    - assets/shaders/login_background_light.frag
+    - assets/shaders/dashboard_background_dark.frag
+    - assets/shaders/dashboard_background_light.frag
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  project: control-center
+  org: parced

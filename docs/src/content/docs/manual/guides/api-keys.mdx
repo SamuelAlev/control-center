@@ -1,0 +1,93 @@
+---
+title: Manage API keys
+description: Store and manage GitHub, Linear, and other API credentials securely.
+---
+
+This guide shows you how to manage API keys and credentials.
+
+## Where keys are stored
+
+All sensitive credentials are stored via `flutter_secure_storage`:
+
+| Platform | Storage |
+|---|---|
+| macOS | Keychain |
+| Windows | Credential Store |
+| Linux | libsecret |
+
+`shared_preferences` is used only for non-sensitive preferences (theme, font). API keys are never stored in plain files.
+
+## GitHub token
+
+### Add
+
+1. Navigate to **Settings → Integrations** (or during onboarding)
+2. Enter your GitHub personal access token
+3. Required scopes: `repo`, `read:org`
+4. Click **Verify** — Control Center validates the token
+5. On success, the token is stored in the keychain
+
+### Auto-detect `gh` CLI
+
+If the `gh` CLI is installed and authenticated:
+
+1. Control Center detects it automatically
+2. Reads the token from `gh`'s credential store
+3. No manual entry needed
+
+### Update
+
+1. Navigate to **Settings → Integrations**
+2. Click **Update** next to GitHub
+3. Enter the new token
+4. Verify and save
+
+### Remove
+
+1. Navigate to **Settings → Integrations**
+2. Click **Remove** next to GitHub
+3. The token is deleted from the keychain
+
+## Linear API key
+
+1. Navigate to **Settings → Integrations**
+2. Find Linear and click **Connect**
+3. Enter your Linear API key
+4. Verify and save
+
+## Model provider keys
+
+API keys for model providers (Anthropic, OpenAI, etc.) are managed by the adapter CLIs themselves, not by Control Center. Configure them in the CLI's configuration:
+
+```bash
+# Claude Code
+claude config set apiKey ...
+
+# OpenAI
+export OPENAI_API_KEY=...
+```
+
+## Security considerations
+
+- **Never commit tokens to Git** — Control Center stores them in the system keychain, not in files
+- **Use least-privilege tokens** — only request the scopes you need
+- **Rotate tokens regularly** — set expiration dates on GitHub PATs
+- **Revoke on compromise** — revoke tokens immediately if you suspect they've been exposed
+
+## Troubleshooting
+
+### Keychain access denied
+
+On macOS, ensure Control Center has keychain access. The app requests access on first use — grant it.
+
+### Token not working
+
+- Check if the token has expired
+- Verify the required scopes are present
+- Test manually: `curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user`
+
+## Related guides
+
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Set up Linear integration](/manual/guides/linear-integration/)
+- [Manage adapters and models](/manual/guides/adapters/)

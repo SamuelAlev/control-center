@@ -1,0 +1,81 @@
+---
+// Meetings & calendar — "Your day and your meetings, on the same deck."
+// A standalone feature band mirroring Tickets.astro: copy on the left, a single
+// "Today" panel on the right that tells the whole story — a calendar agenda with
+// a meeting starting soon (the record-and-link affordance), and the on-device
+// notes it produces (summary + action items). Tailwind v4 utilities wired to the
+// Control Center design system tokens. Reduced-motion is handled by the shared
+// .reveal observer in LandingScripts.astro.
+---
+
+<section id="meetings" class="py-[clamp(56px,9vw,80px)]">
+  <div class="wrap">
+    <div class="grid items-center gap-[clamp(28px,5vw,64px)] lg:grid-cols-[0.9fr_1.1fr]">
+      <div class="reveal from-left">
+        <span class="eyebrow">Meetings &amp; calendar</span>
+        <h2 class="mt-4 max-w-[18ch] text-[clamp(28px,3.8vw,48px)] leading-[1.0] tracking-[-0.03em]">Your day and your meetings, on the same deck.</h2>
+        <p class="mt-[18px] max-w-[42ch] text-muted">Record a call and the deck transcribes it on-device, separates the speakers, and writes the summary, decisions, and action items. Connect Google Calendar to see your day and turn any event into a recorded, summarized meeting.</p>
+        <ul class="mt-[22px] flex list-none flex-col gap-3 p-0">
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>On-device transcription and speaker diarization, then an AI summary with action items and decisions.</li>
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Local and private: audio and transcripts never leave your machine.</li>
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Google Calendar in month, week, and agenda views, with RSVP to invitations.</li>
+          <li class="flex items-start gap-[11px] text-[15px]"><svg class="mt-[2px] h-4 w-4 shrink-0 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>A heads-up before each meeting, and record-and-link straight from a calendar event.</li>
+        </ul>
+      </div>
+
+      <div class="reveal from-right overflow-hidden rounded-lg border border-border bg-panel shadow-soft">
+        <div class="flex items-center gap-[10px] border-b border-border px-[15px] py-3">
+          <svg class="h-[14px] w-[14px] shrink-0 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1"/><path d="M2.5 6.5h11M5.5 2.5v2.4M10.5 2.5v2.4"/></svg>
+          <span class="text-[12.5px]">Today</span>
+          <span class="mono ml-auto text-[11px] text-muted">Thu &middot; Jun 12</span>
+        </div>
+
+        <!-- agenda -->
+        <div class="px-4 pt-[12px] pb-[6px]">
+          <div class="flex flex-wrap items-center gap-x-[10px] gap-y-2 py-[9px]">
+            <span class="mono text-[11px] tabular-nums text-muted">10:00</span>
+            <span class="min-w-0 text-sm tracking-[-0.01em]">Weekly sync</span>
+            <span class="ml-auto inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-warn/40 bg-warn-soft px-[9px] py-[3px] font-mono text-[10px] uppercase tracking-[0.06em] text-[color-mix(in_oklab,var(--color-warn),var(--color-fg)_30%)]">
+              <svg class="h-[10px] w-[10px] shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="6" cy="6" r="4.3"/><path d="M6 3.8V6l1.7 1"/></svg>Starts in 8m
+            </span>
+            <span class="inline-flex items-center gap-[6px] whitespace-nowrap rounded-sm border border-border bg-surface px-[8px] py-[3px] font-mono text-[10px] uppercase tracking-[0.06em] text-muted">
+              <span class="h-[7px] w-[7px] rounded-full bg-accent" aria-hidden="true"></span>Record &amp; link
+            </span>
+          </div>
+          <div class="flex items-center gap-[10px] border-t border-border-soft py-[9px]">
+            <span class="mono text-[11px] tabular-nums text-muted">13:30</span>
+            <span class="min-w-0 text-sm tracking-[-0.01em] text-muted">1:1 with Paul</span>
+            <span class="mono ml-auto text-[10px] uppercase tracking-[0.06em] text-idle">Meet</span>
+          </div>
+        </div>
+
+        <!-- notes the recording produced -->
+        <div class="border-t border-border-soft bg-rail px-4 pt-[14px] pb-4">
+          <div class="flex items-center gap-[10px]">
+            <span class="mono text-[11px] text-muted">Weekly sync &middot; notes</span>
+            <span class="ml-auto inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-success/30 bg-success-soft px-[9px] py-[3px] font-mono text-[10px] uppercase tracking-[0.06em] text-success">
+              <svg class="h-[10px] w-[10px] shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 6.5 5 9l4.5-5.5"/></svg>Summarized
+            </span>
+          </div>
+          <div class="mt-[12px] flex flex-col gap-[9px]">
+            <div class="flex items-center gap-[9px] text-[12.5px]">
+              <svg class="h-[14px] w-[14px] shrink-0 text-success" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.6" y="1.6" width="10.8" height="10.8" rx="1.6"/><path d="M4 7l2 2 4-4.4"/></svg>
+              <span class="min-w-0 truncate text-muted line-through">Ship the broker behind a capability flag</span>
+              <span class="mono ml-auto text-[11px] text-muted">Sam</span>
+            </div>
+            <div class="flex items-center gap-[9px] text-[12.5px]">
+              <svg class="h-[14px] w-[14px] shrink-0 text-idle" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.6" y="1.6" width="10.8" height="10.8" rx="1.6"/></svg>
+              <span class="min-w-0 truncate">Re-test the retry map before merge</span>
+              <span class="mono ml-auto text-[11px] text-muted">Paul</span>
+            </div>
+          </div>
+          <div class="mt-[14px] flex items-center gap-[9px] border-t border-border-soft pt-[14px] text-[12.5px]">
+            <svg class="h-[14px] w-[14px] shrink-0 text-accent" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="7" width="10" height="6.5" rx="1"/><path d="M5.5 7V5.2a2.5 2.5 0 015 0V7"/></svg>
+            <span>On-device</span>
+            <span class="mono ml-auto text-muted">2 action items &middot; 1 decision</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

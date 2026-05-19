@@ -1,0 +1,69 @@
+---
+title: Install
+description: System requirements, download links, and setup verification for Control Center.
+---
+
+## System requirements
+
+| Requirement | macOS | Windows | Linux |
+|---|---|---|---|
+| OS version | macOS 12+ (Monterey) | Windows 10+ | A modern distro with a graphical environment |
+| Architecture | Apple Silicon (arm64) and Intel (x86_64) | x86_64 | x86_64 |
+| Disk space | ~200 MB for the app + space for worktrees | ~200 MB | ~200 MB |
+| Git | Required | Required | Required |
+
+## Download
+
+Download the latest release from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases).
+
+- **macOS**: Download the `.dmg`, open it, and drag Control Center to Applications. These builds aren't signed with a paid Apple Developer certificate, so on first launch **right-click the app → Open** (or **System Settings → Privacy & Security → Open Anyway**).
+- **Windows**: Download the `.exe` installer and run it. Windows may show a SmartScreen warning for unsigned builds — click **More info** then **Run anyway**.
+- **Linux**: Download the AppImage, make it executable (`chmod +x`), and run it — or extract the `.tar.gz` bundle.
+
+On macOS, if Gatekeeper reports that Control Center is **"damaged and can't be opened"**, that's the quarantine flag macOS adds to apps downloaded outside the App Store — not actual damage. Clear it, then reopen:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Control Center.app"
+```
+
+## Agent CLI setup
+
+Control Center dispatches agents through CLI backends. Install at least one:
+
+- **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
+- **Codex CLI** (`codex`): `npm install -g @openai/codex`
+- **Pi** (`pi`): Install per the Pi documentation
+
+Control Center auto-detects installed CLIs in your `PATH`. You can also register custom adapters in **Settings → Adapters**.
+
+## GitHub authentication
+
+Control Center needs a GitHub personal access token (PAT) with these scopes:
+
+- `repo` — full repository access
+- `read:org` — organization membership
+
+Create one at [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+
+If you have the `gh` CLI installed and authenticated (`gh auth login`), Control Center detects and uses it automatically.
+
+## Verify your setup
+
+After launching Control Center:
+
+1. The onboarding flow walks you through GitHub auth and workspace creation.
+2. Open **Settings → Adapters** to verify your agent CLIs were detected.
+3. Open **Settings → Repositories** to add your first repo.
+4. Run **Agent doctor** from any agent's context menu to diagnose environment issues.
+
+## Building from source
+
+```bash
+git clone https://github.com/SamuelAlev/control-center.git
+cd control-center
+flutter pub get
+flutter pub run build_runner build --delete-conflicting-outputs
+flutter run -d macos  # or -d windows, -d linux
+```
+
+Requires [Flutter 3.x](https://flutter.dev) with desktop support enabled.

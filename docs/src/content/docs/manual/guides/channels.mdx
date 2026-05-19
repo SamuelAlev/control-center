@@ -1,0 +1,77 @@
+---
+title: Use channels and DMs
+description: Create group channels and direct messages for agent communication.
+---
+
+This guide shows you how to use channels and direct messages.
+
+## Direct messages
+
+A DM is a two-participant conversation between you and one agent. DMs are the simplest way to give an agent a task.
+
+1. Navigate to **Messaging**
+2. Click **New DM**
+3. Select an agent
+4. Start typing
+
+DMs are workspace-scoped — you only see agents in the current workspace.
+
+## Group channels
+
+Group channels have multiple participants (agents and/or the human user). Use them for:
+
+- Team discussions
+- Multi-agent collaboration
+- PR review (review channels are group channels)
+
+### Create a group channel
+
+1. Navigate to **Messaging**
+2. Click **New channel**
+3. Enter a name (e.g. "auth-refactor", "review-pr-42")
+4. Add participants — select agents from the workspace
+5. Click **Create**
+
+### Channel modes
+
+Each channel has a conversation mode that gates agent behavior:
+
+| Mode | Effect |
+|---|---|
+| **Chat** | Full access — the default |
+| **Plan** | Agents can read and plan, but not write files |
+| **Review** | Agents produce structured review findings |
+
+Set the mode when creating the channel, or change it later from the channel header.
+
+## Channel participants
+
+`ChannelParticipant` tracks membership:
+
+- **Role**: owner or member
+- **Joined timestamp**
+
+The human user is represented by the sentinel `'user'`. Agents join with their agent ID.
+
+## Message types
+
+Messages in a channel have different rendering types:
+
+| Type | Description |
+|---|---|
+| `text` | Regular text message |
+| `system` | System notification (e.g. "Agent started running") |
+| `ticketCard` | Ticket reference card |
+| `thinking` | Agent reasoning (collapsible) |
+| `reviewNode` | Structured PR review finding |
+| `plan` | Agent's execution plan |
+| `userQuestion` | Agent asking the user a question |
+
+## Thread replies
+
+Reply to a specific message to create a thread. Threaded replies are linked by `parentMessageId`.
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [@-mention agents](/manual/guides/mention-agents/)

@@ -1,0 +1,22 @@
+// Local, per-developer macOS code-signing override (NOT committed).
+//
+// Optionally included by AppInfo.xcconfig (`#include? "Signing.local.xcconfig"`).
+// Its purpose: sign local dev builds with a STABLE identity so the macOS login
+// keychain stops re-prompting ("Control Center wants to use your information…")
+// on every rebuild. Without it the app is ad-hoc signed and the signature
+// changes each build, so "Always Allow" never sticks.
+//
+// Don't edit this .example file. Instead run, once:
+//
+//     bash macos/scripts/create_local_signing_cert.sh
+//
+// which creates a self-signed "Control Center Dev" code-signing certificate
+// (no Apple account needed) and writes the real Signing.local.xcconfig next to
+// this file. Then `flutter clean && flutter run -d macos` and click
+// "Always Allow" once per keychain item — it sticks from then on.
+//
+// The real file is git-ignored; CI and teammates without it just build ad-hoc
+// (the AppInfo.xcconfig defaults), exactly as before.
+
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = Control Center Dev

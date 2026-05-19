@@ -1,0 +1,96 @@
+---
+title: Memory and knowledge
+description: How Control Center stores, retrieves, and governs agent knowledge.
+---
+
+## What is memory?
+
+Memory is the workspace-scoped knowledge store that gives agents persistent context across runs. Without memory, every agent conversation starts from zero — the agent doesn't remember conventions, decisions, or past work.
+
+Memory in Control Center has three layers:
+
+1. **Facts** — semantic knowledge units
+2. **Policies** — normative rules derived from facts
+3. **Working memory** — per-agent transient scratchpads
+
+## Facts
+
+A `MemoryFact` is a semantic knowledge unit scoped to a workspace. Facts carry:
+
+| Attribute | Description |
+|---|---|
+| `domain` | The knowledge domain (e.g. "conventions", "api-design", "security") |
+| `topic` | A short topic label |
+| `content` | The knowledge text |
+| `confidence` | Confidence score (0.0–1.0) |
+| `sourceObservationIds` | Which observations led to this fact |
+| `supersededBy` | If this fact was replaced by a newer one |
+
+Facts can be superseded — when an agent learns new information that contradicts an existing fact, the old fact is marked as superseded by the new one. This preserves the audit trail.
+
+### Embeddings and search
+
+Facts are embedded using a local embedding model (384-dimensional vectors via `sqlite_vector`). Search uses a hybrid approach:
+
+- **Vector search** — cosine similarity between the query embedding and fact embeddings
+- **FTS search** — full-text search via FTS5
+- **Hybrid** — Reciprocal Rank Fusion (RRF) combining both
+
+The system degrades gracefully to FTS-only when the vector extension is unavailable.
+
+## Policies
+
+A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace and domain. Policies:
+
+- Have a `rule` (the normative statement)
+- Are derived from source facts (`sourceFactIds`)
+- Can be gated to a required role (e.g. only the "security" role can write to the "security" domain)
+- Can be active or inactive
+
+Policies are injected into agent prompts when relevant, giving agents workspace-specific behavioral constraints.
+
+## Domains
+
+A `MemoryDomain` groups facts and policies within a workspace (e.g. "security", "conventions", "api-design"). Domains provide:
+
+- Organizational structure for knowledge
+- Access control boundaries — grants are per-domain
+- Creation tracking — who created the domain
+
+## Access control
+
+`MemoryAccessGrant` controls which agent roles can read or write to which domains:
+
+| Permission | Description |
+|---|---|
+| `none` | No access |
+| `read` | Can search and retrieve facts |
+| `write` | Can create, update, and supersede facts and policies |
+
+The `MemoryAccessPolicy` service enforces these grants at runtime, throwing on write denial.
+
+## Working memory
+
+Each agent has an `AgentWorkingMemory` — a free-text scratchpad scoped to `(workspaceId, agentId)`. Working memory:
+
+- Persists across runs
+- Is private to the agent
+- Holds transient state the agent wants to remember (e.g. "I was in the middle of refactoring the auth module")
+- Is injected into the agent's prompt at dispatch time
+
+## Memory in the dispatch flow
+
+When an agent is dispatched, `BuildMemoryContextUseCase`:
+
+1. Retrieves the agent's working memory
+2. Searches for relevant facts based on the conversation context
+3. Resolves the agent's access grants
+4. Assembles the memory context into the prompt
+
+This happens automatically — the agent doesn't need to explicitly request memory.
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/) — roles determine memory access
+- [Workspaces and isolation](/manual/concepts/workspaces/) — memory is workspace-scoped
+- [Manage workspace memory](/manual/guides/manage-memory/) — practical memory management

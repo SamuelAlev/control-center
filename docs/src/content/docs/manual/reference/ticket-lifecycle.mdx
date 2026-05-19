@@ -1,0 +1,113 @@
+---
+title: Ticket lifecycle
+description: Ticket status transitions, events, and the workflow engine.
+---
+
+## Ticket statuses
+
+| Status | Description |
+|---|---|
+| `open` | Created, not yet started |
+| `in_progress` | An agent is working on it |
+| `blocked` | Waiting on a dependency or user input |
+| `done` | Completed successfully |
+| `failed` | The agent failed to complete the work |
+| `cancelled` | Cancelled by the user or system |
+
+## Status transitions
+
+```
+open ──→ in_progress ──→ done
+  │           │         │
+  │           ├──→ failed
+  │           ├──→ cancelled
+  │           └──→ blocked ──→ in_progress
+  │
+  └──→ cancelled
+```
+
+Valid transitions:
+
+| From | To | Trigger |
+|---|---|---|
+| `open` | `in_progress` | Agent dispatched via `TicketDispatcher` |
+| `open` | `cancelled` | User cancels |
+| `in_progress` | `done` | Agent completes with valid output |
+| `in_progress` | `failed` | Agent fails or output validation fails |
+| `in_progress` | `cancelled` | User cancels |
+| `in_progress` | `blocked` | Agent reports a blocker |
+| `blocked` | `in_progress` | Blocker resolved |
+| `blocked` | `cancelled` | User cancels |
+
+## Ticket providers
+
+| Provider | Description |
+|---|---|
+| `local` | Control Center only — no external sync |
+| `linear` | Synced bidirectionally with Linear |
+
+## Ticket fields
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `String` | UUID primary key |
+| `workspaceId` | `String` | Owning workspace |
+| `title` | `String` | Short summary |
+| `description` | `String?` | Detailed Markdown description |
+| `status` | `TicketStatus` | Current lifecycle state |
+| `priority` | `TicketPriority` | Priority level |
+| `provider` | `TicketProvider` | local or linear |
+| `externalKey` | `String?` | ID in the external provider |
+| `url` | `String?` | URL to the external issue |
+| `assignedAgentId` | `String?` | Assigned agent |
+| `assignedTeamId` | `String?` | Assigned team |
+| `delegatedByAgentId` | `String?` | Which agent delegated this |
+| `channelId` | `String?` | Conversation channel |
+| `mode` | `ConversationMode` | Dispatch conversation mode |
+| `pipelineRunId` | `String?` | Pipeline that created this |
+| `projectId` | `String?` | Project grouping |
+| `parentTicketId` | `String?` | Parent ticket for hierarchy |
+| `expectedOutputSchema` | `String?` | JSON Schema for output validation |
+| `outputJson` | `String?` | Actual output when done |
+| `errorMessage` | `String?` | Error if failed |
+| `executionLockedAt` | `DateTime?` | Optimistic concurrency lock |
+
+## Domain events
+
+| Event | Fired when |
+|---|---|
+| `TicketCreated` | Ticket is created |
+| `TicketAssigned` | Ticket is assigned to an agent |
+| `TicketStarted` | Agent begins work |
+| `TicketCompleted` | Work finishes successfully |
+| `TicketFailed` | Agent fails |
+| `TicketCancelled` | Ticket is cancelled |
+| `TicketStatusChanged` | Any status change |
+| `TicketReassigned` | Ticket reassigned to another agent |
+| `TicketDelegated` | Agent delegates to another agent |
+| `TicketCollaboratorAdded` | Collaborator joins |
+| `TicketDetailsUpdated` | Metadata changes |
+
+## Ticket links
+
+| Link type | Description |
+|---|---|
+| `blocks` | Source blocks target |
+| `relatesTo` | Related tickets |
+| `duplicateOf` | Source is a duplicate of target |
+
+## Workflow engine
+
+`TicketWorkflowService` manages all mutations:
+
+- **Optimistic concurrency** via `version` field and `executionLockedAt`
+- **Workspace isolation** — every mutation validates `workspaceId` ownership
+- **Single chokepoint** — all mutations go through `_mutate` which validates scope
+
+`TicketDispatcher` handles the assigned→dispatch flow:
+
+1. Listens for `TicketAssigned` events
+2. Runs readiness check (agent available, workspace ready)
+3. Ensures a conversation channel exists
+4. Transitions `open` → `in_progress`
+5. Dispatches the agent once

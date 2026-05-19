@@ -1,0 +1,14 @@
+---
+/**
+ * Starlight `ThemeSelect` override.
+ *
+ * Replaces Starlight's default <select> with the marketing site's shared
+ * system / light / dark chooser, so the docs header matches the brand and
+ * both surfaces share one control. It writes the same localStorage key
+ * (`starlight-theme`) that Starlight's ThemeProvider reads before paint, so
+ * no-flash theming keeps working. Dark tokens live in src/styles/starlight.css.
+ */
+import ThemeToggle from '../shared/ThemeToggle.astro';
+---
+
+<ThemeToggle />

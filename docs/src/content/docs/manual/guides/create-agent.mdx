@@ -1,0 +1,107 @@
+---
+title: Create and configure an agent
+description: Hire a new agent, set its role, skills, and model, and get it running.
+---
+
+This guide shows you how to hire and configure an agent in your workspace.
+
+## Hire an agent
+
+1. Navigate to **Agents** in the sidebar
+2. Click **Hire agent**
+3. Choose a **role** — see roles below
+4. Fill in the configuration fields
+5. Click **Hire**
+
+Alternatively, ask your CEO agent to hire one: `@ceo hire a coder named alice`.
+
+## Choose a role
+
+| Role | Best for |
+|---|---|
+| CEO | Coordination, hiring, delegation |
+| Coder | Writing and modifying code |
+| Reviewer | Reviewing pull requests |
+| QA | Testing and quality assurance |
+| Designer | UI/UX implementation |
+| Security | Security review and auditing |
+| DevOps | Infrastructure and deployment |
+| PM | Product management, planning |
+| General | Flexible, multi-purpose |
+
+The role determines the default persona, memory access grants, and reporting hierarchy.
+
+## Configure the agent
+
+### Name and title
+
+- **Name**: a short identifier used in @-mentions (e.g. "alice", "reviewer-bot")
+- **Title**: a human-readable label (e.g. "Senior coder", "Security reviewer")
+
+### Adapter and model
+
+- **Adapter**: the CLI backend (Claude Code, Codex, Pi) — Control Center auto-detects installed CLIs
+- **Model**: the specific model within the adapter (e.g. Claude Sonnet, GPT-4o)
+
+If your adapter isn't detected, register it manually in **Settings → Adapters**.
+
+### Skills
+
+Skills are free-form identifiers that inject relevant context into the agent's prompt. Add skills that match your project's technology stack:
+
+- `flutter`, `dart` — Flutter/Dart conventions
+- `rest-api` — REST API patterns
+- `typescript`, `react` — TypeScript/React conventions
+
+Skills are case-insensitive.
+
+### Effort
+
+Controls reasoning effort:
+
+- **Low**: fast responses, less thorough — good for simple tasks
+- **Medium**: balanced — good for typical work
+- **High**: thorough, detailed — good for complex tasks
+
+### Persona
+
+The persona is free-text that shapes the agent's behavior. Write in natural language:
+
+```
+You are a senior Flutter developer who prefers simple, readable solutions.
+Avoid over-engineering. Write tests for all new code.
+```
+
+### Capabilities
+
+Capability flags control what the agent can access:
+
+- **Push to repo**: allow pushing commits
+- **GitHub API**: allow GitHub API calls
+- **Ticketing**: allow ticket creation and updates
+- **Network egress**: allow outbound network requests
+
+Disable capabilities you don't need to minimize the agent's attack surface.
+
+### Budget
+
+Set a monthly budget (in cents) to cap the agent's spending. When the budget is exceeded, the agent is blocked from dispatching until the next month.
+
+## Import from disk
+
+Control Center scans for `AGENTS.md` files that define agent configurations. If found, agents appear as **discovered** in the registry and can be imported with one click.
+
+## Verify the setup
+
+After hiring, run **Agent doctor** from the agent's context menu to verify:
+
+- The adapter CLI is installed and accessible
+- The model is available
+- The sandbox backend is working
+- Network connectivity is fine
+
+## Related guides
+
+- [Run agents in parallel](/manual/guides/parallel-agents/)
+- [Build an agent team](/manual/guides/build-team/)
+- [Agent configuration reference](/manual/reference/agent-configuration/)

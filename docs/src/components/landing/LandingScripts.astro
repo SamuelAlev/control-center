@@ -1,0 +1,108 @@
+---
+/**
+ * Landing-page client behavior: capability tabs, OS install tabs, copy-to-clipboard,
+ * reveal-on-scroll, and offset-aware smooth anchors. (Sticky-nav scroll state is owned
+ * by MarketingNav.) Reduced-motion safe.
+ */
+---
+
+<script>
+  (function () {
+    "use strict";
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var nav = document.getElementById("nav");
+    var navH = nav ? nav.offsetHeight : 64;
+
+    /* roving-tablist helper shared by the capability tabs and the OS tabs.
+       Implements the WAI-ARIA tabs pattern: only the selected tab is in the
+       tab order (tabindex 0), the rest are -1, and Arrow/Home/End move focus. */
+    function wireTabs(selector) {
+      var tabs = Array.prototype.slice.call(document.querySelectorAll(selector));
+      if (!tabs.length) return;
+      function activate(tab) {
+        tabs.forEach(function (t) {
+          var on = t === tab;
+          t.setAttribute("aria-selected", on ? "true" : "false");
+          t.tabIndex = on ? 0 : -1;
+          var panel = document.getElementById(t.getAttribute("aria-controls"));
+          if (panel) panel.setAttribute("data-active", on ? "true" : "false");
+        });
+      }
+      tabs.forEach(function (t, i) {
+        t.addEventListener("click", function () { activate(t); });
+        t.addEventListener("keydown", function (e) {
+          var next;
+          if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+          else if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+          else if (e.key === "Home") next = 0;
+          else if (e.key === "End") next = tabs.length - 1;
+          else return;
+          e.preventDefault();
+          tabs[next].focus();
+          activate(tabs[next]);
+        });
+      });
+      /* Seed the roving tabindex from the server-rendered selected tab. */
+      var selected = tabs.filter(function (t) {
+        return t.getAttribute("aria-selected") === "true";
+      })[0] || tabs[0];
+      tabs.forEach(function (t) { t.tabIndex = t === selected ? 0 : -1; });
+    }
+    wireTabs(".tab");
+    wireTabs(".os-tab");
+
+    /* smooth in-page anchors — manual scrollTo with sticky-nav offset */
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        var id = a.getAttribute("href");
+        if (id === "#" || id === "#top") {
+          e.preventDefault();
+          window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+          return;
+        }
+        var target = document.querySelector(id);
+        if (!target) return;
+        e.preventDefault();
+        var y = target.getBoundingClientRect().top + window.scrollY - navH - 12;
+        window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
+      });
+    });
+
+    /* reveal on scroll */
+    var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+    if (reduce || !("IntersectionObserver" in window)) {
+      reveals.forEach(function (el) { el.classList.add("in"); });
+    } else {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); }
+        });
+      }, { threshold: 0.12, rootMargin: "0px 0px -8% 0px" });
+      reveals.forEach(function (el) { io.observe(el); });
+    }
+
+    /* install — copy command to clipboard */
+    Array.prototype.slice.call(document.querySelectorAll(".copy-btn")).forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (btn.disabled) return;
+        var text = btn.getAttribute("data-copy") || "";
+        var label = btn.querySelector(".copy-label");
+        var flash = function () {
+          btn.classList.add("copied");
+          if (label) label.textContent = "Copied";
+          window.setTimeout(function () {
+            btn.classList.remove("copied");
+            if (label) label.textContent = "Copy";
+          }, 1600);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, flash);
+        } else {
+          flash();
+        }
+      });
+    });
+
+    window.addEventListener("resize", function () { navH = nav ? nav.offsetHeight : 64; }, { passive: true });
+  })();
+</script>

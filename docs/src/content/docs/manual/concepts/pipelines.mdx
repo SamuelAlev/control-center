@@ -1,0 +1,98 @@
+---
+title: Pipelines and automation
+description: How DAG-based pipelines orchestrate multi-step agent workflows.
+---
+
+## What are pipelines?
+
+Pipelines are DAG-based workflows that chain steps together to automate multi-agent tasks. A pipeline can dispatch agents, run scripts, route conditionally, and pass data between steps.
+
+Pipelines serve three purposes:
+
+1. **Automation** — chain repetitive multi-step processes
+2. **Coordination** — orchestrate multiple agents in sequence or parallel
+3. **Event-driven workflows** — trigger automatically on domain events or schedules
+
+## Templates and runs
+
+- **Templates** (`PipelineDefinition`) — the declarative DAG. Defines steps, inputs, triggers, and configuration. Lives in the database, scoped to a workspace.
+- **Runs** (`PipelineRun`) — a single execution of a template. Has a mutable state bag, cost/token totals, and status tracking.
+
+A template can have many runs. Runs are resumable — if the app restarts mid-run, the pipeline engine resumes in-flight runs.
+
+## Step kinds
+
+Each step in the DAG has a kind that determines what it does:
+
+| Kind | Description |
+|---|---|
+| `trigger` | Entry point for the pipeline |
+| `promptAgent` | Dispatch an agent with a prompt |
+| `bashScript` | Run a shell script |
+| `dispatchReviewers` | Fan out PR review to reviewer agents |
+| `router` / `conditional` | Route to different downstream steps based on a condition |
+| `join` | Wait for multiple upstream steps to complete |
+| `subPipeline` | Execute another pipeline template as a step |
+
+See [Pipeline step kinds](/manual/reference/pipeline-steps/) for full details.
+
+## Step configuration
+
+Each step carries a `PipelineNodeConfig` with:
+
+- **Prompt/script/agent/team** — what to execute
+- **Input and output keys** — how data flows between steps
+- **Output schema** — JSON Schema for validating step output
+- **Reducer** — how to merge outputs from parallel branches
+- **Retry policy** — max attempts, backoff strategy, initial delay
+- **Continue-on-fail** — whether downstream steps proceed on failure
+- **Timeout** — wall-clock timeout for the step
+- **Dispatch mode** — conversation mode for agent steps
+
+## State and data flow
+
+Steps communicate through a shared state bag on the run:
+
+1. A step reads inputs from the state (keyed by upstream step output keys)
+2. Executes its logic
+3. Writes its output to the state
+
+The `StateReducer` handles concurrent writes from parallel steps. The `TemplateRenderer` substitutes `{{...}}` placeholders in prompts and scripts with values from the state.
+
+## Triggers
+
+`PipelineTrigger` declares when a pipeline should auto-start:
+
+| Trigger type | Description |
+|---|---|
+| **Domain event** | Start on a specific event (e.g. `PullRequestPublished`, `TicketAssigned`) |
+| **Schedule** | Start on a cron schedule |
+| **Manual** | Started by the user from the UI or MCP |
+
+Triggers are default-off and must be enabled explicitly. They can include a payload match filter to scope when they fire.
+
+## The pipeline engine
+
+`PipelineEngine` is the `PipelineEnginePort` implementation that orchestrates runs:
+
+1. Creates a `PipelineRun` record
+2. Schedules the trigger step
+3. As steps complete, schedules downstream steps based on the DAG
+4. Handles routers (conditional branching) and joins (parallel merge)
+5. Manages retry policies and continue-on-fail behavior
+6. Persists state, costs, and errors at each step
+7. Resumes in-flight runs after app restart
+
+The engine is decoupled from the concrete ticketing and dispatch services via ports (`TicketWorkflowPort`, `AgentDispatchPort`, `DispatchReviewersPort`).
+
+## Error handling
+
+- **Step failure**: the step's status moves to `failed`, error message is recorded. If `continue-on-fail` is set, downstream steps proceed.
+- **Run failure**: if a critical step fails and no continue-on-fail is set, the entire run fails.
+- **Retry**: steps with a retry policy are automatically retried with configurable backoff.
+
+## Related concepts
+
+- [Tickets and delegation](/manual/concepts/tickets/) — pipelines often create and manage tickets
+- [Domain events](/manual/concepts/domain-events/) — events that trigger pipelines
+- [Build your first pipeline](/manual/tutorials/first-pipeline/) — hands-on tutorial

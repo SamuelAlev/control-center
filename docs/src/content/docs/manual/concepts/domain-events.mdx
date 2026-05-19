@@ -1,0 +1,112 @@
+---
+title: Domain events
+description: How Control Center uses domain events for cross-feature communication.
+---
+
+## What are domain events?
+
+Domain events are the decoupling mechanism that lets features communicate without direct dependencies. Instead of feature A calling feature B directly, feature A publishes an event, and feature B subscribes to it.
+
+The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Features call `publish(event)` to emit events; subscribers consume a typed `on<T>()` stream.
+
+Every event implements `DomainEvent` and exposes `occurredAt`.
+
+## Why events?
+
+Without events, cross-feature communication requires direct imports. The dashboard would need to import the agents feature, the pipelines feature, and so on — creating a tangled dependency graph.
+
+Events break this coupling. The dashboard subscribes to events from multiple features without importing any of them. Similarly, the notification system maps events to desktop notifications without knowing about any specific feature.
+
+## Event categories
+
+### Workspace, agent, and repo events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `WorkspaceCreated` | Workspace is created | CEO agent seeder |
+| `AgentRunCompleted` | An agent finishes a run | Analytics, notifications, cost tracking, budget enforcement |
+| `RepoAdded` | A repo is registered | Background code indexing |
+
+### PR and review events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `PullRequestPublished` | An agent opens a PR | Notifications |
+| `PullRequestStatusChanged` | PR merged/closed/opened/reopened | Pipeline triggers |
+| `PrMerged` | PR is merged | Analytics, notifications |
+| `ExternalPrDetected` | Non-agent PR found via polling | Dashboard |
+
+### Messaging events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `MessageReceived` | A new message arrives | Desktop notifications |
+| `ConversationDeleted` | A conversation is deleted | Worktree garbage collection |
+
+### Ticketing events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `TicketCreated` | A ticket is created | Notifications |
+| `TicketAssigned` | A ticket is assigned to an agent | Ticket dispatcher |
+| `TicketStarted` | Work begins on a ticket | Analytics |
+| `TicketCompleted` | A ticket is done | Pipeline triggers, analytics |
+| `TicketFailed` | A ticket's work failed | Notifications |
+| `TicketCancelled` | A ticket is cancelled | Cleanup |
+| `TicketStatusChanged` | Any ticket state change | Audit trail |
+| `TicketReassigned` | Ticket reassigned to another agent | Ticket dispatcher |
+| `TicketDelegated` | Ticket delegated by an agent | Notifications |
+| `TicketCollaboratorAdded` | A collaborator joins a ticket | Notifications |
+| `TicketDetailsUpdated` | Ticket metadata changes | External sync |
+
+### Pipeline events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `PipelineRunStarted` | A pipeline run begins | Notifications |
+| `PipelineStepStarted` | A step begins | Run tracking |
+| `PipelineStepCompleted` | A step finishes | Run tracking |
+| `PipelineStepFailed` | A step fails | Notifications |
+| `PipelineRunCompleted` | A run finishes | Analytics, notifications |
+| `PipelineRunFailed` | A run fails | Notifications |
+
+### Observability events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `ActivityLogged` | An audit trail entry is created | Activity feed |
+| `WorktreeMerged` | A worktree merge completes | Cleanup |
+| `BudgetThresholdCrossed` | Spend exceeds a threshold | Notifications |
+
+### Analytics events
+
+| Event | Trigger | Consumers |
+|---|---|---|
+| `AchievementUnlocked` | An agent earns a badge | Notifications |
+
+## Pipeline triggers
+
+Pipeline triggers subscribe to domain events and auto-start matching pipelines. The `PipelineTriggerDispatcher`:
+
+1. Subscribes to all event types
+2. For each event, checks enabled triggers that match the event type
+3. Applies the trigger's payload match filter
+4. Starts a pipeline run for each matching trigger
+
+This is how you get event-driven workflows — a `PullRequestPublished` event can trigger a review pipeline, a `TicketAssigned` event can trigger a dispatch pipeline, etc.
+
+## Event wiring
+
+Events are wired in `main.dart`:
+
+- `ceoAgentSeedProvider` listens for `WorkspaceCreated` to seed the CEO agent
+- `NotificationEventMapper` subscribes to events and produces desktop notifications
+- `PipelineTriggerDispatcher` subscribes to events for auto-starting pipelines
+- Various reconcilers listen for events at startup
+
+## Related concepts
+
+- [Pipelines and automation](/manual/concepts/pipelines/) — triggers consume events
+- [Tickets and delegation](/manual/concepts/tickets/) — ticket lifecycle events
+- [Architecture](/manual/concepts/architecture/) — how events fit in the dependency graph
+- [Domain events reference](/manual/reference/domain-events/) — complete event catalog
