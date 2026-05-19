@@ -1,0 +1,91 @@
+---
+title: Pair a device
+description: Connect your phone (or any browser) to Control Center over a peer-to-peer link so you can follow the fleet remotely.
+---
+
+This guide shows you how to pair a phone with Control Center, so you can read
+messages and tickets and reply from anywhere. See
+[Remote control and mobile](/manual/concepts/remote-control/) for how the link
+works and its security model.
+
+## Prerequisites
+
+- The desktop app running, and a workspace set up.
+- The **Remote** companion app. By default Control Center pairs with
+  [remote.usectrl.dev](https://remote.usectrl.dev/). Point the **phone app host**
+  setting at it. (You can also self-host, see below.)
+- A **signaling broker** reachable from both devices: a `wss://` endpoint that
+  relays only the connection handshake. Note its URL.
+- One or more **STUN servers** (e.g. `stun:stun.l.google.com:19302`). Control
+  Center uses STUN only, and there is no TURN relay by design.
+
+**Self-hosting.** Remote and the broker are open source in this repo: the phone
+app (`apps/cc_remote`, a Flutter web PWA you can deploy to Cloudflare Worker) and
+the signaling broker (`apps/cc_signaling_server`, a single stateless Dart binary
+that holds no app data and never sees the pairing secret). See their READMEs for
+build and run steps.
+
+::::note
+If your NAT blocks direct peer-to-peer connections (some corporate or hotel
+networks), pairing will fail rather than fall back to a third-party relay. That
+is intentional. See [the concept page](/manual/concepts/remote-control/).
+::::
+
+## Step 1: Configure the transport
+
+Open **Settings → Remote control** and fill in three values:
+
+| Field | What to enter |
+|---|---|
+| **Signaling broker URL** | Your `wss://` broker endpoint |
+| **Phone app host** | The Remote app origin the QR points phones at (`remote.usectrl.dev` by default) |
+| **STUN servers** | Comma-separated `stun:` URLs |
+
+Turn on **Start on app launch** if you want the listener to come up
+automatically; when it's off, the listener stays stopped until you start it.
+
+## Step 2: Start the listener
+
+Start the listener from the same section. While it's running you'll see
+**"Listening for devices"**; the desktop is now holding a room open on the broker
+and waiting for a phone.
+
+## Step 3: Show the pairing code
+
+Open **Settings → Devices** and click **Pair a device**. A QR code appears,
+encoding a short-lived deep link (it expires in about five minutes).
+
+Scan it with your phone's camera, or click **Copy link** and open it in a
+browser. The phone loads the PWA, stores the pairing record locally, and strips
+the secret from the URL, so the PWA host never sees it.
+
+## Step 4: Approve the device
+
+The moment the phone authenticates, the desktop dialog swaps its action from
+**Close** to **Approve device**. Click it to finish pairing.
+
+The device now appears in the **Paired devices** list with a live status
+dot: **active** when its connection is up, **pending** when it's waiting.
+
+## Manage paired devices
+
+From **Settings → Devices** you can:
+
+- **Approve** a device that's waiting
+- **Revoke** a device you no longer trust. Its secret is destroyed, so it fails
+  closed on reconnect
+
+Revoking is the right move for a lost or replaced phone. It's immediate and
+irreversible from the device's perspective.
+
+## Switch workspaces from the phone
+
+A paired phone can switch between workspaces independently of the desktop. The
+phone's workspace selection changes only its own view, never what the desktop
+shows. Every call the phone makes is scoped by that selection, so it can't reach
+another workspace by passing a foreign id.
+
+## Related guides
+
+- [Use channels and DMs](/manual/guides/channels/): what you'll mostly do from the phone
+- [Create and manage tickets](/manual/guides/manage-tickets/): triage from the road

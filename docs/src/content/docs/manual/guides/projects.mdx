@@ -1,0 +1,65 @@
+---
+title: Organize work with projects
+description: Group tickets into projects for goal-oriented work tracking.
+---
+
+This guide shows you how to use projects to organize tickets.
+
+## What are projects?
+
+A `Project` is a workspace-scoped grouping of tickets toward a shared goal. Projects are Control Center-only, so they never sync to external providers like Linear.
+
+## Create a project
+
+1. Navigate to **Tickets** in the sidebar
+2. Click **Projects** tab
+3. Click **Create project**
+4. Enter:
+   - **Name**: e.g. "Auth migration", "v2 launch"
+   - **Description**: what this project is about
+   - **Color**: visual identifier (choose from predefined colors)
+5. Click **Create**
+
+## Add tickets to a project
+
+1. Open a ticket
+2. Set the **Project** field to the target project
+3. Or bulk-select tickets and assign them to a project
+
+Tickets can belong to only one project at a time.
+
+## Project status
+
+Projects have their own lifecycle:
+
+| Status | Description |
+|---|---|
+| **Active** | Work is ongoing |
+| **Completed** | All work is done |
+| **Archived** | Historical reference |
+
+Update the project status from the project detail view.
+
+## View project progress
+
+Open a project to see:
+
+- All tickets in the project, grouped by status
+- Completion percentage
+- Which agents are assigned to project tickets
+- Priority distribution
+
+Navigate to `/projects/:projectId` in the app to see the project overview.
+
+## Projects and pipelines
+
+Pipelines can create tickets within a project:
+
+1. Set the `projectId` on a ticket created by a pipeline step
+2. All output tickets are grouped under the project
+3. The project view shows pipeline-generated tickets alongside manually created ones
+
+## Related guides
+
+- [Create and manage tickets](/manual/guides/manage-tickets/)
+- [Delegate work to agents](/manual/guides/delegate-tickets/)

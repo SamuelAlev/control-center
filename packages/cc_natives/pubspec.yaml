@@ -1,0 +1,61 @@
+name: cc_natives
+description: >-
+  Dart FFI surface for Control Center's runtime-loaded native libraries — rift
+  (copy-on-write git worktrees), fff (fast file search), tree-sitter (code
+  indexing) and aec (acoustic echo cancellation). This package owns ONLY the
+  Dart bindings, loaders and path resolution; it builds NO native code. The
+  dylibs themselves are produced by scripts/natives/*.sh and loaded at runtime
+  via dart:ffi DynamicLibrary.open, with graceful degradation when absent.
+#
+# Intentionally NOT a Flutter plugin / ffiPlugin. Converting it to one would
+# move native compilation into `flutter build` (no continue-on-error there),
+# make cargo/meson/ninja/C++ mandatory for every contributor, collapse
+# tree-sitter to a single build-time dylib (killing runtime grammar download),
+# and destroy the install-to-app-support dev loop. Keep it a plain Dart leaf.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+# Pure Dart — NO `flutter` dependency. The package is dart:ffi bindings +
+# runtime DynamicLibrary loaders only, so it links cleanly into the Flutter-free
+# `dart build cli` server binary alongside cc_infra. `@immutable` comes from
+# package:meta (not flutter/foundation). The purity rail
+# (test/core/package_purity_test.dart) asserts this never regresses.
+dependencies:
+  ffi: ^2.2.0
+  path: ^1.9.1
+  crypto: ^3.0.7
+  dio: ^5.9.2
+  meta: any
+  # Pure-Dart shared contracts. The relocated on-device-inference impls
+  # (TextEmbedder / SherpaOnnxTranscriber / VAD / diarization) implement
+  # cc_domain ports and name its value objects (EmbeddingModelPaths /
+  # VoiceModelPaths / Span / DiarizationResult). cc_domain is itself a
+  # Flutter-free pure-Dart leaf, so this does NOT contaminate the Flutter-free
+  # server binary — the purity rail (test/core/package_purity_test.dart) allows
+  # exactly cc_domain here, nothing else.
+  cc_domain:
+    path: ../cc_domain
+  # On-device inference natives. sherpa-onnx Dart is pure dart:ffi + package:ffi
+  # (no Flutter); onnxruntime_v2 is pure dart:ffi after the patchwork patch that
+  # swaps its one `package:flutter/services.dart` import (used only for
+  # Uint8List) to `dart:typed_data`. The sherpa platform packages bundle the
+  # dylib into the process. These pull the Flutter SDK transitively (their
+  # pubspecs declare `flutter: sdk: flutter`), which the pub workspace resolves
+  # fine with the Flutter SDK present — but cc_natives' OWN code never imports
+  # package:flutter, so the server binary stays Flutter-free.
+  sherpa_onnx: ^1.13.2
+  sherpa_onnx_macos: ^1.13.2
+  sherpa_onnx_linux: ^1.13.2
+  sherpa_onnx_windows: ^1.13.2
+  onnxruntime_v2: ^1.23.2+2
+  # WordPiece tokenizer for the BERT-style sentence-transformer embedder.
+  dart_wordpiece: ^1.2.0
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^6.0.0

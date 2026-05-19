@@ -1,0 +1,83 @@
+---
+title: Run agent diagnostics
+description: Use agent doctor to diagnose and fix environment issues.
+---
+
+This guide shows you how to run diagnostics on an agent's environment.
+
+## What is agent doctor?
+
+Agent doctor is a diagnostic tool that checks whether an agent's execution environment is healthy. It verifies the sandbox, CLI tools, database, network, and disk.
+
+## Run diagnostics
+
+1. Navigate to **Agents**
+2. Click the context menu (···) on an agent
+3. Select **Run diagnostics**
+4. Wait for the report to generate
+
+You can also run doctor via the MCP `doctor` tool.
+
+## Diagnostic checks
+
+The doctor report (`DoctorReport`) contains multiple `DiagnosticResult` entries:
+
+| Check | What it verifies |
+|---|---|
+| Sandbox backend | The native sandbox (Seatbelt/bubblewrap) is available and functional |
+| Database | SQLite is accessible, foreign keys are on, integrity is OK |
+| CLI tools | The agent's adapter CLI is installed and in PATH |
+| Adapter version | The CLI reports a compatible version |
+| Disk space | Sufficient disk space for worktrees and logs |
+| Network | The agent can reach required external APIs (GitHub, Linear) |
+
+Each check has a status:
+
+- **Pass**: everything is fine
+- **Warning**: non-critical issue (e.g. low disk space)
+- **Error**: critical issue that will prevent the agent from running
+
+## Auto-repair
+
+Some diagnostic results have `canAutoRepair: true`. For these:
+
+1. The doctor shows a **Repair** button
+2. Click it to apply the fix automatically
+3. Re-run diagnostics to verify
+
+Common auto-repairable issues:
+
+- Missing directory structures
+- Stale cache entries
+- Stuck run logs
+
+## Common issues
+
+### Adapter CLI not found
+
+**Symptom**: "CLI not found in PATH"
+
+**Fix**: Install the CLI (e.g. `npm install -g @anthropic-ai/claude-code`) or register the adapter path manually in **Settings → Adapters**.
+
+### Sandbox unavailable
+
+**Symptom**: "Native sandbox backend not detected"
+
+**Fix**: On macOS, ensure System Integrity Protection is enabled. On Linux, install `bubblewrap` (`sudo apt install bubblewrap` on Debian/Ubuntu).
+
+### Database integrity error
+
+**Symptom**: "Database integrity check failed"
+
+**Fix**: This is rare. Try restarting Control Center. If the error persists, the database may be corrupted. Check the logs for details.
+
+### Network timeout
+
+**Symptom**: "Cannot reach api.github.com"
+
+**Fix**: Check your network connection and proxy settings. If behind a corporate proxy, configure the proxy in the app's network settings.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Manage adapters and models](/manual/guides/adapters/)

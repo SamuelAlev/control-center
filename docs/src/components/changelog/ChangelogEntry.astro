@@ -1,0 +1,53 @@
+---
+import ChangeGroup from './ChangeGroup.astro';
+import PipelineViz from './PipelineViz.astro';
+
+interface ChangeGroupData {
+  type: 'new' | 'improved' | 'fixed';
+  items: string[];
+}
+
+interface Props {
+  id: string;
+  version: string;
+  date: string;
+  tag: string;
+  title: string;
+  lead: string;
+  latest?: boolean;
+  showViz?: boolean;
+  vizBranch?: string;
+  changes: ChangeGroupData[];
+  note?: string;
+}
+
+const { id, version, date, tag, title, lead, latest = false, showViz = false, vizBranch, changes, note } = Astro.props;
+---
+
+<article
+  class="entry reveal scroll-mt-[calc(var(--nav-h)+28px)] pb-[clamp(40px,6vw,64px)] [&+.entry]:border-t [&+.entry]:border-border [&+.entry]:pt-[clamp(40px,6vw,64px)]"
+  id={id}
+>
+  <div class="entry-head flex items-center gap-3 flex-wrap">
+    <span class:list={['ver', 'num', { latest }, 'font-mono text-[13px] tracking-[0.01em] py-[5px] px-[10px] border border-border rounded-sm bg-panel text-fg [&.latest]:border-[color-mix(in_oklab,var(--color-accent),transparent_55%)] [&.latest]:text-accent [&.latest]:bg-accent-soft']}>{version}</span>
+    <span class="entry-date font-mono text-[12.5px] text-muted">{date}</span>
+    <span class="entry-tag ml-0 min-[920px]:ml-auto font-mono text-[10px] tracking-[0.07em] uppercase text-idle py-1 px-[9px] border border-border rounded-full whitespace-nowrap">{tag}</span>
+  </div>
+  <h2 class="text-[clamp(26px,3.6vw,42px)] leading-[1.02] tracking-[-0.028em] mt-[18px] max-w-none sm:max-w-[18ch]">{title}</h2>
+  <p class="lead-e text-muted text-[clamp(16px,1.4vw,18px)] leading-[1.5] mt-4 max-w-[56ch]">{lead}</p>
+
+  {showViz && <PipelineViz branch={vizBranch} />}
+
+  <div class="changes mt-[30px] flex flex-col gap-[26px]">
+    {changes.map((group) => (
+      <ChangeGroup type={group.type} items={group.items} />
+    ))}
+  </div>
+
+  {note && (
+    <p class="entry-note mt-[22px] inline-flex items-center gap-[9px] font-mono text-xs text-idle">
+      <span class="badge text-[9.5px] tracking-[0.08em] uppercase py-[3px] px-2 rounded-sm bg-surface border border-border text-idle flex-none">Platform</span>
+      <Fragment set:html={note} />
+    </p>
+  )}
+</article>

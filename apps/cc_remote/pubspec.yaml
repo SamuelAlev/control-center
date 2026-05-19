@@ -1,0 +1,61 @@
+name: cc_remote
+description: "Control Center phone thin client — a Flutter web PWA that remote-controls the desktop app over a WebRTC DataChannel carrying JSON-RPC."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Path-based URL strategy so routes live in the path and the URL fragment is
+  # free for the pairing deep link (`/#<payload>`). Bundled with the SDK.
+  flutter_web_plugins:
+    sdk: flutter
+  # In-repo design system (tokens, theme, primitives, components). Built on
+  # `package:flutter/widgets.dart` only — no Material/Cupertino — so it renders
+  # unchanged on web. Workspace member.
+  cc_ui:
+    path: ../../packages/cc_ui
+  # Pure-Dart shared contracts (JSON-RPC wire types + DTOs). The same wire types
+  # the desktop/web build use. Workspace member.
+  cc_domain:
+    path: ../../packages/cc_domain
+  # Transport-agnostic JSON-RPC client (repo/call + sub/subscribe). The phone
+  # wraps its WebRTC/relay channel in the cc_rpc `RemoteRpcChannelPort` and
+  # drives the SAME protocol the desktop/web build use.
+  cc_rpc:
+    path: ../../packages/cc_rpc
+  # Remote data-layer adapters over the RPC client (web-safe: cc_domain +
+  # cc_rpc only). The phone reuses these instead of hand-rolling per-screen
+  # fetches — the workspaces/tickets/messaging/newsfeed/agents repositories.
+  cc_data:
+    path: ../../packages/cc_data
+  # Routing. Workspace-pinned version.
+  go_router: ^17.3.0
+  # State management (mirrors the desktop app).
+  flutter_riverpod: ^3.3.1
+  # Browser DOM/WebRTC/WebSocket/IndexedDB bindings. We talk WebRTC directly via
+  # `package:web` + `dart:js_interop` — NOT flutter_webrtc, which pulls native
+  # code that breaks `flutter build web`.
+  web: ^1.1.1
+  lucide_icons_flutter: ^3.1.14+2
+  # Cryptographic primitives (HMAC-SHA256, base64url) for the PSK channel auth.
+  # Pure Dart — runs identically on web.
+  crypto: ^3.0.7
+  # Non-sensitive UI prefs only (e.g. last selected tab). The PSK and pairing
+  # record live in IndexedDB, never here.
+  shared_preferences: ^2.5.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.0
+
+flutter:
+  uses-material-design: true

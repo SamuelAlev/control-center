@@ -1,0 +1,60 @@
+---
+title: Use focus mode
+description: Enter a distraction-free PR review interface.
+---
+
+This guide shows you how to use focus mode for distraction-free PR review.
+
+## What is focus mode?
+
+Focus mode is an ephemeral, minimalist UI for PR review. It strips away the sidebar, navigation, and all non-essential chrome to give you a clean, full-screen diff viewer.
+
+It's built for deep review sessions where you need to concentrate on the code without interruptions, such as large PRs, security-sensitive changes, or any review where the surrounding shell competes for your attention.
+
+## Enter focus mode
+
+1. Open any PR
+2. Click the focus mode toggle in the PR header (or use the keyboard shortcut)
+3. The sidebar and title bar collapse, leaving only the diff viewer
+
+## In focus mode
+
+- **Full-width diff viewer**: the diff takes the entire window, so wide hunks and side-by-side views have room to breathe.
+- **Keyboard navigation**: move between files and changes without reaching for the mouse. See [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/) for the full map.
+- **Inline comments**: leave comments directly on the diff, exactly as you would in the full layout.
+- **File list**: a collapsible file tree for quick jumps between files.
+
+## What's preserved
+
+Focus mode is ephemeral. It changes the layout you see without starting a separate review session, so switching in or out never loses work:
+
+- Your **viewed-file progress** carries across the toggle.
+- **Draft comments** are preserved when you exit and re-enter.
+- The PR's review state (approvals, requested changes) is unaffected. Focus mode changes the layout you see; the review state stays the same.
+
+## Focus mode vs. the full layout
+
+| | Focus mode | Full layout |
+|---|---|---|
+| Sidebar & title bar | Hidden | Visible |
+| Diff width | Full window | Shared with the shell |
+| Notifications & agent activity | Out of view | In the sidebar |
+| Best for | Deep, uninterrupted review | Reviewing while watching the fleet |
+
+Use the full layout when you want to stay aware of other agents' activity while you review; switch to focus mode when a change deserves your undivided attention.
+
+## Exit focus mode
+
+Press `Escape` or click the exit button to return to the normal shell layout.
+
+## When to use focus mode
+
+- Large PRs with many files to review
+- Security-sensitive code that requires deep attention
+- When you want to avoid distraction from notifications and sidebar activity
+
+## Related guides
+
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/)

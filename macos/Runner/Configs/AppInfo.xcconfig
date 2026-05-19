@@ -1,0 +1,32 @@
+// Application-level settings for the Runner target.
+//
+// This may be replaced with something auto-generated from metadata (e.g., pubspec.yaml) in the
+// future. If not, the values below would default to using the project name when this becomes a
+// 'flutter create' template.
+
+// The application's name. By default this is also the title of the Flutter window.
+PRODUCT_NAME = Control Center
+
+// The application's bundle identifier
+PRODUCT_BUNDLE_IDENTIFIER = com.alev.control-center
+
+// The copyright displayed in application information
+PRODUCT_COPYRIGHT = Copyright © 2026 Samuel Alev. All rights reserved.
+
+// Reversed Google OAuth iOS client id, used as the OAuth redirect URL scheme
+// (com.googleusercontent.apps.<CLIENT_ID>). This is PUBLIC, not a secret — it
+// is the client id reversed. It MUST match GOOGLE_OAUTH_CLIENT_ID in .env: when
+// you create/rotate the iOS-type OAuth client, update both this value and .env.
+// Substituted into CFBundleURLSchemes in Info.plist at build time.
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.806422936280-h53u9n27h9pmvrbs2ci86hisla0addqn
+
+// Code signing. Defaults to ad-hoc ("-") so a plain `flutter build` and CI work
+// without any Apple account; CI then re-signs the release with Developer ID +
+// notarizes in scripts/release/macos_package.sh. For local dev, run
+// `bash macos/scripts/create_local_signing_cert.sh` once — it writes
+// Signing.local.xcconfig (gitignored, included below) to sign with your team's
+// trusted Apple Development identity, so the data-protection keychain (see
+// lib/core/providers/storage_providers.dart) never prompts.
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = -
+#include? "Signing.local.xcconfig"

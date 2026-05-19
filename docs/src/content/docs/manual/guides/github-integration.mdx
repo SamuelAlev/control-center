@@ -1,0 +1,95 @@
+---
+title: Set up GitHub integration
+description: Connect GitHub to Control Center for PR management, polling, and API access.
+---
+
+This guide shows you how to set up the GitHub integration.
+
+## Prerequisites
+
+- A GitHub account
+- A personal access token (PAT) with `repo` and `read:org` scopes
+- Or the `gh` CLI installed and authenticated
+
+## Connect during onboarding
+
+When you first launch Control Center, the onboarding flow asks for your GitHub token:
+
+1. Enter your PAT
+2. Control Center validates it by calling the GitHub API
+3. Your username and organizations are resolved
+4. The token is stored securely in your system keychain
+
+If `gh` is installed and authenticated, Control Center detects it automatically and skips the token entry.
+
+## What the integration provides
+
+| Feature | How it works |
+|---|---|
+| **PR management** | Open, review, and merge PRs via the GitHub REST API |
+| **PR polling** | Periodically polls for new external PRs on linked repos |
+| **PR checks** | Shows CI check status on PRs (GitHub Checks API) |
+| **Inline comments** | Post review comments to GitHub when finalizing a review |
+| **GraphQL** | Some operations use the GitHub GraphQL API for efficiency |
+| **User profiles** | View GitHub user profiles with PR filtering |
+
+## API clients
+
+Control Center uses specialized `dio` HTTP clients:
+
+- `GitHubApiClient`: general REST API
+- `GitHubPrClient`: PR-specific operations
+- `GitHubContentClient`: file content and repo operations
+- `GitHubGraphqlClient`: GraphQL queries
+
+All clients inject the auth token via a dio interceptor and map errors through `error_mapper.dart`.
+
+## Token storage
+
+Tokens are stored via `flutter_secure_storage`:
+
+- **macOS**: Keychain
+- **Windows**: Credential Store
+- **Linux**: libsecret
+
+Never stored in `shared_preferences` or plain files.
+
+## GitHub service health
+
+The **GitHub status** indicator in the sidebar shows the current health of GitHub's services:
+
+- Polls the public Statuspage API
+- Shows overall indicator (none, minor, major, critical)
+- Lists active incidents
+
+This is stateless HTTP polling, so no configuration is needed.
+
+## Troubleshooting
+
+### Token not working
+
+- Ensure the token has `repo` scope
+- Check if the token has expired (GitHub PATs can have expiration dates)
+- Verify the token works: `curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user`
+
+### `gh` CLI not detected
+
+- Ensure `gh` is in your PATH
+- Run `gh auth status` to verify it's authenticated
+- Control Center checks for `gh` during onboarding and in Settings
+
+### Rate limiting
+
+GitHub API has rate limits. Control Center:
+
+- Respects rate limit headers
+- Retries on 429 responses
+- Uses conditional requests (ETags) where possible
+
+If you see rate limit errors, check your token's rate limit status.
+
+## Related guides
+
+- [Set up Linear integration](/manual/guides/linear-integration/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Manage API keys](/manual/guides/api-keys/)

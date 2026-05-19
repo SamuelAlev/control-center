@@ -1,0 +1,122 @@
+---
+// HeroDashboard — live Control Center dashboard mockup (hero visual).
+// Converted from landing.html .cc-window to Tailwind v4 utilities wired to the
+// design system in src/styles/global.css. Activity-bar keyframes + nth-child
+// delays remain in a scoped <style> (not expressible as utilities).
+---
+
+<div
+  class="cc-window overflow-hidden rounded-lg border border-border bg-panel shadow-golden"
+  role="img"
+  aria-label="Live Control Center dashboard: six agents, two running, one blocked, one failed, two idle."
+>
+  <div class="flex items-center gap-[10px] border-b border-border bg-[color-mix(in_oklab,var(--color-panel)_55%,var(--color-bg))] px-[14px] py-[10px]">
+    <span class="flex gap-[6px]" aria-hidden="true">
+      <i class="block h-[10px] w-[10px] rounded-full bg-line-strong"></i>
+      <i class="block h-[10px] w-[10px] rounded-full bg-line-strong"></i>
+      <i class="block h-[10px] w-[10px] rounded-full bg-line-strong"></i>
+    </span>
+    <span class="text-xs tracking-[-0.01em] text-muted">Control Center · Dashboard</span>
+    <span class="mono ml-auto inline-flex items-center gap-[7px] text-[11px] text-muted">
+      <span class="pulse-dot"><i></i></span>Live
+    </span>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-[14px] px-4 pt-4 pb-[14px]">
+    <div>
+      <div class="mono text-[10.5px] uppercase tracking-[0.08em] text-idle">Helvetia workspace · Zürich</div>
+      <div class="mt-[3px] text-[22px] tracking-[-0.02em]">Grüezi, Samuel</div>
+    </div>
+    <span class="mono ml-auto inline-flex items-center gap-[7px] whitespace-nowrap rounded-full border border-border bg-bg px-[11px] py-[5px] text-[11.5px] text-muted">
+      <b class="num font-normal text-fg">2</b> running<span class="text-line-strong">·</span><span class="num">1</span> blocked<span class="text-line-strong">·</span><span class="num">1</span> failed
+    </span>
+  </div>
+
+  <ul class="flex list-none flex-col gap-2 px-4 pb-2">
+    <li class="cc-card run flex flex-col gap-2 rounded-sm border border-[color-mix(in_oklab,var(--color-success),var(--color-border)_55%)] bg-panel px-3 py-[11px] transition-colors duration-[var(--motion-fast)]">
+      <div class="flex items-center gap-[10px]">
+        <span class="grid h-7 w-7 flex-none place-items-center rounded-sm border border-border bg-surface text-[13px] text-fg">◆</span>
+        <span class="min-w-0 flex-1">
+          <div class="mono text-[12.5px] tracking-[-0.01em]">ceo</div>
+          <div class="mono mt-px text-[10px] uppercase tracking-[0.06em] text-muted">CEO</div>
+        </span>
+        <span class="mono inline-flex flex-none items-center gap-[6px] whitespace-nowrap rounded-full bg-success-soft px-2 py-[3px] text-[10.5px] uppercase tracking-[0.03em] text-success">
+          <span class="cc-bars inline-flex h-[10px] items-end gap-[2px]" aria-hidden="true"><i class="w-[2px] rounded-[1px] bg-success"></i><i class="w-[2px] rounded-[1px] bg-success"></i><i class="w-[2px] rounded-[1px] bg-success"></i><i class="w-[2px] rounded-[1px] bg-success"></i></span>Running
+        </span>
+      </div>
+      <p class="text-[12.5px] leading-[1.4] text-muted">Launching <b class="font-normal text-fg">claude</b> via subscription relay <span class="mono">[claude-relay]</span></p>
+      <div class="mono flex items-center gap-2 text-[10.5px] text-idle"><span>chat</span><span class="h-[3px] w-[3px] flex-none rounded-full bg-idle"></span><span>relay · 2m</span></div>
+    </li>
+
+    <li class="cc-card run flex flex-col gap-2 rounded-sm border border-[color-mix(in_oklab,var(--color-success),var(--color-border)_55%)] bg-panel px-3 py-[11px] transition-colors duration-[var(--motion-fast)]">
+      <div class="flex items-center gap-[10px]">
+        <span class="grid h-7 w-7 flex-none place-items-center rounded-sm border border-border bg-surface text-[13px] text-fg">⬡</span>
+        <span class="min-w-0 flex-1">
+          <div class="mono text-[12.5px] tracking-[-0.01em]">reviewer-1</div>
+          <div class="mono mt-px text-[10px] uppercase tracking-[0.06em] text-muted">Reviewer</div>
+        </span>
+        <span class="mono inline-flex flex-none items-center gap-[6px] whitespace-nowrap rounded-full bg-success-soft px-2 py-[3px] text-[10.5px] uppercase tracking-[0.03em] text-success">
+          <span class="cc-bars inline-flex h-[10px] items-end gap-[2px]" aria-hidden="true"><i class="w-[2px] rounded-[1px] bg-success"></i><i class="w-[2px] rounded-[1px] bg-success"></i><i class="w-[2px] rounded-[1px] bg-success"></i><i class="w-[2px] rounded-[1px] bg-success"></i></span>Running
+        </span>
+      </div>
+      <p class="text-[12.5px] leading-[1.4] text-muted">Reviewing <b class="font-normal text-fg">#1642</b> · debounce workspace switcher</p>
+      <div class="mono flex items-center gap-2 text-[10.5px] text-idle"><span>review</span><span class="h-[3px] w-[3px] flex-none rounded-full bg-idle"></span><span>web-client · 4m</span></div>
+    </li>
+
+    <li class="cc-card block flex flex-col gap-2 rounded-sm border border-[color-mix(in_oklab,var(--color-warn),var(--color-border)_50%)] bg-panel px-3 py-[11px] transition-colors duration-[var(--motion-fast)]">
+      <div class="flex items-center gap-[10px]">
+        <span class="grid h-7 w-7 flex-none place-items-center rounded-sm border border-border bg-surface text-[13px] text-fg">▣</span>
+        <span class="min-w-0 flex-1">
+          <div class="mono text-[12.5px] tracking-[-0.01em]">qa-1</div>
+          <div class="mono mt-px text-[10px] uppercase tracking-[0.06em] text-muted">QA</div>
+        </span>
+        <span class="mono inline-flex flex-none items-center gap-[6px] whitespace-nowrap rounded-full bg-warn-soft px-2 py-[3px] text-[10.5px] uppercase tracking-[0.03em] text-[color-mix(in_oklab,var(--color-warn),var(--color-fg)_22%)] [&_svg]:h-[10px] [&_svg]:w-[10px]">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.4" height="8" fill="currentColor"/><rect x="7.1" y="2" width="2.4" height="8" fill="currentColor"/></svg>Blocked
+        </span>
+      </div>
+      <p class="text-[12.5px] leading-[1.4] text-muted">Awaiting your approval: <b class="font-normal text-fg">ship verdict</b> on architecture review</p>
+      <div class="mono flex items-center gap-2 text-[10.5px] text-idle"><span>plan</span><span class="h-[3px] w-[3px] flex-none rounded-full bg-idle"></span><span>platform-metrics · 11m</span></div>
+    </li>
+
+    <li class="cc-card fail flex flex-col gap-2 rounded-sm border border-[color-mix(in_oklab,var(--color-danger),var(--color-border)_55%)] bg-panel px-3 py-[11px] transition-colors duration-[var(--motion-fast)]">
+      <div class="flex items-center gap-[10px]">
+        <span class="grid h-7 w-7 flex-none place-items-center rounded-sm border border-border bg-surface text-[13px] text-fg">◈</span>
+        <span class="min-w-0 flex-1">
+          <div class="mono text-[12.5px] tracking-[-0.01em]">devops-1</div>
+          <div class="mono mt-px text-[10px] uppercase tracking-[0.06em] text-muted">DevOps</div>
+        </span>
+        <span class="mono inline-flex flex-none items-center gap-[6px] whitespace-nowrap rounded-full bg-danger-soft px-2 py-[3px] text-[10.5px] uppercase tracking-[0.03em] text-danger [&_svg]:h-[10px] [&_svg]:w-[10px]">
+          <svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3 L9 9 M9 3 L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Failed
+        </span>
+      </div>
+      <p class="text-[12.5px] leading-[1.4] text-muted"><b class="font-normal text-fg">analyze</b> step failed · ConcurrencyConflictException</p>
+      <div class="mono flex items-center gap-2 text-[10.5px] text-idle"><span>pipeline</span><span class="h-[3px] w-[3px] flex-none rounded-full bg-idle"></span><span>core-api · 6m</span></div>
+    </li>
+  </ul>
+
+  <div class="mono flex items-center gap-2 border-t border-border px-4 py-[11px] text-[11px] text-muted">
+    <span>6 agents · 2 idle</span>
+    <a href="#capabilities" class="ml-auto inline-flex items-center gap-[5px] text-accent no-underline hover:text-accent-hover">Open dashboard <span aria-hidden="true">→</span></a>
+  </div>
+</div>
+
+<style>
+  /* Live activity bars — presence motion on running cards only.
+     Keyframes + nth-child stagger are not expressible as Tailwind utilities. */
+  .cc-card.run .cc-bars i {
+    height: 100%;
+    transform-origin: bottom;
+    transform: scaleY(0.4);
+    animation: ccbar 1s var(--ease-standard) infinite alternate;
+  }
+  .cc-card.run .cc-bars i:nth-child(2) { animation-delay: 0.18s; }
+  .cc-card.run .cc-bars i:nth-child(3) { animation-delay: 0.36s; }
+  .cc-card.run .cc-bars i:nth-child(4) { animation-delay: 0.54s; }
+  @keyframes ccbar {
+    from { transform: scaleY(0.3); }
+    to { transform: scaleY(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cc-card.run .cc-bars i { animation: none; transform: scaleY(0.7); }
+  }
+</style>

@@ -1,0 +1,66 @@
+---
+title: Workspaces and isolation
+description: How workspaces enforce hard tenant boundaries between projects.
+---
+
+## What is a workspace?
+
+A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, channels, tickets, memory, and pipelines into a bounded context. Everything that happens inside a workspace stays inside it.
+
+A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2", and "infrastructure".
+
+## Workspace-scoped data
+
+The following entities are scoped to a workspace: they carry a `workspaceId` column and every read query filters by it:
+
+| Entity | Scope |
+|---|---|
+| Agents | Belong to exactly one workspace |
+| Channels and messages | Workspace-scoped |
+| Tickets and projects | Workspace-scoped |
+| Memory facts, policies, domains | Workspace-scoped |
+| Memory access grants | Workspace-scoped |
+| Pipeline runs, templates, triggers | Workspace-scoped |
+| Pull requests (local state) | Workspace-scoped |
+| Review channel associations | Workspace-scoped |
+| Agent run logs | Workspace-scoped |
+| Agent working memory | Workspace-scoped |
+| Workspace repos (join table) | Workspace-scoped |
+| Code graph symbols and edges | Scoped by `(workspaceId, repoId)` |
+
+## Repos are global, worktrees are scoped
+
+Repos are registered globally in Settings, and a single repo can be linked to multiple workspaces. But the worktrees (isolated copies) that agents work in are workspace-scoped. This means the same repo can be checked out on different branches in different workspaces without conflict.
+
+The code graph (symbols and edges) is keyed by `(workspaceId, repoId)` because different workspaces may have the same repo on different branches with different code.
+
+## The isolation invariant
+
+Cross-workspace data leaks are treated as bugs. The system enforces isolation at multiple levels:
+
+- **Database layer**: every DAO query on a workspace-scoped table includes `WHERE workspaceId = ?`. Unscoped queries are only permitted for genuinely global surfaces (dashboard, analytics, startup reconcilers) and must carry a `CROSS-WORKSPACE BY DESIGN` doc comment.
+- **Domain layer**: services that mutate entities validate `entity.workspaceId == workspaceId` before proceeding. On mismatch, they throw `WorkspaceMismatchException`.
+- **MCP tools**: every tool that touches workspace-scoped data requires `workspace_id` as a parameter. Missing or mismatched IDs return an explicit error.
+- **ID-only access is not sufficient**: looking up an entity by its UUID does not prove it belongs to the caller's workspace. Queries must be scoped, or the fetched entity must be validated.
+
+## Workspace creation and CEO seeding
+
+When a workspace is created:
+
+1. The workspace entity is persisted
+2. A `WorkspaceCreated` domain event is published
+3. An event listener seeds a **CEO agent** into the workspace
+
+The CEO agent has the CEO role and a coordination-focused persona. It can hire other agents, delegate work, and manage the workspace team.
+
+## Multiple workspaces
+
+You can run multiple workspaces side by side. Each workspace operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory, and cannot access its tickets.
+
+The dashboard provides a cross-workspace view (by design), but it's read-only aggregation: you cannot act on Workspace B's data from Workspace A's context.
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/): agents belong to workspaces
+- [Memory and knowledge](/manual/concepts/memory-knowledge/): memory is workspace-scoped
+- [Architecture](/manual/concepts/architecture/): how isolation is implemented technically

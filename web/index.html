@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta
+    name="description"
+    content="Control Center — web client. Connects to a cc-server over WebSocket."
+  >
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fcfbf9" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#171614" media="(prefers-color-scheme: dark)">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Control Center">
+
+  <title>Control Center</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    /* First-paint splash shown until Flutter mounts; respects light/dark. */
+    html, body { margin: 0; height: 100%; background: #fcfbf9; }
+    @media (prefers-color-scheme: dark) { html, body { background: #171614; } }
+    #cc-splash {
+      position: fixed; inset: 0; display: flex; align-items: center;
+      justify-content: center;
+    }
+    #cc-splash .ring {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 3px solid rgba(120,113,108,0.25);
+      border-top-color: #e8590c; animation: cc-spin 0.8s linear infinite;
+    }
+    @keyframes cc-spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div id="cc-splash"><div class="ring"></div></div>
+  <!-- The splash is removed from Dart on Flutter's first frame
+       (lib/bootstrap/bootstrap_web.dart). An inline <script> here would be
+       blocked by the strict CSP (script-src has no 'unsafe-inline'). -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+---
+title: Connect a Google Calendar
+description: Connect Google Calendar to a workspace, manage multiple accounts, and reconnect when a token expires.
+---
+
+This guide shows you how to connect Google Calendar to a workspace. It's per-workspace: it syncs your events and lets you RSVP to invitations. See [Calendar and scheduling](/manual/concepts/calendar/) for the full picture.
+
+## Connect an account
+
+1. Open **Calendar** in the sidebar.
+2. Click **Connect** (in the calendar sidebar, or from **Settings → Integrations**).
+3. Your browser opens Google's consent screen. Sign in and approve the requested access.
+4. Google redirects back to Control Center automatically, and your events begin syncing.
+
+The account is connected **to the active workspace only**. Switch workspaces and you'll see that workspace's calendars instead.
+
+:::note[What it changes]
+Control Center pulls your events into a local store and can RSVP to invitations. Beyond your own attendance response, it never creates, edits, or deletes calendar entries.
+:::
+
+## Connect multiple accounts
+
+A workspace can connect several Google accounts (for example work and personal). Repeat the **Connect** step for each; their events merge into the same month / week / agenda views. Each account syncs and refreshes independently.
+
+## Reconnect an expired account
+
+If Google permanently invalidates an account's token (a revoked or long-expired session), syncing stops and Control Center shows a **reconnect** banner on the calendar, plus a desktop notification. Click **Reconnect** and sign in again, and the banner clears on the next successful sync.
+
+## Disconnect an account
+
+From the calendar sidebar (or **Settings → Integrations**), remove the account. This deletes its synced events from the local store and clears its tokens from the keychain.
+
+## Bring your own Google client (forks and self-hosting)
+
+Control Center ships with a working public client id, so most users never touch this. If you fork the app or want your own Google Cloud project:
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen** (add the `calendar.readonly`, `calendar.events`, `openid`, `email`, and `profile` scopes; add yourself as a **test user** while the app is unverified).
+2. Create an **OAuth client ID** of application type **iOS** and copy the client id.
+3. Set `GOOGLE_OAUTH_CLIENT_ID` in your repo-root `.env`, and register the matching reversed-client-id URL scheme for each platform you build (macOS `xcconfig`, Windows `CMakeLists.txt`/`main.cpp`, Linux `.desktop`). These four values must stay in sync, or the redirect silently fails to route if any one drifts.
+4. Rebuild and connect.
+
+None of these values is a secret: the reversed client id is just the public client id rearranged, and the client itself is public.
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---|---|
+| Browser opens, but nothing happens after consent | The redirect scheme isn't registered for your platform, or doesn't match the client id. Re-check the per-platform registration and rebuild |
+| `redirect_uri_mismatch` / `invalid_client` from Google | The client id isn't an **iOS**-type client, or the Calendar API isn't enabled for the project |
+| Consent succeeds but sync is empty | Your account isn't a **test user** on the consent screen, or the `calendar.readonly` scope wasn't granted |
+| "Configure Google client id" error on connect | `GOOGLE_OAUTH_CLIENT_ID` is unset or empty |
+
+## Related guides
+
+- [Record and summarize a meeting](/manual/guides/record-meeting/): turn an event into a recording
+- [Set up GitHub integration](/manual/guides/github-integration/)
+
+## Related concepts
+
+- [Calendar and scheduling](/manual/concepts/calendar/)

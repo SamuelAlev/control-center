@@ -1,0 +1,98 @@
+---
+title: Configure sandbox policies
+description: Set sandbox backend, capability controls, and filesystem access for agents.
+---
+
+This guide shows you how to configure sandbox policies.
+
+## Sandbox settings
+
+Navigate to **Settings → Sandboxing** to configure:
+
+### Backend selection
+
+| Backend | Platform | Description |
+|---|---|---|
+| **Native** | macOS, Linux | OS-native sandbox (default) |
+| **None** | all | No isolation (development only) |
+
+Select the backend per workspace or globally.
+
+### Native backend details
+
+- **macOS**: Uses Apple's Seatbelt sandbox. Profiles restrict filesystem access, network, and process spawning.
+- **Linux**: Uses bubblewrap. Creates mount and PID namespaces for isolation.
+
+## Capability controls
+
+Capabilities control what an agent can access during execution:
+
+| Capability | Description | Default |
+|---|---|---|
+| **Push to repo** | Push commits to the remote | Enabled |
+| **GitHub API** | Call GitHub APIs | Enabled |
+| **Ticketing** | Create and update tickets | Enabled |
+| **Network egress** | Make outbound network requests | Enabled |
+
+Configure capabilities per agent in the agent configuration.
+
+### How capabilities work
+
+1. At dispatch time, the `CredentialBroker` reads the agent's capabilities
+2. It mints scoped environment variables, covering only the capabilities the agent has
+3. The sandbox enforces the policy during execution
+4. Violations emit `SandboxViolation` events visible in the channel
+
+## Filesystem policies
+
+Agents see a restricted filesystem:
+
+- **Read-write**: the isolated worktree
+- **Read-only**: workspace configuration, skill resources
+- **Hidden**: the source checkout, other worktrees, system files
+
+Mount policies are derived from the sandbox backend and conversation mode.
+
+## Conversation mode policies
+
+| Mode | Filesystem | Network | Tools |
+|---|---|---|---|
+| **Chat** | Read-write worktree | Per-capability | Full allowlist |
+| **Plan** | Read-only worktree | Per-capability | Read-only tools |
+| **Review** | Read-only worktree | Per-capability | Review tools only |
+
+## Confirmation prompts
+
+Enable confirmation prompts for destructive actions:
+
+1. Navigate to **Settings → Sandboxing → Confirmations**
+2. Toggle confirmation for specific action types:
+   - Force push
+   - Branch deletion
+   - Large file operations
+   - Privileged API calls
+
+When enabled, the sandbox interrupts the agent and asks for user approval before executing.
+
+## Troubleshooting
+
+### Sandbox not available
+
+Run agent doctor to diagnose:
+
+- macOS: ensure System Integrity Protection is enabled
+- Linux: install bubblewrap (`sudo apt install bubblewrap`)
+
+### Permission denied errors
+
+If agents report permission denied:
+
+- Check the capability flags on the agent
+- Verify the mount configuration
+- Check sandbox violation events in the channel
+
+## Related guides
+
+- [Sandbox and security](/manual/concepts/sandbox-security/)
+- [Sandbox backends reference](/manual/reference/sandbox-backends/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)

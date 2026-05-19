@@ -1,0 +1,95 @@
+---
+title: Manage costs and budgets
+description: Track agent spending, set budgets, and control costs.
+---
+
+This guide shows you how to monitor and control agent spending.
+
+## How costs are tracked
+
+Every agent run records:
+
+- **Input tokens**: tokens sent to the model
+- **Output tokens**: tokens received from the model
+- **Estimated cost**: computed in cents based on the model's pricing
+
+Costs are tracked in `AgentRunLog` and aggregated by the `CostTracker` service.
+
+## View costs
+
+### Per-agent
+
+Navigate to **Analytics** and select an agent to see:
+
+- Total spend this month
+- Token usage breakdown (input vs output)
+- Cost trend over time
+- Per-run cost history
+
+### Per-workspace
+
+The workspace detail view shows aggregated costs across all agents in the workspace.
+
+### Dashboard
+
+The global dashboard shows a cross-workspace cost summary.
+
+## Set budgets
+
+Set a monthly budget per agent in the agent configuration:
+
+1. Navigate to **Agents**
+2. Select an agent
+3. Set **Monthly budget** (in cents)
+4. Save
+
+When an agent's cumulative monthly spend exceeds its budget:
+
+1. `BudgetThresholdCrossed` domain event fires
+2. A desktop notification is sent
+3. The agent is blocked from dispatching until the next month
+
+Budgets are enforced by `BudgetEnforcementService`, which checks cumulative spend before each dispatch.
+
+## Budget policies
+
+Budget policies can be set at different scopes:
+
+- **Per-agent**: individual agent caps
+- **Per-workspace**: workspace-wide caps (future)
+- **Global**: app-wide caps (future)
+
+## Cost optimization
+
+### Choose the right effort level
+
+Higher effort means more tokens and higher cost:
+
+- **Low**: cheapest, good for simple tasks
+- **Medium**: balanced
+- **High**: most expensive, reserve for complex tasks
+
+### Use the right model
+
+Larger models cost more. Use smaller models for routine tasks:
+
+- Code formatting → low effort + small model
+- Bug fixes → medium effort + mid-tier model
+- Architecture decisions → high effort + top-tier model
+
+### Review run logs
+
+Check `AgentRunLog` for runs with unusually high token counts. These may indicate:
+
+- Overly verbose prompts
+- Context that should be compacted
+- Tasks that should be broken into smaller pieces
+
+### Compact conversations
+
+Long conversations accumulate context, increasing token usage. Compaction summarizes the history to reduce the context window.
+
+## Related guides
+
+- [Agent configuration reference](/manual/reference/agent-configuration/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)

@@ -1,0 +1,81 @@
+---
+title: Dispatch your first agent
+description: Hire an agent, start a conversation, and watch it work.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- A coder agent hired into your workspace
+- An active conversation with the agent
+- A pull request opened by the agent
+
+Prerequisites: [Your first workspace](/manual/tutorials/first-workspace/) completed.
+
+## Step 1: Hire an agent
+
+Your workspace has a CEO agent from the previous tutorial. Now let's add a coder.
+
+1. Navigate to **Agents** in the sidebar
+2. Click **Hire agent** (or ask the CEO agent to hire one via chat)
+3. Choose a role, selecting **Coder**
+4. Configure the agent:
+   - **Name**: something short and memorable, like "alice"
+   - **Model**: pick from the detected adapter models (e.g. Claude Sonnet, GPT-4o)
+   - **Adapter**: the CLI backend (e.g. Claude Code, Codex)
+   - **Skills**: add relevant skills like "flutter", "dart", "rest-api"
+   - **Effort**: set to **high** for complex tasks, **medium** for typical work
+5. Click **Hire**
+
+The agent is registered in your workspace and appears in the agent list.
+
+## Step 2: Start a conversation
+
+1. Navigate to **Messaging** in the sidebar
+2. Start a new DM with your agent (or type `@alice` in any channel)
+3. Type a concrete task, for example:
+
+   > Add a `/health` endpoint to the Express server that returns `{ status: "ok", timestamp }`.
+
+4. Press Enter to send
+
+The agent:
+
+1. Receives the prompt (assembled from its role, persona, skills, and your message)
+2. Provisions an isolated worktree from the linked repo
+3. Launches in a sandbox with capability-gated access
+4. Starts streaming its thinking and actions back to the channel
+
+## Step 3: Watch the agent work
+
+As the agent runs, you see its activity in the channel:
+
+- **Thinking events**: the agent's reasoning (shown inline)
+- **Tool calls**: file reads, writes, shell commands (logged)
+- **Sandbox events**: capability violations, if any
+- **Text output**: summaries, explanations, questions for you
+
+The agent's status indicator changes through: `idle` → `running` → `idle` (when done).
+
+If the agent needs clarification, it may ask you a question inline. Answer directly in the channel.
+
+## Step 4: Review the result
+
+When the agent finishes:
+
+1. It commits its changes on the isolated branch
+2. Opens a pull request against the repo's default branch
+3. The PR appears in **Pull requests** in the sidebar
+
+Open the PR to see the diff, review the changes, and merge.
+
+For a full walkthrough of PR review, see [Review your first pull request](/manual/tutorials/first-pr/).
+
+## Recap
+
+You hired a coder agent, gave it a task, watched it work in real time, and got a PR back. The agent ran in an isolated worktree and sandbox, so your main checkout was never touched.
+
+**Next:** [Review your first pull request](/manual/tutorials/first-pr/) to learn the review workflow.
+
+For more on agents: [The agent model](/manual/concepts/agent-model/). For dispatch details: [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/).

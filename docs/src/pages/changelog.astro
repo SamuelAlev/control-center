@@ -1,0 +1,64 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import ChangelogHeader from '../components/changelog/ChangelogHeader.astro';
+import ChangelogEntry from '../components/changelog/ChangelogEntry.astro';
+import ChangelogScripts from '../components/changelog/ChangelogScripts.astro';
+import { releases } from '../data/changelog';
+---
+
+<MarketingLayout
+  title="Changelog \\\\ Control Center"
+  description="Control Center release notes and changelog: every new feature, improvement, and fix, newest first. Updated as we ship."
+  breadcrumbName="Changelog"
+>
+  <main id="top">
+    <ChangelogHeader />
+
+    <section
+      class="wrap grid grid-cols-1 items-start gap-2 pt-7 pb-[clamp(56px,8vw,96px)] min-[920px]:grid-cols-[232px_1fr] min-[920px]:gap-[clamp(36px,5vw,76px)] min-[920px]:pt-[clamp(40px,5vw,60px)]"
+    >
+      <!-- sticky version jump-nav -->
+      <nav
+        class="self-start border-b border-border pb-5 mb-7 min-[920px]:sticky min-[920px]:top-[calc(var(--nav-h)+28px)] min-[920px]:border-0 min-[920px]:pb-0 min-[920px]:mb-0"
+        aria-label="Jump to release"
+      >
+        <p class="font-mono text-[10.5px] uppercase tracking-[0.12em] text-idle pb-2 border-0 min-[920px]:pb-[14px] min-[920px]:border-b min-[920px]:border-border">All releases</p>
+        <div class="font-mono text-[11px] uppercase tracking-[0.06em] text-muted mt-[10px] mb-[6px] min-[920px]:mt-[22px]">June 2026</div>
+        <ul class="cl-jump list-none m-0 p-0 flex flex-wrap gap-[6px] min-[920px]:flex-col min-[920px]:flex-nowrap min-[920px]:gap-0">
+          <li>
+            <a
+              href="#v0-0-1-rc-1"
+              data-spy="v0-0-1-rc-1"
+              class="group flex items-center gap-2 py-[7px] px-[11px] rounded-sm border border-border bg-panel text-muted no-underline transition-colors hover:text-fg [&.active]:text-fg min-[920px]:gap-[11px] min-[920px]:py-2 min-[920px]:px-0 min-[920px]:rounded-none min-[920px]:border-0 min-[920px]:bg-transparent"
+            >
+              <span class="w-2 h-2 flex-none rounded-full border border-line-strong bg-bg transition-[background-color,border-color] group-[.active]:bg-accent group-[.active]:border-accent group-[.active]:shadow-[0_0_0_3px_var(--color-accent-soft)]" aria-hidden="true"></span>
+              <span class="font-mono text-[13px] tracking-[-0.01em]">v0.0.1-rc.1</span>
+              <span class="num ml-1 font-mono text-[11px] text-idle min-[920px]:ml-auto">Jun 12</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- release timeline -->
+      <div class="min-w-0">
+        {releases.map((release) => (
+          <ChangelogEntry
+            id={release.id}
+            version={release.version}
+            date={release.date}
+            tag={release.tag}
+            title={release.title}
+            lead={release.lead}
+            latest={release.latest}
+            showViz={release.showViz}
+            vizBranch={release.vizBranch}
+            changes={release.changes}
+            note={release.note}
+          />
+        ))}
+      </div>
+    </section>
+  </main>
+
+  <ChangelogScripts />
+</MarketingLayout>

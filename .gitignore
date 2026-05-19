@@ -1,0 +1,87 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+dist
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Credentials and secrets
+.env
+.env.*
+!.env.template
+**/secrets.*
+
+coverage
+
+sentry.properties
+
+# Local per-developer macOS signing override (see macos/scripts/create_local_signing_cert.sh)
+macos/Runner/Configs/Signing.local.xcconfig
+
+# macOS Developer ID provisioning profile (see scripts/release/macos_package.sh).
+# Holds no private key, but kept out of the tree — CI embeds it from the
+# MACOS_PROVISIONING_PROFILE_BASE64 secret; locally it's the default-path fallback.
+macos/Control_Center__macOS.provisionprofile
+
+# Release build artifacts written to the repo root by the release scripts.
+/Control-Center-*
+/cc_server-*
+
+# Docker build contexts staged by the release `containers` job (the CI-extracted
+# cc_server bundle + the pre-built Flutter web bundles). Generated, never committed.
+/docker/cc_server/bundle/
+/docker/web/site/
+/docker/cc_remote/site/
+
+# FVM Version Cache
+.fvm/
+
+# Cloudflare
+.wrangler
+
+# patchwork (third-party dependency patching). The committed artifacts are
+# `patches/*.patch` + `patchwork.lock`; the rest is generated locally and
+# re-materialized by `dart run patchwork apply` / the root build hook.
+.patchwork/
+.dart_tool/patchwork/
+pubspec_overrides.yaml

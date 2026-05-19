@@ -1,0 +1,20 @@
+name: cc_host
+description: "Server-side RPC kernel for Control Center — the reusable host machinery an app or cc-server embeds to serve first-party clients: per-connection sessions, the repo-op dispatcher, reactive subscriptions, rate limiting, the remote tool policy, and the WSS server transport. VM-only (uses dart:io); the web-safe client half is cc_rpc."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  cc_rpc:
+    path: ../cc_rpc
+  meta: any
+
+dev_dependencies:
+  test: any
+  lints: any

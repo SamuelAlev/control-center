@@ -1,0 +1,15 @@
+version: 2
+packages:
+  onnxruntime_v2:
+    version: "1.23.2+2"
+    source:
+      type: "hosted"
+      url: "https://pub.dev"
+      sha256: "b20fd9bf40884d5a2975c0cff47fc11127f95a7392bed5c19ced1d509f1a096e"
+    patch:
+      edit-sha256: "3ceffd976981d995ecfbc106a548541905dffa24af59c8d1530d727aab925ecc"
+      commit-sha256: "6edfb5c418a19f6dd376b2d18b60db7532809775f442f1c45d6b4ed0bb272074"
+    applied:
+      patch-sha256: "6edfb5c418a19f6dd376b2d18b60db7532809775f442f1c45d6b4ed0bb272074"
+      path: ".dart_tool/patchwork/onnxruntime_v2@1.23.2+2"
+

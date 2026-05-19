@@ -1,0 +1,76 @@
+---
+title: Delegate work to agents
+description: Assign tickets to agents and let them execute the work autonomously.
+---
+
+This guide shows you how to delegate work to agents via tickets.
+
+## Create and assign
+
+1. [Create a ticket](/manual/guides/manage-tickets/) with a clear title and description
+2. Assign it to an agent
+3. The `TicketDispatcher` automatically:
+   - Creates a conversation channel
+   - Transitions the ticket to `in_progress`
+   - Dispatches the agent with the ticket context
+
+## What the agent receives
+
+When dispatched via ticket assignment, the agent receives:
+
+- The ticket title and description in its prompt
+- The conversation channel for communication
+- An isolated worktree from the workspace's linked repos
+- The ticket's conversation mode (default: `chat`)
+
+The agent works autonomously, streaming its progress to the channel.
+
+## Monitor progress
+
+- **Ticket status**: check the ticket board for `in_progress` status
+- **Channel**: open the ticket's channel to see live agent activity
+- **Dashboard**: see the agent's running status
+- **Run logs**: check the agent's run log for detailed trace
+
+## Output validation
+
+If the ticket has an `expectedOutputSchema`, the dispatcher validates the agent's output against it:
+
+1. The agent completes its work
+2. The output is checked against the JSON Schema
+3. If valid, the ticket transitions to `done` with `outputJson` set
+4. If invalid, the ticket may transition to `failed`
+
+## Delegation chain
+
+Agents can delegate to other agents:
+
+1. An agent working on a ticket encounters a sub-problem
+2. It creates a child ticket via the `create_ticket` MCP tool
+3. Assigns the child ticket to another agent
+4. `TicketDelegated` event fires
+5. The `delegatedByAgentId` field tracks who delegated
+
+This creates a delegation tree. The CEO delegates to coders, coders delegate to QA, and so on.
+
+## Collaborative tickets
+
+Multiple agents can collaborate on a single ticket:
+
+1. Add agents as collaborators
+2. Each collaborator gets access to the ticket's channel
+3. They can @-mention each other and share context
+
+## Ticket delegation via pipeline
+
+Pipelines can create and assign tickets programmatically:
+
+1. Use a `promptAgent` step to analyze a task
+2. Use a downstream step to create tickets with `TicketWorkflowPort`
+3. The tickets are assigned and dispatched automatically
+
+## Related guides
+
+- [Create and manage tickets](/manual/guides/manage-tickets/)
+- [Organize work with projects](/manual/guides/projects/)
+- [Ticket lifecycle reference](/manual/reference/ticket-lifecycle/)

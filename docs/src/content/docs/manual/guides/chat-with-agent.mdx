@@ -1,0 +1,72 @@
+---
+title: Chat with an agent
+description: Start a direct message with an agent and send instructions.
+---
+
+This guide shows you how to start a conversation with an agent.
+
+## Start a DM
+
+1. Navigate to **Messaging** in the sidebar
+2. Click **New conversation**
+3. Select an agent to DM
+4. Type your message and press Enter
+
+The agent dispatches immediately and starts streaming its response.
+
+## Send instructions
+
+Be concrete and specific. Good messages:
+
+> Add a `/health` endpoint to `src/server.ts` that returns `{ status: "ok" }`.
+
+> Fix the null pointer exception in `UserService.findById` when the user doesn't exist.
+
+> Explain how the authentication middleware works in this codebase.
+
+Vague messages work too, but produce less predictable results:
+
+> Make the code better.
+
+## During the conversation
+
+As the agent works, you'll see:
+
+- **Thinking**: the agent's reasoning process
+- **Tool calls**: file reads, writes, shell commands
+- **Text**: summaries, explanations, questions
+
+If the agent asks a question, answer inline. The agent waits for your response.
+
+## Stop an agent
+
+If the agent is going in the wrong direction:
+
+- Click the **Stop** button in the channel header
+- Or use the keyboard shortcut
+
+The agent's run is marked as stopped. You can send a new message to dispatch it again.
+
+## Ask the agent to plan first
+
+Before a complex task, ask the agent to plan:
+
+> Plan how you would implement user authentication for this API. Don't write any code yet.
+
+Then review the plan and switch to execution. See [Use plan mode](/manual/guides/plan-mode/) for structured planning.
+
+## Mention an agent in a channel
+
+You don't need a DM. In any group channel:
+
+```
+@alice can you look at the failing tests in src/auth_test.dart?
+```
+
+The mentioned agent dispatches with the channel's conversation context.
+
+## Related guides
+
+- [Use channels and DMs](/manual/guides/channels/)
+- [@-mention agents](/manual/guides/mention-agents/)
+- [Use plan mode](/manual/guides/plan-mode/)

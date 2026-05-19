@@ -1,0 +1,13 @@
+# Analyzer config for the cc_remote PWA.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+
+linter:
+  rules:
+    always_use_package_imports: true
+    prefer_const_constructors: true
+    prefer_single_quotes: true
+    avoid_web_libraries_in_flutter: false

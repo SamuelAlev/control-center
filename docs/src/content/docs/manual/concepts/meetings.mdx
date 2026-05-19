@@ -1,0 +1,99 @@
+---
+title: Meetings and transcription
+description: How Control Center records, transcribes, and summarizes meetings entirely on-device.
+---
+
+Control Center can record a call and hand you back a clean writeup (a summary, action items, and decisions) without any of the audio or transcript ever leaving your machine. Think Granola, but local-first and wired into the same workspace your agents live in.
+
+## What a meeting is
+
+A **meeting** is a recorded, transcribed session. It is *not* the same thing as a [calendar event](/manual/concepts/calendar/): an event is a scheduled commitment synced from Google, while a meeting is something you actually recorded. The two can be linked, since you can start a recording from an event, but they stay distinct records.
+
+Every meeting is workspace-scoped, like everything else in Control Center. Meetings recorded in one workspace never surface in another.
+
+## Local-first and private
+
+Everything happens on-device:
+
+- Audio is captured locally and written to a local file.
+- Transcription runs through an **on-device Whisper** model, so no audio is uploaded.
+- Speaker diarization runs locally with `sherpa-onnx`.
+
+The only step that involves an agent is the summary, which runs over the already-transcribed text through your configured agent CLI.
+
+## How capture works
+
+A meeting records **two audio channels at once**:
+
+- **You ("me")**: your microphone.
+- **Them ("them")**: the system audio output, captured by a driver-free loopback:
+  - **macOS**: Core Audio process/device taps
+  - **Windows**: WASAPI loopback
+  - **Linux**: a PipeWire / PulseAudio monitor
+
+Because the two channels are captured separately, the transcript is speaker-attributed from the start: your words are tagged `me`, everyone on the call is tagged `them`.
+
+To keep your own voice from being transcribed twice (once from the mic, once bleeding through the system output), Control Center applies echo cancellation: a signal-level WebRTC AEC pass when the platform supports it, and an always-on text-level echo filter as a cross-platform fallback.
+
+## Transcription and diarization
+
+While you record, audio is decoded in **rolling windows** (cut on a short trailing silence, or at a maximum window length) by a Whisper model running off the UI thread. Silent windows are skipped without decoding. Each window becomes a speaker-tagged transcript segment with millisecond offsets.
+
+After you stop, **diarization** runs offline over the recording and splits the remote channel into individual speakers (`Person 1`, `Person 2`, and so on) that you can rename. The transcript is rendered as `[mm:ss] SPEAKER: text` lines.
+
+## Voice profiles
+
+Renaming a speaker does more than label one transcript. Control Center can save
+the speaker's voiceprint as a **voice profile**, so it recognizes them
+automatically in future meetings. When you name a diarized speaker, you're asked
+whether to save the voiceprint; if you do, it's blended into a running centroid
+for that name and matched against new speakers by cosine similarity, so the same
+person shows up with their name next time without you relabeling them.
+
+Voice profiles are workspace-scoped and never cross the boundary. Renaming a
+speaker who was previously saved un-enrolls the old name and offers to enroll
+the new one; deleting a profile removes the stored voiceprint but leaves any
+names already applied to past meetings intact.
+
+
+## The summary pipeline
+
+When a recording stops, Control Center publishes a `MeetingRecordingStopped` [domain event](/manual/concepts/domain-events/). A built-in pipeline template, **`meeting_summary`**, is triggered by that event. The recorder doesn't wait on it; the meeting simply transitions through its status lifecycle:
+
+```
+recording → processing → done
+```
+
+The summary agent receives the title, your rough live notes, and the transcript, and returns **structured JSON**. The pipeline's persist steps then write that JSON to discrete rows:
+
+- `enhancedNotes` and `summary` → the meeting's notes
+- each action item → a `MeetingActionItem` row (content, owner, optional ticket link)
+- each decision → a `MeetingDecision` row
+
+Action items and decisions are **never** parsed out of free-form markdown, only from the agent's structured arrays. If a run produces no structured output, the persist steps are skipped and the raw transcript is kept as a fallback, so you never lose the record.
+
+:::note
+The meeting summary runs as a pipeline, not as an MCP tool. Agents connected over [MCP](/manual/guides/mcp-server/) cannot read your meetings or recordings.
+:::
+
+## Where meetings show up
+
+| Surface | What it shows |
+|---|---|
+| `/meetings` | The list of meetings, with action-item and decision counts |
+| `/meetings/record` | The live recording HUD: your notes on one side, the streaming transcript on the other |
+| `/meetings/:meetingId` | A meeting's detail: Notes, Transcript, Action Items, and Decisions tabs |
+
+## Platform support
+
+On-device capture is driver-free on all three desktop platforms (Core Audio taps on macOS, WASAPI on Windows, PipeWire on Linux). Whisper and diarization models are provided on-device; when a model isn't available the feature degrades rather than failing the recording.
+
+## Related concepts
+
+- [Calendar and scheduling](/manual/concepts/calendar/): record a meeting straight from a calendar event
+- [Pipelines and automation](/manual/concepts/pipelines/): the engine behind the `meeting_summary` summarization
+- [Tickets and delegation](/manual/concepts/tickets/): link a meeting's action items to tickets
+
+## Related guides
+
+- [Record and summarize a meeting](/manual/guides/record-meeting/)

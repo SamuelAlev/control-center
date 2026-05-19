@@ -1,0 +1,31 @@
+{
+  // Cloudflare Pages deploy config for the Control Center WEB CLIENT.
+  //
+  // `flutter build web -t lib/main_web.dart --release` emits a static SPA into
+  // ./build/web. The SPA fallback serves index.html for every unknown path so
+  // client-side routing / deep links (the pairing fragment) resolve to the app
+  // shell. Build + deploy with `scripts/build_web.sh`.
+  //
+  // The web client is a THIN CLIENT: it has no local database and dials a
+  // running cc-server (apps/cc_server) over a WebSocket. The CSP is NOT in
+  // web/_headers: it is stamped per-request by worker/csp.js (run_worker_first),
+  // which reads the cc_proxy_origin cookie the client writes on connect to add
+  // the connected cc-server host to connect-src + img-src — a static file can't
+  // name that host because the user enters it only at connect time. See
+  // lib/bootstrap/bootstrap_web.dart for the connect-time cookie + reload.
+  "name": "control-center-webapp",
+  "compatibility_date": "2026-06-08",
+  "main": "worker/csp.js",
+  "assets": {
+    "directory": "./build/web",
+    // Exposes env.ASSETS so the Worker can serve the static bundle itself.
+    "binding": "ASSETS",
+    // Run the Worker before serving assets so it can stamp the dynamic CSP on
+    // every response (including index.html, which is otherwise served directly).
+    "run_worker_first": true,
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

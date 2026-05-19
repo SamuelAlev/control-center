@@ -1,0 +1,17 @@
+{
+  // Cloudflare Pages deploy config for the Control Center phone PWA.
+  //
+  // `flutter build web --release` emits a static
+  // SPA into ./build/web. The SPA fallback serves index.html for every unknown
+  // path so go_router owns client-side routing; deep links (e.g. the pairing
+  // fragment) resolve to the app shell.
+  "name": "control-center-remote",
+  "compatibility_date": "2026-06-08",
+  "assets": {
+    "directory": "./build/web",
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

@@ -1,0 +1,50 @@
+name: cc_server_core
+description: "Pure-Dart app-server composition for Control Center — the repo-RPC catalog (tickets/messaging/newsfeed), the WebSocket RPC server (LocalRpcServer), live event forwarding, and the paired-device secrets port. Shared by the headless cc_server binary and (transitionally) the desktop's in-process server. No Flutter."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  cc_host:
+    path: ../cc_host
+  cc_infra:
+    path: ../cc_infra
+  cc_mcp:
+    path: ../cc_mcp
+  cc_mcp_client:
+    path: ../cc_mcp_client
+  cc_natives:
+    path: ../cc_natives
+  cc_persistence:
+    path: ../cc_persistence
+  cc_rpc:
+    path: ../cc_rpc
+  dio: ^5.9.2
+  drift: ^2.33.0
+  # Pure-Dart image codecs — the image proxy uses it to transcode favicon ICO
+  # responses to PNG, a format the web client's CanvasKit renderer can decode
+  # (it cannot decode ICO).
+  image: ^4.0.0
+  path: ^1.9.1
+  # Pure-Dart QR matrix generator (no Flutter) — used to render the pairing
+  # deep link as a terminal-scannable QR from the `cc_server pair` command.
+  qr: ^3.0.2
+  uuid: ^4.5.3
+  # Cross-platform WebSocket client — cc_server dials the signaling broker as a
+  # peer to relay the phone's RPC when it isn't directly reachable.
+  web_socket_channel: ^3.0.3
+  meta: any
+
+dev_dependencies:
+  # The real broker, run in-process to integration-test the relay path end to
+  # end (server transport ⇄ broker ⇄ a simulated phone peer).
+  cc_signaling_server:
+    path: ../../apps/cc_signaling_server
+  lints: ^6.0.0
+  test: ^1.25.0

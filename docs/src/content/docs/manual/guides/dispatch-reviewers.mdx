@@ -1,0 +1,77 @@
+---
+title: Dispatch reviewer agents
+description: Manually or automatically dispatch reviewer agents to PRs.
+---
+
+This guide shows you how to dispatch reviewer agents to review pull requests.
+
+## Automatic dispatch
+
+Set up a pipeline trigger to automatically dispatch reviewers when a PR is published:
+
+1. Create a pipeline with a `trigger` step → `dispatchReviewers` step
+2. Set the trigger event to `PullRequestPublished`
+3. Enable the trigger
+
+When any agent opens a PR, the pipeline fires and dispatches reviewer agents automatically.
+
+## Manual dispatch
+
+### From the PR view
+
+1. Open a PR
+2. Click **Dispatch reviewers**
+3. Select reviewer roles (e.g. "reviewer", "security")
+4. Click **Dispatch**
+
+### Via MCP tool
+
+```
+dispatch_reviewers(
+  workspace_id: "...",
+  pr_url: "https://github.com/owner/repo/pull/123",
+  reviewer_roles: ["reviewer", "security"]
+)
+```
+
+### From a pipeline step
+
+Use the `dispatchReviewers` step kind in a pipeline template:
+
+1. Add a `dispatchReviewers` step
+2. Configure the reviewer roles
+3. Set the PR URL from upstream step output or pipeline input
+
+## Reviewer matching
+
+`ReviewerMatchingService` picks the best agent for each requested role:
+
+1. Finds agents with the matching role in the workspace
+2. Checks if the agent is available (not currently running)
+3. Selects the best match based on skills and past performance
+
+If no agent with the exact role is found, it falls back to agents with relevant skills.
+
+## Review channel
+
+Each dispatched reviewer gets a review channel, a group channel associated with the PR via `ReviewChannelAssociation`. The review channel:
+
+- Contains the PR's diff context
+- Receives the reviewer's findings as structured messages
+- Shows the review verdict when the reviewer finishes
+
+Multiple reviewers share the same review channel, making it easy to compare findings.
+
+## Monitor dispatch
+
+The dispatch creates an `AgentRunLog` for each reviewer. Monitor progress in:
+
+- The review channel, with live streaming of findings
+- The PR detail view, which shows review status indicators
+- The dashboard, which lists cross-workspace running agents
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)

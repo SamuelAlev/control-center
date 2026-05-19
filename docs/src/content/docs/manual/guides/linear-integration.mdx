@@ -1,0 +1,78 @@
+---
+title: Set up Linear integration
+description: Connect Linear to Control Center for bidirectional ticket sync.
+---
+
+This guide shows you how to set up the Linear integration.
+
+## Prerequisites
+
+- A Linear account with API access
+- A Linear API key with read/write permissions
+
+## Connect Linear
+
+1. Navigate to **Settings → Integrations**
+2. Find **Linear** and click **Connect**
+3. Enter your Linear API key
+4. Click **Verify**. Control Center validates the key by calling the Linear API
+5. The key is stored securely in your system keychain
+
+## What the integration provides
+
+| Feature | Description |
+|---|---|
+| **Bidirectional sync** | Local tickets mirror to Linear and vice versa |
+| **Provider mapping** | Tickets with `provider: linear` are synced to Linear |
+| **Status sync** | Local status changes are pushed to Linear; Linear changes are pulled |
+| **Team mapping** | Linear teams map to Control Center workspaces |
+
+## How sync works
+
+`TicketSyncService` and `TicketRemoteSyncHandler` handle bidirectional sync:
+
+### Pull (Linear → Control Center)
+
+- Periodically fetches tickets from Linear
+- Creates or updates local ticket mirrors
+- Maps Linear status to Control Center ticket status
+- Preserves the `externalKey` for round-tripping
+
+### Push (Control Center → Linear)
+
+- Local ticket changes (status, title, description, assignee) are pushed to Linear
+- The workflow service stays free of infrastructure concerns
+- Sync is triggered after local mutations complete
+
+## Create a Linear ticket from Control Center
+
+1. Create a ticket with **Provider** set to **Linear**
+2. The ticket is created locally and synced to Linear
+3. The Linear URL is stored on the ticket
+
+## Assign a Linear ticket
+
+Assignment works the same as local tickets:
+
+1. Assign the ticket to an agent
+2. The agent dispatches and works
+3. Status changes are synced back to Linear
+
+## Troubleshooting
+
+### API key invalid
+
+- Regenerate the key in Linear Settings → API
+- Update the key in Control Center Settings → Integrations
+
+### Sync not working
+
+- Check that the ticket's `provider` is set to `linear`
+- Verify the workspace has Linear integration enabled
+- Check logs for sync errors
+
+## Related guides
+
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Create and manage tickets](/manual/guides/manage-tickets/)
+- [Manage API keys](/manual/guides/api-keys/)

@@ -1,0 +1,54 @@
+---
+title: Connect to a remote server
+description: Point the desktop app or web client at a cc_server running on another machine.
+---
+
+By default the desktop spawns its own server on this machine. To keep your data
+on a machine that stays on — a small box, a cloud VM, a build server — connect
+to a `cc_server` running there instead. This guide covers the desktop app and
+the web client.
+
+## Prerequisites
+
+- A running `cc_server` reachable over the network. If you don't have one yet, see [Run a headless server](/manual/guides/run-headless-server/).
+- The three pairing values the server minted for you: the **server URL** (`wss://…/rpc`), a **device id**, and a **pairing key**.
+
+## Connect the desktop app
+
+1. Launch Control Center.
+2. On the first-run screen, choose **Connect to a remote server**.
+3. Enter the server URL, device id, and pairing key. Choose whether to remember them.
+4. Control Center dials the server and lands on the dashboard, scoped to the workspace the server bound the session to.
+
+To switch a desktop that already runs locally:
+
+1. Open **Settings → Server connection**.
+2. Change the mode to **Remote** and enter the server URL, device id, and pairing key.
+3. Restart Control Center. The connection is resolved once at boot, before the UI starts, so the change applies on the next launch.
+
+The desktop is now a pure renderer: it owns no database. Every screen reads and writes through the remote server over a secure WebSocket.
+
+## Connect the web client
+
+The web build is always remote — a browser cannot run a server.
+
+1. Open the deployed web client.
+2. Enter the server URL, device id, and pairing key in the connect form.
+3. The client dials the server and renders the full desktop interface.
+
+If a pairing deep link (`?server=…&device=…` or a base64url fragment) is in the URL, the fields are pre-filled and the pairing key rides in the URL fragment so the static host never sees it. Once connected, the web client is feature-complete with the desktop against the same server.
+
+:::note[Media and security]
+Media (avatars, feed images, PR screenshots) is proxied through the connected server, so the browser never fetches an upstream host directly. A per-request Content-Security Policy, stamped from a non-sensitive cookie, allows only the connected server's origin.
+:::
+
+## Troubleshooting
+
+- **Wrong workspace**: every server session binds to exactly one workspace. Switch it on the client; it never changes the server's view for anyone else. See [Workspaces and isolation](/manual/concepts/workspaces/).
+- **Pairing key rejected**: re-run `cc_server pair` on the server to rotate the key, then enter the new one. A revoked device finds its key gone and fails closed.
+- **Connection times out**: the server must be reachable from the client. For a remote server over the open internet, ensure TLS (`--bind any` requires it) and that the port is open.
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/)
+- [Pair a device](/manual/guides/pair-a-device/) (the WebRTC phone path)

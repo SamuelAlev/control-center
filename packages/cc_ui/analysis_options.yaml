@@ -1,0 +1,27 @@
+# Analyzer config for the cc_ui design-system package.
+#
+# cc_ui is a pure-Flutter UI package: it builds on package:flutter/widgets.dart
+# and MUST NOT import Material, Cupertino, Riverpod, go_router, l10n,
+# drift, dio, or the host app (package:control_center/...). That boundary is
+# enforced by test/core/architecture_constraints_test.dart in the app.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+  errors:
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    always_use_package_imports: true
+    avoid_relative_lib_imports: true
+    directives_ordering: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    sort_constructors_first: true
+    use_super_parameters: true
+    always_declare_return_types: true

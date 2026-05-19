@@ -1,0 +1,28 @@
+name: cc_mcp_client
+description: >-
+  The Control Center MCP CLIENT — connects to EXTERNAL MCP servers (stdio /
+  StreamableHTTP / SSE), bridges their remote tools into CC's local tool
+  registry, and adds the cross-cutting tool ecosystem (BM25 tool discovery,
+  per-args capability tiers, multi-format config discovery, OAuth 2.1,
+  background-process management, worktree-aware semantic code search, and the
+  advisor/watchdog). Pure Dart (cc_domain + dart:io), no Flutter, so it links
+  into both the desktop app and the Flutter-free `dart build cli` server binary.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  crypto: ^3.0.6
+  path: ^1.9.1
+  uuid: ^4.5.3
+  meta: any
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^6.0.0

@@ -1,0 +1,23 @@
+name: cc_rpc
+description: "Transport-agnostic JSON-RPC client + channel transports for Control Center. Web-safe (no dart:io/ffi): the desktop in REMOTE mode, the full web build, and the cc_remote PWA all dial a cc-server through this. Pairs with cc_domain (wire types) and cc_host (the server half)."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  # Cross-platform WebSocket (VM + browser): one client transport for desktop
+  # REMOTE and web.
+  web_socket_channel: ^3.0.3
+  # Pairing/channel-auth crypto (HMAC challenge, PSK gen) — pure, no dart:io.
+  crypto: ^3.0.7
+  meta: any
+
+dev_dependencies:
+  test: any
+  lints: any

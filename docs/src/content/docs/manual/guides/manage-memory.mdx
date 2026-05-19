@@ -1,0 +1,97 @@
+---
+title: Manage workspace memory
+description: Create memory domains, add facts and policies, and control agent access.
+---
+
+This guide shows you how to manage your workspace's knowledge store.
+
+## Memory domains
+
+Domains group related knowledge. Create domains for different aspects of your project:
+
+1. Navigate to **Memory** in the sidebar
+2. Click **Create domain**
+3. Enter a name (e.g. "conventions", "api-design", "security")
+4. Add a description
+5. Click **Create**
+
+Domains are workspace-scoped and control access boundaries.
+
+## Add facts
+
+Facts are knowledge units that agents can retrieve during dispatch.
+
+1. Navigate to a memory domain
+2. Click **Add fact**
+3. Enter:
+   - **Topic**: a short label (e.g. "error handling pattern")
+   - **Content**: the knowledge text (e.g. "All API errors use the Problem Details RFC 7807 format with a `type` field.")
+   - **Confidence**: how confident you are in this fact (0.0–1.0)
+4. Click **Save**
+
+Facts are embedded automatically for vector search. Agents retrieve relevant facts based on the conversation context, so you don't need to explicitly link facts to agents.
+
+## Supersede facts
+
+When knowledge changes, supersede the old fact:
+
+1. Find the outdated fact
+2. Click **Supersede**
+3. Enter the new content
+4. Save
+
+The old fact is marked as superseded and won't appear in search results, but it's preserved for audit trail.
+
+## Add policies
+
+Policies are normative rules derived from facts. They constrain agent behavior.
+
+1. Navigate to a domain
+2. Click **Add policy**
+3. Enter:
+   - **Rule**: the normative statement (e.g. "Never use `print()` for logging; always use the `AppLog` utility.")
+   - **Required role**: optionally gate to a specific role (e.g. only "coder" agents see this policy)
+   - **Source facts**: link to the facts that justify this policy
+4. Click **Save**
+
+Active policies are injected into agent prompts when relevant.
+
+## Control access
+
+Memory access grants determine which agent roles can read or write to each domain.
+
+1. Navigate to **Memory → Access grants**
+2. For each domain, set permissions per role:
+
+| Permission | Effect |
+|---|---|
+| `none` | The role cannot see facts in this domain |
+| `read` | The role can search and retrieve facts |
+| `write` | The role can create, update, and supersede facts and policies |
+
+For example, you might grant:
+
+- **Coder**: read access to "conventions", write access to "api-design"
+- **Reviewer**: read access to "conventions" and "security"
+- **Security**: read/write access to "security"
+
+## Working memory
+
+Each agent has a private working memory scratchpad. Agents use it to persist transient state across runs (e.g. "I'm in the middle of refactoring the auth module").
+
+Working memory is automatically injected into the agent's prompt at dispatch time. You don't manage it directly; it's agent-owned.
+
+## Search
+
+Control Center searches memory using a hybrid approach:
+
+- **Vector search**: semantic similarity between the query and fact embeddings
+- **FTS search**: full-text keyword matching
+- **Hybrid (RRF)**: combines both for the best results
+
+Agents automatically search memory during dispatch via `BuildMemoryContextUseCase`. You can also search manually from the Memory view.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Memory and knowledge](/manual/concepts/memory-knowledge/)

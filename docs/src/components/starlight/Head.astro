@@ -1,0 +1,61 @@
+---
+/**
+ * Starlight `Head` override — renders Starlight's built-in head (title, meta
+ * description, canonical, OpenGraph, sitemap link, …) unchanged, then appends
+ * per-page JSON-LD: a `TechArticle` describing the doc and a `BreadcrumbList`
+ * trail. Registered via `components.Head` in astro.config.mjs, the same
+ * mechanism used for SiteTitle + ThemeSelect.
+ *
+ * Breadcrumb URLs are kept honest: only `/` and `/manual/` resolve to real
+ * pages (section levels like `/manual/guides/` have no index), so the trail is
+ * Home → Documentation → page, never a fabricated category URL.
+ */
+import Default from '@astrojs/starlight/components/Head.astro';
+import StructuredData from '../shared/StructuredData.astro';
+
+const { starlightRoute } = Astro.locals;
+const { entry } = starlightRoute;
+
+const siteHref = new URL('/', Astro.site).href;
+const docsHref = new URL('/manual/', Astro.site).href;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const { title, description } = entry.data;
+
+// The 404 entry isn't a real article — skip structured data there.
+const isError = entry.id === '404' || entry.id.endsWith('/404');
+
+const crumbs = [{ name: 'Home', item: siteHref }];
+if (canonical !== docsHref) crumbs.push({ name: 'Documentation', item: docsHref });
+crumbs.push({ name: title, item: canonical });
+
+const schema = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: title,
+    ...(description ? { description } : {}),
+    url: canonical,
+    inLanguage: starlightRoute.lang ?? 'en',
+    isPartOf: { '@type': 'WebSite', name: 'Control Center', url: siteHref },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Control Center',
+      url: siteHref,
+      logo: new URL('/favicon.svg', Astro.site).href,
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: crumbs.map((c, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: c.name,
+      item: c.item,
+    })),
+  },
+];
+---
+
+<Default><slot /></Default>
+{!isError && <StructuredData schema={schema} />}

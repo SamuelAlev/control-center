@@ -1,0 +1,74 @@
+---
+title: Your first workspace
+description: Create a workspace, add repos, and understand the isolation model.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- A workspace named after your project
+- One or more Git repositories linked to it
+- A CEO agent ready to hire other agents
+- An understanding of how workspace isolation protects your data
+
+## Step 1: Create a workspace
+
+After completing onboarding (GitHub auth + first workspace), Control Center lands on the dashboard. Let's walk through workspace creation deliberately.
+
+1. Navigate to **Workspaces** in the sidebar
+2. Click **Create workspace**
+3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
+4. Optionally upload a logo
+5. Click **Create**
+
+Control Center immediately:
+
+- Creates the workspace container in the database
+- Publishes a `WorkspaceCreated` domain event
+- Seeds a **CEO agent**, a built-in agent with the CEO role that can hire, coordinate, and delegate to other agents
+
+The CEO agent appears in your agent registry. Its persona is tailored for coordination and management.
+
+## Step 2: Add a repository
+
+A workspace needs repos for agents to work on.
+
+1. Navigate to **Settings → Repositories**
+2. Click **Add repository**
+3. Enter the local path to your Git repository (e.g. `~/dev/my-project`)
+4. Control Center inspects the repo, detects the GitHub remote (owner/repo), and registers it
+5. In your workspace detail view, click **Link repo** to associate it with this workspace
+
+Each linked repo becomes available for worktree isolation. When an agent works on a task, it gets a copy-on-write clone on its own branch; the source checkout is never mutated.
+
+## Step 3: Explore the workspace
+
+Navigate to your workspace in the sidebar. You'll see:
+
+- **Agents**: the CEO agent (and any others you add)
+- **Channels**: empty for now, but this is where agent conversations live
+- **Memory**: the workspace's knowledge store (facts, policies, domains)
+- **Tickets**: the workspace's work tracking
+
+Everything here is scoped to this workspace. If you create a second workspace later, its agents, channels, memory, and tickets are completely separate.
+
+## Step 4: Understand isolation
+
+Workspaces are the top-level isolation boundary. This means:
+
+- An agent in Workspace A cannot see or access data in Workspace B
+- Memory facts, policies, and domains are workspace-scoped
+- Channels and messages are workspace-scoped
+- Tickets and projects are workspace-scoped
+- Repos are global (shared across workspaces) but worktrees are workspace-scoped
+
+This is enforced at the database level: every query on a workspace-scoped table filters by `workspaceId`. Cross-workspace access raises `WorkspaceMismatchException`.
+
+For a deeper dive, see [Workspaces and isolation](/manual/concepts/workspaces/).
+
+## Recap
+
+You created a workspace, linked a repo, and explored the isolation model. The CEO agent is ready to hire teammates.
+
+**Next:** [Dispatch your first agent](/manual/tutorials/first-agent/) to put the workspace to work.

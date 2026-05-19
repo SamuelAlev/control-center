@@ -1,0 +1,12 @@
+diff --git a/lib/src/ort_session.dart b/lib/src/ort_session.dart
+index 4ebd2eb5e05f22c79f75e3c1d304dfdef5054239..106969f9846fcdeee6048a7ebb64b1768cb42622 100644
+--- a/lib/src/ort_session.dart
++++ b/lib/src/ort_session.dart
+@@ -1,7 +1,6 @@
+ import 'dart:ffi' as ffi;
+ import 'dart:io';
+ import 'dart:typed_data';
+-import 'package:flutter/services.dart';
+ 
+ import 'package:ffi/ffi.dart';
+ import 'package:onnxruntime_v2/src/bindings/bindings.dart';

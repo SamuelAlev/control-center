@@ -1,0 +1,571 @@
+import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/app_fonts.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/utils/syntax_palette.dart';
+import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_smooth_markdown/flutter_smooth_markdown.dart' as sm;
+import 'package:markdown/markdown.dart' as md;
+
+/// Canonical code-block visual constants.
+///
+/// Shared by both markdown engines (`flutter_markdown_plus` via
+/// [CodeBlockBuilder], `flutter_smooth_markdown` via [buildSharedCodeBlock]
+/// and [smMarkdownStyleSheet]) and the anchored file snippet
+/// (`AnchoredCodeBlock`) so every code surface in the app — PR
+/// descriptions/summaries, chat messages, ticket descriptions, meeting notes,
+/// anchored snippets — renders identically.
+const EdgeInsets kCodeBlockContentPadding = EdgeInsets.symmetric(
+  horizontal: 14,
+  vertical: 12,
+);
+
+/// Padding for the fenced code-block header row (language label + copy button).
+const EdgeInsets kCodeBlockHeaderPadding = EdgeInsets.symmetric(
+  horizontal: 12,
+  vertical: 6,
+);
+
+/// Padding inside an inline `code` chip.
+const EdgeInsets kInlineCodeChipPadding = EdgeInsets.symmetric(
+  horizontal: 4,
+  vertical: 2,
+);
+
+/// Corner radius of an inline `code` chip.
+const double kInlineCodeChipRadius = 4;
+
+/// Shared [CcCheckbox] task-list checkbox builder for read-only markdown
+/// rendering (PR descriptions, review comments, chat messages, tickets).
+///
+/// Wraps the [CcCheckbox] in a [FittedBox] so it renders proportionally
+/// within the markdown list's constrained bullet slot regardless of the
+/// platform's default checkbox size.
+MarkdownCheckboxBuilder markdownCheckboxBuilder(BuildContext context) =>
+    (bool value) => SizedBox(
+      height: 22,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: CcCheckbox(value: value, onChanged: null),
+      ),
+    );
+
+/// Returns the shared GitHub-style [MarkdownStyleSheet] used for PR
+/// descriptions, review comments, chat messages, and ticket descriptions.
+///
+/// Tuned to match the look in `.draft/screens/Screenshot 2026-05-14 at 17.52.52`:
+/// generous heading hierarchy with underline rules under h1/h2, soft inline
+/// `code` chips, a quiet code-block background, and breathing room between
+/// list items and paragraphs.
+MarkdownStyleSheet githubMarkdownStyleSheet(
+  BuildContext context, {
+  bool compact = false,
+  String? codeFontFamily,
+  bool codeLigatures = true,
+}) {
+  final theme = Theme.of(context);
+  final tokens = context.designSystem ?? DesignSystemTokens.light();
+  final base = MarkdownStyleSheet.fromTheme(theme);
+
+  final fg = tokens.textPrimary;
+  final muted = tokens.textTertiary;
+  final divider = tokens.borderSecondary;
+  // Inline code: full-opacity secondary so the chip reads as a distinct pill
+  // against body text. Code blocks reuse this color.
+  final codeBg = tokens.bgSecondary;
+  const link = Color(0xFF1F75FE);
+
+  final bodyFontSize = compact ? 13.5 : 14.5;
+
+  return base.copyWith(
+    p: theme.textTheme.bodyMedium?.copyWith(
+      fontSize: bodyFontSize,
+      height: 1.6,
+      color: fg,
+    ),
+    pPadding: EdgeInsets.only(bottom: compact ? 6 : 10),
+    h1: theme.textTheme.headlineSmall?.copyWith(
+      fontSize: compact ? 22 : 26,
+      fontWeight: FontWeight.w700,
+      color: fg,
+      height: 1.25,
+    ),
+    h1Padding: EdgeInsets.only(top: compact ? 12 : 20, bottom: 4),
+    h1Align: WrapAlignment.start,
+    h2: theme.textTheme.titleLarge?.copyWith(
+      fontSize: compact ? 18 : 20,
+      fontWeight: FontWeight.w600,
+      color: fg,
+      height: 1.3,
+    ),
+    h2Padding: EdgeInsets.only(top: compact ? 12 : 18, bottom: 4),
+    h3: theme.textTheme.titleMedium?.copyWith(
+      fontSize: compact ? 15 : 16,
+      fontWeight: FontWeight.w600,
+      color: fg,
+      height: 1.35,
+    ),
+    h3Padding: EdgeInsets.only(top: compact ? 10 : 14, bottom: 2),
+    h4: theme.textTheme.titleSmall?.copyWith(
+      fontSize: 14,
+      fontWeight: FontWeight.w600,
+      color: fg,
+    ),
+    h4Padding: const EdgeInsets.only(top: 12, bottom: 2),
+    h5: theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: fg,
+    ),
+    h6: theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: muted,
+    ),
+    a: const TextStyle(color: link, decoration: TextDecoration.none),
+    // Inline `code` chip: background is applied via [InlineCodeBuilder]'s
+    // Container wrapper so it doesn't paint over the SelectionArea highlight.
+    // Default to the app's mono font (Fira Code) rather than the generic
+    // platform `monospace`; honour the user's selected code font when one is
+    // threaded in, else the bundled default. `codeStyleDynamic` loads
+    // non-bundled Google families via google_fonts.
+    code: AppFonts.codeStyleDynamic(
+      codeFontFamily ?? AppFonts.codeFamily,
+      fontSize: bodyFontSize - 1,
+      color: fg,
+    ).copyWith(
+      letterSpacing: 0.2,
+      fontWeight: FontWeight.w500,
+      fontFeatures: AppFonts.codeFontFeatures(ligatures: codeLigatures),
+    ),
+    codeblockDecoration: BoxDecoration(
+      color: codeBg,
+      borderRadius: AppRadii.brLg,
+      border: Border.all(color: divider),
+    ),
+    codeblockPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    blockquote: theme.textTheme.bodyMedium?.copyWith(
+      fontSize: bodyFontSize,
+      height: 1.6,
+      color: muted,
+      fontStyle: FontStyle.italic,
+    ),
+    blockquoteDecoration: BoxDecoration(
+      border: Border(left: BorderSide(color: divider, width: 3)),
+    ),
+    blockquotePadding: const EdgeInsets.only(left: 12, top: 2, bottom: 2),
+    listIndent: 30,
+    listBullet: theme.textTheme.bodyMedium?.copyWith(
+      fontSize: bodyFontSize,
+      height: 1.6,
+      color: fg,
+    ),
+    listBulletPadding: const EdgeInsets.only(right: 6),
+    horizontalRuleDecoration: BoxDecoration(
+      border: Border(top: BorderSide(color: divider)),
+    ),
+    tableHead: theme.textTheme.bodyMedium?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: fg,
+    ),
+    tableBody: theme.textTheme.bodyMedium?.copyWith(
+      fontSize: bodyFontSize,
+      color: fg,
+    ),
+    tableBorder: TableBorder.all(color: divider, width: 0.5),
+    tableHeadAlign: TextAlign.left,
+    tableCellsPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    // `flutter_markdown_plus` builds tables with this as `defaultColumnWidth`.
+    // `IntrinsicColumnWidth` would call `getMaxIntrinsicWidth` on every cell,
+    // which throws if a cell contains a `LayoutBuilder` — and our image and
+    // video markdown renderers in `github_markdown_body.dart` both use one to
+    // cap their width against the parent constraints. PR descriptions with a
+    // markdown table around an image (e.g. SamuelAlev/control-center#14414) hit that
+    // path and bring the whole render frame down. `FlexColumnWidth` doesn't
+    // query intrinsics, so cells with `LayoutBuilder` are safe.
+    tableColumnWidth: const FlexColumnWidth(),
+    em: TextStyle(fontStyle: FontStyle.italic, color: fg),
+    strong: TextStyle(fontWeight: FontWeight.w700, color: fg),
+  );
+}
+
+/// Custom builder for inline `code` elements that renders the code chip using a
+/// [Container] background instead of [TextStyle.backgroundColor].
+///
+/// `TextStyle.backgroundColor` is painted by the paragraph renderer *on top*
+/// of the selection highlight, making selected inline code appear unselected.
+/// Moving the background to a [Container] keeps the chip look while letting the
+/// [SelectionArea] highlight shine through.
+///
+/// The chip is wrapped in a [WidgetSpan] inside a [Text.rich] rather than
+/// returned as a bare [Container]. flutter_markdown_plus assembles each
+/// paragraph's inline content into a `Wrap`, and only merges adjacent *text*
+/// widgets into a single `RichText` (see `MarkdownBuilder._mergeInlineChildren`).
+/// A builder that returns a bare widget becomes a standalone `Wrap` child,
+/// which splits the text run: the text *following* the chip is then measured
+/// and wrapped as one atomic block, so it jumps to the next line whenever it
+/// doesn't fully fit in the space left after the chip — even with room to
+/// spare. Returning a [Text.rich] makes the builder count as "text", so the
+/// chip's [WidgetSpan] is merged into the surrounding run and the text after
+/// it wraps naturally, character by character.
+/// Renders an inline `code` chip using a [Container] background instead of
+/// [TextStyle.backgroundColor].
+///
+/// `TextStyle.backgroundColor` is painted by the paragraph renderer *on top*
+/// of the selection highlight, making selected inline code appear unselected.
+/// Moving the background to a [Container] keeps the chip look while letting the
+/// [SelectionArea] highlight shine through.
+///
+/// The chip is wrapped in a [WidgetSpan] inside a [Text.rich] rather than
+/// returned as a bare [Container]. flutter_markdown_plus assembles each
+/// paragraph's inline content into a `Wrap`, and only merges adjacent *text*
+/// widgets into a single `RichText` (see `MarkdownBuilder._mergeInlineChildren`).
+/// A builder that returns a bare widget becomes a standalone `Wrap` child,
+/// which splits the text run: the text *following* the chip is then measured
+/// and wrapped as one atomic block, so it jumps to the next line whenever it
+/// doesn't fully fit in the space left after the chip — even with room to
+/// spare. Returning a [Text.rich] makes the builder count as "text", so the
+/// chip's [WidgetSpan] is merged into the surrounding run and the text after
+/// it wraps naturally, character by character.
+///
+/// The background colour is resolved from `designSystem` inside the chip's own
+/// build, so this works from both a `BuildContext` (flutter_markdown_plus) and
+/// a `MarkdownRenderContext` (flutter_smooth_markdown, which has no
+/// `BuildContext`).
+Widget buildSharedInlineCodeChip(String code, TextStyle codeStyle) {
+  return Text.rich(
+    TextSpan(
+      children: [
+        WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: _InlineCodeChip(code: code, codeStyle: codeStyle),
+        ),
+      ],
+    ),
+  );
+}
+
+class _InlineCodeChip extends StatelessWidget {
+  const _InlineCodeChip({required this.code, required this.codeStyle});
+
+  final String code;
+  final TextStyle codeStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final codeBg =
+        (context.designSystem ?? DesignSystemTokens.light()).bgSecondary;
+    return Container(
+      padding: kInlineCodeChipPadding,
+      decoration: BoxDecoration(
+        color: codeBg,
+        borderRadius: BorderRadius.circular(kInlineCodeChipRadius),
+      ),
+      child: Text(code, style: codeStyle),
+    );
+  }
+}
+
+/// `flutter_markdown_plus` builder for inline `code` elements that delegates
+/// to the canonical [buildSharedInlineCodeChip] renderer.
+class InlineCodeBuilder extends MarkdownElementBuilder {
+  @override
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    final text = element.textContent;
+    if (text.isEmpty) {
+      return null;
+    }
+    return buildSharedInlineCodeChip(text, preferredStyle ?? const TextStyle());
+  }
+}
+
+/// Custom builder for `pre` (fenced code block) elements that renders a
+/// language label, a copy button which places the code on the clipboard
+/// wrapped in triple backticks, and language-aware syntax highlighting
+/// (via `highlight.dart` + the shared [syntaxPaletteFor] palette).
+///
+/// The code is set in the app's mono font (Fira Code by default); pass
+/// [codeFontFamily] to honour the user's selected code font
+/// (`codeFontFamilyProvider`).
+/// Builds the canonical fenced code-block widget: a language label +
+/// copy-button header row, then a horizontally-scrollable, syntax-highlighted
+/// code body (via `highlight.dart` + the shared [syntaxPaletteFor] palette).
+///
+/// This is the single renderer used by both markdown engines:
+/// - `flutter_markdown_plus` — invoked from [CodeBlockBuilder].
+/// - `flutter_smooth_markdown` — passed as the `codeBuilder` callback to
+///   `sm.SmoothMarkdown`/`sm.StreamMarkdown`.
+///
+/// The code is set in the app's mono font (Fira Code by default); pass
+/// [codeFontFamily] to honour the user's selected code font
+/// (`codeFontFamilyProvider`).
+Widget buildSharedCodeBlock(
+  BuildContext context,
+  String code,
+  String? language, {
+  String? codeFontFamily,
+  bool codeLigatures = true,
+}) {
+  final tokens = context.designSystem ?? DesignSystemTokens.light();
+  final codeStyle = githubMarkdownStyleSheet(
+    context,
+    codeFontFamily: codeFontFamily,
+    codeLigatures: codeLigatures,
+  ).code;
+
+  final spans = highlightCodeSpans(
+    code: code,
+    languageId: resolveHighlightLanguage(language),
+    palette: syntaxPaletteFor(Theme.of(context).brightness),
+  );
+
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Container(
+        padding: kCodeBlockHeaderPadding,
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: tokens.borderSecondary)),
+        ),
+        child: Row(
+          children: [
+            if (language != null)
+              Text(
+                language,
+                style: TextStyle(
+                  color: tokens.textTertiary,
+                  fontSize: 12,
+                ),
+              ),
+            const Spacer(),
+            _CopyCodeButton(code: code, language: language),
+          ],
+        ),
+      ),
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: kCodeBlockContentPadding,
+        child: Text.rich(TextSpan(style: codeStyle, children: spans)),
+      ),
+    ],
+  );
+}
+
+/// Custom builder for `pre` (fenced code block) elements that delegates to the
+/// shared [buildSharedCodeBlock] renderer so `flutter_markdown_plus` surfaces
+/// render identically to the `flutter_smooth_markdown` chat path.
+class CodeBlockBuilder extends MarkdownElementBuilder {
+  /// Creates a [CodeBlockBuilder].
+  CodeBlockBuilder({this.codeFontFamily, this.codeLigatures = true});
+
+  /// The mono font family to render the code in. Falls back to Fira Code
+  /// when null (see [githubMarkdownStyleSheet]).
+  final String? codeFontFamily;
+
+  /// Whether programming ligatures are rendered in the fenced code block.
+  final bool codeLigatures;
+
+  @override
+  Widget? visitElementAfterWithContext(
+    BuildContext context,
+    md.Element element,
+    TextStyle? preferredStyle,
+    TextStyle? parentStyle,
+  ) {
+    String? language;
+    for (final child in element.children ?? const <md.Node>[]) {
+      if (child is md.Element && child.tag == 'code') {
+        final cls = child.attributes['class'] ?? '';
+        if (cls.startsWith('language-')) {
+          language = cls.substring(9);
+        }
+      }
+    }
+
+    final code = element.textContent.replaceAll(RegExp(r'\n$'), '');
+    if (code.isEmpty) {
+      return null;
+    }
+
+    return buildSharedCodeBlock(
+      context,
+      code,
+      language,
+      codeFontFamily: codeFontFamily,
+      codeLigatures: codeLigatures,
+    );
+  }
+}
+
+class _CopyCodeButton extends StatefulWidget {
+  const _CopyCodeButton({required this.code, this.language});
+
+  final String code;
+  final String? language;
+
+  @override
+  State<_CopyCodeButton> createState() => _CopyCodeButtonState();
+}
+
+class _CopyCodeButtonState extends State<_CopyCodeButton> {
+  bool _copied = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(
+        _copied ? AppIcons.check : AppIcons.copy,
+        size: 14,
+        color: (context.designSystem ?? DesignSystemTokens.light()).textTertiary,
+      ),
+      visualDensity: VisualDensity.compact,
+      tooltip: _copied
+          ? AppLocalizations.of(context).copied
+          : AppLocalizations.of(context).copy,
+      onPressed: () {
+        final lang = widget.language;
+        final wrapped = lang != null
+            ? '```$lang\n${widget.code}\n```'
+            : '```\n${widget.code}\n```';
+        Clipboard.setData(ClipboardData(text: wrapped));
+        setState(() => _copied = true);
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() => _copied = false);
+          }
+        });
+      },
+    );
+  }
+}
+
+/// Returns the shared `flutter_smooth_markdown` [sm.MarkdownStyleSheet] used
+/// for chat bubbles, plan messages, and transcript segments.
+///
+/// Mirrors [githubMarkdownStyleSheet] so code blocks and inline code render
+/// identically across both markdown engines. The non-code fields (text,
+/// headings, links, blockquotes, tables) reuse the values that were previously
+/// duplicated across the three messaging styleSheet factories.
+///
+/// The inline-code chip background is **not** set via [TextStyle.backgroundColor]
+/// here — that paints over the selection highlight. Instead the chip is drawn
+/// by [SmInlineCodeBuilder] (registered for `'inline_code'`), which reuses
+/// [buildSharedInlineCodeChip]. Fenced code blocks render through
+/// [buildSharedCodeBlock] via the `codeBuilder` callback.
+sm.MarkdownStyleSheet smMarkdownStyleSheet(
+  BuildContext context, {
+  String? codeFontFamily,
+  bool compact = false,
+}) {
+  final theme = Theme.of(context);
+  final tokens = context.designSystem ?? DesignSystemTokens.light();
+  final fg = tokens.textPrimary;
+  final divider = tokens.borderSecondary;
+  final codeBg = tokens.bgSecondary;
+
+  final monoFamily = codeFontFamily ?? AppFonts.codeFamily;
+  final bodyFontSize = compact ? 13.5 : 14.5;
+
+  final bodyStyle = theme.textTheme.bodyMedium?.copyWith(
+    fontSize: bodyFontSize,
+    height: 1.6,
+    color: fg,
+  );
+
+  return sm.MarkdownStyleSheet.fromTheme(theme).copyWith(
+    textStyle: bodyStyle,
+    h1Style: theme.textTheme.titleLarge?.copyWith(
+      fontSize: compact ? 18 : 20,
+      fontWeight: FontWeight.w600,
+      color: fg,
+      height: 1.3,
+    ),
+    h2Style: theme.textTheme.titleLarge?.copyWith(
+      fontSize: compact ? 16 : 18,
+      fontWeight: FontWeight.w600,
+      color: fg,
+      height: 1.3,
+    ),
+    h3Style: theme.textTheme.titleMedium?.copyWith(
+      fontSize: compact ? 14 : 16,
+      fontWeight: FontWeight.w600,
+      color: fg,
+      height: 1.35,
+    ),
+    // Inline code: text style only. The chip background + padding are drawn by
+    // [SmInlineCodeBuilder] (see below); do NOT use TextStyle.backgroundColor.
+    inlineCodeStyle: AppFonts.codeStyleDynamic(
+      monoFamily,
+      fontSize: bodyFontSize - 1,
+      color: fg,
+    ).copyWith(letterSpacing: 0.2, fontWeight: FontWeight.w500),
+    // Fenced code: text style only — the block shell (header, copy button,
+    // highlight, decoration) is drawn by [buildSharedCodeBlock] via the
+    // `codeBuilder` callback.
+    codeBlockStyle: AppFonts.codeStyleDynamic(
+      monoFamily,
+      fontSize: bodyFontSize - 1,
+      color: fg,
+    ).copyWith(height: 1.5),
+    codeBlockDecoration: BoxDecoration(
+      color: codeBg,
+      borderRadius: AppRadii.brLg,
+      border: Border.all(color: divider),
+    ),
+    codeBlockPadding: kCodeBlockContentPadding,
+    linkStyle: theme.textTheme.bodyMedium?.copyWith(
+      color: tokens.textBrandPrimary,
+      decoration: TextDecoration.underline,
+      height: 1.6,
+    ),
+    blockquoteStyle: theme.textTheme.bodyMedium?.copyWith(
+      color: tokens.textTertiary,
+      height: 1.6,
+    ),
+    blockquoteDecoration: BoxDecoration(
+      color: codeBg,
+      borderRadius: BorderRadius.circular(4),
+      border: Border(left: BorderSide(color: divider, width: 3)),
+    ),
+    horizontalRuleColor: divider,
+    tableHeaderStyle: theme.textTheme.labelSmall?.copyWith(
+      color: fg,
+      fontWeight: FontWeight.w600,
+    ),
+    tableCellStyle: theme.textTheme.bodySmall?.copyWith(color: fg),
+    tableBorder: TableBorder.all(color: divider, width: 0.5),
+    tableHeaderDecoration: BoxDecoration(color: codeBg),
+  );
+}
+
+/// `flutter_smooth_markdown` builder for inline `'inline_code'` nodes that
+/// reuses the canonical [buildSharedInlineCodeChip] renderer, so chat inline
+/// code matches the PR/ticket look exactly (Container background, not
+/// [TextStyle.backgroundColor]).
+class SmInlineCodeBuilder extends sm.MarkdownWidgetBuilder {
+  /// Creates an [SmInlineCodeBuilder].
+  const SmInlineCodeBuilder();
+
+  @override
+  bool canBuild(sm.MarkdownNode node) => node is sm.InlineCodeNode;
+
+  @override
+  Widget build(
+    sm.MarkdownNode node,
+    sm.MarkdownStyleSheet styleSheet,
+    sm.MarkdownRenderContext context,
+  ) {
+    final code = (node as sm.InlineCodeNode).code;
+    return buildSharedInlineCodeChip(
+      code,
+      styleSheet.inlineCodeStyle ?? const TextStyle(),
+    );
+  }
+}

@@ -1,0 +1,37 @@
+# Cloudflare response headers for the Control Center web client.
+#
+# Flutter copies everything under web/ into build/web/, and Cloudflare serves
+# these. They are NOT applied by `flutter run -d chrome` locally (a strict CSP
+# there would block the dev server's hot-reload socket), which is fine.
+#
+# The Content-Security-Policy is NOT here: it is stamped per-request by
+# worker/csp.js (wrangler.jsonc `run_worker_first`). The web client dials a
+# cc-server whose host the user enters only at connect time, so a static policy
+# can't name it; the Worker reads the cc_proxy_origin cookie (written on connect
+# — see lib/bootstrap/bootstrap_web.dart) and adds that origin to connect-src +
+# img-src. Without the cookie (a fresh, unpaired page) the policy is strict —
+# no proxy egress — so the connect form loads against a locked-down page.
+#
+# The remaining headers below are also re-asserted by the Worker (it may not see
+# this file's rules on ASSETS subresponses when run_worker_first is on), kept
+# here as documentation + belt-and-suspenders. Only the entry-file cache rules
+# are unique to this file.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(self), display-capture=(self), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# The version-orchestrating entry files must always revalidate, or a cached
+# index.html / bootstrap / service worker can pin an old bundle after a deploy.
+# (Flutter's main.dart.js is not content-hashed, so the service worker owns
+# versioning — keep these fresh and let it manage the rest.)
+/index.html
+  Cache-Control: no-cache
+/flutter_bootstrap.js
+  Cache-Control: no-cache
+/flutter_service_worker.js
+  Cache-Control: no-cache
+/manifest.json
+  Cache-Control: no-cache

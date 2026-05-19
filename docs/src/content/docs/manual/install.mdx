@@ -1,0 +1,92 @@
+---
+title: Install
+description: System requirements, download links, and setup verification for Control Center.
+---
+
+## System requirements
+
+| Requirement | macOS | Windows | Linux |
+|---|---|---|---|
+| OS version | macOS 13+ (Ventura) | Windows 10+ | A modern distro with a graphical environment |
+| Architecture | Apple Silicon (arm64) and Intel (x86_64) | x86_64 | x86_64 |
+| Disk space | ~200 MB for the app + space for worktrees | ~200 MB | ~200 MB |
+| Git | Required | Required | Required |
+
+## Download
+
+macOS is the shipping platform today. Windows and Linux builds are in progress; you can [build from source](#building-from-source) on all three platforms in the meantime.
+
+- **macOS**: Download the latest `.dmg` from [GitHub Releases](https://github.com/SamuelAlev/control-center/releases), open it, and drag Control Center to Applications. The build is signed with a Developer ID and notarized by Apple, so it opens normally. You can also install it with Homebrew:
+
+  ```bash
+  brew tap control-center/tap
+  brew install --cask control-center
+  ```
+
+- **Windows and Linux**: prebuilt downloads are not available yet. Watch [GitHub Releases](https://github.com/SamuelAlev/control-center/releases) for the first Windows `.exe` and Linux AppImage, or build from source today.
+
+## Agent CLI setup
+
+Control Center dispatches agents through CLI backends. Install at least one:
+
+- **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
+- **Codex CLI** (`codex`): `npm install -g @openai/codex`
+- **Pi** (`pi`): Install per the Pi documentation
+
+Control Center auto-detects installed CLIs in your `PATH`. You can also register custom adapters in **Settings → Adapters**.
+
+## GitHub authentication
+
+Control Center needs a GitHub personal access token (PAT) with these scopes:
+
+- `repo`: full repository access
+- `read:org`: organization membership
+
+Create one at [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+
+If you have the `gh` CLI installed and authenticated (`gh auth login`), Control Center detects and uses it automatically.
+
+## Choose how Control Center runs
+
+Control Center is a thin client: it never opens the database itself — a headless **`cc_server`** process owns the data and serves it over RPC. On first launch you choose how the desktop reaches its server:
+
+- **Run locally (default)**: the desktop spawns and supervises a `cc_server` on this machine that owns the database, and talks to it over loopback. This is the self-contained, single-machine setup — nothing to configure beyond the choice.
+- **Connect to a remote server**: point the desktop at a `cc_server` running elsewhere (a small box, a cloud VM) with the server's WebSocket URL, a device id, and the pairing key it minted for you. The data lives on that server; this desktop is purely a renderer.
+
+You can change this later in **Settings → Server connection** (it applies on the next restart). The [web client](#web-client) is always remote — a browser cannot run a server.
+
+### Run a headless server
+
+To run your own `cc_server` for other clients to connect to, build the pure-Dart binary and pair a client before first start. See [Run a headless server](/manual/guides/run-headless-server/) for the full walkthrough; the essentials:
+
+```bash
+cd apps/cc_server
+dart build cli
+./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
+./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
+```
+
+### Web client
+
+The web build is the same app compiled for the browser. It always connects to a remote `cc_server` — open the deployed client, enter the server's WebSocket URL, device id, and pairing key, and it renders the full desktop interface. You can also build it yourself with `flutter build web`.
+
+## Verify your setup
+
+After launching Control Center:
+
+1. The first-run flow asks how you want to run (local or remote), then walks you through GitHub auth and workspace creation.
+2. Open **Settings → Adapters** to verify your agent CLIs were detected.
+3. Open **Settings → Repositories** to add your first repo.
+4. Run **Agent doctor** from any agent's context menu to diagnose environment issues.
+
+## Building from source
+
+```bash
+git clone https://github.com/SamuelAlev/control-center.git
+cd control-center
+flutter pub get
+flutter pub run build_runner build --delete-conflicting-outputs
+flutter run -d macos  # or -d windows, -d linux
+```
+
+Requires [Flutter 3.x](https://flutter.dev) with desktop support enabled.

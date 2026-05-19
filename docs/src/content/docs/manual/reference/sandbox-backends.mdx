@@ -1,0 +1,111 @@
+---
+title: Sandbox backends
+description: Available sandbox execution backends and their configuration.
+---
+
+## Backend overview
+
+| Backend | Value | Platform | Description |
+|---|---|---|---|
+| Native | `native` | macOS, Linux | OS-native sandbox (default) |
+| None | `none` | all | No isolation (development only) |
+
+## Native backend
+
+### macOS: Seatbelt
+
+Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+
+- **Filesystem**: restricts read/write to bound mount paths only
+- **Network**: configurable egress policy (full, restricted, none)
+- **Process**: limits process spawning within the sandbox
+- **Configuration**: profiles are generated per-launch from the `SandboxSpec`
+
+Requirements:
+
+- macOS 12+ (Monterey)
+- System Integrity Protection enabled
+
+### Linux: bubblewrap
+
+Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+
+- **Filesystem**: creates a mount namespace with only the bound paths visible
+- **Network**: shares the network namespace by default; can restrict with capabilities
+- **Process**: PID namespace isolation
+
+Requirements:
+
+- `bubblewrap` package installed (`sudo apt install bubblewrap` on Debian/Ubuntu)
+- Kernel namespace support (standard on modern Linux)
+
+## None backend
+
+Disables all sandboxing. The agent CLI runs directly on the host with full access.
+
+Use only for:
+
+- Development and debugging
+- Trusted environments
+- When sandboxing is incompatible with your workflow
+
+**Warning:** agents running without sandboxing have unrestricted access to your filesystem, network, and processes.
+
+## SandboxSpec
+
+The specification passed to `SandboxPort.launch`:
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `String` | Unique session identifier |
+| `workspaceId` | `String` | Owning workspace |
+| `agentId` | `String` | The agent being sandboxed |
+| `mounts` | `List<SandboxBindMount>` | Host-to-guest bind mounts |
+| `networkEgress` | `bool` | Whether network access is allowed |
+| `workdir` | `String` | Working directory inside the sandbox |
+| `mode` | `ConversationMode` | Affects filesystem write policy |
+
+## SandboxBindMount
+
+| Field | Type | Description |
+|---|---|---|
+| `hostPath` | `String` | Path on the host |
+| `guestPath` | `String` | Path inside the sandbox |
+| `writable` | `bool` | Whether the mount is read-write |
+
+## SandboxHandle
+
+Returned by `SandboxPort.launch`:
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `String` | Session identifier |
+| `backend` | `SandboxBackend` | Which backend is running |
+| `state` | `SandboxState` | Lifecycle state |
+| `error` | `String?` | Error message if failed |
+
+### SandboxState
+
+| State | Description |
+|---|---|
+| `starting` | Sandbox is being created |
+| `running` | Sandbox is active |
+| `stopped` | Sandbox has been torn down |
+| `failed` | Sandbox failed to start |
+
+## Sandbox events
+
+| Event type | Description |
+|---|---|
+| `stdout` | Standard output from the sandbox |
+| `stderr` | Standard error from the sandbox |
+| `exit` | Sandbox process exited |
+| `violation` | A sandbox policy was violated |
+
+## SandboxViolation
+
+| Field | Type | Description |
+|---|---|---|
+| `action` | `String` | The denied action (e.g. "network", "file-write") |
+| `target` | `String` | The target of the denied action |
+| `suggestedCapability` | `String?` | The capability that would allow this action |

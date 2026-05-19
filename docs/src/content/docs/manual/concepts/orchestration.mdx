@@ -1,0 +1,107 @@
+---
+title: Orchestration
+description: How one "big ask" becomes a whole-team plan you approve once, then a generated pipeline that runs it.
+---
+
+A single agent is good at one thing. Some asks are bigger than that: "research
+the market for X and write a positioning doc", "ship this feature end to end",
+"audit this module and fix what you find". An **orchestration** is how Control
+Center handles those: an orchestrator (usually your CEO agent) proposes a
+whole-team plan, you approve it **once**, and a deterministic materializer turns
+it into a pipeline that does the work.
+
+It sits between the two existing ways of getting work done:
+
+| When you want to… | Use |
+|---|---|
+| Hand one task to one agent | A [channel message](/manual/concepts/dispatch-lifecycle/) |
+| Encode a process you already know, by hand | A [pipeline template](/manual/concepts/pipelines/) |
+| Say the goal and let the team figure out the plan | **An orchestration** |
+
+## The shape of a proposal
+
+When you give the orchestrator a goal, it returns a structured
+**`OrchestrationProposal`**: a typed plan the app can validate and execute, rather
+than free-form prose. A proposal has:
+
+- **Goal**: your high-level ask, restated.
+- **Roles**: who does the work. Each role is either an **existing agent** you
+  pick, or a **new hire** the orchestration creates on approval.
+- **Sub-tickets**: the work, broken into a DAG of [tickets](/manual/concepts/tickets/).
+- **Research** *(optional)*: a research phase that runs first and feeds the rest.
+- **Discussion** *(optional)*: a bounded round where each role posts a structured
+  position before work begins.
+- **Synthesis**: the final step that produces the deliverable.
+- **Budget**: a hard spending ceiling for the whole thing.
+
+You can edit the proposal before you approve it: swap a role for an agent you
+trust, drop a sub-ticket, tighten the budget.
+
+## One approval, then deterministic execution
+
+This is the core idea: **the agent plans; a deterministic function executes.**
+When you approve, the `OrchestrationMaterializer`, a pure function with no LLM
+and no I/O, converts the proposal into a real [pipeline](/manual/concepts/pipelines/).
+Given the same proposal and the same resolved roles, it always produces the same
+DAG. That matters because the generated pipeline inherits everything the engine
+already does for free: suspension and resume across restarts, crash recovery,
+per-run cost and token rollups, and the run-detail UI.
+
+Approval also creates the scaffolding the work needs:
+
+- **hires** any roles marked as new (and records them so they can be cleaned up)
+- a **team** grouping the roles
+- a **project** holding the sub-tickets
+- the **pipeline template + run** that drives it all
+
+## The lifecycle
+
+```
+proposed → approved → executing → synthesizing → completed
+                  ↘                 ↘              failed
+                   ↘                 ↘            cancelled
+```
+
+| Status | Meaning |
+|---|---|
+| `proposed` | The plan is ready and waiting for your one upfront approval |
+| `approved` | You approved it; materialization is in progress (hires, team, project, pipeline) |
+| `executing` | The generated pipeline is running: sub-tickets, discussion, work |
+| `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable |
+| `completed` | Done: the deliverable landed on the parent ticket |
+| `failed` | A hard error, every sub-ticket failed, or the budget was exceeded |
+| `cancelled` | You cancelled it |
+
+A monotonic **revision** number tracks the proposal as the orchestrator revises
+it; the app records which revision you approved, so a mid-flight replan can't
+silently change what you signed off on.
+
+An orchestration always opens against a **parent ticket** and shares one
+discussion **channel**, so the whole effort is traceable to a single work item
+and the team talks in one room.
+
+## What happens when it finishes
+
+A kept-alive listener watches the generated pipeline and maps its terminal state
+back onto the orchestration and the parent ticket, so completion, failure, and
+budget-exceeded all surface in the places you already watch. The orchestration
+feature does not need its own execution engine.
+
+You can cancel an orchestration at any time; the cancellation tears down the
+in-flight work.
+
+::::note
+Orchestration builds on [pipelines](/manual/concepts/pipelines/) and
+[tickets](/manual/concepts/tickets/). It is a planning and approval layer over
+the top of them rather than a separate runtime.
+::::
+
+## Related concepts
+
+- [Pipelines and automation](/manual/concepts/pipelines/): the engine a materialized orchestration runs on
+- [Tickets and delegation](/manual/concepts/tickets/): the sub-tickets and parent ticket an orchestration creates
+- [The agent model](/manual/concepts/agent-model/): the roles an orchestration fills or hires
+
+## Related guides
+
+- [Run an orchestration](/manual/guides/run-orchestration/)

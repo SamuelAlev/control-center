@@ -1,0 +1,49 @@
+name: cc_ui
+description: "Control Center design system — tokens, theme, foundation primitives, and components."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^8.1.0
+  lucide_icons_flutter: ^3.1.14+2
+  meta: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  # Base design-system fonts, bundled as host assets so consumers NEVER fetch
+  # them over the network (google_fonts is reserved for user-selected families).
+  # Referenced via the `packages/cc_ui/<family>` name convention in CcFonts.
+  #
+  # cc_ui is the SOLE owner of these files in the repo — the main app, cc_remote,
+  # and cc_gallery all resolve them by the `packages/cc_ui/<family>` name rather
+  # than bundling their own copy (Flutter forbids a package's `fonts:` from
+  # pointing outside its own folder, so this package is the single home). To swap
+  # the UI font, change the family name + assets here AND the `CcFonts.uiFamily`
+  # token in `lib/src/theme/cc_fonts.dart`; nothing else hard-codes it.
+  #
+  # Both defaults are VARIABLE fonts — one file each, full `wght` axis. Flutter
+  # (>=3.24) maps `TextStyle.fontWeight` onto the font's `wght` axis, so the
+  # 400/500/600/700 call sites render at the right weight from the single file
+  # (no per-weight assets needed). Manrope wght 200–800; Fira Code wght 300–700.
+  # Neither has italic faces (italic requests synthesize a faux oblique).
+  fonts:
+    - family: Manrope
+      fonts:
+        - asset: fonts/Manrope-Variable.ttf
+    - family: Fira Code
+      fonts:
+        - asset: fonts/FiraCode-VF.ttf

@@ -1,0 +1,3703 @@
+{
+  "navCalendar": "Agenda",
+  "serverConnection": "Serververbinding",
+  "serverConnectionMode": "Modus",
+  "serverModeLocal": "In deze app uitvoeren",
+  "serverModeLocalDescription": "Control Center draait een eigen server op dit apparaat en bewaart je gegevens lokaal.",
+  "serverModeRemote": "Verbinden met een externe instantie",
+  "serverModeRemoteDescription": "Maak verbinding met een Control Center-server die elders draait. Je gegevens staan op die server.",
+  "serverRemoteUrl": "Server-URL",
+  "serverRemoteDeviceId": "Apparaat-id",
+  "serverRemotePairingKey": "Koppelingssleutel",
+  "serverRemotePairingKeyHint": "Plak de koppelingssleutel van de externe server",
+  "serverConnectionRestartHint": "Start Control Center opnieuw op om de verbindingswijzigingen toe te passen.",
+  "serverConnectionReloadHint": "Herlaad de pagina om opnieuw verbinding te maken met deze wijzigingen.",
+  "pairedClients": "Gekoppelde clients",
+  "pairedClientsDescription": "Apps en apparaten die aan deze server zijn gekoppeld. Koppel er nog een om een tweede browser, een desktop-app of een telefoon te verbinden.",
+  "pairNewClient": "Een nieuwe client koppelen",
+  "pairClientNameHint": "Geef deze client een naam (bijv. Werklaptop)",
+  "pairClientTypeWeb": "Webbrowser",
+  "pairClientTypeDesktop": "Desktop-app",
+  "pairClientTypePhone": "Telefoon",
+  "pairAction": "Koppelen",
+  "revoke": "Intrekken",
+  "pairCredentialsIntro": "Verbind de nieuwe client met deze gegevens, of open de link erop.",
+  "pairLinkLabel": "Link",
+  "pairScanQr": "Scan deze QR-code met de camera van je telefoon om te koppelen.",
+  "pairServerUnreachableTitle": "Niet bereikbaar",
+  "pairServerUnreachable": "Andere apparaten kunnen deze server niet rechtstreeks bereiken, dus een nieuwe client kan geen verbinding maken. Stel de publieke URL van de server in om meer clients te koppelen.",
+  "noPairedClients": "Nog geen gekoppelde clients.",
+  "serverSetupTitle": "Hoe moet Control Center draaien?",
+  "serverSetupSubtitle": "Control Center heeft een server nodig die je gegevens bezit. Voer er een uit in deze app of maak verbinding met een instantie die elders draait.",
+  "serverSetupRunLocal": "In deze app uitvoeren",
+  "serverSetupConnect": "Verbinden",
+  "serverSetupInvalidUrl": "Voer een geldige ws:// of wss:// server-URL in.",
+  "serverSetupCouldNotConnect": "Verbinden mislukt",
+  "calendarViewMonth": "Maand",
+  "calendarViewWeek": "Week",
+  "calendarViewAgenda": "Agenda",
+  "calendarConnectGoogle": "Google Agenda verbinden",
+  "calendarConnectDescription": "Synchroniseer je Google Agenda om afspraken hier te zien en meldingen te krijgen voordat vergaderingen beginnen.",
+  "calendarDisconnect": "Verbinding verbreken",
+  "calendarReconnect": "Opnieuw verbinden",
+  "calendarEmptyNoEvents": "Geen afspraken in dit bereik",
+  "calendarStartRecording": "Opname starten",
+  "calendarStartRecordingAndLink": "Opnemen en koppelen",
+  "calendarJoinMeet": "Deelnemen aan vergadering",
+  "calendarFromCalendar": "Uit de agenda",
+  "calendarLinkedMeeting": "Gekoppelde vergadering",
+  "calendarToday": "Vandaag",
+  "calendarAllDay": "Hele dag",
+  "calendarWeekNumber": "Week {number}",
+  "@calendarWeekNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "calendarPreviousPeriod": "Vorige",
+  "calendarNextPeriod": "Volgende",
+  "calendarLastSynced": "Gesynchroniseerd {time}",
+  "@calendarLastSynced": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "calendarNeverSynced": "Nog niet gesynchroniseerd",
+  "calendarSyncing": "Synchroniseren…",
+  "calendarViewDay": "Dag",
+  "calendarSectionCalendars": "Agenda's",
+  "calendarShow": "Tonen",
+  "calendarHide": "Verbergen",
+  "calendarRsvpGoing": "Aanwezig?",
+  "calendarRsvpYes": "Ja",
+  "calendarRsvpNo": "Nee",
+  "calendarRsvpMaybe": "Misschien",
+  "calendarRsvpFailed": "Kon je reactie niet bijwerken",
+  "calendarAddAccount": "Agenda-account toevoegen",
+  "calendarSettingsTitle": "Google Agenda",
+  "calendarSettingsDescription": "Verbind een Google-account om afspraken in deze werkruimte te synchroniseren.",
+  "calendarNotConnected": "Geen Google-account verbonden",
+  "calendarConnecting": "Verbinden…",
+  "calendarSyncNow": "Nu synchroniseren",
+  "calendarNoWorkspace": "Selecteer een werkruimte om de agenda te bekijken",
+  "calendarConnectError": "Kan Google Agenda niet verbinden",
+  "calendarClientIdLabel": "Client-ID",
+  "calendarClientSecretLabel": "Client-secret",
+  "calendarConnectCredsHint": "Voer de OAuth-client-ID en het secret (device-code) van je Google-project in. De server verzorgt de verbinding en synchronisatie — je browser bewaart de tokens nooit.",
+  "calendarConnectApproveInstruction": "Open de verificatiepagina op een willekeurig apparaat, log in en voer deze code in:",
+  "calendarConnectOpenPage": "Verificatiepagina openen",
+  "calendarConnectWaiting": "Wachten op goedkeuring…",
+  "calendarConnectDenied": "De autorisatie is geweigerd. Probeer het opnieuw.",
+  "calendarConnectExpired": "De code is verlopen. Probeer het opnieuw.",
+  "calendarNotConfigured": "Google Agenda is niet geconfigureerd. Stel GOOGLE_OAUTH_CLIENT_ID in om een account te verbinden.",
+  "notificationMeetingStartsSoon": "Vergadering begint zo",
+  "notifyMeetingStartsSoon": "Wanneer een afspraak in de agenda bijna begint",
+  "notificationCalendarAuthExpiredTitle": "Agenda losgekoppeld",
+  "notificationCalendarAuthExpiredBody": "Verbind {email} opnieuw om het synchroniseren te hervatten",
+  "notificationCalendarAuthExpiredBodyNoEmail": "Verbind je agenda opnieuw om het synchroniseren te hervatten",
+  "notifyCalendarAuthExpired": "Wanneer een agenda-account opnieuw moet worden verbonden",
+  "calendarAlertLeadTime": "Voorlooptijd melding",
+  "calendarAlertLeadTimeSubtitle": "Hoe lang voor een vergadering je een melding krijgt",
+  "calendarConnectedAs": "Verbonden als {email}",
+  "calendarAttendeesCount": "{count} deelnemers",
+  "calendarEventLabel": "Afspraak",
+  "calendarRecurring": "Terugkerende afspraak",
+  "calendarGoogleMeet": "Google Meet",
+  "calendarOrganizer": "Organisator",
+  "calendarYou": "Jij",
+  "calendarShowFewer": "Minder tonen",
+  "calendarRsvpAwaiting": "In afwachting",
+  "calendarParticipantsCount": "{count} deelnemers",
+  "calendarSeeAllParticipants": "Alle {count} deelnemers tonen",
+  "calendarRsvpCountYes": "{count} ja",
+  "calendarRsvpCountNo": "{count} nee",
+  "calendarRsvpCountMaybe": "{count} misschien",
+  "calendarRsvpCountAwaiting": "{count} in afwachting",
+  "calendarLeadMinutesOption": "{count} minuten",
+  "openInEditorPrompt": "In welke editor openen?",
+  "ideNotInstalled": "Niet geïnstalleerd",
+  "openInIde": "Openen in {editor}",
+  "failedToOpenInIde": "Kan {editor} niet openen: {error}",
+  "profileSearchHint": "Pull requests zoeken…",
+  "profileClickToLoad": "Klik om te laden",
+  "profileStateOpenHint": "Momenteel open",
+  "profileStateMergedHint": "Samengevoegde geschiedenis",
+  "profileStateClosedHint": "Gesloten, niet samengevoegd",
+  "profileNoPrsForFilter": "Geen pull requests voor de geselecteerde statussen",
+  "byAuthorPrefix": "door",
+  "youLabel": "jij",
+  "readyToMerge": "Klaar om te mergen",
+  "laneReadyHint": "Checks groen",
+  "laneReviewHint": "Wacht op jou",
+  "inProgress": "Bezig",
+  "laneInProgressHint": "Open · in bewerking",
+  "needsAttention": "Vereist aandacht",
+  "laneAttentionHint": "Mislukt of verouderd",
+  "drafts": "Concepten",
+  "laneDraftsHint": "Nog niet geopend",
+  "allOpenPrs": "Alle open PR's",
+  "showAllCount": "Alle tonen ({count})",
+  "sortOldest": "Oudste",
+  "sortLargest": "Grootste",
+  "selectAction": "Selecteren",
+  "mergeCountReady": "{count} klaar mergen",
+  "countSelected": "{count, plural, =1{1 geselecteerd} other{{count} geselecteerd}}",
+  "mergeReadyAction": "Klaar mergen",
+  "nothingInLane": "Niets in deze baan",
+  "nothingInLaneHint": "Kies hierboven een andere baan of toon alle open PR's.",
+  "summary": "Samenvatting",
+  "openFullDiff": "Volledige diff openen",
+  "viewFiles": "Bestanden bekijken",
+  "checksLabel": "Checks",
+  "commentsLabel": "Reacties",
+  "mergeReadyConfirmTitle": "Klaarstaande pull requests mergen?",
+  "mergeReadyConfirmBody": "{count, plural, =1{1 klaarstaande PR squash-mergen? Kan niet ongedaan worden gemaakt.} other{{count} klaarstaande PR's squash-mergen? Kan niet ongedaan worden gemaakt.}}",
+  "mergedCountPrs": "{count, plural, =1{1 PR gemerged} other{{count} PR's gemerged}}",
+  "keybindingSelectPr": "PR selecteren",
+  "keybindingMergePr": "PR mergen",
+  "keybindingPeekPr": "PR-voorvertoning",
+  "keybindingToggleSelectionOfTheFocusedPullRequestDescription": "Selectie van de gerichte PR omschakelen",
+  "keybindingMergeTheFocusedPullRequestDescription": "De gerichte PR mergen als die klaar is",
+  "keybindingExpandOrCollapseTheFocusedPullRequestPeekDescription": "Het voorvertoningspaneel van de gerichte PR uit- of inklappen",
+  "kbMove": "verplaatsen",
+  "kbSelect": "selecteren",
+  "kbMerge": "mergen",
+  "kbOpen": "openen",
+  "kbPeek": "voorvertoning",
+  "kbTabs": "tabbladen",
+  "kbSearch": "zoeken",
+  "kbViewed": "bekeken",
+  "kbCollapse": "inklappen",
+  "appearance": "Weergave",
+  "appearanceSettingsDescription": "Thema, taal en typografie.",
+  "notificationsSettingsDescription": "Kies welke agent- en werkruimtegebeurtenissen je een melding sturen.",
+  "integrationsSettingsDescription": "Verbind GitHub, ticketing en de MCP-server.",
+  "advanced": "Geavanceerd",
+  "advancedSettingsDescription": "Branchnaamgeving, spraak, semantisch zoeken, privacy en logboekregistratie.",
+  "agentRegistry": "Agentregister",
+  "settingsGroupGeneral": "Algemeen",
+  "settingsGroupAgents": "Agenten",
+  "settingsGroupResources": "Bronnen",
+  "filterSettingsHint": "Instellingen filteren",
+  "needsSetupLabel": "Configuratie vereist",
+  "noSettingsMatch": "Geen instelling komt overeen met \"{query}\"",
+  "privacy": "Privacy",
+  "sendDiffContentTitle": "Diff-inhoud naar AI-adapter sturen",
+  "diffSharingOnSubtitle": "Ruwe diff-regels worden opgenomen in agentprompts voor een grondigere review.",
+  "diffSharingOffSubtitle": "Agenten gebruiken alleen gestructureerde metadata (bestandspaden, regelnummers, PR-beschrijving); er verlaat geen ruwe code de app.",
+  "errorReportingTitle": "Crashrapporten delen",
+  "errorReportingOnSubtitle": "Crash-, fout- en prestatiediagnostiek wordt verzonden om bugs te helpen oplossen (alleen in release-builds).",
+  "errorReportingOffSubtitle": "Diagnostiek is uitgeschakeld. Er worden geen crash- of foutrapporten verzonden.",
+  "onboardingDiagnosticsTitle": "Help Control Center verbeteren",
+  "onboardingDiagnosticsSubtitle": "Verzend crash-, fout- en prestatiediagnostiek zodat we problemen sneller kunnen oplossen (alleen in release-builds). Je kunt dit altijd wijzigen in Instellingen → Privacy.",
+  "blocked": "Geblokkeerd",
+  "idle": "Inactief",
+  "noRunsYet": "Nog geen uitvoeringen",
+  "runsInLastSixMonths": "{count} uitvoeringen in de afgelopen 6 maanden",
+  "lastActiveAgo": "{duration} geleden actief",
+  "reportsToNobody": "Geen manager",
+  "copyPath": "Pad kopiëren",
+  "pathCopied": "Pad gekopieerd naar klembord",
+  "editAgent": "Agent bewerken",
+  "nameRequired": "Naam is verplicht",
+  "titleRequired": "Titel is verplicht",
+  "import": "Importeren",
+  "discoverAgentsFound": "{count, plural, =1{1 agentdefinitie gevonden} other{{count} agentdefinities gevonden}}",
+  "noAgentsToDiscover": "Geen nieuwe agenten om te importeren",
+  "noAgentsToDiscoverHint": "Agentdefinities in deze werkruimte zijn al geïmporteerd.",
+  "sortByStatus": "Status",
+  "sortByName": "Naam",
+  "noMatchingAgents": "Geen agenten komen overeen met je filter",
+  "selectAnAgentHint": "Kies een agent om de status, activiteit en details te zien.",
+  "watchVideoOn": "Bekijk video op {provider}",
+  "@@locale": "nl",
+  "branchTemplate": "Sjabloon voor branchnaam",
+  "branchTemplateDescription": "Patroon voor de branch die wordt aangemaakt wanneer een ticket in een geïsoleerde worktree wordt gestart.",
+  "branchTemplatePreview": "Voorbeeld: {example}",
+  "deletePipelineRun": "Pipelineuitvoering verwijderen",
+  "deletePipelineRunConfirm": "Deze uitvoering van \"{template}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "errorDeletingPipelineRun": "Fout bij het verwijderen van de pipelineuitvoering: {error}",
+  "deleteTicket": "Ticket verwijderen",
+  "deleteTicketConfirm": "\"{title}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "errorDeletingTicket": "Fout bij het verwijderen van het ticket: {error}",
+  "deleteWorkspaceConfirm": "\"{name}\" verwijderen? Gekoppelde repository's op schijf blijven onaangeroerd.",
+  "errorDeletingWorkspace": "Fout bij het verwijderen van de werkruimte: {error}",
+  "indexCode": "Code indexeren",
+  "indexing": "Indexeren…",
+  "indexNoGrammars": "Codegrammatica's niet geïnstalleerd",
+  "indexFailed": "Indexeren mislukt",
+  "indexedSymbolsCount": "{count} symbolen geïndexeerd",
+  "nodeConfigAdvanced": "Geavanceerd",
+  "nodeConfigReducer": "Reducer",
+  "nodeConfigReducerHelp": "Hoe samen te voegen wanneer deze uitvoersleutel al een waarde heeft",
+  "nodeConfigTimeoutMs": "Time-out (ms)",
+  "nodeConfigRetryAttempts": "Nieuwe pogingen",
+  "nodeConfigContinueOnFail": "Doorgaan als deze stap mislukt",
+  "nodeConfigTeamId": "Team-ID",
+  "nodeConfigDispatchMode": "Verzendmodus",
+  "nodeConfigOutputSchema": "Uitvoerschema (JSON)",
+  "nodeConfigOutputSchemaHelp": "JSON-schema waaraan de stapuitvoer moet voldoen",
+  "diffLineDisplay": "Lange regels in diffs",
+  "diffLineDisplayDescription": "Lange regels afbreken of horizontaal scrollen",
+  "diffLineWrap": "Afbreken",
+  "diffLineScroll": "Horizontaal scrollen",
+  "acrossNRepos": "{count, plural, =1{Over 1 repo} other{Over {count} repos}}",
+  "@acrossNRepos": {
+    "description": "Summary label showing how many repos the filters cover",
+    "placeholders": {
+      "count": {
+        "type": "num",
+        "format": "compact"
+      }
+    }
+  },
+  "actions": "Acties",
+  "activate": "Activeren",
+  "@activate": {
+    "description": "Button to activate a policy"
+  },
+  "activity": "Activiteit",
+  "activityLabel": "ACTIVITEIT",
+  "adRulesCount": "{count} advertentieregels",
+  "@adRulesCount": {
+    "description": "Locale string for adRulesCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adapter": "Adapter",
+  "@adapter": {
+    "description": "Adapter"
+  },
+  "adapterLabel": "Adapter",
+  "adapters": "Adapters",
+  "@adapters": {
+    "description": "Adapters"
+  },
+  "adaptersAutoDetected": "Automatisch gedetecteerde agent-runners beschikbaar op deze machine. Installeer ontbrekende CLI-tools om extra runners in te schakelen.",
+  "add": "Toevoegen",
+  "addAComment": "Een reactie toevoegen",
+  "addAReaction": "Een reactie toevoegen",
+  "addASuggestion": "Een suggestie toevoegen",
+  "addAgent": "Agent toevoegen",
+  "addAgents": "Agenten toevoegen",
+  "addAgentsToEnable": "Voeg agenten toe om multi-agent-orkestratie in te schakelen",
+  "addEmoji": "Emoji toevoegen",
+  "addFeed": "Feed toevoegen",
+  "addFromFile": "Uit bestand toevoegen",
+  "addGif": "GIF toevoegen",
+  "addGithubRepoPrompt": "Voeg minimaal één GitHub-repository toe om pull requests te zien",
+  "addLocalCheckoutDescription": "Voeg een lokale checkout toe om er vanuit deze werkruimte op te richten.",
+  "@addLocalCheckoutDescription": {
+    "description": "Add a local checkout to start targeting it from this workspace."
+  },
+  "addRepository": "Repository toevoegen",
+  "addRepoBrowseIntro": "Blader door de mappen op de machine die de server draait en kies een git-checkout om te registreren.",
+  "addThisFolder": "Deze map toevoegen",
+  "goUp": "Omhoog",
+  "noSubfoldersHere": "Geen submappen hier",
+  "notAGitRepository": "Deze map is geen git-repository.",
+  "addToken": "Token toevoegen",
+  "@addToken": {
+    "description": "Add token"
+  },
+  "addWorkspace": "Werkruimte toevoegen",
+  "addWorkspaceEllipsis": "Werkruimte toevoegen…",
+  "added": "Toegevoegd",
+  "addingEllipsis": "Toevoegen…",
+  "@addingEllipsis": {
+    "description": "Locale string for addingEllipsis"
+  },
+  "advancedLabel": "Geavanceerd",
+  "agent": "Agent",
+  "@agent": {
+    "description": "Agent"
+  },
+  "agentCount": "{count} agent{plural, plural, =1{} other{s}}",
+  "@agentCount": {
+    "description": "Agent count label",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "plural": {
+        "type": "int"
+      }
+    }
+  },
+  "agentMdPath": "Agent-MD-pad",
+  "agentName": "Agentnaam",
+  "agentTitle": "Agenttitel",
+  "agentUpdated": "Agent bijgewerkt.",
+  "agents": "Agenten",
+  "agentsCount": "Agenten ({count})",
+  "@agentsCount": {
+    "description": "Locale string for agentsCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentsLabel": "AGENTEN",
+  "agentsMentionSection": "Agenten",
+  "ticketsMentionSection": "Tickets",
+  "pullRequestsMentionSection": "Pull requests",
+  "meetingsMentionSection": "Vergaderingen",
+  "entityRefTicketFallback": "Ticket",
+  "entityRefPrFallback": "Pull request",
+  "entityRefMeetingFallback": "Vergadering",
+  "aiReview": "AI-review",
+  "all": "Alles",
+  "allAgentsAlreadyInChannel": "Alle agenten zijn al in dit kanaal.",
+  "@allAgentsAlreadyInChannel": {
+    "description": "All agents are already in this channel."
+  },
+  "allAgentsCount": "Alle agenten · {count}",
+  "allCommits": "Alle commits",
+  "allSessionsReset": "Alle sandbox-sessies gereset.",
+  "allSources": "Alle bronnen",
+  "@allSources": {
+    "description": "Locale string for allSources"
+  },
+  "allStarBadge": "All-Star",
+  "allTimeLabel": "Alles",
+  "allow": "Toestaan",
+  "allowGitPush": "git push toestaan",
+  "allowGithubApi": "GitHub API-aanroepen toestaan",
+  "allowNetwork": "Algemene netwerktoegang toestaan",
+  "apiKeys": "API-sleutels",
+  "appFont": "App-lettertype",
+  "appLogLevelDebugDescription": "Voegt gedetailleerde traces toe - voor ontwikkeling.",
+  "@appLogLevelDebugDescription": {
+    "description": "Description for the debug app log level"
+  },
+  "appLogLevelDebugLabel": "Debug",
+  "@appLogLevelDebugLabel": {
+    "description": "Label for the debug app log level"
+  },
+  "appLogLevelErrorDescription": "Alleen fouten en onverwachte uitzonderingen.",
+  "@appLogLevelErrorDescription": {
+    "description": "Description for the error app log level"
+  },
+  "appLogLevelErrorLabel": "Fout",
+  "@appLogLevelErrorLabel": {
+    "description": "Label for the error app log level"
+  },
+  "appLogLevelInfoDescription": "Voegt levenscyclus- en statusberichten toe.",
+  "@appLogLevelInfoDescription": {
+    "description": "Description for the info app log level"
+  },
+  "appLogLevelInfoLabel": "Info",
+  "@appLogLevelInfoLabel": {
+    "description": "Label for the info app log level"
+  },
+  "appLogLevelNoneDescription": "Geen console-uitvoer.",
+  "@appLogLevelNoneDescription": {
+    "description": "Description for the none app log level"
+  },
+  "appLogLevelNoneLabel": "Geen",
+  "@appLogLevelNoneLabel": {
+    "description": "Label for the none app log level"
+  },
+  "appLogLevelVerboseDescription": "Alles. Extreem verbose - alleen voor debugging gebruiken.",
+  "@appLogLevelVerboseDescription": {
+    "description": "Description for the verbose app log level"
+  },
+  "appLogLevelVerboseLabel": "Verbose",
+  "@appLogLevelVerboseLabel": {
+    "description": "Label for the verbose app log level"
+  },
+  "appLogLevelWarningDescription": "Voegt waarschuwingen en herstelbare problemen toe.",
+  "@appLogLevelWarningDescription": {
+    "description": "Description for the warning app log level"
+  },
+  "appLogLevelWarningLabel": "Waarschuwing",
+  "@appLogLevelWarningLabel": {
+    "description": "Label for the warning app log level"
+  },
+  "appTitle": "Control Center",
+  "appearanceLanguage": "Weergave en taal",
+  "apply": "Toepassen",
+  "approve": "Goedkeuren",
+  "approveAndCompact": "Goedkeuren en context comprimeren",
+  "approveAndExecute": "Goedkeuren en uitvoeren",
+  "approveAndHire": "Goedkeuren en aannemen",
+  "approved": "Goedgekeurd",
+  "articlesSubscribed": "Artikelen uit je geabonneerde feeds.",
+  "askAi": "Ask AI",
+  "askAiReview": "AI-review aanvragen",
+  "askAiReviewDescription": "Vraag de AI om deze PR te reviewen",
+  "askAnything": "Vraag iets… (@ om agenten te noemen, / voor commando's)",
+  "assignees": "TOEGEWEZENEN",
+  "attachFiles": "Bestanden bijvoegen",
+  "attachImage": "Afbeelding bijvoegen",
+  "attachedAgents": "Gekoppelde agenten",
+  "audioInput": "Audio-invoer",
+  "authentication": "Authenticatie",
+  "authenticationToken": "Authenticatietoken",
+  "authoredByLabel": "Door: {role}",
+  "@authoredByLabel": {
+    "description": "Authored by role label",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "authorsLabel": "Auteurs",
+  "authorsWithCount": "Auteurs · {count}",
+  "autoRecommended": "Automatisch (aanbevolen)",
+  "available": "Beschikbaar",
+  "avgDuration": "Gem. duur",
+  "awaitingYourApproval": "Wachtend op jouw goedkeuring",
+  "awaitingYourReview": "Wachtend op jouw review",
+  "back": "Terug",
+  "backLabel": "Terug",
+  "backend": "Backend",
+  "blockAdsDescription": "Advertenties, trackers en cookiebanners blokkeren",
+  "blockAdsTrackers": "Advertenties, trackers en cookiebanners blokkeren",
+  "blocking": "Blokkerend",
+  "blockingLabel": "Blokkerend",
+  "bookmarkLabel": "Bladwijzer",
+  "briefDescription": "Korte beschrijving",
+  "bugLabel": "BUG",
+  "bundledDefaultsNeverUpdated": "Vooraf geïnstalleerd - nooit bijgewerkt",
+  "@bundledDefaultsNeverUpdated": {
+    "description": "Locale string for bundledDefaultsNeverUpdated"
+  },
+  "cached": "In cache",
+  "cancel": "Annuleren",
+  "cancelEdit": "Bewerking annuleren",
+  "@cancelEdit": {
+    "description": "Tooltip to cancel editing a suggestion"
+  },
+  "categoryCreation": "Aanmaken",
+  "categoryDeletion": "Verwijdering",
+  "@categoryDeletion": {
+    "description": "Locale string for categoryDeletion"
+  },
+  "categoryEditing": "Bewerken",
+  "categoryNavigation": "Navigatie",
+  "categorySystem": "Systeem",
+  "categoryView": "Weergave",
+  "@categoryView": {
+    "description": "Locale string for categoryView"
+  },
+  "centurionBadge": "Centurion",
+  "change": "Wijzigen",
+  "changesRequested": "Wijzigingen aangevraagd",
+  "changesSummary": "Samenvatting van wijzigingen",
+  "channelsMentionSection": "Kanalen",
+  "checkForUpdates": "Controleren op updates",
+  "checking": "Controleren",
+  "checkingEllipsis": "Controleren…",
+  "checkingGhCli": "gh CLI controleren…",
+  "chooseAppFont": "App-lettertype kiezen",
+  "chooseCodeFont": "Codelettertype kiezen",
+  "chooseRunner": "Kies je agent-runner.",
+  "clear": "Wissen",
+  "clearAllFilters": "× Alles wissen",
+  "@clearAllFilters": {
+    "description": "Button to clear all active PR list filters"
+  },
+  "clickToRetry": "Klik om opnieuw te proberen",
+  "@clickToRetry": {
+    "description": "Tooltip for retry button when posting fails"
+  },
+  "close": "Sluiten",
+  "closeEsc": "Sluiten (Esc)",
+  "closeKeyboardHint": "Sneltoetsen sluiten",
+  "@closeKeyboardHint": {
+    "description": "Locale string for closeKeyboardHint"
+  },
+  "closePanel": "Paneel sluiten",
+  "closeReader": "Lezer sluiten",
+  "closeThread": "Thread sluiten",
+  "closed": "Gesloten",
+  "codeFont": "Codelettertype",
+  "codeFontLigatures": "Ligaturen van het codelettertype",
+  "codeFontLigaturesDescription": "Programmeerligaturen (=>, !=, ->) als gecombineerde glyphs tonen in code en diffs",
+  "collapse": "Samenvouwen",
+  "commandPalette": "Commandopalet",
+  "commandPaletteBrowseTeam": "Browse team",
+  "commandPaletteBrowseTeamDesc": "View all organization members",
+  "commandPaletteOrgMembers": "Organization members",
+  "commandsMentionSection": "Commando's",
+  "comment": "Reactie",
+  "commentOnFile": "Reageren op dit bestand",
+  "commentOnThisFile": "Reageren op dit bestand",
+  "commentSelected": "Selectie becommentariëren",
+  "commented": "Gereageerd",
+  "commits": "Commits",
+  "commitsShowingLatest": "Toont de laatste {loaded} van {total} commits",
+  "prCloneProgressCloningTitle": "Repository klonen",
+  "prCloneProgressCloningSubtitle": "Deze PR wijzigt {fileCount} bestanden, wat het API-limiet van GitHub overschrijdt. Repository wordt lokaal gekloond…",
+  "prCloneProgressCloningSubtitleNoCount": "Deze PR overschrijdt het bestandslimiet van de GitHub-API. Repository wordt lokaal gekloond…",
+  "prCloneProgressFetchingTitle": "Refs ophalen",
+  "prCloneProgressFetchingSubtitle": "Basistak en PR-ref worden opgehaald…",
+  "prCloneProgressComputingTitle": "Diff berekenen",
+  "prCloneProgressComputingSubtitle": "Git diff wordt lokaal uitgevoerd…",
+  "prCloneProgressErrorTitle": "Laden van diff mislukt",
+  "prCloneProgressErrorSubtitle": "Er is een fout opgetreden bij het klonen of berekenen van de diff.",
+  "prCloneProgressElapsed": "Nog bezig… {elapsed} verstreken",
+  "confidenceLabel": "Betrouwbaarheid: {percent}%",
+  "@confidenceLabel": {
+    "description": "Confidence percentage label",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "configureAgentIdentities": "Configureer agent-identiteiten, prompts, vaardigheden en bekijk runs.",
+  "configureDefaultRunners": "Configureer welke adapter en model worden gebruikt voor nieuwe gesprekken en titelgeneratie.",
+  "configuredLabel": "Geconfigureerd.",
+  "confirmedBy": "Bevestigd door",
+  "@confirmedBy": {
+    "description": "Label showing who confirmed a review"
+  },
+  "consensus": "Consensus",
+  "contentBlockingDescription": "Advertenties, trackers en cookiebanners blokkeren",
+  "@contentBlockingDescription": {
+    "description": "Locale string for contentBlockingDescription"
+  },
+  "contentHint": "Wat moet worden onthouden",
+  "@contentHint": {
+    "description": "Hint text for fact content field"
+  },
+  "contentLabel": "Inhoud",
+  "@contentLabel": {
+    "description": "Label for fact content field"
+  },
+  "contentMarkdown": "Inhoud (Markdown)",
+  "contextWindowSize": "Contextvenstergrootte",
+  "@contextWindowSize": {
+    "description": "Locale string for contextWindowSize"
+  },
+  "continueLabel": "Doorgaan",
+  "conversationMode": "Gespreksmodus",
+  "convertToGroup": "Converteren naar groep?",
+  "convertToGroupBody": "Het toevoegen van een andere agent maakt van dit een groepsgesprek.",
+  "@convertToGroupBody": {
+    "description": "Adding another agent turns this into a group conversation."
+  },
+  "cookieRulesCount": "{count} cookieregels",
+  "@cookieRulesCount": {
+    "description": "Locale string for cookieRulesCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "copied": "Gekopieerd!",
+  "copy": "Kopiëren",
+  "copyBaseBranchTooltip": "Naam van doelbranch kopiëren",
+  "copyHeadBranchTooltip": "Naam van bronbranch kopiëren",
+  "couldNotCheckGhCli": "Kon gh CLI niet controleren.",
+  "couldNotListDevices": "Kan apparaten niet weergeven: {error}",
+  "@couldNotListDevices": {
+    "description": "Could not list devices error",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "create": "Aanmaken",
+  "createFirstAgent": "Maak je eerste agent aan om te beginnen.",
+  "@createFirstAgent": {
+    "description": "Create your first agent to get started."
+  },
+  "createOrSelectWorkspace": "Maak of selecteer een werkruimte voordat je repository's toevoegt.",
+  "createPr": "PR aanmaken",
+  "createPullRequest": "Pull request aanmaken",
+  "createdByMe": "Door mij aangemaakt",
+  "createdLabel": "Aangemaakt: {date}",
+  "@createdLabel": {
+    "description": "Created date label with value",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "currentParticipants": "Huidige deelnemers",
+  "@currentParticipants": {
+    "description": "Current participants"
+  },
+  "customCapabilitiesDescription": "Aangepaste mogelijkheden voor deze agent",
+  "@customCapabilitiesDescription": {
+    "description": "Locale string for customCapabilitiesDescription"
+  },
+  "customSystemPrompt": "Aangepaste systeem-prompt voor deze agent...",
+  "daysAgo": "{count, plural, =1{1 dag geleden} other{{count} dagen geleden}}",
+  "deactivate": "Deactiveren",
+  "@deactivate": {
+    "description": "Button to deactivate a policy"
+  },
+  "defaultCapabilities": "Standaardmogelijkheden · nieuwe gesprekken",
+  "defaultChat": "Standaard-chat",
+  "defaultPort": "Standaard: {port}.",
+  "@defaultPort": {
+    "description": "Default port label",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "defaultPortHint": "Standaard: {port}.",
+  "defaultRunners": "Standaard-runners",
+  "delete": "Verwijderen",
+  "deleteAgent": "Agent verwijderen",
+  "deleteAgentConfirm": "\\\"{name}\\\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "deleteChannel": "Kanaal verwijderen",
+  "deleteConfirmName": "\\\"{name}\\\" verwijderen?",
+  "deleteConversation": "Gesprek verwijderen",
+  "deleteConversationConfirm": "Dit gesprek verwijderen? Alle berichten gaan verloren.",
+  "deleteFact": "Feit verwijderen",
+  "deleteFeedBody": "Dit verwijdert de feed en alle gecachte artikelen. Opgeslagen artikelen uit deze feed worden ook verwijderd.",
+  "deleteFeedConfirm": "\\\"{name}\\\" verwijderen?",
+  "deleteNamedConversation": "\"{name}\" verwijderen? Alle berichten gaan verloren.",
+  "@deleteNamedConversation": {
+    "description": "Delete \"{name}\"? All messages will be lost.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePolicy": "Beleidsregel verwijderen",
+  "deletePolicyConfirm": "Deze beleidsregel verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "deleteTopicConfirm": "\"{topic}\" verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "@deleteTopicConfirm": {
+    "description": "Delete fact confirmation with topic name",
+    "placeholders": {
+      "topic": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteWorkspace": "Werkruimte verwijderen",
+  "deny": "Weigeren",
+  "descriptionLabel": "Beschrijving",
+  "detailsLabel": "Details",
+  "detectedBackend": "Gedetecteerd: {label}",
+  "detectedRunners": "Gedetecteerde runners ({count})",
+  "detectingAdapters": "Adapters detecteren…",
+  "detectingGhCli": "gh CLI detecteren…",
+  "detectingInputDevices": "Invoerapparaten detecteren…",
+  "@detectingInputDevices": {
+    "description": "Detecting input devices…"
+  },
+  "detectionFailed": "Detectie mislukt: {error}",
+  "diffFailed": "Diff mislukt: {message}",
+  "diffWorkerPool": "Workerpool",
+  "directMessage": "Direct bericht",
+  "@directMessage": {
+    "description": "Direct message"
+  },
+  "directMessages": "Directe berichten",
+  "disabled": "Uitgeschakeld",
+  "@disabled": {
+    "description": "Status label for disabled state"
+  },
+  "discover": "Ontdekken",
+  "discoverAgents": "Agenten ontdekken",
+  "discoverAgentsDescription": "Agentontdekking scant werkruimtepaden naar AGENTS.md- en TEAM.md-bestanden en parseert ze in het agentenregister.\n\nConfigureer eerst een werkruimte en gebruik dan deze functie om agenten automatisch te vullen.",
+  "@discoverAgentsDescription": {
+    "description": "Description of the agent discovery feature"
+  },
+  "acceptAndResolve": "Accepteren en oplossen",
+  "dismiss": "Afwijzen",
+  "@dismiss": {
+    "description": "Button label to dismiss a banner or notice"
+  },
+  "dismissed": "Gesloten",
+  "domainHint": "bijv. api-performance",
+  "@domainHint": {
+    "description": "Hint text for domain field in fact edit"
+  },
+  "domainLabel": "Domein",
+  "download": "Downloaden",
+  "downloadingLabel": "Downloaden",
+  "downloadingModel": "Model downloaden… {pct}%",
+  "draft": "Concept",
+  "draftLabel": "Concept",
+  "earnTiersDescription": "Verdien niveaus door het Control Center te gebruiken",
+  "edit": "Bewerken",
+  "editFact": "Feit bewerken",
+  "@editFact": {
+    "description": "Dialog title for editing a fact"
+  },
+  "editPolicy": "Beleidsregel bewerken",
+  "@editPolicy": {
+    "description": "Dialog title for editing a policy"
+  },
+  "editSuggestedCodeHint": "Voorgestelde code bewerken…",
+  "@editSuggestedCodeHint": {
+    "description": "Placeholder text in the suggested code editor"
+  },
+  "editSuggestion": "Suggestie bewerken",
+  "@editSuggestion": {
+    "description": "Tooltip to start editing a suggestion"
+  },
+  "editTheSuggestedCodeHint": "De voorgestelde code bewerken…",
+  "@editTheSuggestedCodeHint": {
+    "description": "Placeholder text in the fast diff suggestion code editor"
+  },
+  "egArchitect": "bijv. architect",
+  "egControlCenter": "bijv. control-center",
+  "@egControlCenter": {
+    "description": "e.g. control-center"
+  },
+  "egPlatform": "bijv. macOS",
+  "@egPlatform": {
+    "description": "Locale string for egPlatform"
+  },
+  "egSamuelAlev": "bijv. SamuelAlev",
+  "@egSamuelAlev": {
+    "description": "e.g. SamuelAlev"
+  },
+  "egSoftwareArchitect": "bijv. Software Architect",
+  "egTheVerge": "bijv. The Verge",
+  "egTokenLimit": "bijv. 128000",
+  "@egTokenLimit": {
+    "description": "Locale string for egTokenLimit"
+  },
+  "embeddingInstallFailed": "Installatie mislukt: {error}",
+  "embeddingInstalled": "Lokaal embedding-model geïnstalleerd. Hybride zoeken is ingeschakeld.",
+  "embeddingModel": "Embedding-model (ONNX)",
+  "embeddingNotInstalled": "Niet geïnstalleerd. Zoeken valt terug op alleen trefwoorden tot dit is ingeschakeld.",
+  "embeddingRedownloadBody": "De bestaande modelbestanden worden verwijderd en opnieuw gedownload. Semantisch zoeken is niet beschikbaar tot de download is voltooid.",
+  "embeddingRemoveBody": "Semantisch zoeken wordt uitgeschakeld tot je het opnieuw installeert. Je kunt het op elk moment opnieuw installeren.",
+  "speakerDiarization": "Sprekerdiarisatie",
+  "diarizationModel": "Diarisatiemodel",
+  "diarizationInstalled": "Geïnstalleerd — benoemt afzonderlijke sprekers in vergadertranscripties",
+  "diarizationNotInstalled": "Niet geïnstalleerd — sprekers in vergaderingen worden niet gescheiden",
+  "diarizationInstallFailed": "Installatie mislukt: {error}",
+  "@diarizationInstallFailed": {
+    "description": "Diarization model install failure",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "redownloadDiarizationModel": "Diarisatiemodel opnieuw downloaden",
+  "diarizationRedownloadBody": "Hiermee worden de huidige diarisatiemodellen verwijderd en opnieuw gedownload.",
+  "removeDiarizationModel": "Diarisatiemodel verwijderen",
+  "diarizationRemoveBody": "Hiermee worden de diarisatiemodellen op het apparaat verwijderd. Reeds geproduceerde vergadertranscripties blijven onaangetast.",
+  "onboardingDiarizationTitle": "Sprekerdiarisatie (optioneel)",
+  "onboardingDiarizationSubtitle": "Download om afzonderlijke sprekers (Persoon 1, Persoon 2…) te labelen in vergadernotities. Je kunt dit later in instellingen toevoegen.",
+  "enableMcpServer": "MCP-server inschakelen",
+  "enableNotifications": "Meldingen inschakelen",
+  "enableSandboxing": "Sandboxing inschakelen",
+  "enabled": "Ingeschakeld",
+  "@enabled": {
+    "description": "Status label for enabled state"
+  },
+  "enterToken": "{name}-token invoeren",
+  "enterTokenToAuth": "Voer een token in om authenticatie te vereisen",
+  "errorCreatingAgent": "Fout bij aanmaken agent: {error}",
+  "errorDeletingAgent": "Fout bij verwijderen agent: {error}",
+  "errorLoadingAgents": "Fout bij het laden van agenten",
+  "@errorLoadingAgents": {
+    "description": "Error message when agents fail to load"
+  },
+  "errorWithDetail": "Fout: {error}",
+  "@errorWithDetail": {
+    "description": "Error message with detail",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "errored": "Met fouten",
+  "erroredLabel": "Met fouten",
+  "exitSelection": "Selectie verlaten",
+  "expand": "Uitvouwen",
+  "extractingLabel": "Uitpakken",
+  "extractingModel": "Model uitpakken… {pct}%",
+  "fact": "Feit",
+  "factCount": "{count} feit",
+  "@factCount": {
+    "description": "Single fact count in topic node",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "factCountPlural": "{count} feiten",
+  "@factCountPlural": {
+    "description": "Plural fact count in topic node",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "facts": "Feiten",
+  "factsPoliciesCount": "{factCount} feiten · {policyCount} beleidsregels",
+  "@factsPoliciesCount": {
+    "description": "Fact and policy count in domain node",
+    "placeholders": {
+      "factCount": {
+        "type": "int"
+      },
+      "policyCount": {
+        "type": "int"
+      }
+    }
+  },
+  "failed": "Mislukt",
+  "failedToDispatch": "Verzenden mislukt: {error}",
+  "failedToLoad": "Laden mislukt",
+  "failedToLoadAgents": "Agenten laden mislukt: {error}",
+  "failedToLoadFeeds": "Feeds laden mislukt: {error}",
+  "failedToLoadGifs": "GIFs laden mislukt",
+  "@failedToLoadGifs": {
+    "description": "Error message when GIF loading fails"
+  },
+  "failedToLoadLogs": "Logboeken laden mislukt: {error}",
+  "failedToLoadRepos": "Repository's laden mislukt",
+  "failedToLoadWorkspaces": "Werkruimtes laden mislukt",
+  "failedToStartAiReview": "AI-review starten mislukt: {error}",
+  "failedToStartMicTest": "Microfoontest starten mislukt.",
+  "@failedToStartMicTest": {
+    "description": "Failed to start mic test."
+  },
+  "failedToSubmitReview": "Review indienen mislukt: {error}",
+  "failedToUpload": "{name} uploaden mislukt: {error}",
+  "failedWithError": "Mislukt: {error}",
+  "failure": "Mislukt",
+  "feedAlreadyExists": "Er bestaat al een feed met deze URL.",
+  "feedUrl": "Feed-URL",
+  "feedUrlExample": "bijv. https://example.com/feed.xml",
+  "@feedUrlExample": {
+    "description": "Locale string for feedUrlExample"
+  },
+  "feedUrlExists": "Er bestaat al een feed met deze URL.",
+  "feedUrlLabel": "Feed-URL",
+  "feedsCount": "Feeds ({count})",
+  "@feedsCount": {
+    "description": "Locale string for feedsCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "feedsLabel": "Feeds",
+  "filesChanged": "Bestanden gewijzigd",
+  "filesCount": "{count} bestand(en)",
+  "@filesCount": {
+    "description": "Locale string for filesCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesMentionSection": "Bestanden",
+  "filterAgents": "Agenten filteren...",
+  "filterAgentsPlaceholder": "Agenten filteren…",
+  "filterFilesHint": "Bestanden filteren…",
+  "@filterFilesHint": {
+    "description": "Placeholder text in the file filter field"
+  },
+  "filterLists": "Filterlijsten",
+  "filterSkillsPlaceholder": "Vaardigheden filteren…",
+  "finish": "Afronden",
+  "firstReviewBadge": "Eerste review",
+  "fix": "Repareren",
+  "fixSelected": "Selectie repareren",
+  "flawlessBadge": "Vlekkeloos",
+  "focusModeActiveTooltip": "Focusmodus actief — tik om te beëindigen",
+  "@focusModeActiveTooltip": {
+    "description": "Tooltip on the focus mode chip in title bar"
+  },
+  "focusModeBlockNotifications": "Meldingen blokkeren",
+  "@focusModeBlockNotifications": {
+    "description": "Toggle label for blocking notifications during focus"
+  },
+  "focusModeConfigTitle": "Focussessie starten",
+  "@focusModeConfigTitle": {
+    "description": "Title of the focus mode configuration dialog"
+  },
+  "focusModeDurationLabel": "Duur",
+  "@focusModeDurationLabel": {
+    "description": "Label for the session duration selector"
+  },
+  "focusModeEndSession": "Sessie beëindigen",
+  "@focusModeEndSession": {
+    "description": "Tooltip/button to end the current focus session"
+  },
+  "focusModeExpand": "App uitvouwen",
+  "@focusModeExpand": {
+    "description": "Tooltip to expand from compact focus bar back to full app"
+  },
+  "focusModeFloat": "Naar balk minimaliseren",
+  "@focusModeFloat": {
+    "description": "Tooltip to minimize app to compact focus bar"
+  },
+  "focusModeGoalHint": "Waar werk je aan?",
+  "@focusModeGoalHint": {
+    "description": "Placeholder hint for the goal text field"
+  },
+  "focusModeGoalLabel": "Doel",
+  "@focusModeGoalLabel": {
+    "description": "Label for the focus session goal field"
+  },
+  "focusModeStart": "Focussessie starten",
+  "@focusModeStart": {
+    "description": "Button label to open focus mode config dialog"
+  },
+  "focusModeStartButton": "Starten",
+  "@focusModeStartButton": {
+    "description": "Confirm button in focus mode config dialog"
+  },
+  "forward": "Doorsturen",
+  "gatesGithubPatPush": "Stuurt GitHub PAT-injectie aan. Vereist om de agent te laten pushen.",
+  "general": "Algemeen",
+  "generalSettingsDescription": "Weergave, typografie, integraties en MCP-server.",
+  "ghCliAuthButPatOverrideBody": "GitHub CLI is geauthenticeerd en gereed, maar een persoonlijk toegangstoken is hieronder ingesteld en zal daarvoor in de plaats worden gebruikt. Verwijder het PAT om gh CLI-authenticatie te gebruiken.",
+  "@ghCliAuthButPatOverrideBody": {
+    "description": "GitHub CLI is authenticated and ready, but a personal access token is set below and will be used instead. Clear the PAT to use gh CLI auth."
+  },
+  "ghCliInstalledAuth": "Geïnstalleerd. Voer `gh auth login` uit en tik vervolgens op Vernieuwen.",
+  "ghCliNotInstalled": "gh CLI niet geïnstalleerd — installeer via cli.github.com.",
+  "ghCliNotInstalledLabel": "gh CLI niet geïnstalleerd",
+  "@ghCliNotInstalledLabel": {
+    "description": "gh CLI not installed"
+  },
+  "githubCli": "GitHub CLI",
+  "githubCliIntegration": "GitHub CLI-integratie",
+  "githubCliReady": "GitHub CLI is geauthenticeerd en klaar.",
+  "githubLink": "GitHub-link",
+  "githubPersonalAccessToken": "GitHub persoonlijk toegangstoken",
+  "githubStatusAllOperational": "Alle systemen operationeel",
+  "githubStatusComponents": "Componenten",
+  "githubStatusFetchFailed": "Kon githubstatus.com niet bereiken",
+  "githubStatusIncidents": "Actieve incidenten",
+  "githubStatusOpenInBrowser": "Openen in browser",
+  "githubStatusRefresh": "Vernieuwen",
+  "githubStatusTitle": "GitHub-status",
+  "githubStatusUpdated": "Bijgewerkt {time}",
+  "lastChecked": "Gecontroleerd {time}",
+  "lastCheckedRecently": "Recent gecontroleerd",
+  "githubToken": "GitHub-token",
+  "giveAgentsAMemory": "Agenten een geheugen geven.",
+  "giveYourWorkAHome": "Geef je werk een thuis.",
+  "goBack": "Ga terug",
+  "goForward": "Ga vooruit",
+  "googleFonts": "Google Fonts",
+  "groupLabel": "Groep",
+  "groupName": "Groepsnaam",
+  "@groupName": {
+    "description": "Group name"
+  },
+  "groups": "Groepen",
+  "hideContainerTerminal": "Container-terminal verbergen",
+  "@hideContainerTerminal": {
+    "description": "Hide container terminal"
+  },
+  "hideConversationChanges": "Wijzigingen verbergen",
+  "@hideConversationChanges": {
+    "description": "Tooltip to close the conversation changes (diff) panel"
+  },
+  "showConversationChanges": "Wijzigingen tonen",
+  "@showConversationChanges": {
+    "description": "Tooltip to open the conversation changes (diff) panel"
+  },
+  "noConversationChanges": "Nog geen onopgeslagen wijzigingen in dit gesprek.",
+  "@noConversationChanges": {
+    "description": "Empty-state message when a conversation has no uncommitted changes"
+  },
+  "conversationChangesTitle": "Wijzigingen",
+  "@conversationChangesTitle": {
+    "description": "Title for the conversation changes (diff) side panel"
+  },
+  "high": "Hoog",
+  "@high": {
+    "description": "Locale string for high"
+  },
+  "hotStreakBadge": "Winningreeks",
+  "hoursAgo": "{count, plural, =1{1 uur geleden} other{{count} uur geleden}}",
+  "idleStatus": "Inactief",
+  "images": "Afbeeldingen",
+  "inFlightLabel": "Bezig",
+  "@inFlightLabel": {
+    "description": "Locale string for inFlightLabel"
+  },
+  "inactive": "Inactief",
+  "@inactive": {
+    "description": "Label for inactive policies"
+  },
+  "install": "Installeren",
+  "installGhCliBody": "Installeer gh vanaf https://cli.github.com/ en voer `gh auth login` uit, tik dan op Vernieuwen.",
+  "@installGhCliBody": {
+    "description": "Install gh from https://cli.github.com/ and run `gh auth login`, then tap Refresh."
+  },
+  "installRequired": "Installatie vereist",
+  "@installRequired": {
+    "description": "Locale string for installRequired"
+  },
+  "installedNotSignedIn": "Geïnstalleerd - niet aangemeld",
+  "@installedNotSignedIn": {
+    "description": "Installed - not signed in"
+  },
+  "installedVersion": "Geïnstalleerd {version}",
+  "@installedVersion": {
+    "description": "Installed version label",
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "integrations": "Integraties",
+  "invite": "Uitnodigen",
+  "inviteAgent": "Agent uitnodigen",
+  "@inviteAgent": {
+    "description": "Invite agent"
+  },
+  "isolateAgentExecution": "Agentuitvoering isoleren.",
+  "jobCount": "{count} taak{count, plural, =1{} other{s}}",
+  "@jobCount": {
+    "description": "Locale string for jobCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "justNow": "zojuist",
+  "keepMessages": "Berichten behouden",
+  "keepSandboxing": "Sandboxing behouden",
+  "keybindingAdapters": "Adapters",
+  "@keybindingAdapters": {
+    "description": "Locale string for keybindingAdapters"
+  },
+  "keybindingAddARepositoryDescription": "Een repository toevoegen",
+  "@keybindingAddARepositoryDescription": {
+    "description": "Locale string for keybindingAddARepositoryDescription"
+  },
+  "keybindingAddRepository": "Repository toevoegen",
+  "@keybindingAddRepository": {
+    "description": "Locale string for keybindingAddRepository"
+  },
+  "keybindingAgents": "Agenten",
+  "@keybindingAgents": {
+    "description": "Locale string for keybindingAgents"
+  },
+  "keybindingApprove": "Goedkeuren",
+  "@keybindingApprove": {
+    "description": "Locale string for keybindingApprove"
+  },
+  "keybindingApproveThePeerReviewDescription": "Peer review goedkeuren",
+  "@keybindingApproveThePeerReviewDescription": {
+    "description": "Locale string for keybindingApproveThePeerReviewDescription"
+  },
+  "keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": "Geselecteerd artikel bookmarken of verwijderen",
+  "@keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription": {
+    "description": "Locale string for keybindingBookmarkOrUnbookmarkTheSelectedArticleDescription"
+  },
+  "keybindingCollapseOrExpandTheFocusedFileDescription": "Gefocuste bestand samenvouwen of uitvouwen",
+  "@keybindingCollapseOrExpandTheFocusedFileDescription": {
+    "description": "Locale string for keybindingCollapseOrExpandTheFocusedFileDescription"
+  },
+  "keybindingCommandPalette": "Commandopalet",
+  "@keybindingCommandPalette": {
+    "description": "Locale string for keybindingCommandPalette"
+  },
+  "keybindingConversationTab": "Conversatie-tab",
+  "@keybindingConversationTab": {
+    "description": "Locale string for keybindingConversationTab"
+  },
+  "keybindingCreateANewAgentDescription": "Nieuwe agent aanmaken",
+  "@keybindingCreateANewAgentDescription": {
+    "description": "Locale string for keybindingCreateANewAgentDescription"
+  },
+  "keybindingCreateANewGroupChannelDescription": "Nieuw groepskanaal aanmaken",
+  "@keybindingCreateANewGroupChannelDescription": {
+    "description": "Locale string for keybindingCreateANewGroupChannelDescription"
+  },
+  "keybindingCreateANewWorkspaceDescription": "Nieuwe werkruimte aanmaken",
+  "@keybindingCreateANewWorkspaceDescription": {
+    "description": "Locale string for keybindingCreateANewWorkspaceDescription"
+  },
+  "keybindingDeleteAgent": "Agent verwijderen",
+  "@keybindingDeleteAgent": {
+    "description": "Locale string for keybindingDeleteAgent"
+  },
+  "keybindingDeleteChannel": "Kanaal verwijderen",
+  "@keybindingDeleteChannel": {
+    "description": "Locale string for keybindingDeleteChannel"
+  },
+  "keybindingDeleteTheSelectedAgentDescription": "Geselecteerde agent verwijderen",
+  "@keybindingDeleteTheSelectedAgentDescription": {
+    "description": "Locale string for keybindingDeleteTheSelectedAgentDescription"
+  },
+  "keybindingDeleteTheSelectedChannelDescription": "Geselecteerde kanaal verwijderen",
+  "@keybindingDeleteTheSelectedChannelDescription": {
+    "description": "Locale string for keybindingDeleteTheSelectedChannelDescription"
+  },
+  "keybindingDeleteTheSelectedWorkspaceDescription": "Geselecteerde werkruimte verwijderen",
+  "@keybindingDeleteTheSelectedWorkspaceDescription": {
+    "description": "Locale string for keybindingDeleteTheSelectedWorkspaceDescription"
+  },
+  "keybindingDeleteWorkspace": "Werkruimte verwijderen",
+  "@keybindingDeleteWorkspace": {
+    "description": "Locale string for keybindingDeleteWorkspace"
+  },
+  "keybindingFilesChangedTab": "Gewijzigde bestanden-tab",
+  "@keybindingFilesChangedTab": {
+    "description": "Locale string for keybindingFilesChangedTab"
+  },
+  "keybindingFocusSearch": "Zoeken focussen",
+  "@keybindingFocusSearch": {
+    "description": "Locale string for keybindingFocusSearch"
+  },
+  "keybindingFocusThePullRequestSearchFieldDescription": "Het zoekveld voor pull requests focussen",
+  "@keybindingFocusThePullRequestSearchFieldDescription": {
+    "description": "Locale string for keybindingFocusThePullRequestSearchFieldDescription"
+  },
+  "keybindingGeneral": "Algemeen",
+  "@keybindingGeneral": {
+    "description": "Locale string for keybindingGeneral"
+  },
+  "keybindingGoToAgents": "Naar agenten gaan",
+  "@keybindingGoToAgents": {
+    "description": "Locale string for keybindingGoToAgents"
+  },
+  "keybindingGoToAnalytics": "Naar analyse gaan",
+  "@keybindingGoToAnalytics": {
+    "description": "Locale string for keybindingGoToAnalytics"
+  },
+  "keybindingGoToDashboard": "Naar dashboard gaan",
+  "@keybindingGoToDashboard": {
+    "description": "Locale string for keybindingGoToDashboard"
+  },
+  "keybindingGoToMemory": "Naar geheugen gaan",
+  "@keybindingGoToMemory": {
+    "description": "Locale string for keybindingGoToMemory"
+  },
+  "keybindingGoToNewsfeed": "Naar nieuwsfeed gaan",
+  "@keybindingGoToNewsfeed": {
+    "description": "Locale string for keybindingGoToNewsfeed"
+  },
+  "keybindingGoToPullRequests": "Naar pull requests gaan",
+  "@keybindingGoToPullRequests": {
+    "description": "Locale string for keybindingGoToPullRequests"
+  },
+  "keybindingGoToPipelines": "Naar pipelines gaan",
+  "@keybindingGoToPipelines": {
+    "description": "Locale string for keybindingGoToPipelines"
+  },
+  "keybindingGoToTickets": "Naar tickets gaan",
+  "@keybindingGoToTickets": {
+    "description": "Locale string for keybindingGoToTickets"
+  },
+  "keybindingKeybindings": "Sneltoetsen",
+  "@keybindingKeybindings": {
+    "description": "Locale string for keybindingKeybindings"
+  },
+  "keybindingMarkTheFocusedFileAsViewedOrUnviewedDescription": "Markeer het gefocuste bestand als bekeken of niet bekeken",
+  "@keybindingMarkTheFocusedFileAsViewedOrUnviewedDescription": {
+    "description": "Locale string for keybindingMarkTheFocusedFileAsViewedOrUnviewedDescription"
+  },
+  "keybindingNavigateToTheAgentsRegistryDescription": "Navigeren naar agentenregister",
+  "@keybindingNavigateToTheAgentsRegistryDescription": {
+    "description": "Locale string for keybindingNavigateToTheAgentsRegistryDescription"
+  },
+  "keybindingNavigateToTheAnalyticsDashboardDescription": "Navigeren naar analyse-dashboard",
+  "@keybindingNavigateToTheAnalyticsDashboardDescription": {
+    "description": "Locale string for keybindingNavigateToTheAnalyticsDashboardDescription"
+  },
+  "keybindingNavigateToTheGlobalDashboardDescription": "Navigeren naar globaal dashboard",
+  "@keybindingNavigateToTheGlobalDashboardDescription": {
+    "description": "Locale string for keybindingNavigateToTheGlobalDashboardDescription"
+  },
+  "keybindingNavigateToTheMemoryDescription": "Ga naar de kennisbank",
+  "@keybindingNavigateToTheMemoryDescription": {
+    "description": "Locale string for keybindingNavigateToTheMemoryDescription"
+  },
+  "keybindingNavigateToTheNewsfeedDescription": "Navigeren naar nieuwsfeed",
+  "@keybindingNavigateToTheNewsfeedDescription": {
+    "description": "Locale string for keybindingNavigateToTheNewsfeedDescription"
+  },
+  "keybindingNavigateToThePipelinesListDescription": "Ga naar de pipelinelijst",
+  "@keybindingNavigateToThePipelinesListDescription": {
+    "description": "Locale string for keybindingNavigateToThePipelinesListDescription"
+  },
+  "keybindingNavigateToThePullRequestListDescription": "Navigeren naar pull request-lijst",
+  "@keybindingNavigateToThePullRequestListDescription": {
+    "description": "Locale string for keybindingNavigateToThePullRequestListDescription"
+  },
+  "keybindingNavigateToTheTicketsBoardDescription": "Ga naar het ticketbord",
+  "@keybindingNavigateToTheTicketsBoardDescription": {
+    "description": "Locale string for keybindingNavigateToTheTicketsBoardDescription"
+  },
+  "keybindingNewAgent": "Nieuwe agent",
+  "@keybindingNewAgent": {
+    "description": "Locale string for keybindingNewAgent"
+  },
+  "keybindingNewDirectMessage": "Nieuw direct bericht",
+  "@keybindingNewDirectMessage": {
+    "description": "Locale string for keybindingNewDirectMessage"
+  },
+  "keybindingNewGroup": "Nieuwe groep",
+  "@keybindingNewGroup": {
+    "description": "Locale string for keybindingNewGroup"
+  },
+  "keybindingNewWorkspace": "Nieuwe werkruimte",
+  "@keybindingNewWorkspace": {
+    "description": "Locale string for keybindingNewWorkspace"
+  },
+  "keybindingNextArticle": "Volgend artikel",
+  "@keybindingNextArticle": {
+    "description": "Locale string for keybindingNextArticle"
+  },
+  "keybindingNextChannel": "Volgend kanaal",
+  "@keybindingNextChannel": {
+    "description": "Locale string for keybindingNextChannel"
+  },
+  "keybindingNextPr": "Volgende PR",
+  "@keybindingNextPr": {
+    "description": "Locale string for keybindingNextPr"
+  },
+  "keybindingNextWorkspace": "Volgende werkruimte",
+  "@keybindingNextWorkspace": {
+    "description": "Locale string for keybindingNextWorkspace"
+  },
+  "keybindingOpenArticle": "Artikel openen",
+  "@keybindingOpenArticle": {
+    "description": "Locale string for keybindingOpenArticle"
+  },
+  "keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": "Werkruimte-wisselaar-popup in zijbalk openen of sluiten",
+  "@keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription": {
+    "description": "Locale string for keybindingOpenOrCloseTheWorkspaceSwitcherPopupInTheSidebarDescription"
+  },
+  "keybindingOpenPr": "PR openen",
+  "@keybindingOpenPr": {
+    "description": "Locale string for keybindingOpenPr"
+  },
+  "keybindingOpenSettings": "Instellingen openen",
+  "@keybindingOpenSettings": {
+    "description": "Locale string for keybindingOpenSettings"
+  },
+  "keybindingOpenTheAdaptersSettingsPageDescription": "Adapter-instellingenpagina openen",
+  "@keybindingOpenTheAdaptersSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheAdaptersSettingsPageDescription"
+  },
+  "keybindingOpenTheAgentsSettingsPageDescription": "Agent-instellingenpagina openen",
+  "@keybindingOpenTheAgentsSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheAgentsSettingsPageDescription"
+  },
+  "keybindingOpenTheApplicationSettingsDescription": "Applicatie-instellingen openen",
+  "@keybindingOpenTheApplicationSettingsDescription": {
+    "description": "Locale string for keybindingOpenTheApplicationSettingsDescription"
+  },
+  "keybindingOpenTheCommandPaletteDescription": "Commandopalet openen",
+  "@keybindingOpenTheCommandPaletteDescription": {
+    "description": "Locale string for keybindingOpenTheCommandPaletteDescription"
+  },
+  "keybindingOpenTheGeneralSettingsPageDescription": "Algemene instellingenpagina openen",
+  "@keybindingOpenTheGeneralSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheGeneralSettingsPageDescription"
+  },
+  "keybindingOpenTheKeybindingsSettingsPageDescription": "Sneltoetsen-instellingenpagina openen",
+  "@keybindingOpenTheKeybindingsSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheKeybindingsSettingsPageDescription"
+  },
+  "keybindingOpenTheRepositoriesSettingsPageDescription": "Repository-instellingenpagina openen",
+  "@keybindingOpenTheRepositoriesSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheRepositoriesSettingsPageDescription"
+  },
+  "keybindingOpenTheSelectedArticleDescription": "Geselecteerd artikel openen",
+  "@keybindingOpenTheSelectedArticleDescription": {
+    "description": "Locale string for keybindingOpenTheSelectedArticleDescription"
+  },
+  "keybindingOpenTheSelectedPullRequestDescription": "Geselecteerde pull request openen",
+  "@keybindingOpenTheSelectedPullRequestDescription": {
+    "description": "Locale string for keybindingOpenTheSelectedPullRequestDescription"
+  },
+  "keybindingOpenTheSelectedWorkspaceDescription": "Geselecteerde werkruimte openen",
+  "@keybindingOpenTheSelectedWorkspaceDescription": {
+    "description": "Locale string for keybindingOpenTheSelectedWorkspaceDescription"
+  },
+  "keybindingOpenTheSkillsSettingsPageDescription": "Vaardigheden-instellingenpagina openen",
+  "@keybindingOpenTheSkillsSettingsPageDescription": {
+    "description": "Locale string for keybindingOpenTheSkillsSettingsPageDescription"
+  },
+  "keybindingOpenWorkspace": "Werkruimte openen",
+  "@keybindingOpenWorkspace": {
+    "description": "Locale string for keybindingOpenWorkspace"
+  },
+  "keybindingPreviousArticle": "Vorig artikel",
+  "@keybindingPreviousArticle": {
+    "description": "Locale string for keybindingPreviousArticle"
+  },
+  "keybindingPreviousChannel": "Vorig kanaal",
+  "@keybindingPreviousChannel": {
+    "description": "Locale string for keybindingPreviousChannel"
+  },
+  "keybindingPreviousPr": "Vorige PR",
+  "@keybindingPreviousPr": {
+    "description": "Locale string for keybindingPreviousPr"
+  },
+  "keybindingPreviousWorkspace": "Vorige werkruimte",
+  "@keybindingPreviousWorkspace": {
+    "description": "Locale string for keybindingPreviousWorkspace"
+  },
+  "keybindingRefresh": "Vernieuwen",
+  "@keybindingRefresh": {
+    "description": "Locale string for keybindingRefresh"
+  },
+  "keybindingRefreshAllFeedsDescription": "Alle feeds vernieuwen",
+  "@keybindingRefreshAllFeedsDescription": {
+    "description": "Locale string for keybindingRefreshAllFeedsDescription"
+  },
+  "keybindingRefreshAnalyticsDataDescription": "Analysedata vernieuwen",
+  "@keybindingRefreshAnalyticsDataDescription": {
+    "description": "Locale string for keybindingRefreshAnalyticsDataDescription"
+  },
+  "keybindingRefreshDashboardDataDescription": "Dashboarddata vernieuwen",
+  "@keybindingRefreshDashboardDataDescription": {
+    "description": "Locale string for keybindingRefreshDashboardDataDescription"
+  },
+  "keybindingRefreshThePullRequestListDescription": "Pull request-lijst vernieuwen",
+  "@keybindingRefreshThePullRequestListDescription": {
+    "description": "Locale string for keybindingRefreshThePullRequestListDescription"
+  },
+  "keybindingRemoveRepository": "Repository verwijderen",
+  "@keybindingRemoveRepository": {
+    "description": "Locale string for keybindingRemoveRepository"
+  },
+  "keybindingRemoveTheSelectedRepositoryDescription": "Geselecteerde repository verwijderen",
+  "@keybindingRemoveTheSelectedRepositoryDescription": {
+    "description": "Locale string for keybindingRemoveTheSelectedRepositoryDescription"
+  },
+  "keybindingRepositories": "Repository's",
+  "@keybindingRepositories": {
+    "description": "Locale string for keybindingRepositories"
+  },
+  "keybindingRequestChanges": "Wijzigingen aanvragen",
+  "@keybindingRequestChanges": {
+    "description": "Locale string for keybindingRequestChanges"
+  },
+  "keybindingRequestChangesOnThePeerReviewDescription": "Wijzigingen aanvragen op peer review",
+  "@keybindingRequestChangesOnThePeerReviewDescription": {
+    "description": "Locale string for keybindingRequestChangesOnThePeerReviewDescription"
+  },
+  "keybindingRescanForAdaptersDescription": "Opnieuw scannen naar adapters",
+  "@keybindingRescanForAdaptersDescription": {
+    "description": "Locale string for keybindingRescanForAdaptersDescription"
+  },
+  "keybindingSearchInDiff": "Zoeken in diff",
+  "@keybindingSearchInDiff": {
+    "description": "Locale string for keybindingSearchInDiff"
+  },
+  "keybindingSearchWithinTheDiffViewDescription": "Zoeken in diff-weergave",
+  "@keybindingSearchWithinTheDiffViewDescription": {
+    "description": "Locale string for keybindingSearchWithinTheDiffViewDescription"
+  },
+  "keybindingSelectTheNextArticleDescription": "Volgend artikel selecteren",
+  "@keybindingSelectTheNextArticleDescription": {
+    "description": "Locale string for keybindingSelectTheNextArticleDescription"
+  },
+  "keybindingSelectTheNextChannelDescription": "Volgend kanaal selecteren",
+  "@keybindingSelectTheNextChannelDescription": {
+    "description": "Locale string for keybindingSelectTheNextChannelDescription"
+  },
+  "keybindingSelectTheNextPullRequestDescription": "Volgende pull request selecteren",
+  "@keybindingSelectTheNextPullRequestDescription": {
+    "description": "Locale string for keybindingSelectTheNextPullRequestDescription"
+  },
+  "keybindingSelectThePreviousArticleDescription": "Vorig artikel selecteren",
+  "@keybindingSelectThePreviousArticleDescription": {
+    "description": "Locale string for keybindingSelectThePreviousArticleDescription"
+  },
+  "keybindingSelectThePreviousChannelDescription": "Vorig kanaal selecteren",
+  "@keybindingSelectThePreviousChannelDescription": {
+    "description": "Locale string for keybindingSelectThePreviousChannelDescription"
+  },
+  "keybindingSelectThePreviousPullRequestDescription": "Vorige pull request selecteren",
+  "@keybindingSelectThePreviousPullRequestDescription": {
+    "description": "Locale string for keybindingSelectThePreviousPullRequestDescription"
+  },
+  "keybindingSendMessage": "Bericht versturen",
+  "@keybindingSendMessage": {
+    "description": "Locale string for keybindingSendMessage"
+  },
+  "keybindingSendTheCurrentMessageDescription": "Huidige bericht versturen",
+  "@keybindingSendTheCurrentMessageDescription": {
+    "description": "Locale string for keybindingSendTheCurrentMessageDescription"
+  },
+  "keybindingSkills": "Vaardigheden",
+  "@keybindingSkills": {
+    "description": "Locale string for keybindingSkills"
+  },
+  "keybindingStartANewDirectMessageDescription": "Nieuw direct bericht starten",
+  "@keybindingStartANewDirectMessageDescription": {
+    "description": "Locale string for keybindingStartANewDirectMessageDescription"
+  },
+  "keybindingSwitchBetweenLightAndDarkModeDescription": "Wisselen tussen lichte en donkere modus",
+  "@keybindingSwitchBetweenLightAndDarkModeDescription": {
+    "description": "Locale string for keybindingSwitchBetweenLightAndDarkModeDescription"
+  },
+  "keybindingSwitchToTheConversationTabDescription": "Wisselen naar conversatie-tab",
+  "@keybindingSwitchToTheConversationTabDescription": {
+    "description": "Locale string for keybindingSwitchToTheConversationTabDescription"
+  },
+  "keybindingSwitchToTheEighthWorkspaceDescription": "Wisselen naar achtste werkruimte",
+  "@keybindingSwitchToTheEighthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheEighthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheFifthWorkspaceDescription": "Wisselen naar vijfde werkruimte",
+  "@keybindingSwitchToTheFifthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheFifthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheFilesChangedTabDescription": "Wisselen naar gewijzigde bestanden-tab",
+  "@keybindingSwitchToTheFilesChangedTabDescription": {
+    "description": "Locale string for keybindingSwitchToTheFilesChangedTabDescription"
+  },
+  "keybindingSwitchToTheFirstWorkspaceDescription": "Wisselen naar eerste werkruimte",
+  "@keybindingSwitchToTheFirstWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheFirstWorkspaceDescription"
+  },
+  "keybindingSwitchToTheFourthWorkspaceDescription": "Wisselen naar vierde werkruimte",
+  "@keybindingSwitchToTheFourthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheFourthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheNextWorkspaceDescription": "Wisselen naar volgende werkruimte",
+  "@keybindingSwitchToTheNextWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheNextWorkspaceDescription"
+  },
+  "keybindingSwitchToTheNinthWorkspaceDescription": "Wisselen naar negende werkruimte",
+  "@keybindingSwitchToTheNinthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheNinthWorkspaceDescription"
+  },
+  "keybindingSwitchToThePreviousWorkspaceDescription": "Wisselen naar vorige werkruimte",
+  "@keybindingSwitchToThePreviousWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToThePreviousWorkspaceDescription"
+  },
+  "keybindingSwitchToTheSecondWorkspaceDescription": "Wisselen naar tweede werkruimte",
+  "@keybindingSwitchToTheSecondWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheSecondWorkspaceDescription"
+  },
+  "keybindingSwitchToTheSeventhWorkspaceDescription": "Wisselen naar zevende werkruimte",
+  "@keybindingSwitchToTheSeventhWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheSeventhWorkspaceDescription"
+  },
+  "keybindingSwitchToTheSixthWorkspaceDescription": "Wisselen naar zesde werkruimte",
+  "@keybindingSwitchToTheSixthWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheSixthWorkspaceDescription"
+  },
+  "keybindingSwitchToTheThirdWorkspaceDescription": "Wisselen naar derde werkruimte",
+  "@keybindingSwitchToTheThirdWorkspaceDescription": {
+    "description": "Locale string for keybindingSwitchToTheThirdWorkspaceDescription"
+  },
+  "keybindingToggleBookmark": "Bookmark wisselen",
+  "@keybindingToggleBookmark": {
+    "description": "Locale string for keybindingToggleBookmark"
+  },
+  "keybindingToggleCollapse": "Samenvouwen wisselen",
+  "@keybindingToggleCollapse": {
+    "description": "Locale string for keybindingToggleCollapse"
+  },
+  "keybindingToggleTheme": "Thema wisselen",
+  "@keybindingToggleTheme": {
+    "description": "Locale string for keybindingToggleTheme"
+  },
+  "keybindingToggleViewed": "Bekeken wisselen",
+  "@keybindingToggleViewed": {
+    "description": "Locale string for keybindingToggleViewed"
+  },
+  "keybindingToggleWorkspaceSwitcher": "Werkruimte-wisselaar wisselen",
+  "@keybindingToggleWorkspaceSwitcher": {
+    "description": "Locale string for keybindingToggleWorkspaceSwitcher"
+  },
+  "keybindingWorkspace1": "Workspace1",
+  "@keybindingWorkspace1": {
+    "description": "Locale string for keybindingWorkspace1"
+  },
+  "keybindingWorkspace2": "Workspace2",
+  "@keybindingWorkspace2": {
+    "description": "Locale string for keybindingWorkspace2"
+  },
+  "keybindingWorkspace3": "Workspace3",
+  "@keybindingWorkspace3": {
+    "description": "Locale string for keybindingWorkspace3"
+  },
+  "keybindingWorkspace4": "Workspace4",
+  "@keybindingWorkspace4": {
+    "description": "Locale string for keybindingWorkspace4"
+  },
+  "keybindingWorkspace5": "Workspace5",
+  "@keybindingWorkspace5": {
+    "description": "Locale string for keybindingWorkspace5"
+  },
+  "keybindingWorkspace6": "Workspace6",
+  "@keybindingWorkspace6": {
+    "description": "Locale string for keybindingWorkspace6"
+  },
+  "keybindingWorkspace7": "Workspace7",
+  "@keybindingWorkspace7": {
+    "description": "Locale string for keybindingWorkspace7"
+  },
+  "keybindingWorkspace8": "Workspace8",
+  "@keybindingWorkspace8": {
+    "description": "Locale string for keybindingWorkspace8"
+  },
+  "keybindingWorkspace9": "Workspace9",
+  "@keybindingWorkspace9": {
+    "description": "Locale string for keybindingWorkspace9"
+  },
+  "keybindings": "Sneltoetsen",
+  "keybindingsDescription": "Alle sneltoetsen. Sneltoetsen zijn vast en kunnen niet opnieuw worden toegewezen.",
+  "killRunning": "Actieve stoppen",
+  "klipyNotConfigured": "KLIPY_APP_KEY niet geconfigureerd",
+  "@klipyNotConfigured": {
+    "description": "Title when Klipy API key is missing"
+  },
+  "klipyNotConfiguredHint": "Geef --dart-define=KLIPY_APP_KEY=... op\\nof stel deze in in de .env voor het uitvoeren.",
+  "@klipyNotConfiguredHint": {
+    "description": "Instructions for configuring Klipy API key"
+  },
+  "languageDutch": "Nederlands",
+  "languageEnglish": "English",
+  "languageFrench": "Français",
+  "languageGerman": "Deutsch",
+  "languageItalian": "Italiano",
+  "languagePortuguese": "Português",
+  "languageSpanish": "Español",
+  "languageSystem": "Systeem",
+  "lastMonths": "Laatste {count} maanden",
+  "latestLabel": "Nieuwste",
+  "leaderboardLabel": "KLASSEMENT",
+  "leaderboardLabelShort": "Klassement",
+  "leaveACommentEllipsis": "Reactie achterlaten…",
+  "@leaveACommentEllipsis": {
+    "description": "Placeholder text in the comment composer"
+  },
+  "legendLabel": "Legenda",
+  "@legendLabel": {
+    "description": "Legend heading in knowledge graph"
+  },
+  "lessLabel": "Minder",
+  "letsPluginTools": "Laten we je tools aansluiten.",
+  "level": "Niveau",
+  "levelLabel": "Niveau {level}",
+  "loadingAgents": "Agenten laden…",
+  "loadingModels": "Modellen laden…",
+  "lockedLabel": "Vergrendeld",
+  "logLevel": "Logniveau",
+  "logs": "Logboeken",
+  "low": "Laag",
+  "@low": {
+    "description": "Locale string for low"
+  },
+  "maintenance": "Onderhoud",
+  "manageParticipants": "Deelnemers beheren",
+  "createTicketFromConversation": "Ticket maken vanuit gesprek",
+  "manageWorkspaces": "Werkruimtes beheren",
+  "masterToggle": "Hoofdschakelaar",
+  "matchOsAppearance": "Pas het uiterlijk aan aan je OS of kies een vaste modus.",
+  "mcpActiveAccepting": "MCP-server is actief en accepteert verbindingen.",
+  "mcpAuthToken": "MCP-authenticatietoken",
+  "mcpAuthentication": "Authenticatie",
+  "mcpAutoStartDescription": "Als dit uit staat, blijft de server gestopt totdat je hem start.",
+  "mcpDefaultPort": "Standaard: {port}",
+  "mcpListeningOn": "Luistert op 127.0.0.1:{port}",
+  "mcpListeningOnPort": "Luistert op 127.0.0.1:{port}.",
+  "mcpNotAvailableOnServer": "MCP-serverbeheer is niet beschikbaar op de verbonden server.",
+  "modelManagedOnServer": "Dit model draait op de serverhost en wordt daar beheerd.",
+  "mcpNotRunning": "Server is niet actief. Start de server om MCP-verbindingen in te schakelen.",
+  "mcpRestartPortChanges": "De server moet opnieuw worden gestart om poortwijzigingen toe te passen.",
+  "mcpServer": "MCP-server",
+  "mcpServerStopped": "Server is gestopt",
+  "mcpStatus": "Status",
+  "medium": "Middel",
+  "@medium": {
+    "description": "Locale string for medium"
+  },
+  "memoryDataHint": "Feiten en beleidsregels verschijnen hier terwijl agenten werken.",
+  "@memoryDataHint": {
+    "description": "Hint text for empty knowledge graph"
+  },
+  "memoryLabel": "GEHEUGEN",
+  "merge": "Merge",
+  "mergeMasterBadge": "Merge master",
+  "merged": "Samengevoegd",
+  "messagePlaceholder": "Bericht… (@ om te noemen, / voor commando's)",
+  "navConversations": "Gesprekken",
+  "microphonePermissionDenied": "Microfoontoestemming geweigerd.",
+  "@microphonePermissionDenied": {
+    "description": "Microphone permission denied."
+  },
+  "minutesAgo": "{count, plural, =1{1 minuut geleden} other{{count} minuten geleden}}",
+  "modelLabel": "Model",
+  "modified": "Gewijzigd",
+  "monthsAgo": "{count, plural, =1{1 maand geleden} other{{count} maanden geleden}}",
+  "more": "Meer",
+  "moreLabel": "Meer",
+  "mozillaUserAgent": "Mozilla/5.0 …",
+  "name": "Naam",
+  "nameAndTitleRequired": "Naam en titel zijn vereist.",
+  "nameAndUrlRequired": "Naam en URL zijn vereist",
+  "@nameAndUrlRequired": {
+    "description": "Locale string for nameAndUrlRequired"
+  },
+  "nameLabel": "Naam",
+  "nativeSandboxAvailable": "Native sandbox is beschikbaar op {platform}.",
+  "@nativeSandboxAvailable": {
+    "description": "Locale string for nativeSandboxAvailable",
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "nativeSandboxNeedsInstall": "Installatie vereist voor native sandbox",
+  "@nativeSandboxNeedsInstall": {
+    "description": "Locale string for nativeSandboxNeedsInstall"
+  },
+  "navAnalytics": "Analyse",
+  "navDashboard": "Dashboard",
+  "@navDashboard": {
+    "description": "Dashboard"
+  },
+  "navSaved": "Opgeslagen",
+  "navSettings": "Instellingen",
+  "navigateLabel": "Navigeren",
+  "@navigateLabel": {
+    "description": "Locale string for navigateLabel"
+  },
+  "networkBlockCount": "{count} netwerkblokkades",
+  "@networkBlockCount": {
+    "description": "Locale string for networkBlockCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "neutral": "Neutraal",
+  "newAgent": "Nieuwe agent",
+  "newCommitsPushed": "Nieuwe commits zijn gepusht — klik om de diff opnieuw te laden",
+  "newFact": "Nieuw feit",
+  "@newFact": {
+    "description": "Dialog title for creating a new fact"
+  },
+  "newGroup": "Nieuwe groep",
+  "newLabel": "Nieuw",
+  "newMessage": "Nieuw bericht",
+  "newPolicy": "Nieuwe beleidsregel",
+  "@newPolicy": {
+    "description": "Dialog title for creating a new policy"
+  },
+  "newPrToReview": "Nieuwe PR om te reviewen",
+  "@newPrToReview": {
+    "description": "New PR to review"
+  },
+  "newsfeed": "Nieuwsfeed",
+  "newsfeedLabel": "Nieuwsfeed",
+  "newsfeedSettingsDescription": "Beheer je geabonneerde feeds en lezersvoorkeuren.",
+  "newsfeedSettingsTitle": "Nieuwsfeed-instellingen",
+  "nextMatch": "Volgende overeenkomst (↵)",
+  "noAccessGrants": "Geen toegangsrechten geconfigureerd",
+  "@noAccessGrants": {
+    "description": "Empty state for access matrix when no grants"
+  },
+  "noActiveWorkspace": "Geen actieve werkruimte of repository geselecteerd.",
+  "noActiveWorkspaceCreate": "Geen actieve werkruimte",
+  "noActiveWorkspaceGithub": "Geen actieve werkruimte met een GitHub-repository.",
+  "noAgentAssigned": "Geen agent toegewezen",
+  "@noAgentAssigned": {
+    "description": "Locale string for noAgentAssigned"
+  },
+  "noAgentProcessesRunning": "Geen agentprocessen actief",
+  "noAgents": "Geen agenten",
+  "noAgentsConfigured": "Geen agenten geconfigureerd",
+  "noAgentsDiscovered": "Geen agenten ontdekt",
+  "@noAgentsDiscovered": {
+    "description": "Message when no agents have been discovered"
+  },
+  "noAgentsDiscoveredHint": "Klik op \"Ontdekken\" om AGENTS.md-bestanden te scannen of \"Agent toevoegen\" om er handmatig een te configureren",
+  "@noAgentsDiscoveredHint": {
+    "description": "Hint text for when no agents are discovered"
+  },
+  "noAgentsMatchSearch": "Geen agenten komen overeen met je zoekopdracht",
+  "noAgentsRegisteredYet": "Nog geen agenten geregistreerd",
+  "noArticlesYet": "Nog geen artikelen",
+  "@noArticlesYet": {
+    "description": "Locale string for noArticlesYet"
+  },
+  "noArticlesYetBody": "De artikelen van je feeds verschijnen hier.",
+  "@noArticlesYetBody": {
+    "description": "Locale string for noArticlesYetBody"
+  },
+  "noData": "Geen gegevens",
+  "noDirectMessagesYet": "Nog geen directe berichten",
+  "noDomains": "Nog geen domeinen",
+  "@noDomains": {
+    "description": "Empty state for access matrix when no domains"
+  },
+  "noExecutionLogsYet": "Nog geen uitvoeringslogboeken",
+  "@noExecutionLogsYet": {
+    "description": "No execution logs yet"
+  },
+  "noFacts": "Nog geen feiten",
+  "@noFacts": {
+    "description": "Empty state for facts tab"
+  },
+  "noFeedsYet": "Nog geen feeds",
+  "@noFeedsYet": {
+    "description": "Locale string for noFeedsYet"
+  },
+  "noFileAnchor": "Geen bestandsanker — kan geen inline-reactie plaatsen.",
+  "noFileChangesInScope": "Geen bestandswijzigingen in dit bereik",
+  "@noFileChangesInScope": {
+    "description": "Empty state when no file changes exist in the selected scope"
+  },
+  "noGifsFound": "Geen GIFs gevonden",
+  "@noGifsFound": {
+    "description": "Empty state when no GIFs match the search"
+  },
+  "noGroupsYet": "Nog geen groepen",
+  "noInputDevicesDetected": "Geen invoerapparaten gedetecteerd — systeemstandaard wordt gebruikt.",
+  "@noInputDevicesDetected": {
+    "description": "No input devices detected — using system default."
+  },
+  "noMatchingFiles": "Geen overeenkomende bestanden",
+  "@noMatchingFiles": {
+    "description": "Empty state when no files match the filter"
+  },
+  "noMatchingGoogleFonts": "Geen overeenkomstige Google Fonts.",
+  "noMemoryData": "Nog geen geheugengegevens",
+  "@noMemoryData": {
+    "description": "Empty state for knowledge graph"
+  },
+  "noMessagesYet": "Nog geen berichten",
+  "noModelsAdvertised": "Geen modellen aangeboden door deze adapter.",
+  "noOpenPullRequests": "Geen open pull requests",
+  "noPolicies": "Nog geen beleidsregels",
+  "@noPolicies": {
+    "description": "Empty state for policies tab"
+  },
+  "noPrsByUserInWorkspace": "Geen PRs van @{login} in deze werkruimte",
+  "@noPrsByUserInWorkspace": {
+    "description": "Empty state on user profile screen when the user has no PRs in the current workspace",
+    "placeholders": {
+      "login": {
+        "type": "String"
+      }
+    }
+  },
+  "noReposInWorkspaceYet": "Nog geen repository's in deze werkruimte",
+  "@noReposInWorkspaceYet": {
+    "description": "No repositories in this workspace yet"
+  },
+  "noRunnersDetected": "Nog geen runners gedetecteerd. Vernieuw om opnieuw te scannen.",
+  "noSavedArticles": "Nog geen opgeslagen artikelen",
+  "@noSavedArticles": {
+    "description": "Locale string for noSavedArticles"
+  },
+  "noSavedArticlesBody": "De artikelen die je opslaat verschijnen hier.",
+  "@noSavedArticlesBody": {
+    "description": "Locale string for noSavedArticlesBody"
+  },
+  "noShortcutsMatch": "Geen sneltoetsen komen overeen met \\\"{query}\\\"",
+  "noSystemFonts": "Geen systeemlettertypen gedetecteerd.",
+  "noTokenSet": "Geen token ingesteld — toegang is onbeperkt.",
+  "@noTokenSet": {
+    "description": "No token set — access is unrestricted."
+  },
+  "noTokenSetUnrestricted": "Geen token ingesteld — toegang is onbeperkt.",
+  "noTokenUnrestricted": "Geen token — toegang is onbeperkt",
+  "noWorkingMemory": "Nog geen werkgeheugennotities.",
+  "@noWorkingMemory": {
+    "description": "Empty state for agent working memory"
+  },
+  "noneAllRoles": "Geen (alle rollen)",
+  "notAvailable": "Niet beschikbaar",
+  "@notAvailable": {
+    "description": "Not available status label"
+  },
+  "notConfiguredLabel": "Niet geconfigureerd.",
+  "notDetected": "Niet gedetecteerd",
+  "@notDetected": {
+    "description": "Not detected status label"
+  },
+  "notEarnedYet": "Nog niet verdiend",
+  "@notEarnedYet": {
+    "description": "Locale string for notEarnedYet"
+  },
+  "notFoundLabel": "Niet gevonden",
+  "@notFoundLabel": {
+    "description": "Not found status label"
+  },
+  "notYetSpawned": "Nog niet gestart",
+  "@notYetSpawned": {
+    "description": "Locale string for notYetSpawned"
+  },
+  "notes": "Notities",
+  "notificationAgentFinished": "Agent voltooid",
+  "notificationExternalPr": "Externe PR's",
+  "notificationNewMessages": "Nieuwe berichten",
+  "notificationPrMerged": "PR samengevoegd",
+  "notificationPrPublished": "PR gepubliceerd",
+  "notificationSound": "Meldingsgeluid",
+  "@notificationSound": {
+    "description": "Label for the notification sound setting"
+  },
+  "notificationSoundCff": "CFF",
+  "@notificationSoundCff": {
+    "description": "CFF notification sound option"
+  },
+  "notificationSoundChime": "Chime",
+  "@notificationSoundChime": {
+    "description": "Chime notification sound option"
+  },
+  "notificationSoundDescription": "Geluid dat wordt afgespeeld wanneer een melding wordt weergegeven.",
+  "@notificationSoundDescription": {
+    "description": "Description for the notification sound setting"
+  },
+  "notificationSoundDing": "Ding",
+  "@notificationSoundDing": {
+    "description": "Ding notification sound option"
+  },
+  "notificationSoundFfs": "FFS",
+  "@notificationSoundFfs": {
+    "description": "FFS notification sound option"
+  },
+  "notificationSoundMigrosHard": "Migros (hard)",
+  "@notificationSoundMigrosHard": {
+    "description": "Migros hard notification sound option"
+  },
+  "notificationSoundMigrosSoft": "Migros (soft)",
+  "@notificationSoundMigrosSoft": {
+    "description": "Migros soft notification sound option"
+  },
+  "notificationSoundNone": "Geen",
+  "@notificationSoundNone": {
+    "description": "No notification sound option"
+  },
+  "notificationSoundPing": "Ping",
+  "@notificationSoundPing": {
+    "description": "Ping notification sound option"
+  },
+  "notificationSoundPop": "Pop",
+  "@notificationSoundPop": {
+    "description": "Pop notification sound option"
+  },
+  "notificationSoundPost": "Post",
+  "@notificationSoundPost": {
+    "description": "Post notification sound option"
+  },
+  "notificationSoundSbb": "SBB",
+  "@notificationSoundSbb": {
+    "description": "SBB notification sound option"
+  },
+  "notificationSoundTest": "Testen",
+  "@notificationSoundTest": {
+    "description": "Button to preview the selected notification sound"
+  },
+  "notificationVolume": "Volume",
+  "@notificationVolume": {
+    "description": "Label for the notification sound volume slider"
+  },
+  "notificationSoundWhoosh": "Whoosh",
+  "@notificationSoundWhoosh": {
+    "description": "Whoosh notification sound option"
+  },
+  "notifications": "Meldingen",
+  "notifyAgentRunCompleted": "Melding wanneer een agent een run voltooit.",
+  "notifyExternalPr": "Melding wanneer een nieuwe PR wordt gedetecteerd via polling.",
+  "notifyNewMessages": "Melding bij nieuwe agent-berichten in andere kanalen.",
+  "notifyPrMerged": "Melding wanneer een pull request wordt samengevoegd.",
+  "notifyPrPublished": "Melding wanneer een agent een pull request publiceert.",
+  "onboardingLinuxDescription": "Control Center kan Linux-containers gebruiken om de uitvoering van agenten te isoleren.",
+  "@onboardingLinuxDescription": {
+    "description": "Locale string for onboardingLinuxDescription"
+  },
+  "onboardingMacosDescription": "Control Center gebruikt native sandbox op macOS om de uitvoering van agenten te isoleren.",
+  "@onboardingMacosDescription": {
+    "description": "Locale string for onboardingMacosDescription"
+  },
+  "onboardingUnsupportedDescription": "Sandbox is niet beschikbaar op dit platform. De uitvoering van agenten zal zonder isolatie plaatsvinden.",
+  "@onboardingUnsupportedDescription": {
+    "description": "Locale string for onboardingUnsupportedDescription"
+  },
+  "openAction": "Openen",
+  "openApplicationSettings": "Toepassingsinstellingen openen",
+  "openArticlesBrowserFallback": "Artikel in browser openen",
+  "@openArticlesBrowserFallback": {
+    "description": "Locale string for openArticlesBrowserFallback"
+  },
+  "openArticlesInApp": "Artikelen in app openen",
+  "openContainerTerminal": "Container-terminal openen",
+  "@openContainerTerminal": {
+    "description": "Open container terminal"
+  },
+  "openFolder": "Map openen",
+  "openInBrowser": "Openen in browser",
+  "openLabel": "Open",
+  "openOnGithub": "Openen op GitHub",
+  "openStatus": "Open",
+  "optionalPersonaDescription": "Optionele persona-beschrijving",
+  "otherLabel": "Overig",
+  "ownerOrganization": "Eigenaar / Organisatie",
+  "@ownerOrganization": {
+    "description": "Owner / Organization"
+  },
+  "p0": "P0",
+  "p1": "P1",
+  "p2": "P2",
+  "p3": "P3",
+  "parsingDiff": "Diff parseren…",
+  "passed": "Geslaagd",
+  "pasteTokenHere": "Token hier plakken",
+  "pasteValueHere": "Waarde hier plakken",
+  "patNotNeededGhCli": "Niet nodig — gh CLI is ingelogd.",
+  "patOverridesGhCli": "Geconfigureerd — overschrijft gh CLI.",
+  "pathLabel": "Pad",
+  "pendingApproval": "In afwachting van jouw goedkeuring",
+  "perfectionistBadge": "Perfectionist",
+  "persona": "Persona",
+  "@persona": {
+    "description": "Locale string for persona"
+  },
+  "personaColon": "Persona:",
+  "@personaColon": {
+    "description": "Persona label with colon"
+  },
+  "personaOptional": "Persona (optioneel)",
+  "personalAccessTokenOptional": "Persoonlijk toegangstoken (optioneel)",
+  "planLabel": "Plan",
+  "policies": "Beleidsregels",
+  "policiesHint": "Beleidsregels verschijnen hier zodra agenten feiten promoveren.",
+  "@policiesHint": {
+    "description": "Hint text for empty policies tab"
+  },
+  "policy": "Beleidsregel",
+  "popular": "Populair",
+  "port": "Poort",
+  "portLabel": "Poort",
+  "postingEllipsis": "Publiceren…",
+  "@postingEllipsis": {
+    "description": "Badge text while a comment is being posted"
+  },
+  "prCommits": "Commits",
+  "prDescriptionPlaceholder": "PR-beschrijving in markdown...",
+  "prDraftCreated": "PR-concept aangemaakt",
+  "prMachineBadge": "PR-machine",
+  "prMergedBody": "Een pull request is samengevoegd",
+  "@prMergedBody": {
+    "description": "A pull request was merged"
+  },
+  "prMoreActions": "More actions",
+  "prTitle": "PR-titel",
+  "previewLabel": "Voorbeeld",
+  "previousArticle": "Vorig artikel",
+  "previousChannel": "Vorig kanaal",
+  "previousMatch": "Vorige overeenkomst (⇧↵)",
+  "previousPr": "Vorige PR",
+  "previousWorkspace": "Vorige werkruimte",
+  "priorityReviews": "Prioriteitsreviews",
+  "priorityReviewsDescription": "Prioriteitsreviews en overzicht van repository's.",
+  "progressLabel": "Voortgang",
+  "proposeToCreateDomain": "Stel een feit of beleidsregel voor om er een aan te maken.",
+  "@proposeToCreateDomain": {
+    "description": "Hint text when no domains in access matrix"
+  },
+  "prsCreated": "PR's aangemaakt",
+  "prsCreatedLabel": "PR's aangemaakt",
+  "prsMerged": "PR's samengevoegd",
+  "publishToGithub": "Publiceren naar GitHub",
+  "published": "Gepubliceerd",
+  "pullRequestApproved": "Pull request goedgekeurd",
+  "pullRequests": "Pull requests",
+  "pullRequestsLabel": "PRs",
+  "@pullRequestsLabel": {
+    "description": "Short label for pull requests used in filter summary"
+  },
+  "questionLabel": "VRAAG",
+  "queued": "In wachtrij",
+  "react": "Reageren",
+  "readPrsIssuesMetadata": "Stelt de agent in staat PR's, issues en repository-metadata te lezen.",
+  "readerPreferences": "Lezersvoorkeuren",
+  "reasoningEffort": "Reasoning-inspanning",
+  "@reasoningEffort": {
+    "description": "Locale string for reasoningEffort"
+  },
+  "recommendLabel": "AANBEVELEN",
+  "recordingFromDevice": "Opname van {device}.",
+  "@recordingFromDevice": {
+    "description": "Recording from a specific device",
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "redownload": "Opnieuw downloaden",
+  "redownloadEmbeddingModel": "Embedding-model opnieuw downloaden?",
+  "redownloadVoiceModel": "Spraakmodel opnieuw downloaden?",
+  "refinePlan": "Plan verfijnen",
+  "refiningPlan": "Plan verfijnen…",
+  "refresh": "Vernieuwen",
+  "refreshAll": "Alles vernieuwen",
+  "refreshAllFeeds": "Alle feeds vernieuwen",
+  "refreshLabel": "Vernieuwen",
+  "refreshPrData": "PR-gegevens vernieuwen",
+  "reject": "Afwijzen",
+  "rejected": "Afgewezen",
+  "reload": "Herladen",
+  "remove": "Verwijderen",
+  "removeBookmark": "Bladwijzer verwijderen",
+  "removeEmbeddingModel": "Embedding-model verwijderen?",
+  "removeLogo": "Logo verwijderen",
+  "removeRepoFromWorkspace": "Repository uit werkruimte verwijderen?",
+  "removeRepository": "Repository verwijderen",
+  "removeRepositoryConfirm": "Repository uit werkruimte verwijderen?",
+  "removeVoiceModel": "Spraakmodel verwijderen?",
+  "removed": "Verwijderd",
+  "renamed": "Hernoemd",
+  "reopen": "Heropenen",
+  "replyEllipsis": "Beantwoorden…",
+  "repoRemovedFromWorkspace": "{name} wordt verwijderd uit deze werkruimte. De lokale bestanden op schijf worden niet aangeraakt.",
+  "reportsTo": "Rapporteert aan",
+  "reportsToOptional": "Rapporteert aan (optioneel)",
+  "reposCount": "Repository's ({count})",
+  "reposDescription": "De lokale checkouts waar deze werkruimte op gericht is.",
+  "repositories": "Repository's",
+  "repositoriesSettings": "Repository-instellingen",
+  "repositoryName": "Repository-naam",
+  "@repositoryName": {
+    "description": "Repository name"
+  },
+  "requestChanges": "Wijzigingen aanvragen",
+  "requested": "Aangevraagd",
+  "requestedChanges": "Wijzigingen aangevraagd",
+  "requiredIfGhCliUnavailable": "Vereist als gh CLI niet beschikbaar is",
+  "@requiredIfGhCliUnavailable": {
+    "description": "Required if gh CLI is not available"
+  },
+  "requiredRoleLabel": "Vereiste rol: {role}",
+  "@requiredRoleLabel": {
+    "description": "Required role label with value",
+    "placeholders": {
+      "role": {
+        "type": "String"
+      }
+    }
+  },
+  "requiredRoleOptional": "Vereiste rol (optioneel)",
+  "@requiredRoleOptional": {
+    "description": "Label for required role dropdown in policy edit"
+  },
+  "requirements": "Vereisten",
+  "reset": "Resetten",
+  "resetAllSandboxes": "Alle sandboxes resetten",
+  "resolve": "Oplossen",
+  "resolved": "Opgelost",
+  "restartServerToApply": "Start de server opnieuw op om de wijzigingen toe te passen.",
+  "@restartServerToApply": {
+    "description": "Restart the server to apply changes."
+  },
+  "restartShell": "Shell herstarten",
+  "restartToApply": "Start de server opnieuw op om wijzigingen toe te passen.",
+  "retry": "Opnieuw proberen",
+  "review": "Review",
+  "@review": {
+    "description": "Review"
+  },
+  "reviewChanges": "Wijzigingen reviewen",
+  "reviewFatigueWarning": "Het lijkt erop dat je veel reviews achter elkaar doet. Neem even pauze!",
+  "@reviewFatigueWarning": {
+    "description": "Warning shown when a PR review session exceeds 60 minutes",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "reviewedByMe": "Door mij gereviewd",
+  "reviewers": "REVIEWERS",
+  "reviewersActive": "Actieve reviewers",
+  "reviewsLabel": "Reviews",
+  "@reviewsLabel": {
+    "description": "Reviews"
+  },
+  "roleLabel": "Rol",
+  "@roleLabel": {
+    "description": "Table header for role column in access matrix"
+  },
+  "ruleHint": "De regel van de beleidsregel (markdown wordt ondersteund)",
+  "@ruleHint": {
+    "description": "Hint text for policy rule field"
+  },
+  "ruleLabel": "Regel",
+  "@ruleLabel": {
+    "description": "Label for policy rule field"
+  },
+  "runCompleted": "Uitvoering voltooid",
+  "@runCompleted": {
+    "description": "Run completed"
+  },
+  "runGhAuthLoginBody": "Voer `gh auth login` uit in je terminal, tik dan op Vernieuwen.",
+  "@runGhAuthLoginBody": {
+    "description": "Run `gh auth login` in your terminal, then tap Refresh."
+  },
+  "running": "Actief",
+  "runningLabel": "actief",
+  "@runningLabel": {
+    "description": "running label"
+  },
+  "runningStatus": "Actief",
+  "runs": "Runs",
+  "@runs": {
+    "description": "Runs"
+  },
+  "runsAcrossAllAgents": "Runs over alle agenten",
+  "runsLabel": "Runs",
+  "@runsLabel": {
+    "description": "Runs label"
+  },
+  "sandboxBackendNativeLabel": "Native sandbox",
+  "@sandboxBackendNativeLabel": {
+    "description": "Label for the native sandbox backend"
+  },
+  "sandboxBackendNoneLabel": "No isolation",
+  "@sandboxBackendNoneLabel": {
+    "description": "Label for the no isolation sandbox backend"
+  },
+  "sandboxLinuxInstall": "Native sandbox op Linux/WSL2 gebruikt bubblewrap. Installeer met:\\n\\n  sudo apt-get install bubblewrap socat ripgrep   # Debian/Ubuntu\\n  sudo dnf install bubblewrap socat ripgrep       # Fedora/RHEL\\n  sudo pacman -S bubblewrap socat ripgrep         # Arch",
+  "@sandboxLinuxInstall": {
+    "description": "Native sandbox on Linux/WSL2 uses bubblewrap. Install with package manager."
+  },
+  "sandboxMacosBuiltIn": "Native sandbox is ingebouwd in macOS — gebruikt Apple Seatbelt (`sandbox-exec`). Geen installatie vereist.",
+  "@sandboxMacosBuiltIn": {
+    "description": "Native sandbox is built in on macOS - uses Apple Seatbelt (`sandbox-exec`). No install required."
+  },
+  "sandboxPermissions": "Sandbox-machtigingen",
+  "@sandboxPermissions": {
+    "description": "Locale string for sandboxPermissions"
+  },
+  "sandboxUnsupported": "Native sandbox wordt op dit platform nog niet ondersteund. Val terug op \"Geen isolatie\".",
+  "@sandboxUnsupported": {
+    "description": "Native sandbox is not supported on this platform yet. Falls back to No isolation."
+  },
+  "sandboxing": "Sandboxing",
+  "sandboxingDescription": "Voer agenten uit in een sandbox op OS-niveau zodat ze niet bij je thuismap, SSH-sleutels of tokens die je niet hebt verleend, kunnen komen.",
+  "@sandboxingDescription": {
+    "description": "Run agents inside an OS-level sandbox so they can't touch your home folder, SSH keys, or tokens you haven't granted."
+  },
+  "sandboxingDisabledDescription": "Agenten worden direct op de host uitgevoerd met volledige env — niet aanbevolen.",
+  "@sandboxingDisabledDescription": {
+    "description": "Agents run directly on the host with full env - not recommended."
+  },
+  "sandboxingEnabledDescription": "Alle agentaanroepen worden gerouteerd via {backend}.",
+  "@sandboxingEnabledDescription": {
+    "description": "All agent invocations route through a backend.",
+    "placeholders": {
+      "backend": {
+        "type": "String"
+      }
+    }
+  },
+  "save": "Opslaan",
+  "saveChanges": "Wijzigingen opslaan",
+  "@saveChanges": {
+    "description": "Locale string for saveChanges"
+  },
+  "adapterArguments": "Extra argumenten",
+  "@adapterArguments": {
+    "description": "Extra CLI flags appended to an adapter launch"
+  },
+  "adapterArgumentsHint": "Extra CLI-vlaggen (bijv. --yolo)",
+  "@adapterArgumentsHint": {
+    "description": "Hint for the adapter extra-arguments field"
+  },
+  "addVariable": "Variabele toevoegen",
+  "@addVariable": {
+    "description": "Add an environment variable row"
+  },
+  "environmentVariables": "Omgevingsvariabelen",
+  "@environmentVariables": {
+    "description": "Per-adapter environment variables editor title"
+  },
+  "environmentVariablesDescription": "Aangepaste omgevingsvariabelen voor deze adapter (bijv. API-sleutels). Opgeslagen in de sleutelhanger.",
+  "@environmentVariablesDescription": {
+    "description": "Per-adapter environment variables editor description"
+  },
+  "resetToDefault": "Standaardwaarde herstellen",
+  "@resetToDefault": {
+    "description": "Reset the adapter arguments to the default"
+  },
+  "variableKey": "Sleutel",
+  "@variableKey": {
+    "description": "Environment variable key label"
+  },
+  "variableValue": "Waarde",
+  "@variableValue": {
+    "description": "Environment variable value label"
+  },
+  "savedArticlesDescription": "Artikelen die je hebt opgeslagen.",
+  "savedLabel": "Opgeslagen",
+  "savingChanges": "Wijzigingen opslaan…",
+  "@savingChanges": {
+    "description": "Locale string for savingChanges"
+  },
+  "savingEllipsis": "Opslaan…",
+  "scopeDiffToCommits": "Diff beperken tot commits — Shift-klik voor bereik",
+  "searchAgents": "Agenten zoeken",
+  "searchAuthors": "Auteurs zoeken…",
+  "searchPullRequestsHint": "Zoeken… bijv. author:@user",
+  "noPrsMatchSearch": "Geen overeenkomende pull requests",
+  "noPrsMatchSearchHint": "Geen open PR's komen overeen met je zoekopdracht. Probeer andere termen of wis de zoekopdracht.",
+  "searchAuthorsPlaceholder": "Auteurs zoeken…",
+  "searchFactsHint": "Feiten zoeken...",
+  "@searchFactsHint": {
+    "description": "Search field hint in facts tab"
+  },
+  "searchFonts": "Lettertypen zoeken…",
+  "searchGifs": "GIFs zoeken",
+  "@searchGifs": {
+    "description": "Title of the GIF search picker"
+  },
+  "searchGifsHint": "GIFs zoeken...",
+  "@searchGifsHint": {
+    "description": "Placeholder text in the GIF search field"
+  },
+  "searchInDiff": "Zoeken in diff",
+  "searchInDiffHint": "Zoeken in diff…",
+  "@searchInDiffHint": {
+    "description": "Placeholder text in the diff search field"
+  },
+  "searchOrTypeModel": "Zoek of typ een modelnaam…",
+  "searchPlaceholder": "Zoeken…",
+  "@searchPlaceholder": {
+    "description": "Locale string for searchPlaceholder"
+  },
+  "searchShortcuts": "Sneltoetsen zoeken…",
+  "searching": "Zoeken…",
+  "@searching": {
+    "description": "Locale string for searching"
+  },
+  "secondsAgo": "{count, plural, =1{1 seconde geleden} other{{count} seconden geleden}}",
+  "selectAdapter": "Adapter selecteren",
+  "selectAdapterFirst": "Selecteer eerst een adapter",
+  "selectAgentToReportTo": "Selecteer agent om aan te rapporteren…",
+  "selectAnAgent": "Een agent selecteren",
+  "@selectAnAgent": {
+    "description": "Select an agent"
+  },
+  "selectConversation": "Een gesprek selecteren",
+  "selectEffortLevel": "Inspanningsniveau selecteren",
+  "selectLabel": "Selecteren",
+  "selectRunner": "Een runner selecteren",
+  "semanticSearch": "Semantisch zoeken",
+  "send": "Verzenden",
+  "sendFirstMessage": "Verstuur het eerste bericht",
+  "sendMessage": "Bericht verzenden",
+  "sentFindingsToAgent": "{count} bevinding(en) naar agent gestuurd.",
+  "serverRunning": "Server actief",
+  "serverStopped": "Server gestopt",
+  "setGithubLinkDescription": "Stel de GitHub-eigenaar en repository-naam in voor {name}. Dit wordt gebruikt om PR- en issue-referenties zoals #123 in markdown-inhoud op te lossen.",
+  "@setGithubLinkDescription": {
+    "description": "Set the GitHub owner and repository name for {name}. This is used to resolve PR and issue references like #123 in markdown content.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "setLabel": "Instellen",
+  "@setLabel": {
+    "description": "Generic set button label"
+  },
+  "setToken": "Token instellen",
+  "@setToken": {
+    "description": "Button to set an auth token"
+  },
+  "settingsGeneralDescription": "Weergave, typografie, integraties en MCP-server.",
+  "settingsLabel": "Instellingen",
+  "settingsLanguage": "Taal",
+  "settingsLanguageDescription": "Kies de taal van de app.",
+  "sharedSecretToken": "Gedeeld geheim token",
+  "sharpshooterBadge": "Scherpschutter",
+  "shortTask": "Korte taak",
+  "showNativeNotifications": "Systeemmeldingen van macOS tonen voor gebeurtenissen.",
+  "showSuperseded": "Vervangen tonen",
+  "@showSuperseded": {
+    "description": "Checkbox label to show superseded facts"
+  },
+  "signInWithGhAuth": "Log in met gh auth login of voeg een token toe in Instellingen > API-sleutels",
+  "signedIn": "Ingelogd.",
+  "signedInAs": "Ingelogd als {username}.",
+  "skillEditor": "Vaardighedeneditor",
+  "skillNameRequired": "Vaardigheidsnaam is vereist.",
+  "skillSaved": "Vaardigheid \\\"{name}\\\" opgeslagen.",
+  "skills": "Vaardigheden",
+  "skillsColon": "Vaardigheden:",
+  "@skillsColon": {
+    "description": "Skills label with colon"
+  },
+  "skillsCommaSeparated": "Vaardigheden (door komma's gescheiden)",
+  "skillsLabel": "VAARDIGHEDEN",
+  "skipAcceptRisk": "Overslaan — Ik accepteer het risico",
+  "skipForNow": "Voorlopig overslaan",
+  "skipSandboxing": "Sandboxing overslaan",
+  "skipSandboxingDialogContent": "Weet je zeker dat je sandboxing wilt overslaan? Dit staat agenten toe om code op je systeem uit te voeren zonder isolatie.",
+  "@skipSandboxingDialogContent": {
+    "description": "Locale string for skipSandboxingDialogContent"
+  },
+  "somethingWentWrong": "Er is iets misgegaan",
+  "sourceCount": "{count} bron",
+  "@sourceCount": {
+    "description": "Locale string for sourceCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceCountPlural": "{count} bronnen",
+  "@sourceCountPlural": {
+    "description": "Locale string for sourceCountPlural",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "sourceFacts": "Bronfeiten:",
+  "@sourceFacts": {
+    "description": "Label for source fact IDs in policy detail"
+  },
+  "splitDiff": "Diff naast elkaar",
+  "startDmWithAgent": "Direct bericht met agent starten",
+  "@startDmWithAgent": {
+    "description": "Locale string for startDmWithAgent"
+  },
+  "startFresh": "Opnieuw beginnen",
+  "startLabel": "Starten",
+  "startOnAppLaunch": "Starten bij app-lancering",
+  "startServerToAccept": "Start de server om MCP-verbindingen te accepteren.",
+  "stats": "Statistieken",
+  "statusLabel": "Status",
+  "@statusLabel": {
+    "description": "Status"
+  },
+  "stepConnect": "Stap {number} · Verbinden",
+  "stop": "Stoppen",
+  "stopped": "Gestopt",
+  "@stopped": {
+    "description": "Status label for stopped state"
+  },
+  "streaks": "Reeksen",
+  "streaksLabel": "Reeksen",
+  "strictIdentityCheck": "Strikte identiteitscontrole",
+  "@strictIdentityCheck": {
+    "description": "Locale string for strictIdentityCheck"
+  },
+  "success": "Succes",
+  "successLabel": "Succes",
+  "successLabelShort": "Succes",
+  "successRate": "Succespercentage",
+  "suggestAChange": "Wijziging voorstellen",
+  "@suggestAChange": {
+    "description": "Header label for the suggestion composer"
+  },
+  "suggestAChangeEllipsis": "Wijziging voorstellen…",
+  "@suggestAChangeEllipsis": {
+    "description": "Placeholder text in the suggestion composer"
+  },
+  "suggestLabel": "SUGGESTIE",
+  "superseded": "Vervangen",
+  "@superseded": {
+    "description": "Label for superseded facts"
+  },
+  "synced": "Gesynchroniseerd",
+  "systemDefault": "Systeemstandaard",
+  "@systemDefault": {
+    "description": "System default option label"
+  },
+  "systemFonts": "Systeemlettertypen",
+  "systemPrompt": "Systeem-prompt",
+  "systemPromptLabel": "Systeem-prompt",
+  "talkToControlCenter": "Praat met Control Center.",
+  "tapBadgeDescription": "Tik op een badge om te zien hoe je stijgt",
+  "tapBadgeToLevelUp": "Tik op een badge om te zien hoe je stijgt",
+  "taskMentionSection": "Taak",
+  "testLabel": "Testen",
+  "@testLabel": {
+    "description": "Generic test button label"
+  },
+  "theme": "Thema",
+  "themeDark": "Donker",
+  "@themeDark": {
+    "description": "Locale string for themeDark"
+  },
+  "themeLight": "Licht",
+  "@themeLight": {
+    "description": "Locale string for themeLight"
+  },
+  "themeSystem": "Systeem",
+  "@themeSystem": {
+    "description": "Locale string for themeSystem"
+  },
+  "thisCannotBeUndone": "Dit kan niet ongedaan worden gemaakt.",
+  "thisConversation": "dit gesprek",
+  "@thisConversation": {
+    "description": "this conversation"
+  },
+  "threadLabel": "Thread",
+  "throughput": "Doorvoer",
+  "ticketLabel": "TICKET",
+  "tierLabel": "Niveau {tier}",
+  "@tierLabel": {
+    "description": "Locale string for tierLabel",
+    "placeholders": {
+      "tier": {
+        "type": "String"
+      }
+    }
+  },
+  "titleDescription": "Beschrijving",
+  "titleLabel": "Titel",
+  "todayLabel": "Vandaag",
+  "toggleBookmark": "Bladwijzer wisselen",
+  "toggleTheme": "Thema wisselen",
+  "toggleWorkspaceSwitcher": "Werkruimtewisselaar wisselen",
+  "tokenConfigured": "Geconfigureerd — clients moeten dit token presenteren.",
+  "@tokenConfigured": {
+    "description": "Configured — clients must present this token."
+  },
+  "tokenConfiguredClients": "Geconfigureerd — clients moeten dit token presenteren.",
+  "tokenName": "{name}-token",
+  "topPerformerLabel": "TOPPERFORMER",
+  "topPerformersDescription": "Topperformers, doorvoer en werkruimtegezondheid.",
+  "topic": "Onderwerp",
+  "topicHint": "bijv. Tech Stack, Design System",
+  "@topicHint": {
+    "description": "Hint text for topic field in fact edit"
+  },
+  "totalRuns": "Totaal runs",
+  "totalRunsLabel": "Totaal runs",
+  "trackingParamsCount": "{count} trackingparameters",
+  "@trackingParamsCount": {
+    "description": "Locale string for trackingParamsCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "typeCommandOrSearch": "Typ een commando of zoek…",
+  "typography": "Typografie",
+  "unavailable": "Niet beschikbaar",
+  "unexpectedError": "Er is een onverwachte fout opgetreden.",
+  "unifiedDiff": "Uniforme diff",
+  "unknownAuthor": "Onbekend",
+  "unnamedAgent": "Naamloze agent",
+  "updateKey": "Sleutel bijwerken",
+  "updateLabel": "Bijwerken",
+  "@updateLabel": {
+    "description": "Generic update button label"
+  },
+  "updateToken": "Token bijwerken",
+  "@updateToken": {
+    "description": "Update token"
+  },
+  "updatedDaysAgo": "{count} dagen geleden bijgewerkt",
+  "@updatedDaysAgo": {
+    "description": "Locale string for updatedDaysAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updatedHoursAgo": "{count} uur geleden bijgewerkt",
+  "@updatedHoursAgo": {
+    "description": "Locale string for updatedHoursAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updatedJustNow": "Zojuist bijgewerkt",
+  "@updatedJustNow": {
+    "description": "Locale string for updatedJustNow"
+  },
+  "updatedMinutesAgo": "{count} minuten geleden bijgewerkt",
+  "@updatedMinutesAgo": {
+    "description": "Locale string for updatedMinutesAgo",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "useSandbox": "Sandbox gebruiken",
+  "@useSandbox": {
+    "description": "Locale string for useSandbox"
+  },
+  "useWorkspaceDefault": "Werkruimtestandaard gebruiken",
+  "@useWorkspaceDefault": {
+    "description": "Locale string for useWorkspaceDefault"
+  },
+  "userAgent": "User-Agent",
+  "userAgentDescription": "Laat leeg om de standaard app User-Agent te gebruiken. Sommige sites blokkeren niet-browser User-Agents.",
+  "usersLabel": "Gebruikers",
+  "@usersLabel": {
+    "description": "Breadcrumb label for the users section"
+  },
+  "usingSystemDefaultMicrophone": "Standaardmicrofoon van het systeem wordt gebruikt.",
+  "@usingSystemDefaultMicrophone": {
+    "description": "Using the system default microphone."
+  },
+  "viewAll": "Alles bekijken",
+  "viewLabel": "Bekijken",
+  "viewLog": "Log bekijken",
+  "viewLogs": "Logs bekijken",
+  "viewProfile": "Profiel bekijken",
+  "@viewProfile": {
+    "description": "Link to open a user's full profile page"
+  },
+  "voiceInstallFailed": "Installatie mislukt: {error}",
+  "voiceModelNotInstalled": "Niet geïnstalleerd. Download ~200 MB eenmalig; draait volledig op het apparaat.",
+  "voiceModelNotInstalledLabel": "Spraakmodel niet geïnstalleerd.",
+  "voiceRedownloadBody": "De bestaande modelbestanden worden verwijderd en het ~200 MB-archief opnieuw gedownload. Spraaktranscriptie is niet beschikbaar tot de download is voltooid.",
+  "voiceRemoveBody": "Spraaktranscriptie wordt uitgeschakeld totdat je het opnieuw installeert. Je kunt het op elk moment opnieuw installeren.",
+  "@voiceRemoveBody": {
+    "description": "Voice transcription will be disabled until you reinstall it. You can install it again at any time."
+  },
+  "voiceTranscription": "Spraaktranscriptie",
+  "meetingVad": "Spraakdetectie (Silero VAD)",
+  "meetingVadDescription": "Een geleerd spraakactiviteitsmodel dat stilte overslaat zodat alleen spraak wordt getranscribeerd. Valt terug op een energiedrempel wanneer niet geïnstalleerd.",
+  "meetingVadInstalled": "Geïnstalleerd. Transcriptie wordt gefilterd op gedetecteerde spraak.",
+  "meetingVadNotInstalled": "Niet geïnstalleerd — de energiedrempel wordt gebruikt.",
+  "meetingModelIncluded": "Inbegrepen",
+  "weakIsolationDescription": "Zwakke isolatie — alleen namespace-grens, geen kernel-grens.",
+  "@weakIsolationDescription": {
+    "description": "Weak isolation - namespace boundary only, no kernel boundary."
+  },
+  "whenOffNoDefaultRoute": "Als dit uit staat, start de sandbox zonder een standaardroute.",
+  "whenOffServerStaysStopped": "Als dit uit staat, blijft de server gestopt totdat je hem start.",
+  "whisperBaseEn": "Whisper base.en (sherpa-onnx)",
+  "whisperInstalled": "Whisper base.en geïnstalleerd. Gebruikt door de microfoonknop in de composer.",
+  "speechModel": "Spraakmodel",
+  "speechModelHint": "Gebruikt voor vergadertranscriptie en de composer-microfoon.",
+  "voiceModelInstalled": "Geïnstalleerd. Voedt vergadertranscriptie en de microfoonknop in de composer.",
+  "meetingMicSilentWarning": "Je microfoon staat mogelijk uit — de anderen praten, maar er komt niets binnen.",
+  "meetingTemplates": "Sjablonen voor vergadernotities",
+  "meetingTemplatesHint": "Stem de AI-samenvatting af op een soort vergadering. Het actieve sjabloon geldt voor nieuwe en opnieuw uitgevoerde samenvattingen.",
+  "meetingTemplateActive": "Actief sjabloon",
+  "meetingTemplateAdd": "Sjabloon toevoegen",
+  "meetingTemplateNewTitle": "Nieuw sjabloon",
+  "meetingTemplateEditTitle": "Sjabloon bewerken",
+  "meetingTemplateNameLabel": "Naam",
+  "meetingTemplateNameHint": "bijv. Sprintreview",
+  "meetingTemplateInstructionsLabel": "Instructies",
+  "meetingTemplateInstructionsHint": "Hoe moet de AI deze notities structureren en benadrukken?",
+  "workerLabel": "Worker {index}",
+  "@workerLabel": {
+    "description": "Locale string for workerLabel",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "workersCount": "{count} workers",
+  "@workersCount": {
+    "description": "Locale string for workersCount",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "workingMemory": "Werkgeheugen",
+  "workspaceName": "Naam van werkruimte",
+  "workspaceNotesScratchpad": "Werkruimtenotities en kladblok",
+  "workspacePulse": "WERKRUIMTEPOLS",
+  "workspaceScopedSkills": "Vaardigheidsbestanden toegewezen aan werkruimte, gekoppeld aan agenten.",
+  "workspaces": "Werkruimtes",
+  "writeLabel": "Schrijven",
+  "writePrivateNotes": "Schrijf privénotities, observaties, plannen...",
+  "writeSkillContent": "Schrijf hier je vaardigheidsinhoud (Markdown)…",
+  "xp": "XP",
+  "yearsAgo": "{count, plural, =1{1 jaar geleden} other{{count} jaar geleden}}",
+  "yesterday": "gisteren",
+  "yourAchievements": "JOUW PRESTATIES",
+  "mergePullRequest": "Merge pull request",
+  "@mergePullRequest": {
+    "description": "Button label to merge a pull request"
+  },
+  "forceMergePullRequest": "Force merge pull request",
+  "@forceMergePullRequest": {
+    "description": "Button label to force-merge a pull request despite failing checks or pending reviews"
+  },
+  "closePullRequest": "Close pull request",
+  "@closePullRequest": {
+    "description": "Button label to close a pull request"
+  },
+  "closePullRequestConfirm": "Are you sure you want to close this pull request?",
+  "@closePullRequestConfirm": {
+    "description": "Confirmation dialog for closing a pull request"
+  },
+  "squashAndMerge": "Squash and merge",
+  "@squashAndMerge": {
+    "description": "Merge method: squash all commits into one"
+  },
+  "createMergeCommit": "Create a merge commit",
+  "@createMergeCommit": {
+    "description": "Merge method: create a merge commit"
+  },
+  "rebaseAndMerge": "Rebase and merge",
+  "@rebaseAndMerge": {
+    "description": "Merge method: rebase commits onto the base branch"
+  },
+  "commitTitle": "Commit title",
+  "@commitTitle": {
+    "description": "Label for the commit title field in the merge flyout"
+  },
+  "commitDescription": "Commit description",
+  "@commitDescription": {
+    "description": "Label for the commit description field in the merge flyout"
+  },
+  "pullRequestMerged": "Pull request merged",
+  "@pullRequestMerged": {
+    "description": "Success message after merging a pull request"
+  },
+  "pullRequestClosed": "Pull request closed",
+  "@pullRequestClosed": {
+    "description": "Success message after closing a pull request"
+  },
+  "failedToMergePr": "Failed to merge: {error}",
+  "@failedToMergePr": {
+    "description": "Error message when merging a pull request fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToClosePr": "Failed to close: {error}",
+  "@failedToClosePr": {
+    "description": "Error message when closing a pull request fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "checksFailing": "Controles mislukt",
+  "@checksFailing": {
+    "description": "Warning that CI checks are not all passing"
+  },
+  "reviewsPending": "Some reviews are pending",
+  "@reviewsPending": {
+    "description": "Warning that not all reviewers have approved"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button label"
+  },
+  "trustedSitesSectionTitle": "Vertrouwde sites",
+  "@trustedSitesSectionTitle": {
+    "description": "Section header for the per-domain content-blocker allowlist"
+  },
+  "trustedSitesEmpty": "Geen vertrouwde sites. Voeg een domein toe om blokkeren daar uit te schakelen.",
+  "@trustedSitesEmpty": {
+    "description": "Empty-state copy when no domains are on the per-domain allowlist"
+  },
+  "addTrustedSite": "Vertrouwde site toevoegen",
+  "@addTrustedSite": {
+    "description": "Button label to add a domain to the per-domain allowlist"
+  },
+  "removeTrustedSite": "Verwijderen",
+  "@removeTrustedSite": {
+    "description": "Tooltip on the per-domain allowlist row delete button"
+  },
+  "disableBlockingForThisSite": "Blokkeren uitschakelen op deze site",
+  "@disableBlockingForThisSite": {
+    "description": "Tooltip on the article reader shield button when blocking is currently on"
+  },
+  "enableBlockingForThisSite": "Blokkeren inschakelen op deze site",
+  "@enableBlockingForThisSite": {
+    "description": "Tooltip on the article reader shield button when blocking is currently off for this site"
+  },
+  "enterDomainHint": "bijv. voorbeeld.com",
+  "@enterDomainHint": {
+    "description": "Placeholder text in the add-trusted-site domain input"
+  },
+  "invalidDomain": "Voer een geldig domein in (bijv. voorbeeld.com)",
+  "@invalidDomain": {
+    "description": "Validation message when the add-trusted-site domain input is invalid"
+  },
+  "pageLoadTimedOut": "Pagina laden duurde te lang. Herlaad of open in browser.",
+  "@pageLoadTimedOut": {
+    "description": "Banner shown in the article reader when page load exceeds the 15s timeout"
+  },
+  "pipelinesScreenTitle": "Pipelines",
+  "@pipelinesScreenTitle": {
+    "description": "Title for the pipelines screen"
+  },
+  "pipelinesScreenSubtitle": "Declarative multi-step agent workflows",
+  "@pipelinesScreenSubtitle": {
+    "description": "Subtitle for the pipelines screen"
+  },
+  "pipelinesRunHello": "Run hello pipeline",
+  "@pipelinesRunHello": {
+    "description": "Button text to run the hello demo pipeline"
+  },
+  "pipelinesRunPipeline": "Pipeline uitvoeren",
+  "pipelineRunLauncherTitle": "Pipeline uitvoeren",
+  "pipelineRunSubtitle": "Kies een pipeline en vul de invoer in om een uitvoering te starten.",
+  "pipelineRunNoInputsBadge": "Geen invoer",
+  "pipelineRunInputsCount": "{count, plural, =1{1 invoerveld} other{{count} invoervelden}}",
+  "pipelineRunNoInputs": "Deze pipeline heeft geen invoer nodig.",
+  "pipelineRunSubmit": "Pipeline uitvoeren",
+  "pipelineRunCouldNotStart": "Kan de uitvoering niet starten.",
+  "pipelineRunStarted": "{name} gestart",
+  "pipelineRunEmptyTitle": "Geen pipelines klaar om uit te voeren",
+  "pipelineRunEmptyHint": "Schakel een pipeline in en zet handmatige uitvoering aan in de editor om deze hier te starten.",
+  "pipelineRunManageTemplates": "Pipelines beheren",
+  "pipelineRunSettingsTitle": "Handmatige uitvoering",
+  "pipelineRunSettingsAllow": "Handmatige uitvoering toestaan",
+  "pipelineRunSettingsAllowHelp": "Toon deze pipeline op de uitvoeringspagina zodat deze handmatig gestart kan worden.",
+  "pipelineRunSettingsInputsTitle": "Invoer",
+  "pipelineRunSettingsAddInput": "Invoer toevoegen",
+  "pipelineRunSettingsNoInputs": "Nog geen invoer.",
+  "pipelineInputEditTitle": "Invoerveld",
+  "pipelineInputKeyLabel": "Sleutel",
+  "pipelineInputKeyHelp": "Statussleutel waaronder de waarde wordt opgeslagen (bijv. repoFullName).",
+  "pipelineInputLabelLabel": "Label",
+  "pipelineInputTypeLabel": "Type",
+  "pipelineInputOptionsLabel": "Opties (door komma's gescheiden)",
+  "pipelineInputDefaultLabel": "Standaardwaarde",
+  "pipelineInputPlaceholderLabel": "Tijdelijke aanduiding",
+  "pipelineInputHelpLabel": "Helptekst",
+  "pipelineInputRequiredLabel": "Verplicht",
+  "pipelineInputTypeText": "Tekst",
+  "pipelineInputTypeMultiline": "Tekst met meerdere regels",
+  "pipelineInputTypeNumber": "Getal",
+  "pipelineInputTypeBoolean": "Schakelaar",
+  "pipelineInputTypeSelect": "Selectie",
+  "pipelinesEmpty": "No pipeline runs yet",
+  "@pipelinesEmpty": {
+    "description": "Empty state message when no pipelines have been run"
+  },
+  "pipelinesEmptyHint": "Klik op 'Pipeline uitvoeren' om er een te starten.",
+  "@pipelinesEmptyHint": {
+    "description": "Hint text in the empty pipelines state"
+  },
+  "pipelinesSelectRun": "Select a pipeline run to view steps",
+  "@pipelinesSelectRun": {
+    "description": "Placeholder when no pipeline run is selected"
+  },
+  "pipelinesNoSteps": "No steps recorded yet",
+  "@pipelinesNoSteps": {
+    "description": "Placeholder when a pipeline run has no steps"
+  },
+  "pipelinesNoActiveWorkspace": "Selecteer een werkruimte om de pipelines te bekijken",
+  "@pipelinesNoActiveWorkspace": {
+    "description": "Shown on the pipelines screen when no workspace is active"
+  },
+  "pipelinesLoadError": "Pipelines konden niet worden geladen: {error}",
+  "@pipelinesLoadError": {
+    "description": "Error state on the pipelines screen",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelinesRunFailed": "Pipeline kon niet worden gestart: {error}",
+  "@pipelinesRunFailed": {
+    "description": "Snackbar when starting a pipeline fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineStatusPending": "Pending",
+  "@pipelineStatusPending": {
+    "description": "Pipeline status: pending"
+  },
+  "pipelineStatusRunning": "Running",
+  "@pipelineStatusRunning": {
+    "description": "Pipeline status: running"
+  },
+  "pipelineStatusSuspended": "Suspended",
+  "@pipelineStatusSuspended": {
+    "description": "Pipeline status: suspended"
+  },
+  "pipelineStatusCompleted": "Completed",
+  "@pipelineStatusCompleted": {
+    "description": "Pipeline status: completed"
+  },
+  "pipelineStatusFailed": "Failed",
+  "@pipelineStatusFailed": {
+    "description": "Pipeline status: failed"
+  },
+  "pipelineStatusCancelled": "Cancelled",
+  "@pipelineStatusCancelled": {
+    "description": "Pipeline status: cancelled"
+  },
+  "pipelineStatusSkipped": "Skipped",
+  "@pipelineStatusSkipped": {
+    "description": "Pipeline status: skipped"
+  },
+  "pipelineRunDuration": "{seconds}s",
+  "@pipelineRunDuration": {
+    "description": "Duration of a pipeline run in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineStepDuration": "{seconds}s",
+  "@pipelineStepDuration": {
+    "description": "Duration of a pipeline step in seconds",
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineRunStepProgress": "{completed} van {total} stappen",
+  "@pipelineRunStepProgress": {
+    "description": "Run header progress: completed vs total steps",
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "pipelineStepStarted": "Gestart",
+  "@pipelineStepStarted": {
+    "description": "Step detail label: when the step started"
+  },
+  "pipelineStepFinished": "Voltooid",
+  "@pipelineStepFinished": {
+    "description": "Step detail label: when the step finished"
+  },
+  "pipelineStepDurationLabel": "Duur",
+  "@pipelineStepDurationLabel": {
+    "description": "Step detail label: run duration"
+  },
+  "pipelineStepBranch": "Tak",
+  "pipelineStepViewConversation": "Gesprek tonen",
+  "@pipelineStepViewConversation": {
+    "description": "Button opening the hidden pipeline-spawned conversation from the step detail"
+  },
+  "@pipelineStepBranch": {
+    "description": "Step detail label: parallel branch index"
+  },
+  "pipelineStepError": "Fout",
+  "@pipelineStepError": {
+    "description": "Step detail section header: error"
+  },
+  "pipelineStepInput": "Invoer",
+  "@pipelineStepInput": {
+    "description": "Step detail section header: input payload"
+  },
+  "pipelineStepOutput": "Uitvoer",
+  "@pipelineStepOutput": {
+    "description": "Step detail section header: output payload"
+  },
+  "pipelineStepNotExecuted": "Nog niet uitgevoerd",
+  "@pipelineStepNotExecuted": {
+    "description": "Step detail placeholder when the step has not run yet"
+  },
+  "pipelineRunViewTimeline": "Tijdlijn",
+  "pipelineRunViewGraph": "Grafiek",
+  "pipelineRunFailedAtStep": "Mislukt bij {step}",
+  "pipelineRunTriggerManual": "Handmatig",
+  "pipelineRunTriggerAuto": "Automatisch",
+  "pipelineStepSkippedReason": "Overgeslagen",
+  "pipelineRunFilterAll": "Alle",
+  "pipelineRunFilterEmpty": "Geen runs komen overeen met dit filter",
+  "relativeJustNow": "zojuist",
+  "relativeMinutesAgo": "{count, plural, =1{1 min geleden} other{{count} min geleden}}",
+  "relativeHoursAgo": "{count, plural, =1{1 uur geleden} other{{count} uur geleden}}",
+  "relativeDaysAgo": "{count, plural, =1{1 dag geleden} other{{count} dagen geleden}}",
+  "tasksTitle": "Tasks",
+  "@tasksTitle": {
+    "description": "Title for the tasks screen"
+  },
+  "taskStatusPending": "Pending",
+  "@taskStatusPending": {
+    "description": "Ticket status: pending"
+  },
+  "taskStatusInProgress": "In progress",
+  "@taskStatusInProgress": {
+    "description": "Ticket status: in progress"
+  },
+  "taskStatusCompleted": "Completed",
+  "@taskStatusCompleted": {
+    "description": "Ticket status: completed"
+  },
+  "taskStatusFailed": "Failed",
+  "@taskStatusFailed": {
+    "description": "Ticket status: failed"
+  },
+  "taskStatusCancelled": "Cancelled",
+  "@taskStatusCancelled": {
+    "description": "Ticket status: cancelled"
+  },
+  "tasksNoTasks": "Geen tickets",
+  "@tasksNoTasks": {
+    "description": "Empty state for tickets list"
+  },
+  "teamsTitle": "Teams",
+  "@teamsTitle": {
+    "description": "Title for the teams settings screen"
+  },
+  "teamsNoTeams": "No teams configured",
+  "@teamsNoTeams": {
+    "description": "Empty state for teams list"
+  },
+  "teamsAddTeam": "Add team",
+  "@teamsAddTeam": {
+    "description": "Button to add a new team"
+  },
+  "pipelineRunTitle": "Pipeline run",
+  "@pipelineRunTitle": {
+    "description": "Title for the pipeline run detail screen"
+  },
+  "pipelineNotFound": "Pipeline run not found",
+  "@pipelineNotFound": {
+    "description": "Message when pipeline run ID is invalid"
+  },
+  "pipelineTemplatesNav": "Pipelinesjablonen",
+  "pipelineTemplatesTitle": "Pipeline-templates",
+  "pipelineTemplatesSubtitle": "Drag-and-drop-editor voor de pipelines die je agents orkestreren.",
+  "pipelineTemplatesNew": "Nieuwe template",
+  "pipelineTemplatesEmpty": "Nog geen pipeline-templates. Maak er een om te beginnen.",
+  "pipelineTemplateIdLabel": "Template-ID",
+  "pipelineTemplateBuiltInBadge": "Ingebouwd",
+  "pipelineTemplateDeleteConfirmTitle": "Template verwijderen?",
+  "pipelineTemplateDeleteConfirmBody": "Pipeline-template {name} verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "pipelineTemplateSaved": "Pipeline-template opgeslagen",
+  "pipelineTemplateEditorTitle": "Pipeline bewerken",
+  "pipelineTemplateEditorSubtitle": "Sleep node-types vanuit de zijbalk naar het canvas en verbind ze.",
+  "unsavedChanges": "Niet-opgeslagen wijzigingen",
+  "nodeLibraryTitle": "Node-bibliotheek",
+  "nodeLibraryHint": "Sleep een item naar het canvas om een node toe te voegen.",
+  "editorDragHint": "Sleep vanuit de bibliotheek, klik een node om te bewerken",
+  "editorEmptyCanvas": "Sleep een node vanuit de bibliotheek om te beginnen.",
+  "nodeConfigTitle": "Node-configuratie",
+  "nodeConfigKind": "Type",
+  "nodeConfigLabel": "Label",
+  "nodeConfigInputKeys": "Invoersleutels (door komma's gescheiden)",
+  "nodeConfigInputKeysHelp": "State-sleutels die deze node gebruikt. Gebruikt voor placeholder-substitutie in de prompt.",
+  "nodeConfigOutputKey": "Uitvoersleutel",
+  "nodeConfigPrompt": "Prompt-template",
+  "nodeConfigPromptHelp": "Gebruik placeholders met dubbele accolades om waarden uit de state in te voegen op runtime.",
+  "nodeConfigTriggers": "Geactiveerd door",
+  "nodeConfigNoUpstream": "Er zijn geen andere nodes om vanaf te verbinden.",
+  "nodeConfigAgent": "Agent",
+  "nodeConfigAgentHint": "Kies een agent…",
+  "nodeConfigScript": "Bash-script",
+  "nodeConfigScriptHelp": "Uitgevoerd met bash -c. GITHUB_TOKEN is ingesteld. Placeholders worden vóór uitvoering vervangen.",
+  "nodeConfigRouteKeys": "Routesleutels",
+  "nodeConfigRouteKeyFrom": "Routesleutel van {source}",
+  "conditionSectionTitle": "Voorwaarde",
+  "conditionMode": "Modus",
+  "conditionModeFilesAny": "Bestand(en) aanwezig — een",
+  "conditionModeFilesAll": "Bestanden aanwezig — alle",
+  "conditionModeComparison": "Vergelijking",
+  "conditionModeSwitch": "Schakelaar",
+  "conditionFilePaths": "Bestandspaden",
+  "conditionFilePathsAnyHelp": "Eén pad per regel, relatief aan de basismap. Geeft true als er een bestaat.",
+  "conditionFilePathsAllHelp": "Eén pad per regel, relatief aan de basismap. Geeft true alleen als alle bestaan.",
+  "conditionBaseKey": "Sleutel van de basismap",
+  "conditionBaseKeyHelp": "Statussleutel met de map waartegen paden worden opgelost (standaard repoLocalPath).",
+  "conditionRecursive": "Submappen doorzoeken",
+  "conditionNegate": "Omkeren: true als ontbreekt",
+  "conditionLeft": "Linkerwaarde",
+  "conditionOperator": "Operator",
+  "conditionRight": "Rechterwaarde",
+  "conditionSwitchKey": "Schakelen op statussleutel",
+  "conditionCases": "Gevallen (door komma's gescheiden)",
+  "conditionCasesHelp": "Routesleutels om met de waarde te vergelijken, op volgorde.",
+  "conditionDefaultCase": "Standaardgeval",
+  "triggerPanelTitle": "Triggers",
+  "triggerPanelHelp": "Wat deze pipeline start.",
+  "triggerManualHelp": "Toon op de uitvoerpagina en start handmatig.",
+  "triggerSectionAutomatic": "Automatische triggers",
+  "triggerAddButton": "Trigger toevoegen",
+  "triggerNoneYet": "Nog geen automatische triggers.",
+  "triggerAddDialogTitle": "Trigger toevoegen",
+  "triggerKindLabel": "Triggertype",
+  "triggerKindEvent": "Bij een gebeurtenis",
+  "triggerKindSchedule": "Volgens een schema",
+  "triggerIntervalLabel": "Uitvoeren elke (seconden)",
+  "triggerEventFieldLabel": "Gebeurtenis",
+  "triggerNoMoreEvents": "Alle beschikbare gebeurtenissen zijn al gekoppeld.",
+  "triggerMatchStatusLabel": "Alleen wanneer de status is",
+  "triggerSummaryNone": "Geen triggers",
+  "triggerEverySeconds": "Elke {seconds}s",
+  "triggerEventManual": "Handmatige uitvoering",
+  "triggerEventSchedule": "Schema",
+  "triggerEventPrStatusChanged": "PR-status gewijzigd",
+  "triggerEventExternalPr": "Externe PR geopend",
+  "triggerEventPrPublished": "PR gepubliceerd",
+  "triggerEventPrMerged": "PR samengevoegd",
+  "triggerEventRepoAdded": "Repository toegevoegd",
+  "triggerEventMessageReceived": "Bericht ontvangen",
+  "triggerEventTicketCompleted": "Taak voltooid",
+  "triggerEventTicketFailed": "Taak mislukt",
+  "triggerEventTicketCancelled": "Taak geannuleerd",
+  "triggerEventBudgetCrossed": "Budgetdrempel overschreden",
+  "automationsTitle": "Automatiseringen",
+  "@automationsTitle": {
+    "description": "Title for the automations settings screen"
+  },
+  "automationsSubtitle": "Start pipelines automatisch wanneer domeingebeurtenissen worden geactiveerd",
+  "@automationsSubtitle": {
+    "description": "Subtitle for the automations settings screen"
+  },
+  "automationsNoTriggers": "Geen triggers geconfigureerd voor deze gebeurtenis.",
+  "@automationsNoTriggers": {
+    "description": "Empty state for an event section with no triggers"
+  },
+  "automationsAddTrigger": "Trigger toevoegen",
+  "@automationsAddTrigger": {
+    "description": "Button to add a new automation trigger"
+  },
+  "automationsManagedHint": "Triggers worden per pipeline in de editor geconfigureerd. Zet ze hier aan of uit.",
+  "automationsEditInPipeline": "Bewerken in pipeline",
+  "nodeLibrarySearchHint": "Knooppunten zoeken",
+  "nodeLibraryNoMatches": "Geen overeenkomende knooppunten",
+  "nodeCategoryFlow": "Flow en logica",
+  "nodeCategoryPr": "PR-review",
+  "nodeCategoryAgents": "Agents",
+  "nodeCategoryMessaging": "Berichten",
+  "nodeCategoryCode": "Code",
+  "nodeCategoryDemo": "Demo",
+  "triggerDisabledTag": "uit",
+  "pipelineInputTypeRepo": "Repository",
+  "pipelineRunNoRepos": "Nog geen repository's in deze werkruimte.",
+  "allowTicketingApi": "Ticketing-API-aanroepen toestaan",
+  "ticketingApiKey": "Ticketing-API-sleutel",
+  "ticketingApiKeySubtitle": "Injecteert de API-sleutel van de ticketingprovider in de sandbox.",
+  "ticketingProvider": "Ticketingprovider",
+  "connectGitHubAndTicketing": "Verbind GitHub zodat Control Center je pull requests, issues en reviews kan lezen. Verbind optioneel een ticketingprovider. Niets verlaat deze machine.",
+  "triggerEventTicketAssigned": "Ticket toegewezen",
+  "navTickets": "Tickets",
+  "ticketsTitle": "Tickets",
+  "newTicket": "Nieuw ticket",
+  "noTicketsYet": "Nog geen tickets",
+  "assignTicket": "Ticket toewijzen",
+  "addCollaborator": "Medewerker toevoegen",
+  "noCollaborators": "Nog geen medewerkers",
+  "linkedPullRequests": "Gekoppelde pull requests",
+  "noLinkedPullRequests": "Nog geen gekoppelde pull requests",
+  "ticketActivity": "Activiteit",
+  "ticketDispatchHint": "@vermeld een agent om die in te zetten…",
+  "stopAgent": "Agent stoppen",
+  "removeQueuedMessage": "Bericht in wachtrij verwijderen",
+  "ticketProperties": "Eigenschappen",
+  "ticketTabIssue": "Ticket",
+  "ticketTabActivity": "Activiteit",
+  "ticketTabChanges": "Wijzigingen",
+  "ticketTabTerminal": "Terminal",
+  "ticketSelectPrompt": "Selecteer een ticket om de details te bekijken",
+  "ticketNoChanges": "Nog geen wijzigingen in de gekoppelde repository's",
+  "ticketTerminalNoAgent": "Wijs een agent toe om een terminal te openen",
+  "unassigned": "Niet toegewezen",
+  "ticketStatusBacklog": "Backlog",
+  "ticketStatusOpen": "Te doen",
+  "ticketStatusInProgress": "Bezig",
+  "ticketStatusInReview": "In review",
+  "ticketStatusDone": "Klaar",
+  "ticketStatusBlocked": "Geblokkeerd",
+  "ticketStatusFailed": "Mislukt",
+  "ticketStatusCancelled": "Geannuleerd",
+  "notificationTicketAssigned": "Ticket toegewezen",
+  "notificationTicketStatusChanged": "Ticketstatus gewijzigd",
+  "notificationTicketCollaboratorAdded": "Medewerker toegevoegd",
+  "priority": "Prioriteit",
+  "status": "Status",
+  "assignee": "Toegewezen aan",
+  "ticketDescription": "Beschrijving",
+  "ticketPriorityNone": "Geen",
+  "ticketPriorityUrgent": "Urgent",
+  "ticketPriorityHigh": "Hoog",
+  "ticketPriorityMedium": "Gemiddeld",
+  "ticketPriorityLow": "Laag",
+  "ticketViewList": "Lijst",
+  "ticketViewBoard": "Bord",
+  "ticketTitlePlaceholder": "Tickettitel",
+  "ticketDescriptionPlaceholder": "Beschrijving toevoegen…",
+  "createMore": "Meer aanmaken",
+  "selectedCount": "{count} geselecteerd",
+  "clearSelection": "Selectie wissen",
+  "bulkDeleteTitle": "Tickets verwijderen",
+  "bulkDeleteMessage": "{count} geselecteerde tickets verwijderen? Dit kan niet ongedaan worden gemaakt.",
+  "assignTo": "Toewijzen aan…",
+  "sectionMembers": "Leden",
+  "sectionAgents": "Agenten",
+  "sidebarGroupWork": "Werk",
+  "sidebarGroupTeam": "Team",
+  "notificationsTitle": "Meldingen",
+  "notificationsTooltip": "Meldingen",
+  "notificationsEmpty": "Je bent helemaal bij",
+  "markAllRead": "Alles als gelezen markeren",
+  "toggleThemeLabel": "Thema wisselen",
+  "teamsNav": "Teams",
+  "dashboardGreeting": "Grüezi",
+  "dashboardSubtitle": "Dit is waar je agenten aan werken.",
+  "recentActivityTitle": "Recente activiteit",
+  "noRecentActivity": "Nog geen recente activiteit",
+  "noRecentActivitySubtitle": "Agentruns, pull requests en berichten verschijnen hier.",
+  "noWorkspace": "Geen werkruimte",
+  "allAgentsIdle": "Alle agents inactief",
+  "statWorkspaces": "Werkruimtes",
+  "statAgents": "Agenten",
+  "statRunning": "Actief",
+  "activeAgentsTitle": "Actieve agenten",
+  "noAgentProcessesSubtitle": "Agentactiviteit verschijnt hier wanneer een run start.",
+  "agentIdShort": "ID {id}",
+  "runningProcessesLabel": "Actief · {count}",
+  "noneLabel": "Geen",
+  "sidebarGroupKnowledge": "Kennis",
+  "navMemory": "Geheugen",
+  "memoryTabFacts": "Feiten",
+  "memoryTabPolicies": "Beleid",
+  "memoryTabGraph": "Kennisgrafiek",
+  "memoryNoWorkspace": "Selecteer een werkruimte om het geheugen te bekijken.",
+  "topStory": "Uitgelicht",
+  "searchArticles": "Artikelen zoeken",
+  "filterAll": "Alle",
+  "filterUnread": "Ongelezen",
+  "saveArticle": "Artikel opslaan",
+  "removeFromSaved": "Verwijderen uit opgeslagen",
+  "filterBySource": "Filteren op bron",
+  "viewAsList": "Lijstweergave",
+  "viewAsGrid": "Rasterweergave",
+  "filterSaved": "Opgeslagen",
+  "noMatchingArticles": "Geen overeenkomende artikelen",
+  "noMatchingArticlesBody": "Probeer een andere zoekopdracht of bronfilter.",
+  "allCaughtUp": "Helemaal bij",
+  "allCaughtUpBody": "Geen ongelezen artikelen — kom later terug.",
+  "openArticlesInAppDescription": "Links openen in de ingebouwde lezer in plaats van je standaardbrowser.",
+  "blockAdsTrackersDescription": "Advertenties, trackers en cookiebanners verwijderen uit artikelen die je in de lezer opent.",
+  "agentQuestionHeader": "Vraag voor jou",
+  "agentQuestionAnsweredLabel": "Beantwoord",
+  "agentQuestionSubmit": "Antwoord versturen",
+  "agentQuestionFreeformHint": "Typ je antwoord…",
+  "agentQuestionAnswerLabel": "Jouw antwoord",
+  "reviewRequested": "Review aangevraagd",
+  "loadMorePrs": "Meer laden",
+  "loadingMorePrs": "Meer laden…",
+  "noPrsMatchFilters": "Geen pull requests komen overeen met de filters in deze repo",
+  "connectGitHubToLoadPrs": "Verbind GitHub om pull requests te laden",
+  "noRepositoriesConfigured": "Geen repository's geconfigureerd",
+  "noAuthors": "Geen auteurs",
+  "noAuthorMatches": "Geen resultaten",
+  "openedAgo": "Geopend {age}",
+  "@openedAgo": {
+    "description": "Relative-time suffix for when a PR was opened",
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
+  "updatedAgo": "Bijgewerkt {age}",
+  "checksPassing": "Controles geslaagd",
+  "checksRunning": "Controles bezig",
+  "needsYourReview": "Vereist jouw review",
+  "diffSummary": "+{additions} −{deletions} regels",
+  "checks": "Controles",
+  "noReviewersAssigned": "Geen reviewers toegewezen",
+  "noAssignees": "Geen toegewezen personen",
+  "noChecksYet": "Nog geen controles uitgevoerd",
+  "checksFailingCount": "{count} mislukt",
+  "showMore": "Meer tonen",
+  "showLess": "Minder tonen",
+  "backToPullRequests": "Terug naar pull requests",
+  "pullRequestNotFound": "Pull request niet gevonden",
+  "pullRequestNotFoundBody": "Mogelijk is deze samengevoegd, gesloten of verplaatst.",
+  "couldntLoadPullRequest": "Kan deze pull request niet laden",
+  "showDetails": "Details tonen",
+  "loadingPullRequestNumber": "Pull request #{number} laden…",
+  "noDescriptionProvided": "Geen beschrijving opgegeven.",
+  "factsHint": "Feiten verschijnen hier naarmate je agents leren.",
+  "noFactsMatch": "Geen feiten komen overeen met je zoekopdracht",
+  "memoryLoadError": "Kan geheugen niet laden",
+  "sortRecent": "Recent",
+  "sortConfidence": "Vertrouwen",
+  "confidenceTooltip": "Hoe zeker agents zijn dat dit feit klopt, van 0 tot 100%.",
+  "supersededTooltip": "Een nieuwer feit heeft dit vervangen.",
+  "domain": "Domein",
+  "fitToView": "Passend maken",
+  "project": "Project",
+  "projects": "Projecten",
+  "newProject": "Nieuw project",
+  "editProject": "Project bewerken",
+  "deleteProject": "Project verwijderen",
+  "noProject": "Geen project",
+  "allTickets": "Alle tickets",
+  "projectNamePlaceholder": "Projectnaam",
+  "projectDescriptionPlaceholder": "Beschrijving (optioneel)",
+  "projectColorLabel": "Kleur",
+  "noProjectsYet": "Nog geen projecten",
+  "projectTicketsEmpty": "Nog geen tickets in dit project",
+  "createProject": "Project aanmaken",
+  "projectProgress": "{done} van {total} klaar",
+  "deleteProjectConfirm": "\"{name}\" verwijderen? De tickets blijven behouden en worden uit het project verwijderd.",
+  "projectStatusActive": "Actief",
+  "projectStatusCompleted": "Voltooid",
+  "projectStatusArchived": "Gearchiveerd",
+  "markProjectCompleted": "Markeren als voltooid",
+  "markProjectActive": "Markeren als actief",
+  "archiveProject": "Archiveren",
+  "restoreProject": "Herstellen",
+  "relations": "Relaties",
+  "relateTo": "Koppelen aan",
+  "relationSubIssueOf": "Subtaak van…",
+  "relationParentOf": "Bovenliggend van…",
+  "relationBlockedBy": "Geblokkeerd door…",
+  "relationBlocking": "Blokkeert…",
+  "relationRelatedTo": "Gerelateerd aan…",
+  "relationDuplicateOf": "Duplicaat van…",
+  "relationGroupParent": "Bovenliggend",
+  "relationGroupSubIssues": "Subtaken",
+  "relationGroupBlockedBy": "Geblokkeerd door",
+  "relationGroupBlocking": "Blokkeert",
+  "relationGroupRelated": "Gerelateerd",
+  "relationGroupDuplicateOf": "Duplicaat van",
+  "relationGroupDuplicatedBy": "Gedupliceerd door",
+  "copyId": "ID kopiëren",
+  "ticketIdCopied": "Ticket-ID gekopieerd",
+  "selectTicket": "Een ticket selecteren",
+  "searchTicketsHint": "Tickets zoeken…",
+  "noMatchingTickets": "Geen overeenkomende tickets",
+  "addToProject": "Aan project toevoegen",
+  "activeFleet": "Actieve vloot",
+  "agentsCountLabel": "{count, plural, =1{1 agent} other{{count} agents}}",
+  "blockedStatus": "Geblokkeerd",
+  "failedStatus": "Mislukt",
+  "neverRunStatus": "Nooit uitgevoerd",
+  "noActiveRun": "Geen actieve run",
+  "allPullRequests": "Alle pull requests",
+  "clearAll": "Alles wissen",
+  "needsYouNow": "Heeft je nu nodig",
+  "pipelinesSectionTitle": "Pipelines",
+  "allRuns": "Alle runs",
+  "triage": "Triage",
+  "agentsRunningCount": "{count, plural, =1{1 agent actief} other{{count} agents actief}}",
+  "blockedCountLabel": "{count} geblokkeerd",
+  "needsYouCountLabel": "{count} voor jou",
+  "reviewSummary": "{prs, plural, =1{1 PR wacht} other{{prs} PRs wachten}} op je review in {repos, plural, =1{1 repo} other{{repos} repo's}}",
+  "reviewsAwaitingYou": "{count, plural, =1{1 review} other{{count} reviews}} wachten op jou",
+  "reviewsOverTwoDays": "{count, plural, =1{1 ouder dan 2 dagen} other{{count} ouder dan 2 dagen}}",
+  "agentBlockedTitle": "{name} is geblokkeerd",
+  "agentBlockedSubtitle": "Wacht op je bevestiging",
+  "pipelineFailedTitle": "Pipeline mislukt",
+  "prStaleTitle": "PR {number} verouderd",
+  "prStaleSubtitle": "Geen recente activiteit",
+  "reviewRequestedBadge": "Review aangevraagd",
+  "draftBadge": "Concept",
+  "staleLabel": "Verouderd",
+  "stepsProgress": "{done} van {total} stappen",
+  "allCaughtUpSubtitle": "Geen reviews, blokkades of fouten hebben je nu nodig.",
+  "dashboardGreetingNamed": "Grüezi, {name}",
+  "workspaceEyebrow": "{name}-werkruimte",
+  "pipelineTriggerNode": "Trigger",
+  "priorityReviewsTooltip": "Open PR's die om je review vragen en al meer dan 24 uur wachten.",
+  "workspaceSettings": "Werkruimte-instellingen",
+  "manageWorkspacesSubtitle": "Hernoem een werkruimte en wijzig het merkteken — kies er links een om te bewerken.",
+  "workspaceCount": "{count, plural, =0{Geen werkruimtes} =1{1 werkruimte} other{{count} werkruimtes}}",
+  "workspaceReposAgents": "{repos, plural, =0{Geen repo's} =1{1 repo} other{{repos} repo's}} · {agents, plural, =0{0 agents} =1{1 agent} other{{agents} agents}}",
+  "identity": "Identiteit",
+  "uploadImage": "Afbeelding uploaden",
+  "workspaceLogoHint": "PNG, JPG of GIF tot 2 MB. Anders gebruiken we de eerste letter van de werkruimte.",
+  "workspaceNameFieldHelp": "Wordt getoond in de wisselaar, het broodkruimelpad en op elk scherm.",
+  "dangerZone": "Gevarenzone",
+  "deleteThisWorkspace": "Deze werkruimte verwijderen",
+  "deleteWorkspaceLongDescription": "Verwijdert {name}, de bijbehorende repositorykoppelingen, agents en geheugen definitief. Dit kan niet ongedaan worden gemaakt.",
+  "discard": "Negeren",
+  "discardChangesQuestion": "Niet-opgeslagen wijzigingen aan {name} negeren?",
+  "workspaceUpdated": "Werkruimte bijgewerkt",
+  "editTitle": "Titel bewerken",
+  "editDescription": "Beschrijving bewerken",
+  "addDescription": "Een beschrijving toevoegen",
+  "prTitlePlaceholder": "Titel",
+  "prBodyPlaceholder": "Voeg een beschrijving toe",
+  "write": "Schrijven",
+  "diff": "Diff",
+  "preview": "Voorbeeld",
+  "prTemplateLabel": "Sjabloon",
+  "prTemplateDefault": "Standaard",
+  "addReviewers": "Reviewers toevoegen",
+  "addAssignees": "Toegewezenen toevoegen",
+  "searchUsers": "Personen zoeken…",
+  "searchReviewers": "Personen en teams zoeken…",
+  "usersSectionLabel": "Personen",
+  "teamsSectionLabel": "Teams",
+  "noMatchingUsers": "Geen overeenkomende personen",
+  "noMatchingReviewers": "Geen overeenkomsten",
+  "addCount": "Toevoegen ({count})",
+  "requiredByCodeOwners": "Vereist door code-eigenaren",
+  "reviewedOnBehalfOf": "via {login}",
+  "team": "Team",
+  "markdownBold": "Vet",
+  "markdownItalic": "Cursief",
+  "markdownHeading": "Kop",
+  "markdownBulletList": "Opsommingslijst",
+  "markdownChecklist": "Checklist",
+  "markdownCode": "Code",
+  "markdownLink": "Link",
+  "markdownQuote": "Citaat",
+  "failedToUpdateTitle": "Kan titel niet bijwerken: {error}",
+  "failedToUpdateDescription": "Kan beschrijving niet bijwerken: {error}",
+  "failedToUpdateReviewers": "Kan reviewers niet bijwerken: {error}",
+  "failedToUpdateAssignees": "Kan toegewezenen niet bijwerken: {error}",
+  "discardChangesConfirm": "Wijzigingen negeren?",
+  "newPr": "Nieuwe PR",
+  "openPullRequest": "Een pull request openen",
+  "composePrSubtitle": "Vanaf een branch die je hebt gepusht — zonder agents of tickets",
+  "createAsDraft": "Als concept aanmaken",
+  "composePrNoRepo": "Geen GitHub-repository geselecteerd",
+  "composePrNoRepoHint": "Selecteer een werkruimte met een aan GitHub gekoppelde repository om een pull request te openen.",
+  "composePrPickBranches": "Kies een basis- en vergelijkingsbranch om de wijzigingen te bekijken.",
+  "composePrNothingToCompare": "Er zijn geen wijzigingen tussen deze branches.",
+  "repository": "Repository",
+  "baseBranchLabel": "Basis",
+  "compareBranchLabel": "Vergelijken",
+  "selectBranch": "Selecteer een branch",
+  "navMeetings": "Vergaderingen",
+  "meetingsNoWorkspace": "Selecteer een werkruimte om vergaderingen te zien.",
+  "meetingsEmpty": "Nog geen vergaderingen. Start een opname om er een vast te leggen.",
+  "meetingsStartRecording": "Opname starten",
+  "meetingsStopRecording": "Opname stoppen",
+  "meetingsProcessing": "Samenvatten…",
+  "meetingEnhancedNotes": "Verrijkte notities",
+  "meetingYourNotes": "Jouw notities",
+  "meetingNotesHint": "Maak korte notities — de agent werkt ze na de vergadering uit.",
+  "meetingTranscriptTitle": "Transcriptie",
+  "meetingNoTranscriptYet": "De transcriptie verschijnt hier terwijl mensen praten.",
+  "meetingSpeakerMe": "Jij",
+  "meetingSpeakerThem": "Zij",
+  "meetingStatusRecording": "Opname",
+  "meetingStatusProcessing": "Verwerken",
+  "meetingStatusDone": "Klaar",
+  "meetingStatusFailed": "Mislukt",
+  "keybindingGoToMeetings": "Ga naar vergaderingen",
+  "keybindingNavigateToTheMeetingsDescription": "Navigeer naar de vergaderingenlijst",
+  "meetingsOverlineKnowledge": "Kennis",
+  "meetingsOverlineEngine": "Spraakherkenning op het apparaat",
+  "meetingsSubtitle": "Lokale opname van je vergaderingen. We tappen de vergaderingsaudio en je microfoon af, transcriberen op het apparaat en laten een agent je summiere notities omzetten in beslissingen en actiepunten — er sluit nooit een bot aan bij het gesprek.",
+  "meetingsRecordMeeting": "Vergadering opnemen",
+  "meetingsProcessingNow": "{count, plural, =1{1 wordt nu verwerkt} other{{count} worden nu verwerkt}}",
+  "meetingsStatThisWeek": "Deze week",
+  "meetingsStatThisWeekUnit": "vergaderingen vastgelegd",
+  "meetingsStatRecorded": "Opgenomen",
+  "meetingsStatRecordedUnit": "lokaal getranscribeerd",
+  "meetingsStatOpen": "Open",
+  "meetingsStatOpenUnit": "openstaande actiepunten",
+  "meetingsStatLogged": "Vastgelegd",
+  "meetingsStatLoggedUnit": "beslissingen geëxtraheerd",
+  "meetingsCaptureTitle": "Stuurloze systeemaudio-opname staat scherp.",
+  "meetingsCaptureBody": "Control Center tapt de luidsprekeruitvoer af van de app waarin je bezig bent — Slack Huddle, Meet, Zoom, Tuple — plus je microfoon, en decodeert beide streams op dit apparaat.",
+  "meetingsCapturePermission": "Toestemming verleend",
+  "meetingsCaptureOnDevice": "100% op het apparaat",
+  "meetingsCaptureNoBot": "Geen bot sluit aan",
+  "meetingsScopeAll": "Alle vergaderingen",
+  "meetingsFilterAll": "Alle",
+  "meetingsFilterDone": "Klaar",
+  "meetingsFilterProcessing": "Bezig",
+  "meetingsSearchHint": "Filter op titel, persoon, app…",
+  "meetingsBucketToday": "Vandaag",
+  "meetingsBucketYesterday": "Gisteren",
+  "meetingsBucketEarlierThisWeek": "Eerder deze week",
+  "meetingsBucketLastWeek": "Vorige week",
+  "meetingsBucketOlder": "Ouder",
+  "meetingsDecisionsCount": "{count, plural, =1{1 beslissing} other{{count} beslissingen}}",
+  "meetingsActionItemsProgress": "{done} / {total} actiepunten",
+  "meetingsEnhancedPill": "verrijkt",
+  "meetingsTranscribing": "transcriberen en samenvatten…",
+  "meetingsOpenAction": "Openen",
+  "meetingsStopProcessing": "Stoppen",
+  "meetingsStillTranscribing": "Nog aan het transcriberen — de samenvatting verschijnt zodra het klaar is.",
+  "meetingsNoMatch": "Geen vergadering komt overeen",
+  "meetingsNoMatchHint": "Probeer een ander filter of zoekterm.",
+  "meetingBackAllMeetings": "Alle vergaderingen",
+  "meetingPeopleCount": "{count, plural, =1{1 persoon} other{{count} personen}}",
+  "meetingReRunSummary": "Samenvatting opnieuw maken",
+  "meetingExport": "Exporteren",
+  "meetingAugmentingBanner": "Je notities worden verrijkt vanuit het transcript — beslissingen en actiepunten worden geëxtraheerd…",
+  "meetingTabNotes": "Notities",
+  "meetingTabTranscript": "Transcript",
+  "meetingTabActionItems": "Actiepunten",
+  "meetingTabDecisions": "Beslissingen",
+  "meetingNotesEnhancedToggle": "Verrijkt",
+  "meetingNotesYoursToggle": "Jouw notities",
+  "meetingEnhancedByAgent": "Verrijkt door de agent · uit het transcript",
+  "meetingEnhancedPending": "De agent werkt nog aan deze samenvatting.",
+  "meetingNotesEmpty": "Nog geen verrijkte notities.",
+  "meetingNotesSavedLocally": "Lokaal opgeslagen",
+  "meetingNotesSaving": "Opslaan…",
+  "meetingViewFullTranscript": "Volledig transcript bekijken",
+  "meetingTranscriptSearchHint": "Zoek in het transcript…",
+  "meetingSpeakerEveryone": "Iedereen",
+  "meetingSpeakerOthers": "Anderen",
+  "meetingTranscriptEmpty": "Nog geen transcript.",
+  "meetingActionItemsEmpty": "Geen actiepunten geëxtraheerd.",
+  "meetingActionItemFrom": "uit deze vergadering",
+  "meetingCreateTicket": "Ticket aanmaken",
+  "meetingTicketCreated": "Ticket {key} aangemaakt en verstuurd.",
+  "meetingTicketFailed": "Kon het ticket niet aanmaken.",
+  "meetingDecisionsEmpty": "Geen beslissingen vastgelegd.",
+  "meetingEditTitle": "Titel bewerken",
+  "meetingTitleLabel": "Titel",
+  "meetingAddActionItem": "Actiepunt toevoegen",
+  "meetingEditActionItem": "Actiepunt bewerken",
+  "meetingDeleteActionItem": "Actiepunt verwijderen",
+  "meetingActionItemContentLabel": "Actiepunt",
+  "meetingActionItemContentHint": "Wat moet er gebeuren?",
+  "meetingActionItemOwnerLabel": "Eigenaar",
+  "meetingActionItemOwnerHint": "Wie is verantwoordelijk? (optioneel)",
+  "meetingAddDecision": "Beslissing toevoegen",
+  "meetingEditDecision": "Beslissing bewerken",
+  "meetingDeleteDecision": "Beslissing verwijderen",
+  "meetingDecisionContentLabel": "Beslissing",
+  "meetingDecisionContentHint": "Wat is er besloten?",
+  "meetingReRunStarted": "Samenvatting wordt opnieuw op het transcript gemaakt…",
+  "meetingReRunDone": "Samenvatting bijgewerkt.",
+  "meetingReRunNoTranscript": "Er is nog geen transcript om samen te vatten.",
+  "meetingExportCopied": "Notities als Markdown naar het klembord gekopieerd.",
+  "meetingExportSaved": "Vergadering geëxporteerd.",
+  "meetingExportFailed": "Exporteren mislukt: {error}",
+  "meetingExportNothing": "Er is nog niets om te exporteren.",
+  "meetingPlaybackPlay": "Afspelen",
+  "meetingPlaybackPause": "Pauzeren",
+  "meetingPlaybackUnavailable": "Audioweergave is niet beschikbaar op dit apparaat.",
+  "meetingDetectedTitle": "Vergadering gedetecteerd",
+  "meetingDetectedSubtitle": "Het lijkt erop dat \"{label}\" bezig is. Opnemen?",
+  "@meetingDetectedSubtitle": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "meetingDetectedSubtitleGeneric": "Het lijkt erop dat er een vergadering bezig is. Opnemen?",
+  "meetingDetectedRecord": "Opnemen",
+  "meetingDetectedDismiss": "Negeren",
+  "meetingAutoStopTitle": "Deze vergadering lijkt voorbij. Opname stoppen?",
+  "meetingAutoStopStop": "Stoppen",
+  "meetingAutoStopKeep": "Blijven opnemen",
+  "meetingAutoDetect": "Vergaderingen automatisch detecteren",
+  "meetingAutoDetectDescription": "Houdt de agenda en vergader-apps in de gaten en biedt aan om op te nemen wanneer een vergadering begint.",
+  "meetingsRecordingCrumb": "Opnemen…",
+  "meetingRecordTitleHint": "Vergaderingstitel",
+  "meetingRecordTappingLabel": "Aftappen:",
+  "meetingRecordMic": "Microfoon",
+  "meetingRecordSystemAudio": "Systeemaudio",
+  "meetingRecordPause": "Pauzeren",
+  "meetingRecordResume": "Hervatten",
+  "meetingRecordStop": "Stoppen en samenvatten",
+  "meetingRecordYourNotes": "Jouw notities",
+  "meetingRecordNotesTagline": "noteer summier — de agent vult de rest aan",
+  "meetingRecordNotesPlaceholder": "Typ terwijl je luistert. Een paar fragmenten is genoeg — na het stoppen breidt de agent ze uit met het transcript.",
+  "meetingRecordLiveTranscript": "Live transcript",
+  "meetingRecordDecoding": "decoderen op het apparaat",
+  "meetingRecordListening": "Aan het luisteren… spraak verschijnt hier binnen een seconde of twee, gelabeld als Jij / Anderen.",
+  "meetingRecordPausedHint": "Gepauzeerd — audio wordt genegeerd tot je hervat.",
+  "meetingRecordNotActive": "Geen actieve opname.",
+  "meetingHudRecording": "opnemen",
+  "meetingHudPaused": "gepauzeerd",
+  "meetingHudOpen": "Openen",
+  "meetingHudStop": "Stoppen",
+  "meetingToolbarPopOut": "Losmaken",
+  "meetingToolbarHoldToStop": "Houd ingedrukt om de opname te stoppen",
+  "meetingToolbarSemanticLabel": "Werkbalk voor vergaderopname",
+  "orchestrate": "Orkestreren",
+  "orchestrationUnavailable": "Orkestratie niet beschikbaar",
+  "orchestrationApprove": "Plan goedkeuren",
+  "orchestrationReject": "Afwijzen",
+  "orchestrationCancel": "Orkestratie annuleren",
+  "orchestrationRolesSummary": "{count} rollen — {hires} nieuwe aanstellingen",
+  "orchestrationSubTicketsSummary": "{count} subtickets",
+  "orchestrationEstimatedCost": "Geschatte kosten: {amount} $",
+  "orchestrationProgress": "{done}/{total} subtickets klaar",
+  "orchestrationStatusProposed": "Voorgesteld",
+  "orchestrationStatusApproved": "Goedgekeurd",
+  "orchestrationStatusExecuting": "Bezig",
+  "orchestrationStatusSynthesizing": "Synthese",
+  "orchestrationStatusCompleted": "Voltooid",
+  "orchestrationStatusFailed": "Mislukt",
+  "orchestrationStatusCancelled": "Geannuleerd",
+  "messageFailed": "Run mislukt",
+  "retried": "Opnieuw geprobeerd",
+  "replyingTo": "in reactie op {name}",
+  "@replyingTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recentRuns": "Recente runs",
+  "runIdCopied": "Run-id gekopieerd",
+  "copyRunId": "Run-id kopiëren",
+  "copyLogPath": "Logpad kopiëren",
+  "silenceTimeoutLabel": "Stilte-time-out (minuten)",
+  "silenceTimeoutHint": "bijv. 15 — beëindigt een run na deze tijd zonder uitvoer",
+  "ticketOutput": "Uitvoer",
+  "missingRequiredField": "Verplicht veld ontbreekt: {field}",
+  "capabilityJsonMode": "JSON-modus",
+  "capabilityModelSelection": "Modelselectie",
+  "transcriptThinking": "Aan het denken…",
+  "transcriptThoughtFor": "Heeft {duration} nagedacht",
+  "transcriptStatusMakingEdits": "Bewerkingen aanbrengen…",
+  "transcriptStatusReadingFiles": "Bestanden lezen…",
+  "transcriptStatusSearching": "Codebase doorzoeken…",
+  "transcriptStatusRunningCommands": "Opdrachten uitvoeren…",
+  "transcriptStatusResponding": "Aan het antwoorden…",
+  "transcriptStatusRunningTool": "{tool} uitvoeren…",
+  "transcriptInput": "Invoer",
+  "transcriptOutput": "Uitvoer",
+  "transcriptShowMore": "Meer tonen",
+  "transcriptShowLess": "Minder tonen",
+  "transcriptErrorLabel": "Fout",
+  "transcriptInterrupted": "Onderbroken",
+  "transcriptSandboxBlocked": "Sandbox heeft een actie geblokkeerd",
+  "transcriptOutputTruncated": "Uitvoer ingekort",
+  "transcriptDiffStats": "{adds} toevoegingen, {dels} verwijderingen",
+  "meetingSpeakerPerson": "Persoon {number}",
+  "meetingRenameSpeakerTooltip": "Spreker hernoemen",
+  "meetingRenameSpeakerTitle": "Spreker hernoemen",
+  "meetingSpeakerNameLabel": "Naam",
+  "meetingSpeakerSuggestFromCalendar": "Uit de genodigden van deze vergadering",
+  "meetingRenameSpeakerApplyAll": "Toepassen op alle blokken van deze spreker",
+  "meetingRenameSpeakerScopeHint": "Indien uit, wordt alleen de geselecteerde regel hernoemd.",
+  "meetingLinkEvent": "Koppelen aan gebeurtenis",
+  "meetingChangeEvent": "Gebeurtenis wijzigen",
+  "meetingLinkEventTitle": "Koppelen aan een agendagebeurtenis",
+  "meetingLinkEventSearchHint": "Gebeurtenissen zoeken",
+  "meetingLinkEventEmpty": "Geen agendagebeurtenissen in de buurt",
+  "meetingUnlinkEvent": "Koppeling verwijderen",
+  "calendarLinkExistingMeeting": "Koppelen aan bestaande vergadering",
+  "calendarLinkMeetingTitle": "Een vergadering koppelen",
+  "calendarLinkMeetingSearchHint": "Vergaderingen zoeken",
+  "calendarLinkMeetingEmpty": "Geen vergaderingen om te koppelen",
+  "meetingRenameSpeakerFailed": "Kan de spreker niet hernoemen",
+  "calendarLinkUpdateFailed": "Kan de agendakoppeling niet bijwerken",
+  "rename": "Naam wijzigen",
+  "notNow": "Niet nu",
+  "meetingSaveVoiceProfileTitle": "Stemprofiel opslaan?",
+  "meetingSaveVoiceProfileBody": "Herken {name} automatisch in toekomstige vergaderingen door hun stemafdruk op te slaan.",
+  "meetingVoiceProfileSaved": "Stemprofiel opgeslagen voor {name}",
+  "meetingVoiceProfileSaveFailed": "Kan het stemprofiel niet opslaan",
+  "voiceProfilesSection": "Stemprofielen",
+  "voiceProfilesDescription": "Opgeslagen stemmen worden automatisch herkend in toekomstige vergaderingen.",
+  "voiceProfilesEmpty": "Nog geen opgeslagen stemmen. Geef een spreker een naam in een vergadertranscriptie en kies ‘Stemprofiel opslaan’.",
+  "voiceProfileSamples": "{count, plural, =1{1 monster} other{{count} monsters}}",
+  "renameVoiceProfileTitle": "Stemprofiel hernoemen",
+  "deleteVoiceProfileTitle": "Stemprofiel verwijderen?",
+  "deleteVoiceProfileBody": "{name} niet meer herkennen? Hun opgeslagen stemafdruk wordt verwijderd. Namen die al in eerdere vergaderingen zijn toegepast, blijven behouden.",
+  "remoteControl": "Afstandsbediening",
+  "remoteControlListening": "Wacht op apparaten",
+  "remoteControlListenerStopped": "Listener gestopt",
+  "remoteControlStartToAccept": "Start de listener om telefoonverbindingen te accepteren.",
+  "remoteControlStartOnLaunch": "Starten bij opstarten",
+  "remoteControlWhenOffStaysStopped": "Indien uit, blijft de listener gestopt tot je hem start.",
+  "remoteControlRestartToApply": "Herstart de listener om wijzigingen toe te passen.",
+  "remoteControlSignalingUrl": "Signaling-broker-URL",
+  "remoteControlSignalingHint": "wss://-broker die alleen de pairing-handshake doorstuurt.",
+  "remoteControlStunServers": "STUN-servers",
+  "remoteControlStunHint": "Komma-gescheiden STUN-URL's. Geen TURN by design.",
+  "remoteControlPwaHost": "Host van de telefoon-app",
+  "remoteControlPwaHostHint": "Waar de web-app van de telefoon wordt gehost; gecodeerd in de pairing-QR.",
+  "remoteControlNotConfigured": "Voeg een signaling-URL en app-host toe om koppelen in te schakelen.",
+  "remoteControlPairDevice": "Apparaat koppelen",
+  "remoteControlScanQr": "Scan deze code met de camera van je telefoon.",
+  "remoteControlAllWorkspacesWarning": "Dit apparaat krijgt toegang tot alle werkruimtes op deze Mac.",
+  "remoteControlCopyLink": "Link kopiëren",
+  "remoteControlWantsToConnect": "Wil verbinden",
+  "remoteControlApproveDevice": "Apparaat goedkeuren",
+  "remoteControlDeviceConnected": "Apparaat verbonden — keur het goed om het koppelen te voltooien.",
+  "remoteControlQrExpiresIn": "Verloopt over {minutes} min",
+  "remoteControlPairedDevices": "Gekoppelde apparaten",
+  "remoteControlNoPairedDevices": "Nog geen gekoppelde apparaten.",
+  "remoteControlPending": "In afwachting van bevestiging",
+  "remoteControlActive": "Actief",
+  "remoteControlRevoked": "Ingetrokken",
+  "remoteControlRevoke": "Intrekken",
+  "remoteControlConfirmDevice": "Apparaat bevestigen",
+  "remoteControlRevokeConfirm": "Dit apparaat intrekken? Het wordt onmiddellijk verbroken.",
+  "devices": "Apparaten",
+  "devicesSettingsDescription": "Koppel en beheer de telefoons die deze app op afstand kunnen besturen.",
+  "connectedLabel": "Verbonden",
+  "ideTabExplorer": "Verkenner",
+  "ideTabSourceControl": "Bron",
+  "ideTabPullRequests": "PRs",
+  "ideNewTerminal": "Nieuwe terminal",
+  "ideOpenChat": "Chat openen",
+  "ideCloseTab": "Tabblad sluiten",
+  "ideSplitEditor": "Editor splitsen",
+  "ideCloseGroup": "Groep sluiten",
+  "ideNoOpenTabs": "Geen open tabbladen — gebruik + om te openen",
+  "ideBrowserAddressHint": "Adres invoeren of zoeken",
+  "ideSimpleWebBrowser": "Eenvoudige webbrowser",
+  "ideWebBrowser": "Webbrowser",
+  "ideBrowserEnterUrl": "Voer een URL in de adresbalk in om te browsen",
+  "ideFileSearchFailed": "Kon bestanden niet doorzoeken",
+  "ideSourceControlCreatePr": "Pull request maken",
+  "ideSourceControlNoChanges": "Geen wijzigingen",
+  "ideSourceControlChangedFiles": "{count, plural, =1{1 gewijzigd} other{{count} gewijzigd}}",
+  "ideConnectGithub": "Verbind GitHub om pull requests te zien",
+  "ideNoConversationPr": "Geen pull request voor dit gesprek",
+  "ideFileLoading": "Laden…",
+  "ideFileBinary": "Binair bestand",
+  "mcpExternalServers": "Externe MCP-servers",
+  "mcpExternalServersDescription": "Verbind met externe MCP-servers (GitHub, Sentry, Postgres, browserautomatisering). Servers die je voor Claude, Cursor, VS Code en andere tools hebt geconfigureerd, worden automatisch gedetecteerd.",
+  "mcpApprovalMode": "Toolgoedkeuring",
+  "mcpApprovalModeDescription": "Welke acties zonder vragen worden uitgevoerd. Lezen is altijd toegestaan; hogere niveaus vragen om bevestiging.",
+  "mcpApprovalAlwaysAsk": "Altijd vragen",
+  "mcpApprovalWrite": "Schrijfacties goedkeuren",
+  "mcpApprovalYolo": "Alles goedkeuren",
+  "mcpNoExternalServers": "Geen externe MCP-servers gevonden.",
+  "mcpAuthorize": "Autoriseren",
+  "mcpExternalConnectionsNote": "Externe MCP-servers draaien op de agentserver (gedeeld door desktop en web). OAuth-servers autoriseren kan alleen op de desktop.",
+  "mcpReconnect": "Opnieuw verbinden",
+  "mcpToolsSummary": "{count} tools",
+  "mcpStatusConnected": "Verbonden",
+  "mcpStatusConnecting": "Verbinden…",
+  "mcpStatusNeedsAuth": "Autorisatie vereist",
+  "mcpStatusFailed": "Mislukt",
+  "mcpStatusCircuitOpen": "Gepauzeerd",
+  "mcpStatusDisabled": "Uitgeschakeld"
+}

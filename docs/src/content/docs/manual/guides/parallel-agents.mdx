@@ -1,0 +1,79 @@
+---
+title: Run agents in parallel
+description: Dispatch multiple agents simultaneously across isolated worktrees.
+---
+
+This guide shows you how to run multiple agents at the same time.
+
+## How parallel execution works
+
+Each agent gets its own isolated worktree, a copy-on-write clone of the repo on its own branch. Agents never share a working directory, so they can work on the same repo simultaneously without conflicts.
+
+## Dispatch multiple agents
+
+### Via DMs
+
+1. Open a DM with agent A and send a task
+2. Open a DM with agent B and send a different task
+3. Both agents dispatch simultaneously in their own worktrees
+
+### Via channels
+
+In a group channel, @-mention multiple agents:
+
+```
+@alice refactor the auth module. @bob add tests for the payment service.
+```
+
+Both agents dispatch in parallel. Their output streams into the same channel, tagged with the sender.
+
+### Via tickets
+
+1. Create multiple tickets
+2. Assign each to a different agent
+3. The `TicketDispatcher` dispatches all of them, and each gets its own channel and worktree
+
+### Via pipelines
+
+Use a pipeline with parallel branches:
+
+1. Add multiple agent steps after the trigger
+2. Don't connect them to each other, so they run in parallel
+3. Add a join step to wait for all of them to complete
+
+## Monitor parallel agents
+
+The **dashboard** shows all running agents across workspaces:
+
+- Agent name and workspace
+- Status (running, blocked, idle)
+- PID and start time
+- Current run summary
+
+The agent status indicators change in real time: `idle` → `running` → `idle`.
+
+## Handle conflicts
+
+If two agents modify the same file on different branches, you'll see the conflict when you try to merge the second PR. Resolve it the same way you'd resolve any Git merge conflict.
+
+To minimize conflicts:
+
+- Give each agent a distinct scope (different files, different modules)
+- Use the code graph to understand dependencies before dispatching
+- Review and merge agents' PRs promptly
+
+## Resource considerations
+
+Each running agent consumes:
+
+- A worktree (disk space, negligible with CoW)
+- A sandbox process (CPU and memory)
+- API tokens (costs accumulate per agent)
+
+Monitor costs in **Analytics** or via the [manage costs and budgets](/manual/guides/manage-costs/) guide.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Build an agent team](/manual/guides/build-team/)
+- [Manage costs and budgets](/manual/guides/manage-costs/)

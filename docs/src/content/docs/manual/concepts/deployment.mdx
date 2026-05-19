@@ -1,0 +1,139 @@
+---
+title: Deployment and clients
+description: How Control Center's thin-client architecture splits a headless server from its desktop, web, and mobile clients.
+---
+
+Control Center is not one program. It is a **thin-client architecture**: a
+headless server that owns your data, and a set of clients that render an
+interface over a single RPC connection to it. Understanding this split explains
+why some things run where they do, and what each client can and cannot reach.
+
+## The server owns the data
+
+A process called **`cc_server`** holds the database (a Drift/SQLite file) and
+runs the long-lived work: pipeline engines, reconcilers, the MCP tool surface,
+and the orchestration listener. Everything that needs to outlive a window — or
+that two clients should see identically — lives there.
+
+No client opens the database file itself. Instead, every client holds one
+**`RemoteRpcClient`** and issues repo operations and subscriptions over it.
+The server authenticates the connection against a paired-device pre-shared key
+and binds the session to exactly one [workspace](/manual/concepts/workspaces/),
+so a client bound to workspace A cannot reach workspace B by passing a foreign
+id. This is the same workspace-isolation invariant the rest of the product
+enforces, enforced one layer earlier at the RPC boundary.
+
+## Why split it this way
+
+Three pressures pushed toward a server:
+
+1. **One source of truth.** A desktop and a phone, or a laptop and a desktop,
+   should see the same fleet state. If each owned its own database, they would
+   drift. A single server means every client reads the same live data.
+2. **The web cannot self-serve.** A browser cannot spawn a subprocess or open a
+   local file, so a web build can never own the database or run an agent. It
+   must talk to a server that does. Rather than build a second, web-only data
+   path, the desktop was brought onto the same path.
+3. **Headless operation.** A server you can run on a small box — reachable from
+   a phone on the train or a browser anywhere — is more useful than a GUI you
+   must leave open.
+
+The trade-off is that the server is now a dependency: if it is not running,
+nothing works. The desktop's default answer to that is to **spawn one itself**.
+
+## The clients
+
+Four clients reach the server, each with a different shape and trust profile.
+
+### Desktop app
+
+The Flutter desktop application (macOS, Windows, Linux) is the full client. On
+first launch it asks how it should run, then remembers the choice:
+
+- **Local**: spawn and supervise a `cc_server` on this machine — the default,
+  self-contained, single-user setup. The desktop launches the server, which
+  owns the database under the app-support root, and talks to it over loopback.
+- **Remote**: connect to a `cc_server` running elsewhere over a secure
+  WebSocket. The data lives on that server; this desktop is purely a renderer.
+
+In both cases the resulting RPC client overrides the app's data provider, so
+the entire UI — every screen, every feature — reads and writes through the
+server. The desktop never touches the database file directly.
+
+### Web client
+
+The web build (`flutter build web`) is the same Flutter app compiled to run in
+a browser. A browser cannot spawn a subprocess, so the web client is **always**
+remote: it dials a `cc_server` over `wss://` and renders the full desktop
+interface. Once connected, it is feature-complete with the desktop — same
+screens, same fleet — because it runs the same code against the same RPC.
+
+Media (avatars, feed images, PR screenshots) routes through the server's proxy
+endpoint rather than hitting upstream hosts directly, so a browser never fetches
+an arbitrary origin. The deployed client stamps a per-request Content-Security
+Policy from a non-sensitive cookie so only the connected server's origin is
+allowed.
+
+### Phone companion (cc_remote)
+
+The **Remote** app is a separate, lighter client — a Flutter web PWA at
+[remote.usectrl.dev](https://remote.usectrl.dev/). It is intentionally **not**
+the full app. It pairs over a direct WebRTC peer connection and speaks a
+read-mostly slice of the tool surface: read tickets, messages, and the newsfeed;
+send a reply or update a ticket.
+
+A phone is a **lower-privilege principal** than a local agent. A default-deny
+tool policy, a pre-shared key bound to the connection, a per-session workspace
+binding, and rate limiting keep an approved (or leaked) pairing from becoming
+full remote control. See [Remote control and mobile](/manual/concepts/remote-control/)
+for the full security model.
+
+### MCP clients
+
+External tools — editors, other agents, CLIs — that speak the Model Context
+Protocol connect to the server's MCP surface and consume the typed tool
+registry. This is the programmatic integration path; it is not a GUI. See
+[Use the MCP server](/manual/guides/mcp-server/) and the
+[MCP tools reference](/manual/reference/mcp-tools/).
+
+## What runs where
+
+| Concern | Server (`cc_server`) | Desktop client | Web / phone client |
+|---|---|---|---|
+| Database (Drift/SQLite) | owns it | — | — |
+| Pipelines, reconcilers, orchestration listener | runs it | — | — |
+| MCP tool surface | serves it | — | — |
+| Agent execution / sandboxes | runs it | — | — |
+| UI rendering | — | full | full (web) / read-mostly (phone) |
+| Meeting capture (mic + system audio) | — | desktop only | — |
+| Calendar OAuth (Google) | stores tokens | — | — |
+
+Meeting capture stays on the desktop because it needs the microphone and system
+audio — a server in a closet cannot record your call. The recording is then
+summarized by the server's pipeline and the notes are stored where every client
+can read them.
+
+## Pairing and trust
+
+Every client proves who it is with a **pre-shared key** provisioned once:
+
+- The desktop in local mode generates a fresh key each boot and hands it to the
+  spawned server via environment, so nothing secret is persisted on the desktop.
+- Remote clients (desktop-remote, web, phone) use a key minted by the server's
+  `pair` command and stored in the OS keychain (or, on the phone, locally). A
+  revoked device finds its key gone and fails closed on reconnect.
+
+The key never travels through the URL a static host can see — on the phone it
+rides in the URL fragment (the part after `#`), and on the web it is entered
+into the connect form.
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/): the per-session workspace binding enforces the same invariant at the RPC layer
+- [Architecture](/manual/concepts/architecture/): how the codebase is structured around the server and its clients
+- [Remote control and mobile](/manual/concepts/remote-control/): the phone pairing and security model
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/): start `cc_server` and pair a client
+- [Connect to a remote server](/manual/guides/connect-remote-server/): point the desktop or web client at a server elsewhere

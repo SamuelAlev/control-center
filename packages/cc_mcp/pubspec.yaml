@@ -1,0 +1,29 @@
+name: cc_mcp
+description: >-
+  The Control Center MCP tool surface — the agent-facing API. Holds the
+  Ref-free McpTool implementations and the McpToolDispatcher (an RpcDispatcher),
+  consumed by TWO hosts: the desktop's local MCP HTTP server (for local AI
+  agents) and the headless cc_server's RPC/MCP endpoint. Pure Dart, no Flutter
+  (depends only on cc_domain + cc_rpc + cc_infra), so it links into the
+  Flutter-free `dart build cli` server binary.
+publish_to: none
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  cc_rpc:
+    path: ../cc_rpc
+  cc_infra:
+    path: ../cc_infra
+  uuid: ^4.5.3
+  meta: any
+
+dev_dependencies:
+  test: ^1.25.0
+  lints: ^6.0.0

@@ -1,0 +1,150 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import LegalDoc from '../components/legal/LegalDoc.astro';
+
+const lastUpdated = '12 June 2026';
+const issuesUrl = 'https://github.com/SamuelAlev/control-center/issues';
+
+const sections = [
+  { id: 'acceptance', title: 'Acceptance' },
+  { id: 'service', title: 'What Control Center is' },
+  { id: 'eligibility', title: 'Eligibility' },
+  { id: 'credentials', title: 'Your accounts and credentials' },
+  { id: 'agents', title: 'AI agents and autonomous actions' },
+  { id: 'acceptable-use', title: 'Acceptable use' },
+  { id: 'third-party', title: 'Third-party services' },
+  { id: 'ip', title: 'Intellectual property' },
+  { id: 'disclaimer', title: 'Disclaimers' },
+  { id: 'liability', title: 'Limitation of liability' },
+  { id: 'indemnity', title: 'Indemnification' },
+  { id: 'data', title: 'Your data and backups' },
+  { id: 'termination', title: 'Termination' },
+  { id: 'changes', title: 'Changes to these terms' },
+  { id: 'governing-law', title: 'Governing law' },
+  { id: 'contact', title: 'Contact' },
+];
+---
+
+<MarketingLayout
+  title="Terms of service \\\\ Control Center"
+  description="Terms of service for Control Center, the multi-agent development desktop app: AI agents and autonomous actions, your credentials, acceptable use, and liability."
+  breadcrumbName="Terms of service"
+>
+  <LegalDoc
+    title="Terms of service"
+    lastUpdated={lastUpdated}
+    intro="These terms govern your use of Control Center, a desktop application for orchestrating AI coding agents. Control Center dispatches agents that can read and modify code and act on connected services, so please read these terms carefully before you use it."
+    sections={sections}
+  >
+    <section id="acceptance">
+      <h2>Acceptance</h2>
+      <p>By downloading, installing, or using Control Center (the "app" or the "service"), you agree to these terms of service. If you are using the app on behalf of an organization, you agree to these terms on its behalf and confirm you have authority to do so. If you do not agree, do not use the app.</p>
+      <p>In these terms, "we", "us", and "Control Center" refer to the maintainers of Control Center, and "you" refers to the person or organization using the app.</p>
+    </section>
+
+    <section id="service">
+      <h2>What Control Center is</h2>
+      <p>Control Center is a native desktop application that lets you spawn, direct, and review autonomous AI coding agents across isolated Git worktrees, with integrations for source control, project management, pull-request review, pipelines, and related workflows. It is a local-first tool: it runs on your own device and stores your data there. We do not operate a server that hosts your workspaces or runs your agents on your behalf. Released builds do send diagnostic data (crash, error, and performance information) to a third-party error-monitoring service unless you turn it off during onboarding or in Settings → Privacy; this is described in the <a href="/privacy">privacy policy</a>.</p>
+      <p>The app is under active development and is provided on a pre-release, evolving basis. Features may change, be added, or be removed, and some integrations may be incomplete or experimental.</p>
+    </section>
+
+    <section id="eligibility">
+      <h2>Eligibility</h2>
+      <p>You must be at least 18 years old, or the age of majority where you live, and able to form a binding contract to use the app. The app is intended for professional software-development use and is not directed to children.</p>
+    </section>
+
+    <section id="credentials">
+      <h2>Your accounts and credentials</h2>
+      <p>Control Center works by connecting to services and subscriptions that <strong>you</strong> provide and control. This includes, depending on the features you use, your GitHub account or token, your Linear API key, your Google account, and your own Claude Code subscription used by the Claude Code agent adapter.</p>
+      <ul>
+        <li>You are responsible for keeping your credentials secure and for all activity that occurs through them while using the app.</li>
+        <li>Your use of each connected service and AI provider is governed by <strong>that provider's own terms and policies</strong>, in addition to these terms. You are responsible for complying with them — including, where applicable, the terms of your Anthropic Claude Code subscription, and GitHub's, Google's, and Linear's terms.</li>
+        <li>You must have the right to access and use any repositories, accounts, calendars, and data you connect to the app.</li>
+      </ul>
+      <p>Some features send your data to these providers so they can work. Most importantly, when you use the Claude Code adapter, your prompts and the code, diffs, conversation history, and meeting transcript text that the agent works with are sent to Anthropic for processing under your own subscription and Anthropic's terms. The <a href="/privacy">privacy policy</a> sets out what is sent to whom.</p>
+    </section>
+
+    <section id="agents">
+      <h2>AI agents and autonomous actions</h2>
+      <p>This is the most important section. Control Center dispatches AI agents that can <strong>act on your behalf</strong>. Depending on how you configure and direct them, agents can:</p>
+      <ul>
+        <li>read, write, execute, and modify code in isolated working copies of your repositories, including changes that may be destructive or hard to undo;</li>
+        <li>run commands and processes in sandboxed environments, using credentials you supply (such as your GitHub token or Linear API key) that are made available to the agent so it can call those services on your behalf;</li>
+        <li>publish actions to the services you connect — for example, submitting pull-request reviews and comments to GitHub, creating and changing issues in your ticketing system, and writing RSVP responses to calendar events; and</li>
+        <li>generate text, code, and other output using AI models.</li>
+      </ul>
+      <p>You acknowledge and agree that:</p>
+      <ul>
+        <li><strong>You are responsible for what your agents do.</strong> You direct, configure, and supervise the agents. Actions they take through your credentials and on your machine are your responsibility, as if you had taken them yourself.</li>
+        <li><strong>AI output can be wrong.</strong> AI-generated code, reviews, summaries, and other output may be inaccurate, incomplete, insecure, or unsuitable. You must review and validate agent output before relying on it, merging it, or putting it into production. Do not treat agent output as professional advice.</li>
+        <li><strong>Agent actions can be irreversible.</strong> Agents can change repositories, tickets, reviews, and other connected systems in ways that may be difficult or impossible to undo. Keep backups of anything you cannot afford to lose, and do not point agents at systems where an unintended change would be unacceptable.</li>
+        <li><strong>Review before it matters.</strong> Because agents can modify code and act on external services, you should use the app's sandboxing, isolation, and review features and keep a human in the loop for consequential actions.</li>
+      </ul>
+    </section>
+
+    <section id="acceptable-use">
+      <h2>Acceptable use</h2>
+      <p>You agree not to use Control Center to:</p>
+      <ul>
+        <li>violate any law, regulation, or third party's rights, including intellectual-property, privacy, and data-protection rights;</li>
+        <li>access — or configure or direct agents to access or modify — systems, repositories, accounts, or data you do not own or are not authorized to use;</li>
+        <li>build or distribute malware, conduct attacks, or otherwise cause harm;</li>
+        <li>violate the terms of any connected service or AI provider, or attempt to circumvent their usage limits or protections; or</li>
+        <li>record or transcribe people without any consent required by the laws that apply to you.</li>
+      </ul>
+    </section>
+
+    <section id="third-party">
+      <h2>Third-party services</h2>
+      <p>The app interoperates with third-party services and software — including GitHub, Google, Linear, Anthropic, RSS sources, and others — that we do not control. We are not responsible for those services, their availability, their content, or how they handle your data, and their inclusion is not an endorsement. Your relationship with each provider is directly between you and that provider. A provider may change or discontinue its service or API, which may affect or break a Control Center feature.</p>
+    </section>
+
+    <section id="ip">
+      <h2>Intellectual property</h2>
+      <p>The app, including its name, design, and original code, is protected by intellectual-property laws and remains the property of its maintainers and contributors. To the extent the app or its components are made available under an open-source license, your use of those components is governed by that license, which prevails over these terms for that code.</p>
+      <p><strong>Your content stays yours.</strong> We claim no ownership over your repositories, code, prompts, conversations, notes, or other content. As described in the <a href="/privacy">privacy policy</a>, that content stays on your device except where you send it to a connected service or AI provider. Output generated by AI agents is subject to the terms of the AI provider that produced it; you are responsible for determining whether you have the rights you need to use it.</p>
+    </section>
+
+    <section id="disclaimer">
+      <h2>Disclaimers</h2>
+      <p>The app is provided <strong>"as is" and "as available", without warranties of any kind</strong>, whether express, implied, or statutory, including any implied warranties of merchantability, fitness for a particular purpose, title, and non-infringement, to the fullest extent permitted by law.</p>
+      <p>We do not warrant that the app will be uninterrupted, error-free, or secure, that defects will be corrected, or that AI agents or their output will be accurate, reliable, safe, or fit for any purpose. You use the app, its agents, and their output at your own risk.</p>
+    </section>
+
+    <section id="liability">
+      <h2>Limitation of liability</h2>
+      <p>To the fullest extent permitted by law, the maintainers and contributors of Control Center will not be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, or for any loss of profits, data, code, goodwill, or business, arising out of or related to your use of (or inability to use) the app — including any actions taken by AI agents, any AI-generated output, any loss of or damage to data or repositories, and any issue with a connected service.</p>
+      <p>To the extent any liability cannot be excluded, our total aggregate liability for all claims relating to the app is limited to the greater of the amount you paid us for the app in the twelve months before the claim, or fifty Swiss francs (CHF 50). Some jurisdictions do not allow certain exclusions or limitations, so some of the above may not apply to you; nothing in these terms limits liability that cannot be limited under applicable law.</p>
+    </section>
+
+    <section id="indemnity">
+      <h2>Indemnification</h2>
+      <p>You agree to indemnify and hold harmless the maintainers and contributors of Control Center from any claims, losses, liabilities, and expenses (including reasonable legal fees) arising out of your use of the app, your content, the actions of agents you direct, your violation of these terms, or your violation of any law or the rights or terms of any third party or connected service.</p>
+    </section>
+
+    <section id="data">
+      <h2>Your data and backups</h2>
+      <p>Control Center stores your data on your device and does not back it up to a server we operate. <strong>You are solely responsible for your data, its security, and its backup.</strong> There is no server-side recovery: if your device is lost or damaged, or data is deleted, we cannot restore it. We strongly recommend regular backups and full-disk encryption on the machine where you run the app.</p>
+    </section>
+
+    <section id="termination">
+      <h2>Termination</h2>
+      <p>You may stop using the app at any time and remove it and its data from your device. These terms apply for as long as you use the app. Provisions that by their nature should survive — including intellectual property, disclaimers, limitation of liability, indemnification, and governing law — survive after you stop using the app.</p>
+    </section>
+
+    <section id="changes">
+      <h2>Changes to these terms</h2>
+      <p>We may update these terms as the app evolves. When we make material changes, we will update the "Last updated" date above; significant changes may also be noted in the <a href="/changelog">changelog</a>. Your continued use of the app after an update means you accept the revised terms. If you do not agree to a change, stop using the app.</p>
+    </section>
+
+    <section id="governing-law">
+      <h2>Governing law</h2>
+      <p>These terms are governed by the laws of Switzerland, without regard to conflict-of-laws principles. To the extent permitted by law, the courts of Switzerland have exclusive jurisdiction over any dispute arising out of or relating to these terms or the app. Mandatory consumer-protection rights available to you under the law of your country of residence are not affected by this clause.</p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>Questions about these terms? Reach the maintainers through the project's GitHub repository by opening an issue at <a href={issuesUrl}>github.com/SamuelAlev/control-center/issues</a>.</p>
+    </section>
+  </LegalDoc>
+</MarketingLayout>

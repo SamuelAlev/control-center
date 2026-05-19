@@ -1,0 +1,184 @@
+---
+title: MCP tools
+description: Complete catalog of Control Center's 76 MCP server tools.
+---
+
+Control Center exposes **76 typed tools** via its built-in MCP (JSON-RPC 2.0) server. Point any MCP client at the server and it can drive the same surface the app drives itself. This reference catalogs every tool by family.
+
+## Common parameters
+
+### `workspace_id`
+
+**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error, and a value that doesn't match the target entity's workspace is rejected rather than silently ignored. Omit it only on the genuinely global tools (`list_workspaces`, `create_workspace`).
+
+## Agent tools
+
+| Tool | Description |
+|---|---|
+| `list_agents` | List agents in a workspace |
+| `hire_agent` | Create a new agent (writes an `AGENTS.md` and registers it) |
+| `update_agent` | Update an agent's configuration |
+| `fire_agent` | Remove an agent from the workspace |
+| `kill_agent` | Terminate a running agent process |
+| `get_agent_run_logs` | Get run logs for an agent |
+
+## Agent collaboration tools
+
+| Tool | Description |
+|---|---|
+| `consult_agent` | Ask another agent a question and get its answer back |
+| `propose_hire` | Propose hiring a new agent (posts a hire proposal for approval) |
+| `request_peer_review` | Ask a peer agent to review work |
+
+## Skill tools
+
+| Tool | Description |
+|---|---|
+| `list_skills` | List available skills |
+| `create_skill` | Create a new skill definition |
+
+## Workspace tools
+
+| Tool | Description |
+|---|---|
+| `list_workspaces` | List all workspaces (global) |
+| `create_workspace` | Create a new workspace (global) |
+
+## Repo tools
+
+| Tool | Description |
+|---|---|
+| `list_repos` | List repositories linked to a workspace |
+
+## Messaging tools
+
+| Tool | Description |
+|---|---|
+| `list_channels` | List channels in a workspace |
+| `list_private_messages` | List the caller's direct-message channels |
+| `get_channel_messages` | Get messages from a channel |
+| `send_channel_message` | Send a message to a channel |
+| `send_thread_reply` | Reply to a specific message in a thread |
+
+## Pull request and review tools
+
+| Tool | Description |
+|---|---|
+| `list_pull_requests` | List PRs for a workspace's repos |
+| `start_ai_review` | Start an AI-powered review run for a PR |
+| `add_review_node` | Add a review finding (P0–P3) to a review channel |
+| `confirm_review_node` | Confirm another reviewer's finding |
+| `dismiss_review_node` | Dismiss a finding (optionally recording why as a memory fact) |
+| `dispatch_reviewers` | Dispatch matched reviewer agents into a review channel |
+| `submit_reviewer_verdict` | Submit a reviewer agent's ship/hold/block verdict |
+| `finalize_review` | Finalize and roll up the review verdict |
+| `publish_review_to_github` | Publish the review (inline comments + verdict) to GitHub |
+
+## Memory tools
+
+| Tool | Description |
+|---|---|
+| `search_memory` | Hybrid (BM25 + vector) search over facts and policies |
+| `propose_fact` | Propose a new memory fact in a domain |
+| `supersede_fact` | Supersede an existing fact with a newer one |
+| `propose_policy` | Promote facts into a normative policy |
+| `list_policies` | List policies in a domain |
+| `list_memory_domains` | List memory domains in a workspace |
+| `record_observation` | Record a raw observation (later promoted to facts) |
+| `update_my_notes` | Update the calling agent's working-memory scratchpad |
+| `get_my_notes` | Read the calling agent's working-memory scratchpad |
+
+## Code graph tools
+
+| Tool | Description |
+|---|---|
+| `search_code` | Search code symbols by query (hybrid search) |
+| `code_symbol` | Get a symbol's details |
+| `code_callers` | Find callers of a symbol |
+| `code_callees` | Find callees of a symbol |
+| `code_impact` | Impact-radius (BFS) analysis from a symbol |
+
+## Resource tools
+
+| Tool | Description |
+|---|---|
+| `read` | Read a file or resource via an internal URL (`pr:`, `issue:`, `gh:`, `skill:`, `rule:`, `local:`, `agent:`, `artifact:`, `memory:`) |
+
+## User interaction tools
+
+| Tool | Description |
+|---|---|
+| `ask_user_question` | Ask the user a question (options and/or free text); blocks until answered |
+| `request_confirmation` | Request approval for a privileged or destructive action |
+
+## Diagnostic tools
+
+| Tool | Description |
+|---|---|
+| `doctor` | Run agent-environment diagnostics |
+
+## Ticketing tools
+
+| Tool | Description |
+|---|---|
+| `create_ticket` | Create a ticket |
+| `get_ticket` | Get ticket details |
+| `list_tickets` | List tickets in a workspace |
+| `update_ticket` | Update a ticket's fields |
+| `assign_ticket` | Assign a ticket to an agent |
+| `reassign_ticket` | Reassign a ticket to a different agent |
+| `add_ticket_collaborator` | Add a collaborator to a ticket |
+| `comment_on_ticket` | Comment on a ticket |
+| `link_ticket_to_pr` | Link a ticket to a pull request |
+| `unlink_ticket_from_pr` | Remove a ticket↔PR link |
+| `delegate_ticket` | Delegate a ticket to another agent |
+| `complete_ticket` | Mark a ticket complete (with output) |
+| `fail_ticket` | Mark a ticket failed (with an error) |
+| `close_ticket` | Close a ticket |
+| `submit_output` | Submit the structured output payload for your current pipeline run |
+| `link_tickets` | Create a dependency edge between two tickets (blocks / relates-to / duplicate-of) |
+| `unlink_tickets` | Remove a dependency edge |
+| `list_ticket_relations` | List a ticket's dependency relations |
+
+## Project tools
+
+| Tool | Description |
+|---|---|
+| `create_project` | Create a project |
+| `list_projects` | List projects in a workspace |
+| `update_project` | Update a project |
+| `delete_project` | Delete a project |
+| `set_ticket_project` | Move a ticket into (or out of) a project |
+
+## Orchestration tools
+
+| Tool | Description |
+|---|---|
+| `propose_orchestration` | Emit a structured multi-agent orchestration plan for one upfront approval; validates and returns any violations |
+
+## Newsfeed tools
+
+| Tool | Description |
+|---|---|
+| `list_feeds` | List the workspace's RSS/Atom feeds |
+| `list_articles` | List articles from the workspace's feeds |
+| `get_article` | Get a single article's details |
+| `set_article_read` | Mark an article read or unread |
+| `set_article_saved` | Save or unsave an article |
+| `refresh_feeds` | Refresh the workspace's feeds |
+
+:::note[Calendar and meetings are not MCP tools]
+The calendar and meetings features are desktop-only. They are *not* exposed over MCP, so agents cannot read your calendar or your meeting recordings. The meeting summary that produces action items and decisions runs as a built-in [`meeting_summary` pipeline](/manual/concepts/meetings/), not as a tool agents can call directly.
+:::
+
+## Tool gating
+
+Tools are gated by conversation mode via `ConversationModeToolGuard`:
+
+- **Chat mode**: full tool access.
+- **Plan mode**: read-only tools; no file writes or mutating tools.
+- **Review mode**: review-specific tools only.
+
+## Destructive-action confirmation
+
+Some tools require explicit user approval before they run. The tool returns an `ApprovalPayload`; the dispatcher surfaces it (via the `ConfirmationPort` / `request_confirmation`) and the client must confirm before execution proceeds. Examples include `kill_agent`, `fire_agent`, and destructive bash commands run inside the sandbox.

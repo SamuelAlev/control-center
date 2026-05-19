@@ -1,0 +1,118 @@
+---
+title: Tickets and delegation
+description: How Control Center tracks work items and delegates them to agents.
+---
+
+## What are tickets?
+
+Tickets are the unit-of-work aggregate in Control Center. They represent a task, issue, or piece of work that needs to be done. Tickets are vendor-agnostic: they can exist purely locally or be synced with external providers like Linear.
+
+Tickets replaced the former "tasks" feature. `Ticket` is now the single unit-of-work aggregate.
+
+## Ticket attributes
+
+| Attribute | Description |
+|---|---|
+| `title` | Short summary |
+| `description` | Detailed description (Markdown) |
+| `status` | Lifecycle state (open, in_progress, blocked, done, cancelled, failed) |
+| `priority` | Priority level |
+| `provider` | Where the ticket lives: `local` or `linear` |
+| `externalKey` | The ID in the external provider (if any) |
+| `assignedAgentId` | Which agent is working on this ticket |
+| `assignedTeamId` | Which team is working on this ticket |
+| `delegatedByAgentId` | Which agent delegated this ticket |
+| `channelId` | The conversation channel for this ticket |
+| `mode` | Conversation mode for the dispatch |
+| `pipelineRunId` | The pipeline run that created this ticket (if any) |
+| `projectId` | Which project this ticket belongs to |
+| `parentTicketId` | Parent ticket for hierarchy |
+| `expectedOutputSchema` | JSON Schema for the expected output |
+| `outputJson` | The actual output when completed |
+| `executionLockedAt` | Optimistic concurrency lock |
+
+## Ticket lifecycle
+
+```
+open → in_progress → done
+                   → failed
+                   → cancelled
+      → blocked → in_progress (unblocked)
+```
+
+The `TicketWorkflowService` manages lifecycle transitions with:
+
+- **Optimistic concurrency**: a version field prevents conflicting updates
+- **Workspace isolation**: every mutation validates `workspaceId` ownership
+- **Audit trail**: all state changes are tracked
+
+## Delegation
+
+When a ticket is assigned to an agent:
+
+1. `TicketAssigned` domain event fires
+2. `TicketDispatcher` picks it up
+3. Runs a readiness check (is the agent available? is the workspace ready?)
+4. Ensures a conversation channel exists for the agent + ticket
+5. Transitions the ticket from `open` to `in_progress`
+6. Dispatches the agent with the ticket context
+
+The dispatcher is the sole owner of the assigned-ticket→agent dispatch flow. It dispatches exactly once per assignment.
+
+## Ticket hierarchy
+
+Tickets support parent/child relationships via `parentTicketId`. This enables:
+
+- Breaking down a large task into subtasks
+- Agents creating child tickets for sub-problems they encounter
+- Pipeline steps creating child tickets for parallel execution
+
+## Ticket links
+
+`TicketLink` creates directional dependencies between tickets:
+
+| Link type | Description |
+|---|---|
+| `blocks` | The source ticket blocks the target |
+| `relatesTo` | The tickets are related |
+| `duplicateOf` | The source is a duplicate of the target |
+
+## Projects
+
+A `Project` is a workspace-scoped grouping of tickets toward a shared goal. Projects are Control Center-only and never sync to external providers.
+
+Projects have:
+
+- Name and description
+- Color (for visual identification)
+- Status: active, completed, archived
+
+## External provider sync
+
+`TicketSyncService` handles bidirectional sync with external providers:
+
+- **Pull**: remote tickets are mirrored into local tickets
+- **Push**: local state changes are mirrored back to the provider
+- The workflow service stays free of infrastructure concerns
+
+## Ticketing and pipelines
+
+Pipelines can create, complete, and cancel tickets via the `TicketWorkflowPort`:
+
+- A pipeline step can create a ticket as output
+- A pipeline trigger can fire on `TicketAssigned` or `TicketCompleted`
+- Tickets can carry `pipelineRunId` to track which run created them
+
+## Collaborators
+
+`TicketCollaborator` tracks who is working on a ticket:
+
+- Agent collaborators with roles (owner, contributor)
+- The human user (sentinel `'user'`)
+- Joined timestamp
+
+## Related concepts
+
+- [Pipelines and automation](/manual/concepts/pipelines/): pipelines create and manage tickets
+- [The agent model](/manual/concepts/agent-model/): agents are assigned to tickets
+- [Domain events](/manual/concepts/domain-events/): ticket lifecycle events

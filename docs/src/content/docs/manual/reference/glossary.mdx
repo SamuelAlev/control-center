@@ -1,0 +1,183 @@
+---
+title: Glossary
+description: Definitions of key terms used throughout Control Center.
+---
+
+import StructuredData from '../../../../components/shared/StructuredData.astro';
+
+export const glossaryUrl = 'https://usectrl.dev/manual/reference/glossary/';
+
+{/* DefinedTermSet JSON-LD for AI answer engines. Keep these [term, definition]
+    pairs in sync with the prose definitions below (single page, rarely changes). */}
+export const glossaryTerms = [
+  ['Agent', 'An AI worker with an identity, role, skills, and capabilities. Belongs to exactly one workspace. The primary actor in the system.'],
+  ['Workspace', 'The top-level isolation tenant. Groups agents, repos, channels, tickets, memory, and pipelines. All workspace-scoped data is hard-isolated.'],
+  ['Repo', 'A Git repository registered in the system. Global across workspaces but linkable to multiple workspaces for worktree provisioning.'],
+  ['Isolated repo', 'A workspace-scoped copy-on-write worktree of a registered repo. Provisioned per conversation so agents never mutate the source checkout.'],
+  ['Channel', 'A messaging container. Either a DM (two participants) or a group. Workspace-scoped. Carries a conversation mode.'],
+  ['Ticket', 'The unit-of-work aggregate. Vendor-agnostic (local or synced with Linear). Supports hierarchy, links, and delegation.'],
+  ['Pipeline', 'A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.'],
+  ['Meeting', 'A locally recorded, transcribed meeting session. Captures mic and system audio, transcribes on-device with Whisper, diarizes speakers, and summarizes into notes, action items, and decisions. Workspace-scoped.'],
+  ['CalendarEvent', 'A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment, a Meeting is a recorded session.'],
+  ['CalendarAccount', 'A connected Google account, per workspace and email. OAuth tokens live in the platform keychain; an authExpiredAt flag drives the reconnect banner.'],
+  ['AgentRole', 'Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access, and hierarchy.'],
+  ['AgentSkills', 'Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.'],
+  ['AgentCapabilities', 'Per-conversation flags (push to repo, GitHub API, ticketing, network egress) gated by the credential broker.'],
+  ['ConversationMode', 'chat, plan, or review. Gates the system prompt, sandbox writes, and MCP tool allowlist.'],
+  ['SandboxBackend', 'native (OS-native Seatbelt/bubblewrap) or none (no isolation).'],
+  ['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
+  ['WakeReason', 'Why an agent was dispatched: user message, ticket assignment, pipeline step, or review dispatch.'],
+  ['SandboxPort', 'Manages sandbox lifecycle (probe, launch, events, exec, destroy).'],
+  ['CredentialBrokerPort', 'Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.'],
+  ['GitRepoInspectorPort', 'Extracts metadata (owner, repo, branch) from a local Git repo path.'],
+  ['EmbeddingPort', 'Produces unit-norm text embedding vectors for semantic search.'],
+  ['NotificationPort', 'Shows native desktop notifications respecting category/route gating.'],
+  ['TicketProviderPort', 'Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).'],
+  ['PipelineEnginePort', 'Starts a pipeline run from a template, decoupling callers from the concrete engine.'],
+  ['AgentDispatchService', 'Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.'],
+  ['TicketWorkflowService', 'Pure-domain ticket lifecycle engine with optimistic-concurrency mutation chokepoint and workspace isolation enforcement.'],
+  ['TicketDispatcher', 'Sole owner of assigned-ticket to agent dispatch: on TicketAssigned, checks readiness, ensures channel, transitions status, dispatches once.'],
+  ['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
+  ['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
+  ['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
+  ['CostTracker', 'Computes per-run token cost and persists it onto the run log.'],
+  ['BudgetEnforcementService', 'Enforces per-scope monthly spend budgets, blocking dispatch when exhausted.'],
+  ['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
+  ['DomainEvent', 'Base interface. Every event has occurredAt. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, observability, analytics.'],
+  ['Clean Architecture', 'Dependency rule: Presentation to Application/Providers to Domain, with Infrastructure pointing inward. Domain has zero infrastructure imports.'],
+  ['Ports and adapters', 'Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.'],
+  ['Shared kernel', 'core/domain/ entities, value objects, ports, and services shared across 3+ features.'],
+  ['Feature-first', 'Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.'],
+  ['Thin-client architecture', 'No client opens the database; a headless cc_server process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.'],
+  ['cc_server', 'The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket, and runs the background services (pipelines, MCP, reconcilers).'],
+  ['ServerConnectionMode', 'How the desktop reaches its server: local (spawn a cc_server on this machine) or remote (dial one elsewhere). The web client is always remote.'],
+  ['RemoteRpcClient', 'The transport-agnostic JSON-RPC client every thin client uses to talk to its server, over WSS, loopback, or a WebRTC data channel.'],
+  ['RPC workspace binding', 'Every server session is bound to one workspace, the sole source of workspace_id for its calls. A client bound to workspace A cannot reach workspace B.'],
+  ['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over a WebRTC data channel with a default-deny tool policy.'],
+  ['cc_signaling_server', 'A stateless WebSocket signaling broker for WebRTC pairing. A dumb relay: it never interprets SDP/ICE, holds no app data, never sees the pairing PSK.'],
+];
+
+<StructuredData
+  schema={{
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTermSet',
+    name: 'Control Center glossary',
+    url: glossaryUrl,
+    hasDefinedTerm: glossaryTerms.map(([name, description]) => ({
+      '@type': 'DefinedTerm',
+      name,
+      description,
+      inDefinedTermSet: glossaryUrl,
+    })),
+  }}
+/>
+
+## Core entities
+
+**Agent**: An AI worker with an identity, role, skills, and capabilities. Belongs to exactly one workspace. The primary actor in the system.
+
+**Workspace**: The top-level isolation tenant. Groups agents, repos, channels, tickets, memory, and pipelines. All workspace-scoped data is hard-isolated.
+
+**Repo**: A Git repository registered in the system. Global across workspaces but linkable to multiple workspaces for worktree provisioning.
+
+**Isolated repo**: A workspace-scoped copy-on-write worktree of a registered repo. Provisioned per conversation so agents never mutate the source checkout.
+
+**Channel**: A messaging container. Either a DM (two participants) or a group. Workspace-scoped. Carries a conversation mode.
+
+**Ticket**: The unit-of-work aggregate. Vendor-agnostic (local or synced with Linear). Supports hierarchy, links, and delegation.
+
+**Pipeline**: A DAG-based workflow that chains steps (agent dispatch, scripts, conditionals) together. Defined by templates; executed as runs.
+
+## Value objects
+
+**AgentRole**: Enumerated role (CEO, coder, reviewer, QA, designer, security, devops, PM, general). Determines persona, memory access, and hierarchy.
+
+**AgentSkills**: Case-insensitive set of skill identifiers that inject relevant context into prompts at dispatch time.
+
+**AgentCapabilities**: Per-conversation flags (push to repo, GitHub API, ticketing, network egress) gated by the credential broker.
+
+**ConversationMode**: `chat`, `plan`, or `review`. Gates the system prompt, sandbox writes, and MCP tool allowlist.
+
+**SandboxBackend**: `native` (OS-native Seatbelt/bubblewrap) or `none` (no isolation).
+
+**RunCost**: Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.
+
+**WakeReason**: Why an agent was dispatched: user message, ticket assignment, pipeline step, or review dispatch.
+
+## Ports
+
+**SandboxPort**: Manages sandbox lifecycle (probe, launch, events, exec, destroy).
+
+**CredentialBrokerPort**: Mints scoped, capability-gated credentials for sandbox launch and revokes them on teardown.
+
+**GitRepoInspectorPort**: Extracts metadata (owner, repo, branch) from a local Git repo path.
+
+**EmbeddingPort**: Produces unit-norm text embedding vectors for semantic search.
+
+**NotificationPort**: Shows native desktop notifications respecting category/route gating.
+
+**TicketProviderPort**: Vendor-agnostic boundary to a ticketing backend (create, get, list, update, transition, assign).
+
+**PipelineEnginePort**: Starts a pipeline run from a template, decoupling callers from the concrete engine.
+
+## Domain services
+
+**AgentDispatchService**: Launches agent runs: provisions isolated repos, builds prompts, creates run logs, returns live event streams.
+
+**TicketWorkflowService**: Pure-domain ticket lifecycle engine with optimistic-concurrency mutation chokepoint and workspace isolation enforcement.
+
+**TicketDispatcher**: Sole owner of assigned-ticket to agent dispatch: on `TicketAssigned`, checks readiness, ensures channel, transitions status, dispatches once.
+
+**PipelineEngine**: Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.
+
+**PipelineTriggerDispatcher**: Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.
+
+**MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
+
+**CostTracker**: Computes per-run token cost and persists it onto the run log.
+
+**BudgetEnforcementService**: Enforces per-scope monthly spend budgets, blocking dispatch when exhausted.
+
+## Events
+
+**DomainEventBus**: In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume `on<T>()` streams.
+
+**DomainEvent**: Base interface. Every event has `occurredAt`. Key categories: workspace/agent, PR/review, messaging, ticketing, pipeline, observability, analytics.
+
+## Meetings and calendar
+
+**Meeting**: A locally recorded, transcribed meeting session. Captures microphone and system audio, transcribes on-device with Whisper, diarizes speakers, and summarizes into notes, action items, and decisions. Workspace-scoped; stays on the machine.
+
+**MeetingSegment**: One transcribed window of audio, speaker-tagged (`me`/`them`) with a diarization label and millisecond offsets.
+
+**MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
+
+**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+
+**CalendarAccount**: A connected Google account, per workspace and email. OAuth tokens live in the platform keychain; an `authExpiredAt` flag drives the reconnect banner.
+
+## Architecture terms
+
+**Clean Architecture**: Dependency rule: Presentation → Application/Providers → Domain ← Infrastructure. Domain has zero infrastructure imports.
+
+**Ports and adapters**: Domain defines abstract interfaces (ports); infrastructure provides concrete implementations (adapters). Composition root binds them.
+
+**Shared kernel**: `core/domain/` entities, value objects, ports, and services shared across 3+ features.
+
+**Feature-first**: Code is organized by business domain (agents, pipelines, messaging) rather than by technical layer.
+
+## Deployment and clients
+
+**Thin-client architecture**: No client opens the database; a headless `cc_server` process owns the data and serves it over WebSocket RPC. Every client (desktop, web, phone) is a renderer over that one RPC connection.
+
+**cc_server**: The headless server binary (pure-Dart, no Flutter engine). Owns the Drift/SQLite database, serves repo-RPC over WebSocket, and runs the background services (pipelines, MCP, reconcilers).
+
+**ServerConnectionMode**: How the desktop reaches its server — `local` (spawn a `cc_server` on this machine, the default) or `remote` (dial one elsewhere). The web client is always `remote`.
+
+**RemoteRpcClient**: The transport-agnostic JSON-RPC client every thin client uses to talk to its server — over WSS, loopback, or a WebRTC data channel.
+
+**RPC workspace binding**: Every server session is bound to one workspace, the sole source of `workspace_id` for its calls. A client bound to workspace A cannot reach workspace B.
+
+**cc_remote**: The phone thin client — a Flutter web PWA that remote-controls the fleet over a WebRTC data channel with a default-deny tool policy.
+
+**cc_signaling_server**: A stateless WebSocket signaling broker for WebRTC pairing — a dumb relay that never interprets SDP/ICE, holds no app data, and never sees the pairing PSK.

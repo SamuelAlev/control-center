@@ -1,0 +1,161 @@
+---
+title: Remote control and mobile
+description: How Control Center pairs your phone over a peer-to-peer link so you can keep an eye on the fleet, plus the security model that keeps that link tightly scoped.
+---
+
+Control Center is a desktop app, but the work it tracks doesn't stop when you
+step away from your desk. **Remote control** pairs the desktop with your phone
+over a direct, peer-to-peer link, using **[Remote](https://remote.usectrl.dev/)**,
+the companion app at remote.usectrl.dev, so you can follow the fleet from
+there: read messages and tickets, reply to an agent, triage your newsfeed,
+without the audio, transcript, source code, or credentials that live on the
+desktop ever leaving it.
+
+Think of it as a read-mostly companion to the deck. It is not meant to replace the full desktop client.
+
+:::note[Two different remote paths]
+The phone companion pairs over **WebRTC** with the *running desktop*, via a signaling broker — a separate transport from the headless `cc_server` the desktop itself talks to. The full **web build** (and a desktop pointed at a remote server) is the other remote path; it dials `cc_server` over WebSocket and renders the complete app. See [Deployment and clients](/manual/concepts/deployment/) for how the two differ.
+:::
+
+## What the phone can do
+
+The paired phone reaches a small, intentional slice of the desktop's surface:
+
+- **Read** tickets, agents, channels and their messages, and your newsfeed
+- **Reply**: send a message in a channel, update or assign a ticket, mark an
+  article read or saved
+
+That's it. A phone is a **lower-privilege principal** than a local agent. It
+cannot spawn processes, spend LLM budget, push to GitHub, hire or fire agents,
+or create workspaces. See [the security model](#the-security-model) for why.
+
+## How the link is built
+
+The connection is a **direct WebRTC data channel** between the phone and the
+desktop. There is no cloud relay sitting between them that can see your data.
+
+Three pieces come together at pairing time:
+
+| Piece | Role |
+|---|---|
+| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB. |
+| **Signaling broker** | A `wss://` relay that carries **only** opaque connection setup blobs (SDP/ICE). It never sees app data or the pairing secret. |
+| **STUN servers** | Help the two peers find each other's network path. **No TURN relay, by design**: there is no server that relays your traffic. |
+
+The desktop is the **answerer**: the phone creates the connection offer and the
+data channel, and the desktop answers. ICE uses a direct LAN path when both
+devices are on the same network and hole-punches through NAT via STUN when they
+aren't.
+
+Because there is no TURN relay, the link is genuinely peer-to-peer, but it also
+means a strict or symmetric NAT can block it (roughly 10–20% of networks). That
+is the trade-off: Control Center would rather fail to pair than quietly route
+your data through a third-party relay. On repeated connection failure the phone
+suggests joining the same Wi-Fi as the desktop and keeps retrying in the
+background; a connection that succeeds once reconnects without re-scanning the
+code.
+
+## Pairing
+
+You start a pairing offer on the desktop; it shows a **QR code** (and a copyable
+link). Scan it with the phone's camera (or open the link in a browser) and the
+phone connects.
+
+What's in that code is a deep link:
+
+```
+https://<pwa-host>/#<payload>
+```
+
+The payload rides in the URL **fragment**, the part after `#` that browsers
+never send to the server, so the PWA's HTTPS host never sees it. The payload
+carries everything the phone needs to reach the desktop and prove who it is:
+
+- the signaling broker URL and a one-time **room code**
+- a 32-byte **pre-shared key (PSK)**
+- the desktop's app-instance id
+- the STUN server list
+- a short **expiry** (~5 minutes)
+
+The phone decodes it, stores a pairing record locally, and strips the fragment
+so the secret leaves the URL. The offer is short-lived: an unused QR expires.
+
+## The security model
+
+A paired phone is **authenticated but untrusted**. Several layers keep an
+approved (or leaked) pairing from becoming full remote control of the desktop.
+
+### 1. Default-deny tool policy
+
+The phone shares the desktop's tool registry, the same one the
+[MCP server](/manual/guides/mcp-server/) exposes, but a default-deny allow-list
+governs which tools it may call. Anything not listed is rejected before it ever
+runs. The allow-list is intentionally read-and-observe heavy, plus a handful of
+**local-only** writes (a message, a ticket update) that spend no LLM budget,
+spawn no process, and touch no external system like GitHub.
+
+Denied, for example: consulting an agent, starting an AI review, killing an
+agent, publishing a review to GitHub, hiring or firing agents, creating a
+workspace.
+
+### 2. A pre-shared key bound to the connection
+
+On connect, the desktop runs a **PSK nonce challenge** and binds the proof to the
+connection's pinned DTLS fingerprint. The signaling broker only relays setup
+blobs; it never sees the PSK. A device that is revoked (or whose row is
+deleted) finds its PSK already gone, so it **fails closed** on reconnect.
+
+### 3. Per-session workspace binding
+
+Every tool call the phone makes is scoped by a per-session
+**workspace binding**, the sole source of the `workspace_id` for that call. The
+binding is seeded from the desktop's active workspace when the phone connects,
+but is **independent of the desktop UI**: switching workspaces on the phone
+changes only the binding, never the desktop's view. A phone bound to workspace A
+cannot read or mutate workspace B by passing a foreign id. This is the same
+[workspace isolation](/manual/concepts/workspaces/) invariant the rest of the
+product enforces.
+
+### 4. Rate limiting
+
+Each session runs a sliding-window limiter, a cap on total calls per minute and
+a tighter sub-cap on the mutating verbs, so a misbehaving or hijacked client
+can't flood tool calls, churn local writes, or burn resources.
+
+### 5. No long-lived cloud presence
+
+The signaling broker carries only connection setup, stays in the room only for
+the device's lifetime, and drops transiently without surfacing as a hang-up.
+The app data, audio, transcript, source, and credentials all stay on the desktop.
+
+## Live updates
+
+Once paired, the phone receives **live, workspace-scoped updates** as
+notifications (new agent messages, tickets assigned to you, status changes),
+mirroring the desktop's own notifications but filtered to the bound workspace.
+A phone never receives a notification from another workspace.
+
+## Where it lives
+
+| Surface | What it shows |
+|---|---|
+| **Settings → Devices** | Paired devices with live status, plus pair / approve / revoke |
+| **Settings → Remote control** | The transport: signaling broker URL, PWA host, STUN servers, start-on-launch, listener on/off |
+
+The Remote control section configures the transport; the Devices screen manages
+the devices themselves.
+
+::::note
+Remote control is desktop-only and is **not** exposed over MCP. The phone speaks
+to the desktop's own tool dispatcher over the peer connection; it is not an MCP
+client of an external server.
+::::
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/): the per-session workspace binding enforces the same invariant
+- [Architecture](/manual/concepts/architecture/): where remote control sits in the stack
+
+## Related guides
+
+- [Pair a device](/manual/guides/pair-a-device/)

@@ -1,0 +1,8 @@
+#include "../../Flutter/Flutter-Release.xcconfig"
+#include "Warnings.xcconfig"
+
+// Hardened Runtime is required for Developer ID distribution + notarization
+// (Xcode Archive → Distribute → Developer ID). Release/Profile only — Debug is
+// left untouched so `flutter run` (JIT) keeps working. The CLI release path
+// (scripts/release/macos_package.sh) independently signs with `--options runtime`.
+ENABLE_HARDENED_RUNTIME = YES

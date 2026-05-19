@@ -1,0 +1,91 @@
+---
+title: Run a headless server
+description: Build and run the cc_server headless binary, then pair a desktop, web, or phone client to it.
+---
+
+Run `cc_server` on a machine that stays on, then connect to it from your desktop,
+a browser, or your phone. The server is a pure-Dart native binary — no Flutter
+engine — so it runs headless on macOS, Linux, or Windows.
+
+## Prerequisites
+
+- The [Dart SDK](https://dart.dev/get-dart) (use the repo's pinned version via `fvm` if you have it)
+- This repository checked out
+- A reachable host: loopback for local experiments, or a LAN/public address with TLS for remote clients
+
+## Step 1: Build the binary
+
+```bash
+cd apps/cc_server
+dart build cli
+```
+
+The bundle ships `libsqlite3` alongside the binary — no system SQLite or Flutter engine needed. The executable lands at `./build/cli/<os_arch>/bundle/bin/cc_server`.
+
+## Step 2: Pair a client before first start
+
+A fresh data directory has no paired device and no PSK, so a client's pairing-key prompt can't be satisfied yet. Mint one with the `pair` subcommand (it opens the DB directly, so do this **before** starting the server):
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
+```
+
+This prints three values to paste into a client's connect form:
+
+```
+Server:    ws://localhost:9030/rpc
+Device id: web-client
+Pairing key: <a generated key>
+```
+
+To let a phone connect over the LAN and open the web client with one scan, pass the host the phone can reach and the web client's origin:
+
+```bash
+cc_server pair --data-dir ./data --port 9030 \
+  --bind any --host 192.168.1.42 --client-url https://your-web-app.example
+```
+
+That prints a deep link as a terminal-scannable QR. Re-running `pair` rotates the PSK. Useful flags: `--device` (default `web-client`), `--label`, `--workspace-name`.
+
+## Step 3: Start the server
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
+```
+
+Config (CLI flag overrides env, env overrides default):
+
+| Flag | Env | Default | Meaning |
+|---|---|---|---|
+| `--data-dir` | `CC_SERVER_DATA_DIR` | `<cwd>/.cc_server` | SQLite DB + paired-device secrets |
+| `--port` | `CC_SERVER_PORT` | `9030` | TCP port (`0` = ephemeral) |
+| `--bind` | `CC_SERVER_BIND` | `loopback` | `loopback` or `any` (`any` requires TLS) |
+
+The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+
+## Step 4: Connect a client
+
+Point a client at the server URL and pairing key from step 2:
+
+- **Desktop app**: on first launch choose *Connect to a remote server*, or change it later in **Settings → Server connection**. See [Connect to a remote server](/manual/guides/connect-remote-server/).
+- **Web client**: open the deployed web app and enter the server URL, device id, and pairing key.
+- **Phone**: the `pair --client-url` QR opens the web client already connected; the WebRTC **Remote** app pairs separately against a running desktop — see [Pair a device](/manual/guides/pair-a-device/).
+
+## Step 5: Connect a Google Calendar (optional)
+
+To sync a workspace's calendar without the desktop open, use the device-code flow against a running server:
+
+```bash
+cc_server calendar connect --workspace <workspace-id>
+```
+
+It prints a code and a URL to approve on another device, stores the refresh token server-side, and exits.
+
+## Current scope
+
+The server serves the thin-client **data path** — `initialize`, `session/*`, `repo/call` (tickets/messaging/newsfeed), and `sub/*` subscriptions, with per-session workspace binding and PSK auth. A few surfaces are not yet ported: MCP agent tools (`tools/call`), RSS feed fetching (reads work; the desktop still fetches), and vector search (degrades to full-text search when the `sqlite_vector` extension is absent).
+
+## Related guides
+
+- [Connect to a remote server](/manual/guides/connect-remote-server/)
+- [Pair a device](/manual/guides/pair-a-device/)

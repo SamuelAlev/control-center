@@ -1,0 +1,43 @@
+name: cc_gallery
+description: "Widgetbook gallery for the Control Center design system (cc_ui)."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cc_ui:
+    path: ../../packages/cc_ui
+  # Storybook-equivalent gallery. Uses the recommended annotation-driven setup:
+  # `@widgetbook.App()` + `@widgetbook.UseCase(...)` functions, with the
+  # navigation tree generated into `main.directories.g.dart` by
+  # widgetbook_generator. The generator pins analyzer/source_gen versions that
+  # already match the shared workspace toolchain (drift_dev, json_serializable),
+  # so it adds no lockfile conflict.
+  widgetbook: ^3.0.0
+  widgetbook_annotation: ^3.11.0
+  lucide_icons_flutter: ^3.1.14+2
+  # Live accessibility checker overlay for the gallery (BuilderAddon in
+  # main.dart). Replaces widgetbook's deprecated AccessibilityAddon. Debug-only.
+  accessibility_tools: ^2.0.0
+  # Renders the brand mark SVG in the navigation sidebar header. Same version
+  # the host app pins, so the shared workspace lockfile stays consistent.
+  flutter_svg: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  build_runner: ^2.15.0
+  widgetbook_generator: ^3.24.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/brand/

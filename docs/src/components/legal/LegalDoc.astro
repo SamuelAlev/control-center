@@ -1,0 +1,99 @@
+---
+/**
+ * Shared chrome for legal pages (privacy, terms): a quiet eyebrow header, a
+ * sticky scroll-spy table of contents, and a readable prose column.
+ *
+ * The page passes the section list (for the TOC) and provides the matching
+ * `<section id="…"><h2>…</h2></section>` markup in the default slot. Section
+ * ids MUST match the `id`s passed here for the TOC anchors + scroll-spy.
+ *
+ * Mirrors the two-column sticky layout used by the changelog. Prose styling
+ * lives in the `.legal-prose` component class (src/styles/global.css).
+ */
+interface Section {
+  id: string;
+  title: string;
+}
+
+interface Props {
+  /** Page heading, e.g. "Privacy policy". */
+  title: string;
+  /** Human date string, e.g. "12 June 2026". */
+  lastUpdated: string;
+  /** Lead paragraph under the title. */
+  intro: string;
+  /** Ordered list of sections for the table of contents. */
+  sections: Section[];
+}
+
+const { title, lastUpdated, intro, sections } = Astro.props;
+---
+
+<main id="top">
+  <!-- Header — quiet by design; no shader/horizon (reserved for brand moments). -->
+  <section class="border-b border-border pt-[clamp(44px,6.5vw,88px)] pb-[clamp(24px,3.5vw,40px)]">
+    <div class="wrap">
+      <span class="eyebrow reveal">Legal</span>
+      <h1 class="reveal text-[clamp(34px,5.5vw,60px)] leading-[1.02] tracking-[-0.03em] mt-5">{title}</h1>
+      <p class="reveal font-mono text-xs tracking-[0.03em] text-idle mt-5">Last updated: {lastUpdated}</p>
+      <p class="reveal text-[clamp(16px,1.5vw,19px)] leading-[1.55] text-muted max-w-[58ch] mt-4">{intro}</p>
+    </div>
+  </section>
+
+  <!-- Body — sticky TOC + prose. -->
+  <section
+    class="wrap grid grid-cols-1 items-start gap-2 pt-7 pb-[clamp(56px,8vw,96px)] min-[920px]:grid-cols-[232px_1fr] min-[920px]:gap-[clamp(36px,5vw,76px)] min-[920px]:pt-[clamp(40px,5vw,60px)]"
+  >
+    <nav
+      class="legal-toc self-start border-b border-border pb-5 mb-7 min-[920px]:sticky min-[920px]:top-[calc(var(--nav-h)+28px)] min-[920px]:border-0 min-[920px]:pb-0 min-[920px]:mb-0"
+      aria-label="On this page"
+    >
+      <p class="font-mono text-[10.5px] uppercase tracking-[0.12em] text-idle pb-2 border-0 min-[920px]:pb-[14px] min-[920px]:border-b min-[920px]:border-border">On this page</p>
+      <ul class="list-none m-0 p-0 flex flex-wrap gap-[6px] mt-[10px] min-[920px]:flex-col min-[920px]:flex-nowrap min-[920px]:gap-0 min-[920px]:mt-[14px]">
+        {sections.map((s, i) => (
+          <li>
+            <a
+              href={`#${s.id}`}
+              data-spy={s.id}
+              class="group flex items-center gap-2 py-[7px] px-[11px] rounded-sm border border-border bg-panel text-muted no-underline transition-colors hover:text-fg [&.active]:text-fg min-[920px]:gap-[10px] min-[920px]:py-[7px] min-[920px]:px-0 min-[920px]:rounded-none min-[920px]:border-0 min-[920px]:bg-transparent"
+            >
+              <span class="hidden min-[920px]:block font-mono text-[11px] text-idle tabular-nums w-[18px] flex-none group-[.active]:text-accent">{String(i + 1).padStart(2, '0')}</span>
+              <span class="text-[13px] tracking-[-0.01em] leading-snug">{s.title}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <article class="legal-prose min-w-0">
+      <slot />
+    </article>
+  </section>
+</main>
+
+<script>
+  // Scroll-spy: highlight the TOC link for the section currently in view.
+  // Defensive — no-ops if the page has no spy links or sections.
+  const links = Array.from(document.querySelectorAll('.legal-toc a[data-spy]'));
+  if (links.length) {
+    const sections = links
+      .map((a) => document.getElementById(a.getAttribute('data-spy') || ''))
+      .filter((el) => el);
+    let active = '';
+    const setActive = (id) => {
+      if (id === active) return;
+      active = id;
+      for (const a of links) a.classList.toggle('active', a.getAttribute('data-spy') === id);
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActive(visible[0].target.id);
+      },
+      { rootMargin: '-30% 0px -60% 0px', threshold: 0 },
+    );
+    for (const el of sections) observer.observe(el);
+  }
+</script>

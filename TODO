@@ -1,0 +1,18 @@
+[ ] Transform IRC to use messaging feature
+[ ] Skill antivirus
+[ ] Agent task delegation
+    [ ] Concrete "plan" mode
+    [ ] Allowing agents to TODO list
+    [ ] Allow agents to create a prompt and send it to another agent
+[ ] Sandbox / remote execution
+[ ] Notification banners (meetings, calendar, ...)
+[ ] Voice input to the composer text input in chat (and remove 30s max limit)
+[ ] Remove outdated comments in PR diffs
+[ ] Correct the timing of the pipelines runs, when they are stopped and restarted the time is wrong.
+[ ] Logo of the workspace isn't visible (maybe it is under the initial of workspace)
+[ ] Allow user to set ENV on each adapters
+[ ] Add Claude status alongside GitHub status
+[ ] Add subscription plan usage metric (% left for the day / week)
+[ ] Prevent unwanted actions (e.g., deleting files, github create pr/commit&push, ...)
+[ ] Allow installing skills from skills.sh
+[ ] Allow updating skills from skills.sh

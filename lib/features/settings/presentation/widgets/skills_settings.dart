@@ -1,0 +1,753 @@
+import 'dart:io';
+
+import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
+import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/page_wrapper.dart';
+import 'package:control_center/shared/widgets/section_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:yaml/yaml.dart';
+
+/// Parsed skill metadata (name, content, description).
+class SkillInfo {
+  /// Creates a [SkillInfo].
+  const SkillInfo({
+    required this.name,
+    required this.content,
+    required this.description,
+  });
+
+  /// Skill file name.
+  final String name;
+  /// Raw skill file content.
+  final String content;
+  /// Skill description extracted from YAML front-matter.
+  final String description;
+}
+
+/// Provides the list of skills for a workspace.
+final skillListProvider = FutureProvider.family<List<SkillInfo>, String>((
+  ref,
+  workspaceId,
+) async {
+  final fs = ref.read(workspaceFilesystemPortProvider);
+  final slugs = await fs.listSkillSlugs(workspaceId);
+  final skills = <SkillInfo>[];
+  for (final slug in slugs) {
+    final content = await fs.readSkillFile(workspaceId, slug);
+    if (content == null) {
+      continue;
+    }
+    final desc = extractYamlField(content, 'description') ?? '';
+    skills.add(SkillInfo(name: slug, content: content, description: desc));
+  }
+  skills.sort((a, b) => a.name.compareTo(b.name));
+  return skills;
+});
+
+/// Extracts the value of [field] from a YAML front-matter block.
+String? extractYamlField(String content, String field) {
+  final trimmed = content.trim();
+  if (!trimmed.startsWith('---')) {
+    return null;
+  }
+  final secondDelim = trimmed.indexOf('---', 3);
+  if (secondDelim == -1) {
+    return null;
+  }
+  final yamlStr = trimmed.substring(3, secondDelim).trim();
+  try {
+    final parsed = loadYaml(yamlStr);
+    if (parsed is YamlMap) {
+      if (parsed.containsKey(field)) {
+        return (parsed[field] ?? '').toString();
+      }
+      return null;
+    }
+  } on Object catch (_) {}
+  return null;
+}
+
+/// Returns the Markdown body after stripping YAML front-matter.
+String extractMarkdownBody(String content) {
+  final trimmed = content.trim();
+  if (!trimmed.startsWith('---')) {
+    return trimmed;
+  }
+  final secondDelim = trimmed.indexOf('---', 3);
+  if (secondDelim == -1) {
+    return trimmed;
+  }
+  return trimmed.substring(secondDelim + 3).trim();
+}
+
+/// Settings screen for managing workspace-scoped skill files.
+class SkillsSettings extends ConsumerWidget {
+  /// Creates a new [SkillsSettings].
+  const SkillsSettings({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.designSystem;
+    final workspaceId = context.currentWorkspaceId;
+    return PageWrapper(
+      title: l10n.skills,
+      subtitle: l10n.workspaceScopedSkills,
+      child: workspaceId == null
+          ? Center(
+              child: Text(
+                'No workspace selected',
+                style: TextStyle(color: tokens?.textTertiary),
+              ),
+            )
+          : _SkillsBody(workspaceId: workspaceId),
+    );
+  }
+}
+
+class _SkillsBody extends ConsumerStatefulWidget {
+  const _SkillsBody({required this.workspaceId});
+
+  final String workspaceId;
+
+  @override
+  ConsumerState<_SkillsBody> createState() => _SkillsBodyState();
+}
+
+class _SkillsBodyState extends ConsumerState<_SkillsBody> {
+  String? _selectedSkill;
+  final _nameCtl = TextEditingController();
+  final _descCtl = TextEditingController();
+  final _bodyCtl = TextEditingController();
+  final _filterCtl = TextEditingController();
+  bool _dirty = false;
+  bool _saving = false;
+  bool _isNew = false;
+  Set<String> _attachedAgentIds = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _nameCtl.addListener(_markDirty);
+    _descCtl.addListener(_markDirty);
+    _bodyCtl.addListener(_markDirty);
+    _filterCtl.addListener(() => setState(() {}));
+  }
+
+  void _markDirty() {
+    if (!_dirty) {
+      setState(() => _dirty = true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _nameCtl.dispose();
+    _descCtl.dispose();
+    _bodyCtl.dispose();
+    _filterCtl.dispose();
+    super.dispose();
+  }
+
+  void _loadSkill(String name, List<SkillInfo> skills) {
+    final skill = skills.firstWhere((s) => s.name == name);
+    setState(() {
+      _selectedSkill = name;
+      _isNew = false;
+      _nameCtl.text = skill.name;
+      _descCtl.text = skill.description;
+      _bodyCtl.text = extractMarkdownBody(skill.content);
+      _dirty = false;
+      final workspaceId = context.currentWorkspaceId;
+      final agents = workspaceId != null
+          ? ref.read(workspaceAgentsProvider(workspaceId)).value ?? const []
+          : ref.read(agentsProvider).value ?? const [];
+      _attachedAgentIds = agents
+          .where((a) => a.hasSkill(name))
+          .map((a) => a.id)
+          .toSet();
+    });
+  }
+
+  void _startNew() {
+    setState(() {
+      _selectedSkill = null;
+      _isNew = true;
+      _nameCtl.clear();
+      _descCtl.clear();
+      _bodyCtl.clear();
+      _dirty = false;
+      _attachedAgentIds = const {};
+    });
+  }
+
+  Future<void> _save() async {
+    final l10n = AppLocalizations.of(context);
+    final name = _nameCtl.text.trim();
+    if (name.isEmpty) {
+      CcToastScope.of(
+        context,
+      ).show(AppLocalizations.of(context).skillNameRequired, variant: CcToastVariant.neutral);
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final fs = ref.read(workspaceFilesystemPortProvider);
+      final description = _descCtl.text.trim();
+      final body = _bodyCtl.text;
+
+      final frontmatter = <String, String>{'name': name};
+      if (description.isNotEmpty) {
+        frontmatter['description'] = description;
+      }
+      final yamlLines = frontmatter.entries
+          .map((e) => '${e.key}: ${e.value}')
+          .join('\n');
+      final content = '---\n$yamlLines\n---\n\n$body';
+
+      if (_selectedSkill != null && _selectedSkill != name) {
+        await fs.deleteSkillDir(widget.workspaceId, _selectedSkill!);
+      }
+
+      await fs.writeSkillFile(widget.workspaceId, name, content);
+
+      if (_attachedAgentIds.isNotEmpty) {
+        final repo = ref.read(agentRepositoryProvider);
+        for (final agentId in _attachedAgentIds) {
+          final agent = await repo.getById(agentId);
+          if (agent != null) {
+            final currentSkills = agent.skills.toList();
+            if (_selectedSkill != null && _selectedSkill != name) {
+              currentSkills.remove(_selectedSkill);
+            }
+            if (!currentSkills.contains(name)) {
+              currentSkills.add(name);
+            }
+            await repo.upsert(
+              agent.copyWith(skills: AgentSkills(currentSkills)),
+            );
+            await fs.syncAgentSkillLinks(
+              widget.workspaceId,
+              agent.name,
+              currentSkills,
+            );
+          }
+        }
+      }
+
+      ref.invalidate(skillListProvider(widget.workspaceId));
+
+      if (mounted) {
+        setState(() {
+          _selectedSkill = name;
+          _isNew = false;
+          _dirty = false;
+          _saving = false;
+        });
+        CcToastScope.of(
+          context,
+        ).show(l10n.skillSaved(name), variant: CcToastVariant.success);
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        CcToastScope.of(
+          context,
+        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      }
+    }
+  }
+
+  Future<void> _delete() async {
+    final l10n = AppLocalizations.of(context);
+    if (_selectedSkill == null) {
+      return;
+    }
+    final confirmed = await showCcDialog<bool>(
+      context: context,
+      builder: (ctx) => CcDialog(
+        title: l10n.deleteConfirmName(_selectedSkill!),
+        content: Text(AppLocalizations.of(context).thisCannotBeUndone),
+        actions: [
+          CcButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            variant: CcButtonVariant.secondary,
+            child: Text(AppLocalizations.of(context).cancel),
+          ),
+          CcButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            variant: CcButtonVariant.destructive,
+            child: Text(AppLocalizations.of(context).delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      final fs = ref.read(workspaceFilesystemPortProvider);
+      await fs.deleteSkillDir(widget.workspaceId, _selectedSkill!);
+      ref.invalidate(skillListProvider(widget.workspaceId));
+      if (mounted) {
+        _startNew();
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        CcToastScope.of(
+          context,
+        ).show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      }
+    }
+  }
+
+  Future<void> _openSkillFolder() async {
+    if (_selectedSkill == null) {
+      return;
+    }
+    final fs = ref.read(workspaceFilesystemPortProvider);
+    final dir = await fs.skillDir(widget.workspaceId, _selectedSkill!);
+    try {
+      if (Platform.isMacOS) {
+        await Process.run('open', [dir]);
+      } else if (Platform.isWindows) {
+        await Process.run('explorer', [dir]);
+      } else {
+        await Process.run('xdg-open', [dir]);
+      }
+    } on Object catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final skillsAsync = ref.watch(skillListProvider(widget.workspaceId));
+
+    return skillsAsync.when(
+      loading: () => const Center(child: CcSpinner()),
+      error: (e, _) => Center(child: Text(AppLocalizations.of(context).failedWithError('$e'))),
+      data: (skills) {
+        final editing = _selectedSkill != null || _isNew;
+        final filter = _filterCtl.text.toLowerCase();
+        final filteredSkills = skills
+            .where(
+              (s) =>
+                  s.name.toLowerCase().contains(filter) ||
+                  s.description.toLowerCase().contains(filter),
+            )
+            .toList();
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                width: 260,
+                child: _SkillsListPane(
+                  skills: filteredSkills,
+                  selectedSkill: _selectedSkill,
+                  filterController: _filterCtl,
+                  onSelect: (name) => _loadSkill(name, skills),
+                  onNew: _startNew,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: editing
+                    ? _SkillEditor(
+                        isNew: _isNew,
+                        selectedSkill: _selectedSkill,
+                        nameCtl: _nameCtl,
+                        descCtl: _descCtl,
+                        bodyCtl: _bodyCtl,
+                        attachedAgentIds: _attachedAgentIds,
+                        dirty: _dirty,
+                        saving: _saving,
+                        onAttachedChange: (ids) => setState(() {
+                          _attachedAgentIds = ids;
+                          _dirty = true;
+                        }),
+                        onSave: _save,
+                        onDelete: _delete,
+                        onOpenFolder: _openSkillFolder,
+                      )
+                    : const _SkillEmptyState(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── List pane ─────────────────────────────────────────────────────────────
+
+class _SkillsListPane extends StatelessWidget {
+  const _SkillsListPane({
+    required this.skills,
+    required this.selectedSkill,
+    required this.filterController,
+    required this.onSelect,
+    required this.onNew,
+  });
+
+  final List<SkillInfo> skills;
+  final String? selectedSkill;
+  final TextEditingController filterController;
+  final void Function(String name) onSelect;
+  final VoidCallback onNew;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.designSystem;
+    return SectionCard(
+      label: l10n.skills,
+      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
+      headerPadding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      expands: true,
+      trailing: CcButton(
+        variant: CcButtonVariant.secondary,
+        size: CcButtonSize.sm,
+        onPressed: onNew,
+        icon: AppIcons.plus,
+        child: Text(l10n.newLabel),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: CcTextField(
+              controller: filterController,
+              hintText: l10n.filterSkillsPlaceholder,
+            ),
+          ),
+          const CcDivider(),
+          Expanded(
+            child: skills.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No matches.',
+                        style: TextStyle(color: tokens?.textTertiary),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    itemCount: skills.length,
+                    separatorBuilder: (_, _) => const CcDivider(),
+                    itemBuilder: (context, index) {
+                      final skill = skills[index];
+                      final selected = skill.name == selectedSkill;
+                      return _SkillsListTile(
+                        skill: skill,
+                        selected: selected,
+                        onTap: () => onSelect(skill.name),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkillsListTile extends StatelessWidget {
+  const _SkillsListTile({
+    required this.skill,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final SkillInfo skill;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem;
+    final accentColor = tokens?.textPrimary ?? DesignSystemPalette.gray900;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: selected ? accentColor.withValues(alpha: 0.10) : null,
+          border: Border(
+            left: BorderSide(
+              color: selected ? accentColor : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              skill.name,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                color: tokens?.textPrimary,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (skill.description.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                skill.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.45,
+                  color: tokens?.textTertiary,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillEmptyState extends StatelessWidget {
+  const _SkillEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem;
+    return SectionCard(
+      label: AppLocalizations.of(context).skillEditor,
+      expands: true,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              AppIcons.puzzle,
+              size: 48,
+              color: tokens?.textTertiary,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              AppLocalizations.of(context).selectLabel,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              AppLocalizations.of(context).briefDescription,
+              style: TextStyle(fontSize: 13, color: tokens?.textTertiary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Editor ────────────────────────────────────────────────────────────────
+
+class _SkillEditor extends ConsumerWidget {
+  const _SkillEditor({
+    required this.isNew,
+    required this.selectedSkill,
+    required this.nameCtl,
+    required this.descCtl,
+    required this.bodyCtl,
+    required this.attachedAgentIds,
+    required this.dirty,
+    required this.saving,
+    required this.onAttachedChange,
+    required this.onSave,
+    required this.onDelete,
+    required this.onOpenFolder,
+  });
+
+  final bool isNew;
+  final String? selectedSkill;
+  final TextEditingController nameCtl;
+  final TextEditingController descCtl;
+  final TextEditingController bodyCtl;
+  final Set<String> attachedAgentIds;
+  final bool dirty;
+  final bool saving;
+  final ValueChanged<Set<String>> onAttachedChange;
+  final VoidCallback onSave;
+  final VoidCallback onDelete;
+  final VoidCallback onOpenFolder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final agents = workspaceId != null
+        ? ref.watch(workspaceAgentsProvider(workspaceId)).value ?? const []
+        : ref.watch(agentsProvider).value ?? const [];
+    final agentItems = <String, String>{for (final a in agents) a.name: a.id};
+
+    return SectionCard(
+      label: isNew ? 'New skill' : (selectedSkill ?? ''),
+      padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
+      headerPadding: const EdgeInsets.fromLTRB(16, 0, 12, 12),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!isNew) ...[
+            CcButton(
+              variant: CcButtonVariant.secondary,
+              size: CcButtonSize.sm,
+              onPressed: onOpenFolder,
+              icon: AppIcons.folderOpen,
+              child: Text(l10n.openFolder),
+            ),
+            const SizedBox(width: 8),
+            CcButton(
+              variant: CcButtonVariant.destructive,
+              size: CcButtonSize.sm,
+              onPressed: onDelete,
+              icon: AppIcons.trash2,
+              child: Text(l10n.delete),
+            ),
+            const SizedBox(width: 8),
+          ],
+          CcButton(
+            size: CcButtonSize.sm,
+            onPressed: (saving || !dirty) ? null : onSave,
+            child: Text(saving ? l10n.savingEllipsis : l10n.save),
+          ),
+        ],
+      ),
+      child: SizedBox(
+        height: 540,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SectionLabel(text: l10n.nameLabel),
+                        const SizedBox(height: 6),
+                        CcTextField(
+                          controller: nameCtl,
+                          hintText: l10n.egArchitect,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _SectionLabel(text: l10n.descriptionLabel),
+                        const SizedBox(height: 6),
+                        CcTextField(
+                          controller: descCtl,
+                          hintText: l10n.briefDescription,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _SectionLabel(text: l10n.attachedAgents),
+              const SizedBox(height: 6),
+              if (agentItems.isEmpty)
+                Text(
+                  'No agents registered yet.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.designSystem?.textTertiary,
+                  ),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 360),
+                  child: CcMultiSelect<String>(
+                    options: [
+                      for (final entry in agentItems.entries)
+                        CcSelectOption(value: entry.value, label: entry.key),
+                    ],
+                    values: attachedAgentIds,
+                    onChanged: onAttachedChange,
+                    hintText: 'Select agents',
+                    countLabel: (count) =>
+                        '$count agent${count == 1 ? '' : 's'}',
+                  ),
+                ),
+              const SizedBox(height: 16),
+              _SectionLabel(text: l10n.contentMarkdown),
+              const SizedBox(height: 6),
+              CcTextArea(
+                controller: bodyCtl,
+                hintText: l10n.writeSkillContent,
+                minLines: 14,
+              ),
+              if (dirty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Icon(
+                      AppIcons.circleDot,
+                      size: 12,
+                      color: context.designSystem?.textTertiary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Unsaved changes',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                        color: context.designSystem?.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem;
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: tokens?.textTertiary,
+      ),
+    );
+  }
+}

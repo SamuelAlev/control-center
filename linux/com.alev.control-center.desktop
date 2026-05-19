@@ -1,0 +1,14 @@
+[Desktop Entry]
+Name=Control Center
+Comment=Multi-Agent Developer Control Center
+Exec=control_center %U
+Icon=control_center
+Type=Application
+Terminal=false
+Categories=Development;IDE;
+# The second handler is the reversed Google OAuth iOS client id (public, not a
+# secret); it must match GOOGLE_OAUTH_CLIENT_ID in .env. Update both on rotation.
+MimeType=x-scheme-handler/control-center;x-scheme-handler/com.googleusercontent.apps.806422936280-h53u9n27h9pmvrbs2ci86hisla0addqn;
+NoDisplay=false
+StartupNotify=true
+StartupWMClass=control_center

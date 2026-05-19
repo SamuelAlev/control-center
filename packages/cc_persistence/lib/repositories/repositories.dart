@@ -1,0 +1,36 @@
+/// Barrel for the Drift-backed repository implementations.
+library;
+
+export 'achievement_repository_impl.dart';
+export 'analytics_repository_impl.dart';
+export 'dao_agent_repository.dart';
+export 'dao_agent_run_log_repository.dart';
+export 'dao_agent_working_memory_repository.dart';
+export 'dao_cache_repository.dart';
+export 'dao_calendar_repository.dart';
+export 'dao_channel_read_repository.dart';
+export 'dao_episodic_edge_repository.dart';
+export 'dao_isolated_repo_repository.dart';
+export 'dao_meeting_repository.dart';
+export 'dao_memory_access_grant_repository.dart';
+export 'dao_memory_belief_repository.dart';
+export 'dao_memory_conflict_repository.dart';
+export 'dao_memory_domain_repository.dart';
+export 'dao_memory_fact_repository.dart';
+export 'dao_memory_policy_repository.dart';
+export 'dao_messaging_repository.dart';
+export 'dao_orchestration_repository.dart';
+export 'dao_paired_device_repository.dart';
+export 'dao_project_repository.dart';
+export 'dao_repo_repository.dart';
+export 'dao_review_channel_repository.dart';
+export 'dao_ticket_link_repository.dart';
+export 'dao_ticket_repository.dart';
+export 'dao_voice_profile_repository.dart';
+export 'dao_working_memory_item_repository.dart';
+export 'dao_workspace_repository.dart';
+export 'pipeline_run_repository_impl.dart';
+export 'pipeline_template_repository_impl.dart';
+export 'pipeline_trigger_repository_impl.dart';
+export 'streak_repository_impl.dart';
+export 'team_repository_impl.dart';

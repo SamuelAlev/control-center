@@ -1,0 +1,202 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:isolate';
+
+import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
+import 'package:cc_domain/features/code_graph/domain/services/code_indexer.dart';
+import 'package:cc_infra/src/code_graph/code_extractor.dart'
+    show ExtractionResult;
+import 'package:cc_infra/src/code_graph/extraction_isolate.dart';
+import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_natives/cc_natives.dart';
+
+/// Default [CodeIndexer]: enumerate source files, group them by language
+/// (detected from extension), then for each language whose tree-sitter natives
+/// are installed, skip unchanged files (content hash), parse + extract each
+/// changed file in a worker isolate, and ingest into the [CodeGraphRepository].
+/// Finally prune deleted files and resolve cross-file references repo-wide.
+///
+/// Degrades gracefully: languages without natives are skipped; if no language
+/// has natives at all, [indexRepo] returns [CodeIndexResult.skipped] without
+/// touching the index.
+class DefaultCodeIndexer implements CodeIndexer {
+  /// Creates a [DefaultCodeIndexer].
+  DefaultCodeIndexer({
+    required CodeGraphRepository repository,
+    required GrammarManager grammarManager,
+    Future<String> Function(String queryId)? queryLoader,
+    SourceFileWalker? walker,
+  }) : _repository = repository,
+       _grammarManager = grammarManager,
+       _walker = walker ?? const SourceFileWalker(),
+       _queryLoader = queryLoader;
+
+  final CodeGraphRepository _repository;
+  final GrammarManager _grammarManager;
+  final SourceFileWalker _walker;
+
+  /// Loads a tree-sitter `.scm` query by id. Optional: when null (the
+  /// production path) the query is read from disk beside the grammar lib via
+  /// [GrammarManager.loadQuery] — the `.scm` files ship next to the natives in
+  /// dev (`build_tree_sitter.sh`) and release bundles (`scripts/release/*`),
+  /// so no Flutter asset / `rootBundle` is involved and the `dart build cli`
+  /// server reads them the same way. Tests inject a stub loader.
+  final Future<String> Function(String queryId)? _queryLoader;
+
+  /// Resolves the `.scm` query for [queryId]: the injected loader if present
+  /// (tests), otherwise the on-disk query beside the grammar lib. Null when no
+  /// query is found, so the caller skips that language gracefully.
+  Future<String?> _loadQuery(String queryId) {
+    final loader = _queryLoader;
+    return loader != null ? loader(queryId) : _grammarManager.loadQuery(queryId);
+  }
+
+  @override
+  Future<CodeIndexResult> indexRepo({
+    required String workspaceId,
+    required String repoId,
+    required String repoPath,
+    void Function(CodeIndexProgress progress)? onProgress,
+    bool Function()? isCancelled,
+  }) async {
+    final files = await _walker.walk(repoPath);
+    final current = {for (final file in files) file.relativePath};
+
+    // Group walked files by detected language.
+    final byLanguage = <String, List<SourceFile>>{};
+    for (final file in files) {
+      final languageId = languageIdForPath(file.relativePath);
+      if (languageId == null) {
+        continue;
+      }
+      (byLanguage[languageId] ??= <SourceFile>[]).add(file);
+    }
+
+    final existing = await _repository.fileHashes(workspaceId, repoId);
+    final unavailable = <String>[];
+    var indexed = 0;
+    var skipped = 0;
+    var symbols = 0;
+    var edges = 0;
+    var failed = 0;
+    var anyNative = false;
+
+    outer:
+    for (final entry in byLanguage.entries) {
+      final languageId = entry.key;
+      final grammar = await _grammarManager.install(languageId);
+      if (grammar == null) {
+        unavailable.add(languageId);
+        continue;
+      }
+      // The grammar resolved but its `.scm` query is missing/empty — can't
+      // extract, so skip the language gracefully (same outcome as no native).
+      final query = await _loadQuery(queryIdFor(languageId));
+      if (query == null || query.isEmpty) {
+        unavailable.add(languageId);
+        continue;
+      }
+      anyNative = true;
+
+      for (final file in entry.value) {
+        if (isCancelled?.call() ?? false) {
+          break outer;
+        }
+        final hash = await _walker.hashFile(file.absolutePath);
+        if (existing[file.relativePath] == hash) {
+          skipped++;
+          continue;
+        }
+        String source;
+        try {
+          source = await File(file.absolutePath).readAsString();
+        } catch (_) {
+          continue;
+        }
+        final request = ExtractionRequest(
+          workspaceId: workspaceId,
+          repoId: repoId,
+          filePath: file.relativePath,
+          source: source,
+          languageId: languageId,
+          querySource: query,
+          runtimePath: grammar.runtimePath,
+          grammarPath: grammar.grammarPath,
+        );
+        ExtractionResult result;
+        try {
+          // Bound each file's parse so a pathological file can't consume the
+          // whole 30-minute step budget, and surface (rather than silently
+          // swallow) isolate crashes / grammar failures.
+          result = await Isolate.run(() => extractFileInIsolate(request))
+              .timeout(const Duration(seconds: 30));
+        } on TimeoutException {
+          failed++;
+          CcInfraLog.warning('Timed out parsing ${file.relativePath} (30s); skipping',);
+          continue;
+        } on Object catch (e) {
+          failed++;
+          CcInfraLog.warning('Failed to parse ${file.relativePath}: $e; skipping',);
+          continue;
+        }
+        await _repository.ingestFile(
+          workspaceId: workspaceId,
+          repoId: repoId,
+          filePath: file.relativePath,
+          contentHash: hash,
+          symbols: result.symbols,
+          edges: result.edges,
+          language: languageId,
+        );
+        indexed++;
+        symbols += result.symbols.length;
+        edges += result.edges.length;
+        onProgress?.call(
+          CodeIndexProgress(
+            filesIndexed: indexed,
+            totalFiles: files.length,
+            symbols: symbols,
+            edges: edges,
+          ),
+        );
+      }
+    }
+
+    // No supported files had installable natives → nothing was indexed.
+    if (byLanguage.isNotEmpty && !anyNative) {
+      return CodeIndexResult.skipped(
+        'tree-sitter natives not installed for: ${byLanguage.keys.join(', ')}',
+      );
+    }
+    if (unavailable.isNotEmpty) {
+      CcInfraLog.info('skipped languages (natives missing): ${unavailable.join(', ')}',);
+    }
+    if (failed > 0) {
+      CcInfraLog.warning('skipped $failed file(s) due to parse timeout or extraction error',);
+    }
+
+    // Prune files that no longer exist on disk (any language).
+    final removed = existing.keys
+        .where((path) => !current.contains(path))
+        .toList();
+    if (removed.isNotEmpty) {
+      await _repository.deleteFiles(workspaceId, repoId, removed);
+    }
+
+    // Bind cross-file references now that every file's symbols are present.
+    final resolved = await _repository.resolvePendingReferences(
+      workspaceId,
+      repoId,
+    );
+
+    return CodeIndexResult(
+      filesIndexed: indexed,
+      filesSkipped: skipped,
+      symbols: symbols,
+      edges: edges,
+      removedFiles: removed.length,
+      resolvedReferences: resolved,
+      nativeAvailable: anyNative || byLanguage.isEmpty,
+    );
+  }
+}

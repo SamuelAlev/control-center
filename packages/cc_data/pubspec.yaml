@@ -1,0 +1,20 @@
+name: cc_data
+description: "Remote data layer for Control Center — repository adapters that satisfy reads/writes over the cc_rpc client (repo/call + sub/subscribe) instead of a local database. Web-safe (cc_domain + cc_rpc only, no dart:io/ffi): the full web build and the desktop in REMOTE mode get their data through these adapters; the desktop in LOCAL mode keeps the Drift-backed repositories."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  cc_rpc:
+    path: ../cc_rpc
+  meta: any
+
+dev_dependencies:
+  test: any
+  lints: any

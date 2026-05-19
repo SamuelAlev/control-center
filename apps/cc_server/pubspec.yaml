@@ -1,0 +1,19 @@
+name: cc_server
+description: "Control Center headless server — a pure-Dart `dart build cli` binary (no Flutter engine). Serves the repo-RPC catalog (tickets/messaging/newsfeed) over WebSocket from the cc_persistence database. Paired devices, the web build, and (Fork A) the desktop all connect here."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # The entire backend composition is pure-Dart in cc_server_core (which pulls
+  # cc_host + cc_persistence + cc_domain + cc_rpc). No flutter, no control_center.
+  cc_server_core:
+    path: ../../packages/cc_server_core
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
