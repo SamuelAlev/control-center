@@ -1,0 +1,98 @@
+---
+title: Run a fleet worker
+description: Build and run the cc_worker headless executor that pairs with a cc_server and pulls leased jobs from the fleet.
+---
+
+Run `cc_worker` on a spare machine to add execution capacity to your fleet. It is a pure-Dart binary — no Flutter engine — that pairs with a `cc_server`, declares the host's capabilities, heartbeats, pulls leased jobs, executes them, and streams process events back. It holds no durable state: a supervisor restarts it and it re-registers.
+
+You need a running `cc_server` first — see [Run a headless server](/manual/guides/run-headless-server/).
+
+## Prerequisites
+
+- The [Dart SDK](https://dart.dev/get-dart) (use the repo's pinned version via `fvm` if you have it)
+- This repository checked out on the worker machine
+- A reachable `cc_server` (loopback for dev, LAN/remote for production)
+- `git` on the `PATH` — the worker materializes repos and runs `git` probes
+
+## Step 1: Build the binary
+
+```bash
+cd apps/cc_worker
+dart build cli
+```
+
+Like `cc_server`, this produces a self-contained bundle under `./build/cli/<os_arch>/bundle/bin/cc_worker`.
+
+## Step 2: Pair the worker with the server
+
+A production server only accepts workers that present a paired-device id and pre-shared key. Mint them from `cc_server pair-device` (or the desktop pairing UI), then pass both to the worker on startup:
+
+| Flag | Description | Default |
+|---|---|---|
+| `--server <url>` | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | — |
+| `--name <name>` | Operator-facing worker name. | host name |
+| `--device-id <id>` | Stable paired-device id, also used as the worker id. | `cc-worker` |
+| `--psk <key>` | Paired-device pre-shared key. Omit only for a loopback dev server. | — |
+
+`CC_WORKER_CACHE` overrides the worktree materialization cache dir (default: a `cc_worker_cache` dir under the system temp dir).
+
+## Step 3: Start the worker
+
+Against a paired server (production):
+
+```bash
+dart run cc_worker --server wss://host:9030 --device-id my-worker --psk <psk>
+```
+
+Or the built binary:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_worker --server wss://host:9030 --device-id my-worker --psk <psk>
+```
+
+Against a loopback dev server with no auth handshake:
+
+```bash
+dart run cc_worker --server ws://localhost:9030
+```
+
+The worker registers with `fleet.registerWorker` and aborts if the server reports `compatible: false` — a protocol-version mismatch means you need to rebuild the worker from the same release as the server. Once registered, it heartbeats every 20s and polls for leases every 2s. It runs until `SIGINT`/`SIGTERM`, then shuts down cleanly; put it under systemd or launchd so it restarts and re-registers after a crash or reboot.
+
+## Step 4: Understand what the worker declares
+
+On registration the worker auto-detects its `WorkerCapabilities` and the scheduler matches jobs against them — you do not configure these by hand:
+
+- **OS and arch** (`macos`/`linux`/`windows`, `arm64`/`x64`) — exact probes
+- **Cores and RAM** — exact core count; RAM degrades to `0` when unprobeable
+- **`flutter`** — set when a Flutter SDK is reachable (bare `flutter`, then `fvm flutter`); golden-render jobs require it
+- **`sandbox`** — set on macOS (`native-macos`) and Linux (`native-linux`)
+- **`always-on` and `parallel`** — a dedicated `cc_worker` always advertises both, so it is eligible for eval batches and other throwaway parallel capacity
+
+Detection is best-effort: anything it cannot probe degrades to a safe default rather than failing startup.
+
+## Step 5: Confirm it leases jobs
+
+The worker picks up `JobSpec`s the scheduler leases to it. The job kinds are:
+
+- `agentRun` — a single agent run (dispatch)
+- `pipelineStep` — a pipeline step execution
+- `codeIndex` — a repo code-index build
+- `goldenRender` — a UI visual golden render (requires `flutter`)
+- `benchmark` — a performance benchmark run
+- `evalBatch` — an eval batch (prefers `parallel` capacity)
+
+When a lease carries `repoRemote`, the worker does `git clone --depth 1` into a remote+SHA-keyed cache dir, then `git fetch` + `git checkout <headSha>`. For `agentRun` jobs it runs the command from the lease env's `CC_JOB_COMMAND` in the work dir, streaming stdout/stderr back as events; without `CC_JOB_COMMAND` it echoes the prompt so the transport is still exercised end to end. Other kinds currently run small real commands (`git rev-parse HEAD`, or `git --version` with no work dir) as honest probes. Job-scoped credentials in the lease `env` are injected into every subprocess and never written to a log.
+
+Events are batched and flushed to the server every 250ms or every 32 events; each job ends with a `DoneEvent` and a completion report. The model is heartbeats plus short-TTL leases: if a worker loses contact its lease expires and the server reaps the job for retry. There is no durable state on the worker and no consensus or work-stealing between workers.
+
+## Step 6: Watch it in the fleet panel
+
+Open **Observability** (`/observability`) in the desktop or web app and switch to the **Fleet** tab. It lists every registered worker with its platform, cores, capability keys, and last heartbeat, plus the jobs distributed across them. From a worker's tile you can **drain** it (finish current jobs, take no new leases), **resume** it, or **revoke** it.
+
+Worker and job rows live in the server's `global.db` — the worker itself writes nothing to disk beyond the materialization cache.
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/)
+- [Connect to a remote server](/manual/guides/connect-remote-server/)
+- [Pair a device](/manual/guides/pair-a-device/)

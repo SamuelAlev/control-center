@@ -1,0 +1,122 @@
+---
+title: Pipelines and automation
+description: How DAG-based pipelines orchestrate multi-step agent workflows.
+---
+
+## What are pipelines?
+
+Pipelines are DAG-based workflows that chain steps together to automate multi-agent tasks. A pipeline can dispatch agents, run scripts, route conditionally, and pass data between steps.
+
+Pipelines serve three purposes:
+
+1. **Automation**: chain repetitive multi-step processes
+2. **Coordination**: orchestrate multiple agents in sequence or parallel
+3. **Event-driven workflows**: trigger automatically on domain events or schedules
+
+## Templates and runs
+
+- **Templates** (`PipelineDefinition`): the declarative DAG. Defines steps, inputs, triggers, and configuration. Lives in the database, scoped to a workspace.
+- **Runs** (`PipelineRun`): a single execution of a template. Has a mutable state bag, cost/token totals, and status tracking.
+
+A template can have many runs. Runs are resumable: if the app restarts mid-run, the pipeline engine resumes in-flight runs.
+
+## Step kinds and step bodies
+
+A step has two orthogonal parts:
+
+- **Kind** (`StepKind`): tells the *engine* how to schedule the step relative to its upstream steps. This is what shapes the DAG — the engine only needs to know when a step becomes runnable, not what it does.
+- **Body** (`bodyKey`): the *work* the step performs once scheduled. Bodies are registered by key and executed by the engine; many steps of different kinds can share the same body (e.g. several `listen` steps all running `pipeline.promptAgent`).
+
+Keeping kinds and bodies separate is what lets the engine stay small: scheduling semantics live in six kinds, while the catalog of behaviors can grow without touching the scheduler.
+
+The six step kinds:
+
+| Kind | Description |
+|---|---|
+| `trigger` | Mandatory entry point — exactly one per template, always the first node. Does no work itself; it declares what starts the pipeline and fans out to downstream listeners. Its body is the no-op `pipeline.trigger`. |
+| `listen` | Fires when all of its source steps complete. The default kind for work steps. |
+| `join` | Fires when every step in its `waitForStepIds` reaches a terminal state — used to merge parallel branches. |
+| `router` | Conditional branching. Its body returns a route key that selects which outgoing edge fires; non-selected branches are marked skipped. |
+| `forEach` | Map / fan-out: runs its body once per item in a state collection (`extras.iterableKey`), then aggregates the per-item outputs into a list under `outputKey`. |
+| `terminal` | Marks the end of the DAG. The pipeline completes when a terminal step finishes. |
+
+Built-in body keys include:
+
+| Body key | Description |
+|---|---|
+| `pipeline.trigger` | No-op body of the mandatory trigger node |
+| `pipeline.promptAgent` | Dispatch an agent with a prompt; suspends until the agent completes |
+| `pipeline.bashScript` | Run a shell script with `{{state}}` substitution, no agent dispatched |
+| `pipeline.condition` | Evaluate a comparison or switch and return a router key |
+| `team.dispatch` | Dispatch a whole team, suspending until the members finish |
+| `human.gate` | Pause for human approval via `approve_step` / `reject_step` |
+| `prReview.comment` | Post consolidated findings as a PR review comment |
+| `messaging.postChannel` | Post a message to a messaging channel |
+| `flow.forEach` | Run an agent task per item in a state collection |
+| `flow.callPipeline` | Run another pipeline template as a nested sub-pipeline and merge its final state back |
+| `repos.cleanup` | Remove stale isolated worktrees |
+| `code.index` | Walk a repo and ingest symbols into the code graph |
+| `meeting.*` | Persist meeting outcomes (`meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`) |
+
+See [Pipeline step kinds](/manual/reference/pipeline-steps/) for the full catalog.
+
+## Step configuration
+
+Each step carries a `PipelineNodeConfig` with:
+
+- **Prompt/script/agent/team**: what to execute
+- **Input and output keys**: how data flows between steps
+- **Output schema**: JSON Schema for validating step output
+- **Reducer**: how to merge outputs from parallel branches
+- **Retry policy**: max attempts, backoff strategy, initial delay
+- **Continue-on-fail**: whether downstream steps proceed on failure
+- **Timeout**: wall-clock timeout for the step
+- **Dispatch mode**: mode for agent steps
+
+## State and data flow
+
+Steps communicate through a shared state bag on the run:
+
+1. A step reads inputs from the state (keyed by upstream step output keys)
+2. Executes its logic
+3. Writes its output to the state
+
+The `StateReducer` handles concurrent writes from parallel steps. The `TemplateRenderer` substitutes `{{...}}` placeholders in prompts and scripts with values from the state.
+
+## Triggers
+
+`PipelineTrigger` declares when a pipeline should auto-start:
+
+| Trigger type | Description |
+|---|---|
+| **Domain event** | Start on a specific event (e.g. `PullRequestPublished`, `TicketAssigned`) |
+| **Schedule** | Start on a cron schedule |
+| **Manual** | Started by the user from the UI or MCP |
+
+Triggers are default-off and must be enabled explicitly. They can include a payload match filter to scope when they fire.
+
+## The pipeline engine
+
+`PipelineEngine` is the `PipelineEnginePort` implementation that orchestrates runs:
+
+1. Creates a `PipelineRun` record
+2. Schedules the trigger step
+3. As steps complete, schedules downstream steps based on the DAG
+4. Handles routers (conditional branching) and joins (parallel merge)
+5. Manages retry policies and continue-on-fail behavior
+6. Persists state, costs, and errors at each step
+7. Resumes in-flight runs after app restart
+
+The engine is decoupled from the concrete ticketing and dispatch services via ports (`TicketWorkflowPort`, `AgentDispatchPort`, `DispatchReviewersPort`).
+
+## Error handling
+
+- **Step failure**: the step's status moves to `failed`, error message is recorded. If `continue-on-fail` is set, downstream steps proceed.
+- **Run failure**: if a critical step fails and no continue-on-fail is set, the entire run fails.
+- **Retry**: steps with a retry policy are automatically retried with configurable backoff.
+
+## Related concepts
+
+- [Tickets and delegation](/manual/concepts/tickets/): pipelines often create and manage tickets
+- [Domain events](/manual/concepts/domain-events/): events that trigger pipelines
+- [Build your first pipeline](/manual/tutorials/first-pipeline/): hands-on tutorial

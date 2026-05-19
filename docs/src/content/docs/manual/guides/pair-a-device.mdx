@@ -1,0 +1,72 @@
+---
+title: Pair a device
+description: Connect your phone (or a second browser or desktop) to your Control Center server so you can follow the fleet remotely.
+---
+
+This guide shows you how to pair a phone with Control Center, so you can read
+messages and tickets and reply from anywhere. The same flow pairs a second
+browser or desktop app. See
+[Remote control and mobile](/manual/concepts/remote-control/) for how the link
+works and its security model.
+
+## Prerequisites
+
+- The desktop app running, and a workspace set up.
+- The server reachable from the device you're pairing. On the same network
+  this just works; from further away the brokered relay carries the traffic.
+  If the panel warns **Not reachable**, set the server's public URL first.
+- For a phone: nothing to install. The QR opens the **Remote** web app
+  ([remote.usectrl.dev](https://remote.usectrl.dev/) by default).
+
+**Self-hosting.** Remote and the relay broker are open source in this repo: the
+phone app (`apps/cc_remote`, a Flutter web PWA you can deploy to a Cloudflare
+Worker) and the relay (`apps/cc_signaling_server`, a single stateless Dart
+binary that holds no app data and never sees the pairing secret — it forwards
+only end-to-end-sealed frames). See their READMEs for build and run steps.
+
+## Step 1: Open the pairing panel
+
+Open **Settings → Remote control & devices**. The **Paired clients** panel
+lists every app and device paired with this server.
+
+## Step 2: Pair a new client
+
+Click **Pair a new client**, give it a label (e.g. "My phone"), pick the type
+— **Web browser**, **Desktop app**, or **Phone** — and click **Pair**.
+
+- For a **phone**, a QR code appears. Scan it with the phone's camera, or copy
+  the link and open it in any browser. The link points the Remote app at the
+  server and expires in about five minutes.
+- For a **browser** or **desktop**, copy the shown link and pairing key into
+  the new client instead.
+
+## Step 3: Approve the first connection
+
+When the new device connects for the first time it starts as **pending**.
+Approve it from the Paired clients list to promote it to **active** — approval
+is a deliberate step, so a scanned QR alone never grants access.
+
+## Manage paired devices
+
+From **Settings → Remote control & devices** you can:
+
+- **Approve** a device that's waiting on its first connection
+- **Revoke** a device you no longer trust. Revoking drops its live session and
+  destroys its credential, so it fails closed on reconnect
+
+Revoking is the right move for a lost or replaced phone. It's immediate and
+irreversible from the device's perspective. Credentials are also time-boxed:
+an approved pairing expires after 30 days, and a device idle for two weeks
+needs fresh approval on its next connect.
+
+## Switch workspaces from the phone
+
+A paired phone can switch between workspaces independently of the desktop. The
+phone's workspace selection changes only its own view, never what the desktop
+shows. Every call the phone makes is scoped by that selection, so it can't
+reach another workspace by passing a foreign id.
+
+## Related guides
+
+- [Use channels](/manual/guides/channels/): what you'll mostly do from the phone
+- [Create and manage tickets](/manual/guides/manage-tickets/): triage from the road

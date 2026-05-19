@@ -1,0 +1,79 @@
+---
+title: Use the MCP server
+description: Connect external MCP clients to Control Center's tool server.
+---
+
+This guide shows you how to use Control Center's MCP server with external clients.
+
+## What is MCP?
+
+The Model Context Protocol (MCP) is a JSON-RPC 2.0 protocol for exposing tools to AI clients. Control Center runs an MCP server that exposes over 100 typed tools for agents and external clients.
+
+## Start the MCP server
+
+The MCP server starts automatically when Control Center runs. It listens for JSON-RPC connections from local clients.
+
+## Available tools
+
+Tools are organized by domain:
+
+| Domain | Tools | Description |
+|---|---|---|
+| Agents | list, hire, update, fire, kill, run logs | Agent lifecycle management |
+| Agent collaboration | consult_agent, propose_hire, request_peer_review | Agent-to-agent coordination |
+| Skills | list, create | Skill discovery and authoring |
+| Workspaces & repos | list/create workspaces, list_repos | Workspace and repository management |
+| Messaging | list_channels, get_channel_messages, send_channel_message, get/update_channel_notes | Communication |
+| PR & review | start_ai_review, review nodes, verdicts, dispatch_reviewers, finalize_review, publish_review_to_github | PR review workflow |
+| Memory | facts, policies, domains, observations, search_memory, working-memory notes | Knowledge management |
+| Code graph | search_code, code_symbol, code_callers, code_callees, code_impact | Code navigation |
+| User interaction | ask_user_question, request_confirmation, todo_read, todo_write | Human-in-the-loop |
+| Doctor | doctor | Environment diagnostics |
+| Ticketing & projects | CRUD, lifecycle, assignment, links, approval gates, projects | Work tracking |
+
+See [MCP tools reference](/manual/reference/mcp-tools/) for the complete catalog.
+
+The calendar and meetings features are desktop-only and are **not** exposed over MCP.
+
+## Workspace scoping
+
+Every tool that touches workspace-scoped data requires `workspace_id` in its parameters:
+
+```json
+{
+  "workspace_id": "abc-123",
+  "title": "Fix login bug",
+  "priority": "high"
+}
+```
+
+Tools that span all workspaces (e.g. `list_workspaces`, `create_workspace`) are the only exceptions.
+
+## Mode gating
+
+The `ModeToolGuard` restricts which tools are available based on the current mode. This prevents agents in plan mode from using write tools, for example.
+
+## Connect from a client
+
+The MCP surface shares the cc_server listener — there is no separate MCP port.
+Point your client at `http://<host>:<port>/mcp` (Streamable HTTP transport),
+where `<port>` is the cc_server port (default `9030`). The exact configuration
+shape depends on your client.
+
+The server answers loopback clients out of the box. To serve MCP beyond this
+host, set a bearer token in **Settings → MCP** and send it as an
+`Authorization: Bearer <token>` header — a tokenless server refuses off-host
+requests with 403 (fail closed).
+
+## Destructive action confirmation
+
+Some tools require explicit confirmation before execution:
+
+- The tool returns an `ApprovalPayload` describing the action
+- The client must confirm before the tool proceeds
+- This provides a safety net for destructive operations
+
+## Related guides
+
+- [MCP tools reference](/manual/reference/mcp-tools/)
+- [Create and configure an agent](/manual/guides/create-agent/)

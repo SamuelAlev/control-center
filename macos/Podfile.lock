@@ -1,0 +1,57 @@
+PODS:
+  - auto_updater_macos (0.0.1):
+    - FlutterMacOS
+    - Sparkle
+  - flutter_inappwebview_macos (0.0.1):
+    - FlutterMacOS
+    - OrderedSet (~> 6.0.3)
+  - flutter_pty (0.0.1):
+    - FlutterMacOS
+  - FlutterMacOS (1.0.0)
+  - local_notifier (0.1.0):
+    - FlutterMacOS
+  - OrderedSet (6.0.3)
+  - Sparkle (2.9.5)
+  - system_audio_capture (0.0.1):
+    - FlutterMacOS
+
+DEPENDENCIES:
+  - auto_updater_macos (from `Flutter/ephemeral/.symlinks/plugins/auto_updater_macos/macos`)
+  - flutter_inappwebview_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_inappwebview_macos/macos`)
+  - flutter_pty (from `Flutter/ephemeral/.symlinks/plugins/flutter_pty/macos`)
+  - FlutterMacOS (from `Flutter/ephemeral`)
+  - local_notifier (from `Flutter/ephemeral/.symlinks/plugins/local_notifier/macos`)
+  - system_audio_capture (from `Flutter/ephemeral/.symlinks/plugins/system_audio_capture/macos`)
+
+SPEC REPOS:
+  trunk:
+    - OrderedSet
+    - Sparkle
+
+EXTERNAL SOURCES:
+  auto_updater_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/auto_updater_macos/macos
+  flutter_inappwebview_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_inappwebview_macos/macos
+  flutter_pty:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_pty/macos
+  FlutterMacOS:
+    :path: Flutter/ephemeral
+  local_notifier:
+    :path: Flutter/ephemeral/.symlinks/plugins/local_notifier/macos
+  system_audio_capture:
+    :path: Flutter/ephemeral/.symlinks/plugins/system_audio_capture/macos
+
+SPEC CHECKSUMS:
+  auto_updater_macos: 3e3462c418fe4e731917eacd8d28eef7af84086d
+  flutter_inappwebview_macos: bdf207b8f4ebd58e86ae06cd96b147de99a67c9b
+  flutter_pty: 41b6f848ade294be726a6b94cdd4a67c3bc52f59
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
+  local_notifier: e9506bc66fc70311e8bc7291fb70f743c081e4ff
+  OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
+  Sparkle: 3ed3ee66c8526fcba244d06edef5f009d3bbc6ba
+  system_audio_capture: 9f3ed91aff276f8f4ca92391d1de61bd1d931b41
+
+PODFILE CHECKSUM: 89c84cf5c2351c1e554c6dea18d31a879fc3a19e
+
+COCOAPODS: 1.16.2

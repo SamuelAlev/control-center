@@ -1,0 +1,92 @@
+---
+title: Guardrails — one policy for every mutating action
+description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose, and what the autonomy dial really changes.
+---
+
+Agents in Control Center can delete files, push branches, publish pull
+requests, and call external APIs. Each of those is a different *kind* of risk,
+and for a long time only one of them — shell commands — had a policy. The
+guardrails exist to answer one question uniformly, for every mutating action
+an agent can take, regardless of which runtime or tool proposes it: **is this
+allowed, does it need an approval, or is it denied?**
+
+## One engine, every chokepoint
+
+There is exactly one policy engine. It is consulted at every point where an
+action can leave the system: the built-in harness's tool registry, the
+server-side MCP dispatcher gate, and repo-op mutations. A rule written once
+therefore applies to the built-in runtime and to external agent CLIs alike —
+there is no second, quieter path around it. The older bash-only `CommandPolicy`
+still works: a rule can match a command prefix instead of an action class, and
+the two forms coexist in the same store.
+
+## ActionClass: a deliberately closed taxonomy
+
+Every mutating tool declares which **ActionClasses** it belongs to, from a
+closed set of twelve effect classes:
+
+`fileDelete`, `fileWriteOutsideWorktree`, `gitCommit`, `gitPush`, `prCreate`,
+`prPublish`, `vendorSyncWrite`, `networkEgress`, `secretAccess`,
+`packageInstall`, `processSpawn`, `workspaceMutation`.
+
+The set is closed on purpose. A new mutating tool that declares no class fails
+the ratchet test, so the taxonomy can only grow by an explicit, argued
+decision — "taxonomy sprawl is the death of this feature." Twelve classes is
+enough to express the policies people actually write (never push without
+asking, never delete outside a worktree, always allow reads) and few enough
+that the settings UI stays comprehensible.
+
+## Rules and scope resolution
+
+A rule maps `(scope, ActionClass | command prefix) → allow | prompt | deny`.
+Scopes nest from most to least specific:
+
+**channel > agent > workspace > mode preset > built-in default**
+
+The most specific scope wins; within one scope, the longest prefix and then
+the most restrictive rule wins. This replaced an earlier flat precedence
+(`allow > deny > prompt`), which made a broad allow silently defeat a narrow
+deny — the opposite of what a safety system should do.
+
+Decisions carry a few hard guarantees:
+
+- **Fail-closed prompts.** `prompt` with no approver connected resolves to
+  *denied*. An unanswered question is never a yes.
+- **Turn-stable decisions.** A denial is terminal for that action within the
+  turn, so an agent cannot be re-prompted (or re-denied) in a storm.
+- **Most-restrictive combination.** An action spanning several classes
+  combines them most-restrictively; when several classes prompt, one
+  confirmation lists them all.
+
+## The autonomy dial is a profile, not a parallel system
+
+The per-channel autonomy dial — `propose-only`, `act-with-approval`,
+`act-freely` — is a named profile over this same policy store, not a second
+mechanism. Turning a channel to `act-freely` widens what resolves to `allow`
+*within* the taxonomy; it never disables the engine, and fail-closed gates
+(risky classes with no approver) hold regardless of dial position. Delegation
+between agents inherits the same ceiling: a delegated task can narrow, never
+exceed, the autonomy of the chain that spawned it.
+
+## The adapter honesty matrix
+
+Not every runtime lets Control Center intercept every action. External agent
+CLIs run some tools natively, in-process, where no gate can sit. Rather than
+pretend otherwise, each adapter carries an **honesty matrix**: per ActionClass,
+whether enforcement happens at the MCP gate, via the CLI's own permission-mode
+mapping, at the sandbox floor, or not at all. The settings UI shows this
+matrix, because the one unforgivable failure for a guardrail system is
+claiming coverage that doesn't exist.
+
+## Probing policy before it bites
+
+The guardrails settings screen (`/settings/guardrails`) includes a what-if
+probe: pick an action class (or a command) and a scope, and it shows which
+rule decided and why. Because resolution is deterministic — same action, same
+scope, same decision — the probe's answer is the answer the agent will get.
+
+## Related concepts
+
+- [Sandbox and security](/manual/concepts/sandbox-security/): the OS-level floor beneath the policy engine
+- [Multiplayer — identity, membership, and presence](/manual/concepts/multiplayer/): channels, principals, and where the autonomy dial lives
+- [Configure guardrails](/manual/guides/configure-guardrails/): writing and testing rules in practice

@@ -1,0 +1,83 @@
+---
+title: Review your first pull request
+description: Open a PR, explore the diff, leave comments, and merge.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- Opened a pull request in Control Center's diff viewer
+- Left inline comments and a review verdict
+- Merged the PR
+
+Prerequisites: [Dispatch your first agent](/manual/tutorials/first-agent/) completed (you have at least one agent-generated PR).
+
+## Step 1: Open the pull request
+
+1. Navigate to **Pull requests** in the sidebar
+2. Find the PR your agent opened. It should show as **Open** with the agent as author
+3. Click it to open the detail view
+
+The PR detail shows:
+
+- Title, description, and metadata (branch, author, checks status)
+- A list of changed files with addition/deletion counts
+- CI check results (if applicable)
+
+## Step 2: Explore the diff
+
+Click any changed file to open the diff viewer.
+
+Control Center's diff viewer renders:
+
+- **Unified diff** with syntax highlighting
+- **Inline comments**: click the `+` button on any line to leave a comment
+- **File tree navigation**: jump between files in the sidebar
+- **Viewed state**: mark files as viewed to track your progress
+
+Navigate through the diff using the file list or keyboard shortcuts (see [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/)).
+
+## Step 3: Leave inline comments
+
+1. Hover over any line in the diff and a `+` button appears
+2. Click it to open a comment box
+3. Type your feedback and submit
+
+Comments are local to Control Center until you submit a review. They support Markdown formatting.
+
+## Step 4: Submit a review
+
+Once you've reviewed all the changes:
+
+1. Click **Submit review** in the header
+2. Choose a verdict:
+   - **Approve**: the PR is ready to merge
+   - **Request changes**: the author (agent) should address your feedback
+   - **Comment**: leave general feedback without blocking
+3. Add a summary comment
+4. Submit
+
+If you approve, the **Merge** button becomes active.
+
+## Step 5: Merge the PR
+
+Click **Merge** to merge the pull request into the target branch. Control Center merges via the GitHub API and updates the PR status.
+
+After merging:
+
+- The worktree is cleaned up
+- A `PrMerged` domain event fires (used by analytics and notifications)
+- The agent's run log records the completion
+
+## Using AI-powered review
+
+Control Center can also dispatch reviewer agents to review PRs automatically. Reviewer agents produce structured findings (P0–P3 severity) and an overall verdict (ship / hold / block).
+
+To try it, see [Use AI-powered review](/manual/guides/ai-review/).
+
+## Recap
+
+You opened a PR, explored the diff with syntax highlighting, left inline comments, submitted a review, and merged. The entire review workflow happened inside Control Center, with no browser needed.
+
+**Next:** [Build your first pipeline](/manual/tutorials/first-pipeline/) to automate multi-step workflows.

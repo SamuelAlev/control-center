@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime exceptions for the Node runtime vendored inside code-server
+  (bin/code-server/darwin-*/lib/node and its helper executables).
+
+  cc_server_package.sh signs every Mach-O in the standalone archive with the
+  hardened runtime, because the notary service rejects the archive otherwise.
+  The hardened runtime is also what stops V8 from allocating executable memory,
+  so a node signed with it and NO entitlements is notarizable and unrunnable —
+  it dies at startup instead. These are the same three exceptions VS Code ships
+  with; they are documented, notarization-friendly exceptions, not a bypass.
+
+  Applied ONLY to Mach-O *executables* under bin/code-server/. Entitlements are
+  read from a process's main executable, so putting them on the .dylib/.node
+  payloads would be noise.
+
+  cc_server itself takes exactly one exception — allow-unsigned-executable-
+  memory, for the Dart AOT snapshot its runtime maps as executable memory at
+  startup (signed bare it is SIGKILLed on launch: CODESIGNING, Invalid Page).
+  See cc_server.entitlements beside this file. It still takes neither JIT nor
+  library-validation: Dart AOT never JITs, and cc_server only loads dylibs
+  signed with this same Developer ID.
+-->
+<plist version="1.0">
+<dict>
+	<!-- V8 needs MAP_JIT pages. Without this, node aborts on launch. -->
+	<key>com.apple.security.cs.allow-jit</key>
+	<true/>
+	<!-- Node's older RWX allocation paths (and some native addons) still need
+	     unsigned executable memory; VS Code carries the same pair. -->
+	<key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+	<true/>
+	<!-- code-server dlopen()s compiled addons (*.node) out of node_modules.
+	     They are re-signed with our identity here, but the extension host also
+	     loads addons that arrive later, at runtime, from an extension. -->
+	<key>com.apple.security.cs.disable-library-validation</key>
+	<true/>
+</dict>
+</plist>

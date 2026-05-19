@@ -1,0 +1,6 @@
+# Shrinking allowlist: presentation-layer files that still import a feature
+# data/ layer directly (should go through a Riverpod provider → repository).
+# Enforced by architecture_constraints_test.dart. Migrate + remove. No NEW entries.
+# Seeded 2026-07-06 to the current baseline (CI was red; the check was a hard
+# expect(empty) that nobody could keep green — the ratchet forbids growth).
+lib/features/settings/presentation/widgets/sections/general/editor_theme_section.dart

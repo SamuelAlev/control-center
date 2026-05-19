@@ -1,0 +1,45 @@
+---
+/**
+ * Changelog hero section: golden-hour horizon SVG, heading, lead, sub-links.
+ * Uses global .wrap, .eyebrow, .reveal, .num classes. The release count is
+ * derived from the changelog data so the header can never drift from the list.
+ */
+import { releases } from '../../data/changelog';
+
+const releaseCount = releases.length;
+---
+
+<section class="relative overflow-hidden border-b border-border pt-[clamp(44px,6.5vw,88px)] pb-[clamp(28px,4vw,44px)]">
+  <svg class="absolute left-0 right-0 bottom-[-1px] w-full h-[200px] z-0 pointer-events-none opacity-[0.42] [mask-image:linear-gradient(180deg,transparent,#000_60%)] [-webkit-mask-image:linear-gradient(180deg,transparent,#000_60%)]" viewBox="0 0 1280 200" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffd06a" stop-opacity="0"/>
+        <stop offset="1" stop-color="#ffa110" stop-opacity="0.55"/>
+      </linearGradient>
+      <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#fb6424"/>
+        <stop offset="1" stop-color="#fa520f"/>
+      </linearGradient>
+    </defs>
+    <rect width="1280" height="200" fill="url(#sky)"/>
+    <circle cx="1050" cy="120" r="34" fill="#ff8a00" opacity="0.7"/>
+    <path d="M0 200 L150 110 L250 160 L360 90 L470 150 L600 100 L720 158 L860 110 L1000 162 L1130 120 L1280 165 L1280 200 Z" fill="url(#ridge)" opacity="0.45"/>
+  </svg>
+
+  <div class="wrap relative z-[2]">
+    <span class="eyebrow reveal">Changelog</span>
+    <h1 class="reveal text-[clamp(40px,7vw,82px)] leading-[0.98] tracking-[-0.03em] mt-5">What's shipped,<br><span class="text-idle">newest first.</span></h1>
+    <p class="reveal text-[clamp(17px,1.6vw,20px)] leading-[1.5] text-muted max-w-[46ch] mt-5">Every change to Control Center: what's new, what got sharper, and what we fixed. Updated as we ship.</p>
+    <div class="reveal flex items-center flex-wrap gap-x-[22px] gap-y-3 mt-[26px]">
+      <a class="inline-flex items-center gap-2 text-sm text-muted no-underline transition-colors duration-[var(--motion-fast)] hover:text-fg" href="https://github.com/SamuelAlev/control-center" target="_blank" rel="noopener noreferrer">
+        <svg class="w-[15px] h-[15px] flex-none" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38v-1.34c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.18-.89-1.18-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.87 2.34.67.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.19c0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        Follow on GitHub
+      </a>
+      <a class="inline-flex items-center gap-2 text-sm text-muted no-underline transition-colors duration-[var(--motion-fast)] hover:text-fg" href="/rss.xml">
+        <svg class="w-[15px] h-[15px] flex-none" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M3.429 2.857A.857.857 0 0 0 2.57 3.714v.857c4.262 0 7.714 3.452 7.714 7.715h.857a.857.857 0 0 0 .857-.857C12 6.86 8.282 3.143 3.43 2.857ZM2.571 6.286v1.714a3.43 3.43 0 0 1 3.429 3.429h1.714A5.143 5.143 0 0 0 2.57 6.286ZM4 10.286a1.143 1.143 0 1 0 0 2.285 1.143 1.143 0 0 0 0-2.285Z"/></svg>
+        RSS feed
+      </a>
+      <span class="inline-flex items-center gap-[9px] font-mono text-xs tracking-[0.03em] text-idle"><span class="num">{releaseCount}</span> {releaseCount === 1 ? 'release' : 'releases'}<span class="text-line-strong">·</span>macOS</span>
+    </div>
+  </div>
+</section>

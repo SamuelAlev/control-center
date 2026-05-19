@@ -1,0 +1,80 @@
+---
+title: Domain events
+description: How Control Center uses domain events for cross-feature communication.
+---
+
+## What are domain events?
+
+Domain events are the decoupling mechanism that lets features communicate without direct dependencies. Instead of feature A calling feature B directly, feature A publishes an event, and feature B subscribes to it.
+
+The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Features call `publish(event)` to emit events; subscribers consume a typed `on<T>()` stream.
+
+Every event implements `DomainEvent` and exposes `occurredAt`.
+
+## Why events?
+
+Without events, cross-feature communication requires direct imports. The dashboard would need to import the agents feature, the pipelines feature, and so on, creating a tangled dependency graph.
+
+Events break this coupling. The dashboard subscribes to events from multiple features without importing any of them. Similarly, the notification system maps events to desktop notifications without knowing about any specific feature.
+
+## What events drive
+
+A handful of cross-cutting concerns are built almost entirely on top of the event stream:
+
+- **Notifications.** Events are forwarded from the server to connected clients, where they are mapped to desktop notifications — an agent finishing a run, a PR needing review, a meeting starting soon.
+- **Audit trail.** Workspace-scoped events are bridged into the activity log, so the feed of "what happened" is a projection of the event stream rather than a separate bookkeeping system.
+- **Event-driven automation.** Pipeline triggers subscribe to events and auto-start matching pipelines (see below).
+- **Memory and learning.** Listeners harvest facts from completed agent runs and stream memory changes to any panel that wants them.
+- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist agents and its built-in pipeline templates; orchestration runs advance when their tickets reach terminal states.
+
+## Event categories
+
+Events span the whole product surface. At a high level they fall into these groups:
+
+- **Workspaces and repos** — workspace creation, repo registration
+- **Agent runs** — a run finishing (success or failure), driving analytics, cost tracking, and budget enforcement
+- **Pull requests** — publishing, status changes, merges, review requests, mentions, externally detected PRs
+- **Tickets and delegation** — the full ticket lifecycle: created, assigned, started, completed, failed, cancelled, reassigned, delegated, plus external webhook intake
+- **Tasks** — lifecycle frames for dispatched tasks, sequenced so clients can order and de-duplicate them
+- **Orchestration** — multi-agent orchestration runs progressing and terminating
+- **Pipelines** — run and step start/finish/fail, the backbone of run tracking
+- **Approvals** — escalations routed to the people who can resolve them
+- **Artifacts** — work products produced by runs
+- **Memory** — facts, beliefs, and conflicts as the memory system consolidates
+- **Plan documents** — collaborative plan edits
+- **Conversations and messaging** — messages, channels, and conversations opening and closing
+- **Meetings and calendar** — meetings starting soon, recordings finishing, calendar syncs and auth expiry
+- **Identity and membership** — users, workspace members, roles, invites, and device revocation
+
+Membership and device-revocation events are load-bearing for live access control: a revoked device or removed member has their open sessions terminated within seconds, not on the next reconnect.
+
+For the complete catalog — every event, its payload, and its consumers — see the [Domain events reference](/manual/reference/domain-events/).
+
+## Pipeline triggers
+
+Pipeline triggers subscribe to domain events and auto-start matching pipelines. The `PipelineTriggerDispatcher`:
+
+1. Subscribes to all event types
+2. For each event, checks enabled triggers that match the event type
+3. Applies the trigger's payload match filter
+4. Starts a pipeline run for each matching trigger
+
+This is how you get event-driven workflows: a `PullRequestPublished` event can trigger a review pipeline, a `TicketAssigned` event can trigger a dispatch pipeline, etc.
+
+## Event wiring
+
+The bus lives where execution happens — server-side. The server runtime wires the subscribers that react to events:
+
+- `WorkspaceSeeder` listens for `WorkspaceCreated` to seed the CEO and specialist agents plus the built-in pipeline templates and triggers
+- `PipelineTriggerDispatcher` subscribes to events for auto-starting pipelines
+- `OrchestrationRunListener` reacts to ticket terminal states to advance orchestration runs
+- The audit bridge records workspace-scoped events into the activity log
+
+A `RemoteEventForwarder` also forwards bus events over RPC to every connected client, where `RpcNotificationMapper` turns them into desktop notifications. Thin clients therefore see the same event stream the server sees, without owning any execution themselves.
+
+## Related concepts
+
+- [Pipelines and automation](/manual/concepts/pipelines/): triggers consume events
+- [Tickets and delegation](/manual/concepts/tickets/): ticket lifecycle events
+- [Architecture](/manual/concepts/architecture/): how events fit in the dependency graph
+- [Domain events reference](/manual/reference/domain-events/): complete event catalog

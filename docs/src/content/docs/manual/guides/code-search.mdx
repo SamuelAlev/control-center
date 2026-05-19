@@ -1,0 +1,106 @@
+---
+title: Search code with the code graph
+description: Use the code graph to search symbols, trace calls, and analyze impact.
+---
+
+This guide shows you how to use the code graph to search and navigate your codebase.
+
+## What is the code graph?
+
+The code graph is a symbol/edge database built by indexing your repos with tree-sitter. It contains:
+
+- **Symbols**: functions, classes, methods, fields, enums, etc.
+- **Edges**: directed relationships (calls, imports, extends, implements, references)
+
+The graph is scoped by `(workspaceId, repoId)`, so each workspace+repo combination has its own graph.
+
+## Indexing
+
+Control Center indexes repos automatically when:
+
+- A repo is linked to a workspace (`RepoAdded` event triggers indexing)
+- Files change (the indexer processes changed files in worker isolates)
+
+You can also trigger indexing manually from the workspace detail view.
+
+The indexer:
+
+1. Parses files with tree-sitter
+2. Extracts symbols (functions, classes, methods, etc.)
+3. Extracts edges (calls, imports, extends, etc.)
+4. Prunes deleted symbols
+5. Resolves cross-file references
+6. Embeds symbol signatures for vector search
+
+It degrades gracefully if tree-sitter natives are missing.
+
+## Search code
+
+Use the `search_code` MCP tool or the code graph UI:
+
+```
+search_code(workspace_id: "...", query: "authentication middleware")
+```
+
+Search combines:
+
+- **FTS**: keyword matching on symbol names, signatures, and docstrings
+- **Vector**: semantic similarity on embedded content
+- **Hybrid (RRF)**: combines both
+
+Results include the symbol's name, qualified name, file path, line range, and signature.
+
+## Explore symbols
+
+### Look up a symbol
+
+```
+code_symbol(workspace_id: "...", symbol_id: "...")
+```
+
+Returns the symbol's full metadata: kind, signature, docstring, parent name.
+
+### Find callers
+
+```
+code_callers(workspace_id: "...", symbol_id: "...")
+```
+
+Returns all symbols that call this function/method.
+
+### Find callees
+
+```
+code_callees(workspace_id: "...", symbol_id: "...")
+```
+
+Returns all symbols that this function/method calls.
+
+### Impact analysis
+
+```
+code_impact(workspace_id: "...", symbol_id: "...")
+```
+
+Runs a BFS traversal from the symbol, returning:
+
+- All reachable symbols
+- Edges between them
+- Depth of each symbol from the root
+
+Use this before refactoring to understand what will be affected.
+
+## Symbol and edge kinds
+
+### Symbol kinds
+
+`function`, `method`, `class`, `field`, `enum`, `constructor`, `getter`, `setter`, `typedef`, `extension`, `mixin`, `variable`
+
+### Edge kinds
+
+`calls`, `imports`, `extends`, `implements`, `mixesIn`, `references`
+
+## Related guides
+
+- [Add repos to a workspace](/manual/guides/add-repos/)
+- [Use the MCP server](/manual/guides/mcp-server/)

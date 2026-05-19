@@ -1,0 +1,102 @@
+---
+title: Inspect a PR in Review Studio
+description: Use Review Studio's cohorts, walkthrough diagrams, contract and visual diffs, and per-axis gates to review a PR.
+---
+
+This guide shows you how to inspect a pull request in Review Studio, the semantic multi-modal review surface.
+
+## Open Review Studio on a PR
+
+1. Navigate to **Pull requests** in the sidebar and select a PR
+2. Open the **Review** tab
+3. Click the **Review studio** chip (next to **Findings**)
+
+Opening Review Studio computes the PR's cohorts and deterministic axes server-side. If the PR's head changed since your last visit, click **Recompute** to rebuild them.
+
+The surface has a verdict header and a multi-axis dashboard on top, four center panes (**Walkthrough**, **API contract**, **Visual diff**, **Blast radius**), a cohort list on the left, and a context rail with AI summaries on the right.
+
+## Navigate cohorts
+
+Review Studio groups the PR's changed files into **cohorts** — content-derived buckets of files that belong together by meaning, ranked by impact so you read the riskiest group first.
+
+- Cohorts are recomputed when the PR opens and on every head-SHA change, and replaced wholesale. Each cohort has a push-stable key, so its summary and review progress survive a rebase.
+- If the repo is not indexed, cohorts fall back to path grouping and the surface says **Grouped by path (repo not indexed)**. Click **Index repo** if you want semantic grouping.
+- Select a cohort in the left rail to see its files and its AI summary in the context rail.
+
+## Read the walkthrough diagram
+
+A **walkthrough diagram** is a structured illustration a reviewer agent attaches to a cohort: a sequence, entity-relation, or state-machine diagram of how the changed code fits together. An agent adds one after reading a cohort's files, using the `add_review_diagram` MCP tool. Every edge is cross-checked against the real code graph — an edge the graph cannot corroborate is rendered dashed and flagged as unverified, so the diagram never shows invented call flows.
+
+An agent can also record a markdown summary for a cohort with `set_cohort_summary`; the context rail renders it as a "read this first" narrative.
+
+To read them:
+
+1. Stay on the **Walkthrough** pane
+2. Select a cohort in the left rail
+3. Read the cohort summary in the context rail, then the diagram in the center pane
+4. If an edge renders dashed, treat that call flow as unverified and confirm it in the diff yourself
+
+If a cohort has no summary or diagram yet, dispatch a reviewer agent to produce one (see [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)).
+
+## Check the API-contract diff
+
+If the PR changes an OpenAPI or Swagger spec file, Review Studio diffs the contract before/after and classifies every change.
+
+1. Switch to the **API contract** pane
+2. Review each classified change — endpoint, parameter, schema, and response additions, removals, and modifications
+3. Note the severity: **Breaking** (removed endpoint or param, tightened type, new required param), non-breaking (additive), or informational
+4. **Approve** or **Reject** each change
+
+A rejected breaking change blocks the merge gate. If the pane shows **No API contract changes in this PR**, no spec file changed.
+
+## Inspect visual diffs
+
+If the PR changes UI components in a Flutter repo with a Widgetbook app, Review Studio renders the changed components before and after via a headless `flutter test` golden pass and diffs the pixels. This requires a Flutter SDK on the host.
+
+1. Switch to the **Visual diff** pane
+2. For each snapshot, compare the before/after render and the changed-region percentage
+3. If a change is intended, click **Approve intended change**
+
+Snapshots marked **Changed** or **Removed** hold the visual gate until approved; **Unchanged**, **Added**, and **Approved** snapshots clear it. If the pane shows **Visual diff unavailable** with a reason (no Flutter SDK on host, no Widgetbook app in repo), the axis did not run — see the held-verdict section below.
+
+## Read the per-axis gates
+
+The multi-axis dashboard shows one result per review axis:
+
+| Axis | Driven by |
+|---|---|
+| Correctness | Reviewer agents (tokens) |
+| Security | Reviewer agents (tokens) |
+| Test gap | Reviewer agents (tokens) |
+| Performance | Deterministic (benchmarks) |
+| Visual | Deterministic (golden harness) |
+| API contract | Deterministic (spec diff) |
+
+Each axis reports one of:
+
+| State | Meaning |
+|---|---|
+| **Pass** | Ran, nothing blocking found |
+| **Warn** | Ran, non-blocking concerns |
+| **Fail** | Ran, found a blocking problem |
+| **Partial** | Ran but could not complete (e.g. token budget exhausted mid-pass) |
+| **Unavailable** | Could not run at all (e.g. no Flutter SDK, no spec files, repo not indexed) |
+
+Only **pass** and **warn** clear a gated axis.
+
+## Understand a held verdict
+
+The verdict header aggregates the axes into **Ship**, **Hold**, or **Block**:
+
+- A gated axis that **fails** forces **Block**
+- A gated axis that is **partial** or **unavailable** forces at least **Hold**
+
+This means a blocking axis that could not run *holds* the verdict — absence of evidence never greens a gate. If the verdict is held by an unavailable axis, read the axis note for the reason (for example, no Flutter SDK on host for the visual axis), fix the cause, and click **Recompute**. If it is held by a partial axis, the token budget ran out mid-pass; raise the budget and rerun the reviewers.
+
+To act on the verdict, see [Review and merge a PR](/manual/guides/review-merge-pr/).
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)

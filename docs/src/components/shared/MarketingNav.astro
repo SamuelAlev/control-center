@@ -1,0 +1,50 @@
+---
+import BrandMark from './BrandMark.astro';
+import ThemeToggle from './ThemeToggle.astro';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = '' } = Astro.props;
+
+const links = [
+  { href: '/#install', label: 'Install' },
+  { href: '/manual/', label: 'Documentation' },
+  { href: '/changelog', label: 'Changelog' },
+];
+---
+<header
+  class="sticky top-0 z-[60] h-[var(--nav-h)] flex items-center border-b border-transparent transition-[border-color,background] duration-200 ease-[var(--ease-standard)] backdrop-blur-[12px] backdrop-saturate-[160%] bg-[color-mix(in_oklab,var(--color-bg)_80%,transparent)] [&.scrolled]:border-border [&.scrolled]:bg-[color-mix(in_oklab,var(--color-bg)_92%,transparent)]"
+  id="nav"
+>
+  <div class="wrap flex items-center gap-[28px] w-full">
+    <a class="flex items-center gap-[11px] no-underline text-[15px] tracking-[-0.01em]" href="/" aria-label="Control Center home">
+      <BrandMark />
+      <span>Control&nbsp;Center</span>
+    </a>
+    <nav class="hidden gap-[2px] ml-[6px] sm:flex" aria-label="Primary">
+      {links.map(({ href, label }) => (
+        <a
+          class="px-3 py-2 text-sm text-muted no-underline rounded-sm transition-colors duration-150 hover:text-fg aria-[current=page]:text-fg"
+          href={href}
+          {...(currentPath === href ? { 'aria-current': 'page' as const } : {})}
+        >{label}</a>
+      ))}
+    </nav>
+    <div class="ml-auto flex items-center gap-4">
+      <ThemeToggle />
+      <a class="text-sm text-muted no-underline hover:text-fg" href="https://github.com/SamuelAlev/control-center" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a class="btn btn-primary btn-sm-marketing" href="/#install">Download</a>
+    </div>
+  </div>
+</header>
+
+<script>
+  const nav = document.getElementById('nav');
+  if (nav) {
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+</script>

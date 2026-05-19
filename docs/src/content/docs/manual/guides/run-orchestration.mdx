@@ -1,0 +1,77 @@
+---
+title: Run an orchestration
+description: Give the orchestrator a goal, review the plan it proposes, approve it once, and let a generated pipeline do the work.
+---
+
+This guide shows you how to turn one big goal into a whole-team plan that runs
+itself. See [Orchestration](/manual/concepts/orchestration/) for how it works.
+
+## When to use an orchestration
+
+Reach for an orchestration when the ask is bigger than one agent and you don't
+already know the exact steps. For a single task, message an agent in a
+[channel](/manual/guides/chat-with-agent/); for a process you can spell out by
+hand, build a [pipeline template](/manual/guides/create-pipeline/).
+
+## Step 1: Ask for the plan
+
+Ask your orchestrator (usually the CEO agent) for the goal, in plain language:
+
+> Research the competitive landscape for an offline-first meeting recorder and
+> write a one-page positioning doc.
+
+The orchestrator returns a structured **proposal**: the roles it needs, the work
+broken into sub-tickets, an optional research and discussion phase, a synthesis
+step that produces the deliverable, and a budget.
+
+## Step 2: Review the proposal
+
+Read the proposal before approving. In particular, check:
+
+- **Roles**: each is either an existing agent or a **new hire** the
+  orchestration will create on approval. Swap any role for an agent you trust,
+  or change a hire to an existing agent.
+- **Sub-tickets**: the work DAG. Drop anything you don't want.
+- **Budget**: the hard spending ceiling for the whole orchestration. Tighten it
+  if you want a guardrail.
+
+Because the proposal is a typed object, the app can validate it (well-formed
+roles, declared output schemas, and so on) before anything runs.
+
+## Step 3: Approve
+
+Approve the plan. **This is the only decision you make.** From here a
+deterministic materializer (a pure function, no LLM) turns the proposal into a
+real [pipeline](/manual/concepts/pipelines/) and creates the scaffolding:
+
+- hires any new roles (and records them)
+- groups the roles into a **team**
+- files the sub-tickets under a **project**
+- starts the **pipeline run** that drives it all
+
+The status moves to `approved`, then `executing`.
+
+## Step 4: Watch it run
+
+The sub-tickets execute as pipeline steps; if you enabled a discussion round,
+each role posts a position first. Progress surfaces where you already look:
+
+- the **parent ticket** the orchestration opened against
+- the shared **channel** the team talks in
+- the **pipeline run** detail, with its usual per-step timeline and cost rollup
+
+Once the sub-tickets are done, the status moves to `synthesizing` and the
+synthesis step produces the deliverable onto the parent ticket, then
+`completed`.
+
+## Stop it early
+
+If the plan is going sideways, cancel it. Cancellation tears down the in-flight
+work. A failed orchestration (a hard error, every sub-ticket failing, or the
+budget exceeded) lands in `failed` with an error message.
+
+## Related guides
+
+- [Create and manage tickets](/manual/guides/manage-tickets/): the sub-tickets an orchestration creates
+- [Run a pipeline manually](/manual/guides/run-pipeline/): what a materialized orchestration looks like in the engine
+- [Build an agent team](/manual/guides/build-team/): the roles an orchestration fills or hires

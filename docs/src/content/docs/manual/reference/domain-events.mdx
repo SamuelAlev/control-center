@@ -1,0 +1,189 @@
+---
+title: Domain events
+description: Complete catalog of domain events published by Control Center.
+---
+
+## Event bus
+
+The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Features call `publish(event)` to emit; subscribers consume a typed `on<T>()` stream. Every event has `occurredAt`.
+
+## Workspace, agent, and repo events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `WorkspaceCreated` | `workspaceId` | Workspace is created |
+| `AgentRunCompleted` | `agentId`, `runId?`, `workspaceId?`, `conversationId?` | Agent finishes a run (success or failure) |
+| `RepoAdded` | `repoId`, `path`, `workspaceId` | A repo is registered; triggers background code indexing |
+
+## PR and review events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `PullRequestPublished` | `prId`, `workspaceId`, `repoOwner`, `repoName` | Agent opens a PR |
+| `PullRequestStatusChanged` | `status`, `prId?`, `workspaceId?`, `repoFullName?`, `prNumber?` | PR merged/closed/opened/reopened/approved |
+| `PrMerged` | `prId`, `workspaceId`, `agentId` | PR is merged — a narrow merge-only signal kept for analytics/notifications |
+| `PrReviewRequested` | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` | GitHub asks for the server user's review (notifications poll, `review_requested`) |
+| `PrMentioned` | `workspaceId`, `repoOwner`, `repoName`, `prNumber`, `prTitle` | Server user is mentioned on a PR (notifications poll, `mention`) |
+| `ExternalPrDetected` | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author`, `workspaceId?` | Non-agent PR found via polling — pipeline-only (drives `external_pr_welcome`), raises no notification |
+
+## Messaging events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `MessageReceived` | `channelId`, `messageId`, `senderName`, `contentPreview`, `isAgentMessage`, `workspaceId?`, `mentions`, `requestedByUserId?` | New message arrives |
+| `ChannelCreated` | `channelId`, `workspaceId?` | Channel is created |
+| `ChannelDeleted` | `channelId`, `workspaceId?` | Channel is deleted |
+| `ChannelProvisioningChanged` | `workspaceId`, `channelId`, `status`, `step?` | The channel's workspace enters provisioning, reaches a step (cloning a repo, checking out a PR, setting up an agent), or flips to ready/failed — the chat bridge narrates it on its task card |
+| `ConversationOpened` | `workspaceId`, `channelId`, `conversationId` | A conversation (parenthesis) is opened inside a channel |
+| `ConversationArchived` | `workspaceId`, `channelId`, `conversationId` | A conversation (parenthesis) is archived (closed) |
+
+## Ticketing events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `TicketCreated` | `ticketId`, `workspaceId` | Ticket is created |
+| `TicketAssigned` | `ticketId`, `ticketTitle`, `ticketBody?`, `ticketUrl?`, `assignedAgentId?`, `assigneeType`, `assignedTeamId?`, `workspaceId` | Ticket assigned to a principal or team |
+| `TicketStarted` | `ticketId` | Agent begins work |
+| `TicketCompleted` | `ticketId` | Work finishes (terminal) |
+| `TicketFailed` | `ticketId`, `errorMessage` | Agent fails (terminal) |
+| `TicketCancelled` | `ticketId` | Ticket cancelled (terminal) |
+| `TicketStatusChanged` | `ticketId`, `workspaceId`, `from`, `to` | Any status change |
+| `TicketReassigned` | `ticketId`, `workspaceId`, `fromAgentId?`, `toAgentId?` | Ticket reassigned |
+| `TicketDelegated` | `ticketId`, `parentTicketId` | Agent delegates — a child ticket is created under a parent |
+| `TicketCollaboratorAdded` | `ticketId`, `agentId`, `role` | Collaborator joins |
+| `TicketDetailsUpdated` | `ticketId`, `workspaceId` | Title, description, or priority changes |
+| `ExternalTicketWebhookReceived` | `vendor`, `workspaceId`, `eventType?`, `externalId?` | An external vendor webhook is verified and applied |
+
+## Task lifecycle events
+
+The unified task-lifecycle stream — one dispatched agent run, keyed by its run-log id. Every event carries `taskId`, a monotonic per-task `seq`, `workspaceId?`, `agentId?`, and a `phase`; the rows below list only the additional fields.
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `TaskQueued` | — | Task accepted into the queue |
+| `TaskDispatched` | — | Task handed to a backend for execution |
+| `TaskRunning` | — | Task started producing output |
+| `TaskWaitingLocalDirectory` | `lockedPath`, `holderTaskId?` | Task parked — another task owns the on-disk path lock it needs |
+| `TaskProgress` | `note?` | Mid-run progress checkpoint |
+| `TaskMessage` | `messageType`, `content` | Streamed message (text/thinking/tool_use/tool_result/error); reported under the `progress` phase |
+| `TaskCompleted` | `summary?` | Task finished successfully |
+| `TaskFailed` | `errorMessage` | Task finished with an error |
+| `TaskCancelled` | — | Task cancelled before completion |
+
+## Pipeline events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `PipelineRunStarted` | `pipelineRunId`, `templateId` | Run begins |
+| `PipelineStepStarted` | `pipelineRunId`, `stepRunId`, `stepId` | Step begins |
+| `PipelineStepCompleted` | `pipelineRunId`, `stepRunId`, `stepId` | Step finishes |
+| `PipelineStepFailed` | `pipelineRunId`, `stepRunId`, `stepId`, `errorMessage` | Step fails |
+| `PipelineRunCompleted` | `pipelineRunId`, `templateId` | Run finishes |
+| `PipelineRunCancelled` | `pipelineRunId`, `templateId` | Run cancelled (by the user or the system) — a deliberate stop, not an error |
+| `PipelineRunFailed` | `pipelineRunId`, `templateId`, `errorMessage` | Run fails |
+
+## Orchestration events
+
+All orchestration events carry `orchestrationId` and `workspaceId`.
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `OrchestrationProposed` | — | Orchestrator proposes a plan (revision 1) |
+| `OrchestrationRevised` | `revision` | Orchestrator revises an existing proposal |
+| `OrchestrationApproved` | — | User approves a proposal |
+| `OrchestrationExecutionStarted` | `pipelineRunId` | Deterministic execution (the generated pipeline) starts |
+| `OrchestrationCompleted` | — | Orchestration completes and the deliverable lands |
+| `OrchestrationFailed` | `errorMessage` | Orchestration fails |
+| `OrchestrationCancelled` | — | User cancels the orchestration |
+
+## Plan document events
+
+All plan-document events carry `planId`, `workspaceId`, and `conversationId`.
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `PlanDocumentSubmitted` | `revision`, `agentId`, `nodeCount` | Agent submits (or resubmits) a plan via `submit_plan` |
+| `PlanDocumentApproved` | `orchestrationId`, `approvedNodeKeys` | Operator approves a plan, after the compiled orchestration is materialized |
+
+## Artifact events
+
+All artifact events carry `workProductId`, `revisionId`, `workspaceId`, `conversationId`, `agentId`, `revisionNumber`, and `blockCount`.
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `ArtifactPublished` | `title` | Agent publishes a new artifact via `publish_artifact` |
+| `ArtifactRevised` | `summary?` | Agent replaces an artifact's content via `revise_artifact` |
+
+## Memory events
+
+All memory events carry `workspaceId`.
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `MemoryFactRecorded` | `factId` | A new fact is recorded |
+| `MemoryFactUpdated` | `factId` | An existing fact is re-asserted (confidence bumped) |
+| `MemoryFactSuperseded` | `factId`, `supersededBy` | A fact is superseded by a newer fact or a conflict resolution |
+| `MemoryConflictDetected` | `conflictId`, `winningFactId`, `losingFactId` | A contradiction is detected between two facts |
+| `MemoryConsolidated` | `factsCreated`, `factsUpdated` | A consolidation (`sleep`) pass rolls working memory into episodic memory |
+| `MemoryBeliefHarmonized` | `beliefId` | Cross-agent SHMR emits a harmonized belief |
+
+## Approval events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `ApprovalEscalated` | `workspaceId`, `approvalId`, `tier`, `targetUserIds` | An unanswered approval gate escalates to the next routing tier |
+
+## Observability events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `ActivityLogged` | `id`, `actorType`, `actorId?`, `action`, `entityType`, `entityId?`, `details?`, `workspaceId?`, `runId?` | Audit trail entry created |
+| `WorktreeMerged` | `workspaceId`, `sourceBranch`, `targetBranch`, `mergedBy?` | Worktree merge completes |
+| `BudgetThresholdCrossed` | `scopeType`, `scopeId`, `spentCents`, `budgetCents`, `isHardStop` | Spend exceeds threshold |
+
+## Identity and membership events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `UserCreated` | `userId` | A new user is provisioned (bootstrap, invite redemption, or OIDC JIT) |
+| `WorkspaceMemberAdded` | `workspaceId`, `userId`, `role` | A user joins a workspace (invite redemption or admin add) |
+| `WorkspaceMemberRemoved` | `workspaceId`, `userId` | A member is removed — live sessions of that user scoped to the workspace must re-check access immediately |
+| `WorkspaceMemberRoleChanged` | `workspaceId`, `userId`, `role` | A member's role changes |
+| `UserDeviceRevoked` | `deviceId`, `userId` | A device credential is revoked — its session must terminate within seconds, not on next reconnect |
+| `WorkspaceInviteRedeemed` | `workspaceId`, `inviteId`, `userId` | An invite is redeemed (user exists, membership recorded, pairing begun) |
+
+## Calendar and meeting events
+
+| Event | Payload | Fired when |
+|---|---|---|
+| `CalendarEventsRefreshed` | `workspaceId` | A calendar sync upserts events for a workspace |
+| `CalendarAuthExpired` | `workspaceId`, `accountEmail` | A connected account's OAuth refresh token is permanently invalid (published once per disconnection episode) |
+| `MeetingStartingSoon` | `workspaceId`, `eventId`, `title`, `startTime`, `meetingUrl` | A calendar event is starting within the configured lead window |
+| `MeetingRecordingStopped` | `workspaceId`, `meetingId`, `title`, `userNotes`, `transcript`, `summaryInstructions?` | A meeting recording finishes and triggers the built-in `meeting_summary` pipeline |
+
+## Subscribing to events
+
+Features subscribe to events in their initialization (wired in `main.dart`):
+
+- `ceoAgentSeedProvider` → `WorkspaceCreated`
+- `NotificationEventMapper` → all notification-producing events
+- `PipelineTriggerDispatcher` → all triggerable events
+- `TicketDispatcher` → `TicketAssigned`
+- `SnapshotAggregator` → `AgentRunCompleted` (hourly rollup)
+
+## Notification mapping
+
+`NotificationEventMapper` maps events to `AppNotification` instances. It subscribes to exactly ten events:
+
+| Category | Source event |
+|---|---|
+| `agentRunCompleted` | `AgentRunCompleted` |
+| `pullRequestPublished` | `PullRequestPublished` |
+| `prMerged` | `PrMerged` |
+| `newMessage` | `MessageReceived` |
+| `prMentioned` | `PrMentioned` |
+| `reviewRequested` | `PrReviewRequested` |
+| `ticketAssigned` | `TicketAssigned` |
+| `ticketStatusChanged` | `TicketStatusChanged` |
+| `meetingStartsSoon` | `MeetingStartingSoon` |
+| `calendarAuthExpired` | `CalendarAuthExpired` |

@@ -1,0 +1,101 @@
+---
+title: Configure notifications
+description: Set up desktop notifications for agent events, PRs, and messages.
+---
+
+This guide shows you how to configure desktop notifications.
+
+## How notifications work
+
+Control Center maps domain events to desktop notifications via `NotificationEventMapper`:
+
+| Event | Notification |
+|---|---|
+| `AgentRunCompleted` | Agent finished a run |
+| `PullRequestPublished` | Agent opened a PR |
+| `PrMerged` | PR was merged |
+| `MessageReceived` | New message in a channel |
+| `PrMentioned` | You were mentioned in a pull request |
+| `PrReviewRequested` | Your review was requested on a pull request |
+| `TicketAssigned` | A ticket was assigned to an agent or team |
+| `TicketStatusChanged` | A ticket changed status |
+| `MeetingStartingSoon` | A calendar meeting is starting soon |
+| `CalendarAuthExpired` | A connected calendar account's OAuth token expired |
+
+Notifications appear as native desktop alerts (via `local_notifier`).
+
+## Notification settings
+
+Navigate to **Settings → Notifications** to configure:
+
+### Global toggle
+
+Enable or disable all notifications.
+
+### Per-category settings
+
+Each notification category can be individually enabled or disabled:
+
+- Agent run completed
+- Pull request published
+- PR merged
+- New message
+- PR mentioned
+- Review requested
+- Ticket assigned
+- Ticket status changed
+- Meeting starting soon
+- Calendar auth expired
+
+### Batch delivery
+
+Instead of showing each notification immediately, non-urgent notifications can be collected into digests:
+
+- **Real-time**: show each notification as it arrives
+- **2-hour digest**: accumulate notifications and deliver them every 2 hours
+- **Daily digest**: deliver one digest per day
+
+Urgent categories (pull request published, meeting starting soon) are always delivered in real time.
+
+### Quiet hours
+
+Set quiet hours to suppress notifications during specific times:
+
+- **Start time**: when quiet hours begin
+- **End time**: when quiet hours end
+
+During quiet hours, non-urgent notifications are suppressed. Urgent categories still come through.
+
+### Sound
+
+Choose a notification sound:
+
+- Select from built-in sounds (bundled as MP3 assets)
+- Adjust volume
+- Disable sound entirely
+
+### Calendar alert lead time
+
+Set how many minutes before a meeting the **Meeting starting soon** notification fires.
+
+## Route gating
+
+Some notifications include a navigation route. Clicking the notification opens the relevant screen:
+
+- Agent run completed, new message → the channel where it happened
+- PR published, PR merged → pull requests
+- PR mentioned, review requested → the pull request detail
+- Ticket assigned, ticket status changed → the ticket detail
+- Meeting starting soon → the calendar event detail
+- Calendar auth expired → the calendar (with a reconnect banner)
+
+This is handled by the notification category system, not manual configuration.
+
+## Notification preferences port
+
+All settings are read and written through `NotificationPreferencesPort`, which uses `shared_preferences` for non-sensitive storage.
+
+## Related guides
+
+- [Domain events](/manual/concepts/domain-events/)
+- [Manage API keys](/manual/guides/api-keys/)

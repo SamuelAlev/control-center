@@ -1,0 +1,153 @@
+---
+/**
+ * ThemeToggle — a system / light / dark chooser.
+ *
+ * Shared by the marketing nav (MarketingNav.astro) and the docs header
+ * (the Starlight ThemeSelect override). It persists the preference to
+ * localStorage['starlight-theme'] — the SAME key Starlight's own
+ * ThemeProvider reads before paint — and reflects the resolved theme on
+ * <html data-theme>. So a choice made on the landing page carries into the
+ * docs and vice-versa, and the docs keep their no-flash behaviour.
+ *
+ * Token references use fallback chains (--color-* on marketing, --cc-* and
+ * --sl-* in the docs) so the control looks native in both places.
+ */
+---
+
+<cc-theme-toggle class="cc-theme-toggle" role="radiogroup" aria-label="Color theme">
+  <button type="button" data-theme-value="auto" role="radio" aria-checked="false" title="System theme" aria-label="System theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" />
+    </svg>
+  </button>
+  <button type="button" data-theme-value="light" role="radio" aria-checked="false" title="Light theme" aria-label="Light theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  </button>
+  <button type="button" data-theme-value="dark" role="radio" aria-checked="false" title="Dark theme" aria-label="Dark theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+  </button>
+</cc-theme-toggle>
+
+<style>
+  .cc-theme-toggle {
+    /* Resolve against whichever design system is mounted. */
+    --tt-fg: var(--color-fg, var(--sl-color-white, #1f1f1f));
+    --tt-muted: var(--color-muted, var(--sl-color-gray-3, #56544d));
+    --tt-border: var(--color-border, var(--sl-color-hairline, #e8e5dc));
+    --tt-accent: var(--color-accent, var(--sl-color-accent, #fa520f));
+    --tt-active-bg: var(--color-accent-soft, var(--sl-color-accent-low, color-mix(in oklab, var(--tt-accent), transparent 88%)));
+    --tt-hover: var(--color-hover, color-mix(in oklab, var(--tt-fg) 8%, transparent));
+
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    padding: 2px;
+    border: 1px solid var(--tt-border);
+    border-radius: 9999px;
+    background: transparent;
+  }
+
+  .cc-theme-toggle button {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: none;
+    color: var(--tt-muted);
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+  .cc-theme-toggle button:hover {
+    color: var(--tt-fg);
+    background: var(--tt-hover);
+  }
+  .cc-theme-toggle button[aria-checked="true"] {
+    color: var(--tt-accent);
+    background: var(--tt-active-bg);
+  }
+  .cc-theme-toggle button:focus-visible {
+    outline: 2px solid var(--tt-accent);
+    outline-offset: 2px;
+  }
+  .cc-theme-toggle svg {
+    width: 15px;
+    height: 15px;
+    display: block;
+  }
+</style>
+
+<script>
+  type Pref = 'auto' | 'light' | 'dark';
+  const KEY = 'starlight-theme';
+
+  const read = (): Pref => {
+    try {
+      const v = localStorage.getItem(KEY);
+      return v === 'light' || v === 'dark' ? v : 'auto';
+    } catch {
+      return 'auto';
+    }
+  };
+
+  const resolve = (pref: Pref): 'light' | 'dark' =>
+    pref === 'auto'
+      ? matchMedia('(prefers-color-scheme: dark)').matches
+        ? 'dark'
+        : 'light'
+      : pref;
+
+  const apply = (pref: Pref) => {
+    document.documentElement.dataset.theme = resolve(pref);
+  };
+
+  class CCThemeToggle extends HTMLElement {
+    private buttons: HTMLButtonElement[] = [];
+    private media = matchMedia('(prefers-color-scheme: dark)');
+
+    connectedCallback() {
+      this.buttons = Array.from(this.querySelectorAll('button'));
+      for (const btn of this.buttons) {
+        btn.addEventListener('click', () => {
+          const pref = (btn.dataset.themeValue as Pref) ?? 'auto';
+          this.set(pref);
+        });
+      }
+      // Re-resolve "auto" when the OS preference changes.
+      this.media.addEventListener('change', () => {
+        if (read() === 'auto') apply('auto');
+      });
+      // Sync if another tab (or the docs/marketing crossover) changes it.
+      window.addEventListener('storage', (e) => {
+        if (e.key === KEY) this.reflect(read());
+      });
+      this.reflect(read());
+    }
+
+    private set(pref: Pref) {
+      try {
+        localStorage.setItem(KEY, pref);
+      } catch {
+        /* private mode — still apply for this session */
+      }
+      apply(pref);
+      this.reflect(pref);
+    }
+
+    private reflect(pref: Pref) {
+      for (const btn of this.buttons) {
+        btn.setAttribute('aria-checked', String(btn.dataset.themeValue === pref));
+      }
+    }
+  }
+
+  if (!customElements.get('cc-theme-toggle')) {
+    customElements.define('cc-theme-toggle', CCThemeToggle);
+  }
+</script>

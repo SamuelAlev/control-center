@@ -1,0 +1,195 @@
+---
+title: Create a pipeline template
+description: Define a DAG-based workflow template with steps and configuration.
+---
+
+This guide shows you how to create a pipeline template.
+
+## Create a template
+
+1. Navigate to **Pipelines** in the sidebar
+2. Click **Create template**
+3. Enter a name and description
+4. The template editor opens with a blank canvas
+
+## Add steps
+
+Click **Add step** and drag a node onto the canvas. The palette ships with these node types:
+
+| Palette node | Step kind | Description |
+|---|---|---|
+| **Bash script** | listen | Run a shell script with `{{state}}` substitution; no agent dispatched |
+| **Clone PR branch** | listen | Agentless setup — discovers the PR head branch via `gh pr view` and clones it into the pipeline workspace |
+| **Post PR comment** | listen | Post consolidated findings to the PR as a GitHub review comment |
+| **Reviewer (prompt)** | listen | Dispatch a specialist reviewer agent; suspends until the agent calls `complete_task` |
+| **Consolidate (join)** | join | Join multiple upstream branches and ask an agent to consolidate their outputs |
+| **Custom prompt** | listen | Generic prompt-driven node routed through the `promptAgent` body |
+| **Hello: greet** | listen | Demo body that writes a greeting into state |
+| **Hello: world** | listen | Demo body that appends to the greeting |
+| **Post to channel** | listen | Send a message to a messaging channel (digest/notification steps) |
+| **Condition / switch (router)** | router | Branch the flow: switch mode routes on a state key value; comparison mode routes true/false |
+| **If file exists (router)** | router | Route `"true"` when a file/dir exists under the clone, else `"false"` |
+| **Any file exists (OR router)** | router | Route `"true"` when any of the listed files exists |
+| **All conditions (AND router)** | router | Route `"true"` only when every listed file exists |
+| **Team dispatch** | listen | Dispatch a whole team — one task per member in parallel, or via a leader who delegates |
+| **Approval gate** | listen | Pause the pipeline for human/lead approval |
+| **For each (map)** | forEach | Run an agent task once per item in a state collection, in parallel |
+| **Call sub-pipeline** | listen | Run another pipeline template as a nested step and merge its final state back |
+| **Clean up worktrees** | listen | Remove stale isolated worktrees; deterministic, no agent dispatched |
+
+## Configure a step
+
+Click a step to configure it:
+
+### Prompt agent
+
+- **Agent**: which agent to dispatch (or "use pipeline input" to select at run time)
+- **Prompt**: the instruction text. Use `{{inputKey}}` to reference pipeline inputs or upstream outputs.
+- **Mode**: chat, plan, review, or orchestrate
+- **Timeout**: wall-clock timeout in seconds
+- **Retry policy**: max attempts, backoff strategy
+- **Continue on fail**: whether downstream steps proceed if this step fails
+
+### Bash script
+
+- **Script**: the shell command to run
+- **Working directory**: where to run it
+- **Environment variables**: additional env vars
+- **Timeout**: wall-clock timeout
+
+### Router
+
+A router evaluates a condition and returns a route key; the engine fires only the downstream edge whose route key matches and marks the other branches skipped. Three authoring shapes are supported (in the node's extras), in priority order:
+
+- **Predicate tree** — a boolean tree that routes `"true"` / `"false"`. This is what the If-file-exists, Any-of, and All-of palette nodes emit:
+  - `{"type": "fileExists", "paths": ["Cargo.toml"], "baseKey": "repoLocalPath", "negate": false, "recursive": false}` — true when any listed path exists under the clone dir; `negate` flips it, `recursive` also searches sub-directories
+  - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — reads pipeline state, not the filesystem; operators: `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`
+  - `{"type": "and"/"or", "of": [...]}` — boolean groups; `{"type": "not", "of": ...}` — negation
+- **Switch** — `{"switchKey": "prClass", "cases": ["docs", "security", "standard"], "default": "standard"}` routes to the first case the state value contains (case-insensitive), else `default`
+- **Comparison** (legacy) — top-level `left` / `op` / `right` in extras, equivalent to a `comparison` predicate, kept for templates authored before predicate trees
+
+Outgoing edges carry a route key that must match the router's result.
+
+### Join
+
+- No configuration: it waits for all upstream steps to complete
+
+### Approval gate
+
+The `human.gate` body pauses the pipeline for human/lead approval. It dispatches the approver agent into a hidden conversation with the gate prompt and suspends; the approver seeks the user's decision in-channel and submits it via `submit_output`. The decision lands under the output key, so a downstream router can branch on it.
+
+- **Agent**: the approver to dispatch
+- **Prompt**: the gate prompt. The approver is asked to submit `{ "decision": "approved" | "rejected", "reason": "..." }`
+- **Output key**: where `{decision, reason}` is written (default `approvalDecision`)
+
+```json
+{
+  "agentId": "<approver agent id>",
+  "outputKey": "approvalDecision",
+  "prompt": "Review the findings and approve or reject before proceeding."
+}
+```
+
+Pair the gate with a switch router on `approvalDecision` to continue only when approved.
+
+### Team dispatch
+
+The `team.dispatch` body dispatches a whole team instead of a single agent and suspends until the team finishes.
+
+- **Team**: the workspace team to dispatch (mutually exclusive with picking an agent)
+- **Dispatch mode**: `allParallel` (one task per member, suspend until all complete), `sequential`, or `manager` (dispatch the leader with delegation)
+- **Prompt**: the task each member receives
+- **Output key** and **reducer**: set the reducer to `append` to collect each member's result into a list
+
+```json
+{
+  "teamId": "<team id>",
+  "dispatchMode": "allParallel",
+  "outputKey": "team_findings",
+  "reducer": "append",
+  "prompt": "Review the work and report your findings."
+}
+```
+
+### For each (map)
+
+The `flow.forEach` body runs an agent task once per item in a state collection, in parallel, then aggregates the per-item outputs into a list under the output key.
+
+- **Agent**: the agent to dispatch per item
+- **Prompt**: the per-item task; reference the current item with `{{item}}` (or your custom item key)
+- **Iterable key** (extras): the state key holding the list to map over
+- **Item key** (extras): the placeholder name bound to each item (default `item`)
+- **Reducer**: set to `append` to aggregate results
+
+```json
+{
+  "agentId": "<agent id>",
+  "outputKey": "items_results",
+  "reducer": "append",
+  "extras": {"iterableKey": "items", "itemKey": "item"},
+  "prompt": "Process this item: {{item}}"
+}
+```
+
+An empty collection completes immediately with an empty list.
+
+### Call sub-pipeline
+
+The `flow.callPipeline` body runs another pipeline template as a nested step. The step suspends until the child run reaches a terminal state, then merges the child's final state back under the output key. A pipeline cannot call itself; if the child fails or is cancelled, the parent step fails (feeding its retry/continue-on-fail policy).
+
+- **Template** (extras `templateId`): the child template to run
+- **Input keys**: state keys copied into the child's trigger payload
+- **Output key**: where the child's final state is merged (default `subflow_result`)
+
+```json
+{
+  "inputKeys": ["repoFullName", "prNumber"],
+  "outputKey": "subflow_result",
+  "extras": {"templateId": "<child template id>"}
+}
+```
+
+## Connect steps
+
+Steps must be connected to form a DAG:
+
+1. Drag from a step's output port to another step's input port
+2. The connection defines the execution order
+3. Unconnected branches run in parallel
+
+Rules:
+
+- Every pipeline has exactly one trigger step
+- Steps can have multiple downstream connections (fan-out)
+- The join step waits for all its upstream connections (fan-in)
+- No cycles: the graph must be a DAG
+
+## Declare inputs
+
+Inputs are form fields rendered when someone runs the pipeline:
+
+1. In the template editor, click **Inputs**
+2. Add input fields:
+
+| Field | Description |
+|---|---|
+| **Key** | Variable name (used in `{{...}}` references) |
+| **Label** | Display label |
+| **Type** | text, number, boolean, select |
+| **Required** | Whether the input is mandatory |
+| **Default** | Default value |
+| **Help text** | Helper text shown below the input |
+
+Reference inputs in steps with `{{keyName}}`.
+
+## Save and enable
+
+1. Click **Save** to persist the template
+2. Enable it with the toggle in the header
+3. The template is now available for manual runs or triggers
+
+## Related guides
+
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+- [Pipeline step kinds](/manual/reference/pipeline-steps/)

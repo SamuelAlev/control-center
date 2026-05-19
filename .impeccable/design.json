@@ -1,0 +1,201 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-24T00:00:00Z",
+  "title": "Design System: Control Center",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Signal Orange",
+        "canonical": "#fa520f",
+        "tonalRamp": ["#7a2a09", "#a6380c", "#c0400f", "#dc480d", "#fa520f", "#fb6424", "#f89e78", "#fddfd2"]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Near-White Canvas",
+        "canonical": "#fcfbf9",
+        "tonalRamp": ["#171614", "#1f1f1f", "#262522", "#3d3d3d", "#8c8578", "#d8d3c6", "#f2f0e9", "#fcfbf9"]
+      },
+      "panel": {
+        "role": "neutral",
+        "displayName": "Data White",
+        "canonical": "#ffffff",
+        "tonalRamp": ["#1f1f1f", "#262522", "#3d3d3d", "#8c8578", "#b8b2a4", "#e8e5dc", "#f7f5f0", "#ffffff"]
+      },
+      "fg": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#1f1f1f",
+        "tonalRamp": ["#171614", "#1f1f1f", "#262522", "#2c2c2a", "#3d3d3d", "#8c8578", "#b8b2a4", "#e8e5dc"]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Status Success",
+        "canonical": "#17a34a",
+        "tonalRamp": ["#0a4d23", "#0f6e33", "#138a40", "#17a34a", "#3cbf6c", "#7ad79d", "#b3e8c8", "#17a34a24"]
+      },
+      "warn": {
+        "role": "secondary",
+        "displayName": "Status Warn",
+        "canonical": "#eab308",
+        "tonalRamp": ["#6b5204", "#8f6e06", "#b88c07", "#eab308", "#f2c63c", "#f7d976", "#fbe9af", "#eab30833"]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Status Danger",
+        "canonical": "#dc2626",
+        "tonalRamp": ["#6b1212", "#8f1818", "#b81e1e", "#dc2626", "#e85656", "#f08c8c", "#f7bfbf", "#dc26261f"]
+      },
+      "sunshine": {
+        "role": "tertiary",
+        "displayName": "Golden-Hour Sunshine (brand graphics only)",
+        "canonical": "#ffb83e",
+        "tonalRamp": ["#c0400f", "#ff8a00", "#ffa110", "#ffb83e", "#ffd06a", "#ffd900", "#ffe28a", "#fff1c2"]
+      }
+    },
+    "typographyMeta": {
+      "display-hero": { "displayName": "Display Hero", "purpose": "Earned brand moments only — onboarding, the dashboard greeting deck. The ceiling of the app scale (40px)." },
+      "display": { "displayName": "Display", "purpose": "Top-of-screen headings and big statements (28px)." },
+      "title": { "displayName": "Title", "purpose": "Section / card / feature titles (18px)." },
+      "body": { "displayName": "Body", "purpose": "Standard body and prose; cap measured text at 65-75ch (14px)." },
+      "body-sm": { "displayName": "Body Small", "purpose": "Dense UI text, control labels, buttons (13px)." },
+      "caption": { "displayName": "Caption", "purpose": "Metadata and secondary annotations (12px)." },
+      "label": { "displayName": "Label", "purpose": "Mono uppercase eyebrows, nav labels, status pills — the one 500-weight in the system (Fira Code 12px, +0.6px tracking)." },
+      "mono-num": { "displayName": "Mono Num", "purpose": "Counts, IDs, diffs, timestamps — tabular figures (Fira Code 13px)." }
+    },
+    "shadows": [
+      { "name": "soft", "value": "0 1px 2px rgba(127,99,21,0.05), -2px 6px 18px rgba(127,99,21,0.05)", "purpose": "Subtle warm lift for card hover and sticky chrome that must read as slightly raised." },
+      { "name": "golden-float", "value": "-8px 16px 39px rgba(127,99,21,0.12), -28px 56px 64px rgba(127,99,21,0.08), -64px 120px 88px rgba(127,99,21,0.06)", "purpose": "Signature multi-layer golden-hour cascade. Genuinely floating data surfaces only: dialogs, popovers, drawers, toasts, hero deck. Amber-tinted, offset lower-left." },
+      { "name": "focus-ring", "value": "0 0 0 3px rgba(250,82,15,0.12)", "purpose": "Accent focus glow, paired with a 2px solid #fa520f outline at 2px offset. On every interactive element." }
+    ],
+    "motion": [
+      { "name": "fast", "value": "120ms ease-out", "purpose": "Hover / press color washes." },
+      { "name": "normal", "value": "180ms ease-out", "purpose": "Dropdown / popover / tooltip open." },
+      { "name": "slow", "value": "240ms cubic-bezier(0.22,1,0.36,1)", "purpose": "Sidebar collapse, drawer, larger chrome (emphasized = ease-out-cubic)." },
+      { "name": "reduced", "value": "0ms", "purpose": "CcMotion.resolve collapses every duration to zero under prefers-reduced-motion / MediaQuery.disableAnimations." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "430px" },
+      { "name": "tablet", "value": "768px" },
+      { "name": "rail-collapse", "value": "900px" },
+      { "name": "desktop", "value": "1024px" },
+      { "name": "content-cap", "value": "1080px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main CTA. Ink-black at rest, warms to Signal Orange on hover — calm by default, orange on intent.",
+      "html": "<button class='ds-btn-primary'>Dispatch agent</button>",
+      "css": ".ds-btn-primary { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.45; font-weight: 400; color: #ffffff; background: #1f1f1f; border: none; border-radius: 2px; padding: 12px 18px; cursor: pointer; transition: background 120ms ease-out, transform 120ms ease-out; } .ds-btn-primary:hover { background: #fa520f; } .ds-btn-primary:active { transform: translateY(1px); } .ds-btn-primary:focus-visible { outline: 2px solid #fa520f; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(250,82,15,0.12); }"
+    },
+    {
+      "name": "Accent Button",
+      "kind": "button",
+      "refersTo": "button-accent",
+      "description": "Solid Signal Orange 'go' affordance for in-app actions where a dark button would feel too heavy. Spend within the two-per-screen accent budget.",
+      "html": "<button class='ds-btn-accent'>Run pipeline</button>",
+      "css": ".ds-btn-accent { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.45; font-weight: 400; color: #ffffff; background: #fa520f; border: none; border-radius: 2px; padding: 9px 16px; cursor: pointer; transition: background 120ms ease-out, transform 120ms ease-out; } .ds-btn-accent:hover { background: #fb6424; } .ds-btn-accent:active { background: #dc480d; transform: translateY(1px); } .ds-btn-accent:focus-visible { outline: 2px solid #fa520f; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(250,82,15,0.12); }"
+    },
+    {
+      "name": "Line Button",
+      "kind": "button",
+      "refersTo": "button-line",
+      "description": "Quiet utility button for dense UI: white fill, hairline border that strengthens to ink on hover.",
+      "html": "<button class='ds-btn-line'>Open in IDE</button>",
+      "css": ".ds-btn-line { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.45; font-weight: 400; color: #1f1f1f; background: #ffffff; border: 1px solid #e8e5dc; border-radius: 2px; padding: 9px 16px; cursor: pointer; transition: border-color 120ms ease-out, transform 120ms ease-out; } .ds-btn-line:hover { border-color: #1f1f1f; } .ds-btn-line:active { transform: translateY(1px); } .ds-btn-line:focus-visible { outline: 2px solid #fa520f; outline-offset: 2px; box-shadow: 0 0 0 3px rgba(250,82,15,0.12); }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White, hairline, 2px corners. Focus swaps the border to accent and adds the focus ring; placeholder uses the lightest gray, real hints stay in muted.",
+      "html": "<input class='ds-input' type='text' placeholder='Filter agents…' />",
+      "css": ".ds-input { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 13px; line-height: 1.45; color: #1f1f1f; background: #ffffff; border: 1px solid #e8e5dc; border-radius: 2px; padding: 9px 12px; transition: border-color 120ms ease-out, box-shadow 120ms ease-out; } .ds-input::placeholder { color: #8c8578; } .ds-input:focus { outline: none; border-color: #fa520f; box-shadow: 0 0 0 3px rgba(250,82,15,0.12); }"
+    },
+    {
+      "name": "Status Pill — Running",
+      "kind": "chip",
+      "refersTo": "status-run",
+      "description": "Live presence pill. Color + animated equalizer bars + uppercase label, so state survives color-blind viewing and grayscale. Bars settle under reduced motion.",
+      "html": "<span class='ds-status-run'><span class='ds-eq'><i></i><i></i><i></i></span>Running</span>",
+      "css": ".ds-status-run { display: inline-flex; align-items: center; gap: 6px; font-family: 'Fira Code', ui-monospace, monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.6px; text-transform: uppercase; color: #17a34a; background: rgba(23,163,74,0.14); border-radius: 999px; padding: 3px 8px; } .ds-status-run .ds-eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 10px; } .ds-status-run .ds-eq i { width: 2px; background: #17a34a; border-radius: 1px; animation: ds-eq 900ms ease-in-out infinite; } .ds-status-run .ds-eq i:nth-child(1) { height: 5px; animation-delay: 0ms; } .ds-status-run .ds-eq i:nth-child(2) { height: 10px; animation-delay: 150ms; } .ds-status-run .ds-eq i:nth-child(3) { height: 7px; animation-delay: 300ms; } @keyframes ds-eq { 0%, 100% { transform: scaleY(0.5); } 50% { transform: scaleY(1); } } @media (prefers-reduced-motion: reduce) { .ds-status-run .ds-eq i { animation: none; transform: scaleY(0.7); } }"
+    },
+    {
+      "name": "Status Pill — Failed",
+      "kind": "chip",
+      "refersTo": "status-failed",
+      "description": "Danger-tinted pill with an alert glyph and label. Color is never the only signal.",
+      "html": "<span class='ds-status-failed'><svg viewBox='0 0 16 16' width='12' height='12' aria-hidden='true'><path d='M8 1.5 15 14H1L8 1.5Z' fill='none' stroke='currentColor' stroke-width='1.4' stroke-linejoin='round'/><path d='M8 6.5v3.2' stroke='currentColor' stroke-width='1.4' stroke-linecap='round'/><circle cx='8' cy='11.6' r='0.8' fill='currentColor'/></svg>Failed</span>",
+      "css": ".ds-status-failed { display: inline-flex; align-items: center; gap: 5px; font-family: 'Fira Code', ui-monospace, monospace; font-size: 12px; font-weight: 500; letter-spacing: 0.6px; text-transform: uppercase; color: #dc2626; background: rgba(220,38,38,0.12); border-radius: 999px; padding: 3px 8px; }"
+    },
+    {
+      "name": "Data Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The tight 2px list/rail unit. Status-relevant cards tint the BORDER (not the fill) by state, so a busy fleet stays legible. Never nest a card in a card.",
+      "html": "<div class='ds-card'><div class='ds-card-title'>refactor-auth-flow</div><div class='ds-card-meta'>agent · 4 files · 2m ago</div></div>",
+      "css": ".ds-card { background: #ffffff; border: 1px solid #e8e5dc; border-radius: 2px; padding: 11px 12px; transition: box-shadow 120ms ease-out; } .ds-card:hover { box-shadow: 0 1px 2px rgba(127,99,21,0.05), -2px 6px 18px rgba(127,99,21,0.05); } .ds-card-title { font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; color: #1f1f1f; } .ds-card-meta { margin-top: 2px; font-family: 'Fira Code', ui-monospace, monospace; font-size: 12px; color: #3d3d3d; }"
+    },
+    {
+      "name": "Keyboard Key",
+      "kind": "custom",
+      "refersTo": "kbd",
+      "description": "Mono key cap for the keyboard-first surface. Pairs with shortcut hints like ⌘K.",
+      "html": "<kbd class='ds-kbd'>⌘K</kbd>",
+      "css": ".ds-kbd { font-family: 'Fira Code', ui-monospace, monospace; font-size: 12px; color: #3d3d3d; background: #fcfbf9; border: 1px solid #e8e5dc; border-radius: 2px; padding: 1px 5px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Golden-Hour Deck",
+    "overview": "Control Center is the operator deck for a one-person developer operations hub: a single technical operator running many concurrent streams of work — coding agents on isolated worktrees, a meeting recording, a calendar filling up, PRs to review, feeds and conversations updating — and holding all of it in view at once. The personality is alive, warm, confident: alive because the surface reports real work as it happens, warm in the Anthropic register (intelligent, on-your-side, never cold or corporate), confident because it is direct and technical with no hype. The canvas is near-white with ink-black as the structural color; the warm gold is confined to bounded graphics (the logo mosaic, one golden-hour horizon, the dark sunset CTA) and the single orange signal is rationed to at most twice per screen. Warmth is a moment you earn at a threshold, not a wash you apply everywhere — which is how the system reads warm and confident while staying quiet and dense for ten-hours-a-day use across desktop, web, and a touch-first phone remote.",
+    "keyCharacteristics": [
+      "Near-white canvas, ink-black structure, one rationed orange signal — black does the structural work, orange is a signal not a highlight.",
+      "Earned warmth — golden-hour gold lives only in bounded brand graphics and the amber elevation shadows, never as a page wash.",
+      "Sharp 2px geometry — near-zero radius everywhere (4px on large panels, pills excepted).",
+      "One family, near-one weight — Manrope + Fira Code, weight 400 throughout except the mono eyebrow label at 500; hierarchy is size + color, never bold.",
+      "Presence over decoration — motion and color report real state (running / blocked / failed / recording / syncing) or they are cut; every animated element has a reduced-motion path.",
+      "Status is never color alone — every state pairs color with an icon/shape and a text label.",
+      "Dual theme — a full light and dark theme ship from the same token names.",
+      "Multi-platform, one operation — dense + keyboard-first on desktop, ≥44px touch targets on the phone remote, no surface a degraded afterthought."
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Signal Orange appears on ≤2 elements per screen. Its rarity is the signal; spend it on the one thing that matters next, never on decoration.", "section": "colors" },
+      { "name": "The Earned-Warmth Rule", "body": "All warm gold is confined to bounded graphics (mosaic, horizon, sunset CTA) and the amber elevation shadows. Gold is never a text color and never a page background.", "section": "colors" },
+      { "name": "The Contrast Rule", "body": "Body and essential text target 7:1 (AAA); fg (~14:1) and muted (~9:1) on the canvas clear it and are the defaults. AA (4.5:1) is the minimum, never the target. The lightest grays (placeholder ~3.3:1, idle) clear only the disabled-state bar; never carry meaningful text in them.", "section": "colors" },
+      { "name": "The Derivation Contract", "body": "Alpha tokens (idle, line-strong, accent-soft, the *-soft set, hovers) are an opacity of a base token — idle = fg @ 38%, accent-soft = accent @ 12%. Keep the relationship in code so a base-color change propagates.", "section": "colors" },
+      { "name": "The One-Weight Rule", "body": "Everything is Manrope 400 — even Display Hero at 40px. Hierarchy comes from size and color, never bold. The sole 500 is the mono label. Never introduce a 700, a second display family, or Inter/Roboto/Arial as a display face.", "section": "typography" },
+      { "name": "The Machine-Truth Rule", "body": "Anything countable, addressable, or time-stamped is Fira Code with tabular figures. Mono signals machine truth, not decoration.", "section": "typography" },
+      { "name": "The Warm-Shadow Rule", "body": "Shadows are always amber-tinted (rgba(127,99,21,…), never cool gray) and offset to the lower-left, as if lit by late-afternoon sun. Never a cool, symmetric, or top-down drop shadow.", "section": "elevation" },
+      { "name": "The Borders-Not-Shadows Rule", "body": "A surface separates with a hairline ring by default. Reach for a shadow only when something genuinely floats above the canvas.", "section": "elevation" },
+      { "name": "The Always-Visible-Focus Rule", "body": "Every interactive element shows a focus ring: a 2px solid accent outline at 2px offset plus a 0 0 0 3px accent-soft glow. Keyboard operability is a P0; never remove the ring without an equal replacement.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the canvas near-white and let ink-black be the structural color; reserve pure white for data surfaces.",
+      "Do confine all warm gold to bounded graphics — mosaic, horizon, sunset CTA — and amber elevation shadows.",
+      "Do ration the accent to two uses per screen; default primary buttons to dark and let orange arrive on hover.",
+      "Do pair every status with an icon/shape and a text label, never color alone.",
+      "Do target AAA contrast (7:1) for body and essential text; keep muted as the lightest color you trust for meaningful text, AA (4.5:1) as the hard floor.",
+      "Do keep one family at weight 400 (the mono label 500 is the only exception); build hierarchy from size and color.",
+      "Do hold corners at 2px (4px for large panels; pills excepted).",
+      "Do make warm, lower-left, amber-tinted shadows — and only on genuinely floating surfaces.",
+      "Do set numerics, IDs, counts, and timestamps in mono with tabular figures.",
+      "Do ship a real reduced-motion path for every animated/presence element, and keep the 2px accent focus ring visible on every interactive element.",
+      "Do design every surface for its platform: dense + keyboard-first on desktop, ≥44px touch targets and no hover-only affordances on the phone remote, and verify both light and dark themes."
+    ],
+    "donts": [
+      "Don't let any surface read as a generic SaaS dashboard — no gradient hero-metric cards, no identical rounded card grids repeated down a page, no decorative charts, no purple gradients.",
+      "Don't ship the default component-kit / template look — distinction comes from making the model (agents, meetings, conversations) legible, not from decoration.",
+      "Don't use ivory/cream as a full-bleed surface — that's the 'ugly yellow' the near-white canvas exists to fix.",
+      "Don't use pure #000, cool grays, or cool/symmetric drop shadows.",
+      "Don't introduce blue/green/purple chrome or any cool gradient (status hues excepted, and always shape-paired).",
+      "Don't add a bold weight or a second display typeface.",
+      "Don't carry meaningful text in placeholder or idle grays — they clear the disabled bar, not the 4.5:1 body bar.",
+      "Don't round corners to feel friendlier, or add radius to hero imagery; sharpness is the point.",
+      "Don't spend the accent on decoration — it is a signal, not a highlight; and never lead the block mosaic with yellow.",
+      "Don't nest a card inside a card, and don't let color be the only carrier of meaning (status, validation, diffs)."
+    ]
+  }
+}

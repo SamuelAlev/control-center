@@ -1,0 +1,49 @@
+---
+import BrandMark from './BrandMark.astro';
+
+const repoUrl = 'https://github.com/SamuelAlev/control-center';
+---
+<footer class="bg-inverse-surface text-accent-on/70 py-[52px]">
+  <div class="wrap">
+    <div class="flex justify-between gap-10 flex-wrap">
+      <div class="max-w-[300px]">
+        <a class="brand flex items-center gap-[11px] no-underline text-[15px] tracking-[-0.01em] text-accent-on" href="/" aria-label="Control Center home">
+          <BrandMark />
+          <span>Control&nbsp;Center</span>
+        </a>
+        <p class="mt-4 text-sm text-accent-on/45">The deck for your whole developer operation.</p>
+      </div>
+      <div class="flex gap-[clamp(36px,6vw,80px)] flex-wrap">
+        <div class="flex flex-col gap-[11px]">
+          <strong class="font-normal font-mono text-[11px] tracking-[0.08em] uppercase text-accent-on/45">Product</strong>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#capabilities">Agents</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#capabilities">Review</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#capabilities">Pipelines</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#meetings">Meetings</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#under-hood">Platform</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#install">Install</a>
+        </div>
+        <div class="flex flex-col gap-[11px]">
+          <strong class="font-normal font-mono text-[11px] tracking-[0.08em] uppercase text-accent-on/45">Platform</strong>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#install">macOS</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#install">Windows</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="/#install">Linux</a>
+        </div>
+        <div class="flex flex-col gap-[11px]">
+          <strong class="font-normal font-mono text-[11px] tracking-[0.08em] uppercase text-accent-on/45">Connect</strong>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href={repoUrl} target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="https://linear.app" target="_blank" rel="noopener noreferrer">Linear</a>
+          <a class="no-underline text-sm text-accent-on/[.72] hover:text-accent-on" href="https://modelcontextprotocol.io" target="_blank" rel="noopener noreferrer">MCP</a>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-between items-center gap-5 flex-wrap mt-10 pt-[22px] border-t border-accent-on/[.14] font-mono text-xs text-accent-on/[.55]">
+      <span>© 2026 Control Center</span>
+      <span class="flex items-center gap-5">
+        <a class="no-underline text-accent-on/[.55] hover:text-accent-on transition-colors" href="/privacy">Privacy</a>
+        <a class="no-underline text-accent-on/[.55] hover:text-accent-on transition-colors" href="/terms">Terms</a>
+      </span>
+      <span>Native desktop · macOS today · Windows and Linux soon</span>
+    </div>
+  </div>
+</footer>

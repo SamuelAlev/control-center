@@ -1,0 +1,32 @@
+name: cc_rpc
+description: "Transport-agnostic JSON-RPC client + channel transports for Control Center. Web-safe (no dart:io/ffi): the desktop in REMOTE mode, the full web build, and the cc_remote PWA all dial a cc-server through this. Pairs with cc_domain (wire types) and cc_host (the server half)."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  # Cross-platform WebSocket (VM + browser): one client transport for desktop
+  # REMOTE and web.
+  web_socket_channel: ^3.0.3
+  # Pairing/channel-auth crypto (HMAC challenge, PSK gen) — pure, no dart:io.
+  crypto: ^3.0.7
+  # Ed25519 server-identity signatures (TOFU fingerprint pinning) — pure Dart,
+  # web-safe.
+  cryptography: ^2.9.0
+  # Cross-platform /healthz reachability probes (fetch on web, dart:io on VM).
+  http: ^1.6.0
+  meta: any
+  # Cross-platform heavy-compute offload (isolates on VM, Web Workers on web).
+  # Backs the frame-decode offload without a `dart:isolate` import, so cc_rpc
+  # stays web-safe with one code path instead of an _io/_web seam. Pure Dart.
+  isolate_manager: ^6.3.2
+
+dev_dependencies:
+  test: any
+  lints: any

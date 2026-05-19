@@ -1,0 +1,85 @@
+---
+title: Set up pipeline triggers
+description: Configure event-based and scheduled triggers for automatic pipeline runs.
+---
+
+This guide shows you how to set up triggers that auto-start pipelines.
+
+## What are triggers?
+
+A `PipelineTrigger` declares when a pipeline should start automatically. Triggers are:
+
+- Default-off (enable them explicitly)
+- Workspace-scoped
+- Optional payload match filters
+
+## Trigger types
+
+| Type | Description |
+|---|---|
+| **Domain event** | Start when a specific event fires (e.g. `PullRequestPublished`) |
+| **Schedule** | Start on a cron expression (e.g. every weekday at 9am) |
+| **Manual** | Started by the user (always available, no trigger needed) |
+
+## Create a trigger
+
+1. Open a pipeline template
+2. Click **Triggers** tab
+3. Click **Add trigger**
+4. Configure:
+
+### Event trigger
+
+- **Event type**: select from the domain event catalog (e.g. `TicketAssigned`, `PullRequestPublished`)
+- **Match filter**: optional JSON filter on the event payload
+
+Example: trigger on `PullRequestPublished` only for non-draft PRs:
+
+```json
+{ "isDraft": false }
+```
+
+### Schedule trigger
+
+- **Cron expression**: standard cron (e.g. `0 9 * * 1-5` for weekdays at 9am)
+
+5. Click **Save**
+6. **Enable** the trigger
+
+## How triggers fire
+
+The `PipelineTriggerDispatcher` subscribes to domain events:
+
+1. An event is published
+2. For each enabled trigger matching the event type:
+   - If the trigger has a match filter, apply it to the event payload
+   - If the filter passes (or there's no filter), start a pipeline run
+3. Dedup keys prevent the same trigger from firing twice for the same event
+
+## Common trigger patterns
+
+### Auto-review on PR
+
+- **Event**: `PullRequestPublished`
+- **Pipeline**: dispatch reviewers → finalize review
+
+### Auto-dispatch on ticket assignment
+
+- **Event**: `TicketAssigned`
+- **Pipeline**: prompt agent with ticket context → create child tickets if needed
+
+### Nightly code quality
+
+- **Schedule**: `0 2 * * *` (2am daily)
+- **Pipeline**: prompt agent to run quality checks → bash script to lint
+
+### On ticket completion
+
+- **Event**: `TicketCompleted`
+- **Pipeline**: run integration tests → notify channel
+
+## Related guides
+
+- [Create a pipeline template](/manual/guides/create-pipeline/)
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Domain events reference](/manual/reference/domain-events/)

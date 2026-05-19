@@ -1,0 +1,15 @@
+[ ] Transform IRC to use messaging feature                                → PRD 22 §1 (specs/multiplayer-and-craft/22-agent-peer-messaging-delegation.md) — IrcBus is in-memory + no MCP surface; re-express over channels, delete the bus
+[ ] Skill antivirus                                                       → PRD 23 §2–3 (23-skills-ecosystem-supply-chain.md) — mandatory fail-closed scan gate: static rules + capability manifest + hardened LLM review
+[ ] Agent task delegation                                                 → PRD 22 §3 — delegate_task with depth/cycle/budget/autonomy guards
+    [ ] Concrete "plan" mode                                              → already specified: PRD 17 §8 (harness plan mode, typed PlanDocument, read-only phase)
+    [ ] Allowing agents to TODO list                                      → PRD 22 §4 — todo_write exists; adds todo_read (missing) + cross-conversation operator board
+    [ ] Allow agents to create a prompt and send it to another agent      → PRD 22 §2 — send_to_agent / ask_agent (explicit recipient, request/reply with mandatory timeout)
+[ ] Sandbox / remote execution                                            → already specified: PRD 20 (fleet & remote execution); sandboxing itself is built (SandboxPort/policies)
+[ ] Notification banners (meetings, calendar, ...)                        → PRD 25 §1 — generic banner rail driven by NotificationEventMapper (no generic in-app banner exists today)
+[ ] Remove outdated comments in PR diffs                                  → PRD 25 §3 — today anchorLine==null comments are silently DROPPED (unified_diff_view.dart); becomes a collapsed "Outdated" group, GitHub-parity
+[x] Allow user to set ENV on each adapters                                → ALREADY SHIPPED — secure store (adapter_env_overrides_repository.dart) + Adapters settings UI + dispatch injection (_mergedEnv). PRD 25 §9 = verify/discoverability only
+[ ] Prevent unwanted actions (e.g., deleting files, github create pr/commit&push, ...) → PRD 24 — existing CommandPolicy engine is bash-shaped; generalize to ActionClass taxonomy + workspace/channel rules + MCP-layer enforcement
+[ ] Allow installing skills from skills.sh                                → PRD 23 §1 — SkillRegistryPort + skills.sh adapter, behind the scan gate (23.1 ships before the registry)
+[ ] Allow updating skills from skills.sh                                  → PRD 23 §4 — update check + content diff + delta re-scan + re-pin (pinning currently means stale-forever)
+[ ] Collaboration on the same agent (e.g., multiple users can work on the same agent/groups via webrtc or whatever) → already specified: PRD 16 (real-time collaboration & presence) on PRD 14 (identity) + 15 (N-way transport/WebRTC/TURN)
+[ ] Rearrange the settings sections / pages / layouts for better organization → PRD 25 §5 — IA unification (kill the standalone-screens vs section-widgets split), 8 user-facing groups, search, deep-link redirects

@@ -1,0 +1,33 @@
+---
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import Hero from '../components/landing/Hero.astro';
+import ProofStrip from '../components/landing/ProofStrip.astro';
+import Install from '../components/landing/Install.astro';
+import ProblemStatement from '../components/landing/ProblemStatement.astro';
+import Capabilities from '../components/landing/Capabilities.astro';
+import Tickets from '../components/landing/Tickets.astro';
+import MeetingsCalendar from '../components/landing/MeetingsCalendar.astro';
+import Platform from '../components/landing/Platform.astro';
+import Philosophy from '../components/landing/Philosophy.astro';
+import LandingScripts from '../components/landing/LandingScripts.astro';
+---
+
+<MarketingLayout
+  title="Control Center \\\\ The developer operations deck"
+  description="Dispatch and review AI coding agents, capture and summarize meetings, and keep tickets, pipelines, and your calendar on one native desktop deck. macOS today."
+  softwareApplication
+>
+  <main id="top">
+    <Hero />
+    <ProofStrip />
+    <Install />
+    <ProblemStatement />
+    <Capabilities />
+    <Tickets />
+    <MeetingsCalendar />
+    <Platform />
+    <Philosophy />
+  </main>
+
+  <LandingScripts />
+</MarketingLayout>

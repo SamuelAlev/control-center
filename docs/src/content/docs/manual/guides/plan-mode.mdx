@@ -1,0 +1,95 @@
+---
+title: Use plan mode
+description: Switch to plan mode for structured analysis before execution.
+---
+
+This guide shows you how to use plan mode to get structured analysis from agents.
+
+## What is plan mode?
+
+Plan mode is a mode where agents analyze the codebase and produce a structured plan instead of writing code. The agent's sandbox is restricted to read-only, so it cannot modify files.
+
+Use plan mode when you want to:
+
+- Understand the scope of a change before committing
+- Get a detailed implementation plan
+- Break down a complex task into steps
+- Have the agent identify risks and dependencies
+
+## Switch to plan mode
+
+### In a channel
+
+1. Open a channel with an agent
+2. Click the mode selector in the channel header
+3. Select **Plan**
+
+### Via message
+
+Tell the agent to plan:
+
+> Plan how to implement user authentication for this API. Don't write code yet.
+
+### Via pipeline
+
+Set the dispatch mode on a `promptAgent` step to `plan`.
+
+## What the agent produces
+
+Plan mode has exactly one deliverable: a **typed plan**, submitted with the `submit_plan` tool. The agent:
+
+1. Asks up to three clarifying questions if the request is genuinely ambiguous
+2. Researches read-only — memory, the code index, files
+3. Calls `submit_plan` once with the plan as a dependency graph: nodes carrying
+   a key, title, description, and the node keys they depend on
+4. Stops
+
+The plan appears **in the conversation** as a compact row showing the goal, its
+status, and the step count. **Plan studio** — the dependency graph, the per-node
+inspector, and the cost estimate — opens as a tab beside the conversation:
+press **Open in Plan Studio** on the row, or simply wait, because a plan that
+lands while you are watching the conversation opens its tab itself.
+
+Prose is not a deliverable here. A run that ends without calling `submit_plan`
+is reported as a failed run ("ended without submitting a plan") rather than
+silently succeeding.
+
+:::note
+The read-only guarantee is structural, not a prompt instruction: in plan mode the
+agent's tool list simply contains no write, edit, or command tools. There is no
+plans directory to write to.
+:::
+
+## Execute the plan
+
+Approve it. From the plan's row in the conversation, or from Plan studio:
+
+1. Press **Approve and run**
+2. Control Center compiles the plan into an orchestration and materializes it —
+   the tickets and the run. No model is involved in this step; it is
+   deterministic. The plan executes as the agent that wrote it; whether to bring
+   anyone else in is that agent's call at run time (it can `delegate_task` to a
+   better-suited teammate or `hire_agent` a specialist it lacks).
+3. The plan's goal becomes **the conversation's goal**, and the work runs **in
+   that same conversation**: each step posts what the agent was asked and
+   streams its turn back, so you follow it (and can stop a turn) where you
+   already are.
+4. The goal row in the channel sidebar carries the run's progress and its stop
+   button; Plan studio shows per-node state on the graph and cancels there too.
+
+If you would rather keep working in the same conversation instead of approving
+the plan, the agent can call `exit_plan_mode`, which opens an approval you grant
+before mutating tools unlock.
+
+## Plan mode in pipelines
+
+Use plan mode in pipeline steps for analysis-only stages:
+
+1. Add a `promptAgent` step with mode set to `plan`
+2. The agent's output is a typed plan document
+3. Downstream steps can use the plan as input (e.g. a router step that decides whether to proceed)
+
+## Related guides
+
+- [Modes](/manual/concepts/modes/)
+- [Chat with an agent](/manual/guides/chat-with-agent/)

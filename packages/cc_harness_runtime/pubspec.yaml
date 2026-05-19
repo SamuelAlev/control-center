@@ -1,0 +1,19 @@
+name: cc_harness_runtime
+description: "Batteries for the cc_harness kernel — VM-only, Control-Center-free: the Anthropic/OpenAI/Ollama streaming providers (raw dart:io HttpClient + SSE), OAuth/PKCE credential brokering, file/env credential stores, the generic tool set (read/write/edit/search/find/bash/web/task/file-search), AGENTS.md + skills context loaders, run config, watchdog advisor, and shell loop hooks. CC-coupled adapters (sandboxed command runner, MCP bridge, apply_patch) stay in cc_infra."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_harness:
+    path: ../cc_harness
+  crypto: ^3.0.7
+  path: ^1.9.1
+
+dev_dependencies:
+  test: any
+  lints: any

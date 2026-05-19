@@ -1,0 +1,135 @@
+---
+title: Sandbox backends
+description: Available sandbox execution backends and their configuration.
+---
+
+## Backend overview
+
+| Backend | Value | Platform | Description |
+|---|---|---|---|
+| Native | `native` | macOS, Linux | OS-native sandbox (default) |
+| None | `none` | all | No isolation (development only) |
+
+The previous `docker` and `auto` backends were removed when the in-project native sandbox landed. Stored preferences containing `"docker"` are migrated to `native` on read (`SandboxBackend.fromName`), so existing users keep their sandboxed intent.
+
+## Native backend
+
+### macOS: Seatbelt
+
+Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+
+- **Filesystem**: restricts read/write to bound mount paths only
+- **Network**: all egress routed through the in-process proxies, which enforce the per-session domain allowlist (see [Network egress](#network-egress))
+- **Process**: limits process spawning within the sandbox
+- **Configuration**: profiles are generated per-launch from the `SandboxSpec`
+
+Requirements:
+
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+
+### Linux: bubblewrap
+
+Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+
+- **Filesystem**: creates a mount namespace with only the bound paths visible
+- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
+- **Process**: PID namespace isolation
+
+Requirements:
+
+- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
+- Kernel namespace support (standard on modern Linux)
+
+## None backend
+
+Disables all sandboxing. The agent CLI runs directly on the host with full access.
+
+Use only for:
+
+- Development and debugging
+- Trusted environments
+- When sandboxing is incompatible with your workflow
+
+**Warning:** agents running without sandboxing have unrestricted access to your filesystem, network, and processes.
+
+## Network egress
+
+Outbound network access is enforced by in-process proxies, not by kernel firewall rules:
+
+- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the Control Center process, shared by all sandbox sessions (`http_proxy.dart`, `socks_proxy.dart`).
+- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
+- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Wildcards are supported: `*.example.com` matches any subdomain but not the apex itself.
+- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus capability-derived domains (GitHub domains when the agent has GitHub capabilities; the ticketing provider's domains when it can call ticketing), plus `SandboxSpec.egressAllowlist`.
+- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
+- `networkEnabled: false` (or an agent without the network capability) launches the sandbox with no proxies at all.
+
+## SandboxSpec
+
+The specification passed to `SandboxPort.launch`:
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `String` | Stable session identifier (typically the channel id) |
+| `workspaceId` | `String` | Owning workspace id |
+| `agentId` | `String?` | Agent currently bound to the sandbox, if any |
+| `bindMounts` | `List<SandboxBindMount>` | Host→guest mounts; the sandbox sees only the host paths listed here |
+| `networkEnabled` | `bool` (default `true`) | When false, the proxies are not exposed and the sandbox has no network access |
+| `egressAllowlist` | `List<String>` (default `[]`) | Extra allowed egress domains; wildcards supported (`*.example.com`). When empty, the curated baseline plus capability-derived domains apply |
+| `guestWorkdir` | `String?` | Default working directory inside the sandbox; individual `exec` calls can override it |
+| `mode` | `Mode` (default `chat`) | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan`, and `orchestrate` are read-only |
+| `capabilities` | `AgentCapabilities` (default `safeDefault`) | Derives the egress allowlist (GitHub / ticketing domains) and the network on/off decision |
+| `protectedPaths` | `List<String>` (default `[]`) | Host paths that must never be writable inside the sandbox, in any mode |
+
+`protectedPaths` holds the original registered repo checkouts. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`.
+
+## SandboxBindMount
+
+| Field | Type | Description |
+|---|---|---|
+| `hostPath` | `String` | Absolute path on the host |
+| `guestPath` | `String` | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
+| `readOnly` | `bool` (default `false`) | Mount read-only when true |
+
+## SandboxHandle
+
+Returned by `SandboxPort.launch`:
+
+| Field | Type | Description |
+|---|---|---|
+| `sessionId` | `String` | Session identifier |
+| `backend` | `SandboxBackend` | Which backend is running |
+| `state` | `SandboxState` | Lifecycle state |
+| `error` | `Object?` | Set when `state` is `error` |
+| `details` | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+
+### SandboxState
+
+| State | Description |
+|---|---|
+| `created` | Spec created but the VM has not started yet |
+| `warm` | Running and ready to exec commands |
+| `active` | Currently executing a command |
+| `suspended` | Paused / checkpointed to disk to save RAM |
+| `destroyed` | Torn down; the handle is no longer valid |
+| `error` | Launch failed — see `SandboxHandle.error` |
+
+## Sandbox events
+
+| Event type | Description |
+|---|---|
+| `stdout` | Standard output from the sandbox |
+| `stderr` | Standard error from the sandbox |
+| `exit` | Sandbox process exited (carries `exitCode`) |
+| `starting` | Sandbox is starting up |
+| `ready` | Sandbox is ready to accept exec calls |
+| `killed` | Process killed by the host (OOM, timeout, manual stop) |
+| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+
+## SandboxViolation
+
+| Field | Type | Description |
+|---|---|---|
+| `action` | `String` | The denied verb (e.g. `file-read*`, `network-outbound`) |
+| `target` | `String` | Path or host that was the target of the denied operation |
+| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
+| `raw` | `String?` | Raw log line, useful for debugging |

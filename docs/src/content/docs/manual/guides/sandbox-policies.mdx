@@ -1,0 +1,97 @@
+---
+title: Configure sandbox policies
+description: Set sandbox backend, capability controls, and filesystem access for agents.
+---
+
+This guide shows you how to configure sandbox policies.
+
+## Sandbox settings
+
+Navigate to **Settings → Security & privacy** to configure sandboxing. Agent permission rules are a separate surface — see [Configure guardrails](/manual/guides/configure-guardrails/).
+
+### Backend selection
+
+| Backend | Platform | Description |
+|---|---|---|
+| **Auto** (recommended) | all | Uses the detected OS-native backend |
+| **Native** | macOS, Linux | OS-native sandbox |
+| **None** | all | No isolation (development only) |
+
+Select the backend per workspace.
+
+### Native backend details
+
+- **macOS**: Uses Apple's Seatbelt sandbox. Profiles restrict filesystem access, network, and process spawning.
+- **Linux**: Uses bubblewrap. Creates mount and PID namespaces for isolation.
+
+## Capability controls
+
+Capabilities control what an agent can access during execution:
+
+| Capability | Description | Default |
+|---|---|---|
+| **Push to repo** | Push commits to the remote — gates injection of the GitHub PAT | Off |
+| **GitHub API** | Call api.github.com — gates GH_TOKEN injection and egress | Off |
+| **Ticketing** | Call the ticketing provider API — gates the provider API key | Off |
+| **Network egress** | Make outbound network requests | On |
+
+Set the defaults for new conversations under **Settings → Security & privacy → Default capabilities**. Override them per agent in the agent configuration, or per conversation from the capability badge in the chat header.
+
+### How capabilities work
+
+1. At dispatch time, the `CredentialBroker` reads the agent's capabilities
+2. It mints scoped environment variables, covering only the capabilities the agent has
+3. The sandbox enforces the policy during execution
+4. Violations emit `SandboxViolation` events visible in the channel
+
+## Filesystem policies
+
+Agents see a restricted filesystem:
+
+- **Read-write**: the isolated worktree
+- **Read-only**: workspace configuration, skill resources
+- **Hidden**: the source checkout, other worktrees, system files
+
+Mount policies are derived from the sandbox backend and mode.
+
+## Mode policies
+
+| Mode | Filesystem | Network | Tools |
+|---|---|---|---|
+| **Chat** | Read-write worktree | Per-capability | Full allowlist |
+| **Plan** | Read-only worktree | Per-capability | Read-only tools |
+| **Review** | Read-only worktree | Per-capability | Review tools only |
+| **Orchestrate** | Read-only worktree | Per-capability | Research tools + `propose_orchestration` |
+
+## Confirmation prompts
+
+Destructive and risky actions are gated by guardrail decisions, not by the sandbox backend. To require approval before an action runs:
+
+1. Navigate to **Settings → Agent permissions**
+2. Set the action's decision to **Ask first** (or **Deny** to forbid it) at the workspace, agent, or channel scope
+
+An **Ask first** decision interrupts the agent and asks for your approval before executing; with no approver connected, the gate fails closed and the action is denied. See [Configure guardrails](/manual/guides/configure-guardrails/).
+
+## Troubleshooting
+
+### Sandbox not available
+
+Run agent doctor to diagnose:
+
+- macOS: ensure System Integrity Protection is enabled
+- Linux: install bubblewrap (`sudo apt install bubblewrap`)
+
+### Permission denied errors
+
+If agents report permission denied:
+
+- Check the capability flags on the agent
+- Verify the mount configuration
+- Check sandbox violation events in the channel
+
+## Related guides
+
+- [Configure guardrails](/manual/guides/configure-guardrails/)
+- [Sandbox and security](/manual/concepts/sandbox-security/)
+- [Sandbox backends reference](/manual/reference/sandbox-backends/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)

@@ -1,0 +1,310 @@
+name: CI
+
+on: [push, pull_request]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+  build-web:
+    name: web Wasm (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: client
+            directory: .
+          - target: remote
+            directory: apps/cc_remote
+          - target: gallery
+            directory: apps/cc_gallery
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Build WebAssembly bundle
+        working-directory: ${{ matrix.directory }}
+        run: flutter build web --release --wasm
+
+      - name: Verify SkWasm and CanvasKit fallback artifacts
+        working-directory: ${{ matrix.directory }}
+        run: |
+          test -f build/web/main.dart.wasm
+          test -f build/web/main.dart.mjs
+          test -f build/web/main.dart.js
+
+  test:
+    # Sharded by test FILE, not by `flutter test --total-shards`: package:test
+    # applies those flags inside each suite, so every shard would still load and
+    # compile every test file and only run a slice of the `test()` cases in it.
+    # Compiling + booting flutter_tester per file is the dominant cost here, so
+    # only splitting the file list actually divides the work. See
+    # tool/test_shard.dart.
+    #
+    # To change the shard count, edit this list only — `--total` is derived from
+    # it via `strategy.job-total`, so the two cannot drift apart.
+    name: test (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Select shard
+        run: >
+          dart run tool/test_shard.dart
+          --index ${{ matrix.shard }}
+          --total ${{ strategy.job-total }}
+          --output shard_files.txt
+
+      - name: Test
+        # bash (not sh) for mapfile, which keeps the whole shard in ONE
+        # `flutter test` invocation — xargs may split a long list and pay the
+        # compile cost again per batch.
+        shell: bash
+        # Cap concurrency: each flutter_tester loads the whole app. Uncapped
+        # (one per CPU) OOMs the runner and surfaces as a post-test
+        # PathNotFoundException deleting flutter_test_listener under /tmp.
+        #
+        # No --coverage: nothing consumes the lcov (no upload step, and
+        # coverage/ is gitignored), and collecting it forces the VM service on
+        # for every test file. To restore it, add
+        # `--coverage --coverage-path=coverage/lcov-${{ matrix.shard }}.info`,
+        # upload each shard's file as an artifact, and merge them downstream.
+        run: |
+          mapfile -t files < shard_files.txt
+          echo "Running ${#files[@]} test files"
+          flutter test --concurrency=2 "${files[@]}"
+
+  # The workspace packages' own suites (~690 test files), which the root
+  # `flutter test` never covered because it only runs the root package's test/.
+  #
+  # Split by RUNNER, not one job per package: the pure-Dart suites finish in
+  # well under a minute each, so 13 separate runners would each spend more time
+  # on checkout + SDK setup + pub get than on testing, and would not shorten the
+  # critical path (the root `test` shards above dominate it either way).
+  test-packages:
+    name: packages (${{ matrix.runner }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [dart, flutter]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Test ${{ matrix.runner }} packages
+        shell: bash
+        # Packages are DISCOVERED, not listed, so a new package that ships tests
+        # cannot be silently left out of CI. A `flutter_test` dev_dependency is
+        # what decides the runner — it is exactly the question being asked ("do
+        # these tests need the Flutter harness?"). Everything else runs under
+        # plain `dart test`, which skips flutter_tester entirely and is far
+        # faster. Comments are stripped before matching: cc_natives is pure Dart
+        # but mentions `sdk: flutter` in a prose comment.
+        #
+        # Every package runs even after one fails, so a single break does not
+        # hide the rest; the job still exits non-zero at the end.
+        run: |
+          set -uo pipefail
+          failed=()
+          ran=0
+          for dir in packages/*/ apps/*/; do
+            pkg="${dir%/}"
+            [ -d "$pkg/test" ] || continue
+            [ -f "$pkg/pubspec.yaml" ] || continue
+            if sed 's/#.*//' "$pkg/pubspec.yaml" \
+              | grep -qE '^[[:space:]]+flutter_test:'; then
+              kind=flutter
+            else
+              kind=dart
+            fi
+            [ "$kind" = "${{ matrix.runner }}" ] || continue
+            ran=$((ran + 1))
+            echo "::group::$pkg"
+            if (cd "$pkg" && ${{ matrix.runner }} test --concurrency=2); then
+              echo "PASS $pkg"
+            else
+              echo "FAIL $pkg"
+              failed+=("$pkg")
+            fi
+            echo "::endgroup::"
+          done
+          # A discovery bug would otherwise pass as a silently empty green job.
+          if [ "$ran" -eq 0 ]; then
+            echo "No ${{ matrix.runner }} packages discovered — discovery is broken."
+            exit 1
+          fi
+          echo "Ran $ran ${{ matrix.runner }} package(s)."
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "Failed: ${failed[*]}"
+            exit 1
+          fi
+
+  # Aggregate gate so branch protection can require ONE stable check instead of
+  # every shard by name. Deliberately keeps the job id `build` — that was the
+  # single job's name before sharding, so existing required-check rules keep
+  # matching without being reconfigured.
+  # Generated code is COMMITTED (71 *.g.dart from drift/json_serializable, plus
+  # the localizations), and `build_runner` ran only in release.yml and
+  # deploy-design-system.yml — never on a PR. So a table or @JsonSerializable
+  # change could go green here and first diverge at release time, on a tag,
+  # which is the worst place to discover it. deploy-design-system.yml even said
+  # so out loud: it regenerates "so a deploy never ships a stale navigation
+  # tree, even if the committed file lags".
+  codegen:
+    name: generated code is current
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Regenerate
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+
+      - name: Fail if anything changed
+        run: |
+          if ! git diff --quiet; then
+            echo "::error::Committed generated code is stale. Run:"
+            echo "  fvm dart run build_runner build --delete-conflicting-outputs"
+            echo "  fvm flutter gen-l10n"
+            echo "and commit the result."
+            git --no-pager diff --stat
+            exit 1
+          fi
+
+  build:
+    if: always()
+    needs: [analyze, codegen, build-web, test, test-packages]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check analyze and every test job passed
+        run: |
+          echo "analyze:       ${{ needs.analyze.result }}"
+          echo "codegen:       ${{ needs.codegen.result }}"
+          echo "build-web:     ${{ needs.build-web.result }}"
+          echo "test:          ${{ needs.test.result }}"
+          echo "test-packages: ${{ needs.test-packages.result }}"
+          [ "${{ needs.analyze.result }}" = "success" ] \
+            && [ "${{ needs.codegen.result }}" = "success" ] \
+            && [ "${{ needs.build-web.result }}" = "success" ] \
+            && [ "${{ needs.test.result }}" = "success" ] \
+            && [ "${{ needs.test-packages.result }}" = "success" ]

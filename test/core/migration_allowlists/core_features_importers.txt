@@ -1,0 +1,15 @@
+# Shrinking allowlist: lib/core files that still import lib/features (a layering
+# inversion — core must not depend on features). Enforced by
+# architecture_constraints_test.dart. Migrate the feature-specific wiring out of
+# core (into di/ or the feature) + remove. No NEW entries.
+# Seeded 2026-07-06 to the current baseline; the check was a hard expect(empty)
+# that stayed red — the ratchet now forbids growth while this debt is paid down.
+lib/core/infrastructure/embedding/embedding_model_control.dart
+lib/core/infrastructure/power/agent_sleep_blocker.dart
+lib/core/infrastructure/speech/diarization_model_control.dart
+lib/core/infrastructure/speech/dictation_controller.dart
+lib/core/infrastructure/speech/speech_transcriber_providers.dart
+lib/core/infrastructure/speech/voice_model_control.dart
+lib/core/notifications/notification_service_provider.dart
+lib/core/providers/rpc_client_workspace_sync_provider.dart
+lib/core/theme/diff_colors.dart

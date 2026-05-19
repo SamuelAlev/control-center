@@ -1,0 +1,75 @@
+---
+title: Run a pipeline manually
+description: Start a pipeline run from the UI, fill in inputs, and monitor progress.
+---
+
+This guide shows you how to run a pipeline manually.
+
+## Start a run
+
+1. Navigate to **Pipelines**
+2. Find the template you want to run
+3. Click **Run** (or open the template and click **Run pipeline**)
+4. If the template has inputs, a form appears; fill them in
+5. Click **Start run**
+
+The pipeline engine creates a `PipelineRun` record and begins executing steps.
+
+## Monitor the run
+
+The run detail view shows:
+
+- **Overall status**: running, completed, failed
+- **Step progress**: each step's status, input, and output
+- **Timeline**: when each step started and finished
+- **Cost**: cumulative token cost across all agent steps
+
+### Step statuses
+
+| Status | Meaning |
+|---|---|
+| **Pending** | Waiting for upstream steps |
+| **Running** | Currently executing |
+| **Completed** | Finished successfully |
+| **Failed** | Ended with an error |
+| **Skipped** | Skipped by a router or skip-propagation |
+
+### Cost tracking
+
+Agent steps accumulate token costs. The run's `totalCostCents` and `totalTokens` are updated as steps complete.
+
+## Inspect step output
+
+Click any step to see:
+
+- **Input JSON**: what was passed to the step
+- **Output JSON**: what the step produced
+- **Error message**: if the step failed
+- **Duration**: wall-clock time
+- **Attempt count**: how many times the step was tried (if retry policy is set)
+
+## Handle failures
+
+If a step fails:
+
+1. Check the error message in the step detail
+2. If the step has a retry policy, it may retry automatically
+3. If `continue-on-fail` is set, downstream steps proceed despite the failure
+4. If neither, the run fails
+
+Failed runs can be inspected but not resumed from the UI. Fix the template and start a new run.
+
+## Dry run
+
+Enable **Dry run** when starting a run to see what would happen without actually executing steps. Dry runs:
+
+- Evaluate the DAG structure
+- Render template placeholders
+- Show which steps would run and with what inputs
+- Don't dispatch agents or run scripts
+
+## Related guides
+
+- [Create a pipeline template](/manual/guides/create-pipeline/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/)

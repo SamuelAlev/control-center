@@ -1,0 +1,111 @@
+---
+title: Manage adapters and models
+description: Configure agent backends — built-in or external CLI — and select models for inference.
+---
+
+This guide shows you how to manage adapters and models.
+
+## What are adapters?
+
+An adapter is a backend that Control Center uses to dispatch agents. The built-in harness runs agents in-process; every other adapter wraps a specific AI CLI tool:
+
+| Adapter | CLI name | Description |
+|---|---|---|
+| Control Center (built-in) | — (none) | Built-in agent loop; talks to LLM providers directly, no external CLI |
+| Claude Code | `claude` | Anthropic's Claude CLI |
+| Codex | `codex` | OpenAI's Codex CLI (via the `acpx` ACP bridge) |
+| Gemini CLI | `gemini` | Gemini CLI over the Agent Client Protocol |
+| Goose | `goose` | Goose over the Agent Client Protocol |
+| OpenCode | `opencode` | OpenCode CLI over the Agent Client Protocol |
+| Cursor | `cursor-agent` | Cursor agent over the Agent Client Protocol |
+| Pi | `pi` | Pi agent runner |
+
+## The built-in harness
+
+The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs in-process and talks to LLM providers over HTTP. It is always detected — Settings → Adapters shows it as found with version `built-in`.
+
+Authenticate providers in-app under **Settings → Adapters**, in the providers and models section:
+
+- **Anthropic** and **OpenAI**: browser OAuth login (PKCE with a loopback callback) or an API key.
+- **Kimi Code**: browser OAuth login via the device-code flow (RFC 8628).
+- **OpenAI-compatible providers** (OpenRouter, Groq, Google Gemini compat, DeepSeek, Mistral, xAI, z.ai): API key.
+- **Custom providers**: any OpenAI- or Anthropic-compatible endpoint with a base URL and optional API key (Ollama, LM Studio, vLLM, private deployments).
+
+OAuth tokens are stored in the credential store and refreshed automatically before expiry.
+
+## View detected adapters
+
+1. Navigate to **Settings → Adapters**
+2. The list shows all detected adapters with:
+   - Detection status (found/not found)
+   - CLI version
+   - Installation path
+
+Control Center auto-detects CLIs in your `PATH` on startup. The built-in harness is always present; only external-CLI adapters appear as found or not found.
+
+## Install an adapter
+
+The built-in harness needs no installation. For an external-CLI adapter, install its CLI using that tool's package manager:
+
+```bash
+# Claude Code
+npm install -g @anthropic-ai/claude-code
+
+# Codex
+npm install -g @openai/codex
+```
+
+After installation, refresh the adapter list in Settings.
+
+## Select a model
+
+Each adapter offers multiple models. When configuring an agent:
+
+1. Select the adapter
+2. The model dropdown shows available models for that adapter
+3. Pick the model based on your needs:
+
+| Model tier | Use for |
+|---|---|
+| Fast/cheap | Simple tasks, formatting, quick fixes |
+| Mid-tier | Typical coding, bug fixes |
+| Top-tier | Complex architecture, critical code, security review |
+
+Model availability depends on your adapter and provider credentials.
+
+## Model routing and provider policies
+
+The model catalog is assembled from the [models.dev](https://models.dev) registry and lists every provider and model the built-in harness can run. Model choice can be governed per workspace by **provider policies**: glob allow/deny rules (e.g. `anthropic/*`, `openai/gpt-*`) with last-match-wins precedence. Configure them in **Settings → Adapters**, in the providers and models section; denied models are hidden from the model selector.
+
+## Custom adapters
+
+Register custom adapters in Settings:
+
+1. Click **Add adapter**
+2. Enter the CLI name and path
+3. Control Center probes the CLI for version and capabilities
+4. The adapter appears in the agent configuration dropdown
+
+## ACP models
+
+Control Center also supports ACP-compatible agent runners. Advertised models are keyed by adapter ID and shown in the model selector.
+
+## Troubleshooting
+
+### Adapter not detected
+
+- Ensure the CLI is in your `PATH` (`which claude`)
+- Restart Control Center after installing a new CLI
+- Check the adapter settings for the expected CLI name
+
+### Model not available
+
+- Verify your API key has access to the model
+- Check the adapter's documentation for supported models
+- Some models require specific CLI versions
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)
+- [Manage API keys](/manual/guides/api-keys/)

@@ -1,0 +1,35 @@
+# Analyzer config for the cc_markdown engine package.
+#
+# cc_markdown is a self-contained markdown engine: parser + AST + plugins are
+# pure Dart; the render/selection layers build on package:flutter/widgets.dart.
+# The ONLY file allowed to import Material is lib/src/selection/context_menu.dart
+# (AdaptiveTextSelectionToolbar). The package MUST NOT import Riverpod, cc_ui,
+# highlight, l10n, or the host app (package:control_center/...). That boundary
+# is enforced by test/core/architecture_constraints_test.dart in the app.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+
+linter:
+  rules:
+    always_use_package_imports: true
+    avoid_relative_lib_imports: true
+    directives_ordering: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    sort_constructors_first: true
+    use_super_parameters: true
+    always_declare_return_types: true

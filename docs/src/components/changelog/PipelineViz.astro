@@ -1,0 +1,33 @@
+---
+interface Props {
+  branch?: string;
+  stages?: number;
+}
+const { branch = 'feature/onboarding', stages = 3 } = Astro.props;
+---
+
+<div class="release-viz mt-[26px] max-w-[480px] bg-panel border border-border rounded-lg shadow-golden overflow-hidden" role="img" aria-label={`A three-stage pipeline: Plan complete, Implement running, Review pending.`}>
+  <div class="flex items-center gap-[9px] px-[15px] py-[11px] border-b border-border text-[12.5px]">
+    <svg class="w-[14px] h-[14px] text-accent flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 6h6a4 4 0 0 1 4 4v0M7 18h6a4 4 0 0 0 4-4v0"/></svg>
+    Pipeline · {branch}
+    <span class="num ml-auto text-[11px] text-muted">{stages} stages</span>
+  </div>
+  <div class="flex items-center gap-0 flex-wrap px-4 py-5">
+    <span class="node-run inline-flex items-center gap-2 border border-border rounded-sm bg-bg px-3 py-[9px] text-[12.5px]"><svg class="w-3 h-3 flex-none text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Plan</span>
+    <span class="w-[22px] h-px bg-line-strong flex-none" aria-hidden="true"></span>
+    <span class="node-run inline-flex items-center gap-2 rounded-sm bg-bg px-3 py-[9px] text-[12.5px] border border-[color-mix(in_oklab,var(--color-success),var(--color-border)_45%)]"><span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>Implement</span>
+    <span class="w-[22px] h-px bg-line-strong flex-none" aria-hidden="true"></span>
+    <span class="inline-flex items-center gap-2 border border-border rounded-sm bg-bg px-3 py-[9px] text-[12.5px]"><svg class="w-3 h-3 flex-none text-idle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>Review</span>
+    <div class="w-full mt-[14px] font-mono text-[11px] text-muted flex items-center gap-[7px]">
+      <svg class="w-3 h-3 text-idle flex-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h18M3 12h18M3 17h18"/></svg>
+      Each stage runs in its own isolated worktree.
+    </div>
+  </div>
+</div>
+
+<style>
+.node-run .bars i { animation: bar 1s var(--ease-standard) infinite alternate; }
+.node-run .bars i:nth-child(2) { animation-delay: .18s; }
+.node-run .bars i:nth-child(3) { animation-delay: .36s; }
+@keyframes bar { from { transform: scaleY(0.3); } to { transform: scaleY(1); } }
+</style>

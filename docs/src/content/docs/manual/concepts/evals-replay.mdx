@@ -1,0 +1,82 @@
+---
+title: Evals, replay, and regression protection
+description: How session recording, replay, golden sessions, and eval suites protect agents from regressions.
+---
+
+## Overview
+
+Agents are nondeterministic: the same prompt can produce different behavior depending on the model, the tools in play, and the state of the repo. That makes "it worked yesterday" an unverifiable claim — until a run becomes an artifact that can be re-executed, compared, and graded.
+
+The evals feature is built on one idea: **replay is the primitive**. Record real runs, replay them deterministically to test the harness, re-execute them live to test the agent, and distill the results into scorecards that gate configuration changes and inform how much autonomy an agent has earned.
+
+## Session recordings: runs as artifacts
+
+A `SessionRecording` captures one complete harness run so it can be replayed later. Recording is opt-in per agent/channel, so most runs leave no recording row — you enable it where regression protection is worth the storage.
+
+Each recording bundles four things, stored as content-addressed refs alongside the run log it captures:
+
+- **The event stream** (`eventsRef`): every event the harness emitted, serialized as JSONL under the server data dir.
+- **The cassette bundle** (`cassetteRef`): the recorded LLM turns and tool results, so every external call can be stubbed back exactly as it happened.
+- **The fixture** (`fixtureRef`): a git bundle plus pinned SHA (or rift snapshot) of the repo state, so the world the run saw can be reconstructed.
+- **The config hash** (`configHash` + `hashVersion`): the fingerprint of the exact agent configuration that produced the run.
+
+What a recording proves: *this is precisely what happened* — the inputs, the externals, and the emitted stream, pinned to one configuration.
+
+## The config hash: pinning a run to an exact configuration
+
+A recording is only comparable if you know which configuration produced it. `AgentConfigSnapshot` computes a SHA-256 (`AgentConfigHash`) over a canonical JSON document: sorted keys, a fixed field list covering the assembled system prompt, the sorted mode prompts, sorted tool `(name, schemaHash)` pairs, the resolved model id, sorted memory-policy `id@version` refs, and the routing-table hash.
+
+Two consequences:
+
+- **Drift detection**: two runs with the same hash ran under an identical effective configuration; a different hash means something in the configuration changed, even if nobody "edited the agent".
+- **Deliberate re-keying**: the field list carries a `hashVersion`. Adding a hashed field later re-keys every config *on purpose* — old hashes stay comparable within their version instead of silently colliding with new ones.
+
+The hash is also the identity of a config version and the unit that eval runs evaluate.
+
+## Two kinds of replay, honestly labeled
+
+Replay answers two different questions, and the modes are kept distinct because conflating them produces false confidence:
+
+**Deterministic replay tests the harness.** The `ReplayDriver` re-runs a recording with every external stubbed from the cassette: the model is a `ReplayLlmProvider` that hands back the recorded turns in order, and every tool is a `ReplayTool` that pops the recorded result without executing anything. There is no network, no token cost, and no side effect. The driver asserts the harness produces a byte-identical event stream (compared via a canonical, timestamp-free signature of each event). If a harness change reorders, drops, or reshapes events, the replay reports the mismatch — and if the loop makes one more model call than was recorded, the provider throws, because an over-call is itself a harness regression.
+
+**Live replay tests the agent.** Re-executing a task against the real model — dispatched into a throwaway worktree — measures the agent as it behaves today. Because a live run is sampled behavior, the unit of truth is never a single run but a batch: a scorecard over N repetitions. Goldens can run in either mode, and the distinction matters for gating: deterministic goldens are exact and free, so they gate; live goldens are advisory, because a flaky model response should not block a save on its own.
+
+## Golden sessions: the regression baseline
+
+A `GoldenSession` is a blessed recording pinned per agent (or playbook, by convention) — an operator's declaration that *this is what good looks like*. An enabled golden gates saves and CI in its mode: deterministic by default, live when marked advisory. Each golden tracks its last run status and scorecard, plus who blessed it and when.
+
+Goldens are the smoke tests of the agent fleet: cheap to keep green, and the first thing a proposed config change must not break.
+
+## Suites, runs, and scorecards
+
+An `EvalSuite` is a workspace-scoped evaluation definition: a task spec (prompt, target agent and mode, setup), an optional fixture with a pinned SHA for fixture-drift measurement, and a list of graders. Graders are deterministic first — free and exact — with an LLM-rubric judge reserved for what deterministic checks cannot express. A default batch size of N repetitions exists to expose variance rather than hide it. Starter suites ship with Control Center and are seeded per workspace, so the feature proves itself on the product's own agents before you write any.
+
+An `EvalRun` is one batch execution of a suite against a config hash, with a status lifecycle (`queued` → `running` → `done`/`failed`/`cancelled`), metered cost, and a record of what triggered it (`manual`, `canary`, `golden`, or `ci`). Large batches can fan out to workers as a fleet job.
+
+The result is an `EvalScorecard`: pass rate with its standard deviation, average cost and cost variance, average turns and duration, and a per-grader breakdown. A repetition passes only when *every* grader passes. What a scorecard proves: *this configuration, measured over a batch, achieves this quality at this cost* — statistics, never a single-run verdict.
+
+## The canary lifecycle: promoting config changes on evidence
+
+Every run records its effective config as an `AgentConfigVersion` (idempotent by hash), so "what changed?" always has an answer. Each version carries a lifecycle status:
+
+- **live**: the configuration currently in effect.
+- **canary**: a proposed change under evaluation. The old config stays live while the new one runs its goldens and suite.
+- **retired**: a previously-live version superseded by a promotion.
+
+The `CanaryGateService` promotes a canary only when its scorecard is green (a 0.9 pass-rate bar by default), or via an explicit override that is recorded as such. Promotion retires the previously-live version. A config hash that is already live or retired is never silently demoted back to canary. What the gate proves: *this change was promoted on measured evidence, or a human overrode the evidence and left a paper trail.*
+
+## Reliability scores and the autonomy dial
+
+Scorecards accumulate into a track record. `ReliabilityScore.compute` blends eval pass rate and production success rate weighted by volume, then applies bounded penalties for sandbox violations, doom-loop incidents, and negative human feedback. From the score it derives a recommended autonomy ceiling:
+
+- **observe only**: not enough evidence, or reliability below the approval bar.
+- **act with approval**: reliable enough to act, with human approval on effects (at least 20 runs and an 0.85 score by default).
+- **act freely**: demonstrated reliability high enough to act without approval (at least 100 runs, a 0.95 score, and zero sandbox violations by default).
+
+The recommendation deliberately requires *both* a high score and a minimum evidence volume — an agent with no history is never recommended for act-freely — and it always carries human-readable rationale lines explaining why, intended for display on the autonomy dial.
+
+Today the score is exposed per agent over the `evals.reliability` RPC, computed from the agent's config-version scorecards (production signals can be layered in by the runtime). The domain also provides a `permits` gate predicate — act-freely requires an act-freely recommendation — but nothing in the server enforces a dial setting against it yet. The link from reliability to autonomy is therefore a *recommendation with a ready-made gate*, not an automatic clamp: the dial cites the evidence, and the operator (or a future enforcement layer) decides.
+
+## Catching drift that recording can't
+
+One failure mode survives every artifact above: behavior shifting *without* a config change — an upstream model update, a tool that starts behaving differently. The drift detector addresses it by comparing a rolling window of recent runs (cost, turn counts, failure-family mix) against a baseline window and raising an alarm with per-dimension evidence when they diverge. Together with recordings, goldens, and scorecards, it closes the loop: regressions from your changes are gated, and regressions from the world's changes are detected.

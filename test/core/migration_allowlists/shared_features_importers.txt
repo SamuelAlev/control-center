@@ -1,0 +1,9 @@
+# Shrinking allowlist: lib/shared files that still import lib/features (shared
+# must not depend on features). Enforced by architecture_constraints_test.dart.
+# Invert the dependency (feature passes what it needs into the shared widget) +
+# remove. No NEW entries.
+# Regenerated 2026-07-22 to the current baseline (list had drifted).
+lib/shared/widgets/app_shortcuts.dart
+lib/shared/widgets/composer/voice/voice_button.dart
+lib/shared/widgets/github_link_handler.dart
+lib/shared/widgets/source_control/scm_view.dart

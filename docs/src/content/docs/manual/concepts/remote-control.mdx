@@ -1,0 +1,164 @@
+---
+title: Remote control and mobile
+description: How Control Center pairs your phone with the server over a brokered, end-to-end-sealed relay so you can keep an eye on the fleet, plus the security model that keeps that link tightly scoped.
+---
+
+Control Center is a desktop app, but the work it tracks doesn't stop when you
+step away from your desk. **Remote control** pairs your phone with your
+`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
+at remote.usectrl.dev, so you can follow the fleet from there: read messages
+and tickets, reply to an agent, triage your newsfeed, without the audio,
+transcript, source code, or credentials that live on the server ever leaving
+it.
+
+Think of it as a read-mostly companion to the deck. It is not meant to replace
+the full desktop client.
+
+:::note[Two different remote paths]
+The phone companion pairs with a `cc_server` over a **brokered WebSocket
+relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
+(and a desktop pointed at a remote server) is the other remote path; it dials
+`cc_server` over WebSocket and renders the complete app. See
+[Deployment and clients](/manual/concepts/deployment/) for how the two differ.
+:::
+
+## What the phone can do
+
+The paired phone reaches a small, intentional slice of the server's surface:
+
+- **Read** tickets, agents, channels and their messages, and your newsfeed
+- **Reply**: send a message in a channel, update or assign a ticket, mark an
+  article read or saved
+
+That's it. A phone is a **lower-privilege principal** than a local agent. It
+cannot spawn processes, spend LLM budget, push to GitHub, hire or fire agents,
+or create workspaces. See [the security model](#the-security-model) for why.
+
+## How the link is built
+
+The connection rides a **brokered relay**: the server joins one invite-gated
+room on a `wss://` broker as its owner, and every paired client — desktop, web,
+phone — joins the same room with a time-boxed admission token. Three pieces
+come together:
+
+| Piece | Role |
+|---|---|
+| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB. |
+| **Relay broker** | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret, and never interprets what it forwards. |
+| **`cc_server`** | The room's owner. It answers the phone's calls against the same tool dispatcher and workspace binding every other client uses. |
+
+A pairing offer carries a **connection descriptor** listing every path to the
+server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
+The phone's resolver picks the best reachable path and pins the fingerprint on
+first connect (TOFU); the relay guarantees connectivity even when no direct
+path exists, without ever being able to read the traffic.
+
+## Pairing
+
+You mint a pairing offer from **Settings → Remote control & devices**; for a
+phone it shows a **QR code** (and a copyable link). Scan it with the phone's
+camera (or open the link in a browser) and the phone connects.
+
+What's in that code is a deep link:
+
+```
+https://<pwa-host>/#<payload>
+```
+
+The payload rides in the URL **fragment**, the part after `#` that browsers
+never send to the server, so the PWA's HTTPS host never sees it. The payload
+carries everything the phone needs to reach the server and prove who it is:
+
+- the **connection descriptor** (every path to the server + its identity
+  fingerprint)
+- a freshly minted **device id**
+- a 32-byte **pre-shared key (PSK)**
+- a short **expiry** (~5 minutes)
+
+The phone decodes it, stores a pairing record locally, and strips the fragment
+so the secret leaves the URL. The offer is short-lived: an unused QR expires,
+and an un-approved offer is purged — PSK and row — past its window.
+
+## The security model
+
+A paired phone is **authenticated but untrusted**. Several layers keep an
+approved (or leaked) pairing from becoming full remote control of the server.
+
+### 1. Default-deny tool policy
+
+The phone shares the server's tool registry, the same one the
+[MCP server](/manual/guides/mcp-server/) exposes, but a default-deny allow-list
+governs which tools it may call. Anything not listed is rejected before it ever
+runs. The allow-list is intentionally read-and-observe heavy, plus a handful of
+**local-only** writes (a message, a ticket update) that spend no LLM budget,
+spawn no process, and touch no external system like GitHub.
+
+Denied, for example: consulting an agent, starting an AI review, killing an
+agent, publishing a review to GitHub, hiring or firing agents, creating a
+workspace.
+
+### 2. End-to-end-sealed frames keyed by the PSK
+
+Every frame between phone and server is sealed with the pairing PSK; the
+admission token only gets a client into the room, it decrypts nothing. The
+broker relays ciphertext and never sees the PSK. A device that is revoked finds
+its credential already gone, so it **fails closed** on reconnect.
+
+Pairing is never a permanent backdoor: an approved credential is time-boxed
+(30 days), and a device idle for two weeks drops back to requiring fresh
+approval on its next connect rather than auto-resuming a long-dormant trust.
+
+### 3. Per-session workspace binding
+
+Every call the phone makes is scoped by a per-session
+**workspace binding**, the sole source of the `workspace_id` for that call. The
+binding is independent of any other client's view: switching workspaces on the
+phone changes only the binding, never the desktop's. A phone bound to
+workspace A cannot read or mutate workspace B by passing a foreign id. This is
+the same [workspace isolation](/manual/concepts/workspaces/) invariant the rest
+of the product enforces.
+
+### 4. Rate limiting
+
+Each session runs a sliding-window limiter, a cap on total calls per minute and
+a tighter sub-cap on the mutating verbs, so a misbehaving or hijacked client
+can't flood tool calls, churn local writes, or burn resources.
+
+### 5. A broker that learns nothing
+
+The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
+and holds no accounts, no app data, and no keys. Rooms are invite-gated and
+transient. The app data, audio, transcript, source, and credentials all stay on
+the server.
+
+## Live updates
+
+Once paired, the phone receives **live, workspace-scoped updates** as
+notifications (new agent messages, tickets assigned to you, status changes),
+mirroring the desktop's own notifications but filtered to the bound workspace.
+A phone never receives a notification from another workspace.
+
+## Where it lives
+
+| Surface | What it shows |
+|---|---|
+| **Settings → Remote control & devices** | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+
+The same panel mints pairings for a second browser or desktop app, not just
+phones — the flow is identical, only the deep link differs (phones get the QR
+that points the Remote PWA at the broker room).
+
+::::note
+Remote control is desktop-and-server-only and is **not** exposed over MCP. The
+phone speaks to the server's own tool dispatcher over the relay; it is not an
+MCP client of an external server.
+::::
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/): the per-session workspace binding enforces the same invariant
+- [Architecture](/manual/concepts/architecture/): where remote control sits in the stack
+
+## Related guides
+
+- [Pair a device](/manual/guides/pair-a-device/)

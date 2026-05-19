@@ -1,0 +1,81 @@
+---
+title: Monitor pipeline runs
+description: Track pipeline execution, inspect step results, and debug failures.
+---
+
+This guide shows you how to monitor and debug pipeline runs.
+
+## View runs
+
+1. Navigate to **Pipelines** in the sidebar
+2. The run list shows all runs with status, template name, start time, and cost
+
+Filter by:
+
+- **Status**: running, completed, failed
+- **Template**: which template was used
+- **Time range**: recent, last 24h, last 7 days
+
+## Run detail
+
+Click a run to see:
+
+- **DAG visualization**: the step graph with color-coded statuses
+- **Step list**: each step with status, duration, and cost
+- **State**: the shared state bag (input/output JSON)
+- **Timeline**: step execution timeline
+- **Error details**: shown if the run failed
+
+## Step inspection
+
+Click any step to see:
+
+- **Input**: JSON data passed to the step
+- **Output**: JSON data the step produced
+- **Error**: error message if the step failed
+- **Duration**: wall-clock execution time
+- **Attempt count**: retries so far
+- **Branch index**: for parallel branches
+
+For agent steps, the output includes the agent's response text and any tool call summaries.
+
+For bash script steps, the output includes stdout and stderr.
+
+## Debug failures
+
+When a step fails:
+
+1. Check the **error message**: it usually identifies the root cause
+2. Check the **input**: was the data correct?
+3. Check the **attempt count**: did retries run?
+4. For agent steps: check the agent's run log for detailed trace
+
+Common failure reasons:
+
+- **Agent unavailable**: the agent was already running or not found
+- **Timeout**: the step exceeded its configured timeout
+- **Script error**: the bash command returned a non-zero exit code
+- **Schema validation**: the step's output didn't match the expected schema
+- **State error**: a referenced input key was missing from the state
+
+## Cost monitoring
+
+The run detail shows cumulative cost across all steps:
+
+- **Total cost**: in cents
+- **Total tokens**: input + output across all agent steps
+
+Use this to identify expensive pipeline templates and optimize them.
+
+## Run history
+
+Each template shows its run history. Compare runs to track:
+
+- Whether the pipeline is getting faster or slower
+- Whether costs are increasing
+- Failure rates over time
+
+## Related guides
+
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Create a pipeline template](/manual/guides/create-pipeline/)

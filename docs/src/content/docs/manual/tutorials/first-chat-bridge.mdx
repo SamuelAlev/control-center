@@ -1,0 +1,103 @@
+---
+title: Bridge Slack to your workspace
+description: Create the Slack app, connect it, link your account, and get an agent answering in a Slack thread.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- A Slack app created for your workspace, with the right permissions and events already set
+- A live connection between Slack and Control Center
+- Your own Slack account linked to your Control Center user
+- An agent answering you in a Slack thread, and a ticket filed from a slash command
+
+Prerequisites:
+
+- [Your first workspace](/manual/tutorials/first-workspace/) and [Dispatch your first agent](/manual/tutorials/first-agent/) completed — a workspace with no agents can receive a Slack message but has nobody to answer it
+- The `owner` or `admin` role in the Control Center workspace (connecting a chat app speaks for the whole workspace)
+- Permission to create and install apps in your Slack workspace
+
+Nothing here needs a public address, a tunnel, or an inbound port. Control Center dials *out* to Slack over Socket Mode, so this works from a laptop behind NAT.
+
+## Step 1: Get a Slack app configuration token
+
+This is the one secret you have to fetch by hand. It lets Control Center create and later edit the app for you.
+
+1. Open [api.slack.com/apps](https://api.slack.com/apps)
+2. Scroll to the app configuration tokens section at the bottom of the page
+3. Generate a token pair for your Slack workspace
+4. Copy the **refresh** token — it starts with `xoxe-`
+
+## Step 2: Let Control Center create the app
+
+1. In Control Center, go to **Settings → Accounts** and find the **Chat bridges** card
+2. On the **Slack** block, click **Create app for me**
+3. Paste the app configuration token
+4. Review what the bot will look like:
+   - **App name**: how Slack lists the app, e.g. `Control Center · Acme`
+   - **Bot name**: what people type after `@`, e.g. `control-center`
+   - **Short description** and **What the bot says it can do**
+   - **Slash command**: `cc` by default, so the command is `/cc`
+   - **Direct messages**: leave on so members can DM the bot
+5. Click **Create app**
+
+Control Center composes the whole app definition — Socket Mode on, the bot scopes and event subscriptions it needs, the slash command, the Messages tab — and creates it in Slack.
+
+## Step 3: Finish the two steps only Slack can do
+
+Slack has no API for generating an app-level token or installing an app, so the dialog hands you both as links:
+
+1. **Generate an app-level token** — opens **Basic Information → App-Level Tokens**. Create a token with the `connections:write` scope and copy it. It starts with `xapp-`
+2. **Install the app** — opens **Install App**. Install to your workspace, then copy the **Bot User OAuth Token**. It starts with `xoxb-`
+
+Keep both values around for the next step.
+
+## Step 4: Connect
+
+1. Back in the dialog, click **Paste the credentials**
+2. Enter the **Bot token** (`xoxb-…`) and the **App-level token** (`xapp-…`)
+3. Leave **App configuration token** empty — the one from step 1 was already stored (Slack rotated it, and Control Center saved the new one)
+4. Click **Connect**
+
+Control Center verifies the bot token with Slack before it stores anything, then opens the socket. The row now reads the bot's name and your Slack workspace name with a **Live** tag.
+
+## Step 5: Link your own Slack account
+
+The connection makes the bot reachable; linking makes *you* recognizable. Until your Slack identity is linked, the bot will not act on your messages — it never attributes a message to whoever installed the app.
+
+1. On the Slack block, click **Link my Slack account**
+2. Copy the command it shows, for example `/cc link K7M2QP`
+3. In Slack, send that command to the bot in a DM
+4. The bot answers "Linked — you are …"
+
+The code is single-use and expires in 15 minutes. If your Slack email matches a Control Center user who is already a member of this workspace, the bridge links you automatically the first time you talk to it and you can skip this step.
+
+## Step 6: Put an agent on something
+
+1. In Slack, invite the bot into a channel: `/invite @control-center`
+2. Mention it with a real request:
+
+   > @control-center summarize the open PRs on the api repo
+
+The bridge:
+
+1. Creates a Control Center channel for that Slack thread, named after the channel and your request
+2. Wakes the workspace's front-door agent (the CEO agent when there is one, otherwise the first agent)
+3. Streams the agent's answer back into the Slack thread as it is written
+
+Reply in the same thread to keep going — no further mentions needed, because the thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center channel, with a title and an "is thinking…" status line while the agent works.
+
+## Step 7: File a ticket without leaving Slack
+
+```text
+/cc ticket Fix the flaky login test | It fails on CI about once a day.
+```
+
+The bot answers with the ticket key it filed. The ticket is an ordinary local Control Center ticket, reported by you, ready to be assigned to an agent. `/cc help` lists everything the command can do.
+
+## Recap
+
+You created a Slack app from Control Center, connected it over an outbound socket, linked your Slack identity to your Control Center user, and drove an agent from a Slack thread. Everything that happened in Slack also exists in Control Center: the thread is a channel, the reply is a transcript, the ticket is a ticket.
+
+**Next:** [Set up Slack integration](/manual/guides/slack-integration/) covers the by-hand path, rotating tokens, and troubleshooting. For the model underneath, read [Chat bridges](/manual/concepts/chat-bridges/).

@@ -1,0 +1,126 @@
+---
+title: Triage your inbox
+description: Work the unified inbox — clear what blocks you, review what waits on you, and track your own PRs.
+---
+
+This guide shows you how to work the inbox: the one surface that collects
+everything that blocks you or explicitly asks for you — pending agent
+approvals, failed ticket syncs, and every pull request that involves you as
+reviewer or author.
+
+## Open the inbox
+
+1. Click **Inbox** in the sidebar. Its badge counts pending agent approvals,
+   failed syncs, and open PRs awaiting your review.
+2. Or press <kbd>⌘K</kbd> and run the **Inbox** navigation command.
+3. Or deep-link straight to `/workspaces/<workspace-id>/inbox`.
+
+The sidebar entry always shows the live count, so you can see triage work
+accumulate without opening the page.
+
+## Read severity at a glance
+
+Scan top to bottom; the inbox is already ordered by urgency:
+
+1. The pinned **Needs your attention** strip sits above the PR sections. Every
+   card carries a severity chip:
+   - **Blocked** — progress is halted (an agent is stuck on an approval, a
+     ticket sync failed and its vendor mirror is stale).
+   - **Waiting** — needs attention soon, but nothing is halted.
+   - **Info** — a standing request that isn't halting work.
+2. Within the strip, the most urgent severity comes first; ties go to the item
+   that has been waiting longest.
+3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
+   **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
+   **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
+   author**. The top sections are what needs *you*; the rest are where *your*
+   PRs stand. **Needs your review** includes PRs that still request a GitHub
+   team you belong to (the team drops off once any teammate reviews).
+
+An item only lands in the inbox when it blocks something or explicitly
+requests you, so an empty strip plus an empty section list ("You're all caught
+up") genuinely means nothing is waiting on you.
+
+## Clear the attention strip
+
+Each strip card has one next action:
+
+1. If a card says an agent is asking to run a command, click **Review** — you
+   land in that agent's channel with its pending confirmation. Approve or
+   reject there (see [Chat with an agent](/manual/guides/chat-with-agent/)).
+2. If a card says a ticket sync failed for a vendor, click **Open** — you land
+   on **Settings → Accounts**, where you can reconnect the vendor. Only the
+   latest failure per vendor appears, so fixing the connector clears the card.
+3. Cards disappear on their own once the underlying state resolves (the agent
+   is answered, the sync recovers) — there is nothing to dismiss manually.
+
+## Filter to what is blocking
+
+1. Press <kbd>f</kbd> (with no text field focused) to open the filter menu, or
+   click the filter button in the toolbar.
+2. Pick any combination of status, author, reviewers, content, repo
+   owner/name, date windows, or quick-to-review. Facet counts in the menu show
+   how many inbox items each option matches.
+3. Active filters appear as chips in the bar above the list; click a chip's
+   ✕ to drop that criterion.
+4. Use the left rail to jump between sections — each entry shows its live
+   count, and the highlight tracks your scroll position. Click a section
+   header to collapse sections you don't triage (for example **Drafts** while
+   clearing reviews).
+5. Click a column header (title, changes, or updated) to sort every section;
+   click the active column again to flip direction. The display-options button
+   controls draft visibility, row properties, ordering, and grouping by
+   author.
+
+Filters here are independent of the PR queue — narrowing the inbox never
+changes the queue's filters, and vice versa.
+
+## Act on a PR item
+
+1. Click any row to open the PR detail page.
+2. If the PR is in **Needs your review**, review it and submit your decision —
+   see [Review and merge a PR](/manual/guides/review-merge-pr/).
+3. If the PR is in **Returned to you** (changes requested or CI failed), push
+   fixes from your checkout or hand the follow-up to an agent.
+4. If the PR is in **Approved**, merge it from the detail page.
+5. If you'd rather delegate a review than do it yourself, see
+   [Dispatch reviewers](/manual/guides/dispatch-reviewers/) and
+   [the dispatch lifecycle](/manual/concepts/dispatch-lifecycle/).
+
+Once the underlying state changes (your review lands, the PR merges), the
+classifier re-files the PR into its new section automatically.
+
+## Undo a mistaken action
+
+1. Press <kbd>⌘Z</kbd> to undo the last action, <kbd>⌘⇧Z</kbd> to redo it.
+2. If a text field is focused, ⌘Z edits the field's text instead — click out
+   of the field first to undo an app-level action.
+
+## Look up shortcuts in place
+
+Press <kbd>?</kbd> (with no text field focused) to open the keyboard cheat
+sheet. It lists every binding active on the current route, including the
+inbox's <kbd>f</kbd> filter shortcut. The full map is in the
+[keyboard shortcuts reference](/manual/reference/keyboard-shortcuts/).
+
+## Drive it from the command palette
+
+1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
+2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
+   matching pull requests and opens the one you pick.
+3. From anywhere else in the app, use the palette's **Copy link** command to
+   copy the current inbox URL for sharing.
+
+## Refresh on demand
+
+The inbox updates live, but if you suspect stale data, click the refresh
+control in the toolbar — it forces an immediate server-side GitHub sweep and
+refetches the merged/reviewed overlays. The icon spins until every fetch
+settles.
+
+## Related guides
+
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Dispatch reviewers](/manual/guides/dispatch-reviewers/)
+- [Dispatch lifecycle (concept)](/manual/concepts/dispatch-lifecycle/)

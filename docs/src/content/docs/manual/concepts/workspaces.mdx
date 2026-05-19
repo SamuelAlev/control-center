@@ -1,0 +1,75 @@
+---
+title: Workspaces and isolation
+description: How workspaces enforce hard tenant boundaries between projects.
+---
+
+## What is a workspace?
+
+A workspace is the top-level isolation tenant in Control Center. It groups agents, repositories, channels, tickets, memory, and pipelines into a bounded context. Everything that happens inside a workspace stays inside it.
+
+A typical workspace maps to one project or one codebase. You might have separate workspaces for "api-service", "frontend-v2", and "infrastructure".
+
+## Workspace-scoped data
+
+The following entities live in the workspace's own database file (`workspaces/<id>.db`). Most rows still carry a `workspaceId` column as defense in depth (see below), but the file split — not the column — is what scopes them:
+
+| Entity | Scope |
+|---|---|
+| Agents | Belong to exactly one workspace |
+| Channels and messages | Workspace-scoped |
+| Tickets and projects | Workspace-scoped |
+| Memory facts, policies, domains | Workspace-scoped |
+| Memory access grants | Workspace-scoped |
+| Pipeline runs, templates, triggers | Workspace-scoped |
+| Pull requests (local state) | Workspace-scoped |
+| Review channel associations | Workspace-scoped |
+| Agent run logs | Workspace-scoped |
+| Agent working memory | Workspace-scoped |
+| Code graph symbols and edges | Scoped by `repoId` within the workspace file |
+
+## Repos are workspace-scoped; identity across workspaces is by path
+
+A repo row lives in its workspace's own database file — the file *is* the scope, so the table has no `workspaceId` column and no join table. Registering the same checkout in two workspaces creates two independent rows with two ids; repo identity *across* workspaces is by filesystem path (or GitHub owner/name), never by id. The worktrees (isolated copies) that agents work in are likewise per-workspace, so the same repository can be checked out on different branches in different workspaces without conflict.
+
+The code graph (symbols and edges) lives in the same file, keyed by `repoId`, because different workspaces may have the same repository on different branches with different code.
+
+## The isolation invariant
+
+Cross-workspace data leaks are treated as bugs. Isolation used to be a convention — every query had to remember `WHERE workspace_id = ?`, policed by tests that could only pattern-match SQL. It is now **structural**, enforced at several levels:
+
+- **Database layer**: each workspace has its own SQLite file, handed out by `WorkspaceDatabaseManager.of(workspaceId)`. A `WorkspaceDatabase` physically contains one workspace's rows and does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read is not a bug you can write — it does not compile. Repositories resolve their DAO per call (`_dbs.of(workspaceId).agentDao`), and because every repository method takes a required `workspaceId`, the workspace can never be inferred or defaulted.
+- **Defense in depth**: the `workspaceId` columns are still there and still written. Redundant within a file, they keep the sync-feed triggers, FTS indexes, and existing row shapes unchanged, and they make a file self-describing when it is inspected on its own — which is exactly what export/import relies on.
+- **Domain layer**: services that mutate entities validate `entity.workspaceId == workspaceId` before proceeding and throw `WorkspaceMismatchException` on mismatch — the loud failure for an ID that arrived from the wrong context.
+- **RPC layer**: the repo-RPC dispatcher is the chokepoint. Every workspace-scoped op must carry `workspace_id` in its args, and the server validates that the caller is a member of that workspace with a role at least at the op's floor (plus per-repo grants for code-bearing ops). There is no per-session "current workspace" to leak: multiple clients on one server each name their own workspace per request, and genuinely global ops (newsfeed, fleet) declare `workspaceScoped: false` as an explicit decision. MCP tools follow the same rule — any tool touching workspace-scoped data requires `workspace_id` as a parameter.
+- **Cross-workspace fan-out is enumerable**: answering a question about several workspaces means opening several databases. That fan-out is deliberately confined to `CrossWorkspaceQueries`, so the cross-workspace surface stays listed in one file instead of diffusing behind doc comments.
+- **ID-only access is not sufficient**: looking up an entity by its UUID does not prove it belongs to the caller's workspace. The file split makes the wrong file unreachable, and the domain-layer validation catches a wrong ID that arrives through a legitimate file.
+
+## The global registry
+
+Not everything is workspace-scoped. A second database — `GlobalDatabase` (`global.db`, 11 tables) — holds what is genuinely server-wide: the workspace registry, so the switcher can list every workspace without opening a single workspace file; users and identity, because one human is one user across every workspace and a paired device survives a workspace being deleted; the fleet queue, whose scheduler matches the whole job queue against every worker on each tick; the newsfeed; and `workspace_routes`, the pre-auth index that answers "which workspace owns this key?" before a session is authenticated. Boot opens only this file — workspace files open lazily on first touch — so startup cost stays flat no matter how much history the workspaces accumulate.
+
+## Export and import
+
+Because one workspace is one file, handing a workspace around is a file operation. `workspace.export` is a single `VACUUM INTO` — a consistent, defragmented snapshot taken under a read transaction while the server keeps serving — rather than a table-by-table dump. `workspace.import` adopts such a file: the embedded `workspace_meta` records which workspace the file holds and which install created it, so an import can tell "my own file, re-adopted" from "a file that came from another install" (the latter is allowed, but logged rather than invisible).
+
+## Workspace creation and CEO seeding
+
+When a workspace is created:
+
+1. The workspace entity is persisted
+2. A `WorkspaceCreated` domain event is published
+3. An event listener seeds a **CEO agent** into the workspace
+
+The CEO agent has the CEO role and a coordination-focused persona. It can hire other agents, delegate work, and manage the workspace team.
+
+## Multiple workspaces
+
+You can run multiple workspaces side by side. Each workspace operates independently: agents in one workspace cannot message agents in another, cannot read another workspace's memory, and cannot access its tickets.
+
+The dashboard provides a cross-workspace view (by design), but it's read-only aggregation: you cannot act on Workspace B's data from Workspace A's context.
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/): agents belong to workspaces
+- [Memory and knowledge](/manual/concepts/memory-knowledge/): memory is workspace-scoped
+- [Architecture](/manual/concepts/architecture/): how isolation is implemented technically

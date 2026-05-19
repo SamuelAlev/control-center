@@ -1,0 +1,263 @@
+name: control_center
+description: "Multi-Agent Developer Control Center"
+publish_to: "none"
+
+version: 0.0.1+1
+
+environment:
+  sdk: ">=3.12.0 <4.0.0"
+
+# Native Dart pub workspace. This pubspec is the workspace ROOT (it carries the
+# `workspace:` key, so it does NOT set `resolution: workspace` — only members do).
+# cc_ui (design system) and cc_gallery (Widgetbook) are the new members alongside
+# the existing system_audio_capture plugin. All members share a single
+# pubspec.lock resolved in one pass.
+workspace:
+  - packages/system_audio_capture
+  - packages/cc_ui
+  - packages/cc_markdown
+  - packages/cc_natives
+  - packages/cc_domain
+  - packages/cc_harness
+  - packages/cc_harness_runtime
+  - packages/cc_rpc
+  - packages/cc_host
+  - packages/cc_infra
+  - packages/cc_data
+  - packages/cc_persistence
+  - packages/cc_mcp
+  - packages/cc_mcp_client
+  - packages/cc_server_core
+  - apps/cc_gallery
+  - apps/cc_remote
+  - apps/cc_server
+  - apps/cc_signaling_server
+  - apps/cc_worker
+
+dependencies:
+  sentry_flutter: ^9.26.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  # Web: lets `main()` switch the web app to clean path-based URLs (`/workspaces/<id>/…` instead of `/#/…`). Platform-safe — a no-op on desktop. See lib/main.dart.
+  flutter_web_plugins:
+    sdk: flutter
+  intl: ^0.20.3
+  # UI
+  # In-repo design system (tokens, theme, primitives, components). Workspace member, the app owns every visual component outright.
+  cc_ui:
+    path: packages/cc_ui
+  cc_markdown:
+    path: packages/cc_markdown
+  # The web / desktop is now a thin client, desktop can spawn a local `cc_server` (which owns the database) and talks to it over RPC. The app opens no DB.
+  # In-repo Dart FFI surface for the runtime-loaded natives (rift/fff/tree-sitter/aec). Bindings + loaders only — builds no native code; the dylibs are produced by scripts/natives/*.sh. Workspace member.
+  cc_natives:
+    path: packages/cc_natives
+  # Pure-Dart shared contracts (JSON-RPC wire types + DTOs) consumed by both the web / desktop app and the cc_remote PWA. Workspace member.
+  cc_domain:
+    path: packages/cc_domain
+  cc_harness:
+    path: packages/cc_harness
+  # Transport-agnostic RPC client + channel transports (web-safe). The desktop in REMOTE mode, the full web build and cc_remote dial a cc-server through this. The server half lives in cc_host. Workspace member.
+  cc_rpc:
+    path: packages/cc_rpc
+  # Server-side RPC kernel (VM-only): per-connection sessions, repo-op dispatch, subscriptions, rate limiting, tool policy, WSS server transport. Embedded by the desktop "be your own server" path and apps/cc_server. Workspace member.
+  cc_host:
+    path: packages/cc_host
+  # Server-side VM-only infrastructure adapters (pure dart:io impls of cc_domain ports: git/process/GitHub-CLI, schema validation, adapter/ACP detection).
+  # Kept SEPARATE from the cc_host kernel and free of Flutter/cc_natives so both link into the Flutter-free cc_server binary. Workspace member.
+  cc_infra:
+    path: packages/cc_infra
+  # Remote data layer (web-safe): repository adapters that read/write over the cc_rpc client. The data source for the web build + desktop REMOTE mode; desktop LOCAL keeps the Drift repositories. Workspace member.
+  cc_data:
+    path: packages/cc_data
+  # Pure-Dart persistence: the Drift schema (AppDatabase + tables + DAOs) lives here so the same database runs on the desktop and a dart build cli server.
+  cc_persistence:
+    path: packages/cc_persistence
+  # Pure-Dart app-server composition (RPC catalog + LocalRpcServer + event forwarding + secrets port). The desktop's in-process server uses it today; apps/cc_server is the same composition with no Flutter. Workspace member.
+  cc_server_core:
+    path: packages/cc_server_core
+  # The MCP tool surface (agent-facing API). The desktop registers these tools into its local MCP HTTP server; the wiring providers stay in lib but the tool classes + dispatcher live here so the headless cc_server reuses them.
+  cc_mcp:
+    path: packages/cc_mcp
+  # The MCP CLIENT — connects to EXTERNAL MCP servers and bridges their tools into the local registry, plus the cross-cutting tool ecosystem (BM25 tool discovery, capability tiers, config discovery, OAuth, background processes, semantic code search, advisor/watchdog).
+  # Pure Dart; links into both the desktop and the headless cc_server.
+  cc_mcp_client:
+    path: packages/cc_mcp_client
+  # TextMate-grammar syntax highlighting (pure-Dart Shiki port; replaced the
+  # unmaintained `highlight` hljs port). Themed by the custom CC theme and
+  # wired through lib/shared/syntax/ — grammars, language table, tokenizer
+  # seam, and the Flutter-free engine the PR-diff worker compiles in.
+  shiki_flutter: ^1.1.0
+  flutter_emoji: ^2.5.1
+  # Exact-extent virtualized list (Fenwick-tree extent manager) for the message feed: measured per-row extents keep the scrollbar stable across wildly varying bubble heights, where a plain ListView estimates and the thumb jumps.
+  super_sliver_list: ^0.4.1
+
+  # Routing
+  go_router: ^17.5.0
+
+  # State Management
+  flutter_riverpod: ^3.4.2
+  # The app-support directory is the root every app path derives from, so the
+  # plugin is a direct dependency rather than something inherited from whichever
+  # media package happens to pull it. The platform interface is direct too, to
+  # subclass PathProviderPlatform (see core/storage/app_support_path_provider.dart).
+  path_provider: ^2.1.6
+  path_provider_platform_interface: ^2.1.3
+  path: ^1.9.1
+  uuid: ^4.6.0
+
+  # Browser APIs (localStorage) for the web build's session persistence. Only
+  # imported by the web bootstrap (lib/bootstrap/bootstrap_web.dart), never by
+  # the desktop bootstrap. Already in the lockfile via the cc_remote PWA member.
+  web: ^1.1.1
+
+  # Network
+  dio: ^5.11.0
+  http: ^1.6.0
+  # Zero-config LAN discovery of cc_server instances: the desktop
+  # browses the `_ccserver._tcp.local` mDNS service the server advertises.
+  # Desktop-only — imported solely from lib/core/server/lan_discovery.dart,
+  # which only desktop code paths reach (the package is dart:io-based).
+  multicast_dns: ^0.3.3+1
+
+  # Diff
+  diff_match_patch: ^0.4.1
+
+  # Cross-platform heavy-compute offload: one API over Dart isolates (native)
+  # and Web Workers (web). `dart:isolate` does not exist on web, so this is how
+  # web-reachable heavy work (diff parse/tokenize, large markdown parse, metrics,
+  # graph layout) runs off the main thread on web the way isolates do on desktop.
+  # Web workers are generated to web/*.js via `tool/gen_workers.sh`.
+  isolate_manager: ^6.3.2
+
+  # Charts
+  fl_chart: ^1.2.0
+
+  # YAML parsing (AGENTS.md/TEAM.md)
+  yaml: ^3.1.3
+
+  # Desktop
+  # Unified native surface: window control, multi-window, plain (NSUserDefaults/
+  # registry/GSettings) storage, URL opening. Replaces window_manager +
+  # desktop_multi_window + url_launcher + shared_preferences.
+  # NOTE: nativeapi 0.1.x has NO working secure-storage backend (every platform
+  # is a stub that no-ops), so secrets stay on flutter_secure_storage below.
+  nativeapi: ^0.1.4
+  local_notifier: ^0.1.6
+  file_selector: ^1.1.0
+
+  # Secrets (GitHub/Linear tokens, remote-control PSKs): real OS keychain —
+  # macOS/iOS Keychain, Windows Credential Manager, Linux libsecret. nativeapi's
+  # SecureStorage is unimplemented, so this dedicated plugin backs SecureStore.
+  flutter_secure_storage: ^11.0.0
+
+  # Utils
+  crypto: ^3.0.7
+  collection: ^1.19.1
+  # `@immutable`/`@pragma` annotations used by Flutter-free files that are pulled
+  # into `dart compile js` Web Worker entrypoints (e.g. diff_worker_core.dart),
+  # which cannot import flutter/foundation.
+  meta: ^1.19.0
+  # Non-secret storage (shared_preferences) and URL opening (url_launcher) are
+  # now provided by `nativeapi` (see the Desktop section); secrets use
+  # flutter_secure_storage (nativeapi's secure store is an unimplemented stub).
+  html: ^0.15.6
+  flutter_inappwebview: ^6.1.5
+  # Lets Flutter overlays/gestures win over embedded web platform views: on web
+  # an <iframe>/webview (browser + code-server panes) swallows pointer events the
+  # moment the cursor enters it, so flyouts over it aren't clickable and a drag
+  # dies when it crosses in. PointerInterceptor drops a transparent DOM element
+  # above the iframe so events reach Flutter instead. No-op off-web (desktop
+  # native platform views don't steal captured drags).
+  pointer_interceptor: ^0.10.1+2
+  record: ^7.1.1
+  # Driver-free system-output (loopback) audio capture for meeting notes.
+  # Local plugin: Core Audio taps (macOS), WASAPI loopback (Windows), PipeWire/PulseAudio monitor (Linux).
+  system_audio_capture:
+    path: packages/system_audio_capture
+  video_player: ^2.14.0
+  audioplayers: ^6.8.1
+  chewie: ^1.14.1
+  # WebRTC for the remote-control transport (one DataChannel per paired phone carries JSON-RPC). DataChannel-only — no camera/mic. Heavy native xcframework; see macos Podfile minimum.
+  flutter_webrtc: ^1.6.0
+  # Pure-Dart QR widget for the remote-control pairing QR code.
+  qr_flutter: ^4.1.0
+  flutter_svg: ^2.3.0
+
+  # Terminal emulator (xterm.dart) + host-side PTY
+  xterm: ^4.0.0
+  flutter_pty: ^0.4.2
+
+  kalender: ^0.25.0
+  # Desktop in-app updater: Sparkle 2 (macOS) + WinSparkle (Windows) behind one
+  # Dart seam (lib/core/update/desktop_updater*.dart). Updates the WHOLE app
+  # bundle (UI + embedded cc_server + natives); the check cadence and the
+  # drain rule (never prompt mid-recording) live in desktop_update_controller.
+  auto_updater: ^1.0.0
+
+dev_dependencies:
+  sentry_dart_plugin: ^3.4.0
+  # Pure-Dart Ed25519 for the local updater harness (tool/fake_update_server.dart
+  # signs a fake Sparkle appcast with a throwaway dev key). Already in the graph
+  # transitively (cc_rpc's server identity); promoted to dev-direct for the tool.
+  cryptography: ^2.9.0
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Code generation — drift + json_serializable.
+  #
+  # No mocking package: every double in this repo is a hand-written fake
+  # (test/fakes/, and the per-suite ones like the Linear adapter's FakeDio).
+  # mockito was here for exactly one mock of one method; it never generated a
+  # `.mocks.dart` and `@GenerateMocks` was never used, so it cost a dependency
+  # and bought a `noSuchMethod` shim a 40-line class does better.
+  build_runner: ^2.16.0
+  # NOTE: the Web Worker generator (`isolate_manager_generator`) is intentionally
+  # NOT a dev_dependency. Its newest release pins `analyzer ^10`, while
+  # `build_runner >=2.15.2` requires `analyzer >=13.3.0` — so it is build_runner
+  # ITSELF that excludes it, and no amount of dropping other dev dependencies
+  # helps. (Verify with `dart pub add --dev isolate_manager_generator --dry-run`;
+  # this comment has previously blamed the wrong package.) It is a build-time-only
+  # tool, so `tool/gen_workers.sh` runs it via `dart pub global` in its own
+  # isolated resolution. The generated `web/*.js` are committed; end users never
+  # run it.
+
+  test: any
+  riverpod: any
+  # Virtual clock for the update controllers' schedules (first check at T+60s,
+  # the 24h cycle, the deferred-check retry, the stuck-check watchdog) — those
+  # are the behaviours worth pinning and none of them can be tested in real
+  # time. Already in the graph via flutter_test; promoted to dev-direct.
+  fake_async: any
+  drift: any
+flutter:
+  uses-material-design: true
+  generate: true
+
+  assets:
+    - assets/ide_logos/
+    - assets/logo.svg
+    - assets/sandbox/seccomp/
+    - assets/sounds/
+    - assets/models/silero-vad/
+
+  # The app bundles NO fonts of its own. Both defaults — Manrope (UI) and Fira
+  # Code (code) — are owned by the cc_ui package and resolved by their
+  # `packages/cc_ui/<family>` name via AppFonts (which aliases CcFonts). This is
+  # the single-copy setup: see packages/cc_ui/pubspec.yaml + cc_fonts.dart.
+  # A user-selected family is fetched at runtime through the host instead
+  # (CcFontRegistry), so no font catalogue is compiled into the bundle.
+  shaders:
+    - assets/shaders/login_background_dark.frag
+    - assets/shaders/login_background_light.frag
+    - assets/shaders/hero_background_dark.frag
+    - assets/shaders/hero_background_light.frag
+
+sentry:
+  upload_debug_symbols: true
+  upload_source_maps: true
+  project: control-center
+  org: parced

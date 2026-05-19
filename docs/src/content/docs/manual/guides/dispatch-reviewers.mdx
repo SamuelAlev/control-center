@@ -1,0 +1,84 @@
+---
+title: Dispatch reviewer agents
+description: Manually or automatically dispatch reviewer agents to PRs.
+---
+
+This guide shows you how to dispatch reviewer agents to review pull requests.
+
+## Automatic dispatch
+
+Set up a pipeline trigger to automatically dispatch reviewers when a PR is published:
+
+1. Create a pipeline with a `trigger` step followed by one or more **Reviewer (prompt)** nodes — one per reviewer role you want dispatched
+2. Set the trigger event to `PullRequestPublished`
+3. Enable the trigger
+
+When any agent opens a PR, the pipeline fires and dispatches the reviewer agents automatically.
+
+## Manual dispatch
+
+### From the PR view
+
+1. Open a PR
+2. Open the overflow menu in the PR header and choose **Ask AI review**
+
+This starts the AI review pipeline, which dispatches the reviewer agents. For control over which roles are dispatched and their scope, use the MCP tool or a pipeline step instead.
+
+### Via MCP tool
+
+```
+dispatch_reviewers(
+  channel_id: "...",
+  workspace_id: "...",
+  reviewers: [
+    {role: "reviewer"},
+    {role: "security", scope: "src/auth/**"}
+  ]
+)
+```
+
+Each reviewer spec takes a `role` plus an optional file-glob `scope` and a `prompt_override`. An optional `concurrency` (1–8) caps parallel dispatches; when omitted, the workspace's `review_concurrency` setting applies (default 3). The tool returns immediately with `dispatched` and `unmatched` lists; reviewer output lands as `review_node` messages in the channel.
+
+### From a pipeline step
+
+Add a **Reviewer (prompt)** node to a pipeline template — it dispatches a specialist reviewer agent through the `promptAgent` body and suspends until the agent calls `complete_task`:
+
+1. Add a **Reviewer (prompt)** node from the palette
+2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}` placeholders for upstream outputs (e.g. `{{repoLocalPath}}`, `{{prNumber}}`)
+3. Set the output key (default `reviewer_findings`) so downstream steps can consume the findings
+
+Fan out by wiring several reviewer nodes to the same upstream step, then consolidate their outputs with a **Consolidate (join)** node.
+
+## Reviewer matching
+
+`ReviewerMatchingService` picks the best agent for each requested role by scoring every candidate agent in the workspace against the role label:
+
+1. A skill containing the role label scores highest
+2. A matching title scores next
+3. A matching agent name scores lowest
+
+The highest-scoring agent wins. If no candidate scores above zero, the spec is returned in the tool's `unmatched` list instead of being dispatched.
+
+## Review channel
+
+Each dispatched reviewer gets a review channel, a channel associated with the PR via `ReviewChannelAssociation`. The review channel:
+
+- Contains the PR's diff context
+- Receives the reviewer's findings as structured messages
+- Shows the review verdict when the reviewer finishes
+
+Multiple reviewers share the same review channel, making it easy to compare findings.
+
+## Monitor dispatch
+
+The dispatch creates an `AgentRunLog` for each reviewer. Monitor progress in:
+
+- The review channel, with live streaming of findings
+- The PR detail view, which shows review status indicators
+- The dashboard, which lists cross-workspace running agents
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)

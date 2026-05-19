@@ -1,0 +1,43 @@
+---
+/**
+ * Starlight `SiteTitle` override — Control Center brand mark + wordmark.
+ * Mirrors src/components/shared/BrandMark.astro and MarketingNav so the
+ * docs header reads as the same product as the marketing site.
+ *
+ * Self-contained (scoped styles + brand tokens from src/styles/starlight.css)
+ * so it carries no dependency on the marketing Tailwind layer. Links to the
+ * site root rather than the docs home, matching the marketing nav.
+ */
+---
+
+<a href="/" class="cc-site-title" aria-label="Control Center home">
+  <img class="cc-brand-mark" src="/favicon.svg" alt="" aria-hidden="true" width="32" height="32" />
+  <span class="cc-wordmark" translate="no">Control&nbsp;Center</span>
+</a>
+
+<style>
+  @layer starlight.core {
+    .cc-site-title {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      text-decoration: none;
+      color: var(--cc-fg, #1f1f1f);
+    }
+
+    .cc-brand-mark {
+      width: 32px;
+      height: 32px;
+      flex: none;
+      border-radius: 6px;
+      display: block;
+    }
+
+    .cc-wordmark { overflow: hidden; }
+  }
+</style>

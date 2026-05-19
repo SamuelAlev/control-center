@@ -1,0 +1,35 @@
+{
+    "name": "Control Center",
+    "short_name": "Control Center",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#fcfbf9",
+    "theme_color": "#fcfbf9",
+    "description": "Control Center web client — connects to a cc-server over WebSocket.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

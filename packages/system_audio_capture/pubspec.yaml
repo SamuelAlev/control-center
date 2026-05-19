@@ -1,0 +1,33 @@
+name: system_audio_capture
+description: >-
+  Driver-free capture of system OUTPUT audio (loopback) on macOS, Windows, and
+  Linux. Delivers 16 kHz mono signed-16-bit PCM frames — what plays through the
+  speakers (e.g. the other participants in a meeting), with no virtual audio
+  driver to install.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+# macOS uses Core Audio process taps (macOS 14.4+); Windows uses WASAPI
+# loopback. Linux has no native code — it is handled in Dart by streaming a
+# PipeWire/PulseAudio monitor source via `parecord`/`pw-record`, so it is
+# intentionally absent from the `platforms` map below.
+flutter:
+  plugin:
+    platforms:
+      macos:
+        pluginClass: SystemAudioCapturePlugin
+      windows:
+        pluginClass: SystemAudioCapturePluginCApi

@@ -1,0 +1,110 @@
+---
+title: Agent configuration
+description: Complete reference for agent configuration fields and options.
+---
+
+This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/manual/guides/create-agent/).
+
+## Agent entity fields
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | `String` | Yes | Unique agent identifier |
+| `name` | `String` | Yes | Short identifier for @-mentions |
+| `title` | `String` | Yes | Human-readable role title |
+| `agentMdPath` | `String` | Yes | Absolute path to the agent's `.md` definition file |
+| `workspaceId` | `String` | Yes | Owning workspace (non-null) |
+| `reportsTo` | `String?` | No | Parent agent ID |
+| `skills` | `AgentSkills` | Yes | Set of skill identifiers |
+| `persona` | `String?` | No | Free-text behavioral instructions |
+| `systemPrompt` | `String?` | No | Override the default system prompt |
+| `adapterId` | `String?` | No | Inference adapter id |
+| `modelId` | `String?` | No | Model id within the adapter |
+| `strictMode` | `bool` | No | Strict prompt adherence (default `false`) |
+| `effort` | `String?` | No | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels` |
+| `contextSize` | `int?` | No | Max context window size |
+| `role` | `AgentRole?` | No | Agent role (see below); null for legacy agents |
+| `capabilities` | `AgentCapabilities?` | No | Per-agent sandbox capability default; when null the user-level default applies |
+| `monthlyBudgetCents` | `int` | No | Monthly spending cap in cents (default `0`, unlimited) |
+| `silenceTimeoutMinutes` | `int?` | No | Silence-timeout override in minutes (1–240 when set) |
+| `maxConcurrentTasks` | `int` | No | Maximum tasks run concurrently (default `1`) |
+| `visibility` | `AgentVisibility` | No | Workspace-shared or private (default `workspace`) |
+| `lifecycleStatus` | `AgentLifecycleStatus` | No | Governance status; non-active agents are not dispatchable (default `active`) |
+| `budgetPolicyId` | `String?` | No | Shared budget policy id; when null `monthlyBudgetCents` applies directly |
+| `runtimeProfileId` | `String?` | No | Custom runtime profile id |
+| `createdAt` | `DateTime` | Yes | Creation timestamp |
+
+## AgentRole enum
+
+| Role | Label | Description |
+|---|---|---|
+| `ceo` | CEO | Coordination, hiring, delegation |
+| `coder` | Coder | Code implementation |
+| `reviewer` | Reviewer | PR review and analysis |
+| `qa` | QA | Testing and quality assurance |
+| `designer` | Designer | UI/UX implementation |
+| `security` | Security | Security review and auditing |
+| `devops` | DevOps | Infrastructure and deployment |
+| `pm` | PM | Product management |
+| `general` | General | Flexible, multi-purpose |
+
+## AgentVisibility enum
+
+| Value | Description |
+|---|---|
+| `workspace` | Visible to everyone in the workspace (default) |
+| `private` | Private to the creating user |
+
+## AgentLifecycleStatus enum
+
+| Value | Description |
+|---|---|
+| `active` | Eligible for dispatch (default) |
+| `paused` | Held — not dispatchable (budget hard-stop or manual pause) |
+| `archived` | Retired and hidden from active rosters |
+
+## AgentCapabilities flags
+
+| Flag | Type | Default | Description |
+|---|---|---|---|
+| `canPushToRepo` | `bool` | `false` | Push commits to the remote (gates GitHub PAT injection) |
+| `canCallGitHubApi` | `bool` | `false` | Call api.github.com (gates `GH_TOKEN` injection and egress) |
+| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API (gates provider API-key injection) |
+| `canAccessNetwork` | `bool` | `true` | Arbitrary outbound network egress |
+
+## AgentSkills
+
+An immutable, case-insensitive set of skill identifiers. Skills are matched at prompt assembly time to inject relevant context.
+
+```
+{'flutter', 'dart', 'rest-api'}
+```
+
+## AgentLiveState (derived)
+
+Not stored. Computed from the most recent `AgentRunLog`:
+
+| State | Condition |
+|---|---|
+| `neverRun` | No run logs exist |
+| `idle` | Last run completed |
+| `running` | Last run is active (process alive) |
+| `blocked` | Agent is waiting for input |
+| `failed` | Last run ended with an error |
+
+## DiscoveredAgent
+
+An agent definition found on disk (`AGENTS.md`) but not yet registered:
+
+| Field | Description |
+|---|---|
+| `name` | Agent name from the file |
+| `path` | Path to the AGENTS.md |
+| `role` | Parsed role |
+| `skills` | Parsed skills |
+
+## See also
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [The agent model](/manual/concepts/agent-model/)
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

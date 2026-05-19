@@ -1,0 +1,78 @@
+---
+title: Route map
+description: All routes in Control Center and their corresponding screens.
+---
+
+## App shell
+
+The app shell (`ControlCenterLayout`) wraps every route via a `ShellRoute`. **Every in-shell destination is workspace-prefixed — `/workspaces/:workspaceId/…` — and the workspace id in the URL is the single source of truth for the active workspace.** Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, and the bare `/workspaces` picker (all full-screen).
+
+The auth guard redirects to `/onboarding` until GitHub auth (PAT or `gh` CLI) and at least one workspace exist.
+
+## Routes
+
+Paths below omit the `/workspaces/:workspaceId` prefix for brevity.
+
+| Path | Screen |
+|---|---|
+| `/splash` | Startup splash that resolves the onboarding gate (no prefix) |
+| `/onboarding` | API keys + first workspace setup, full-screen (no prefix) |
+| `/workspaces` | Workspace list / picker (no prefix) |
+| `/dashboard` | Global dashboard with system metrics (the workspace root redirects here) |
+| `/inbox` | Unified inbox: PRs classified by review lifecycle plus non-PR work blocking the operator |
+| `/pull-requests` | PR list |
+| `/pull-requests/compose` | Compose a new pull request |
+| `/pull-requests/:owner/:repo/:number` | PR detail with diff viewer |
+| `/channels` | Channels: agent chat across channels |
+| `/channels/:channelId` | A specific channel (deep-linkable to a message via `?m=`) |
+| `/tickets` | Ticket board |
+| `/tickets/:ticketId` | Ticket master-detail |
+| `/projects/:projectId` | Project overview |
+| `/observability` | Observability hub: live Agent Hub + cost/usage/quota/behavior analytics |
+| `/meetings` | Meetings list with stats |
+| `/meetings/record` | Live meeting recording HUD |
+| `/meetings/:meetingId` | Meeting detail: notes, transcript, action items, decisions |
+| `/calendar` | Calendar: month / week / agenda views |
+| `/calendar/:eventId` | Calendar event detail (master-detail) |
+| `/newsfeed` | Newsfeed list |
+| `/newsfeed/settings` | Feed management |
+| `/newsfeed/article/:articleId` | Article webview |
+| `/pipelines` | Pipeline run list |
+| `/pipelines/run` | Pipeline run launcher |
+| `/pipelines/:runId` | Pipeline run detail |
+| `/plans` | Plan Studio hub: active plans, plan documents, and playbooks |
+| `/plans/:kind/:id` | Plan Studio for one plan; `kind` is `orchestration` or `document` |
+| `/memory` | Workspace knowledge memory |
+| `/users/:login` | GitHub user profile |
+| `/api-keys` | API key management |
+| `/settings/*` | Settings screens (see below) |
+
+## Settings sub-routes
+
+| Path | Screen |
+|---|---|
+| `/settings/appearance` | Theme, language, typography (the settings landing) |
+| `/settings/notifications` | Per-event notification toggles |
+| `/settings/keybindings` | Keyboard shortcut customization |
+| `/settings/agents` | Registered agent identities |
+| `/settings/adapters` | Auto-detected agent runners (detection and registration) |
+| `/settings/skills` | Skill configuration |
+| `/settings/repositories` | Global repo management |
+| `/settings/members` | Workspace roster, invites, and audit trail |
+| `/settings/teams` | Team management |
+| `/settings/pipelines` | Pipeline templates |
+| `/settings/pipelines/:templateId` | Pipeline template editor (drag-and-drop canvas) |
+| `/settings/accounts` | GitHub, ticketing, and calendar accounts |
+| `/settings/mcp` | Built-in and external MCP servers |
+| `/settings/remote-control` | Remote-control server config and paired phones |
+| `/settings/voice-meetings` | Meeting transcription, diarization, voice profiles, templates |
+| `/settings/security` | Security & privacy: sandboxing, command rules, privacy |
+| `/settings/guardrails` | Agent permissions: guardrail policy matrix, what-if probe, adapter enforcement reference |
+| `/settings/advanced` | Branch template, semantic search, server connection, sync engine, logging |
+
+## Route configuration
+
+- **Router**: `go_router` configured in `lib/router/app_router.dart`
+- **Route constants**: `lib/router/routes.dart`
+- **Auth guards**: `lib/router/guards.dart`
+- **Onboarding gate**: `lib/features/auth/providers/onboarding_providers.dart`

@@ -1,0 +1,104 @@
+---
+title: Modes
+description: How chat, plan, review, and orchestrate modes control agent behavior and sandbox policies.
+---
+
+## What are modes?
+
+A mode is an enum (`chat`, `plan`, `review`, `orchestrate`). Each one is declared
+once, in a **capability profile**, which every enforcement layer projects from:
+
+1. **Tool surface**: which tools exist at all in that mode
+2. **Required output verb**: what the run must call to have delivered anything
+3. **Denied effects**: which action classes the guard refuses
+4. **Sandbox posture**: whether bind-mounted worktrees are writable
+5. **System prompt**: a generated capability block (derived from the *actual*
+   tool list, so a prompt can never name a tool the run does not have) plus
+   hand-written guidance
+
+Modes are set per-channel and can be changed during a channel.
+
+## Chat mode
+
+The default mode. The agent has full access to its tools and can read and write files in its isolated worktree.
+
+Use chat mode for:
+
+- General coding tasks
+- Bug fixes and feature implementation
+- Asking questions about the codebase
+- Ad-hoc requests
+
+The system prompt for chat mode is general-purpose: it instructs the agent to be helpful, precise, and to produce working code.
+
+## Plan mode
+
+Plan mode restricts the agent to analysis and planning. The agent **cannot write files**: it reads the codebase, analyzes the problem, and produces a structured plan.
+
+Use plan mode when you want to:
+
+- Get a detailed implementation plan before committing to code
+- Understand the scope of a change
+- Have the agent break down a complex task into steps
+
+The plan is delivered by a single `submit_plan` call carrying a typed dependency
+graph. It renders as a compact row in the conversation (goal, status, step count)
+and opens Plan studio in a tab beside it for review. Approving it compiles
+and runs the work deterministically, and takes the conversation out of plan mode.
+
+A plan-mode run that ends without calling `submit_plan` is recorded as a failed
+run, not a silent success.
+
+Plan mode is useful for expensive or risky changes where you want to review the approach before the agent writes any code.
+
+## Review mode
+
+Review mode is designed for PR review. The agent receives the PR's diff as context and produces structured findings.
+
+In review mode:
+
+- The agent's system prompt is tailored for code review
+- It produces **review nodes**, structured findings with:
+  - Finding kind (bug, security, performance, style, suggestion)
+  - Priority (P0 critical → P3 nit)
+  - File and line anchor
+  - Original code and suggested fix
+  - Confidence score
+- It produces a **review verdict**, an aggregate assessment:
+  - **Ship**: no significant issues
+  - **Hold**: issues that should be addressed before merge
+  - **Block**: critical issues that must be fixed
+
+Review mode also gates the MCP tool allowlist to review-relevant tools.
+
+## Orchestrate mode
+
+Orchestrate mode is for turning one goal into a whole-team plan. The agent (usually an orchestrator such as the CEO) can **read and research** — like plan mode, it cannot write files — plus a single privileged verb, `propose_orchestration`, which emits a structured plan (roles, sub-tickets, a synthesis step, and a budget).
+
+Nothing in the plan executes until you approve it. On approval, a deterministic materializer hires the agents, creates the tickets and a project, and runs a generated pipeline. See [Orchestration](/manual/concepts/orchestration/).
+
+## Mode resolution
+
+The `ModeResolver` resolves the mode for a given channel:
+
+1. If a channel has an explicit mode set, use that
+2. If the channel was started by a pipeline step with a mode, use that
+3. Default to `chat`
+
+The mode is also serialized into the wake context so the dispatch service knows which prompt template to use.
+
+## Changing modes
+
+You can change the mode of a channel at any time. This affects subsequent messages: the agent will use the new mode's prompt and policies for its next response.
+
+Some contexts set the mode automatically:
+
+- Opening a PR review channel sets mode to `review`
+- Starting a planning session sets mode to `plan`
+- Regular channels default to `chat`
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/): how modes affect prompt assembly
+- [Sandbox and security](/manual/concepts/sandbox-security/): how modes gate sandbox writes
+- [Use plan mode](/manual/guides/plan-mode/): practical guide to planning

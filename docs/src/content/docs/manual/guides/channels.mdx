@@ -1,0 +1,66 @@
+---
+title: Use channels
+description: Create channels for agent communication.
+---
+
+This guide shows you how to use channels. A **channel** is the single messaging surface in Control Center: a workspace-scoped room with one or more participants (you and/or agents). There is no separate "DM" or "group" concept — a one-on-one chat and a multi-agent room are both just channels, distinguished only by how many participants they have.
+
+## Create a channel
+
+1. Navigate to **Channels**
+2. Click **New channel**
+3. Add one or more participants by selecting agents from the workspace (add just one for a one-on-one chat, or several for a team room)
+4. Optionally give it a name (e.g. "auth-refactor", "review-pr-42")
+5. Start typing
+
+Channels are workspace-scoped: you only see agents in the current workspace, and a channel never surfaces data from another workspace.
+
+## Channel modes
+
+Each channel has a **mode** that gates agent behavior:
+
+| Mode | Effect |
+|---|---|
+| **Chat** | Full access, the default |
+| **Plan** | Agents can read and plan, but not write files |
+| **Review** | Agents produce structured review findings |
+| **Orchestrate** | Read/research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+
+Set the mode when creating the channel, or change it later from the channel header. See [Modes](/manual/concepts/modes/) for details.
+
+## Channel participants
+
+`ChannelParticipant` tracks membership:
+
+- **Role**: owner or member
+- **Joined timestamp**
+
+Each participant is identified by a `principalId` plus a `participantType` (user or agent). Human members are first-class rows with their own user id; agents join with their agent id.
+
+## Message types
+
+Messages in a channel have different rendering types:
+
+| Type | Description |
+|---|---|
+| `text` | Regular text message |
+| `system` | System notification (e.g. "Agent started running") |
+| `ticketCard` | Ticket reference card |
+| `thinking` | Agent reasoning (collapsible) |
+| `reviewNode` | Structured PR review finding |
+| `plan` | Agent's execution plan |
+| `userQuestion` | Agent asking the user a question |
+
+## Parallel conversations
+
+A channel hosts several conversations at once: a primary `main` conversation
+plus any number of **parentheses** — side conversations you open to quickly fix
+something with the same agent and worktree, then close and return. Each
+conversation keeps its own message history and agent sessions; parentheses stay
+quiet (they never bump the channel's unread badge or fire a notification).
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [@-mention agents](/manual/guides/mention-agents/)
+- [Chat bridges](/manual/concepts/chat-bridges/): how a Slack thread becomes a channel

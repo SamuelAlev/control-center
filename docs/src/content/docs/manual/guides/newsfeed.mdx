@@ -1,0 +1,60 @@
+---
+title: Curate your newsfeed
+description: Add RSS/Atom feeds, manage articles, and stay informed.
+---
+
+This guide shows you how to set up and use the newsfeed.
+
+## What is the newsfeed?
+
+The newsfeed aggregates RSS and Atom feeds into a unified reading experience. It supports:
+
+- Multiple feed subscriptions
+- Built-in ad blocking and content extraction
+- Read/saved state for articles
+- Article search
+
+## Add a feed
+
+1. Navigate to **Newsfeed** in the sidebar
+2. Click the settings icon (or navigate to `/newsfeed/settings`)
+3. Click **Add feed**
+4. Enter the feed URL (RSS or Atom)
+5. Optionally set a custom name and user agent
+6. Click **Add**
+
+Control Center fetches the feed, parses it, and imports articles.
+
+## Manage feeds
+
+From the newsfeed settings:
+
+- **Enable/disable** feeds: disabled feeds won't be fetched
+- **Edit** feed details (name, URL, user agent)
+- **Remove** feeds
+- **Refresh**: manually trigger a feed refresh
+
+## Read articles
+
+1. Navigate to **Newsfeed**
+2. Articles are listed by publish date (newest first)
+3. Click an article to open it in the built-in webview
+4. Articles open in `/newsfeed/article/:articleId`
+
+### Article states
+
+| State | Description |
+|---|---|
+| **Unread** | New article, not yet opened |
+| **Read** | Opened and viewed |
+| **Saved** | Starred for later reference |
+
+Mark articles as read by opening them, or mark all as read from the list header.
+
+## Content curation
+
+Control Center extracts the main content from articles using Readability, stripping ads, navigation, and other clutter. The webview shows the clean article content.
+
+## Related guides
+
+- [Configure notifications](/manual/guides/notifications/)

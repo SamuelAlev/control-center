@@ -1,0 +1,79 @@
+---
+title: Review and merge a PR
+description: Open a PR, explore the diff, leave comments, submit a review, and merge.
+---
+
+This guide shows you how to review and merge a pull request.
+
+## Open a PR
+
+1. Navigate to **Pull requests** in the sidebar
+2. Select a PR from the list
+
+The PR detail shows:
+
+- Title, description, and author
+- Branch info (head → base)
+- Changed files with addition/deletion counts
+- CI check status
+- Existing review comments
+
+## Navigate the diff
+
+Click a changed file to open the diff viewer:
+
+- **Syntax highlighting** for common languages
+- **Unified diff** format
+- **File tree** in the sidebar for quick navigation
+- **Viewed state**: mark files as viewed to track progress
+
+Use keyboard shortcuts for faster navigation (see [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/)).
+
+## Leave inline comments
+
+1. Hover over a line in the diff, and a `+` icon appears
+2. Click to open a comment box
+3. Write your feedback in Markdown
+4. Submit
+
+Comments are held locally until you submit a review. You can draft multiple comments across files before submitting.
+
+## Submit a review
+
+1. After reviewing all files, click **Submit review**
+2. Choose a verdict:
+   - **Approve**: ready to merge
+   - **Request changes**: the author should address your feedback
+   - **Comment**: leave feedback without blocking
+3. Add a summary body
+4. Submit
+
+On approval, the Merge button activates.
+
+## Merge
+
+Click **Merge** to merge via the GitHub API. After merging:
+
+- The PR status updates to **Merged**
+- The worktree is cleaned up
+- A `PrMerged` event fires for analytics and notifications
+
+## Review an external PR
+
+Control Center also imports external PRs (opened by humans, not agents). The review flow is the same. External PRs are detected by the PR polling service.
+
+## PR detail metadata
+
+The PR detail view shows:
+
+- **Author** with avatar and login
+- **Checks status**: CI check results (passing, failing, pending)
+- **Labels** and **assignees**
+- **Reactions** on the PR body
+- **Commits** list
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Use focus mode](/manual/guides/focus-mode/)

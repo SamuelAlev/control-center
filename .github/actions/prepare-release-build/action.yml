@@ -1,0 +1,94 @@
+name: Prepare release build
+description: >
+  Code generation, native libraries, built-in credentials, and the build
+  identity stamp — everything the three release build jobs do identically
+  before their platform's `flutter build`.
+
+# The macOS, Windows and Linux jobs ran these five steps in the same order with
+# the same comments, differing only in which natives script builds the libraries
+# and whether code-server is fetched. That was ~15 steps of copy-paste in an
+# 810-line workflow, and it made the three platforms hard to diff against each
+# other — which is exactly how they drift.
+#
+# Ordering here is load-bearing, in both directions:
+#   * credentials BEFORE any `dart build cli`, because that command has no `-D`
+#     flag, so they must be real source constants by the time cc_server compiles;
+#   * natives staged BEFORE any `dart build cli`, because
+#     apps/cc_server/hook/build.dart bundles build/natives into the server's
+#     lib/ and hard-fails when it is empty;
+#   * the identity stamp before every client build, since BuildInfo is compiled
+#     in rather than read at runtime.
+
+inputs:
+  os:
+    description: macos | linux | windows
+    required: true
+  version:
+    description: The release version, used for the build-identity stamp.
+    required: true
+  fetch-code-server:
+    description: >
+      Fetch the pinned code-server archive. No-op on Windows (code-server ships
+      no native Windows host), so the release job skips it there.
+    required: false
+    default: "true"
+  google-client-id:
+    required: false
+    default: ""
+    description: CC_BUILTIN_GOOGLE_CLIENT_ID secret.
+  google-client-secret:
+    required: false
+    default: ""
+    description: CC_BUILTIN_GOOGLE_CLIENT_SECRET secret.
+  klipy-app-key:
+    required: false
+    default: ""
+    description: CC_BUILTIN_KLIPY_APP_KEY secret.
+
+runs:
+  using: composite
+  steps:
+    - name: Code generation (drift / json_serializable)
+      shell: bash
+      run: dart run build_runner build --delete-conflicting-outputs
+
+    # FATAL on failure: every native is required. cc_server's boot preflight
+    # refuses to start without any one of them and the packaging scripts refuse
+    # to produce an artifact, so tolerating a failure here would only ship a
+    # build that dies on the user's machine instead of on the runner.
+    - name: Build native FFI libraries
+      shell: bash
+      run: |
+        if [ "${{ inputs.os }}" = "windows" ]; then
+          # No rift on Windows: no MSVC copy-on-write backend, so `git worktree`
+          # is the backend there rather than a degradation.
+          bash scripts/release/windows_natives.sh
+        else
+          bash scripts/natives/build_natives.sh build/natives
+        fi
+
+    # Server-side only: no client build reads these. Missing secrets are not an
+    # error; the build simply ships none, exactly like a build from a fork.
+    - name: Inject built-in app credentials
+      shell: bash
+      env:
+        CC_BUILTIN_GOOGLE_CLIENT_ID: ${{ inputs.google-client-id }}
+        CC_BUILTIN_GOOGLE_CLIENT_SECRET: ${{ inputs.google-client-secret }}
+        CC_BUILTIN_KLIPY_APP_KEY: ${{ inputs.klipy-app-key }}
+      run: bash scripts/release/builtin_credentials.sh inject
+
+    # The shared const BOTH the app and the embedded/standalone cc_server
+    # compile in: `cc_server --version`, /healthz, the RPC handshake, and the
+    # About page all read it.
+    - name: Stamp build identity
+      shell: bash
+      run: dart run tool/gen_build_info.dart --version "${{ inputs.version }}"
+
+    # Vendored VS Code-in-the-browser, extracted into build/code-server/<platform>/
+    # for cc_server_package.sh to stage. Non-fatal: the server falls back to an
+    # on-demand download at runtime.
+    - name: Fetch code-server standalone archive
+      if: inputs.fetch-code-server == 'true' && inputs.os != 'windows'
+      shell: bash
+      continue-on-error: true
+      run: bash scripts/release/fetch_code_server.sh

@@ -1,0 +1,81 @@
+---
+title: Configure guardrails
+description: Set allow, ask-first, and deny rules for agent actions, test them with the what-if probe, and tune per-channel autonomy.
+---
+
+This guide shows you how to configure guardrails: the rules that decide whether an agent's action runs, asks for approval first, or is refused.
+
+## Set a decision for an action class
+
+Guardrail rules live under **Settings → Agent permissions**. The page shows a matrix with one row per action class and a scope selector at the top.
+
+1. Navigate to **Settings → Agent permissions**
+2. Pick a scope: **Workspace**, **Agent** (then select the agent), or **Channel** (then select the channel)
+3. On the row for the action class, pick **Allow**, **Ask first**, or **Deny**
+4. To remove a rule you set, click **Clear to inherited** on that row — the decision falls back to the wider scope
+
+Each cell shows the effective decision and where it came from: a rule at this scope, an inherited rule, the mode preset, or the built-in default.
+
+Rules cascade: **channel > agent > workspace > mode preset > built-in default**. The first scope with a matching rule decides. An **Ask first** decision surfaces one approval prompt; if no approver is connected, the gate fails closed and the action is denied.
+
+### Action classes and built-in defaults
+
+If no rule matches, the class falls back to its built-in default:
+
+| Action class | Built-in default |
+|---|---|
+| Delete a file | Ask first |
+| Write outside the worktree | Allow |
+| Create a commit | Allow |
+| Push to a remote | Ask first |
+| Open a pull request | Ask first |
+| Publish a review or merge | Ask first |
+| Write to an external tracker | Ask first |
+| Access the network | Allow |
+| Read a secret | Allow |
+| Install a package | Allow |
+| Run a process | Allow |
+| Change workspace structure | Allow |
+
+## Check the command rules
+
+Shell commands are gated separately by the built-in command policy. To see which commands are denied or ask first:
+
+1. Navigate to **Settings → Security & privacy → Command rules**
+2. Switch the mode selector to compare the global baseline against a read-only mode (plan, review, orchestrate) — each rule carries a badge showing whether it is global or a mode override
+
+When the guardrail engine resolves a command, the longest matching prefix wins and equally specific conflicts resolve most-restrictive (**Deny** > **Ask first** > **Allow**). Test any command against the live policy with the what-if probe below.
+
+## Test a rule with the what-if probe
+
+Before changing a rule, check how the current policy resolves an action:
+
+1. Navigate to **Settings → Agent permissions → What if?**
+2. Pick the **Action** (one of the action classes)
+3. Optionally type a **Command** (e.g. `git push origin main`), and pick an **Agent**, a **Channel**, and a **Mode**
+4. Read the result: the decision, the reason, and the source of the winning rule
+
+The probe runs the same resolver the enforcement path uses against your live rules, so the answer is exact. If the result surprises you, set or clear a rule in the matrix and probe again.
+
+## Set a channel's autonomy dial
+
+The autonomy dial controls how much an agent may do in one channel without asking:
+
+1. Open the channel and expand the agent in the channel header's participant list
+2. Under **Autonomy**, pick a level:
+   - **Propose only** — gated tools are denied outright; the agent can only propose actions
+   - **Act with approval** — risky actions hit the fail-closed approval gate
+   - **Act freely** — actions are pre-approved within policy
+   - **Default** — no channel-specific setting; behaves as Act with approval
+
+The dial is per agent per channel, and guardrail rules still apply on top — a **Deny** rule refuses the action regardless of the dial.
+
+:::note
+Guardrails decide *whether to ask*; the sandbox decides *what is reachable*. An **Allow** rule never widens the sandbox — the sandbox floor still applies. See [Sandbox and security](/manual/concepts/sandbox-security/) for the full model.
+:::
+
+## Related guides
+
+- [Configure sandbox policies](/manual/guides/sandbox-policies/)
+- [Modes](/manual/concepts/modes/)
+- [Sandbox and security](/manual/concepts/sandbox-security/)
