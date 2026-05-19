@@ -1,0 +1,131 @@
+---
+title: Review and merge a PR
+description: Open a PR workbench, read the diff, leave inline comments, submit a review and merge.
+---
+
+This guide shows you how to review and merge a pull request.
+
+## Open the PR workbench
+
+1. Navigate to **Pull requests** in the sidebar
+2. Select a PR from the list
+
+A PR opens as a tabbed workbench, not a single page. Five tabs open by default, in
+this order: **Overview**, **Diff**, **Source control**, **Chat** and **Actions**
+(CI checks grouped by workflow). **Review** — the review pipeline's progress, then
+the artifact it published with its findings rail — is deliberately not one of them:
+a PR has no review until someone asks for one, so **Ask AI** opens it. A terminal,
+a single-file editor, an embedded code-server and an in-app browser open on demand;
+deployment-preview tabs are injected automatically when a preview URL is detected
+on the PR. Your tab layout is remembered per PR.
+
+The Overview tab carries the PR's metadata (author, branch, labels, assignees,
+reactions, commits, check status) and the action row: refresh, **Review**,
+**Merge**, open in IDE and a ⋯ overflow menu.
+
+## Read the diff
+
+Open the **Diff** tab to see the whole PR diff at once, with a file tree for
+jumping between files.
+
+- The settings button in the diff toolbar switches **split** (side-by-side) and
+  **unified** view and toggles line wrapping and code-font ligatures.
+- `@@` hunk headers are replaced by **Show N lines** / **Show end of file**
+  affordances that splice in the surrounding context on click.
+- Press `j` / `k` to step between files, `c` to collapse or expand the focused
+  file, `t` to return the sidebar to the file tree and `⌘F` to search across the
+  whole diff (`Enter` / `Shift+Enter` walk the matches).
+- Press `v` to mark the focused file as viewed, and the cursor advances to the
+  next file. On GitHub the viewed state is stored on the forge, so it follows you
+  between clients; GitLab and Bitbucket have no such API, so there it is
+  remembered on this device only.
+
+Mouse-drag in the code area selects text down to the exact column and `⌘C`
+copies the raw source rather than the rendered diff markers.
+
+## Leave inline comments
+
+1. Tap a code row's gutter to open a composer anchored to that line, or use the
+   `+` button on a file header for a file-level comment
+2. Write your feedback in Markdown
+3. Submit
+
+An inline comment is **posted to the forge the moment you submit it** — there is
+no batching. The thread shows a pending state until the forge confirms it, then
+flips to synced. If the post fails, the thread is marked with the error and
+offers a retry.
+
+Only the review _body_ is a draft: it is saved server-side against
+(owner, repo, PR number) a moment after you stop typing, so it survives a reload
+and follows you between the desktop and web clients.
+
+## Submit a review
+
+1. Press **Review** in the Overview action row (it is hidden on your own PRs and
+   on a closed or merged PR)
+2. Write the review body. You can attach an image, insert an emoji or a GIF and
+   toggle between write and preview
+3. Press **Approve** (`⌘↵`) or **Request changes** (`⌘⇧↵`)
+
+The verdict _is_ the button — there is no separate verdict picker and no
+comment-only verdict in this overlay. After submitting, the button relabels itself
+to **Approved** or **Requested changes** and the draft body is cleared.
+
+:::caution[Submitting is irreversible]
+`pr_review.submitReview` publishes to the forge and never enters the undo stack.
+There is no "unsubmit" from Control Center.
+:::
+
+## Merge
+
+The **Merge** button appears when you have write access and the PR is open and not
+a draft. Its colour is a readiness signal derived from required approvals and
+check state (ready / pending / blocked) — it is advisory only. The button is never
+disabled by review state; the forge's own branch protection is what enforces
+the rules.
+
+1. Press **Merge** to open the merge flyout
+2. Pick a merge method: **squash**, **merge commit** or **rebase** (squash is the
+   default). Bitbucket has no true rebase merge, so rebase maps to its
+   fast-forward strategy and fails on a diverged branch
+3. For squash and merge commit, edit the prefilled commit title and description.
+   Rebase takes neither and hides both fields
+4. Read the warnings panel — it names failing checks and pending reviews, but does
+   not block you
+5. Press the merge button in the flyout to confirm
+
+Merging is irreversible: it pushes commits to the forge, so it gets a confirmation
+step instead of an undo entry. Afterwards the PR's cache is invalidated, its status
+flips to **Merged** and a `PullRequestStatusChanged` event fires with status
+`merged`. That event releases the ephemeral "open in editor" worktree and starts
+two seeded pipelines: **Stale repository cleanup**, which removes the PR's stale
+worktrees and conversation folders and **Release notes**, which drafts a changelog
+entry.
+
+:::note[The PR review space is not auto-archived]
+Auto-archiving the review space's conversations is wired to a separate `PrMerged`
+domain event that nothing in the product currently emits, so the space stays as
+you left it after a merge. The daily cleanup sweep still reclaims its worktree;
+delete the space yourself if you want it out of the sidebar.
+:::
+
+## Hand the PR to reviewer agents
+
+The ⋯ overflow menu on the Overview tab carries **Ask AI**, which starts the
+seeded `pr_review` pipeline for this PR. It only appears while the PR is open. See
+[Use AI-powered review](/manual/guides/ai-review/) for what the pipeline does and
+how to publish its findings, and [Review Studio](/manual/guides/review-studio/)
+for the deterministic cohort and axis model — which the server computes and
+nothing in the app renders.
+
+## Review an external PR
+
+Control Center also imports PRs opened by humans outside the app. The review flow
+above is identical. External PRs are detected by the PR polling service.
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Review Studio (cohorts and axes)](/manual/guides/review-studio/)
+- [Connect a code host](/manual/guides/connect-forges/)

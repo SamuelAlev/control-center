@@ -1,0 +1,49 @@
+{
+  "id": "triage-ticket",
+  "triggers": ["triage", "ticket", "bug report", "issue", "customer", "investigate"],
+  "steps": [
+    {
+      "kind": "thinking",
+      "text": "Two reports that look alike are not necessarily the same bug. Check whether they share a code path before merging them."
+    },
+    {
+      "kind": "say",
+      "text": "Looking at **PD-118 — Inspection PDFs hang at 99% on large scans**. Two brokerages, both on scans over 1GB.\n\n"
+    },
+    {
+      "kind": "tool",
+      "tool": "grep",
+      "args": { "pattern": "onUploadProgress|contentLength", "path": "lib/documents/" },
+      "result": "lib/documents/upload_client.dart:52:      onUploadProgress: (sent, total) => _progress.add(sent / total),\nlib/documents/upload_client.dart:78:    final contentLength = await file.length();"
+    },
+    {
+      "kind": "tool",
+      "tool": "read",
+      "args": { "path": "lib/documents/upload_client.dart", "offset": 44, "limit": 22 },
+      "result": "  Future<void> upload(File file) async {\n    final total = await file.length();\n    await _dio.put(\n      url,\n      data: file.openRead(),\n      onUploadProgress: (sent, _) => _progress.add(sent / total),\n    );\n    await _finalize();   // server-side notarization check, ~30s on a 1GB scan\n    _progress.add(1.0);\n  }"
+    },
+    {
+      "kind": "say",
+      "text": "It isn't hanging. `onUploadProgress` reaches 100% when the last byte leaves the client, but `_finalize()` then waits on a server-side notarization check that takes ~30s on a 1GB scan. The bar sits at 99% (rounding) with no indication anything is still happening, so the agent assumes it hung and cancels.\n\nSo it's a **reporting** bug, not a transfer bug — which also explains why it only shows up on large scans and why the packets that \"failed\" are actually notarized and present in the closing file.\n\n"
+    },
+    {
+      "kind": "usage",
+      "input": 12600,
+      "output": 358,
+      "cache_read": 8400,
+      "cache_write": 1020,
+      "thought": 140
+    },
+    {
+      "kind": "say",
+      "text": "I've moved PD-118 to **in progress**, retitled it to name the real cause, and linked PD-121 as a duplicate. The fix is a distinct notarization-pending state rather than a progress percentage — Priya already has it open in **#401**, so I pointed the ticket there instead of starting a second PR."
+    },
+    {
+      "kind": "usage",
+      "input": 13900,
+      "output": 188,
+      "cache_read": 12100,
+      "cache_write": 210
+    }
+  ]
+}

@@ -1,0 +1,89 @@
+---
+title: Install and manage skills
+description: Add GitHub repositories as skill sources, browse their catalogs, and install, update or uninstall skills through the antivirus scan gate.
+---
+
+This guide shows you how to fill a workspace with skills from GitHub: add a
+repository as a source, install the skills you want from it, and keep them
+current over time.
+
+The important thing to know before you start: **a source repository is
+untrusted.** Its name, description and star count are written by whoever owns
+it. The only safety signal Control Center trusts is the antivirus scan verdict,
+which every install passes through before anything reaches disk or an agent
+prompt. If you want the reasoning, read the
+[agent model's skills section](/manual/concepts/agent-model/); this page stays
+on the doing.
+
+Skills live at **Settings → Workspace → Skills** (`/settings/workspace/skills`).
+They are workspace-scoped: the skills you install here belong to this workspace
+only.
+
+## Add a skill repository
+
+1. Open **Settings → Workspace → Skills** and switch to the **Sources** tab.
+2. Press **Add repository**.
+3. Paste a GitHub repository URL, e.g. `https://github.com/anthropics/skills`,
+   and confirm.
+
+The server checks that the repository exists and is visible with its
+credentials, then adds it to the left rail. There is no curated store in the
+middle: any GitHub repository works, which also means reputation is yours to
+judge — a star count is evidence, never a guarantee.
+
+A repository's skills are the directories that contain a `SKILL.md` (up to
+three levels deep, plus the Claude plugin-marketplace layout
+`plugins/<plugin>/skills/<skill>`, with dependency and vendor trees skipped).
+If the grid later says the repository has no skills, that is what it means: no
+directory in it matches the skill convention.
+
+## Inspect a skill before installing
+
+Select a repository in the rail; its skills appear as a grid on the right,
+with a filter field above it that narrows the catalog by name, description or
+slug. Click a card to open the detail view. It shows three things:
+
+- **The README**, rendered as markdown — the skill directory's `README.md`, or
+  the `SKILL.md` body when there is no README.
+- **The scan preview** — the verdict (`pass`, `warn` or `quarantine`), the
+  capabilities the skill's content declares (runs shell, writes files, network
+  access…) and every finding the scanner recorded.
+- **The file count** — an install writes the skill's whole directory, not just
+  its `SKILL.md`.
+
+The preview scans the exact bytes an install would write, so the verdict you
+see is the verdict the install gets; nothing is re-judged behind your back.
+
+## Install a skill
+
+1. Open the skill's detail view.
+2. Read the scan verdict. For a `warn` or `pass` verdict, press **Install**.
+3. For a `quarantine` verdict, install stays disabled until you tick
+   **I understand the risk — install anyway**. That override is recorded, not
+   assumed.
+
+The install writes the skill's directory into the workspace, records a pin in
+`skills-lock.json` (source repository, path, the commit it came from and a
+content hash), and the skill becomes available to agents in the workspace. A
+card marked **Name in use** means a different skill already owns that name
+locally — uninstall that one first.
+
+## Update skills over time
+
+Cards for installed skills carry badges: **Installed**, or **Update available**
+when the repository has moved past the commit you pinned. Open the detail view
+and press **Update** to re-fetch at the new commit. An update passes through
+the same scan gate as an install — a skill whose new version quarantines is
+refused and the version you had stays put. The old version's hash is kept as a
+rollback reference in the lock.
+
+## Uninstall a skill, remove a repository
+
+**Uninstall** (on an installed skill's detail view, or delete in the Installed
+tab) removes the skill's directory and its lock pin together — an uninstalled
+skill leaves nothing behind.
+
+**Removing a repository** from the rail removes only the catalog: skills you
+installed from it stay installed and still update, because a pin records the
+repository by name rather than by reference to the source entry. Add the
+repository back if you want to browse it again.

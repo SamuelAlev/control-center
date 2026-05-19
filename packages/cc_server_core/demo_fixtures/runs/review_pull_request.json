@@ -1,0 +1,53 @@
+{
+  "id": "review-pull-request",
+  "triggers": ["review", "pull request", "pr ", "diff", "look at the changes"],
+  "steps": [
+    {
+      "kind": "thinking",
+      "text": "The PR reworks contingency deadlines on the escrow timeline, and three surfaces render them. If one closing's extension can shift the calculation, every surface lies at once. Let me read the diff before saying anything."
+    },
+    {
+      "kind": "say",
+      "text": "Reading the diff on **#412 — Surface contingency deadlines on the escrow timeline**.\n\n"
+    },
+    {
+      "kind": "tool",
+      "tool": "read",
+      "args": { "path": "lib/escrow/timeline.dart" },
+      "result": "class EscrowTimeline {\n  /// All deadline math goes through the clock so the timeline, the export\n  /// and the tests share one definition of a business day.\n  const EscrowTimeline(this._clock);\n\n  final EscrowClock _clock;\n\n  DateTime deadlineFor(Contingency c, DateTime acceptance) =>\n      _clock.bd(acceptance, _win(c));\n\n  int _win(Contingency c) => switch (c.kind) {\n        ContingencyKind.inspection => 10,\n        ContingencyKind.financing => 21,\n        ContingencyKind.title => 14,\n      };\n\n  int daysRemaining(Contingency c, DateTime acceptance) =>\n      _clock.bdBetween(_clock.now(), deadlineFor(c, acceptance));\n}"
+    },
+    {
+      "kind": "say",
+      "text": "The arithmetic itself is clean — one window table, one clock, deadlines derived instead of typed in. What I want to check is whether two closings can race it: `deadlineFor` resolves from the acceptance date alone, with no closing id in the key.\n\n"
+    },
+    {
+      "kind": "tool",
+      "tool": "grep",
+      "args": { "pattern": "deadlineFor", "path": "lib/" },
+      "result": "lib/escrow/timeline.dart:9:  DateTime deadlineFor(Contingency c, DateTime acceptance) =>\nlib/escrow/timeline_view.dart:44:    final dl = _timeline.deadlineFor(c, closing.acceptedAt);\nlib/escrow/extensions.dart:71:    final shifted = _timeline.deadlineFor(c, ext.acceptedAt);\nlib/reports/closing_export.dart:132:    row('Deadline', _timeline.deadlineFor(c, closing.acceptedAt));"
+    },
+    {
+      "kind": "say",
+      "text": "Three independent callers, and `extensions.dart` recomputes after an extension is recorded. Two closings can share one acceptance date — a re-trade re-accepted the same day, or a double escrow on adjacent parcels — so one closing's extension shifts the other file's inspection, financing and title deadlines everywhere they render. That is the \"deadlines moved on their own\" report from last month.\n\n"
+    },
+    {
+      "kind": "usage",
+      "input": 14820,
+      "output": 386,
+      "cache_read": 9600,
+      "cache_write": 1280,
+      "thought": 210
+    },
+    {
+      "kind": "say",
+      "text": "I left one blocking comment on `timeline.dart:9` asking for the closing id in the calculation key, and approved the rest. Days-remaining reads through the clock and needs no migration — that part is correct.\n\n**Summary:** 1 blocking comment, 3 nits, no test coverage for the shared-acceptance case."
+    },
+    {
+      "kind": "usage",
+      "input": 16100,
+      "output": 194,
+      "cache_read": 14200,
+      "cache_write": 240
+    }
+  ]
+}

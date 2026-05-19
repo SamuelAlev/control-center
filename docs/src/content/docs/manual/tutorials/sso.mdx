@@ -1,0 +1,105 @@
+---
+title: Sign your team in with SSO
+description: Connect Okta (SAML) to your Control Center server and take a login end to end.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- a SAML connection between your Control Center server and an identity
+  provider (we use Okta as the example),
+- one user provisioned automatically on their first login and
+- a workspace membership policy you chose deliberately.
+
+You will need a server you administer (the owner of at least one workspace)
+and an IdP application you can configure. Budget 20 minutes.
+
+## 1. Open the single sign-on settings
+
+Sign in to Control Center, then go to
+**Settings → Server → Single sign-on**. The screen shows one tab per
+protocol Control Center speaks — **SAML** and **OpenID Connect** — plus a
+**user provisioning (SCIM)** card. Stay on the SAML tab.
+
+Everything on this screen is server-wide: one IdP authenticates every
+workspace's humans, so only server admins can edit it.
+
+## 2. Paste the IdP metadata
+
+In Okta, open your app's **Sign On** tab and copy the metadata XML (or
+download it and paste the file's contents). Back in Control Center, paste it
+into **IdP metadata XML** and press **Test connection**.
+
+The toast reports the IdP's sign-on endpoint — proof that the metadata
+parsed, the certificate was read and the server can build a login request
+against it (the test exercises everything short of the browser round-trip).
+If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
+Okta calls it "Metadata URL"; open the URL and copy what it serves). The
+same button on the **OpenID Connect** tab checks your issuer's discovery
+document instead.
+
+## 3. Register Control Center at the IdP
+
+Press **Copy SP metadata** and hand it to whoever configures the Okta side
+(or read the two values they ask for):
+
+- **ACS URL**: `https://<your-server>/saml/acs`
+- **Entity ID**: `https://<your-server>/saml`
+
+The URLs derive from the origin your users' browsers reach. If the server
+runs behind a tunnel or reverse proxy, make sure the origin is stable
+(Settings → Server → Sharing shows the public URL) — or pin the entity ID
+explicitly in the **SP entity ID** field.
+
+:::note[Behind NAT?]
+SAML login does **not** need a public IP or domain: the IdP never connects
+to your server — the user's browser carries the round-trip, so localhost,
+LAN, VPN, Tailscale, or a tunnel all work. Two things to keep straight:
+
+- the origin the browser uses must **match** the ACS URL / entity ID
+  registered at the IdP (pin the entity ID if users reach the server under
+  more than one origin),
+- **SCIM provisioning is the exception** — the IdP calls your server
+  directly, so it needs a tunnel or public URL
+  ([provision users with SCIM](/manual/guides/sso-scim)).
+  :::
+
+## 4. Choose what a login grants
+
+Two policies decide what a first login does:
+
+- **Add users to every workspace on first login** — leave on for a
+  single-team deployment where SSO equals trust. Turn it off when several
+  teams or customers share the server: each newcomer then needs an explicit
+  workspace invite, which is the safer default.
+- **Provision unknown users on first login** — on by default; turn it off to
+  reject anyone whose account does not already exist.
+
+Optionally map an attribute carrying group names (Okta's is commonly
+`groups`) and translate groups to roles with the map — for example
+`{"platform-leads": "admin"}`. SSO can never grant the owner role.
+
+## 5. Enable and take a login
+
+Flip **Enable this connection**, press **Save**, then open a private
+browser window at `https://<your-server>/saml/login`. Sign in at Okta and
+you land back on the web client — logged in, with your account created and
+its membership granted per the policy you chose.
+
+The same entry point appears on the web connect screen (**Sign in with
+SSO**) the moment you type the server address — the form adapts to what the
+server offers. The button opens sign-in in a **new tab**; when the
+round-trip completes, the waiting tab picks the session up automatically.
+The desktop server-setup screen does the same: type the server URL, a
+**Sign in with SSO** button appears that opens your browser and the app
+logs in when the round-trip completes.
+
+## Where to go next
+
+- Give your IdP lifecycle control too:
+  [provision and deprovision users with SCIM](/manual/guides/sso-scim).
+- Your IdP speaks OpenID Connect instead of SAML?
+  [Connect an OpenID Connect provider](/manual/guides/sso-oidc).
+- Curious what the browser round-trip actually verifies?
+  [How single sign-on works](/manual/concepts/sso).

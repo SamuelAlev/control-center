@@ -1,0 +1,145 @@
+---
+title: Monitor pipeline runs
+description: Work the runs queue, read a run's waterfall and step panel and recover from a failed or stuck step.
+---
+
+This is the page for everything after a run has started: finding it, reading
+what each step did and getting a failed run moving again. To start one, see
+[Run a pipeline manually](/manual/guides/run-pipeline/).
+
+## Find a run
+
+1. Click **Pipelines** in the workspace sidebar. The screen is the workspace's
+   run queue — every run, newest first.
+2. Use the left rail to filter. There are exactly three filters, each with a
+   live count: **All**, **Running**, **Failed**.
+3. Walk the table with <kbd>↑</kbd>/<kbd>↓</kbd> (or <kbd>j</kbd>/<kbd>k</kbd>)
+   and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
+   same.
+
+Each row shows a glyph for how the run started (**Manual** or **Automatic**),
+the pipeline name, a status badge, the active duration and how long ago it
+started. Active duration excludes idle stop-and-restart gaps, so it is not the
+wall-clock span.
+
+There is no filter for completed, suspended or cancelled runs, no per-template
+filter, no time window and no per-template run history view. Comparing runs of
+one template means scanning the queue for its name.
+
+## Read the run detail
+
+A run's page has three stacked parts.
+
+**The meta strip** carries the start time, active duration, step progress
+("3 of 7 steps"), a failure summary naming the step that broke and why and the
+**Retry** and **Delete** actions.
+
+**The timing waterfall** gives one bar per step, with its duration and — for
+agent steps — its cost in cents. A step that was retried shows a `×N` suffix
+after its duration; that suffix is the only place attempt counts surface.
+
+**The graph canvas** draws the template with each node's live status.
+Selecting a node opens its step panel.
+
+### Run and step statuses
+
+| Status        | Meaning                                           |
+| ------------- | ------------------------------------------------- |
+| **Pending**   | Created, not yet started                          |
+| **Running**   | Executing                                         |
+| **Suspended** | Waiting on something external — normal, not stuck |
+| **Completed** | Finished successfully                             |
+| **Failed**    | Ended with an error                               |
+| **Cancelled** | Stopped by a user or by the system                |
+
+Steps have those six plus **Skipped**, for a branch a router did not take (and
+its now-unreachable descendants).
+
+**Suspended** is where an agent step spends most of its life: a dispatched agent
+or an approval gate holds the step until its work lands. Two engine backstops
+fail the whole run rather than resuming: a step suspended longer than 24 hours
+(approval gates are exempt) and a non-idempotent step that was mid-flight when
+the server stopped.
+
+## Inspect a step
+
+Select a node on the canvas. The step panel shows, in order:
+
+- An **Error** callout when the step failed, or a **Skipped** callout with the
+  reason when it was skipped.
+- **Started**, **Finished** and duration.
+- **Branch** — the branch index, for parallel branches.
+- **View conversation** — jumps to the conversation the step ran in. Pipeline
+  conversations are hidden from the sidebar, so this is the only way in.
+- **Input** and **Output**, as collapsible JSON.
+- **Agent activity** — one tile per agent run the step dispatched, with its
+  status, summary, duration and cost.
+
+For an agent step, **Output** is the structured payload the agent submitted with
+`submit_output`, not its prose. The reasoning trace lives in **Agent activity**
+and in the conversation behind **View conversation**.
+
+For a bash step, **Output** is the trimmed stdout the script wrote on exit 0.
+A non-zero exit fails the step with the stderr tail as the error message.
+
+## Recover a failed run
+
+1. Read the failure summary on the meta strip; it names the failing step. The
+   step panel's **Error** callout has the message.
+2. Check the step's **Input** — a missing or misspelled state key is the most
+   common cause. A prompt-agent step fails outright and names the unresolved
+   placeholders; a bash step renders them as empty strings and runs anyway,
+   which usually surfaces one step later.
+3. For an agent step, open **View conversation** and read what the agent actually
+   did.
+4. Press **Retry** on the meta strip. Completed and skipped steps keep their
+   outputs; everything else is deleted and re-executed and the run flips back
+   to running. The duration clock restarts for this attempt.
+
+Common causes worth checking first:
+
+- **Timeout** — the step exceeded its **Timeout (ms)**. Remember the field is
+  milliseconds.
+- **Script error** — the bash command exited non-zero, or `bash` is not on the
+  server host's `PATH`.
+- **Schema validation** — the agent's `submit_output` payload did not satisfy
+  the step's output schema.
+- **Unresolved placeholder** — a `{{key}}` a prompt-agent step referenced was
+  never written upstream. The error names every unresolved key.
+- **Unregistered body** — a step whose body key is not registered warns at
+  template load and then simply never executes.
+
+:::caution[Retry only works on a failed or cancelled run]
+The **Retry** button is also shown on completed runs, but the engine returns
+immediately unless the run's status is `failed` or `cancelled`. Pressing it on a
+completed run does nothing at all, with no message.
+:::
+
+## Stop a step that is stuck
+
+Select the running step and press the **Kill running** button in the step
+panel's header. This kills the step's process, marks the step failed and
+therefore fails the whole run — every open sibling branch is closed out with it.
+
+There is no cancel-run control on this screen. `pipeline.cancel` exists as an
+RPC operation and the engine implements it, but nothing in the pipelines UI
+calls it; **Kill running** on a step, or **Delete** on the run, are the only
+stop gestures available.
+
+## Track cost
+
+Cost is reported per step, in the waterfall's right-hand column and on each
+tile under **Agent activity**. There is no run total on the detail page and no
+cost column in the runs queue, so comparing the cost of two runs means adding up
+their steps.
+
+## Related guides
+
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Create a pipeline template](/manual/guides/create-pipeline/)
+- [Manage costs](/manual/guides/manage-costs/)
+- [Pipeline steps reference](/manual/reference/pipeline-steps/)
+
+## Related concepts
+
+- [Pipelines](/manual/concepts/pipelines/)

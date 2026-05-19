@@ -1,0 +1,89 @@
+---
+title: Direct background workers
+description: Use vibe mode to stop doing the work yourself and start directing several agents that do it in parallel.
+---
+
+This guide shows you how to run a conversation as a **director** rather than as a worker: the session reads and verifies, and background agents do the editing.
+
+## What changes when you type `/vibe`
+
+Two things, and only the first is enforced by the machinery:
+
+1. **The session's own tools drop to read-only**, plus five worker verbs. The only way it can affect the repo is through a worker, and the only way it can know what happened is by reading the files a worker touched.
+2. **It is told to verify by reading, not by believing.** A worker's report is a claim about what it did, not evidence that it worked.
+
+The first is the load-bearing one. A director that can still grep and edit will do the work itself under pressure, which is the failure mode this exists to prevent.
+
+```
+/vibe migrate the auth module to the new session API
+```
+
+## Workers start blank
+
+A worker has never seen your conversation and never will. The brief is its entire context.
+
+That is what keeps the pattern cheap — twenty workers each holding the director's history would cost twenty times the director's context — and it is also the one thing that makes briefs hard to write. "Now do the other one too" reads as a complete instruction to the director and as nothing at all to a fresh session.
+
+A good brief names files, commands and the definition of done:
+
+> In `lib/features/auth/`, replace every call to `SessionStore.read(key)` with `SessionStore.get(key)`. The new method returns `Future<String?>` where the old one returned `String?`, so callers need `await`. Run `fvm flutter analyze lib/features/auth` when you are done and report any errors you could not fix.
+
+## The five verbs
+
+| Verb         | What it does                                            |
+| ------------ | ------------------------------------------------------- |
+| `vibe_spawn` | Starts a worker on a brief. **Returns immediately.**     |
+| `vibe_list`  | Tier, status, elapsed time and last result for everyone  |
+| `vibe_send`  | A follow-up turn for a worker that has finished          |
+| `vibe_wait`  | Blocks until one worker settles                          |
+| `vibe_kill`  | Stops one                                                |
+
+Spawning is asynchronous by design. A director that blocks on every spawn is running workers one at a time, which is a slower way of doing what it was already doing itself. Use `vibe_wait` only when you genuinely cannot proceed without a specific answer.
+
+## Two tiers
+
+| Tier   | For                                                              |
+| ------ | ---------------------------------------------------------------- |
+| `fast` | Mechanical work with a clear specification — edits, renames, drafts, running commands |
+| `good` | Design, judgment, or reviewing what a `fast` worker produced       |
+
+A common shape is to fan out `fast` workers over independent files, then spawn one `good` worker to review what they collectively did.
+
+## Verifying
+
+This is the part that decides whether the pattern is worth anything.
+
+```
+vibe_list
+→ w1 [fast] auth-migrate — done (48s): Edited lib/features/auth/session.dart …
+  w2 [fast] tests — running (12s)
+```
+
+Then **read the files it named**. The director has `read`, `search`, `lsp` and `ast_grep`; that is the whole point of keeping them. A director that takes the report at face value is a summarizer of other agents' optimism.
+
+`lsp(action: "diagnostics", file: "*")` after a round of workers is usually the fastest single check.
+
+## When a worker loses the thread
+
+Kill it and re-brief. A fresh, corrected brief is cheaper than an argument, and `vibe_send` only works on a worker that has already finished its turn.
+
+```
+vibe_kill(worker_id: "w2")
+vibe_spawn(brief: "…corrected…", label: "tests", tier: "fast")
+```
+
+## Limits
+
+- **Eight concurrent workers.** A ceiling on spend, not a technical limit: each is a full model session, and a director that fans out twenty has stopped tracking what they are all doing.
+- **No worker outlives the mode.** When the run ends, every one of them is stopped and the transcript says how many. A background agent still editing files after the conversation moved on is the one failure this cannot have.
+- **Workers are ordinary subagents underneath.** Same depth cap, same guardrail policy, same run-log child. Vibe changes who drives them, not what they are allowed to do — so approval prompts still appear for a worker's write and exec calls.
+
+## When not to use it
+
+Vibe mode is for work that decomposes into independent briefs. If the next step depends on the previous step's output, you are describing a [pipeline](/manual/guides/create-pipeline/) or an [orchestration](/manual/guides/run-orchestration/), and both express dependencies properly instead of making the director simulate them with `vibe_wait`.
+
+## Related
+
+- [Run agents in parallel](/manual/guides/parallel-agents/) — the other ways to fan out
+- [Orchestration](/manual/concepts/orchestration/) — when the work has a shape
+- [Built-in agent tools](/manual/reference/agent-tools/) — the verbs and their arguments

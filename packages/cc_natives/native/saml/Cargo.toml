@@ -1,0 +1,49 @@
+[package]
+name = "cc_saml"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Control Center's SAML 2.0 service-provider crypto native: AuthnRequest building, IdP metadata parsing and XML-DSig-verified Response consumption behind a C ABI for Dart FFI."
+license = "MIT"
+
+[lib]
+name = "cc_saml"
+crate-type = ["cdylib"]
+
+[dependencies]
+# PINNED EXACTLY: pre-1.0 alpha with a security-sensitive surface. Upgrade
+# only with a Cargo.lock review, a re-run of the conformance corpus in
+# src/lib.rs (wrapping/tamper/expiry/audience/destination/replay vectors),
+# and a fresh look at the upstream changelog. The FFI seam exists so this
+# pin (or the whole backend) can be swapped without touching Dart.
+#
+# Feature set = the crate's defaults minus `reqwest-client` (cc_server brings
+# its own HTTP; the SP login flow needs no backchannel) — everything else is
+# dependency-free code. `weak-algos` stays OFF: SHA-1/RSA-PKCS1v1.5/DSA are
+# rejected, not merely discouraged.
+saml = { version = "=0.0.1-alpha.2", default-features = false, features = [
+  "rsa-sha",
+  "ecdsa-sha",
+  "xmlenc",
+  "slo",
+  "metadata-emit",
+  "xsd-validate",
+] }
+serde_json = "1"
+
+# Test-only: minting fixture responses (IdP side), inflating redirect
+# AuthnRequests, parsing redirect URLs. Not linked into the cdylib.
+[dev-dependencies]
+base64 = "0.23"
+flate2 = "1"
+url = "2"
+
+# This crate is built standalone (--manifest-path), so it is its own profile
+# root despite living inside the repo.
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+# NOT "abort": every extern "C" entry point wraps its body in catch_unwind so
+# a panic becomes an error return instead of UB across the FFI boundary.
+panic = "unwind"

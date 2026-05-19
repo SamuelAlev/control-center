@@ -1,0 +1,150 @@
+---
+title: Use AI-powered review
+description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
+---
+
+This guide shows you how to have reviewer agents review a pull request and how to
+publish the result to GitHub.
+
+## Start an AI review
+
+1. Open the PR and go to its **Overview** tab
+2. Open the ⋯ overflow menu in the action row and choose **Ask AI**
+
+The item only appears while the PR is open — it is a pre-merge action. The same
+button is offered as **Ask AI** on the **Review** tab's empty state, before any
+review exists.
+
+Control Center starts the seeded `pr_review` pipeline and navigates you to its run
+page so you can watch it. The pipeline:
+
+1. Opens the PR's own review space, whose isolated worktree has the PR checked
+   out at its head
+2. Fans out the reviewers for the workspace's review level — three by default
+   (the seeded **qa**, **architect** and **engineer** agents, in parallel).
+   There is no language or domain detection
+3. Has the lead (CEO) agent consolidate their findings into a walkthrough
+4. Finalizes: sorts the findings into consensus buckets and computes the
+   verdict, and the status bar on the Review tab flips to **Awaiting your
+   approval**
+
+How deep the review goes is the workspace's **review level** — `light` (one
+reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
+security and performance specialists) — set at
+**Settings → Workspace → Workspace policy → Review level**. A lighter level
+files just as many findings; it reports fewer of them front and centre.
+
+All the reviewers post into the PR's single review space, which is what makes
+their findings comparable. See
+[AI review](/manual/concepts/ai-review/) for how the pieces fit together.
+
+`pr_review` ships with a manual trigger only. To have it fire on every published
+PR, add a trigger yourself — see
+[Dispatch reviewer agents](/manual/guides/dispatch-reviewers/). You can also
+start one from GitHub itself, no pipeline trigger needed: mention the server's
+bot on the PR or add the `ai-review` label — see
+[Talk to Control Center from a GitHub PR](/manual/guides/github-pr-conversations/).
+
+If the toast says the run is a duplicate, a review is already in flight for this
+PR; open **Pipelines** to find it.
+
+## Read the findings
+
+Reviewers record findings as **review nodes** in the review space. Each carries:
+
+| Field          | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
+| Priority       | P0 (critical) → P3 (nit)                                      |
+| Axis           | Which review axis the finding belongs to                      |
+| File and line  | Where the finding is anchored                                 |
+| Original code  | The code the finding is about                                 |
+| Suggested code | The proposed fix                                              |
+| Confidence     | How confident the reviewer is                                 |
+| Status         | `open` → `consensus-ready` → `resolved` or `dismissed`        |
+
+A finding only reaches **consensus-ready** once a _peer_ reviewer confirms it. An
+agent cannot confirm its own finding, so a single reviewer's opinion never
+graduates on its own.
+
+The **Review** tab shows the findings list, filterable by kind and status, with a
+toggle for dismissed findings, beside the artifact the consolidating agent
+published. The deterministic view — cohorts, the multi-axis dashboard, contract
+and visual diffs — is computed server-side but has no surface in the app; see
+[Review Studio](/manual/guides/review-studio/) for what exists and where.
+
+## Check the disagreements panel
+
+When two reviewers anchor findings to the same file and line but rate them very
+differently — priorities two or more levels apart, or one calls it a `bug` while
+the other calls it a `suggestion` — a disagreement panel appears above the findings
+list. Read those first: they are where the reviewers' opinions diverge and your
+judgement is worth the most.
+
+## Read the verdict
+
+When the lead agent finalizes, it computes a **verdict**:
+
+| Verdict   | Meaning                                      |
+| --------- | -------------------------------------------- |
+| **Ship**  | Nothing blocking found                       |
+| **Hold**  | Issues that should be addressed before merge |
+| **Block** | Critical issues that must be fixed           |
+
+The verdict carries an aggregate confidence score and per-priority finding counts.
+
+The review axes then fold into it and they can only make it **more** severe. A
+gated axis that fails forces **Block**; a gated axis that could not complete
+(`partial`) or could not run at all (`unavailable`) forces at least **Hold**.
+Absence of evidence never clears a gate.
+
+## Publish the review to GitHub
+
+Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
+does **not** post to GitHub — the old "post PR comment" step was removed so a
+review cannot double-publish.
+
+1. On the **Review** tab, wait for the status bar to read **Awaiting your
+   approval**
+2. Press **Publish to GitHub**
+
+Control Center sends **one** GitHub review. Findings already resolved or dismissed
+are skipped and only findings a peer confirmed are included. Those that carry a
+file and line anchor become inline comments; everything else folds into the summary
+body, each with a "— Control Center AI review" footer so the source is
+unambiguous. A **Block** verdict is submitted as `REQUEST_CHANGES`; anything else
+is submitted as `COMMENT` — the bot never approves on your behalf. The status bar
+then flips to **Published**.
+
+If GitHub rejects an inline anchor because the line is not part of the diff, the
+whole review is re-sent with every finding folded into the body, so nothing is
+silently dropped.
+
+:::caution[Publishing is guardrail-gated]
+`pr_review.publishReview` declares the `prPublish` action class and runs through
+the guardrail chokepoint. If the resolved decision is `prompt` and no approver is
+connected, the publish is denied — guardrails fail closed. Set an explicit rule at
+Settings → Workspace → Agent permissions if you want it to run unattended.
+:::
+
+Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
+`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
+holds its output back for you.
+
+## Dispatch reviewers yourself
+
+For control over which roles review the PR and which files each one looks at, use
+the `dispatch_reviewers` MCP tool inside an existing review space, or add
+reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are in
+[Dispatch reviewer agents](/manual/guides/dispatch-reviewers/).
+
+## Related guides
+
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Review Studio (cohorts and axes)](/manual/guides/review-studio/)
+
+## Related concepts
+
+- [AI review](/manual/concepts/ai-review/)
+- [Guardrails](/manual/concepts/guardrails/)

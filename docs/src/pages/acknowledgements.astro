@@ -1,0 +1,191 @@
+---
+/**
+ * Acknowledgements — the open source Control Center is built on.
+ *
+ * The component list is READ FROM THE BUILD, not written here: the same
+ * `scripts/lib/third_party.sh` manifest that produces the
+ * `THIRD-PARTY-LICENSES.txt` inside every artifact. A dependency added to the
+ * product appears on this page at the next deploy, which is the only way a
+ * credits page stays true.
+ *
+ * This page is the credit; `/licenses` carries the full legal text.
+ */
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import LegalDoc from '../components/legal/LegalDoc.astro';
+import { components, dartDeps } from 'virtual:third-party';
+
+/**
+ * One-line descriptions, keyed by the manifest's slug.
+ *
+ * Editorial copy, so it lives here rather than in the shell manifest — and a
+ * slug with no entry renders an empty cell instead of breaking the build.
+ */
+const blurbs: Record<string, string> = {
+  rift: 'Copy-on-write worktrees, so every agent gets its own checkout instantly.',
+  fff: 'The fuzzy file finder behind file search and @-mentions.',
+  'tree-sitter': 'Parses source into syntax trees for the code graph.',
+  'tree-sitter-dart': 'Dart grammar for the code graph.',
+  'tree-sitter-javascript': 'JavaScript grammar for the code graph.',
+  'tree-sitter-typescript': 'TypeScript and TSX grammars for the code graph.',
+  'tree-sitter-php': 'PHP grammar for the code graph.',
+  'webrtc-audio-processing': 'Echo cancellation for meeting recording.',
+  'lame-libmp3lame': 'MP3 encoding for recorded audio.',
+  'sherpa-onnx': 'On-device speech: transcription, diarization and voice activity detection.',
+  'onnx-runtime': 'Runs the transcription and text-embedding models locally.',
+  'flutter-pty-vendored-c': 'Pseudo-terminals for the built-in shell.',
+  'code-server': 'The in-app editor, served from your own machine.',
+  'appimage-runtime': 'Makes the Linux build a single self-contained file.',
+  'manrope-font': 'The interface typeface.',
+  'fira-code-font': 'The monospace typeface, used for code and terminals.',
+  'phosphor-icons-font': 'Every icon in the app.',
+};
+
+const compiled = components.filter((c) => c.linkage === 'static');
+const fonts = components.filter((c) => c.name.includes('(font)'));
+const shipped = components.filter(
+  (c) => c.linkage === 'bundled' && !c.name.includes('(font)'),
+);
+
+/** Two package columns per row, so 48 packages read as a list and not a scroll. */
+const dartRows = Array.from({ length: Math.ceil(dartDeps.length / 2) }, (_, i) => [
+  dartDeps[i * 2],
+  dartDeps[i * 2 + 1],
+]);
+
+const sections = [
+  { id: 'foundation', title: 'The foundation' },
+  { id: 'compiled', title: 'Native libraries' },
+  { id: 'shipped', title: 'Bundled programs' },
+  { id: 'typefaces', title: 'Typefaces' },
+  { id: 'dart', title: 'Dart and Flutter packages' },
+  { id: 'licenses', title: 'Licenses' },
+];
+---
+
+<MarketingLayout
+  title="Acknowledgements \\ Control Center"
+  description="The open-source projects Control Center is built on — native libraries, bundled programs, typefaces and the Dart and Flutter packages behind the app."
+  breadcrumbName="Acknowledgements"
+>
+  <LegalDoc
+    title="Acknowledgements"
+    lastUpdated="Generated at build time"
+    intro="Control Center is assembled from other people's work. Everything below ships inside the app or the server, and the list is generated from the same manifest the release pipeline uses — so it describes the build you actually downloaded, rather than a list somebody remembered to update."
+    sections={sections}
+  >
+    <section id="foundation">
+      <h2>The foundation</h2>
+      <p>
+        Control Center is a <a href="https://flutter.dev" rel="noopener">Flutter</a> application written in <a href="https://dart.dev" rel="noopener">Dart</a>. The desktop app and the headless server share one codebase; the server compiles to a native binary with no Flutter engine in it at all.
+      </p>
+      <p>
+        Your data lives in <a href="https://sqlite.org" rel="noopener">SQLite</a>, reached through <a href="https://drift.simonbinder.eu" rel="noopener">Drift</a> — one database file per workspace, on your own disk.
+      </p>
+    </section>
+
+    <section id="compiled">
+      <h2>Native libraries</h2>
+      <p>
+        Compiled from source and linked into the binaries we ship. These are what make copy-on-write
+        worktrees, code indexing and on-device transcription possible without sending anything to a
+        server we run.
+      </p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Native libraries, scrollable">
+        <table>
+          <thead>
+            <tr><th>Project</th><th>Version</th><th>License</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            {
+              compiled.map((c) => (
+                <tr>
+                  <td><a href={c.homepage} rel="noopener">{c.name}</a></td>
+                  <td><code>{c.version}</code></td>
+                  <td>{c.license}</td>
+                  <td>{blurbs[c.slug] ?? ''}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="shipped">
+      <h2>Bundled programs</h2>
+      <p>Shipped whole, as their own executables, rather than linked in.</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Bundled programs, scrollable">
+        <table>
+          <thead>
+            <tr><th>Project</th><th>Version</th><th>License</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            {
+              shipped.map((c) => (
+                <tr>
+                  <td><a href={c.homepage} rel="noopener">{c.name}</a></td>
+                  <td><code>{c.version}</code></td>
+                  <td>{c.license}</td>
+                  <td>{blurbs[c.slug] ?? ''}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="typefaces">
+      <h2>Typefaces</h2>
+      <p>Bundled with the app so it reads the same on every machine.</p>
+      <ul>
+        {
+          fonts.map((c) => (
+            <li>
+              <a href={c.homepage} rel="noopener">{c.name.replace(' (font)', '')}</a> — {c.license}.{' '}
+              {blurbs[c.slug] ?? ''}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="dart">
+      <h2>Dart and Flutter packages</h2>
+      <p>
+        The {dartDeps.length} packages Control Center depends on directly. Each ships under its own
+        license; the complete set, including everything these pull in transitively, is reproduced in
+        the <code>NOTICES</code> file inside the application bundle.
+      </p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Dart and Flutter packages, scrollable">
+        <table>
+          <thead>
+            <tr><th>Package</th><th>Version</th><th>Package</th><th>Version</th></tr>
+          </thead>
+          <tbody>
+            {
+              dartRows.map(([left, right]) => (
+                <tr>
+                  <td><a href={left.url} rel="noopener">{left.name}</a></td>
+                  <td><code>{left.version}</code></td>
+                  <td>{right ? <a href={right.url} rel="noopener">{right.name}</a> : ''}</td>
+                  <td>{right ? <code>{right.version}</code> : ''}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="licenses">
+      <h2>Licenses</h2>
+      <p>
+        The full text of every license above is reproduced on the <a href="/licenses">licenses page</a>, and travels inside each download as <code>THIRD-PARTY-LICENSES.txt</code>.
+      </p>
+      <p>
+        Control Center itself is MIT licensed. If we have credited you incorrectly, or missed you entirely, please <a href="https://github.com/SamuelAlev/control-center/issues" rel="noopener">open an issue</a> — we would like to fix it.
+      </p>
+    </section>
+  </LegalDoc>
+</MarketingLayout>

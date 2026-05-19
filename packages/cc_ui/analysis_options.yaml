@@ -1,0 +1,56 @@
+# Analyzer config for the cc_ui design-system package.
+#
+# cc_ui is a pure-Flutter UI package: it builds on package:flutter/widgets.dart
+# and MUST NOT import Material, Cupertino, Riverpod, go_router, l10n,
+# drift, dio, or the host app (package:control_center/...). That boundary is
+# enforced by test/core/architecture_constraints_test.dart in the app.
+# ONE rule table. This file used to `include: package:flutter_lints/flutter.yaml`
+# plus a hand-copied SUBSET of the root rules, which meant it silently missed
+# `avoid_print`, `avoid_dynamic_calls`, `unawaited_futures`,
+# `cancel_subscriptions`, `close_sinks` and ~20 more — and every new root rule
+# would have missed it too. Include the root (which itself includes
+# flutter_lints) and opt DOWN explicitly, the way cc_domain does.
+include: ../../analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+  errors:
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    # Opted DOWN from the root, deliberately and narrowly:
+    #
+    # `always_put_control_body_on_new_line` — a formatting preference this
+    # package predates in ~30 places; `dart format` does not enforce it either
+    # way, so turning it on here would be 30 diffs of pure style noise ahead of
+    # any real change.
+    #
+    # `comment_references` — this package's doc comments link freely to Flutter
+    # framework types it does not import at the doc site (`[FontLoader]`,
+    # `[ImageProvider]`), which is good documentation and a lint false-positive.
+    #
+    # Everything else the root enforces now applies here, which is the point:
+    # `avoid_print`, `avoid_dynamic_calls`, `unawaited_futures`,
+    # `cancel_subscriptions` and `close_sinks` were all silently absent before.
+    always_put_control_body_on_new_line: false
+    comment_references: false
+    always_use_package_imports: true
+    avoid_relative_lib_imports: true
+    directives_ordering: true
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_single_quotes: true
+    sort_constructors_first: true
+    use_super_parameters: true
+    always_declare_return_types: true

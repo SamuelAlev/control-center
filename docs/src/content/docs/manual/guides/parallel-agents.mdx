@@ -1,0 +1,89 @@
+---
+title: Run agents in parallel
+description: Dispatch several agents at once and keep their work from colliding.
+---
+
+This guide shows you how to run several agents at the same time without them overwriting each other.
+
+## The unit of isolation is the space, not the agent
+
+When work starts in a space, Control Center provisions one copy-on-write checkout per registered repo under that space's own root, on a branch derived from the workspace's branch template. Each agent in the space then gets its own overlay working directory — but the overlays **share** that space's `repos/` directory.
+
+So:
+
+- Two agents in **different spaces** work in different checkouts, on different branches. That is real isolation.
+- Two agents in the **same space** work in the same checkout, on the same branch. Their overlay paths differ, so the dispatch path lock (which serialises runs only when they request the identical working directory) does not serialise them either. They can write the same files at the same time.
+
+The rule that follows: **one space per parallel task.**
+
+## Run tasks in parallel — separate spaces
+
+1. Open a space with agent A and send it a task.
+2. Open a second space with agent B and send it a different task.
+3. Both dispatch immediately, each in its own space checkout on its own branch.
+
+This is the recipe to use whenever the agents will be editing files.
+
+## Work together in one space — several mentions
+
+In a single space, @-mention more than one agent:
+
+```
+@alice refactor the auth module. @bob review what alice lands.
+```
+
+Both agents dispatch in parallel and stream into the same space, tagged by sender. Because they share the space's checkout, use this for collaboration — one writing, one reading, or two agents reasoning about the same tree — not for two independent edits.
+
+## Fan out from a pipeline
+
+The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
+
+:::caution[Authoring your own fan-out does not work yet]
+A step you add downstream in the pipeline editor is not executed: the run completes as soon as the seeded first step reaches the terminal sentinel and the terminal node is filtered out of the editor canvas so it cannot be re-threaded. Parallel branches you draw yourself will not run today. Use the built-in templates, or the space recipes above.
+:::
+
+:::caution[Assigning a ticket dispatches nothing]
+Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
+:::
+
+## Watch them run
+
+**Observability → Live** (sidebar footer → Observability, then the Live tab) shows this workspace's agent roster, re-ticking every second: status (running / idle / parked / aborted), what each one is doing, tokens and cost for its latest run and a kill control for a running process. Selecting a row docks a live transcript drawer.
+
+**Settings → Workspace → Agents** shows the same roster with a different, attention-first status vocabulary derived from each agent's run history — running, blocked, failed, idle, never run — sorted so anything needing attention floats to the top. Each agent's **Logs** tab holds its own run history.
+
+Both surfaces are scoped to the active workspace.
+
+## Handle conflicts
+
+Across spaces, each space is on its own branch, so a collision surfaces as an ordinary Git merge conflict when you merge the second pull request. Resolve it the way you would any merge conflict.
+
+Inside one space there is no branch boundary and no lock: the agents are writing the same files live and the loser is simply overwritten. If you find yourself wanting two agents to edit in one space, split the work into two spaces instead.
+
+To reduce collisions either way:
+
+- Give each agent a distinct scope — different files, different modules.
+- Use the code graph to check what a change touches before dispatching. See [Search code with the code graph](/manual/guides/code-search/).
+- Review and merge each agent's pull request promptly.
+
+## Resource considerations
+
+Each running agent costs:
+
+- A space checkout — negligible on disk while copy-on-write is available, a full `git worktree` otherwise
+- A process on the server host
+- Model tokens, which accumulate per agent
+
+Costs land in **Observability → Insights**. Note that a normal interactive turn has no spend cap; see [Manage costs](/manual/guides/manage-costs/) for the two commands that do have one.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Build an agent team](/manual/guides/build-team/)
+- [Manage costs](/manual/guides/manage-costs/)
+- [Add repos to a workspace](/manual/guides/add-repos/)
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)
+- [Sandbox and security](/manual/concepts/sandbox-security/)

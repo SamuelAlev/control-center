@@ -1,0 +1,192 @@
+---
+title: Use focus mode and soundscapes
+description: Run a timed focus session with a floating countdown pill and suppressed notifications, and shape the adaptive soundscape that plays under it.
+dateModified: 2026-08-17
+---
+
+This guide shows you how to run a focus session: a timed block during which
+Control Center suppresses non-urgent notifications and floats a countdown pill
+over your other windows. It also covers the soundscape that (by default) plays
+under it — an endless ambient track your server synthesizes live, shaped by the
+mood you pick, the weather outside and the hour of the day.
+
+A focus session is a shell-level feature. It is not tied to any pillar — it does
+not change the layout, hide the sidebar, or alter a PR review surface.
+
+:::note[Desktop only]
+The floating pill and the soundscape's pop-out mini player are native sibling
+windows, mounted only by the desktop bootstrap. The web build at
+`app.usectrl.dev` has neither, and no OS-notification pipeline, so a focus
+session has nothing to show or suppress there. The soundscape panel and its
+playback work wherever you connect to a server.
+:::
+
+## Start a focus session
+
+1. Click the focus icon at the right of the title bar (tooltip **Start focus
+   session**)
+2. In the dialog, type an optional **Goal** — what you are working on
+3. Pick a **Duration**: 25m, 50m, 1h, 1h 30m or 2h. The default is 50m and your
+   last choice is remembered
+4. Leave **Block notifications** on (see the caution below for what it actually
+   controls)
+5. Press **Start**
+
+Checkpoint: the title-bar button is replaced by an accent chip showing the
+minutes remaining, the floating pill appears over your other windows and — with
+**Start with focus mode** on — the soundscape starts playing.
+
+Two other entry points reach the same session:
+
+- **⌘K → Start focus session** opens the same dialog.
+- **⌘⇧⌥F** starts a session immediately with your remembered duration and no
+  goal — it skips the dialog. Pressing it again ends the session.
+
+## Read the floating pill
+
+The pill is a small frameless window you can drag anywhere. It shows:
+
+- A live presence dot and the remaining time as `mm:ss`
+- Your goal, or "Focus session" when you did not set one
+- A thin progress bar along the bottom edge
+
+Hover it to reveal two actions:
+
+- **Pause** / **Resume** — stops the countdown. Pausing is local to the pill; the
+  session itself stays active.
+- **Complete** — ends the session.
+
+The pill commits to the dark palette whatever theme the main window is using,
+because it floats over arbitrary desktop content.
+
+If you close the pill from the title bar, the session keeps running. Press the
+picture-in-picture button next to the focus chip (tooltip **Minimize to bar**) to
+bring it back.
+
+## Know what gets suppressed
+
+While a session is active, Control Center drops every notification except two
+categories, which are always delivered:
+
+- **Meeting starting soon** — a meeting alert you see after the fact is worthless
+- **Pull request published**
+
+Everything else is silently suppressed for the whole session — no sound, no OS
+toast. Suppressed notifications are not queued for later delivery.
+
+:::caution[The "Block notifications" switch does nothing]
+The switch in the start dialog is persisted with your duration preference, but no
+code reads it. Suppression is gated on the session being active, so non-urgent
+notifications are suppressed whether you leave the switch on or turn it off.
+Treat it as a preference that has not been wired up yet.
+:::
+
+## Play a soundscape
+
+1. Click the speaker icon at the right of the title bar (tooltip **Soundscapes**)
+   to open the panel
+2. Pick a **Mood** — **Focus**, **Relax** or **Sleep**
+3. Press **Play**
+
+Checkpoint: the **Now playing** card names the current scene — the weather at
+your workspace's location, the temperature in °C and the location label. While
+it reads "Tuning the ambience…" the scene is still resolving.
+
+The track is not a loop. Your server synthesizes it continuously from the mood,
+the live weather at the workspace's location and the time of day. Rain reads
+bright and busy, a storm loud and gusty, fog muffled; night is darker and more
+reverberant than midday. The mood sets the vocabulary:
+
+| Mood   | Sound                                                            |
+| ------ | ---------------------------------------------------------------- |
+| Focus  | Gentle, alert ambience with a low pulse — meant to sit under work |
+| Relax  | Warmer, more consonant pads, no beat                             |
+| Sleep  | Low drones with almost no events, deep reverb                    |
+
+Switching mood while playing hands playback to the new mood without stopping.
+
+The panel is also reachable from ⌘K under the **Focus** category, next to the
+focus session itself.
+
+## Shape the sound
+
+- **Tune** (Focus and Relax only) — a square pad with a draggable puck.
+  Horizontal is **Mellow** to **Energetic** (how much happens), vertical is
+  **Spacy** to **Bright** (how open it sounds). Double-tap the pad to reset to
+  the neutral centre; arrow keys nudge the puck. Your tune is remembered per
+  mood, and adjustments glide into the running mix — the stream never
+  restarts. The Sleep mood is untunable by design.
+- **Volume** — a slider from 0 to 100%, defaulting to 60%. It is separate from
+  the system volume and is remembered.
+- **Location** — detected automatically from the workspace. Press **Refresh
+  weather** to refetch the scene.
+
+## Pop out the mini player
+
+While audio is playing, the title bar grows a second button (tooltip **Pop out
+player**). It floats a small always-on-top HUD with play/pause, the weather
+glyph, the scene name and a **Return to app** button — handy once a focus
+session has you in another app entirely.
+
+Pausing from the mini player does not dismiss it; only its close button (or
+quitting the app) removes it.
+
+## Run them together
+
+The two features are coupled by one switch in the soundscape panel:
+**Start with focus mode**, on by default.
+
+- Starting a focus session starts the soundscape if nothing is already playing.
+- Ending the session — however it ends, including the timer running out — stops
+  it, even when you started the soundscape by hand.
+
+Turn the switch off to keep the two independent.
+
+## End a session
+
+Any one of these ends it:
+
+- Click the focus chip in the title bar (tooltip **Focus mode active — tap to
+  end**)
+- Press **Complete** on the pill
+- Press **⌘⇧⌥F**
+- Choose **Exit focus mode** in ⌘K
+- Let the timer run out — the session auto-completes at zero
+
+The pill closes, notifications resume immediately and the soundscape stops.
+
+## Understand what does not persist
+
+A session lives for exactly one app run. Quit and reopen Control Center and you
+start inactive with a reset timer, even mid-session — there is no crash recovery
+and no session history.
+
+Only two things carry over: your preferred duration and the block-notifications
+flag. The goal, the elapsed time and the pill's open state do not.
+
+Playback is just as ephemeral — the soundscape is always stopped at launch. Your
+mood, volume and per-mood tunes persist; the stream itself never resumes on its
+own.
+
+## Troubleshooting
+
+### The tune pad is missing
+
+You are on the Sleep mood, which is deliberately untunable. Switch to Focus or
+Relax to get the pad back.
+
+### Nothing plays after restarting the app
+
+By design — playback is always stopped at app launch. Open the panel and press
+**Play** again. If it still stays silent, check the panel's volume slider, which
+is separate from the system volume.
+
+### The weather or temperature looks wrong
+
+The scene follows the active workspace's location. Press **Refresh weather** in
+the panel to refetch it.
+
+## Related guides
+
+- [Configure notifications](/manual/guides/notifications/)
+- [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/)

@@ -1,0 +1,77 @@
+name: Web Workers
+
+# Byte-level drift guard for the committed isolate_manager Web Workers
+# (web/*.js). Scoped to PRs/pushes that touch a worker entrypoint or the
+# Flutter-free code it compiles in, so it never slows the main CI. Regenerates
+# and diffs via tool/check_workers.sh. The cheap floor (every annotated worker
+# has *an* asset) runs in the normal test suite (test/tooling/web_workers_test.dart).
+on:
+  push:
+    paths:
+      - 'lib/features/pr_review/presentation/utils/diff_worker_core.dart'
+      - 'lib/features/pr_review/presentation/utils/word_diff.dart'
+      - 'packages/cc_domain/lib/features/pr_review/domain/services/diff_parser.dart'
+      - 'lib/shared/widgets/markdown/markdown_worker_core.dart'
+      - 'lib/shared/syntax/**'
+      - 'packages/cc_markdown/lib/parser.dart'
+      - 'packages/cc_markdown/lib/src/codec/**'
+      - 'packages/cc_markdown/lib/src/parser/**'
+      - 'packages/cc_markdown/lib/src/ast/**'
+      - 'packages/cc_markdown/lib/src/plugins/**'
+      - 'pubspec.yaml'
+      - 'web/*.js'
+      - 'tool/gen_workers.sh'
+      - 'tool/check_workers.sh'
+      - '.github/workflows/web-workers.yml'
+  pull_request:
+    paths:
+      - 'lib/features/pr_review/presentation/utils/diff_worker_core.dart'
+      - 'lib/features/pr_review/presentation/utils/word_diff.dart'
+      - 'packages/cc_domain/lib/features/pr_review/domain/services/diff_parser.dart'
+      - 'lib/shared/widgets/markdown/markdown_worker_core.dart'
+      - 'lib/shared/syntax/**'
+      - 'packages/cc_markdown/lib/parser.dart'
+      - 'packages/cc_markdown/lib/src/codec/**'
+      - 'packages/cc_markdown/lib/src/parser/**'
+      - 'packages/cc_markdown/lib/src/ast/**'
+      - 'packages/cc_markdown/lib/src/plugins/**'
+      - 'pubspec.yaml'
+      - 'web/*.js'
+      - 'tool/gen_workers.sh'
+      - 'tool/check_workers.sh'
+      - '.github/workflows/web-workers.yml'
+
+permissions: {}
+
+concurrency:
+  group: web-workers-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Check Web Workers are up to date
+        run: ./tool/check_workers.sh

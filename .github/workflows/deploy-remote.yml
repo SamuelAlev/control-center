@@ -1,0 +1,103 @@
+name: Deploy remote client
+
+# Builds the cc_remote phone PWA (apps/cc_remote) and deploys it to the
+# Cloudflare Worker "control-center-remote" as static assets — the same model as
+# the design system. Config lives in apps/cc_remote/wrangler.jsonc (SPA fallback
+# + the strict CSP `_headers` shipped under web/).
+#
+# Setup — reuses the existing repository secret:
+#   CLOUDFLARE_API_TOKEN  A Cloudflare API token scoped to "Edit Cloudflare
+#                         Workers" for the account below.
+# The account id is not sensitive, so it is inlined. `wrangler deploy` creates
+# the Worker on first run if it does not already exist.
+
+on:
+  push:
+    branches: [main]
+    # Redeploy when the phone client or the shared packages it bundles change.
+    paths:
+      - "apps/cc_remote/**"
+      # Every workspace package, not the enumerated closure: cc_remote also
+      # depends on cc_rpc and cc_data and the enumeration silently missed them
+      # (a change there redeployed the web client but NOT the phone PWA). A
+      # closure list is right the day it is written and wrong at the next
+      # package; an unnecessary 3-minute redeploy beats a silently stale one.
+      - "packages/**"
+      - "tool/gen_build_info.dart"
+      - ".github/workflows/deploy-remote.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: deploy-remote
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      CLOUDFLARE_ACCOUNT_ID: d7dccdb80e94309a90054ed9c182ba05
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+            api.cloudflare.com:443
+            registry.npmjs.org:443
+            sparrow.cloudflare.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Stamp build identity
+        run: |
+          dart run tool/gen_build_info.dart
+          echo "CC_BUILD_SHA=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "CC_BUILD_VERSION=$(grep -m1 '^version:' pubspec.yaml | sed 's/version:[[:space:]]*//' | cut -d'+' -f1)" >> "$GITHUB_ENV"
+
+      - name: Build web (SkWasm with CanvasKit fallback)
+        working-directory: apps/cc_remote
+        run: flutter build web --release --wasm
+
+      # The manifest the client polls to offer a consent-driven refresh.
+      # Derived from the stamped build_info.dart, so the manifest and the
+      # BuildInfo compiled into the bundle are the same identity by
+      # construction — this used to be an inline heredoc here, in
+      # deploy-webapp.yml and in release.yml and the three had drifted into
+      # two different version semantics.
+      #
+      # deploy.json, NOT version.json: `flutter build web` writes its own
+      # build/web/version.json and would clobber it. Written AFTER the build
+      # for the same reason.
+      - name: Write deploy.json
+        run: dart run tool/gen_deploy_manifest.dart apps/cc_remote/build/web
+
+      # Cloudflare rejects the whole deploy if ANY asset exceeds 25 MiB. The
+      # check lives in scripts/lib/common.sh so this is one implementation
+      # rather than the three verbatim copies these workflows used to carry
+      # (two of which pointed at the third in a comment).
+      - name: Check asset size budget
+        working-directory: apps/cc_remote
+        run: |
+          source "$GITHUB_WORKSPACE/scripts/lib/common.sh"
+          assert_asset_budget build/web 24
+
+      - name: Deploy to Cloudflare
+        working-directory: apps/cc_remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: npx --yes wrangler@4.98.0 deploy

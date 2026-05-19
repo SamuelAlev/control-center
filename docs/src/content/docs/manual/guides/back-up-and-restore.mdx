@@ -1,0 +1,300 @@
+---
+title: Back up and restore
+description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
+---
+
+This guide covers the five things people actually do with backups: take one, collect it,
+move a workspace, put one back, and keep copies off the machine. For the exact shape of
+every artifact and operation, see the
+[backup reference](/manual/reference/backup/).
+
+Everything here lives at **Settings → Server → Backup & restore**.
+
+## Prerequisites
+
+- A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
+- For per-workspace actions: **admin** of that workspace to export it, **owner** to import or delete it. Downloading a whole install snapshot needs to be the install's **owner**.
+- For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
+
+:::caution[Nothing is scheduled]
+A snapshot is taken only when somebody asks for one. Nothing runs on a timer, nothing
+rotates old snapshots and there is no `cc_server backup` subcommand. If you want
+unattended backups, set them up yourself — see
+[Copy backups off the machine](#copy-backups-off-the-machine).
+:::
+
+## What a backup covers
+
+Both artifacts are **databases only**:
+
+- An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
+- A **workspace export** is that single `workspace.db` file.
+
+Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
+credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
+`agents/`, `chat_credentials/`, recorded meeting audio or rig images. Some of that is
+disposable and some of it is not — the
+[full table is in the reference](/manual/reference/backup/#what-a-backup-does-not-contain),
+and covering it is what the [off-machine section](#copy-backups-off-the-machine) is for.
+
+## Take a snapshot of the whole install
+
+1. Open **Settings → Server → Backup & restore**.
+2. Under **Install snapshots**, press **Back up now**.
+3. The toast names the directory that was written, on the server host. The new snapshot appears at the top of the list.
+
+The server keeps running throughout. Each file is written with `VACUUM INTO`, which is
+consistent against a live database, so there is no maintenance window and no need to stop
+agents.
+
+Each row in the list shows the timestamp, the size on disk, how many workspaces were
+captured and whether the snapshot is **Complete** or **Incomplete**. Incomplete means the
+manifest is missing or names files that are not there — a backup interrupted by a crash
+or a full disk. Those are still listed on purpose: a snapshot you cannot see is one you
+believe you have. An incomplete snapshot cannot restore a whole install, but the
+workspace files it does hold can still be adopted one at a time.
+
+A row may also say **_n_ workspaces not captured**. That is a workspace registered but
+never written to (there is no file yet), or one whose copy failed — check the server log.
+
+## Collect a copy on your own machine
+
+The paths the page shows are on the machine running `cc_server`. When that is not the
+machine you are sitting at, use the **Download** buttons:
+
+- Beside each **workspace** under **Workspace data** → **Download**, for one `.db` file.
+- Beside each **snapshot** under **Install snapshots** → **Download**, for the whole snapshot as a `.zip`.
+
+On desktop you pick where the file lands and the toast names it; on web it goes to the
+browser's downloads. Either way both report progress in bytes, because these are the two
+payloads that run to gigabytes.
+
+Both mint a fresh copy at the moment you press the button, stream it, and delete the
+server's copy afterwards — a download is not "fetch the file the export button made
+earlier".
+
+Unzipping a snapshot archive reproduces the snapshot layout exactly, which is what makes
+restoring it a copy back.
+
+## Move a workspace to another install
+
+One workspace is one database file, so handing it over is a file operation.
+
+1. On the **source** server, **Settings → Server → Backup & restore → Workspace data**, expand the workspace and press **Download**.
+2. On the **destination** server, create (or pick) the workspace that will receive it.
+3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
+
+If both servers are the same machine you are sitting at, **Save on server** plus
+**Import** → **Choose file** does the same thing without the round trip; the import
+dialog's paths resolve on the server host.
+
+:::caution[Import replaces everything]
+Importing overwrites everything the target workspace currently holds, and it cannot be
+undone. Export the target first if it holds anything you might want back.
+:::
+
+Two things are allowed and logged rather than refused: importing a file whose recorded
+workspace id differs from the target (this is how you duplicate a workspace or restore it
+under a new id), and importing a file from a **different install**. In that second case
+the file's paired devices and user ids belong to the install it came from and will not
+resolve on this one — the workspace's own data is intact, but re-check membership after
+adopting it.
+
+Chat bot tokens live beside the database, not inside it, so a workspace you hand to
+somebody else carries no live credentials. The receiving install reconnects its own.
+
+## Restore one workspace from a snapshot
+
+1. Under **Install snapshots**, expand the snapshot you want.
+2. Find the workspace's row and press **Restore**.
+3. Confirm. Everything that workspace has done since the snapshot was taken is lost.
+
+This is the same operation as an import, pointed at the snapshot's copy of that
+workspace's file — deliberately, so there is no second mechanism that could treat the
+same file differently.
+
+A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
+holds a workspace this install no longer has. Bring it back by hand — create a workspace,
+then under **Workspace data** import into it from
+`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
+**Path on the server** in a copy field, and the row's title is the old workspace id, so
+you have both halves of that path in front of you.
+
+## Restore a whole install
+
+There is no button for this, and there should not be: it replaces the databases the
+running server is holding open.
+
+1. **Stop `cc_server`.** If you run the desktop app with its embedded server, quit the app.
+2. Copy the snapshot's contents over the data directory. The snapshot layout mirrors the live one, so this is a plain copy:
+
+   ```bash
+   # macOS default; see the CLI reference for other platforms
+   DATA_DIR="$HOME/Library/Application Support/control-center"
+   SNAPSHOT="$DATA_DIR/backups/2026-07-28T09-12-33-000Z"
+
+   cp "$SNAPSHOT/global.db" "$DATA_DIR/global.db"
+   for d in "$SNAPSHOT"/*/; do
+     id=$(basename "$d")
+     mkdir -p "$DATA_DIR/$id"
+     cp "$d/workspace.db" "$DATA_DIR/$id/workspace.db"
+   done
+   ```
+
+3. Delete any `-wal` and `-shm` files sitting next to the databases you replaced. They belong to the old files and a stale one alongside a restored database is a corruption risk.
+4. Start the server again.
+
+The snapshot holds no `secrets.json`, so an install restored onto a **fresh** host keeps
+its data but not its credentials: paired devices, provider tokens and SSO settings have to
+be re-established, or restored from wherever you kept that file. Restoring onto the same
+host, where `secrets.json` was never lost, keeps everything.
+
+## Copy backups off the machine
+
+A snapshot on the same disk as the database it copied protects you from a bad import, not
+from the disk. Nothing in Control Center ships a copy anywhere, so this part is yours.
+
+### Sync the snapshots
+
+Snapshots are immutable once written and named by timestamp, so any sync tool handles
+them well. Exclude `transfer/`, which is a workbench for in-flight downloads and uploads:
+
+```bash
+DATA_DIR="$HOME/Library/Application Support/control-center"
+
+# To another host over ssh
+rsync -a --delete --exclude 'transfer/' \
+  "$DATA_DIR/backups/" backup-host:/srv/control-center-backups/
+
+# To object storage
+aws s3 sync --exclude 'transfer/*' \
+  "$DATA_DIR/backups/" s3://my-bucket/control-center/backups/
+
+# Or with deduplication, encryption and its own retention
+restic backup --exclude 'transfer' "$DATA_DIR/backups"
+```
+
+`--delete` mirrors your local pruning to the remote. Drop it if you want the remote to
+keep snapshots longer than the host does.
+
+:::danger[Never sync the live databases directly]
+Do not point rsync, `aws s3 sync` or a file-level backup agent at `global.db` or
+`<workspaceId>/workspace.db` while the server is running. A live SQLite database has a
+`-wal` sidecar, and a file-by-file copy captures the two at different instants — the
+result is a file that often opens and is silently missing recent writes, or does not open
+at all. Copy the **snapshot**, which was written under a read transaction, or take one
+with `VACUUM INTO` as below.
+:::
+
+### Include what a snapshot leaves out
+
+To be able to rebuild the install rather than just its data, copy these too. They are
+ordinary files, safe to copy while the server runs:
+
+```bash
+rsync -a \
+  "$DATA_DIR/secrets.json" \
+  backup-host:/srv/control-center-backups/config/
+
+rsync -a --relative \
+  "$DATA_DIR"/./*/chat_credentials \
+  "$DATA_DIR"/./*/blobs \
+  "$DATA_DIR"/./*/skills \
+  "$DATA_DIR"/./*/agents \
+  backup-host:/srv/control-center-backups/workspace-files/
+```
+
+`secrets.json` is `0600` and holds every pairing key, provider credential and SSO setting
+on the install. Wherever it lands must be at least as protected as the server host —
+encrypted at rest, and not a bucket anyone else can read.
+
+Skip `spaces/` (copy-on-write worktrees, re-provisioned from your repos), `pr_clones/`
+(a cache), `models/` (re-downloaded), `media_cache/` and `rigs/` (machine state, and
+large). Recorded meeting audio under `meetings/` is worth including if you keep meetings.
+
+### Snapshot on a schedule, without the UI
+
+There is no CLI subcommand and the RPC ops need a paired full client, so the practical
+way to automate this on the server host is to do what the server does — `VACUUM INTO`,
+which is safe against the live databases:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+DATA_DIR="${CC_SERVER_DATA_DIR:-$HOME/.local/share/control-center}"
+DEST="/srv/control-center-snapshots/$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+mkdir -p "$DEST"
+
+sqlite3 "$DATA_DIR/global.db" "VACUUM INTO '$DEST/global.db'"
+
+for db in "$DATA_DIR"/*/workspace.db; do
+  id=$(basename "$(dirname "$db")")
+  mkdir -p "$DEST/$id"
+  sqlite3 "$db" "VACUUM INTO '$DEST/$id/workspace.db'"
+done
+```
+
+Run it as the same user that owns the data directory, from cron or a systemd timer, and
+sync `DEST` off the host afterwards. `VACUUM INTO` needs SQLite 3.27 or newer.
+
+Write it **outside** `<dataDir>/backups/`. A hand-made directory there has no
+`manifest.json`, so the app would list it as an incomplete snapshot and the list would
+stop being an honest record of what the server itself produced.
+
+### Prune old snapshots
+
+Nothing rotates them, and each one is roughly the size of your databases.
+
+```bash
+find "$DATA_DIR/backups" -mindepth 1 -maxdepth 1 -type d \
+  ! -name exports ! -name transfer \
+  -mtime +30 -exec rm -rf {} +
+```
+
+Check the output of a `-print` run before adding `-exec`. Keep more than one: the failure
+you are protecting against is often "the last backup also has the problem".
+
+## Check that a backup is good
+
+A backup nobody has restored is a hypothesis.
+
+Cheap check — the file opens and its pages are intact:
+
+```bash
+sqlite3 "$SNAPSHOT/global.db" 'PRAGMA integrity_check;'   # expects: ok
+```
+
+Real check — adopt it. Create a scratch workspace on a non-production install, import a
+workspace file into it, and look at whether the spaces, tickets and messages you expect
+are there. That exercises the same path a real restore takes, including the FTS rebuild,
+and it is the only check that tells you the backup is restorable rather than merely
+readable.
+
+Do this once when you set backups up, and again whenever you change where they are stored.
+
+## Troubleshooting
+
+| Symptom                                                                  | Cause and fix                                                                                                            |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
+| "The server refused"                                                     | Role. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot needs the install's operator       |
+| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
+| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
+| Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
+| A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
+| A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |
+| A restored install has no forge or SSO credentials                       | `secrets.json` is not in a snapshot. Restore it from wherever you kept it, or reconnect the providers                     |
+| A restored workspace is missing pasted images                            | Blobs live beside the database, not in it. Copy `<workspaceId>/blobs/` across as well                                     |
+
+## Related guides
+
+- [Run a headless server](/manual/guides/run-headless-server/): where the data directory comes from
+- [Connect to a remote server](/manual/guides/connect-remote-server/): direct versus relayed connections
+- [Pair a device](/manual/guides/pair-a-device/): the credential the transfer routes sign with
+
+## Related concepts and reference
+
+- [Backup, export and import](/manual/reference/backup/): every operation, route, field and limit
+- [Workspaces and isolation](/manual/concepts/workspaces/): why one workspace is one file
+- [`cc_server` CLI](/manual/reference/cc-server-cli/): the data directory layout

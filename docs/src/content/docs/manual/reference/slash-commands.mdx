@@ -1,0 +1,159 @@
+---
+title: Slash commands
+description: Every command you can type in the composer, what it does and where it runs.
+---
+
+Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
+
+| Where it runs | What that means                                                                    |
+| ------------- | ---------------------------------------------------------------------------------- |
+| **Local**     | Handled in the client. Nothing is persisted and no agent sees it.                  |
+| **Side**      | One server-side model call about the conversation. The conversation is not changed. |
+| **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
+
+---
+
+## Directing a run
+
+### `/plan`
+
+**Dispatch.** Puts the conversation in plan mode: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit.
+
+### `/goal <objective>`
+
+**Dispatch.** Starts an autonomous objective the goal supervisor redispatches across segments and restarts.
+
+Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
+
+`/goal pause`, `/goal resume`, `/goal drop` and `/goal budget <N|off>` control a running goal.
+
+:::note[Why it interrupts at all]
+An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Six questions are cheaper than one overnight run that finished whenever it felt finished.
+:::
+
+### `/loop [budget] [task]`
+
+**Dispatch.** Works iteratively until complete. Accepts a bound: `/loop 10`, `/loop 30m`, `/loop 1h30m`, `/loop 10 minutes fix the tests`.
+
+A token that *looks* like a limit (starts with a digit or a sign) and fails to parse is a hard error. Prose is just prose, so `/loop keep going until the tests pass` is an unbounded loop with an inline prompt rather than a misparse.
+
+### `/vibe [task]`
+
+**Dispatch.** Turns the session into a **director**: its own tools drop to `read` plus five worker verbs, and background workers do the editing. See [Direct background workers](/manual/guides/direct-background-workers/).
+
+Workers never outlive the mode — exiting kills every one of them.
+
+---
+
+## Managing context
+
+### `/compact [focus]`
+
+**Dispatch.** Folds older history into an anchored summary and continues on the compacted context. The optional free text steers what the summary keeps.
+
+### `/shake [target]`
+
+**Local → server.** Drops heavy content **without** summarizing: no model call, every word kept, only the bulk nobody was going to re-read is blanked.
+
+| Target        | Drops                             |
+| ------------- | --------------------------------- |
+| `tool_output` | Uneventful older tool results (default) |
+| `images`      | Old screenshots, keeping their text |
+| `all`         | Both                              |
+
+This is the escape hatch for "my context is fat but I do not want a summary".
+
+### `/context [agent]`
+
+**Local.** Opens the context explorer for this conversation's agent in a tab of
+its own: every segment and part of its context window — system prompt, skills,
+context files, tool schemas, history and images — with what each is costing and
+the verbatim content behind it.
+
+The tab is keyed on the (space, agent) pair, so running it twice refocuses one
+tab rather than stacking copies of the same breakdown.
+
+In a space with **more than one agent**, a bare `/context` opens the window the
+header's context meter is reading — whichever agent last worked here, which is
+the one whose message is at the bottom of the trail — and the tab is labelled
+`Context · <name>` so it says whose it is. Name another to switch: `/context qa` (the `@` is optional). A typed name
+resolves exactly, never fuzzily: two agents hold two different windows, so a
+near-miss that opened the other one would be a plausible-looking answer to a
+question you did not ask.
+
+The same explorer is behind the context meter chip in the space header, which
+follows that same agent — the command and the chip can never disagree about
+what "the context" means here.
+
+---
+
+## Asking about the conversation
+
+These spend one model call and **never change the conversation**. The agent's next real turn sees exactly what it would have seen anyway, which is the entire value of asking.
+
+### `/handoff [focus]`
+
+**Side.** Writes a handoff document for whoever picks the work up cold: what the task is, what was learned, what remains.
+
+### `/btw <question>`
+
+**Side.** Answers a question about the work so far without adding the question or the answer to the transcript.
+
+:::note[Two commands, one implementation]
+Both are the same shape — take the conversation as it stands, ask one question about it, persist neither side. Implemented once so they cannot drift into two different notions of "the context so far".
+:::
+
+---
+
+## Navigating and exporting
+
+### `/tree`
+
+**Local.** Opens the branch navigator: where the conversation forked, which path it is currently on, and how to get back to one you left. See [Branch a conversation](/manual/guides/branch-a-conversation/).
+
+### `/export`
+
+**Local.** Writes the conversation to a self-contained HTML file — collapsible tool cards, no stylesheet, no script, no image host. Lands in `Documents/ControlCenter/exports/` on desktop and downloads on web.
+
+### `/dump`
+
+**Local.** Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. Reasoning is deliberately excluded: a transcript pasted into a bug report is read by a person.
+
+---
+
+## Everything else
+
+### `/todo [args]`
+
+**Local.** Views and edits the conversation's persisted checklist.
+
+### `/skill:<name> [args]`
+
+**Dispatch.** Applies an installed skill. Skills live under their own `skill:` prefix so they share no namespace with the built-ins — without that, a skill called `plan` would be permanently unreachable.
+
+### `/<your-command> [args]`
+
+**Dispatch.** Any markdown file under `.agents/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+
+Templating: `$1`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description`, `allowed-tools` and `model`.
+
+A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+
+---
+
+## Magic keywords
+
+Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden instruction for that turn.
+
+| Word          | Effect                                                             |
+| ------------- | ------------------------------------------------------------------ |
+| `ultrathink`  | Maximum reasoning effort for the turn                              |
+| `orchestrate` | Delegate independent work in parallel and verify each phase        |
+
+The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
+
+---
+
+## Deliberately not shipped
+
+`/omfg` (forging a stream rule from a complaint), `/tan` (spawning a background agent on a tangent) and `/share` (an encrypted public link) were considered and left out.

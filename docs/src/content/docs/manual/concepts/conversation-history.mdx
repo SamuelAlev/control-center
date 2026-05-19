@@ -1,0 +1,89 @@
+---
+title: Conversation history
+description: How a run keeps, folds, branches and resumes its context — compaction strategies, the session tree, and what "resume" actually means.
+---
+
+A long conversation runs into a hard wall: the model's context window. Everything on this page exists because of that wall, and the interesting part is what gets thrown away, what gets kept, and what can be got back.
+
+## Four ways to reclaim context
+
+They are not alternatives so much as a ladder, cheapest first.
+
+| Mechanism      | Cost           | Keeps                                | Loses                             |
+| -------------- | -------------- | ------------------------------------ | --------------------------------- |
+| **Elision**    | Nothing        | Every word of the narrative          | Uneventful older tool results     |
+| **Image shedding** | Nothing    | The text around them                 | Old screenshots                   |
+| **Snapshots**  | Nothing        | Every word, as pixels                | Legibility to a non-vision model  |
+| **Summary**    | One model call | A narrative                          | The details it did not pick       |
+
+Elision and shedding run first because they are free and lossless in the way that matters: they drop bulk nobody was going to re-read.
+
+### Why summarizing is the last resort
+
+A summary is the only one of the four that **spends a model call** and the only one that **decides for you** what mattered. Both are real costs. The call is the more interesting one, because of when it happens.
+
+Compaction usually runs *ahead* of the wall, on a threshold. But it also runs **reactively**, after the provider itself rejects a request as too large — the heuristic estimate under-counted what the provider actually measured. In that situation a summarizing compactor has to make a request to shrink the context, and the request it makes is the one that just overflowed.
+
+### Snapshots
+
+Snapshot compaction renders discarded history onto dense pages of pixel glyphs and hands them back as images.
+
+The premise is a billing quirk: a vision model charges for an image at a flat or area-proportional rate that has nothing to do with how many characters are in it. Twelve thousand characters of discarded conversation cost twelve thousand characters' worth of text tokens. The same characters rendered onto one page cost one image.
+
+What makes it worth having rather than merely clever is that it needs **no model call, no key and no network**. It is the one strategy that is always available during overflow recovery.
+
+The reconstruction shape is verbatim head, imaged middle, verbatim tail. The head is the task and the constraints that everything downstream refers back to; the tail is where the work currently is. The middle is what gets re-read least and costs most.
+
+:::note[It degrades honestly]
+A model with no vision cannot read pages of pixels, and rendering text nothing can look at is not a degraded compaction — it is a deleted conversation. So the reader's capability decides, and a non-vision model always gets the summary.
+:::
+
+:::caution[Page shape is priced for the API, not the weights]
+Gemini bills a flat rate per image, so every extra character on the page is free and its pages are the widest. OpenAI and Anthropic bill by area, so a bigger page buys nothing. Some processors downscale past a threshold, which silently destroys 5-pixel glyphs, so their pages stay under it. A Claude served through a gateway is billed by the gateway, so the shape follows the model id as the route names it.
+:::
+
+Snapshots are re-rendered from **retained source text** on each pass, never from the previous pass's pixels. Imaging an image degrades the glyphs one generation per compaction until nothing can read them.
+
+## What a run actually resumes from
+
+Historically every harness run started from an empty history and rebuilt continuity from a `<context>` block in the prompt — a *summary* of the conversation rather than the conversation. Three things followed from that:
+
+- **Resume was a re-tell.** The model never saw its own earlier reasoning or the actual bytes its tools returned, only a description of them.
+- **Rewind died with the process.** A `checkpoint` is an index into the live message list, so a restart lost every label the model had set.
+- **Retry could not tell "nothing to retry" from "nothing loaded".** After a restart the failed turn is gone from live state either way.
+
+All three are fixed by persisting the transcript. It is saved at every **turn boundary** and never mid-turn: a history captured between a tool call and its result is one no provider will accept, so a crash at that instant restores the turn *before* rather than a half-turn that cannot be replayed.
+
+A resumed run is trimmed to its newest messages, cutting at a boundary that is not an orphaned tool result — a result whose call was trimmed away is a request providers reject outright, and a transcript that cannot be sent is worse than a short one.
+
+:::note[Where it lives]
+One JSON file per conversation-and-agent, under the workspace's own directory beside its database. Two agents in one conversation hold two histories: they saw different tool results and were given different system prompts, so merging them would hand each the other's reasoning as its own.
+:::
+
+## The session tree
+
+Every message records the one it continues from, and every conversation names its current **branch tip**. That one decision is the whole feature.
+
+**Branching writes nothing.** It moves the pointer. The path you left is still there, so switching back is another pointer move rather than a restore — and editing a prompt to re-run it stops costing you the answer you were comparing against.
+
+Without it, every form of going back has to hide or delete messages, and hiding is a lie the next reader cannot see through.
+
+### Branch versus fork
+
+|                | Branch              | Fork                        |
+| -------------- | ------------------- | --------------------------- |
+| What happens   | The pointer moves   | The path is copied          |
+| Where it goes  | Same conversation   | A new conversation          |
+| Cost           | Nothing             | One copy of the branch      |
+
+A fork copies with **fresh ids** rather than sharing rows. Two conversations sharing rows would show each other's later messages, which is the one thing a fork must not do.
+
+### Rewind rides the same pointer
+
+The in-run `checkpoint` / `rewind` pair marks a clean turn boundary and returns to it after an exploration, keeping a digest. Because checkpoints are persisted alongside the transcript, a label the model set before a restart still lands where it was set. A checkpoint whose target did not survive a trim is **dropped**, not clamped — rewinding "to the label" and landing somewhere else is exactly the failure a label exists to prevent.
+
+## Related
+
+- [Branch a conversation](/manual/guides/branch-a-conversation/) — the tree navigator, forking and export
+- [Tool context and prompt caching](/manual/concepts/tool-context/) — the other half of what fills a context window
+- [Slash commands](/manual/reference/slash-commands/) — `/compact`, `/shake`, `/context`, `/tree`

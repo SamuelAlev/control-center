@@ -1,0 +1,181 @@
+---
+title: Sandbox backends
+description: The sandbox backends, where they are applied and every value object the sandbox runtime uses.
+---
+
+:::caution[Whether a run is sandboxed depends on the host]
+`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the external-CLI transports (`pi`, `claude`, `codex`) through the sandbox port and the ACP transport plus the built-in harness `bash` tool through the sandbox manager.
+
+Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. Both paths log that fact and spawn with environment sanitization only. The remaining boundaries are the run's own copy-on-write worktree, capability-gated credentials brokered per launch and revoked on teardown, the per-mode command policy, the unified [action guardrails](/manual/concepts/guardrails/) (fail-closed), environment sanitization and the tool surface its mode allows.
+
+The harness's in-process file tools (read, write, edit, apply patch, search) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+:::
+
+## Backend overview
+
+| Backend     | Value     | Platform                                      | Availability                                                                                                      |
+| ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/manual/concepts/rigs/), not on the host |
+| Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; wraps agent dispatch when available                                                               |
+| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+
+`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`, preserving the sandboxed intent of preferences written before the `docker` and `auto` backends were removed.
+
+**`microvm` is the one backend with a kernel boundary** — the workload
+genuinely does not run on the host. It is never a silent fallback in either
+direction: explicitly requesting it on a host that cannot boot a VM fails
+loudly ("I asked for a VM and got my laptop" is the one degradation the
+enclosure cannot afford), and only an *unspecified default* steps down to
+`native`, with a log line saying so. The session's actual backend is reported
+back to the client and badged, so a terminal can never claim to be enclosed
+while running on the host. Lifecycle, images and egress for the VM itself are
+covered by the [rigs reference](/manual/reference/rigs/).
+
+**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` with the note "Native sandbox is not yet supported on this platform" on every host that is not macOS or Linux/WSL2, so a Windows host has only the `none` backend.
+
+## Probe results
+
+The probe is what gates enforcement. It runs once, at server boot.
+
+| Host                                   | `available` | Note / hint                                                               |
+| -------------------------------------- | ----------- | ------------------------------------------------------------------------- |
+| macOS                                  | `true`      | `sandbox-exec` (Seatbelt) — namespace isolation, no kernel boundary       |
+| Linux or WSL2 with `bwrap` and `socat` | `true`      | bubblewrap — namespace isolation, no kernel boundary                      |
+| Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
+| Any other platform                     | `false`     | Native sandbox is not yet supported on this platform                      |
+
+The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+
+`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+
+## Native backend
+
+### macOS: Seatbelt
+
+Uses Apple's Seatbelt sandbox mechanism (the same system used by macOS App Sandbox).
+
+The generated profile is **permissive by default** (`(allow default)`) and carves out denies, because a fully deny-by-default profile makes an interactive shell unusable — there are too many dyld, XPC and Mach calls to enumerate. The practical consequence is that an agent can still read most of the host; your registered checkouts are protected by explicit write and rename denials, not by invisibility.
+
+- **Filesystem reads**: denied for the secret paths (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` and the rest of the deny-read set)
+- **Filesystem writes**: reset to deny, then explicit subpath allows, with the mandatory-deny paths (shell rc files, `.git/hooks`, Claude config, protected checkouts) blocked even inside a writable root. `file-write-unlink` is denied on every denied path and its ancestors, so a rename cannot bypass a write-deny
+- **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory
+- **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and Unix sockets are not allowed. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
+- **Configuration**: profiles are generated per launch from the `SandboxSpec`
+
+Requirements:
+
+- `sandbox-exec` (`/usr/bin/sandbox-exec`), part of every macOS install — no additional tooling required
+
+### Linux: bubblewrap
+
+Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
+
+- **Filesystem**: creates a mount namespace with only the bound paths visible
+- **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
+- **Process**: PID namespace isolation
+
+Requirements:
+
+- `bubblewrap` and `socat` installed (`sudo apt-get install bubblewrap socat` on Debian/Ubuntu)
+- Kernel namespace support (standard on modern Linux)
+
+## None backend
+
+No sandboxing. The process runs directly on the host with the host's filesystem, network and process access, subject only to environment sanitization and the command policy. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+
+## Server-hosted terminal
+
+The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+
+When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. Capability gating does not apply — that is a dispatch concern. If the wrap is unsupported the session falls back to the host shell and emits a notice line.
+
+## Network egress
+
+When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+
+- The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, shared by all sandbox sessions (`http_proxy.dart`, `socks_proxy.dart`).
+- Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.
+- Each connection's target host is matched against the session's domain allowlist; anything else is denied. Wildcards are supported: `*.example.com` matches any subdomain but not the apex itself.
+- The allowlist is resolved per session from the curated baseline (`kBaselineAllowedDomains`: LLM providers, Git hosting, package registries), plus capability-derived domains (GitHub domains when the agent has GitHub capabilities; the ticketing provider's domains when it can call ticketing), plus `SandboxSpec.egressAllowlist`.
+- A fixed deny list (`kBaselineDeniedDomains`: cloud metadata endpoints, telemetry sinks) takes precedence over all allows.
+- `networkEnabled: false` (or an agent without the network capability) launches the sandbox with no proxies at all.
+
+## SandboxSpec
+
+The specification passed to `SandboxPort.launch`:
+
+| Field             | Type                                        | Description                                                                                                                                 |
+| ----------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sessionId`       | `String`                                    | Stable session identifier (typically the space id)                                                                                          |
+| `workspaceId`     | `String`                                    | Owning workspace id                                                                                                                         |
+| `agentId`         | `String?`                                   | Agent currently bound to the sandbox, if any                                                                                                |
+| `bindMounts`      | `List<SandboxBindMount>`                    | Host→guest mounts; the sandbox sees only the host paths listed here                                                                         |
+| `networkEnabled`  | `bool` (default `true`)                     | When false, the proxies are not exposed and the sandbox has no network access                                                               |
+| `egressAllowlist` | `List<String>` (default `[]`)               | Extra allowed egress domains; wildcards supported (`*.example.com`). When empty, the curated baseline plus capability-derived domains apply |
+| `guestWorkdir`    | `String?`                                   | Default working directory inside the sandbox; individual `exec` calls can override it                                                       |
+| `mode`            | `Mode` (default `chat`)                     | Carves the filesystem write rules: `chat` keeps bind mounts writable; `review`, `plan` and `orchestrate` are read-only                      |
+| `capabilities`    | `AgentCapabilities` (default `safeDefault`) | Derives the egress allowlist (GitHub / ticketing domains) and the network on/off decision                                                   |
+| `protectedPaths`  | `List<String>` (default `[]`)               | Host paths that must never be writable inside the sandbox, in any mode                                                                      |
+
+`protectedPaths` holds the original registered repo checkouts, resolved per dispatch from the workspace's repos. Agents work exclusively in per-conversation copy-on-write worktrees, so the originals must never be writable from inside the sandbox — on macOS, Seatbelt's blanket `$HOME` write allowance would otherwise leave them writable via `bash`. They join the secrets deny-write set in every mode, `chat` included.
+
+Every deny-read and deny-write path is emitted in both its literal spelling and its symlink-resolved one. The kernel matches a deny rule against the resolved path, so a rule written against a symlinked path never fires — and on macOS that is the common case rather than the exotic one, since `/tmp` resolves to `/private/tmp` and `/var/folders/…` to `/private/var/folders/…`. Entries containing `*` or `?` are treated as globs and left alone; a path that does not resolve is kept as written.
+
+## SandboxBindMount
+
+| Field       | Type                     | Description                                                                                             |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------- |
+| `hostPath`  | `String`                 | Absolute path on the host                                                                               |
+| `guestPath` | `String`                 | Path inside the sandbox (with the native sandbox this equals `hostPath`; retained for adapter symmetry) |
+| `readOnly`  | `bool` (default `false`) | Mount read-only when true                                                                               |
+
+## SandboxHandle
+
+Returned by `SandboxPort.launch`:
+
+| Field       | Type                   | Description                                                              |
+| ----------- | ---------------------- | ------------------------------------------------------------------------ |
+| `sessionId` | `String`               | Session identifier                                                       |
+| `backend`   | `SandboxBackend`       | Which backend is running                                                 |
+| `state`     | `SandboxState`         | Lifecycle state                                                          |
+| `error`     | `Object?`              | Set when `state` is `error`                                              |
+| `details`   | `Map<String, Object?>` | Adapter-private bookkeeping (working directory, PID, profile path, etc.) |
+
+### SandboxState
+
+| State       | Description                                 |
+| ----------- | ------------------------------------------- |
+| `created`   | Spec created but the VM has not started yet |
+| `warm`      | Running and ready to exec commands          |
+| `active`    | Currently executing a command               |
+| `suspended` | Paused / checkpointed to disk to save RAM   |
+| `destroyed` | Torn down; the handle is no longer valid    |
+| `error`     | Launch failed — see `SandboxHandle.error`   |
+
+## Sandbox events
+
+| Event type  | Description                                                  |
+| ----------- | ------------------------------------------------------------ |
+| `stdout`    | Standard output from the sandbox                             |
+| `stderr`    | Standard error from the sandbox                              |
+| `exit`      | Sandbox process exited (carries `exitCode`)                  |
+| `starting`  | Sandbox is starting up                                       |
+| `ready`     | Sandbox is ready to accept exec calls                        |
+| `killed`    | Process killed by the host (OOM, timeout, manual stop)       |
+| `violation` | A sandbox policy was violated (carries a `SandboxViolation`) |
+
+## SandboxViolation
+
+| Field                 | Type      | Description                                                                |
+| --------------------- | --------- | -------------------------------------------------------------------------- |
+| `action`              | `String`  | The denied verb (e.g. `file-read*`, `network-outbound`)                    |
+| `target`              | `String`  | Path or host that was the target of the denied operation                   |
+| `suggestedCapability` | `String?` | The capability flag that would allow this action (e.g. `canCallGitHubApi`) |
+| `raw`                 | `String?` | Raw log line, useful for debugging                                         |
+
+## See also
+
+- [Sandbox security](/manual/concepts/sandbox-security/)
+- [Sandbox policies](/manual/guides/sandbox-policies/)
+- [Guardrails](/manual/concepts/guardrails/)
+- [cc_server CLI](/manual/reference/cc-server-cli/): the `--sandbox` flag

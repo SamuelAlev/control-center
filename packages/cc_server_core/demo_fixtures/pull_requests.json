@@ -1,0 +1,340 @@
+{
+  "_comment": [
+    "The demo's pull-request world, authored in the SAME shape the production",
+    "PR cache stores (see PrCacheCodec.*ToCache). The seeder writes these rows",
+    "verbatim into the `caches` table and DemoPrReviewRepository decodes them",
+    "with the real *FromCache functions — so a fixture is a realistic cache",
+    "entry rather than a parallel invention.",
+    "",
+    "avatar_url is deliberately EMPTY everywhere: a demo container makes no",
+    "outbound request, the media proxy is disabled, and the client renders",
+    "initials when there is no avatar. A remote URL here would be the one",
+    "thing that broke the zero-egress guarantee."
+  ],
+  "repo": {
+    "owner": "parced",
+    "name": "closing",
+    "full_name": "parced/closing"
+  },
+  "assignable_users": [
+    { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+    { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+    { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
+    { "login": "tlindqvist", "avatar_url": "", "name": "Tom Lindqvist" }
+  ],
+  "requestable_teams": [
+    { "kind": "team", "name": "Closing eng", "slug": "closing-eng", "avatar_url": "", "is_code_owner": true, "state": "pending" }
+  ],
+  "pull_requests": [
+    {
+      "detail": {
+        "id": 4120001,
+        "number": 412,
+        "title": "Surface contingency deadlines on the escrow timeline",
+        "body": "Contingency deadlines are typed in as fixed calendar dates after acceptance, so they drift every time a window is renegotiated and nothing agrees with the contract.\n\nThis derives each deadline from contract acceptance instead — per-contingency business-day windows (inspection 10, financing 21, title 14) behind an `EscrowClock` — and surfaces days-remaining on the closing timeline.\n\n- [x] `EscrowClock` abstraction\n- [x] Business-day windows for inspection, financing, title\n- [x] Days-remaining on the timeline\n- [ ] Decide what happens when two closings share one acceptance date",
+        "state": "open",
+        "is_draft": false,
+        "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+        "created_at": "@-3d",
+        "updated_at": "@-4h",
+        "repo_full_name": "parced/closing",
+        "html_url": "https://example.invalid/parced/closing/pull/412",
+        "external_id": "PR_412",
+        "head_sha": "9f2c1ab7e4d05c3b8a61f7d2e0c94b5a7d13e6f8",
+        "head_ref": "diego/contingency-deadlines",
+        "base_ref": "main",
+        "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
+        "requested_reviewers": [
+          { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }
+        ],
+        "requested_team_slugs": [],
+        "assignees": [
+          { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [
+          { "content": "THUMBS_UP", "emoji": "👍", "count": 2, "user_reacted": false, "usernames": ["maya-ok", "priya-r"] }
+        ],
+        "changed_files": 3,
+        "commits_count": 4,
+        "additions": 118,
+        "deletions": 26,
+        "comments_count": 3,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "reviewRequired"
+      },
+      "diff": "diff --git a/lib/escrow/timeline.dart b/lib/escrow/timeline.dart\nindex 3f1a9c2..9f2c1ab 100644\n--- a/lib/escrow/timeline.dart\n+++ b/lib/escrow/timeline.dart\n@@ -1,16 +1,44 @@\n class EscrowTimeline {\n+  /// All deadline math goes through the clock so the timeline, the export\n+  /// and the tests share one definition of a business day.\n+  const EscrowTimeline(this._clock);\n+\n+  final EscrowClock _clock;\n+\n   DateTime deadlineFor(Contingency c, DateTime acceptance) =>\n-      acceptance.add(const Duration(days: 17));\n+      _clock.bd(acceptance, _win(c));\n+\n+  int _win(Contingency c) => switch (c.kind) {\n+        ContingencyKind.inspection => 10,\n+        ContingencyKind.financing => 21,\n+        ContingencyKind.title => 14,\n+      };\n \n   int daysRemaining(Contingency c, DateTime acceptance) =>\n-      deadlineFor(c, acceptance).difference(DateTime.now()).inDays;\n+      _clock.bdBetween(_clock.now(), deadlineFor(c, acceptance));\n }\n+\n+/// One definition of a business day, injectable for tests.\n+class EscrowClock {\n+  const EscrowClock([this._now = DateTime.now]);\n+\n+  final DateTime Function() _now;\n+\n+  DateTime now() => _now();\n+\n+  DateTime bd(DateTime from, int days) {\n+    var d = from;\n+    while (days > 0) {\n+      d = d.add(const Duration(days: 1));\n+      if (d.weekday < DateTime.saturday) days--;\n+    }\n+    return d;\n+  }\n+\n+  int bdBetween(DateTime from, DateTime to) {\n+    var n = 0;\n+    for (var d = from; d.isBefore(to); d = d.add(const Duration(days: 1))) {\n+      if (d.weekday < DateTime.saturday) n++;\n+    }\n+    return n;\n+  }\n+}\ndiff --git a/test/escrow/timeline_test.dart b/test/escrow/timeline_test.dart\nindex 8c4e1d0..2b9a7f3 100644\n--- a/test/escrow/timeline_test.dart\n+++ b/test/escrow/timeline_test.dart\n@@ -12,6 +12,22 @@ void main() {\n     expect(deadline, equals(accepted.add(const Duration(days: 17))));\n   });\n \n+  test('inspection window is 10 business days from acceptance', () {\n+    final dl = timeline.deadlineFor(inspection, accepted);\n+    expect(clock.bdBetween(accepted, dl), 10);\n+  });\n+\n+  test('a window never lands on a weekend', () {\n+    final friday = DateTime.utc(2026, 3, 6);\n+    final dl = timeline.deadlineFor(titleContingency, friday);\n+    expect(dl.weekday, lessThan(DateTime.saturday));\n+  });\n+\n }\n",
+      "files": [
+        {
+          "filename": "lib/escrow/timeline.dart",
+          "status": "modified",
+          "additions": 14,
+          "deletions": 6,
+          "patch": "@@ -1,16 +1,44 @@\n class EscrowTimeline {\n+  /// All deadline math goes through the clock so the timeline, the export\n+  /// and the tests share one definition of a business day.\n+  const EscrowTimeline(this._clock);\n+\n+  final EscrowClock _clock;\n+\n   DateTime deadlineFor(Contingency c, DateTime acceptance) =>\n-      acceptance.add(const Duration(days: 17));\n+      _clock.bd(acceptance, _win(c));\n+\n+  int _win(Contingency c) => switch (c.kind) {\n+        ContingencyKind.inspection => 10,\n+        ContingencyKind.financing => 21,\n+        ContingencyKind.title => 14,\n+      };",
+          "viewed_state": "unviewed"
+        },
+        {
+          "filename": "test/escrow/timeline_test.dart",
+          "status": "modified",
+          "additions": 96,
+          "deletions": 12,
+          "patch": "@@ -12,6 +12,22 @@ void main() {\n+  test('inspection window is 10 business days from acceptance', () {\n+    final dl = timeline.deadlineFor(inspection, accepted);\n+    expect(clock.bdBetween(accepted, dl), 10);\n+  });\n+\n+  test('a window never lands on a weekend', () {\n+    final friday = DateTime.utc(2026, 3, 6);\n+    final dl = timeline.deadlineFor(titleContingency, friday);\n+    expect(dl.weekday, lessThan(DateTime.saturday));\n+  });",
+          "viewed_state": "unviewed"
+        },
+        {
+          "filename": "CHANGELOG.md",
+          "status": "modified",
+          "additions": 8,
+          "deletions": 8,
+          "patch": "@@ -1,5 +1,5 @@\n # Changelog\n \n-## Unreleased\n+## Unreleased\n+- Contingency deadlines are derived from acceptance in business days (inspection 10, financing 21, title 14).",
+          "viewed_state": "viewed"
+        }
+      ],
+      "commits": [
+        { "sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1", "message": "Introduce EscrowClock behind the timeline", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-3d" },
+        { "sha": "4c8b2f19a7d360e5c1b98a2d4f70e6c3b5a91d82", "message": "Derive deadlines from acceptance in business days", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-2d" },
+        { "sha": "7e3a5d81c92b4f06a7d5e8c1b3f92a604d7c8e15", "message": "Pin the inspection and title windows in tests", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-2d" },
+        { "sha": "9f2c1ab7e4d05c3b8a61f7d2e0c94b5a7d13e6f8", "message": "Changelog", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-4h" }
+      ],
+      "reviews": [
+        {
+          "id": 9001,
+          "state": "commented",
+          "author": { "login": "ravi", "avatar_url": "", "name": "Ravi (AI)" },
+          "body": "Reviewed 3 files (+118/−26).\n\n**What this does.** Contingency deadlines stop being dates someone types in after acceptance: `deadlineFor` now derives each one from contract acceptance through `EscrowClock` — inspection 10, financing 21, title 14 business days — and `daysRemaining` reads through the same clock, so the timeline, the closing export and the tests share one definition of a business day. Deriving instead of storing also means a renegotiated window needs no migration. That part is correct and I have no notes on it.\n\n**Blocking (1).** The calculation is keyed on the acceptance date alone. Two closings can share one — a re-trade re-accepted the same day, a double escrow on adjacent parcels — and `lib/escrow/extensions.dart:71` recomputes through this same path after an extension is recorded, so one closing's extension shifts the *other* file's inspection, financing and title deadlines everywhere they render. This is the open question in the PR body and it is still unresolved: the calculator needs the closing id (or the acceptance event) in the key.\n\n**Nits (3).**\n- `bd` / `bdBetween` on `EscrowClock`, and `_win` here — the most-scrutinized math in the PR under the least searchable names in the codebase. `addBusinessDays`, `businessDaysBetween`, `windowFor` say what they do.\n- Inspection (10) and title (14) each have a pinning test; financing (21) is the one window with a legal consequence when it slips, and it has none.\n- The clock skips weekends but has no holiday table, so a deadline can land on July 4th and nothing moves it. Fine if deliberate — say so where the windows are declared, because the county recorder does not record that day either.\n\nApproving once the shared-acceptance race is addressed — the rest looks correct.",
+          "submitted_at": "@-5h",
+          "reactions": []
+        }
+      ],
+      "review_comments": [
+        {
+          "id": 8801,
+          "body": "Two closings can share an acceptance date — a re-trade re-accepted the same day, or a double escrow on adjacent parcels. `deadlineFor` resolves from the date alone, so once an extension is recorded on one file, the other closing's inspection, financing and title deadlines shift too. I think this is the \"deadlines moved on their own\" report.\n\nCould the calculator take the closing id and resolve the window per closing, so an extension on one never moves the other?",
+          "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+          "path": "lib/escrow/timeline.dart",
+          "position": 9,
+          "created_at": "@-6h",
+          "side": "RIGHT",
+          "diff_hunk": "@@ -1,16 +1,44 @@\n   DateTime deadlineFor(Contingency c, DateTime acceptance) =>",
+          "line": 9,
+          "thread_id": "thread-412-1",
+          "reactions": [
+            { "content": "EYES", "emoji": "👀", "count": 1, "user_reacted": false, "usernames": ["dferrer"] }
+          ]
+        },
+        {
+          "id": 8802,
+          "body": "Good catch — I'll key the calculator by the acceptance event so each closing resolves its own windows. In this PR, not a follow-up.",
+          "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+          "path": "lib/escrow/timeline.dart",
+          "position": 9,
+          "created_at": "@-5h",
+          "side": "RIGHT",
+          "in_reply_to_id": 8801,
+          "diff_hunk": "",
+          "line": 9,
+          "thread_id": "thread-412-1",
+          "reactions": []
+        }
+      ],
+      "issue_comments": [
+        {
+          "id": 7701,
+          "body": "Rendering note while it's fresh: once a contingency passes its deadline, \"0 days remaining\" reads like it is still live. Show expired ones as \"Expired 2d ago\" in the danger tone and stop counting down — otherwise we teach agents to ignore the chip. Mock is in the chip spec if you want it.",
+          "user": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
+          "created_at": "@-2h",
+          "reactions": []
+        }
+      ],
+      "timeline": [
+        { "kind": "reviewRequested", "actor": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "reviewer_name": "maya-ok", "reviewer_is_team": false, "reviewer_avatar_url": "", "created_at": "@-3d" }
+      ],
+      "check_runs": [
+        { "name": "analyze", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-4h", "completed_at": "@-4h", "output": "No issues found", "workflow_name": "ci" },
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-4h", "completed_at": "@-3h", "output": "612 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [
+        { "context": "ci/build", "state": "success", "description": "Build succeeded", "target_url": "", "created_at": "@-3h" }
+      ],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "is_code_owner": true, "state": "pending" },
+        { "kind": "user", "user": { "login": "ravi", "avatar_url": "", "name": "Ravi (AI)" }, "is_code_owner": false, "state": "commented" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 4010001,
+        "number": 401,
+        "title": "Add a distinct notarization-pending state to document uploads",
+        "body": "Inspection PDFs and disclosure packets upload to 100% and then sit silent while the server-side notarization check runs — on a 1GB scan that is ~30s of nothing, and support logs show people cancel and re-upload a packet that was fine.\n\nThis adds a `notarizing` phase between transfer and done so the tile says what is actually happening instead of parking at 99%.\n\nFixes PD-118.",
+        "state": "open",
+        "is_draft": false,
+        "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
+        "created_at": "@-6d",
+        "updated_at": "@-1d",
+        "repo_full_name": "parced/closing",
+        "html_url": "https://example.invalid/parced/closing/pull/401",
+        "external_id": "PR_401",
+        "head_sha": "b71e4c9d3a25f80c6e1b7d94a3f28c05e6d1b7a4",
+        "head_ref": "priya/notarization-phase",
+        "base_ref": "main",
+        "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
+        "requested_reviewers": [],
+        "requested_team_slugs": ["closing-eng"],
+        "assignees": [],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 2,
+        "commits_count": 2,
+        "additions": 64,
+        "deletions": 9,
+        "comments_count": 1,
+        "checks_status": "failing",
+        "mergeable_state": "blocked",
+        "review_decision": "approved"
+      },
+      "diff": "diff --git a/lib/documents/upload_client.dart b/lib/documents/upload_client.dart\nindex 22c9f1e..b71e4c9 100644\n--- a/lib/documents/upload_client.dart\n+++ b/lib/documents/upload_client.dart\n@@ -44,10 +44,17 @@ class DocumentUploadClient {\n   Future<void> upload(File file) async {\n     final total = await file.length();\n+    _phase.add(UploadPhase.transferring);\n     await _dio.put(\n       url,\n       data: file.openRead(),\n       onUploadProgress: (sent, _) => _progress.add(sent / total),\n     );\n+    // The server-side notarization check takes ~30s on a 1GB inspection\n+    // scan. Without its own phase the bar sits at 99% and reads as a hang,\n+    // so people cancel an upload that actually completes.\n+    _phase.add(UploadPhase.notarizing);\n     await _finalize();\n+    _phase.add(UploadPhase.done);\n     _progress.add(1.0);\n   }\n",
+      "files": [
+        { "filename": "lib/documents/upload_client.dart", "status": "modified", "additions": 42, "deletions": 6, "patch": "@@ -44,10 +44,17 @@ class DocumentUploadClient {\n+    _phase.add(UploadPhase.notarizing);\n     await _finalize();", "viewed_state": "unviewed" },
+        { "filename": "lib/ui/document_upload_tile.dart", "status": "modified", "additions": 22, "deletions": 3, "patch": "@@ -18,6 +18,12 @@\n+      if (phase == UploadPhase.notarizing)\n+        const Text('Notarization pending…'),", "viewed_state": "unviewed" }
+      ],
+      "commits": [
+        { "sha": "e5c1a7b93d604f28a1c7e9b5d0f3a682c4b91d7e", "message": "Add an explicit notarizing phase to uploads", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-6d" },
+        { "sha": "b71e4c9d3a25f80c6e1b7d94a3f28c05e6d1b7a4", "message": "Render notarization pending in the tile", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-1d" }
+      ],
+      "reviews": [
+        {
+          "id": 9101,
+          "state": "approved",
+          "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+          "body": "Approved on the state machine — `notarizing` as a real phase instead of a fake 99% is the right call, and the copy matches what we agreed with title ops.\n\nOne thing before merge: the ordering failure Diego flagged is real. `UploadPhase.done` is emitted before `_progress.add(1.0)`, so a listener that reads both briefly sees a finished upload at 99%. Flip those two lines and this is mergeable.",
+          "submitted_at": "@-1d",
+          "reactions": []
+        }
+      ],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [
+        { "kind": "reviewRequested", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "reviewer_name": "closing-eng", "reviewer_is_team": true, "reviewer_avatar_url": "", "created_at": "@-6d" }
+      ],
+      "check_runs": [
+        { "name": "analyze", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-1d", "completed_at": "@-1d", "output": "No issues found", "workflow_name": "ci" },
+        { "name": "test", "status": "completed", "conclusion": "failure", "html_url": "", "started_at": "@-1d", "completed_at": "@-1d", "output": "1 failing: document_upload_test.dart — expected done after progress 1.0", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [
+        { "context": "ci/build", "state": "failure", "description": "1 test failed", "target_url": "", "created_at": "@-1d" }
+      ],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "is_code_owner": false, "state": "approved" },
+        { "kind": "team", "name": "Closing eng", "slug": "closing-eng", "avatar_url": "", "is_code_owner": true, "state": "pending" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 4080001,
+        "number": 408,
+        "title": "Title exception scraper (experiment)",
+        "body": "Draft. County-record fetch + parse are wired; classification is not — every exception lands in `uncategorized` for now.\n\nDo not review yet — pushing for CI only.",
+        "state": "open",
+        "is_draft": true,
+        "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+        "created_at": "@-2d",
+        "updated_at": "@-9h",
+        "repo_full_name": "parced/closing",
+        "html_url": "https://example.invalid/parced/closing/pull/408",
+        "external_id": "PR_408",
+        "head_sha": "c93b7e1a5d284f60b7e2c9a1d5f38b04e7c2a916",
+        "head_ref": "maya/title-exceptions",
+        "base_ref": "main",
+        "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [{ "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 1,
+        "commits_count": 1,
+        "additions": 210,
+        "deletions": 0,
+        "comments_count": 0,
+        "checks_status": "pending",
+        "mergeable_state": "unknown",
+        "review_decision": "none"
+      },
+      "diff": "diff --git a/lib/title/exceptions.dart b/lib/title/exceptions.dart\nnew file mode 100644\nindex 0000000..c93b7e1\n--- /dev/null\n+++ b/lib/title/exceptions.dart\n@@ -0,0 +1,24 @@\n+/// One recorded exception pulled from a county recorder export: a lien,\n+/// an easement, a CC&R — anything that encumbers title.\n+///\n+/// Classification is deliberately NOT part of this: lien vs easement vs\n+/// covenant is a judgment we keep getting wrong automatically, so it needs\n+/// its own review pass and a visible \"uncategorized\" state instead.\n+class TitleException {\n+  const TitleException({\n+    required this.id,\n+    required this.countyRecord,\n+    required this.instrument,\n+    required this.recordedAt,\n+    this.category = ExceptionCategory.uncategorized,\n+  });\n+\n+  final String id;\n+  final String countyRecord;\n+  final String instrument;\n+  final DateTime recordedAt;\n+  final ExceptionCategory category;\n+}\n",
+      "files": [
+        { "filename": "lib/title/exceptions.dart", "status": "added", "additions": 210, "deletions": 0, "patch": "@@ -0,0 +1,24 @@\n+class TitleException {\n+  const TitleException({\n+    required this.id,\n+    required this.countyRecord,\n+    required this.instrument,\n+  });\n+}", "viewed_state": "unviewed" }
+      ],
+      "commits": [
+        { "sha": "c93b7e1a5d284f60b7e2c9a1d5f38b04e7c2a916", "message": "Exception model + county-record fetch", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-9h" }
+      ],
+      "reviews": [],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [],
+      "check_runs": [
+        { "name": "analyze", "status": "inProgress", "html_url": "", "started_at": "@-9h", "output": "", "workflow_name": "ci" },
+        { "name": "test", "status": "queued", "html_url": "", "output": "", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [
+        { "context": "ci/build", "state": "pending", "description": "Build running", "target_url": "", "created_at": "@-9h" }
+      ],
+      "reviewers": []
+    },
+    {
+      "detail": {
+        "id": 3970001,
+        "number": 397,
+        "title": "Batch MLS sync at 256 listings",
+        "body": "Measured on the 40k-listing MLS corpus: wall clock 41s → 12s, peak RSS unchanged.",
+        "state": "merged",
+        "is_draft": false,
+        "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+        "created_at": "@-12d",
+        "updated_at": "@-9d",
+        "merged_at": "@-9d",
+        "repo_full_name": "parced/closing",
+        "html_url": "https://example.invalid/parced/closing/pull/397",
+        "external_id": "PR_397",
+        "head_sha": "d40a6c2b81e795f3c0a6b8d2e4f17c93b5a0e6d8",
+        "head_ref": "diego/mls-batch-size",
+        "base_ref": "main",
+        "base_sha": "0b3c8a71d92e46f5a8c1b7d03e9f2a64c5b8d017",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [],
+        "reviewed_by_me": true,
+        "reactions": [
+          { "content": "ROCKET", "emoji": "🚀", "count": 3, "user_reacted": false, "usernames": ["maya-ok", "priya-r", "tlindqvist"] }
+        ],
+        "changed_files": 1,
+        "commits_count": 1,
+        "additions": 4,
+        "deletions": 4,
+        "comments_count": 0,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "approved"
+      },
+      "diff": "diff --git a/lib/listings/mls_sync.dart b/lib/listings/mls_sync.dart\nindex 5a0e6d8..d40a6c2 100644\n--- a/lib/listings/mls_sync.dart\n+++ b/lib/listings/mls_sync.dart\n@@ -18,7 +18,7 @@ class MlsSyncEngine {\n-  static const _batchSize = 32;\n+  static const _batchSize = 256;\n",
+      "files": [
+        { "filename": "lib/listings/mls_sync.dart", "status": "modified", "additions": 4, "deletions": 4, "patch": "@@ -18,7 +18,7 @@ class MlsSyncEngine {\n-  static const _batchSize = 32;\n+  static const _batchSize = 256;", "viewed_state": "viewed" }
+      ],
+      "commits": [
+        { "sha": "d40a6c2b81e795f3c0a6b8d2e4f17c93b5a0e6d8", "message": "Batch MLS sync at 256 listings", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-12d" }
+      ],
+      "reviews": [
+        { "id": 9201, "state": "approved", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "body": "Ran the same benchmark on the east-region feed before approving — 41s → 12s holds there too.", "submitted_at": "@-9d", "reactions": [] }
+      ],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [],
+      "check_runs": [
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-9d", "completed_at": "@-9d", "output": "612 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [],
+      "reviewers": []
+    }
+  ]
+}

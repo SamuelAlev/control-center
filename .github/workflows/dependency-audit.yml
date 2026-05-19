@@ -1,0 +1,73 @@
+name: Dependency audit
+
+# Reports outdated / discontinued dependencies across the pub workspace and
+# fails on any dependency flagged by pub.dev's security-advisory database or
+# discontinued upstream. Uses only first-party Dart tooling (`dart pub
+# outdated`), so no third-party action needs SHA-pinning / egress-allowing.
+# Runs weekly and on demand.
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: dep-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  outdated:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+
+      - name: Report outdated dependencies
+        run: dart pub outdated --show-all
+
+      # Fail on any dependency flagged by pub.dev's security-advisory database
+      # (isCurrentAffectedByAdvisory), retracted, or discontinued upstream.
+      - name: Fail on advisories / retracted / discontinued packages
+        run: |
+          dart pub outdated --json > outdated.json
+          python3 - outdated.json <<'PY'
+          import json, sys
+          data = json.load(open(sys.argv[1]))
+          flagged = []
+          for p in data.get('packages', []):
+              reasons = []
+              if p.get('isCurrentAffectedByAdvisory'):
+                  reasons.append('security advisory')
+              if p.get('isCurrentRetracted'):
+                  reasons.append('retracted')
+              if p.get('isDiscontinued'):
+                  reasons.append('discontinued')
+              if reasons:
+                  flagged.append(f"{p['package']}: {', '.join(reasons)}")
+          if flagged:
+              for f in flagged:
+                  print(f"::error::{f}")
+              sys.exit(1)
+          print('No advisories, retractions, or discontinued dependencies.')
+          PY

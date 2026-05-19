@@ -1,0 +1,255 @@
+---
+title: Sandbox and security
+description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
+---
+
+:::note[Where the OS sandbox does and does not reach]
+`cc_server` probes the host at boot and wraps agent command execution in the
+OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
+Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
+backend exists — Windows, or a Linux box missing those tools — runs fall back
+to the other boundaries below and the server says so in its startup log.
+`--sandbox off` turns it off deliberately.
+
+Two gaps survive the sandbox and are worth holding in mind:
+
+- The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
+  `apply_patch`, search) run inside the server process, so only `bash` is
+  wrapped. What bounds those is path confinement in the tools themselves plus
+  the action guardrails.
+- **Claude Code is launched with `--dangerously-skip-permissions`**, because a
+  non-interactive `claude -p` would otherwise block forever on its own prompt.
+  Its file and shell calls are therefore not gated by Control Center's
+  guardrails — the OS sandbox is the boundary around them.
+  :::
+
+## Why isolation matters here
+
+An agent reads files, runs shell commands and calls external APIs on your
+behalf. The failure you care about is rarely malice — it is an agent that
+misreads a path and rewrites your working checkout, or one that pushes a branch
+you had not finished reviewing. So the question the product has to answer is not
+"is the agent trustworthy" but "what is the blast radius when it is wrong".
+
+Control Center answers that in layers and the layers are independent on
+purpose. If one is missing, the others still hold. That matters, because the
+outermost layer — the OS sandbox — is the only conditional one: it depends on
+the host offering a backend and on Windows no host does.
+
+## What actually constrains an agent
+
+Five things bound an agent run on every host, sandbox or no sandbox. None of
+them is a kernel boundary; all of them are real. Where the host offers a
+backend the OS sandbox sits above them and "What the sandbox adds and where
+it stops" below covers what that changes.
+
+**Its own copy-on-write worktree.** Every conversation provisions its own
+checkout of each linked repo, cloned copy-on-write through the bundled `rift`
+native rather than copied byte by byte, so isolation is cheap enough to be the
+default. The registered repository you added to the workspace is not the
+directory the agent works in — two conversations touching the same repo cannot
+see each other's edits and neither is editing your checkout.
+
+The grain is worth being precise about: **the worktree is per conversation, not
+per agent.** Two agents in the same conversation get distinct overlay working
+directories that _share_ that conversation's `repos/` — which is the point,
+since they are collaborating on one change — while their private agent
+directories stay separate. On a filesystem with no copy-on-write support and
+on Windows where there is no copy-on-write backend at all, this degrades to a
+plain `git worktree`: slower to create, isolating the same way.
+
+**Path confinement in the built-in harness's file tools.** The harness's `read`,
+`write`, `edit`, `apply_patch` and search tools resolve every path against the
+run's working directory plus one shared root — the conversation's `repos/`
+directory, where the worktrees live — and refuse anything that lands outside.
+Absolute paths are accepted only if they were already inside. A symlink inside
+the worktree pointing out of it is resolved and refused too. This is why an
+agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
+
+**The mode's tool surface.** A conversation's [mode](/manual/concepts/modes/)
+decides which tools are materialized for the run at all. In the read-only modes
+(`plan`, `review`, `orchestrate`) the mutating tools are simply not in the
+registry and the shell command policy for those modes denies every mutating
+command outright — `git commit`, `git push`, `npm install`, `docker` and the
+rest — rather than prompting for them. A tool that is not present cannot be
+called, which is a stronger guarantee than a tool that is present and gated.
+
+**The unified action guardrails.** Every mutating tool declares the effect
+classes it can produce and the policy engine resolves each one to allow,
+prompt, or deny before the call runs. A `prompt` with no approver connected
+resolves to _denied_ — a question nobody can answer is never a yes. See
+[Guardrails](/manual/concepts/guardrails/) for the resolution model.
+
+**Capability-gated credentials and a sanitized environment.** Credentials are
+minted per launch from the conversation's capability flags and revoked when the
+run ends and the environment handed to any spawned process is stripped of the
+dynamic-linker and interpreter injection vectors (`LD_PRELOAD`,
+`DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and their kin)
+before the process starts.
+
+### Where those bounds thin out
+
+The harness's file tools run _in the server process_, not in a child process, so
+no sandbox profile could constrain them even if one were attached — only `bash`
+goes through the sandboxed command runner. Their confinement is the path check
+described above and that check is therefore load-bearing rather than a second
+line of defence.
+
+The `bash` tool is the other place to be precise. Its commands are evaluated
+against the mode's command policy and then spawned with a sanitized environment
+and the worktree as its working directory. Where a backend exists that spawn is
+wrapped, so the sandbox is what stops a shell command from writing outside the
+worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
+command policy is the only thing between the command and the rest of the disk.
+In `chat` mode the policy hard-denies a fixed list (privilege escalation,
+system and disk destruction, container and namespace escape) and prompts on
+remote-state mutations (`git push`, `gh pr create`, package publishes and
+installs). Anything on neither list runs. Pipelines, chains and subshells are
+parsed and each sub-command evaluated separately, with the most restrictive
+decision winning.
+
+Claude Code, when used as an adapter, is the case where the sandbox carries the
+most weight. Control Center launches it with `--dangerously-skip-permissions`,
+because a non-interactive `claude -p` would otherwise block forever on its own
+approval prompt. Its read, write, edit and shell calls happen inside its own
+process and Control Center never sees them; the only calls it makes that reach
+a gate are the `mcp__*` tools Control Center itself serves. Where a backend
+exists, those unseen calls still happen inside the sandbox wrap, so the OS is
+the boundary around them. Where none does, nothing is. Each adapter states this
+in its enforcement matrix — see [the adapter honesty
+matrix](/manual/concepts/guardrails/#the-adapter-honesty-matrix).
+
+## Capability gating is enforcement by absence
+
+A conversation carries four capability flags: push to the repo, call the GitHub
+API, call the ticketing provider and access the network. They are not checked
+when the agent acts. They are checked once, at launch, by the credential broker
+— and a capability that is off means the matching token is simply never put in
+the environment.
+
+That is the whole mechanism and it is worth stating plainly because the failure
+mode is not what people expect. Turning off "GitHub API" does not produce a
+"capability denied" message. It produces an ordinary `401` inside the agent,
+because there is no `GH_TOKEN` to send. The agent may well narrate that as a
+credentials problem. Enforcement by absence is robust — there is no check to
+bypass — but it is silent and the agent does not know why it failed.
+
+The network flag behaves the same way. With it off, the harness's `web_fetch`
+and `web_search` tools refuse every call and no proxy endpoint is exposed to a
+spawned process.
+
+Credentials are revoked when the run tears down, so a handle does not outlive
+the conversation turn that minted it.
+
+## What the sandbox adds and where it stops
+
+Two backends are implemented — `native` (Seatbelt on macOS, bubblewrap on Linux
+and WSL2) and `none`. Understanding their shape explains what you gain where
+one is attached and what they were never going to give you.
+
+`cc_server` probes the host once at boot and where a backend answers it feeds
+both of the seams the dispatch path has, because the transports do not share
+one. The first wraps the CLI transports — Pi and Claude Code. The second wraps
+the ACP adapters (OpenCode, Gemini CLI, Goose, Cursor, Codex) and the built-in
+harness's `bash` tool. Feeding only one would leave the other transport
+spawning unwrapped, which is what used to happen to all of them. On a host with
+no backend, or under `--sandbox off`, they all spawn unwrapped and the server
+says which case you are in on its startup line.
+
+One surface deliberately opts out: the server-hosted terminal accepts a backend
+argument per session and `cc_server` constructs it defaulting to the host
+shell, so a terminal you open from the app runs unsandboxed unless a client
+names `native` explicitly. That is a real shell on the server host, not an
+agent run.
+
+On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
+only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
+profile that is **permissive by default** — a fully deny-by-default profile
+makes an interactive shell unusable, because the number of dyld, XPC and Mach
+calls to enumerate is impractical. The macOS profile therefore starts from
+`(allow default)` and carves out denies: reads of secret paths, a write policy
+reset to deny with explicit allows on top, unlink-blocking on every denied path
+and its ancestors so a rename cannot bypass a write-deny, exec denies for
+always-dangerous binaries and for anything copied into a writable directory and
+network restricted to the loopback proxy ports plus DNS.
+
+The practical consequence: on Linux the agent's view of the filesystem is
+narrowed; on macOS the agent can still _read_ most of the host and your
+registered checkouts are protected by explicit write and rename denials rather
+than by invisibility. Both are namespace-level isolation, not a kernel security
+boundary — the backends say so in their own capability notes.
+
+The bind-mount set is where the cross-agent boundary is drawn. Three mounts,
+resolved per dispatch: the agent's overlay working directory read-write, the
+agent's config directory read-only and the conversation's shared `repos/`
+directory read-write when it exists. A sibling agent's directory is never
+mounted. This is the same shape the harness's in-process path check enforces in
+software, so the two agree — but only the path check covers the harness's own
+file tools, which never reach a mount namespace at all.
+
+Your registered checkouts join the deny-write set on top of that, in every mode
+and on all three of the wrapped paths and each rule is emitted in both its
+literal and its symlink-resolved spelling. The second spelling is not a nicety:
+the kernel matches a deny rule
+against the resolved path and macOS makes resolution the common case rather
+than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
+really `/private/var/folders/…` — so a checkout reached through either would
+have been writable while the profile appeared to forbid it.
+
+Network, under a sandbox, is a per-session **domain** allowlist enforced by
+in-process loopback proxies. Egress is default-deny: with the network
+capability off, no proxy is exposed at all. With it on, the resolver builds the
+allowlist from a curated baseline — LLM API providers, git hosting, package
+registries, the model catalogue — plus the GitHub domains an agent's GitHub or
+push capability earns it and matches every connection's target host against
+it. Wildcards work (`*.example.com` matches subdomains, not the apex). A
+separate always-denied list wins over the allowlist and covers cloud metadata
+endpoints and telemetry sinks. What is _not_ configurable is the list itself:
+the spec carries an `egressAllowlist` field for extra domains and a ticketing
+domain hook, but nothing in the dispatch path populates either, so in practice
+every run gets the baseline plus its capability-derived domains and nothing
+more.
+
+Denials, on macOS, are observable: a monitor taps the system log for Sandbox
+denials, filters known noise, deduplicates retry storms and surfaces each as a
+`SandboxViolation` naming what was attempted and which capability would unblock
+it. Those arrive on the run's own event stream, so a denied syscall shows up in
+the transcript rather than only in a log. The telemetry only exists while a
+native sandbox is actually wrapping the process — on a host with no backend
+there is nothing to observe. It is also unrelated to capability gating: a
+violation comes from a denied syscall, never from a capability lookup.
+
+## Confirmations come from the guardrails, not the sandbox
+
+The sandbox has no approval path. It launches, executes, emits events and tears
+down; there is nowhere in it for a human to answer a question. When you see a
+confirmation in a space — approve this push, approve this delete — it was
+raised by the guardrail engine (or the harness's command policy) _before_ the
+action reached the runtime at all.
+
+This ordering is deliberate. An approval that happened after the syscall would
+be an audit record, not a gate. It is also why the fail-closed rule lives in the
+guardrails: with no approver connected, the decision is made before anything
+runs and it is a denial.
+
+## Diagnostics
+
+A diagnostic service exists that checks the sandbox backend, database access,
+CLI tool availability, disk space and network connectivity. It has no reachable
+entry point today: there is no doctor command in the client and no `doctor` MCP
+tool — that tool class was deleted, so nothing appears in `tools/list`.
+[Run agent diagnostics](/manual/guides/agent-diagnostics/) is the single place
+that states what can be run.
+
+## Related concepts
+
+- [Rigs and enclosures](/manual/concepts/rigs/): the step above the sandbox — when the work needs a whole disposable machine with a kernel boundary, not a wrapped process
+- [Guardrails](/manual/concepts/guardrails/): the policy layer above the OS floor and where approvals actually come from
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/): where isolation fits in the dispatch flow
+- [Modes](/manual/concepts/modes/): how a mode narrows the tool surface and the command policy
+- [Sandbox backends reference](/manual/reference/sandbox-backends/): the backends and their configuration
+
+## Related guides
+
+- [Configure sandbox policies](/manual/guides/sandbox-policies/): capability flags and filesystem posture
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/): what the diagnostic checks cover

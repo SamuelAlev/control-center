@@ -1,0 +1,514 @@
+---
+/**
+ * HeroCarousel — the hero capture, cycling through the surfaces the page
+ * details below.
+ *
+ * A tab rail names every stop, so the breadth of the deck reads in one glance
+ * whether or not the visitor waits for the rotation. The accent bar under the
+ * active tab is the dwell itself running down: it freezes when the rotation
+ * does (hover, focus, a hidden tab, scrolled out of view), so the motion is
+ * always reporting real state.
+ *
+ * Rotation is timer-driven, never required: the first slide is selected in the
+ * markup, so with no JS the hero is the static capture it was before. It ships
+ * as `data-auto="idle"` (no bar at all) and the script decides between `on` and
+ * `off`, so no countdown flashes before the script runs, and a page without it
+ * never shows a countdown it cannot honour. An
+ * explicit play/pause control (WCAG 2.2.2), hover/focus holds and a hard stop
+ * on any manual selection mean the rotation never fights the reader.
+ * `prefers-reduced-motion` starts it stopped, with the active tab's bar drawn
+ * full instead of animating.
+ */
+import ScreenshotSlot from './ScreenshotSlot.astro';
+import { heroShots } from '../../data/shots';
+
+interface Props {
+  /** Seconds each slide holds before the next one comes up. */
+  dwellMs?: number;
+  /** CSS aspect-ratio of the capture frame. */
+  ratio?: string;
+}
+
+const { dwellMs = 6500, ratio = '16 / 8.2' } = Astro.props;
+
+/** 16×16 line glyphs, one per stop. Stroked with currentColor. */
+const glyphs: Record<string, string> = {
+  deck: '<rect x="2.4" y="2.4" width="4.8" height="4.8"/><rect x="8.8" y="2.4" width="4.8" height="4.8"/><rect x="2.4" y="8.8" width="4.8" height="4.8"/><rect x="8.8" y="8.8" width="4.8" height="4.8"/>',
+  agents:
+    '<rect x="4.4" y="4.4" width="7.2" height="7.2"/><path d="M6.6 1.6v2.8M9.4 1.6v2.8M6.6 11.6v2.8M9.4 11.6v2.8M1.6 6.6h2.8M1.6 9.4h2.8M11.6 6.6h2.8M11.6 9.4h2.8"/>',
+  rigs: '<rect x="1.6" y="2.6" width="12.8" height="8.6"/><path d="M6 14h4M8 11.2V14"/>',
+  review:
+    '<circle cx="4.2" cy="4" r="1.7"/><circle cx="4.2" cy="12" r="1.7"/><circle cx="11.8" cy="12" r="1.7"/><path d="M4.2 5.7v4.6M11.8 10.3V6.6a2 2 0 0 0-2-2H7.4"/><path d="M9.2 2.6 7.3 4.6l1.9 2"/>',
+  meetings:
+    '<rect x="1.8" y="3.2" width="12.4" height="11"/><path d="M1.8 6.6h12.4M5.2 1.6v3.2M10.8 1.6v3.2"/>',
+};
+---
+
+<div
+  class="cc-carousel reveal"
+  data-carousel
+  data-auto="idle"
+  data-dwell={String(dwellMs)}
+  style={`--dwell:${dwellMs}ms`}
+>
+  <div class="rail-row">
+    <div class="rail">
+      <div class="tabs" role="tablist" aria-label="Tour of the deck" data-tabs>
+        {heroShots.map((s, i) => (
+          <button
+            class="tab"
+            type="button"
+            role="tab"
+            id={`hero-tab-${s.id}`}
+            aria-controls={`hero-panel-${s.id}`}
+            aria-selected={i === 0 ? 'true' : 'false'}
+            tabindex={i === 0 ? 0 : -1}
+            data-tab
+          >
+            <svg
+              class="glyph"
+              viewBox="0 0 16 16"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.4"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              set:html={glyphs[s.id] ?? ''}
+            />
+            <span class="tab-label" data-label={s.label}>{s.label}</span>
+            <span class="tab-dwell" aria-hidden="true"><i></i></span>
+          </button>
+        ))}
+      </div>
+      <button class="toggle" type="button" data-toggle aria-label="Play the tour" title="Play the tour" hidden>
+        <svg class="i-pause" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><rect x="3.5" y="2.5" width="3" height="11"/><rect x="9.5" y="2.5" width="3" height="11"/></svg>
+        <svg class="i-play" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M4 2.4 13.5 8 4 13.6Z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="stage" data-stage>
+    {heroShots.map((s, i) => (
+      <div
+        class="panel"
+        role="tabpanel"
+        id={`hero-panel-${s.id}`}
+        aria-labelledby={`hero-tab-${s.id}`}
+        data-panel
+        data-active={i === 0 ? '' : undefined}
+        inert={i !== 0}
+      >
+        <ScreenshotSlot
+          n={s.n}
+          title={s.title}
+          file={s.file}
+          description={s.description}
+          theme={s.theme ?? 'light'}
+          ratio={ratio}
+          reveal={false}
+        />
+      </div>
+    ))}
+  </div>
+</div>
+
+<style>
+  /* ── Tab rail ──────────────────────────────────────────────────── */
+  .rail-row {
+    display: flex;
+    justify-content: center;
+  }
+
+  .rail {
+    display: flex;
+    align-items: stretch;
+    max-width: 100%;
+    border: 1px solid var(--color-border);
+    background: var(--color-panel);
+  }
+
+  .tabs {
+    position: relative;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    position: relative;
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 16px 12px;
+    font-size: 13.5px;
+    line-height: 1;
+    white-space: nowrap;
+    color: var(--color-muted);
+    border-left: 1px solid var(--color-border);
+    transition:
+      color var(--motion-fast) var(--ease-standard),
+      background var(--motion-fast) var(--ease-standard);
+  }
+  .tab:first-child {
+    border-left: 0;
+  }
+  .tab:hover {
+    color: var(--color-fg);
+    background: var(--color-hover);
+  }
+  .tab[aria-selected="true"] {
+    color: var(--color-fg);
+    background: color-mix(in oklab, var(--color-accent), transparent 93%);
+  }
+
+  .glyph {
+    width: 15px;
+    height: 15px;
+    flex: none;
+    color: var(--color-idle);
+    transition: color var(--motion-fast) var(--ease-standard);
+  }
+  .tab:hover .glyph,
+  .tab[aria-selected="true"] .glyph {
+    color: var(--color-accent);
+  }
+
+  /* The label reserves its own semibold width (the hidden ::after row), so
+     selecting a tab never reflows the rail out from under the pointer. */
+  .tab-label {
+    display: inline-grid;
+    justify-items: center;
+  }
+  .tab-label::after {
+    content: attr(data-label);
+    grid-row: 2;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 600;
+    pointer-events: none;
+  }
+  .tab[aria-selected="true"] .tab-label {
+    font-weight: 600;
+  }
+
+  /* Dwell bar: the countdown to the next slide, not decoration. */
+  .tab-dwell {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    overflow: hidden;
+  }
+  .tab-dwell i {
+    display: block;
+    height: 100%;
+    background: var(--color-accent);
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  [data-carousel][data-auto="on"] .tab[aria-selected="true"] .tab-dwell i {
+    animation: cc-dwell var(--dwell) linear forwards;
+  }
+  /* Mirrors the selector above, plus `[data-state]`: the `animation`
+     shorthand resets play-state, so the hold has to out-specify it. */
+  [data-carousel][data-auto="on"][data-state="held"] .tab[aria-selected="true"] .tab-dwell i {
+    animation-play-state: paused;
+  }
+  /* Stopped (or no JS): the active tab keeps a full bar, so the state is
+     carried by a shape and not by color alone. */
+  [data-carousel][data-auto="off"] .tab[aria-selected="true"] .tab-dwell i {
+    transform: scaleX(1);
+  }
+
+  @keyframes cc-dwell {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .toggle {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    color: var(--color-idle);
+    border-left: 1px solid var(--color-border);
+    transition:
+      color var(--motion-fast) var(--ease-standard),
+      background var(--motion-fast) var(--ease-standard);
+  }
+  .toggle[hidden] {
+    display: none;
+  }
+  .toggle:hover {
+    color: var(--color-fg);
+    background: var(--color-hover);
+  }
+  .toggle svg {
+    width: 11px;
+    height: 11px;
+  }
+  .toggle .i-play {
+    display: none;
+  }
+  [data-carousel][data-auto="off"] .toggle .i-pause {
+    display: none;
+  }
+  [data-carousel][data-auto="off"] .toggle .i-play {
+    display: block;
+  }
+
+  @media (pointer: coarse) {
+    .tab {
+      min-height: 44px;
+    }
+    .toggle {
+      width: 48px;
+    }
+  }
+
+  /* ── Stage ─────────────────────────────────────────────────────── */
+  .stage {
+    display: grid;
+    margin-top: clamp(14px, 1.8vw, 22px);
+    touch-action: pan-y;
+  }
+
+  .panel {
+    grid-area: 1 / 1;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate3d(0, 10px, 0) scale(0.994);
+    transition:
+      opacity 240ms var(--ease-standard),
+      transform 240ms var(--ease-standard),
+      visibility 0s linear 240ms;
+  }
+  .panel[data-active] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 440ms var(--ease-standard) 60ms,
+      transform 620ms var(--ease-standard) 60ms,
+      visibility 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel,
+    .panel[data-active] {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-carousel]").forEach(setup);
+
+  function setup(root: HTMLElement) {
+    const tabs = Array.from(root.querySelectorAll<HTMLElement>("[data-tab]"));
+    const panels = Array.from(root.querySelectorAll<HTMLElement>("[data-panel]"));
+    const strip = root.querySelector<HTMLElement>("[data-tabs]");
+    const stage = root.querySelector<HTMLElement>("[data-stage]");
+    const toggle = root.querySelector<HTMLElement>("[data-toggle]");
+    if (tabs.length < 2) return;
+
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const dwell = Number(root.getAttribute("data-dwell")) || 6500;
+
+    let index = Math.max(
+      0,
+      tabs.findIndex((t) => t.getAttribute("aria-selected") === "true"),
+    );
+    /* Rotation runs for everyone except reduced-motion readers, who get it
+       stopped with the control sitting right there to start it. */
+    let auto = !motionQuery.matches;
+    let held = false; /* pointer over the carousel, or focus inside it */
+    let onscreen = true;
+    let timer: number | null = null;
+    let startedAt = 0;
+    let remaining = dwell;
+
+    if (toggle) toggle.removeAttribute("hidden");
+
+    const paused = () => held || document.hidden || !onscreen;
+
+    function render() {
+      root.setAttribute("data-auto", auto ? "on" : "off");
+      root.setAttribute("data-state", paused() ? "held" : "running");
+      /* Announce slides only when the reader, not the timer, is turning
+         them (the APG carousel rule). */
+      stage?.setAttribute("aria-live", auto && !paused() ? "off" : "polite");
+      if (toggle) {
+        const label = auto ? "Pause the tour" : "Play the tour";
+        toggle.setAttribute("aria-label", label);
+        toggle.setAttribute("title", label);
+      }
+    }
+
+    function clearTimer() {
+      if (timer === null) return;
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    function arm() {
+      clearTimer();
+      if (!auto || paused()) return;
+      startedAt = Date.now();
+      timer = window.setTimeout(() => {
+        timer = null;
+        select(index + 1);
+      }, remaining);
+    }
+
+    /* Freeze the countdown where it stands. The bar pauses off the same
+       `data-state`, so the two never drift apart. */
+    function hold() {
+      if (timer === null) return;
+      remaining = Math.max(0, remaining - (Date.now() - startedAt));
+      clearTimer();
+    }
+
+    function sync() {
+      render();
+      if (auto && !paused()) arm();
+      else hold();
+    }
+
+    function select(next: number, focus?: boolean) {
+      index = ((next % tabs.length) + tabs.length) % tabs.length;
+      tabs.forEach((tab, i) => {
+        const on = i === index;
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+        tab.setAttribute("tabindex", on ? "0" : "-1");
+      });
+      panels.forEach((panel, i) => {
+        const on = i === index;
+        if (on) panel.setAttribute("data-active", "");
+        else panel.removeAttribute("data-active");
+        panel.toggleAttribute("inert", !on);
+      });
+      remaining = dwell;
+      keepInView(tabs[index]!);
+      if (focus) tabs[index]!.focus();
+      sync();
+    }
+
+    function keepInView(tab: HTMLElement) {
+      if (!strip || strip.scrollWidth <= strip.clientWidth) return;
+      strip.scrollTo({
+        left: Math.max(0, tab.offsetLeft - (strip.clientWidth - tab.offsetWidth) / 2),
+        behavior: motionQuery.matches ? "auto" : "smooth",
+      });
+    }
+
+    /* Any deliberate pick stops the rotation: a reader who chose a slide
+       should not have it taken away six seconds later. */
+    function stopAnd(next: number, focus?: boolean) {
+      auto = false;
+      select(next, focus);
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener("click", () => stopAnd(i));
+      tab.addEventListener("keydown", (e) => {
+        let next: number;
+        if (e.key === "ArrowRight") next = index + 1;
+        else if (e.key === "ArrowLeft") next = index - 1;
+        else if (e.key === "Home") next = 0;
+        else if (e.key === "End") next = tabs.length - 1;
+        else return;
+        e.preventDefault();
+        stopAnd(next, true);
+      });
+    });
+
+    toggle?.addEventListener("click", () => {
+      auto = !auto;
+      remaining = dwell;
+      sync();
+    });
+
+    if (window.matchMedia("(hover: hover)").matches) {
+      root.addEventListener("mouseenter", () => {
+        held = true;
+        sync();
+      });
+      root.addEventListener("mouseleave", () => {
+        held = false;
+        sync();
+      });
+    }
+
+    /* Focus holds only while it is on the tabs themselves: a reader arrowing
+       through them should not have the panel change underneath. The play
+       control is deliberately outside that, or pressing it would put focus
+       somewhere that keeps the tour it just started held. */
+    if (strip) {
+      strip.addEventListener("focusin", () => {
+        held = true;
+        sync();
+      });
+      strip.addEventListener("focusout", (e) => {
+        const to = e.relatedTarget;
+        if (to instanceof Node && strip.contains(to)) return;
+        held = false;
+        sync();
+      });
+    }
+
+    document.addEventListener("visibilitychange", sync);
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        (entries) => {
+          onscreen = entries[0]!.isIntersecting;
+          sync();
+        },
+        { threshold: 0 },
+      ).observe(root);
+    }
+
+    motionQuery.addEventListener("change", (e) => {
+      if (e.matches) auto = false;
+      sync();
+    });
+
+    /* Swipe across the capture: the gesture a carousel owes a phone. */
+    if (stage) {
+      let from: { x: number; y: number } | null = null;
+      stage.addEventListener("pointerdown", (e) => {
+        if (e.pointerType === "mouse") return;
+        from = { x: e.clientX, y: e.clientY };
+        try {
+          stage.setPointerCapture(e.pointerId);
+        } catch {
+          /* capture is an optimization; the gesture still works without it */
+        }
+      });
+      stage.addEventListener("pointerup", (e) => {
+        if (!from) return;
+        const dx = e.clientX - from.x;
+        const dy = e.clientY - from.y;
+        from = null;
+        if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+        stopAnd(dx < 0 ? index + 1 : index - 1);
+      });
+      stage.addEventListener("pointercancel", () => {
+        from = null;
+      });
+    }
+
+    sync();
+  }
+</script>

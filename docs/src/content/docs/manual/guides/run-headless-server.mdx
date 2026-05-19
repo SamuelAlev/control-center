@@ -1,0 +1,291 @@
+---
+title: Run a headless server
+description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
+dateModified: 2026-09-10
+---
+
+Run `cc_server` on a machine that stays on, then connect to it from your desktop,
+a browser, or your phone. The server is a pure-Dart native binary — no Flutter
+engine — so it runs headless on macOS, Linux, or Windows. It owns the database,
+runs the agents and makes every external API call; the clients only render.
+
+## Run in Docker (prebuilt images)
+
+Every release publishes four images to GHCR — the backend, the two static thin
+clients and the optional pairing relay — so a self-hosted stack needs no source
+checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) or ride
+`latest`.
+
+| Image                                             | What it is                                   | Publishes        |
+| ------------------------------------------------- | -------------------------------------------- | ---------------- |
+| `ghcr.io/samuelalev/cc-server`                    | The backend: database, agents, MCP, webhooks | `-p 9030:9030`   |
+| `ghcr.io/samuelalev/cc-webapp`           | The web client (static nginx)                | `-p 8080:8080`  |
+| `ghcr.io/samuelalev/cc-remote`        | The phone companion PWA (static nginx)       | `-p 8081:8080`  |
+| `ghcr.io/samuelalev/cc-signaling-server`     | The WebRTC pairing relay (optional)          | `-p 8788:8788`   |
+
+The whole stack as a compose file:
+
+```yaml
+services:
+  server:
+    image: ghcr.io/samuelalev/cc-server:latest
+    ports: ["9030:9030"]
+    volumes: ["cc_data:/data"]
+    restart: unless-stopped
+  web:
+    image: ghcr.io/samuelalev/cc-webapp:latest
+    ports: ["8080:8080"]
+    restart: unless-stopped
+  remote:
+    image: ghcr.io/samuelalev/cc-remote:latest
+    ports: ["8081:8080"]
+    restart: unless-stopped
+  signaling:
+    image: ghcr.io/samuelalev/cc-signaling-server:latest
+    ports: ["8788:8788"]
+    restart: unless-stopped
+
+volumes:
+  cc_data:
+```
+
+Things worth knowing before you expose any of this beyond loopback:
+
+- **The `cc-server` image ships `CC_SERVER_INSECURE=1`** (it must bind `0.0.0.0`
+  to receive published-port traffic), which is only safe behind a
+  TLS-terminating reverse proxy — Caddy, Traefik, nginx or a Cloudflare Tunnel —
+  on a trusted network. To terminate TLS in-process instead, mount a certificate
+  and set `CC_SERVER_TLS_CERT` / `CC_SERVER_TLS_KEY` (then unset
+  `CC_SERVER_INSECURE`). Everything is overridable with `docker run -e …` or the
+  compose `environment:` block.
+- **`/data` is the only state.** The SQLite databases, paired-device secrets,
+  downloaded models and meeting audio all live in the volume — back it up and
+  the container becomes disposable.
+- **Pair a client from inside the image** before the first connection, the
+  container equivalent of [step 3](#step-3-pair-a-client-before-first-start):
+
+  ```bash
+  docker run --rm -it -v cc_data:/data \
+    --entrypoint /app/bin/cc_server ghcr.io/samuelalev/cc-server:latest pair
+  ```
+
+- **The two client images are static nginx hosts** — nothing to configure at
+  runtime; each client's connect form takes your server URL, device id and
+  pairing key. The signaling relay likewise needs only its port
+  (`SIGNALING_HOST` / `SIGNALING_PORT` overridable); it is stateless, holds no
+  secrets and is a **fallback** — a phone uses loopback, LAN, tailnet or a
+  direct `wss://` path when one is reachable, and only falls back to the relay
+  when none is. Skip it if your clients always reach the server directly.
+
+The rest of this guide builds the server from source; the flags and behavior it
+covers are the same ones the image's environment variables feed.
+
+## Prerequisites
+
+- The [Dart SDK](https://dart.dev/get-dart). This repo pins its SDK with [fvm](https://fvm.app), so prefix every command with `fvm`.
+- This repository checked out.
+- The native toolchain the staging script needs — Rust/`cargo`, plus `meson`, `ninja`, `pkg-config`, `git` and a C++ compiler. Each build script names what it cannot find and how to install it.
+- A reachable host: loopback for local use, or a LAN/public address with TLS for remote clients.
+
+## Step 1: Stage the native libraries
+
+The natives are **required** — there is no degraded mode. Build them from the
+repo root before anything else:
+
+```bash
+scripts/natives/build_natives.sh
+```
+
+This builds `rift`, `fff`, tree-sitter plus its grammars, `aec`, `lame`,
+`ccpty`, `cc_watcher`, `cc_inference` and the SAML native into
+`build/natives/`. The `cc_server` build
+hook re-emits whatever is staged there into the bundle, so skipping this step
+either fails the build outright or — with the escape hatch below — produces a
+binary whose boot preflight refuses to start and names the missing library.
+
+:::note[Compile-only escape hatch]
+Creating an empty `.cc_natives_allow_missing` file at the repo root downgrades
+the missing-natives build failure to a warning. It is for syntax-checking a
+fresh clone; a server built that way cannot boot. It must be a **file** — the
+build-hook runner does not forward the caller's environment, so an environment
+variable is ignored.
+:::
+
+## Step 2: Build the binary
+
+```bash
+cd apps/cc_server
+fvm dart build cli
+```
+
+The bundle ships `libsqlite3` and the staged natives alongside the binary — no
+system SQLite and no Flutter engine needed. The executable lands at
+`./build/cli/<os_arch>/bundle/bin/cc_server`.
+
+## Step 3: Pair a client before first start
+
+A fresh data directory has no paired device and no pre-shared key, so a client's
+pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
+It opens the database directly, so run it **before** starting the server:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
+```
+
+It prints three values to paste into a client's connect form:
+
+```
+Connect a thin client (paste into its connect form):
+  Server      ws://localhost:9030/rpc
+  Device id   web-client
+  Pairing key <a freshly generated key>
+```
+
+Useful flags: `--device` (default `web-client`; the id also picks the device
+tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`,
+`--host` (the host to print in the URL, since loopback is not reachable from
+another machine) and `--client-url`. Re-running `pair` rotates that device's key.
+Pairing never creates a workspace: the connecting client's onboarding names and
+creates the first one.
+
+With `--client-url` it also prints a terminal-scannable QR that opens the web
+client already filled in:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030 \
+  --bind any --host 192.168.1.42 --client-url https://app.usectrl.dev
+```
+
+:::caution[This QR is not the phone QR]
+`--client-url` builds a link for the **web client** — server URL, device id and
+key in the URL fragment. The **Remote** phone app expects a different payload
+(the server's full connection descriptor plus an expiry), minted from
+**Settings → You → Your devices** in a running client. The two are not
+interchangeable. See [Pair a device](/manual/guides/pair-a-device/).
+:::
+
+A credential minted by `cc_server pair` carries **no expiry**; one minted in the
+app always expires after 30 days. Revoke a CLI-minted device from
+**Settings → You → Your devices** when you are done with it.
+
+## Step 4: Start the server
+
+On loopback — the default and all you need for a client on the same machine:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030
+```
+
+To reach it from another machine, bind every interface. A non-loopback bind
+without TLS is **refused at startup** (`Refusing to bind non-loopback address …
+without TLS`), so supply a certificate:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
+  --bind any --tls-cert /path/fullchain.pem --tls-key /path/privkey.pem \
+  --public-url wss://server.example:9030/rpc
+```
+
+Or terminate TLS in a reverse proxy on a trusted private network and opt into a
+plaintext bind behind it:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server --data-dir ./data --port 9030 \
+  --bind any --insecure --public-url wss://server.example/rpc
+```
+
+`--insecure` is ignored when `--tls-cert` and `--tls-key` are both set — TLS
+always wins. The server advertises the plaintext state as `insecure: true` in
+`GET /healthz` and clients badge such a connection as insecure.
+
+The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
+
+## Step 5: Connect a client
+
+Point a client at the server URL and pairing key from step 3:
+
+- **Desktop app**: on the first-run screen (**How should Control Center run?**) fill in the connect fields instead of **Run in this app**, or add the server later at **Settings → Server → Connection & status**. See [Connect to a remote server](/manual/guides/connect-remote-server/).
+- **Web client**: open [app.usectrl.dev](https://app.usectrl.dev) (or your own copy of the web build) and enter the server URL, device id and pairing key.
+- **Phone**: pair the **Remote** app from a running client — see [Pair a device](/manual/guides/pair-a-device/).
+
+:::note[cc_server serves no web bundle]
+A standalone `cc_server` never mounts a web root, so `GET /` returns 404. The web
+client is hosted separately — use `app.usectrl.dev`, or host the web build
+yourself on any static HTTPS host (the `cc-webapp` image above is
+exactly that). A browser origin other than loopback must be
+on `--allowed-origins` or the WebSocket upgrade to `/rpc` is refused; the default
+list is `https://app.usectrl.dev` and `localhost` / `127.0.0.1` are always
+allowed.
+:::
+
+## Step 6: Connect a Google Calendar (optional)
+
+To sync a workspace's calendar with no GUI attached, use the device-code flow:
+
+```bash
+./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
+  --data-dir ./data --workspace <workspace-id> \
+  --google-client-id <id> --google-client-secret <secret>
+```
+
+It prints a code and a URL to approve on another device, stores the refresh token
+server-side and exits. A source build ships no Google client, so the id and
+secret (or their environment variables) are required — see
+[Connect a Google Calendar](/manual/guides/connect-calendar/).
+
+## Configuration
+
+The flags used above are the ones a first setup needs. The complete surface — 23
+flag and environment-variable pairs, the four subcommands and the data-directory
+layout — is in the [`cc_server` CLI reference](/manual/reference/cc-server-cli/).
+
+:::caution[Unknown flags are ignored silently]
+The argument parser is hand-rolled and skips anything it does not recognise, so
+a typo (`--tls-key-file`, `--bindany`) produces no error — the server just starts
+with the default. Check the startup log lines when a flag seems to have no effect.
+:::
+
+The four you are most likely to need:
+
+| Flag           | Default                              | Meaning                                                                                          |
+| -------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `--data-dir`   | the OS per-user application-data dir | Databases, secrets, models and cached media                                                      |
+| `--port`       | `9030`                               | TCP port (`0` = ephemeral)                                                                       |
+| `--bind`       | `loopback`                           | `loopback`, or `any` for every interface (needs TLS or `--insecure`)                             |
+| `--public-url` | derived from the bind                | The RPC URL advertised to paired clients. **Set this explicitly behind a proxy, NAT, or tunnel** |
+
+The default data dir is `~/Library/Application Support/control-center` on macOS,
+`%APPDATA%\control-center` on Windows and `$XDG_DATA_HOME/control-center` (else
+`~/.local/share/control-center`) elsewhere. A cwd-relative `.cc_server` is only
+used when no home or app-data directory resolves.
+
+## What the server serves
+
+`cc_server` is the whole product surface, not a subset: the repo-RPC data path
+and subscriptions, the MCP tool endpoint at `POST /mcp` and `GET /sse` on the
+same port, inbound webhooks, the media and font proxies, single sign-on
+callbacks, the fleet lease protocol, server-side RSS fetching on a 30-minute
+schedule and vector search (the `sqlite_vector` extension is registered as a
+process-global auto-extension, degrading to full-text search only where the
+extension is unavailable).
+
+The dispatcher is **stateless**: there is no per-session workspace binding.
+Every workspace-scoped call carries its own `workspace_id` and access is decided
+by the caller's workspace membership and role — not by holding a pairing key.
+
+Two things to know before you expose the port beyond loopback:
+
+- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
+- **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
+
+## Related guides
+
+- [Connect to a remote server](/manual/guides/connect-remote-server/)
+- [Pair a device](/manual/guides/pair-a-device/)
+- [Run a fleet worker](/manual/guides/run-fleet-worker/)
+- [Connect a Google Calendar](/manual/guides/connect-calendar/)
+
+## Related concepts
+
+- [Deployment and clients](/manual/concepts/deployment/)
+- [Remote control and mobile](/manual/concepts/remote-control/)

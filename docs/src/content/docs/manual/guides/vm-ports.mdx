@@ -1,0 +1,92 @@
+---
+title: Forward ports from an enclosed terminal
+description: Reach a dev server running inside a Terminal (VM) — from your machine, from the Browser (VM), on your network, or under a dev domain with HTTPS.
+---
+
+A server you start inside a [Terminal (VM)](/manual/guides/use-rigs/#terminals-inside-a-rig)
+listens inside the machine, not on your computer. The ports panel notices it,
+forwards it, and gives you an address for every place you might want to reach
+it from. Nothing here opens the machine up: every path is created by the
+server, on request, and dies with the rig.
+
+## See what is listening
+
+1. Open the conversation's **Terminal (VM)** (in a space or on a PR page).
+2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
+3. Within a few seconds the **plug icon** in the terminal's top-right corner
+   gets a dot. Click it.
+
+The panel lists every listening port with the process that owns it, as
+`3000 → 3000`: the guest port on the left, the port it answers on locally on
+the right (the same number whenever it was free on your machine).
+
+New ports are forwarded automatically. Turn **Auto-forward ports** off in the
+same panel if you want only the ones you add yourself.
+
+## Reach it from this computer
+
+Use **Copy local URL** on the row — `http://localhost:3000`. The forward
+listens on loopback only, so nothing else on your network can see it.
+
+## Reach it from the Browser (VM)
+
+Nothing to configure. The enclosed browser in the **same conversation**
+reaches every forwarded port at `localhost:<port>` — type
+`localhost:3000` into it, or have an agent's `browser_use` navigate there to
+test the page you just started. The two machines are wired together through
+the server; neither can reach the other any other way.
+
+## Share it on your network
+
+**⋯ → Share on local network** publishes the port at
+`<server-ip>:<random port>` — useful for opening the page on your phone, or
+when the server runs on another machine.
+
+- The LAN port is always OS-assigned, never the guest's number, so exposure
+  is a deliberate, visible address rather than a guessable one.
+- It stays private (loopback-only) until you flip it, and **⋯ → Local only**
+  takes it back off the network.
+
+## Give it a name — with HTTPS
+
+**⋯ → Set a browser domain** assigns the port a dev domain such as
+`myapp.test`. Inside the Browser (VM), `https://myapp.test` then loads your
+server with a valid padlock — useful for anything that behaves differently
+on a named origin or a secure context (cookies, service workers, OAuth
+callbacks).
+
+- Domains must end in `.test` or `.localhost` — the two TLDs reserved for
+  development, so a dev name can never shadow a real site.
+- The certificate comes from a local authority minted on your server the
+  first time it is needed. Its keys live under the server's data directory
+  and never enter any guest; the enclosed browser trusts exactly that one
+  key, so TLS to the real internet still validates normally.
+- The domain resolves **inside the Browser (VM) only**. Your own browser on
+  the host uses `localhost:<port>` instead.
+- Plain `http://myapp.test` works too.
+
+## Forward a port by hand
+
+**Add port** at the bottom of the panel forwards a guest port before (or
+whether or not) anything is listening on it. A manual forward keeps its
+address while your server restarts — the row shows *not listening* until it
+comes back — where auto-forwards disappear when their port does.
+
+## How it stays contained
+
+The hypervisor's own port map is fixed when a machine boots, so all of this
+rides two narrow channels the server controls: one pre-created inbound lane
+into the terminal VM that refuses to connect to any port the guest is not
+actually listening on, and reverse tunnels the server holds open for the
+Browser (VM). No listener is ever created inside a guest that the server did
+not put there, and everything is torn down with the rig. The design is
+explained in [Rigs and enclosures](/manual/concepts/rigs/#ports-without-holes);
+the exact reserved ports and domain rules are in the
+[rigs reference](/manual/reference/rigs/#ports-and-dev-domains).
+
+## Related
+
+- [Give an agent a machine to test on](/manual/guides/use-rigs/) — opening,
+  watching and taking over rigs
+- [Rigs reference](/manual/reference/rigs/) — reserved ports, dev TLDs,
+  defaults

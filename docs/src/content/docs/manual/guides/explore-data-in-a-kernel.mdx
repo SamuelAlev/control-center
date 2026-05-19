@@ -1,0 +1,107 @@
+---
+title: Explore data in a persistent kernel
+description: Give an agent a Python or JavaScript interpreter that keeps its variables between calls, draws charts into the chat, and can call your own tools from inside a cell.
+---
+
+This guide shows you how to have an agent load something expensive once and then ask several questions of it, instead of paying the load on every question.
+
+The `eval` tool runs a **persistent interpreter**. Variables, imports and loaded data survive between calls.
+
+## Why not just run a script
+
+A one-shot `python -c` pays the setup on every question. Loading a dataframe costs seconds and a hundred megabytes; charting it costs milliseconds. When every question costs the load, an agent asks fewer questions than it should — and each answer comes back as text it then has to re-parse.
+
+## Load once, then ask
+
+> Load `data/runs.csv` and tell me the p95 duration by agent.
+
+```python
+import pandas as pd
+runs = pd.read_csv("data/runs.csv")
+len(runs)
+```
+
+The last expression is echoed the way a notebook does, so `len(runs)` reports the row count without a `print`.
+
+Then, in a **separate call**:
+
+```python
+runs.groupby("agent")["duration_ms"].quantile(0.95).sort_values()
+```
+
+`runs` is still loaded. A pandas frame comes back rendered as a table rather than as a repr.
+
+## Charts land in the chat
+
+```python
+import matplotlib.pyplot as plt
+runs.groupby("agent")["duration_ms"].mean().plot.bar()
+```
+
+Figures are captured after the cell and returned as images, which the transcript renders. You see the chart; so does the agent.
+
+Figures are closed after capture. An uncollected figure would be redrawn and re-sent by the *next* cell too, so a five-cell session would emit the first chart five times.
+
+:::note[No Jupyter, no pip, no install step]
+The runner is plain `python3 -u` speaking a line protocol on stdio. It implements `display()`, MIME-bundle dispatch and figure capture itself, so it works on any Python 3 — including inside a sandbox where installing is exactly what the sandbox is there to prevent.
+:::
+
+## The idioms you would type anyway
+
+These are rewritten into plain code rather than erroring:
+
+| You type    | What happens                                        |
+| ----------- | --------------------------------------------------- |
+| `%pip install x` | Runs pip, then **clears the module cache** so the next `import` sees it |
+| `%cd path`  | `os.chdir`                                          |
+| `!command`  | A captured subprocess                               |
+| `%%bash`    | The rest of the cell as a shell script              |
+| `%%timeit`  | 1000 timed runs                                     |
+
+The `%pip` cache eviction is the one that matters: installing into a live interpreter does nothing for a module that was already imported, so without it the version you just installed is not the one running.
+
+## Calling your own tools from inside a cell
+
+```python
+paths = tool("search", {"pattern": "TODO", "path": "lib"})
+for path in paths.splitlines()[:100]:
+    contents = tool("read", {"path": path})
+    ...
+```
+
+`tool(name, args)` re-enters the agent's own tool registry. That means a cell can fan out over a hundred files, or delegate through `task`, without the model spending a turn per item.
+
+:::caution[The bridge does not go around your guardrails]
+A bridged call resolves against the **same** tool registry a model-issued call does, so `ActionClass` policy, approval prompts and every wrapper apply identically. A bridge that reached past the registry would be a hole shaped exactly like "write a Python one-liner".
+:::
+
+A bridged call **suspends the cell's timeout** while it is outstanding. The budget measures inactivity, not wall clock — a cell that fans out to subagents and waits four minutes is not hung, and killing it mid-fanout would lose the whole kernel's state.
+
+## Starting over
+
+```
+eval(code: "…", reset: true)
+```
+
+Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.
+
+## Where the kernel runs
+
+In the conversation's **enclosure** when it has one, on the host otherwise.
+
+A persistent interpreter driven by a model reading an untrusted repo is exactly what enclosure-only execution exists for: a one-shot `bash` call at least ends, while a kernel is a shell that remembers.
+
+It does **not** boot an enclosure to get there — the same rule that stops a rig tab auto-starting. If you want the kernel enclosed, open the conversation's shell first. See [Give an agent a machine to test on](/manual/guides/use-rigs/).
+
+## Limits
+
+- **One cell at a time per kernel.** Two cells racing in one interpreter is two halves of two programs interleaved in one namespace.
+- **Output is capped.** A cell in a print loop is truncated rather than allowed to fill the context window.
+- **Four images per cell.** A plotting loop can emit a figure per iteration, and every image is a large fixed cost in the request that carries it.
+- **The kernel dies with the run.** One still holding a dataframe after the conversation ended is a leak.
+
+## Related
+
+- [Sandbox and security](/manual/concepts/sandbox-security/) — what "enclosed" means here
+- [Give an agent a machine to test on](/manual/guides/use-rigs/) — opening the enclosure
+- [Built-in agent tools](/manual/reference/agent-tools/) — the arguments

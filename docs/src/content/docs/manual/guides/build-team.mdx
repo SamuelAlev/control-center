@@ -1,0 +1,69 @@
+---
+title: Build an agent team
+description: Group agents under a leader so assigned work routes through one coordinator.
+---
+
+This guide shows you how to create a team and give it a leader and what you can currently do with one.
+
+A team is a named group of agents inside one workspace, with one agent designated as its **leader**. Assigning a ticket to the team wakes the leader, which breaks the work down and delegates to members; when a member's run finishes the leader is woken again to decide what is next.
+
+:::caution[Nothing in the app dispatches to a team]
+Teams can be created, edited and given a leader entirely from the UI and leader routing works once a ticket carries a team assignment. But the ticket assignee picker offers only "Unassigned", yourself and individual agents — there is no team option — and a team's id is never displayed anywhere in the app. The two paths that do set a team assignment (an agent calling the `assign_ticket` tool with a `team_id`, or a pipeline **Team dispatch** node) both need that id and there is no `list_teams` tool to obtain it. Treat team dispatch as designed but not yet reachable.
+:::
+
+## Create a team
+
+1. Open **Settings → Workspace → Teams** (`/settings/teams`).
+2. Click **Add team**.
+3. Enter a **name** (for example "backend" or "review squad") and an optional **description**, then click **Create**.
+
+The team is created and selected and its editor opens in the right-hand pane.
+
+## Set the leader
+
+This is the step the whole feature depends on. In the team's editor:
+
+1. Under **Leader**, pick an agent. The help text describes it exactly: "The coordinator that receives team-assigned work and delegates to the best-suited member."
+2. Optionally fill in **Operating instructions** — free text handed to the leader with every routed ticket.
+
+Promoting an agent to leader also makes it a member if it was not one already. A team left on **No leader** is inert: nothing is dispatched when work is routed to it and removing the current leader from the members list leaves the team leaderless again.
+
+## Add members
+
+In the same editor, use the members card to add agents from the workspace and to remove them. Members are the roster the leader delegates across.
+
+Teams are workspace-scoped: only agents in this workspace can join.
+
+## Give the team a space
+
+There is no automatic team space. If you want one, create an ordinary space from **Spaces** and add the team's agents to it. A `Team` carries a name, description, leader, instructions and members — no space association.
+
+## Reporting lines are a separate thing
+
+Each agent also has a **Reports to** field, set in **Settings → Workspace → Agents**. That builds the workspace's reporting tree, which you can see with the **Org chart** button on the agents page and it is what a leader consults when it picks a delegate.
+
+It does not drive anything else. Memory access grants are keyed on an agent's role, not on the reporting chain and no analytics surface aggregates by team or hierarchy. Delegation guards cap depth and detect cycles, but they never require the target to be a subordinate.
+
+## What a routed ticket does
+
+When a ticket does carry a team assignment:
+
+1. The team's leader is dispatched with the ticket, its operating instructions and the member roster.
+2. The leader delegates to members and records its evaluation with the `record_team_activity` tool — `action` (delegated), `no_action` (nothing more to do, which stops further re-triggers) or `failed`.
+3. Each member run that completes re-wakes the leader, bounded by the no-action guard.
+
+The pipeline **Team dispatch** node is the other entry point. It takes a team id, a prompt and a dispatch mode:
+
+- `allParallel` — one task per member into a shared hidden conversation, suspending until every run completes, with each member's output collected under the node's output key
+- `manager` — dispatch only the leader, which coordinates in the conversation
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Run agents in parallel](/manual/guides/parallel-agents/)
+- [Delegate work to agents](/manual/guides/delegate-tickets/)
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/)
+- [Tickets and delegation](/manual/concepts/tickets/)

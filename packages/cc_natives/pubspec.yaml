@@ -1,0 +1,58 @@
+name: cc_natives
+description: >-
+  Dart FFI surface for Control Center's runtime-loaded native libraries — rift
+  (copy-on-write git worktrees), fff (fast file search), tree-sitter (code
+  indexing) and aec (acoustic echo cancellation). This package owns ONLY the
+  Dart bindings, loaders and path resolution; it builds NO native code. The
+  dylibs themselves are produced by scripts/natives/*.sh, bundled into the
+  host binary as DynamicLoadingBundled code assets (apps/cc_server/hook) and
+  loaded at runtime via dart:ffi DynamicLibrary.open. A missing native is a
+  hard failure, not a degraded mode.
+#
+# Intentionally NOT a Flutter plugin / ffiPlugin. Converting it to one would
+# move native compilation into `flutter build` (no continue-on-error there),
+# make cargo/meson/ninja/C++ mandatory for every contributor, collapse
+# tree-sitter to a single build-time dylib (killing runtime grammar download),
+# and destroy the install-to-app-support dev loop. Keep it a plain Dart leaf.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+# Pure Dart — NO `flutter` dependency. The package is dart:ffi bindings +
+# runtime DynamicLibrary loaders only, so it links cleanly into the Flutter-free
+# `dart build cli` server binary alongside cc_infra. `@immutable` comes from
+# package:meta (not flutter/foundation). The purity rail
+# (test/core/package_purity_test.dart) asserts this never regresses.
+dependencies:
+  ffi: ^2.2.0
+  path: ^1.9.1
+  crypto: ^3.0.7
+  dio: ^5.11.0
+  meta: any
+  # Pure-Dart shared contracts. The relocated on-device-inference impls
+  # (TextEmbedder / SherpaOnnxTranscriber / VAD / diarization) implement
+  # cc_domain ports and name its value objects (EmbeddingModelPaths /
+  # VoiceModelPaths / Span / DiarizationResult). cc_domain is itself a
+  # Flutter-free pure-Dart leaf, so this does NOT contaminate the Flutter-free
+  # server binary — the purity rail (test/core/package_purity_test.dart) allows
+  # exactly cc_domain here, nothing else.
+  cc_domain:
+    path: ../cc_domain
+  # On-device inference has NO pub dependency: speech (sherpa-onnx) and text
+  # embeddings (ONNX Runtime) both go through the in-repo Rust crate
+  # `native/inference/`, which statically links sherpa-onnx together with ONE
+  # ONNX Runtime and exposes a narrow C ABI (`cc_inference.h`) that
+  # `src/inference/cc_inference_bindings.dart` binds over dart:ffi.
+  #
+  # WordPiece tokenizer for the BERT-style sentence-transformer embedder.
+  # Tokenization and pooling stay on the Dart side deliberately: the native owns
+  # the model graph, not the arithmetic around it.
+  dart_wordpiece: ^1.2.0
+
+dev_dependencies:
+  test: any
+  lints: any

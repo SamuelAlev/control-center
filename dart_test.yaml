@@ -1,0 +1,25 @@
+# Default test configuration for the ROOT app suite.
+#
+# `test/flutter_test_config.dart` has always documented "always run with
+# `--timeout 30s`", but nothing encoded it: CI ran a plain
+# `flutter test --concurrency=2` and there was no `dart_test.yaml` anywhere in
+# the workspace. A hung test therefore burned the whole 20-minute job timeout
+# and reported as a job failure with no failing test name — the least
+# actionable shape a CI failure can take.
+#
+# 30s is deliberately generous for a widget test and still an order of
+# magnitude below the job budget. A test that genuinely needs longer says so
+# locally with `@Timeout(...)`, which is a visible, reviewable claim rather
+# than a silent one.
+timeout: 30s
+
+# Concurrency is NOT set here: each `flutter_tester` loads the whole app plus a
+# frontend_server, so the cap belongs on the command line where the runner (and
+# the machine) is known — see the `--concurrency` rule in AGENTS.md and the
+# PreToolUse hook that enforces it.
+
+# Declared so `@Tags(['integration'])` suites do not warn on every run. They
+# are NOT excluded by default — an integration test that never runs is a
+# comment. Select or skip them explicitly with `--tags` / `--exclude-tags`.
+tags:
+  integration:

@@ -1,0 +1,148 @@
+---
+title: Use spaces
+description: Create spaces, set their mode, manage participants and autonomy and open conversations and threads.
+---
+
+This guide shows you how to use spaces. A **space** is the messaging surface in
+Control Center: a workspace-scoped room with one or more participants (you and/or
+agents), owning a copy-on-write worktree per repo it was created for.
+
+One-on-one and many-agent rooms are both just spaces, distinguished only by how
+many participants they have. The one exception is spaces agents open to talk to
+each other — see [Agent-to-agent spaces](#agent-to-agent-spaces) below.
+
+## Create a space
+
+1. Navigate to **Spaces**
+2. Click the **+** button beside the Spaces heading
+3. Give it a **name** — required. An empty name cancels the dialog silently
+4. Add one or more agents from the workspace
+5. When the workspace has several repos, pick which ones this space provisions
+   worktrees for. All are selected by default
+6. Confirm
+
+Spaces are workspace-scoped: you only see agents from the current workspace and
+a space never surfaces data from another workspace.
+
+Each repo is checked out at `repos/<name>/` inside the space. A repo that ships
+its own agent skills contributes them to whichever agent is working in it — one
+repo's set at a time, swapping as the agent moves. From the composer you can
+reach any of them with `/skill:<repo>:<name>`. See
+[Repo-scoped skills](/manual/concepts/agent-model/#repo-scoped-skills).
+
+The surface lives at `/workspaces/<id>/spaces`, and a single space at
+`/workspaces/<id>/spaces/<spaceId>`.
+
+## Set the space's mode
+
+A new space starts in the default mode. Change it from the **mode dropdown** on
+the far left of the composer toolbar — not from the create dialog (which has no
+mode field) and not from the space header.
+
+| Mode            | Effect                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| **Agent**       | Full access. The default; `chat` internally, labelled "Agent" in the dropdown                         |
+| **Plan**        | Read and research only; the deliverable is a typed plan                                               |
+| **Orchestrate** | Read and research plus a single `propose_orchestration` verb; the plan runs only after you approve it |
+
+Shift+Tab toggles between plan and agent mode without opening the dropdown.
+
+A fourth mode, **review**, exists but is not offered in the dropdown — it is
+applied automatically to PR review spaces.
+
+The mode is stored on the space, so the same agent can be in plan mode in one
+space and agent mode in another. Every conversation inside a space shares that
+space's mode.
+
+:::caution[Watch for the enforcement badge]
+A badge appears beside the mode dropdown when the space's agents run on an
+adapter that cannot enforce the mode you picked. Only the built-in Control Center
+harness filters the tool surface and gates every call; external CLI and ACP
+adapters receive the mode as a request their runner may or may not honour. No badge
+means "no claim is being made", not "verified safe".
+:::
+
+See [Modes](/manual/concepts/modes/) for the full model.
+
+## Manage participants and per-agent autonomy
+
+Click the people icon in the space header to open **Manage participants**. For
+each agent already in the space you can:
+
+- Remove it from the space
+- Set its **Autonomy** for this space: **Default**, **Propose only**, **Act with
+  approval** or **Act freely**
+
+The autonomy dial is per (space, agent), so an agent you trust in one room can be
+held to propose-only in another.
+
+## React to a message
+
+Hover a message and click the smile icon to open the reaction palette. It is a
+fixed set of six: 👍 👎 🎉 ❤️ 👀 ✅. There is no free emoji picker — tapping one
+toggles it for you and the aggregated chips appear below the message.
+
+## Open a conversation
+
+A space hosts several conversations at once and they are flat equals — there is
+no primary one. The **conversation strip** above the composer lists them and its
+**New conversation** button opens another, asking for a title (hint: "e.g. quick
+fix"). Use one to run parallel work with the same agent and worktree, then close
+it and return.
+
+Each conversation keeps its own message history and agent sessions while sharing
+the space's worktrees and its mode. Every chip on the strip carries a close
+affordance, which archives only that conversation.
+
+A space with no conversations left shows an empty state offering the same **New
+conversation** action.
+
+## Start a thread
+
+Hover any message and choose **Start thread**. That opens a conversation
+anchored to that message: the anchor seeds the new conversation's agent context
+with one line and the parent's history is **not** copied.
+
+Once a thread has replies, the message it hangs off grows a row underneath it —
+the faces of who has spoken, the reply count and when the last reply landed.
+That row is the way back in: clicking it opens (or focuses) the thread's tab. It
+is the only trace a thread leaves in the stream it branched from, which is why
+it is there at all.
+
+A thread's tab is titled `Thread: <name>` and carries the branch glyph, so two
+tabs on the same space are never mistaken for each other.
+
+Threads never nest — anchoring to a message that already sits inside a thread is
+refused. The conversation header links back to the anchor message. Deleting the
+anchor message deletes the thread, and archiving the parent conversation does not
+block its existing threads.
+
+## Read state
+
+Read marks are scoped to the space, not the conversation: unread aggregates
+across all of a space's conversations, so there is no per-conversation badge.
+Unread dots and notifications treat every conversation equally, threads included.
+
+## Agent-to-agent spaces
+
+Spaces that agents open to talk to each other are sectioned separately in the
+sidebar under **Agents**, collapsed by default and rendered muted. They never bump
+your unread badge and never fire an OS notification — agent chatter is quiet by
+construction, not by a setting you have to find.
+
+A space's kind is one of five values: `topic` (the default for anything you
+create), `agentPeer`, `system` (pipeline-managed), `pr` (created when a PR
+surface needs a worktree anchor and hidden from the sidebar until it has
+messages) and `slack` (created by the chat bridge for a Slack thread or bot DM,
+and treated as an ordinary human conversation).
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [@-mention agents](/manual/guides/mention-agents/)
+- [Use plan mode](/manual/guides/plan-mode/)
+
+## Related concepts
+
+- [Modes](/manual/concepts/modes/)
+- [Chat bridges](/manual/concepts/chat-bridges/): how a Slack thread becomes a space

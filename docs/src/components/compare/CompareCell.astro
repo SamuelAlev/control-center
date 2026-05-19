@@ -1,0 +1,46 @@
+---
+/**
+ * One capability cell of a comparison table, shared by the hub matrix and the
+ * per-tool head-to-head so a cell can never mean two things.
+ *
+ * A cell is a glyph, and a glyph is not text: ✓ ≈ — carry nothing for a screen
+ * reader, and an `aria-label` on a bare <span> is discarded (role=generic
+ * prohibits naming), which is how this table shipped announcing nothing at all.
+ * So every cell renders visually-hidden text alongside the glyph — the one
+ * labelling technique no assistive tech gets wrong.
+ *
+ * A `partial` cell additionally gets the reason: visually as a tooltip on
+ * hover AND focus (`data-tip`, drawn by CompareTooltip), and in the same
+ * breath for assistive tech via that same hidden text. Sighted-mouse and
+ * screen-reader users read the identical sentence.
+ */
+import { cellLabel, type CompareTool } from '../../data/compare';
+
+interface Props {
+  tool: CompareTool;
+  columnId: string;
+}
+
+const { tool, columnId } = Astro.props;
+
+const value = tool.cells[columnId];
+const label = cellLabel(tool, columnId);
+const note = value === 'partial' ? tool.notes?.[columnId] : undefined;
+
+const glyph = { yes: '✓', partial: '≈', no: '—' } as const;
+const tone = value === 'yes' ? 'text-accent-strong' : value === 'partial' ? 'text-muted' : 'text-idle';
+---
+
+{
+  note ? (
+    <span class="cell-tip" tabindex="0" data-tip={note}>
+      <span class:list={['font-mono text-[14px]', tone]} aria-hidden="true">{glyph[value]}</span>
+      <span class="sr-only">{label}</span>
+    </span>
+  ) : (
+    <span>
+      <span class:list={['font-mono text-[14px]', tone]} aria-hidden="true">{glyph[value]}</span>
+      <span class="sr-only">{label}</span>
+    </span>
+  )
+}

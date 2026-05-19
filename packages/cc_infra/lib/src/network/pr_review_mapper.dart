@@ -1,0 +1,666 @@
+import 'package:cc_domain/core/domain/entities/github_user.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_stack.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
+import 'package:cc_infra/src/network/models/github_check_run.dart';
+import 'package:cc_infra/src/network/models/github_commit.dart';
+import 'package:cc_infra/src/network/models/github_commit_status.dart';
+import 'package:cc_infra/src/network/models/github_issue_comment.dart';
+import 'package:cc_infra/src/network/models/github_job_run.dart';
+import 'package:cc_infra/src/network/models/github_pr_review_state.dart';
+import 'package:cc_infra/src/network/models/github_pr_stack.dart';
+import 'package:cc_infra/src/network/models/github_pull_request.dart';
+import 'package:cc_infra/src/network/models/github_pull_request_file.dart';
+import 'package:cc_infra/src/network/models/github_reaction.dart';
+import 'package:cc_infra/src/network/models/github_review.dart';
+import 'package:cc_infra/src/network/models/github_review_comment.dart';
+import 'package:cc_infra/src/network/models/github_timeline_event.dart';
+
+PrUser _toPrUser(GitHubUser? u) {
+  if (u == null) {
+    return const PrUser(login: '', avatarUrl: '');
+  }
+
+  return PrUser(login: u.login, avatarUrl: u.avatarUrl, name: u.name);
+}
+
+/// Converts a [GitHubReactionSummary] to a list of [ReactionGroup]s.
+List<ReactionGroup> reactionGroupsFromSummary(GitHubReactionSummary? s) {
+  if (s == null || s.totalCount == 0) {
+    return const [];
+  }
+  return [
+    for (final r in ReactionGroup.supportedReactions)
+      if ((r.content == '+1' && s.plusOne > 0) ||
+          (r.content == '-1' && s.minusOne > 0) ||
+          (r.content == 'laugh' && s.laugh > 0) ||
+          (r.content == 'hooray' && s.hooray > 0) ||
+          (r.content == 'confused' && s.confused > 0) ||
+          (r.content == 'heart' && s.heart > 0) ||
+          (r.content == 'rocket' && s.rocket > 0) ||
+          (r.content == 'eyes' && s.eyes > 0))
+        ReactionGroup(
+          content: r.content,
+          emoji: r.emoji,
+          count: switch (r.content) {
+            '+1' => s.plusOne,
+            '-1' => s.minusOne,
+            'laugh' => s.laugh,
+            'hooray' => s.hooray,
+            'confused' => s.confused,
+            'heart' => s.heart,
+            'rocket' => s.rocket,
+            'eyes' => s.eyes,
+            _ => 0,
+          },
+          userReacted: false,
+        ),
+  ];
+}
+
+/// Builds [ReactionGroup]s from individual `(content, login)` reactions — the
+/// shape the per-user reaction listings answer with, where there is no summary
+/// to read counts off (GraphQL review reactions; any future per-user lane).
+///
+/// `usernames` carries the full reactor list so the enrichment layer can mark
+/// the viewer without a second round trip; `userReacted` starts false because
+/// the viewer is not this layer's to know.
+List<ReactionGroup> reactionGroupsFromPerUser(
+  Iterable<ForgeReaction> reactions,
+) {
+  final byContent = <String, List<String>>{};
+  for (final r in reactions) {
+    if (r.login.isEmpty) {
+      continue;
+    }
+    (byContent[r.content] ??= []).add(r.login);
+  }
+  if (byContent.isEmpty) {
+    return const [];
+  }
+  return [
+    for (final s in ReactionGroup.supportedReactions)
+      if (byContent[s.content] != null)
+        ReactionGroup(
+          content: s.content,
+          emoji: s.emoji,
+          count: byContent[s.content]!.length,
+          userReacted: false,
+          usernames: byContent[s.content]!,
+        ),
+  ];
+}
+
+/// Pull request stack from GitHub's stacks REST API shape.
+PrStack prStackFromGitHub(GitHubPrStack gh) => PrStack(
+  id: gh.id,
+  number: gh.number,
+  externalId: gh.externalId,
+  url: gh.url,
+  baseRef: gh.baseRef,
+  open: gh.open,
+  createdAt: gh.createdAt,
+  pullRequests: [
+    for (final e in gh.pullRequests)
+      PrStackEntry(
+        number: e.number,
+        state: PrStackEntryState.fromString(e.state),
+        isDraft: e.draft,
+        headRef: e.headRef,
+        headSha: e.headSha,
+        mergedAt: e.mergedAt,
+      ),
+  ],
+);
+
+/// Pull request from git hub.
+PullRequest pullRequestFromGitHub(
+  GitHubPullRequest gh, {
+  required String repoFullName,
+  bool reviewedByMe = false,
+}) {
+  return PullRequest(
+    id: gh.number,
+    number: gh.number,
+    title: gh.title,
+    body: gh.body,
+    // GitHub's REST API only ever returns `open`/`closed` in `state`; a merged
+    // PR comes back as `closed` with `merged_at` set. Promote it to `merged` so
+    // `isMerged`/`isOpen` (and everything gated on them) are correct.
+    state: gh.mergedAt != null
+        ? PrState.merged
+        : PrStateExtension.fromString(gh.state),
+    isDraft: gh.isDraft,
+    author: _toPrUser(gh.author),
+    createdAt: gh.createdAt,
+    updatedAt: gh.updatedAt,
+    repoFullName: repoFullName,
+    htmlUrl: gh.htmlUrl,
+    externalId: gh.externalId,
+    headSha: gh.headSha,
+    baseRef: gh.baseRef,
+    baseSha: gh.baseSha,
+    headRef: gh.headRef,
+    requestedReviewers: gh.requestedReviewers
+        .map(_toPrUser)
+        .toList(growable: false),
+    assignees: gh.assignees.map(_toPrUser).toList(growable: false),
+    mergedAt: gh.mergedAt,
+    reviewedByMe: reviewedByMe,
+    reactions: reactionGroupsFromSummary(gh.reactions),
+    bodyHtml: gh.bodyHtml,
+    changedFiles: gh.changedFiles,
+    commitsCount: gh.commitsCount,
+    mergeableState: PrMergeableState.fromString(gh.mergeableState),
+  );
+}
+
+/// Maps GitHub's GraphQL `StatusState` rollup string to [PrChecksStatus].
+///
+/// `SUCCESS` → passing, `FAILURE`/`ERROR` → failing, `PENDING`/`EXPECTED`
+/// → pending, anything else (including null) → none.
+PrChecksStatus prChecksStatusFromRollup(String? state) {
+  switch (state) {
+    case 'SUCCESS':
+      return PrChecksStatus.passing;
+    case 'FAILURE':
+    case 'ERROR':
+      return PrChecksStatus.failing;
+    case 'PENDING':
+    case 'EXPECTED':
+      return PrChecksStatus.pending;
+    default:
+      return PrChecksStatus.none;
+  }
+}
+
+PrUser _prUserFromGraphQl(Map<String, dynamic>? u) {
+  if (u == null) {
+    return const PrUser(login: '', avatarUrl: '');
+  }
+  return PrUser(
+    login: u['login'] as String? ?? '',
+    avatarUrl: u['avatarUrl'] as String? ?? '',
+  );
+}
+
+/// Builds a [PullRequest] from a single GraphQL `PullRequest` node returned by
+/// `GitHubGraphQLClient.fetchOpenPullRequestsBatch`.
+///
+/// Carries the list fields plus the metrics (diff size, comment count, check
+/// rollup, merge state) and requested reviewers, so the decision-lane
+/// classification has every signal it reads — no follow-up REST calls. `body`/
+/// `bodyHtml` and reactions are intentionally empty (the list doesn't show
+/// them; the detail view fetches the full PR).
+///
+/// `reviewed-by-me` is derived from `latestReviews` against `viewerLogin`: the
+/// PR counts as reviewed when the viewer authored any of its latest reviews.
+PullRequest pullRequestFromGraphQlNode(
+  Map<String, dynamic> node, {
+  required String repoFullName,
+  String? viewerLogin,
+}) {
+  final number = (node['number'] as num?)?.toInt() ?? 0;
+  final comments = node['comments'] as Map<String, dynamic>?;
+  final commitsTotal = node['commitsTotal'] as Map<String, dynamic>?;
+  final lastCommit = node['lastCommit'] as Map<String, dynamic>?;
+  final lastCommitNodes = lastCommit?['nodes'] as List?;
+  final firstCommit = (lastCommitNodes != null && lastCommitNodes.isNotEmpty)
+      ? lastCommitNodes.first as Map<String, dynamic>?
+      : null;
+  final commit = firstCommit?['commit'] as Map<String, dynamic>?;
+  final rollup = commit?['statusCheckRollup'] as Map<String, dynamic>?;
+
+  final requestedReviewers = <PrUser>[];
+  final requestedTeamSlugs = <String>[];
+  final reviewRequests = node['reviewRequests'] as Map<String, dynamic>?;
+  final reviewRequestNodes = reviewRequests?['nodes'] as List?;
+  if (reviewRequestNodes != null) {
+    for (final rr in reviewRequestNodes.whereType<Map<String, dynamic>>()) {
+      final reviewer = rr['requestedReviewer'] as Map<String, dynamic>?;
+      if (reviewer == null) {
+        continue;
+      }
+      final login = reviewer['login'] as String?;
+      if (login != null && login.isNotEmpty) {
+        requestedReviewers.add(
+          PrUser(
+            login: login,
+            avatarUrl: reviewer['avatarUrl'] as String? ?? '',
+          ),
+        );
+        continue;
+      }
+      final slug = reviewer['slug'] as String?;
+      if (slug != null && slug.isNotEmpty) {
+        requestedTeamSlugs.add(slug);
+      }
+    }
+  }
+
+  return PullRequest(
+    id: number,
+    number: number,
+    title: node['title'] as String? ?? '',
+    body: '',
+    state: PrState.open,
+    isDraft: node['isDraft'] as bool? ?? false,
+    author: _prUserFromGraphQl(node['author'] as Map<String, dynamic>?),
+    createdAt: DateTime.tryParse(node['createdAt'] as String? ?? ''),
+    updatedAt: DateTime.tryParse(node['updatedAt'] as String? ?? ''),
+    repoFullName: repoFullName,
+    htmlUrl: node['url'] as String? ?? '',
+    externalId: node['id'] as String? ?? '',
+    headSha: node['headRefOid'] as String? ?? '',
+    baseRef: node['baseRefName'] as String? ?? '',
+    headRef: node['headRefName'] as String? ?? '',
+    requestedReviewers: requestedReviewers,
+    requestedTeamSlugs: requestedTeamSlugs,
+    mergedAt: DateTime.tryParse(node['mergedAt'] as String? ?? ''),
+    reviewedByMe: _graphQlNodeReviewedByViewer(node, viewerLogin),
+    changedFiles: (node['changedFiles'] as num?)?.toInt() ?? 0,
+    commitsCount: (commitsTotal?['totalCount'] as num?)?.toInt() ?? 0,
+    additions: (node['additions'] as num?)?.toInt() ?? 0,
+    deletions: (node['deletions'] as num?)?.toInt() ?? 0,
+    commentsCount: (comments?['totalCount'] as num?)?.toInt() ?? 0,
+    checksStatus: prChecksStatusFromRollup(rollup?['state'] as String?),
+    mergeableState: PrMergeableState.fromString(
+      (node['mergeStateStatus'] as String?)?.toLowerCase(),
+    ),
+    reviewDecision: PrReviewDecision.fromString(
+      node['reviewDecision'] as String?,
+    ),
+  );
+}
+
+bool _graphQlNodeReviewedByViewer(
+  Map<String, dynamic> node,
+  String? viewerLogin,
+) {
+  if (viewerLogin == null || viewerLogin.isEmpty) {
+    return false;
+  }
+  final me = viewerLogin.toLowerCase();
+  final latestReviews = node['latestReviews'] as Map<String, dynamic>?;
+  final reviewNodes = latestReviews?['nodes'] as List?;
+  if (reviewNodes == null) {
+    return false;
+  }
+  for (final r in reviewNodes.whereType<Map<String, dynamic>>()) {
+    final author = r['author'] as Map<String, dynamic>?;
+    final login = author?['login'] as String?;
+    if (login != null && login.toLowerCase() == me) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/// Maps one node from the dashboard's review-requested GraphQL `search` into a
+/// [PullRequest] plus the `owner/name` it belongs to (for grouping under the
+/// workspace's `Repo` set). Returns null for a node that isn't a usable PR
+/// (a non-PR search hit comes back as an empty map and `repository` is absent).
+///
+/// The priority-reviews panel renders only title/number/branch/age/diff/
+/// comments, so the fields the lean search query deliberately omits (author,
+/// reviewers, checks, sha, base ref, …) keep their [PullRequest] defaults. The
+/// server-side `review-requested:<login>` filter already guarantees membership,
+/// so `requestedReviewers` need not be recovered here.
+({PullRequest pr, String repoFullName})? priorityReviewFromSearchNode(
+  Map<String, dynamic> node,
+) {
+  final number = (node['number'] as num?)?.toInt() ?? 0;
+  final title = node['title'] as String? ?? '';
+  final repository = node['repository'] as Map<String, dynamic>?;
+  final repoFullName = repository?['nameWithOwner'] as String? ?? '';
+  if (number <= 0 || title.isEmpty || repoFullName.isEmpty) {
+    return null;
+  }
+  final comments = node['comments'] as Map<String, dynamic>?;
+  final pr = PullRequest(
+    id: number,
+    number: number,
+    title: title,
+    body: '',
+    state: PrState.open,
+    isDraft: node['isDraft'] as bool? ?? false,
+    author: null,
+    createdAt: DateTime.tryParse(node['createdAt'] as String? ?? ''),
+    updatedAt: DateTime.tryParse(node['updatedAt'] as String? ?? ''),
+    repoFullName: repoFullName,
+    htmlUrl: node['url'] as String? ?? '',
+    headRef: node['headRefName'] as String? ?? '',
+    additions: (node['additions'] as num?)?.toInt() ?? 0,
+    deletions: (node['deletions'] as num?)?.toInt() ?? 0,
+    commentsCount: (comments?['totalCount'] as num?)?.toInt() ?? 0,
+  );
+  return (pr: pr, repoFullName: repoFullName);
+}
+
+/// Maps a GraphQL `PullRequestReviewState` string to [PrReviewSubmissionState].
+///
+/// `DISMISSED` and `PENDING` both map to `pending`: a dismissed review no
+/// longer satisfies the request, so for the rail it reads as "still awaited".
+PrReviewSubmissionState prReviewerStateFromGraphQl(String state) {
+  switch (state) {
+    case 'APPROVED':
+      return PrReviewSubmissionState.approved;
+    case 'CHANGES_REQUESTED':
+      return PrReviewSubmissionState.changesRequested;
+    case 'COMMENTED':
+      return PrReviewSubmissionState.commented;
+    default:
+      return PrReviewSubmissionState.pending;
+  }
+}
+
+/// The set of reviewer identities (`user:<login>` / `team:<slug>`) that GitHub
+/// currently flags as code owners (pending requests only — the flag is dropped
+/// once the request is satisfied). Persisted by the repository so the shield
+/// survives the pending→reviewed transition without parsing CODEOWNERS.
+Set<String> codeOwnerIdentitiesFromReviewState(GitHubPrReviewState raw) {
+  final ids = <String>{};
+  for (final u in raw.pendingUsers) {
+    if (u.asCodeOwner && u.login.isNotEmpty) {
+      ids.add('user:${u.login.toLowerCase()}');
+    }
+  }
+  for (final t in raw.pendingTeams) {
+    if (t.asCodeOwner && t.slug.isNotEmpty) {
+      ids.add('team:${t.slug.toLowerCase()}');
+    }
+  }
+  return ids;
+}
+
+/// Resolves the raw GraphQL review state into the enriched reviewer rows.
+///
+/// - Pending user/team requests become `pending` rows; `isCodeOwner` is the
+///   GraphQL `asCodeOwner` flag OR-ed with membership in `knownCodeOwnerIds`.
+/// - A completed review with `onBehalfOf` merges into the team's row, carrying
+///   the member who reviewed and the team's review verdict.
+/// - A completed review without `onBehalfOf` is an individual review and
+///   overrides any pending row for that user (completed state wins).
+/// Users dedupe by login, teams by slug. Users render before teams.
+List<PrReviewer> prReviewersFromReviewState(
+  GitHubPrReviewState raw, {
+  Set<String> knownCodeOwnerIds = const {},
+}) {
+  final users = <String, PrUserReviewer>{};
+  final teams = <String, PrTeamReviewer>{};
+
+  for (final u in raw.pendingUsers) {
+    if (u.login.isEmpty) {
+      continue;
+    }
+    final key = u.login.toLowerCase();
+    users[key] = PrUserReviewer(
+      user: PrUser(login: u.login, avatarUrl: u.avatarUrl),
+      isCodeOwner: u.asCodeOwner || knownCodeOwnerIds.contains('user:$key'),
+      state: PrReviewSubmissionState.pending,
+    );
+  }
+
+  for (final t in raw.pendingTeams) {
+    if (t.slug.isEmpty) {
+      continue;
+    }
+    final key = t.slug.toLowerCase();
+    teams[key] = PrTeamReviewer(
+      name: t.name,
+      slug: t.slug,
+      avatarUrl: t.avatarUrl,
+      isCodeOwner: t.asCodeOwner || knownCodeOwnerIds.contains('team:$key'),
+      state: PrReviewSubmissionState.pending,
+    );
+  }
+
+  for (final r in raw.completedReviews) {
+    final state = prReviewerStateFromGraphQl(r.state);
+    final author = PrUser(login: r.authorLogin, avatarUrl: r.authorAvatarUrl);
+    if (r.onBehalfOf.isEmpty) {
+      final key = r.authorLogin.toLowerCase();
+      final existing = users[key];
+      users[key] = PrUserReviewer(
+        user: author,
+        isCodeOwner:
+            (existing?.isCodeOwner ?? false) ||
+            knownCodeOwnerIds.contains('user:$key'),
+        state: state,
+      );
+    } else {
+      for (final team in r.onBehalfOf) {
+        final key = team.slug.toLowerCase();
+        final existing = teams[key];
+        teams[key] = PrTeamReviewer(
+          name: (existing?.name.isNotEmpty ?? false)
+              ? existing!.name
+              : team.name,
+          slug: team.slug,
+          avatarUrl: (existing?.avatarUrl.isNotEmpty ?? false)
+              ? existing!.avatarUrl
+              : team.avatarUrl,
+          isCodeOwner:
+              (existing?.isCodeOwner ?? false) ||
+              knownCodeOwnerIds.contains('team:$key'),
+          state: state,
+          reviewedBy: author,
+        );
+      }
+    }
+  }
+
+  return <PrReviewer>[...users.values, ...teams.values];
+}
+
+/// Pr file from git hub.
+PrFile prFileFromGitHub(GitHubPullRequestFile f) {
+  return PrFile(
+    filename: f.filename,
+    status: PrFileStatusExtension.fromString(f.status),
+    additions: f.additions,
+    deletions: f.deletions,
+    patch: f.patch,
+    previousFilename: f.previousFilename,
+  );
+}
+
+/// Pr commit from git hub.
+PrCommit prCommitFromGitHub(GitHubCommit c) {
+  return PrCommit(
+    sha: c.sha,
+    message: c.message,
+    author: _toPrUser(c.author),
+    date: c.committedAt,
+  );
+}
+
+/// Pr code review comment from git hub.
+PrCodeReviewComment prCodeReviewCommentFromGitHub(GitHubReviewComment c) {
+  return PrCodeReviewComment(
+    id: c.id,
+    body: c.body,
+    user: _toPrUser(c.user),
+    path: c.path,
+    position: c.line ?? c.originalLine,
+    createdAt: c.createdAt,
+    side: c.side,
+    inReplyToId: c.inReplyToId,
+    startLine: c.startLine,
+    diffHunk: c.diffHunk,
+    line: c.line,
+    originalLine: c.originalLine,
+    reactions: reactionGroupsFromSummary(c.reactions),
+    reviewId: c.pullRequestReviewId,
+  );
+}
+
+/// Check run from git hub.
+CheckRun checkRunFromGitHub(GitHubCheckRun c) {
+  return CheckRun(
+    name: c.name,
+    status: _checkRunStatusFromGitHub(c.status),
+    conclusion: _checkRunConclusionFromGitHub(c.conclusion),
+    htmlUrl: c.htmlUrl,
+    startedAt: c.startedAt,
+    completedAt: c.completedAt,
+    output: c.output,
+    checkSuiteId: c.checkSuiteId,
+  );
+}
+
+/// Job run detail from git hub.
+JobRunDetail jobRunDetailFromGitHub(
+  GitHubJobRun j, {
+  String? logs,
+  bool logsTruncated = false,
+}) {
+  return JobRunDetail(
+    jobId: j.id,
+    status: CheckRunStatusExtension.fromString(j.status),
+    conclusion: j.conclusion == null
+        ? null
+        : CheckRunConclusionExtension.fromString(j.conclusion!),
+    htmlUrl: j.htmlUrl,
+    steps: j.steps
+        .map(
+          (s) => JobRunStep(
+            number: s.number,
+            name: s.name,
+            status: CheckRunStatusExtension.fromString(s.status),
+            conclusion: s.conclusion == null
+                ? null
+                : CheckRunConclusionExtension.fromString(s.conclusion!),
+            startedAt: s.startedAt,
+            completedAt: s.completedAt,
+          ),
+        )
+        .toList(growable: false),
+    logs: logs,
+    logsTruncated: logsTruncated,
+  );
+}
+
+/// Commit status from GitHub.
+CommitStatus commitStatusFromGitHub(GitHubCommitStatus s) => CommitStatus(
+  context: s.context,
+  state: CommitStatusStateExtension.fromString(s.state),
+  targetUrl: s.targetUrl,
+  description: s.description,
+  updatedAt: s.updatedAt,
+);
+
+PrReviewSubmissionState _reviewStateFromGitHub(GitHubReviewState s) {
+  switch (s) {
+    case GitHubReviewState.approved:
+      return PrReviewSubmissionState.approved;
+    case GitHubReviewState.changesRequested:
+      return PrReviewSubmissionState.changesRequested;
+    case GitHubReviewState.commented:
+      return PrReviewSubmissionState.commented;
+    case GitHubReviewState.dismissed:
+    case GitHubReviewState.pending:
+    case GitHubReviewState.unknown:
+      return PrReviewSubmissionState.commented;
+  }
+}
+
+/// Pr review submission from git hub.
+///
+/// [reactions] is the GraphQL join the REST payload cannot carry — passed in
+/// by the adapter, empty when the side query failed (best-effort, like thread
+/// state).
+PrReviewSubmission prReviewSubmissionFromGitHub(
+  GitHubReview r, {
+  List<ReactionGroup> reactions = const [],
+}) {
+  return PrReviewSubmission(
+    id: r.id,
+    state: _reviewStateFromGitHub(r.state),
+    author: _toPrUser(r.user),
+    body: r.body,
+    submittedAt: r.submittedAt,
+    reactions: reactions,
+  );
+}
+
+/// Pr timeline event from git hub. Returns null for event kinds the activity
+/// feed does not consume.
+PrTimelineEvent? prTimelineEventFromGitHub(GitHubTimelineEvent e) {
+  final kind = switch (e.event) {
+    'review_requested' => PrTimelineEventKind.reviewRequested,
+    'review_request_removed' => PrTimelineEventKind.reviewRequestRemoved,
+    _ => null,
+  };
+  if (kind == null) {
+    return null;
+  }
+  final reviewer = e.requestedReviewer;
+  return PrTimelineEvent(
+    kind: kind,
+    actor: e.actor == null ? null : _toPrUser(e.actor),
+    reviewerName: reviewer != null ? reviewer.login : e.requestedTeamName,
+    reviewerIsTeam: reviewer == null && e.requestedTeamName.isNotEmpty,
+    reviewerAvatarUrl: reviewer?.avatarUrl ?? e.requestedTeamAvatarUrl,
+    createdAt: e.createdAt,
+  );
+}
+
+/// Issue comment from git hub.
+IssueComment issueCommentFromGitHub(GitHubIssueComment c) {
+  return IssueComment(
+    id: c.id,
+    body: c.body,
+    user: _toPrUser(c.user),
+    createdAt: c.createdAt,
+    reactions: reactionGroupsFromSummary(c.reactions),
+  );
+}
+
+CheckRunStatus _checkRunStatusFromGitHub(GitHubCheckStatus s) {
+  switch (s) {
+    case GitHubCheckStatus.queued:
+      return CheckRunStatus.queued;
+    case GitHubCheckStatus.inProgress:
+      return CheckRunStatus.inProgress;
+    case GitHubCheckStatus.completed:
+      return CheckRunStatus.completed;
+    case GitHubCheckStatus.unknown:
+      return CheckRunStatus.queued;
+  }
+}
+
+CheckRunConclusion? _checkRunConclusionFromGitHub(GitHubCheckConclusion c) {
+  switch (c) {
+    case GitHubCheckConclusion.success:
+      return CheckRunConclusion.success;
+    case GitHubCheckConclusion.failure:
+      return CheckRunConclusion.failure;
+    case GitHubCheckConclusion.neutral:
+      return CheckRunConclusion.neutral;
+    case GitHubCheckConclusion.cancelled:
+      return CheckRunConclusion.cancelled;
+    case GitHubCheckConclusion.skipped:
+      return CheckRunConclusion.skipped;
+    case GitHubCheckConclusion.timedOut:
+      return CheckRunConclusion.timedOut;
+    case GitHubCheckConclusion.actionRequired:
+      return CheckRunConclusion.actionRequired;
+    case GitHubCheckConclusion.stale:
+      return CheckRunConclusion.stale;
+    case GitHubCheckConclusion.none:
+      return null;
+  }
+}

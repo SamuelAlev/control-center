@@ -1,0 +1,200 @@
+import 'dart:convert';
+
+import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
+import 'package:cc_domain/core/logging/cc_domain_log.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
+import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
+import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
+import 'package:uuid/uuid.dart';
+
+/// Registers the deterministic `orchestration.*` bodies used by generated
+/// orchestration pipelines. No LLM in these bodies — they reconcile state and
+/// persist the canonical record.
+void registerOrchestrationBodies(
+  PipelineBodyRegistry registry, {
+  required OrchestrationRepository orchestrations,
+  required TicketWorkflowService ticketWorkflow,
+  required MessagingRepository messaging,
+  required DomainEventBus eventBus,
+}) {
+  const uuid = Uuid();
+
+  // orchestration.markPhase — the work-DAG join. Writes a `{failed:true}`
+  // sentinel for every sub-ticket that produced no `out_<key>` (so downstream
+  // `{{out_<key>}}` placeholders always resolve and the synthesis step can
+  // cover gaps), records `failed_inputs` and flips the orchestration to
+  // `synthesizing`.
+  registry.registerBody(BuiltInBodyKeys.orchestrationMarkPhase, (ctx) async {
+    final orchestrationId = ctx.optional<String>('orchestration_id');
+    if (orchestrationId == null || orchestrationId.isEmpty) {
+      return StepResult.failed(
+        'orchestration.markPhase: missing orchestration_id',
+      );
+    }
+    final orchestration = await orchestrations.getById(
+      ctx.workspaceId,
+      orchestrationId,
+    );
+    if (orchestration == null) {
+      return StepResult.failed(
+        'orchestration.markPhase: orchestration not found in this workspace',
+      );
+    }
+    final mutated = <String, dynamic>{};
+    final failed = <String>[];
+    for (final t in orchestration.proposal.subTickets) {
+      final key = 'out_${t.key}';
+      if (ctx.state[key] == null) {
+        mutated[key] = {'failed': true, 'key': t.key};
+        failed.add(t.key);
+      }
+    }
+    mutated['failed_inputs'] = failed;
+
+    if (orchestration.status == OrchestrationStatus.executing) {
+      await orchestrations.update(
+        orchestration.copyWith(
+          status: OrchestrationStatus.synthesizing,
+          updatedAt: DateTime.now(),
+        ),
+      );
+    }
+    return StepResult.ok(mutatedState: mutated);
+  });
+
+  // orchestration.awaitApproval — the partial-approval gate (PRD 17 §4).
+  // Completes immediately once its node key is in the orchestration's
+  // approved set; otherwise suspends. `approveNodes` releases the gate via
+  // `PipelineEngine.resumeStep` and any crash-recovery re-run of this body
+  // re-reads the approved set from the row, so both paths agree.
+  registry.registerBody(BuiltInBodyKeys.orchestrationAwaitApproval, (
+    ctx,
+  ) async {
+    final orchestrationId = ctx.optional<String>('orchestration_id');
+    final nodeKey = ctx.optional<String>('node_key');
+    if (orchestrationId == null ||
+        orchestrationId.isEmpty ||
+        nodeKey == null ||
+        nodeKey.isEmpty) {
+      return StepResult.failed(
+        'orchestration.awaitApproval: missing orchestration_id/node_key',
+      );
+    }
+    final orchestration = await orchestrations.getById(
+      ctx.workspaceId,
+      orchestrationId,
+    );
+    if (orchestration == null) {
+      return StepResult.failed(
+        'orchestration.awaitApproval: orchestration not found',
+      );
+    }
+    if (orchestration.isNodeApproved(nodeKey)) {
+      return StepResult.ok();
+    }
+    return StepResult.suspendUntilEvent('orchestration.nodeApproved');
+  });
+
+  // orchestration.persistDeliverable — writes the synthesis output to the
+  // parent ticket, completes it, posts the deliverable and marks the
+  // orchestration completed. Idempotent: re-running after a crash skips when
+  // the orchestration is already completed.
+  registry.registerBody(BuiltInBodyKeys.orchestrationPersistDeliverable, (
+    ctx,
+  ) async {
+    final orchestrationId = ctx.optional<String>('orchestration_id');
+    if (orchestrationId == null || orchestrationId.isEmpty) {
+      return StepResult.failed(
+        'orchestration.persistDeliverable: missing orchestration_id',
+      );
+    }
+    final orchestration = await orchestrations.getById(
+      ctx.workspaceId,
+      orchestrationId,
+    );
+    if (orchestration == null) {
+      return StepResult.failed(
+        'orchestration.persistDeliverable: orchestration not found',
+      );
+    }
+    if (orchestration.status == OrchestrationStatus.completed) {
+      return StepResult.ok(
+        mutatedState: const {'orchestration_completed': true},
+      );
+    }
+
+    final deliverableRaw = ctx.state['deliverable'];
+    final deliverable = deliverableRaw is Map<String, dynamic>
+        ? deliverableRaw
+        : <String, dynamic>{'result': deliverableRaw};
+    final now = DateTime.now();
+    final parentTicketId = orchestration.parentTicketId;
+
+    if (parentTicketId != null && parentTicketId.isNotEmpty) {
+      await ticketWorkflow.completeTicket(
+        parentTicketId,
+        workspaceId: ctx.workspaceId,
+        force: true,
+      );
+    }
+
+    final spaceId = orchestration.spaceId;
+    if (spaceId != null && spaceId.isNotEmpty) {
+      await messaging.sendMessage(
+        workspaceId: ctx.workspaceId,
+        spaceId: spaceId,
+        content: _renderDeliverable(orchestration.proposal.goal, deliverable),
+        senderId: orchestration.orchestratorAgentId ?? 'system',
+        senderType: 'agent',
+        messageType: 'text',
+        id: uuid.v4(),
+      );
+      await messaging.sendMessage(
+        workspaceId: ctx.workspaceId,
+        spaceId: spaceId,
+        content: 'Orchestration completed — deliverable posted to the ticket.',
+        senderId: 'system',
+        senderType: 'agent',
+        messageType: 'system',
+        id: uuid.v4(),
+      );
+    }
+
+    await orchestrations.update(
+      orchestration.copyWith(
+        status: OrchestrationStatus.completed,
+        completedAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    CcDomainLog.info(
+      'orchestration.persistDeliverable: Completed orchestration ${orchestration.id}',
+    );
+    return StepResult.ok(mutatedState: const {'orchestration_completed': true});
+  });
+}
+
+String _renderDeliverable(String goal, Map<String, dynamic> deliverable) {
+  final buf = StringBuffer()..writeln('## Deliverable — $goal');
+  deliverable.forEach((key, value) {
+    buf.writeln();
+    buf.writeln('### $key');
+    if (value is String) {
+      buf.writeln(value);
+    } else if (value is List) {
+      for (final item in value) {
+        buf.writeln('- $item');
+      }
+    } else {
+      buf.writeln('```json');
+      buf.writeln(const JsonEncoder.withIndent('  ').convert(value));
+      buf.writeln('```');
+    }
+  });
+  return buf.toString();
+}

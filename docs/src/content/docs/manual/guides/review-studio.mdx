@@ -1,0 +1,155 @@
+---
+title: Review Studio (cohorts, axes and deterministic diffs)
+description: What the review compute pass produces server-side — cohorts, API-contract and visual diffs, per-axis gates — and why none of it has a viewer today.
+---
+
+Review Studio was the semantic multi-modal review surface: a cohort rail, a
+walkthrough pane, API-contract and visual-diff panes, a blast-radius view and a
+multi-axis dashboard. **The client no longer has it.** The split Findings /
+Studio tab pair was folded into a single **review artifact** tab, and everything
+this page describes now runs server-side with nothing rendering it.
+
+:::caution[There is no Review Studio surface in the app]
+Do not go looking for a **Review studio** chip, a cohort rail, a **Recompute**
+button, or the Walkthrough / API contract / Visual diff / Blast radius panes —
+none of them exist. `pr.reviewStudio` survives only as a legacy tab kind so a
+persisted layout naming it still opens the review artifact tab instead.
+
+The compute itself is live: `cc_server` still builds cohorts, runs the
+deterministic axes and serves them over the `review_studio.*` RPC operations
+(`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
+`setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
+The client binds the repository and then reads none of it — every cohort, axis,
+contract-diff and visual-diff provider in `review_studio_providers.dart` has
+zero consumers. Reaching this data today means speaking RPC directly.
+:::
+
+## What you actually get in the app
+
+The PR's **Review** tab is the review pipeline's live progress while it works,
+then the artifact it published, with the actions on it. One tab with two states,
+because they are the same thing at two times. It is not a default tab: a PR has
+no review until someone asks for one, so **Ask AI** is what opens it.
+
+- The consolidating agent publishes an ordinary conversation artifact with
+  `publish_artifact`, so the tab renders it through the same artifact viewer a
+  chat bubble opens — there is no review-shaped copy of the artifact system.
+- Findings sit in a rail beside it, and the verdict rides a slim bar above the
+  artifact rather than a dashboard header.
+- A stale banner appears when the PR head moved past the review.
+
+See [Use AI-powered review](/manual/guides/ai-review/) for the flow and
+[Review and merge a PR](/manual/guides/review-merge-pr/) for acting on it.
+
+## Cohorts
+
+Cohorts group the PR's changed files into content-derived buckets of files that
+belong together by meaning, ranked by impact so the riskiest group reads first.
+They are recomputed on every head-SHA change and replaced wholesale; each cohort
+has a push-stable key, so a summary and review progress survive a rebase.
+
+If the repo is not code-indexed, cohorts fall back to path grouping. To index a
+repo, use **Settings → Workspace → Repositories** — each repo row carries an
+**Index code** action that runs the `index_code` pipeline and reports progress in
+place.
+
+The code graph only parses Dart, JavaScript, TypeScript, TSX and PHP. A repo in
+any other language can never produce semantic cohorts, however often you index
+it.
+
+An agent can record a markdown summary for a cohort with `set_cohort_summary`
+and attach a structured walkthrough diagram with `add_review_diagram` — a typed
+sequence, entity-relation or state-machine object, never mermaid text. Every
+edge is cross-checked against the real code graph, and an edge the graph cannot
+corroborate is marked unverified rather than drawn as fact. Both tools are
+registered and callable; what is missing is the surface that would draw the
+result.
+
+## The API-contract axis
+
+The contract axis diffs only **explicit** spec files. It matches the six default
+names — `openapi.yaml`, `openapi.yml`, `openapi.json`, `swagger.yaml`,
+`swagger.yml`, `swagger.json` — plus any changed file whose name contains
+`openapi` or `swagger` and ends in `.yaml`, `.yml` or `.json`. A contract
+inferred from handler code is out of scope and GraphQL schemas are not diffed.
+
+Each change is classified — endpoint, parameter, schema and response additions,
+removals and modifications — and carries a severity: **breaking** (removed
+endpoint or param, tightened type, new required param), non-breaking (additive),
+or informational. A rejected change fails the contract gate, as does a breaking
+change left undecided; breaking-but-approved warns; no breaking changes passes. A
+diff marked **derived (advisory)** never gates.
+
+Approving or rejecting a change is `review_studio.setContractDecision`. There is
+no control for it in the app.
+
+## The visual axis
+
+If the PR changes UI components in a Flutter repo with a Widgetbook app, the
+compute pass renders the changed components before and after via a headless
+`flutter test` golden pass in the PR's base and head worktrees, then diffs the
+pixels.
+
+:::note[This needs a Flutter SDK on the server host]
+The pure-Dart server cannot render Flutter widgets in-process, so it shells out
+to `flutter test`. The SDK has to be installed on the machine running
+`cc_server` — not on your client. Without it the axis reports **unavailable**
+with the reason "no Flutter SDK on host". It never reports a pass it did not
+earn.
+:::
+
+Snapshots marked **changed** or **removed** hold the visual gate until approved;
+**unchanged**, **added** and **approved** snapshots clear it. Unavailability has
+one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
+golden-testable use-cases, or a golden harness error.
+
+Approving an intended change is `review_studio.approveVisual`. There is no
+control for it in the app.
+
+## The axes and the verdict
+
+| Axis         | Driven by                      |
+| ------------ | ------------------------------ |
+| Correctness  | Reviewer agents (tokens)       |
+| Security     | Reviewer agents (tokens)       |
+| Test gap     | Reviewer agents (tokens)       |
+| Visual       | Deterministic (golden harness) |
+| API contract | Deterministic (spec diff)      |
+
+The three token axes are recorded when a lead agent calls `finalize_review`; the
+two deterministic axes are recorded by the compute pass.
+
+:::note[There is no performance axis today]
+A `performance` axis exists in the taxonomy and has a display label, but nothing
+in the product computes a performance result — its only appearance outside the
+enum is the demo seeder.
+:::
+
+Each axis reports one of:
+
+| State           | Meaning                                            |
+| --------------- | -------------------------------------------------- |
+| **Pass**        | Ran, nothing blocking found                        |
+| **Warn**        | Ran, non-blocking concerns                         |
+| **Fail**        | Ran, found a blocking problem                      |
+| **Partial**     | Ran but could not complete; results are incomplete |
+| **Unavailable** | Could not run at all                               |
+
+Only **pass** and **warn** clear a gated axis. **Partial** and **unavailable**
+are deliberately distinct from **fail** and neither clears a gate.
+
+The axes aggregate into **Ship**, **Hold** or **Block**, and they can only make
+the verdict _more_ severe — it is never downgraded. A gated axis that **fails**
+forces **Block**; one that is **partial** or **unavailable** forces at least
+**Hold**. So a blocking axis that could not run _holds_ the verdict: absence of
+evidence never greens a gate.
+
+The verdict the app shows you on the review artifact tab is the one
+`finalize_review` posted. The per-axis breakdown behind it has no viewer.
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Search code with the code graph](/manual/guides/code-search/)

@@ -1,0 +1,182 @@
+---
+title: Memory and knowledge
+description: How Control Center stores agent knowledge, what actually reaches an agent's prompt and why memory reads are fail-open.
+---
+
+## What memory is for
+
+Without memory, every agent conversation starts from zero: the same convention
+has to be re-explained, the same decision re-litigated, the same dead end
+re-explored. Memory is the workspace-scoped store that survives runs and it
+exists so that knowledge produced by one agent is findable by another later.
+
+It has three layers and they answer different questions:
+
+1. **Facts** — what is true (a convention, an outcome, a decision).
+2. **Policies** — what agents must do about it (a normative rule).
+3. **Working memory** — what one agent was in the middle of.
+
+The distinction matters because they reach the agent by different routes. Facts
+are searched. Policies are pushed. Working memory is private.
+
+## Facts
+
+A `MemoryFact` is a knowledge unit scoped to a workspace and a domain.
+
+| Attribute                                   | What it is                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------- |
+| `domain`                                    | The knowledge domain ("conventions", "decisions", "codebase")             |
+| `topic`                                     | A short topic label                                                       |
+| `content`                                   | The knowledge text                                                        |
+| `confidence`                                | 0.0–1.0, seeded from provenance and raised by re-mention                  |
+| `memoryType`                                | The fact's kind — drives its temporal decay curve                         |
+| `veracity`                                  | How it came to be known — seeds confidence and sizes each re-mention bump |
+| `sourceObservationIds`                      | Which observations led to it                                              |
+| `supersededBy`                              | The newer fact that replaced it, if any                                   |
+| `validUntil`, `recallCount`, `mentionCount` | Expiry and usage signals used at recall                                   |
+
+The last two rows are the ones people miss and they are what decide _which_
+fact surfaces. `memoryType` carries per-type Weibull decay parameters, so a
+time-boxed commitment fades quickly while a stable profile fact does not.
+`veracity` records provenance — stated by a human (weight 1.0), inferred by an
+agent (0.7), produced by a tool (0.5), imported (0.6) — and that weight seeds
+the fact's starting confidence.
+
+Facts are never edited in place when they are contradicted. Writing a fact runs
+conflict detection against same-domain, same-topic facts and supersedes the
+loser, recording a conflict row. The audit trail is the point: you can always
+see what was believed before and what replaced it.
+
+## Policies
+
+A `MemoryPolicy` is a normative rule derived from facts, scoped to a workspace
+and domain, with an active flag and an optional `requiredRole`.
+
+Every **active** policy in the workspace is injected into **every** dispatch,
+unfiltered — no filtering by domain, role, task, or space. This is worth
+knowing before you write your twentieth policy, because policies compete for
+the same context window as the task. It is also why `requiredRole` on a policy
+is advisory: it describes who the rule is aimed at, it does not stop the rule
+reaching everyone else.
+
+## Domains
+
+A `MemoryDomain` groups facts and policies within a workspace. Domains give
+knowledge organizational structure and they are the unit access grants are
+written against — but see the caution below before treating a domain as a
+confidentiality boundary.
+
+## Access control is fail-open for reads
+
+`MemoryAccessGrant` maps an agent role and a domain to one of three permission
+levels:
+
+| Permission | Meaning                                             |
+| ---------- | --------------------------------------------------- |
+| `none`     | No access                                           |
+| `read`     | Can search and retrieve facts                       |
+| `write`    | Can create, update and supersede facts and policies |
+
+:::caution[A missing grant means read, not deny]
+When there is no grant row for a `(role, domain)` pair, the effective
+permission is **`read`**. Reads are fail-open by design; only writes are hard
+enforced and only writes throw. Putting sensitive content in a memory domain
+does not restrict who can read it unless you have explicitly written a `none`
+grant for every role that should not see it.
+
+There is also no UI for grants anywhere in the product today. The memory screen
+has Facts, Policies and Graph tabs and nothing else; grants are reachable only
+over the `memory_access_grant.*` RPC ops.
+:::
+
+The asymmetry — soft on reads, hard on writes — is a deliberate trade. Memory
+is most useful when it circulates and a read denial produces an agent that
+silently knows less rather than one that reports a problem. A write denial, by
+contrast, is loud and correctable, so that is where the enforcement sits.
+
+## Working memory
+
+Each agent has an `AgentWorkingMemory`: a free-text scratchpad keyed by
+workspace and agent. It persists across runs, is private to that agent and is
+injected into its prompt at every dispatch. It is where "I was halfway through
+refactoring auth" lives — the state that is worth carrying to the next run but
+not worth promoting to a durable fact.
+
+## What actually reaches an agent's prompt
+
+At dispatch, the memory preamble is assembled from exactly three things:
+
+- **Every active workspace policy**, as `- [domain] rule` lines.
+- **The agent's own working memory**, verbatim.
+- **A keyword-matched shortlist of facts** for this task — at most five, within
+  a ~1,200-character budget and only when the task description is at least 20
+  characters long. Shorter tasks get no facts at all.
+
+The shortlist is FTS/keyword-only and it is capped on purpose. Embedding a
+query is slow and the dispatch path is the one place where latency is
+immediately visible, so the slow semantic path is deliberately kept off it. The
+preamble closes by telling the agent to verify load-bearing items with
+`search_memory`, which is where the full recall model lives.
+
+No access grants are consulted on this path. Whatever the shortlist finds is
+what the agent sees.
+
+## Recall: one query, four voices
+
+The agent-facing `search_memory` tool has three modes and they are genuinely
+different searches:
+
+- **`keyword`** — FTS5 only.
+- **`semantic`** — BM25 and vector results fused by reciprocal rank fusion.
+- **`hybrid`** (the default) — polyphonic recall: four ranked voices fused
+  together, then diversified.
+
+The four voices are lexical (FTS), semantic (vector KNN), temporal (recent
+active facts) and graph — a two-hop walk over episodic edges from the
+strongest lexical and semantic seeds. The graph voice is the reason episodic
+edges exist at all: it surfaces the fact that is _connected to_ your answer
+without matching any of your words. The voices are weighted by a classified
+query intent (semantic carries the most weight by default, then graph and
+lexical, then recency), every candidate's score is scaled by its Weibull decay,
+and the result set is MMR-diversified so five restatements of one fact do not
+crowd out four different ones.
+
+:::note[Semantic recall is silent until the model is installed]
+The vector voice only contributes once the on-device embedding model has been
+downloaded. Until then, hybrid recall runs with three voices and there is no
+retroactive backfill — facts written before the model was installed never gain
+vectors. The vector path degrades further, to an in-Dart scan over the packed
+embeddings, if the SQLite vector extension itself fails to load; recall still
+answers, just more slowly.
+:::
+
+The desktop and web memory search is a separate, simpler path: the
+`memory_fact.search` RPC op is **FTS5-only**, because a thin client cannot ship
+a query embedding and the hybrid path stays host-internal. So the ranking you
+see in the memory browser is not the ranking an agent gets from `search_memory`.
+That is expected, not a bug, but it does mean "I searched and did not find it"
+in the UI is not evidence the agent will not find it.
+
+## Where memory lives and who writes it
+
+The memory browser is at **Settings → Workspace → Memory**
+(`/workspaces/<id>/settings/memory`), with Facts, Policies and Graph tabs.
+
+There is an asymmetry there that surprises people: **you can edit and delete
+memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
+has an add affordance. Authoring is agent-side, through `propose_fact`,
+`propose_policy` and `remember`. The browser is a review and correction
+surface, not an authoring one — so if you want a fact in memory, the way to put
+it there is to tell an agent.
+
+Two maintenance operations are likewise agent-invoked rather than scheduled:
+`consolidate_memory` merges and prunes accumulated facts and
+`harmonize_memory` reconciles beliefs that diverged across agents.
+`list_memory_conflicts` shows what conflict detection has already recorded.
+Nothing runs them for you on a timer.
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/): roles are what grants are written against
+- [Workspaces and isolation](/manual/concepts/workspaces/): memory is workspace-scoped and lives in that workspace's own database file
+- [Manage workspace memory](/manual/guides/manage-memory/): working with memory in practice

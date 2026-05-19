@@ -1,0 +1,139 @@
+---
+title: Refactor code structurally
+description: Have an agent find and rewrite code by shape rather than by text, and review the change before it lands.
+---
+
+This guide shows you how to get an agent to make a wide mechanical change — a codemod, a bulk API migration, a pattern you want gone — using structural search and rewrite, with the change staged for review before anything is written.
+
+`ast_grep` matches code by **shape**. `ast_edit` rewrites it. `resolve` commits or discards.
+
+## Before you start
+
+Structural tools cover the languages the code graph parses: **Dart, JavaScript, TypeScript, TSX and PHP**. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+
+## Find the shape first
+
+Never rewrite something you have not looked at. Ask the agent to search:
+
+> Find every place we call `dispose()` on a nullable that we just null-checked.
+
+```
+ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
+```
+
+The output is `file:line` plus the matched source for each site.
+
+### What the pattern syntax buys you
+
+| Token      | Matches                                    |
+| ---------- | ------------------------------------------ |
+| `$NAME`    | Any single node, captured                  |
+| `$$$NAME`  | Any run of siblings — arguments, statements |
+| `$_`       | Anything, captured under no name            |
+
+The one that matters: **a repeated `$NAME` must capture the same text**.
+
+```
+if ($X != null) $X.dispose()
+```
+
+finds a guard that disposes what it tested. It does **not** find `if (a != null) b.dispose()` — which is usually the bug you were looking for. No textual search can express that.
+
+:::note[It cannot match inside a string or a comment]
+The pattern is parsed by the same grammar as the file, so `dispose(x)` written in a doc comment or a string literal is not a call and is not matched. That is the whole reason to reach for this over `grep`.
+:::
+
+### When the pattern finds nothing
+
+Two things to try, in order:
+
+1. **Make it smaller.** `foo($X)` before `if (a) { foo($X); }`. A pattern that is not valid code on its own often is not the construct you meant.
+2. **Name the language.** `language:` is inferred only when `path` names a single file.
+
+A pattern no parse context accepts is reported as unparseable — the tool says so rather than reporting "no matches" for something that was never being read the way it looks.
+
+## Rewrite, and look before it lands
+
+```
+ast_edit(
+  pattern: "if ($X != null) $X.dispose()",
+  rewrite: "$X?.dispose()",
+  language: "dart",
+)
+```
+
+The result is a **proposal**:
+
+```
+(proposed) ast_edit: if ($X != null) $X.dispose() → $X?.dispose()
+12 replacements in 4 files:
+  lib/features/a/x.dart (3)
+  lib/features/b/y.dart (5)
+  …
+Nothing has been written. Call resolve with edit_id "edit_1" and action
+"accept" to apply it, or "discard" to drop it.
+```
+
+Nothing is on disk yet. Read the list, check a couple of the sites the search reported, then:
+
+```
+resolve(edit_id: "edit_1", action: "accept")
+```
+
+or
+
+```
+resolve(edit_id: "edit_1", action: "discard")
+```
+
+:::caution[The commit is all-or-nothing]
+Every file is compared against the content captured when the change was staged. If any one of them moved — the agent hand-edited it, a formatter ran, a diagnostics pass rewrote it — the **whole** change is refused and dropped. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+
+Re-run the tool against the current files; do not retry the stale id.
+:::
+
+## Check your work with the compiler
+
+The point of doing this structurally is that it is wide. Wide changes are exactly where a plausible-looking rewrite breaks a type. Ask for diagnostics after resolving:
+
+```
+lsp(action: "diagnostics", file: "*")
+```
+
+`file: "*"` runs the project's own checker (`dart analyze`, `tsc --noEmit`, `cargo check`, `go build`) rather than a per-file query — the right shape of question after a change that touched forty files.
+
+## Worked example: migrating a call
+
+Say `log(msg, level)` is becoming `log(level: level, message: msg)`.
+
+```
+ast_grep(pattern: "log($MSG, $LEVEL)", language: "dart")
+```
+
+Look at the hits. If some of them are a *different* two-argument `log`, narrow the pattern by scoping `path` to the directory that owns the one you mean, rather than trying to express the difference in the pattern.
+
+```
+ast_edit(
+  pattern: "log($MSG, $LEVEL)",
+  rewrite: "log(level: $LEVEL, message: $MSG)",
+  path: "lib/features/telemetry",
+  language: "dart",
+)
+```
+
+Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
+
+## When to use something else
+
+| Situation                                 | Better tool                          |
+| ----------------------------------------- | ------------------------------------ |
+| Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
+| Finding a string, a comment or a filename | `search` / `grep`                    |
+| "What breaks if I change this?"           | The [code graph](/manual/guides/code-search/) |
+| A language the grammars do not cover      | `search` plus `edit`                 |
+
+## Related
+
+- [Code intelligence](/manual/concepts/code-intelligence/) — why structural matching is not a regex with extra steps
+- [Built-in agent tools](/manual/reference/agent-tools/) — the full argument list
+- [Search code with the code graph](/manual/guides/code-search/) — the symbol and impact side

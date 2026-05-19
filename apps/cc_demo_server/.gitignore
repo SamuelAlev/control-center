@@ -1,0 +1,8 @@
+.dart_tool/
+build/
+.packages
+pubspec.lock
+
+data
+data2
+agents/

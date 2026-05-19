@@ -1,0 +1,121 @@
+---
+title: PR conversations
+description: How a GitHub PR comment becomes an agent turn with no webhook, what authorizes the author, and who each side of the conversation is attributed to.
+---
+
+A pull request is already where the conversation about code happens. PR
+conversations make it a surface on a Control Center workspace, the same way a
+[chat bridge](/manual/concepts/chat-bridges/) makes Slack one: @mention the
+server's GitHub App bot on a PR, reply inside its review threads, or add the
+`ai-review` label, and the work happens in the PR's review space — under the
+same membership, attribution and guardrails as anything typed in the app. The
+bot's answers come back on GitHub, in the lane the question was asked in.
+
+Three decisions shape the feature, and each is the same decision the chat
+bridge made for chat, restated for a forge: **which direction the connection
+runs**, **what authorizes a comment that arrives from outside** and **who each
+side is attributed to**.
+
+## Polling is the transport
+
+GitHub's only push channel for an app is a webhook, and a webhook needs an
+inbound URL — the one thing this server deliberately never requires. So
+discovery is a sweep: every minute or so, one aliased search per app
+installation asks GitHub for the open PRs that mention the bot or carry the
+review label, PRs that already have a review space get their comment threads
+read, and everything is diffed by comment id against what was seen last sweep.
+
+The design consequences are worth naming:
+
+- **Latency is a sweep interval, not an event.** The 👀 acknowledgement lands
+  within about a minute. Nothing urgent rides on it.
+- **Exactly once, per comment.** Comment ids are unique across GitHub; each is
+  recorded the moment it is classified as eligible, before anything acts on
+  it. A crash can lose a comment's handling, never double-fire it.
+- **Offline time is caught up, not replayed.** The seen-set is persisted, so a
+  restart delivers what arrived while it was down. The one exception is the
+  first sweep ever: with no memory to diff against, everything outstanding is
+  recorded silently — an operator who labeled twenty PRs before this server
+  existed must not come back to twenty running reviews.
+- **The label is a set, not an event.** Search reports label _presence_, so a
+  labeled PR triggers once, ever. Re-adding a label after removing it is
+  invisible to the sweep; a mention is the re-run path.
+
+The search runs once per installation account on that owner's own client,
+because an installation token only sees its own installation's repos — a
+single server-wide credential would quietly miss every PR under the app's
+other installations.
+
+## Membership authorizes, not the comment
+
+A PR comment arrives carrying little more than an author login — an
+unauthenticated external identity until proven. The bot resolves it against a
+reverse index of the workspace's members and their connected GitHub accounts,
+rebuilt on a TTL because people sign in and get invited while the server runs.
+
+Failing closed looks like a ladder, and every rung answers in the thread it
+refused in:
+
+- **An unlinked login** is told how to link
+- **A linked non-member** is told membership is the boundary
+- **A read-only member** is told their role cannot start work
+
+None of them proceed. A comment is never attributed to somebody who did not
+send it, and a stranger's words never enter a workspace they cannot see.
+
+## Two identities, on purpose
+
+Each side of the conversation carries a different identity, and the difference
+is the feature:
+
+- **On GitHub, the bot is the server.** Every comment, reaction and reply the
+  bridge posts rides the app's installation token. Nobody clicked anything in
+  a client, so nothing borrows a person's account — the same rule that keeps
+  webhooks and polling off human credentials.
+- **In the space, the question is yours.** The message is attributed to the
+  member the author resolved to, and the agent run executes on their behalf:
+  commits co-author them, their stored credential backs the run, and the
+  space's autonomy dial and action guardrails apply exactly as they do to a
+  message typed in the app.
+
+Publishing review findings back to GitHub remains a person's decision, made in
+Control Center. A mention can _start_ a review; only a human publishes one.
+
+## The loop guard, and the short name
+
+Everything authored by a bot account is dropped before any gate runs — ours
+specifically, and every `[bot]` suffix, so another app's review bot cannot
+wake ours either. Without this the bot's own answers would arrive as new
+comments and re-trigger it forever.
+
+The `[bot]` suffix is also why the short form exists. GitHub fixes an app
+account's login at `<slug>[bot]`, offers no autocomplete for it, and never
+resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
+decision, and discovering it needs a raw comment-**text** search lane rather
+than GitHub's mention index. The cost is stated rather than smoothed: a human
+user who shares the app's slug addresses the bot with every short-form
+mention of themselves. Distinctive app names make the collision hypothetical.
+
+## What is deliberately not offered
+
+- **No auto-publish.** Findings land in the review space; publishing to GitHub
+  is a separate, human action
+- **No fuzzy identity.** The author resolves to exactly one member or is
+  refused — there is no best-guess attribution
+- **No inbound network.** No webhook endpoint exists to secure, because no
+  webhook endpoint exists
+
+## See also
+
+- [Talk to Control Center from a GitHub PR](/manual/guides/github-pr-conversations/):
+  the how-to for all of this
+- [Chat bridges](/manual/concepts/chat-bridges/): the same three decisions,
+  made for chat
+- [Create the GitHub App](/manual/guides/github-app/): where the bot identity
+  comes from
+- [Multiplayer — identity, membership and presence](/manual/concepts/multiplayer/):
+  the principals and roles a login resolves through
+- [Guardrails](/manual/concepts/guardrails/): what the answering agent is
+  allowed to do
+- [Use AI-powered review](/manual/guides/ai-review/): the pipeline a mention
+  or label starts

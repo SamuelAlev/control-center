@@ -1,0 +1,524 @@
+name: CI
+
+on: [push, pull_request]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      # Formatting was enforced nowhere — not in a workflow, a script or a
+      # hook. On a 20-package workspace that erodes diffs fast: a reformatted
+      # region turns a two-line change into a fifty-line review.
+      #
+      # Scoped to the files this PR CHANGED, deliberately. The tree has ~438
+      # files that predate any formatter run, and a repo-wide gate would either
+      # fail every PR or force a big-bang reformat that buries real diffs in
+      # noise. Changed-files enforcement stops the drift growing and lets the
+      # backlog be cleared on its own schedule.
+      #
+      # `--set-exit-if-changed` only REPORTS; it never rewrites the tree.
+      - name: Check formatting (changed files)
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          mapfile -t files < <(
+            git diff --name-only --diff-filter=ACMR "$BASE_SHA" "$HEAD_SHA" \
+              -- '*.dart' | grep -v '\.g\.dart$' || true
+          )
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No Dart files changed."
+            exit 0
+          fi
+          printf 'Checking %d changed Dart file(s)…\n' "${#files[@]}"
+          dart format --output=none --set-exit-if-changed "${files[@]}"
+
+  build-web:
+    name: web wasm (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: client
+            directory: .
+          - target: remote
+            directory: apps/cc_remote
+          - target: gallery
+            directory: apps/cc_gallery
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Build WebAssembly bundle
+        working-directory: ${{ matrix.directory }}
+        run: flutter build web --release --wasm
+
+      - name: Verify SkWasm and CanvasKit fallback artifacts
+        working-directory: ${{ matrix.directory }}
+        run: |
+          test -f build/web/main.dart.wasm
+          test -f build/web/main.dart.mjs
+          test -f build/web/main.dart.js
+
+  test:
+    # Sharded by test FILE, not by `flutter test --total-shards`: package:test
+    # applies those flags inside each suite, so every shard would still load and
+    # compile every test file and only run a slice of the `test()` cases in it.
+    # Compiling + booting flutter_tester per file is the dominant cost here, so
+    # only splitting the file list actually divides the work. See
+    # tool/test_shard.dart.
+    #
+    # To change the shard count, edit this list only — `--total` is derived from
+    # it via `strategy.job-total`, so the two cannot drift apart.
+    name: test (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            *.archive.ubuntu.com:80
+            esm.ubuntu.com:443
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      # The sandbox suites (test/features/sandboxing/…) spawn REAL bwrap +
+      # socat bridge processes: the ubuntu image ships neither, and skipping
+      # them would gut the only enforcement coverage there is. The apt
+      # endpoints above exist for exactly this step.
+      - name: Install sandbox tooling (bwrap + socat)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap socat
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Select shard
+        env:
+          # Env, not a ${{ }} interpolation inside run: — strategy values are
+          # runner-computed, so interpolating them into a script is
+          # injection-shaped (zizmor's template-injection audit). matrix.shard
+          # is a workflow literal and needs no such indirection.
+          SHARD_TOTAL: ${{ strategy.job-total }}
+        run: >
+          dart run tool/test_shard.dart
+          --index ${{ matrix.shard }}
+          --total "$SHARD_TOTAL"
+          --output shard_files.txt
+
+      - name: Test
+        # bash (not sh) for mapfile, which keeps the whole shard in ONE
+        # `flutter test` invocation — xargs may split a long list and pay the
+        # compile cost again per batch.
+        shell: bash
+        # Cap concurrency: each flutter_tester loads the whole app. Uncapped
+        # (one per CPU) OOMs the runner and surfaces as a post-test
+        # PathNotFoundException deleting flutter_test_listener under /tmp.
+        #
+        # No --coverage: nothing consumes the lcov (no upload step and
+        # coverage/ is gitignored) and collecting it forces the VM service on
+        # for every test file. To restore it, add
+        # `--coverage --coverage-path=coverage/lcov-${{ matrix.shard }}.info`,
+        # upload each shard's file as an artifact and merge them downstream.
+        run: |
+          mapfile -t files < shard_files.txt
+          echo "Running ${#files[@]} test files"
+          flutter test --concurrency=2 "${files[@]}"
+
+  # The workspace packages' own suites (~690 test files), which the root
+  # `flutter test` never covered because it only runs the root package's test/.
+  #
+  # Split by RUNNER, not one job per package: the pure-Dart suites finish in
+  # well under a minute each, so 13 separate runners would each spend more time
+  # on checkout + SDK setup + pub get than on testing and would not shorten the
+  # critical path (the root `test` shards above dominate it either way).
+  test-packages:
+    name: packages (${{ matrix.runner }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [dart, flutter]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            *.archive.ubuntu.com:80
+            esm.ubuntu.com:443
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      # cc_infra's sandbox enforcement suite spawns REAL bwrap + socat
+      # processes ("the only thing that catches that class of regression is
+      # spawning a real process"); the ubuntu image ships neither, and
+      # skipping the suite would silence exactly that alarm. Ubuntu 24.04's
+      # AppArmor profile denies unprivileged user namespaces, which bwrap
+      # needs — best-effort loosen it (the sysctl is namespaced on newer
+      # kernels; a miss is visible as a bwrap spawn failure, not a skip).
+      - name: Install sandbox tooling (bwrap + socat)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bubblewrap socat
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Test ${{ matrix.runner }} packages
+        shell: bash
+        run: scripts/ci/test_packages.sh ${{ matrix.runner }}
+
+  # The whole Dart test matrix ran on ubuntu-latest and nowhere else, while the
+  # codebase carries deliberate platform-specific behaviour: the 104/108-byte
+  # `sockaddr_un.sun_path` cap that decides where a rig's control socket may
+  # live, macOS-only QEMU/HVF and proxy plumbing, the Windows rift exemption,
+  # and path handling throughout. None of it was ever executed on the platforms
+  # it is about — natives.yml and release.yml were the only jobs that touched
+  # macOS or Windows, and neither runs a Dart test.
+  #
+  # Restricted to the default branch and manual dispatch on purpose. macOS
+  # minutes bill at 10x and Windows at 2x, so running this on every PR would
+  # multiply the cost of the review loop for behaviour that changes rarely; a
+  # per-merge signal catches it well before a release.
+  test-packages-os:
+    name: packages (${{ matrix.runner }}, ${{ matrix.os }})
+    if: github.event_name != 'pull_request'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-latest]
+        runner: [dart, flutter]
+    steps:
+      - name: Harden runner
+        # `block` is Linux-only in harden-runner; audit is the ceiling here.
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+        with:
+          # WINDOWS ONLY. With the windowing flag on, WidgetsBinding's
+          # initInstances eagerly constructs the Win32 windowing owner, whose
+          # FFI symbol (InternalFlutterWindows_WindowManager_Initialize) is an
+          # ENGINE-embedder export flutter_tester does not carry — so every
+          # testWidgets file fails to LOAD, not fail a test. flutter_test
+          # installs its own _TestWindowingOwner only AFTER super's eager
+          # construction (flutter_test/src/binding.dart initInstances), so no
+          # consumer-side code can intercept it; that ordering bug is the
+          # upstream gap. macOS keeps the flag ON exactly as before — its
+          # tester resolves the owner — so the flag-off surface is precisely
+          # the platform that cannot honor it.
+          windowing: ${{ runner.os != 'Windows' }}
+
+      # bash explicitly: the default shell on the Windows runner is PowerShell,
+      # and this is the same script the Linux job runs.
+      - name: Test ${{ matrix.runner }} packages
+        shell: bash
+        run: scripts/ci/test_packages.sh ${{ matrix.runner }}
+
+  # Aggregate gate so branch protection can require ONE stable check instead of
+  # every shard by name. Deliberately keeps the job id `build` — that was the
+  # single job's name before sharding, so existing required-check rules keep
+  # matching without being reconfigured.
+  #
+  # `test-packages-os` is deliberately NOT in `needs`: it does not run on pull
+  # requests, so requiring it would make this gate see `skipped` and fail every
+  # PR. It is a post-merge signal, not a merge gate.
+  # Generated code is COMMITTED (71 *.g.dart from drift/json_serializable, plus
+  # the localizations) and `build_runner` ran only in release.yml and
+  # deploy-design-system.yml — never on a PR. So a table or @JsonSerializable
+  # change could go green here and first diverge at release time, on a tag,
+  # which is the worst place to discover it. deploy-design-system.yml even said
+  # so out loud: it regenerates "so a deploy never ships a stale navigation
+  # tree, even if the committed file lags".
+  codegen:
+    name: generated code is current
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            github.com:443
+            pub.dev:443
+            storage.googleapis.com:443
+            release-assets.githubusercontent.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Regenerate
+        run: |
+          dart run build_runner build --delete-conflicting-outputs
+          flutter gen-l10n
+
+      - name: Fail if anything changed
+        run: |
+          if ! git diff --quiet; then
+            echo "::error::Committed generated code is stale. Run:"
+            echo "  fvm dart run build_runner build --delete-conflicting-outputs"
+            echo "  fvm flutter gen-l10n"
+            echo "and commit the result."
+            git --no-pager diff --stat
+            exit 1
+          fi
+
+  # ---------------------------------------------------------------------------
+  # The strongest tests in the repo — native preflight → runCcServer → PSK
+  # handshake → repo/call, and the desktop spawning that server as a child —
+  # ran NOWHERE but a developer's laptop. `cc_server_e2e_test.dart` and its
+  # siblings skip themselves when the natives are not staged, and CI never
+  # staged them: natives.yml builds and verifies the set, then throws it away
+  # without running a single Dart test against it.
+  #
+  # So: restore the natives cache natives.yml already seeds, stage it where the
+  # test helper looks (`build/natives/`), and run the suites. The cache is an
+  # accelerator for release builds and it costs nothing to reuse here.
+  #
+  # A cache MISS is handled differently by ref, deliberately. On main (and on
+  # demand) the natives are built from source so the boot path is exercised on
+  # every merge — that is the coverage this job exists for. On a pull request a
+  # miss is reported as a warning and the suites are skipped rather than adding
+  # ~40 minutes to every PR: PR runs get this check whenever main's cache is
+  # warm, which is the common case, and never at the cost of the review loop.
+  # The `Verify the staged set` step is what keeps a partial restore from
+  # reading as a pass.
+  e2e:
+    name: server boot e2e (natives staged)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          # The pub/Flutter set, plus everything scripts/natives/build_natives.sh
+          # fetches on a cache miss — the same allowlist natives.yml documents
+          # host by host.
+          allowed-endpoints: >
+            *.archive.ubuntu.com:80
+            *.blob.core.windows.net:443
+            *.dl.sourceforge.net:443
+            *.microsoft.com:443
+            api.github.com:443
+            downloads.sourceforge.net:443
+            esm.ubuntu.com:443
+            github.com:443
+            gitlab.freedesktop.org:443
+            index.crates.io:443
+            objects.githubusercontent.com:443
+            pub.dev:443
+            release-assets.githubusercontent.com:443
+            static.crates.io:443
+            static.rust-lang.org:443
+            storage.googleapis.com:443
+            wrapdb.mesonbuild.com:443
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: ./.github/actions/setup-flutter
+
+      - name: Restore natives cache
+        id: natives-cache
+        uses: ./.github/actions/natives-cache
+
+      - name: Decide what a cache miss means here
+        id: gate
+        shell: bash
+        env:
+          HIT: ${{ steps.natives-cache.outputs.cache-hit }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$HIT" = "true" ]; then
+            echo "run=true"   >> "$GITHUB_OUTPUT"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::warning title=Server e2e skipped::No natives cache for these inputs. This PR changes a native input, or main's cache was evicted — the server-boot suites did not run."
+            echo "run=false"  >> "$GITHUB_OUTPUT"
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true"   >> "$GITHUB_OUTPUT"
+            echo "build=true"  >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install AEC build tools (meson/ninja)
+        if: steps.gate.outputs.build == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build pkg-config
+
+      - name: Build native FFI libraries
+        if: steps.gate.outputs.build == 'true'
+        run: bash scripts/natives/build_natives.sh build/natives
+
+      # A partial restore must not read as a pass: the suites would skip
+      # themselves on a missing native and the job would go green having
+      # proven nothing.
+      - name: Verify the staged set
+        if: steps.gate.outputs.run == 'true'
+        run: bash scripts/release/verify_natives.sh build/natives linux server
+
+      # `hostHasServerNatives` (packages/cc_server_core/test/helpers/
+      # native_staging.dart) probes build/natives, so no extra staging step is
+      # needed — the suites stop skipping the moment the directory is real.
+      - name: Server boot e2e
+        run: cd packages/cc_server_core && dart test --concurrency=2 test/cc_server_e2e_test.dart test/fresh_boot_first_workspace_test.dart test/workspace_seeder_test.dart
+        if: steps.gate.outputs.run == 'true'
+
+      # `dart run apps/cc_server/bin/cc_server.dart` pays the whole-DAG kernel
+      # compile on its first invocation. Warm it BEFORE the test so the test's
+      # spawn budget is spent booting, not compiling (the first CI run burned
+      # its 90s readiness timeout on a cold compile).
+      - name: Warm the cc_server dart-run kernel cache
+        if: steps.gate.outputs.run == 'true'
+        run: dart run apps/cc_server/bin/cc_server.dart --version
+
+      # The desktop half of the same path: spawn the real cc_server as a child
+      # and read a seeded ticket back over loopback RPC.
+      - name: Desktop thin-client boot (fork A)
+        if: steps.gate.outputs.run == 'true'
+        run: flutter test --concurrency=1 test/integration/fork_a_spawn_connect_test.dart
+      # A skip is a legitimate outcome on a PR cache miss, but it must be
+      # visible rather than implied by a green check.
+      - name: Report
+        if: always()
+        shell: bash
+        env:
+          GATE_RUN: ${{ steps.gate.outputs.run }}
+        run: |
+          if [ "$GATE_RUN" = "true" ]; then
+            echo "Server-boot suites ran against staged natives."
+          else
+            echo "Server-boot suites were SKIPPED (no natives cache on a PR)."
+          fi
+
+  build:
+    if: always()
+    needs: [analyze, codegen, build-web, test, test-packages, e2e]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Check analyze and every test job passed
+        run: |
+          echo "analyze:       ${{ needs.analyze.result }}"
+          echo "codegen:       ${{ needs.codegen.result }}"
+          echo "build-web:     ${{ needs.build-web.result }}"
+          echo "test:          ${{ needs.test.result }}"
+          echo "test-packages: ${{ needs.test-packages.result }}"
+          echo "e2e:           ${{ needs.e2e.result }}"
+          [ "${{ needs.analyze.result }}" = "success" ] \
+            && [ "${{ needs.codegen.result }}" = "success" ] \
+            && [ "${{ needs.build-web.result }}" = "success" ] \
+            && [ "${{ needs.test.result }}" = "success" ] \
+            && [ "${{ needs.test-packages.result }}" = "success" ] \
+            && [ "${{ needs.e2e.result }}" = "success" ]

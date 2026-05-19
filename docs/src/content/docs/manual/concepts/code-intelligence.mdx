@@ -1,0 +1,86 @@
+---
+title: Code intelligence
+description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
+---
+
+Control Center gives an agent three ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are three rather than one is that no single mechanism answers all of them.
+
+| Mechanism            | Answers                                          | Costs                                  |
+| -------------------- | ------------------------------------------------ | -------------------------------------- |
+| **Code graph**       | What is here, and what depends on it              | An index pass; cheap to query          |
+| **Language server**  | Does this actually compile, and what is this type | A server process per project           |
+| **Structural search**| Where does this SHAPE appear                      | A parse per file                       |
+| **Debugger**         | What was true at this moment, in this frame       | A stopped process                      |
+
+## The gap the language server closes
+
+The [code graph](/manual/concepts/tool-context/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+
+Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
+
+So the payoff is not really the `lsp` tool. It is that `write`, `edit` and `apply_patch` are wrapped: after every write, the file goes through the language server and **newly introduced** diagnostics are folded into the tool result. The agent learns it broke the build at the moment it broke it, whether or not it thought to ask.
+
+### Only new diagnostics
+
+Repeating what the agent has already been told is worse than saying nothing: it fills the result with noise the agent learns to skim past, and the one new error goes with it. A per-run ledger tracks what has been reported, keyed on severity, code and message — **not** position, so a diagnostic that merely moved down four lines is not re-reported as new.
+
+### Lazy, and honest about being absent
+
+No server starts at boot. One starts on the first request that needs it, which is almost always the first edit to a file it claims, and idle ones are swept. A host that never touches Dart never starts an analyzer.
+
+Detection is an **intersection**: a root marker must exist in the checkout *and* the binary must resolve. A marker alone says "this project is Python" and nothing about whether the server is installed; a resolvable binary alone says the host has a toolchain and nothing about this checkout. Only both together mean a query can succeed, and a tool that is offered and always fails is worse than one that is absent.
+
+## Why structural search, when grep exists
+
+`grep` matches characters. That is the right tool for a name and the wrong one for a shape.
+
+A structural pattern is parsed by the **same grammar as the file**, so `dispose($X)` finds the call however it is spaced, wrapped or line-broken, and never matches the same characters inside a string literal or a comment.
+
+The property that makes it more than a regex with extra steps is that a metavariable repeated in one pattern must capture the same text:
+
+```
+if ($X != null) $X.dispose()
+```
+
+matches a guard that disposes what it tested, and does not match one that disposes something else. That is a bug class you cannot express textually at all.
+
+### It runs on the tree-sitter already linked
+
+There is no second engine. `cc_natives` already loads tree-sitter and five grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+
+### A fragment needs somewhere to live
+
+A grammar only defines what a whole *file* is. Parsed bare at Dart's top level, `dispose(x)` is a perfectly valid **function signature** — a declaration named `dispose` taking a parameter `x` — with no error anywhere to give it away. A matcher built on that parse looks for declarations, finds no calls, and reports "no matches" for a pattern that was never being read the way it looks.
+
+So a pattern is tried in a ladder of scaffolds — statement, expression, class member, top level — and the first that accepts it wins. A fragment no context accepts is reported as unparseable rather than searched for and quietly not found.
+
+## Why a rewrite stages instead of writing
+
+A structural rewrite is the widest edit an agent can make: one pattern, forty files, and nobody reads the result line by line — not the model, and not the person who asked for it. Writing it and reporting "done" means the first honest look at the change is a `git diff` afterwards.
+
+So `ast_edit` reports what it *would* do — the count, the files, the matched sites — and the change lands only when `resolve` commits it. That is also what lets a diff and an Accept/Discard sit in front of a human before anything reaches disk.
+
+The commit is all-or-nothing and every file is checked against the content captured at staging time. Between staging and committing, the agent may have hand-edited one of those files, a diagnostics pass may have rewritten it, or a formatter may have touched it — committing anyway would discard that work and the diff would look intentional. Any mismatch refuses the whole change, because a partly-applied structural rewrite leaves a tree that compiles under neither shape.
+
+## What a debugger answers that a print statement cannot
+
+The print-statement loop is: add a print, run the whole thing again, read the output, delete the print. It costs a full test run per question, and it only answers the question you thought to ask *before* running.
+
+A stopped frame answers every question about that moment at once — every local, every caller, and an expression evaluated in the frame's own scope. For a wedged process or a failure that reproduces once in ten runs, that is the difference between an afternoon and a minute.
+
+### Bounded like an enclosure, and for the same reason
+
+A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection. A session nobody is driving is a leak that outlives the turn that started it. So there is a hard TTL, exactly one session per conversation, and a second `launch` is refused rather than silently replacing the first: an agent that starts a second without ending the first has almost certainly lost track of the first.
+
+### One transport, two protocols
+
+The Debug Adapter Protocol shares the Language Server Protocol's `Content-Length` framing and nothing above it — different correlation keys, a different failure shape, and a third message type (events) with no LSP equivalent. The framing lives in one place; the protocols sit on it separately.
+
+Writing the framing twice would mean two answers to "a message spans two chunks", "a chunk holds three messages" and "the server wrote a banner to stdout before its first frame", and only one of them would get the fix.
+
+## Related
+
+- [Search code with the code graph](/manual/guides/code-search/) — the symbol and impact side
+- [Debug a failing test](/manual/guides/debug-a-failing-test/) — the debugger, end to end
+- [Refactor structurally](/manual/guides/structural-refactor/) — `ast_grep` and `ast_edit`
+- [Built-in agent tools](/manual/reference/agent-tools/) — every operation and argument

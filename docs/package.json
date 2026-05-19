@@ -1,0 +1,26 @@
+{
+  "name": "docs",
+  "type": "module",
+  "version": "0.0.1",
+  "packageManager": "pnpm@11.21.0+sha512.521705bce689924eac72f5a3587122f362689ef6571e55ba80076fd637c11132ecffada26fad4ea79c485bfddbfd3d5a2a5b05805a77e893de71ec8a6cca3bb1",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build && node scripts/fix-wrangler.mjs",
+    "test": "node --test \"test/*.test.ts\"",
+    "preview": "astro preview",
+    "astro": "astro",
+    "generate-types": "wrangler types"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.2.5",
+    "@astrojs/mdx": "^7.0.8",
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/starlight": "^0.41.9",
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.2.9",
+    "sharp": "^0.35.4",
+    "tailwindcss": "^4.3.3",
+    "wrangler": "^4.127.0"
+  }
+}

@@ -1,0 +1,80 @@
+---
+title: Branch a conversation
+description: Try a different approach from an earlier point without losing the one you already have, then fork or export what you want to keep.
+---
+
+This guide shows you how to go back to an earlier point in a conversation and take it somewhere else — while keeping the path you left.
+
+## The one thing worth knowing
+
+**Branching writes nothing.** A conversation is a tree of messages with a pointer at the tip, and going back moves the pointer. Nothing is deleted, nothing is hidden, and switching back is another pointer move.
+
+That is why editing a prompt and re-running is safe here: the answer you were comparing against is still there.
+
+## See the branches
+
+```
+/tree
+```
+
+The navigator lists every message, indented at each fork, with the current path marked **On this branch**. A conversation that never forked renders as the flat list it always was — the navigator costs nothing to look at until there is something to navigate.
+
+Each row offers two actions.
+
+| Action                          | Effect                                                    |
+| ------------------------------- | --------------------------------------------------------- |
+| **Continue from here**          | Moves the pointer. Your next message continues from that message. |
+| **Fork into a new conversation** | Copies the path up to that message into a new conversation. |
+
+## Branch: try a different approach
+
+1. `/tree`
+2. Find the message you want to start again from — usually the last one you were happy with.
+3. **Continue from here.**
+4. Type the new prompt.
+
+The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
+
+:::note[The transcript follows the pointer]
+The conversation shows the branch you are on. The other one is not gone — it is one `/tree` away.
+:::
+
+## Fork: take it somewhere else
+
+Forking copies the path into a **new conversation** in the same space. Use it when the two directions are going to keep diverging and you want them side by side rather than switching.
+
+The copy has fresh message ids. Two conversations sharing rows would show each other's later messages, which is exactly what a fork is supposed to prevent.
+
+## Revert versus branch
+
+They are different tools and the difference matters.
+
+|                     | Revert                                             | Branch                          |
+| ------------------- | -------------------------------------------------- | ------------------------------- |
+| The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
+| The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
+| Undo                | `unrevert` restores the batch                       | Move the pointer back            |
+
+Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
+
+Reverting also moves the branch tip, so your next message continues from the right place rather than from a tail nobody can see any more.
+
+## Take it out of the app
+
+### `/export`
+
+Writes a **self-contained HTML file**: the whole conversation with collapsible tool cards showing what each call was given and what it returned. No stylesheet, no script, no image host — it works from a USB stick and it works in five years.
+
+- **Desktop:** `Documents/ControlCenter/exports/`, timestamped so a second export does not overwrite the first.
+- **Web:** a browser download.
+
+### `/dump`
+
+Copies the transcript to the clipboard as markdown, with tool calls in collapsible blocks. This is the one to paste into an issue.
+
+Reasoning is deliberately left out: it is the model's scratch space, and a bug report is read by a person.
+
+## Related
+
+- [Conversation history](/manual/concepts/conversation-history/) — why the tree is a pointer move, and what resume actually restores
+- [Slash commands](/manual/reference/slash-commands/) — `/tree`, `/export`, `/dump`

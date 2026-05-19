@@ -1,0 +1,114 @@
+---
+title: Connect a code host
+description: Connect GitHub, GitLab or Bitbucket so the PR surface, repo registration and agent runs work — one workspace can use all three.
+---
+
+Control Center works with three code hosts, called **forges** throughout the app: **GitHub**, **GitLab** and **Bitbucket Cloud**. None of them is the default. Connect one and everything works; connect several and a single workspace can hold repos from all of them at once.
+
+The forge is a property of each **repo**, read from its `origin` remote when you register it. You never pick one, and there is no per-workspace setting to get wrong.
+
+## Connect a forge
+
+1. Open **Settings → You → Profile & identity** (`/settings/profile`).
+2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
+3. Press **Sign in with …** if the row offers it, or **Add token** and paste one.
+
+**Sign in** appears for a forge your server has an app registered for — today that is GitHub, over a device flow (see [Create the GitHub App](/manual/guides/github-app/)). Everything else is a pasted token, which is the honest affordance rather than a button that cannot complete.
+
+Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
+
+Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+
+| Subtitle                         | Meaning                                                            |
+| -------------------------------- | ------------------------------------------------------------------ |
+| `Signed in as octocat`           | Your own credential is being used                                   |
+| `Signed in as octocat · via this server's app` | The server's app identity is answering — you have not signed in |
+| `Signed in as octocat · from the environment` | A server environment variable is answering, not your credential |
+| `Not connected`                  | You have no credential for this forge                               |
+
+### What token each forge wants
+
+| Forge         | Token                                                     | Where to create it                                        |
+| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| **GitHub**    | A personal access token with `repo` and `read:org`        | github.com → Settings → Developer settings → Tokens        |
+| **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
+
+Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+
+### Or use the environment
+
+For a headless or CI install, the server reads these:
+
+- **GitHub** — `GITHUB_TOKEN`, then `GH_TOKEN`
+- **GitLab** — `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
+- **Bitbucket** — `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+
+These are the **server's** credential, not yours, and the distinction is load-bearing: a request made on your behalf uses your credential and nothing else, so the environment never quietly stands in for you. Work with no human behind it — webhooks, PR polling, ticket sync — resolves the server's app identity first, then the server owner's credential, then the environment. The order is fixed so that "I signed in and nothing changed" is never a supported outcome.
+
+## You are a different person on each forge
+
+The same human is `octocat` on GitHub and something else entirely on GitLab. Control Center resolves your identity **per forge** and uses the right one for each repo, which is what makes "needs my review", "created by me" and "you approved this" correct in a mixed workspace.
+
+If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
+
+## One inbox, every forge
+
+The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
+
+Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+
+## What each forge can do
+
+Every forge supports the core loop: list and open pull requests, read diffs, comment inline and at top level, review, merge and close. Beyond that they genuinely differ, and Control Center hides what a forge cannot do rather than showing a control that silently fails.
+
+| Capability                        | GitHub | GitLab | Bitbucket |
+| --------------------------------- | :----: | :----: | :-------: |
+| Batched (pending) reviews         |   ✓    |   ✓    |     —     |
+| Request changes                   |   ✓    |   ✓    |     ✓     |
+| Per-file "viewed" state synced    |   ✓    |   —    |     —     |
+| Emoji reactions                   |   ✓    |   ✓    |     —     |
+| Team / group reviewers            |   ✓    |   ✓    |     —     |
+| Suggested reviewers               |   ✓    |   —    |     ✓     |
+| CI results on a PR                |   ✓    |   ✓    |     ✓     |
+| Drill into a CI job's steps/logs  |   ✓    |   ✓    |     —     |
+| Stacked pull requests             |   ✓    |   —    |     —     |
+| PR description templates          |   ✓    |   ✓    |     —     |
+| Notification polling              |   ✓    |   —    |     —     |
+| Rich user profiles                |   ✓    |   ✓    |     —     |
+| Server-side PR head ref           |   ✓    |   ✓    |     —     |
+
+Where a capability is missing the feature degrades honestly:
+
+- **Viewed state** still works, but only on the device you set it on.
+- **Batched reviews** on Bitbucket post comment by comment, so reviewers see them arrive individually rather than all at once.
+- **No PR head ref** on Bitbucket means checking out a pull request fetches its source branch by name, which fails once that branch is deleted.
+
+## Vocabulary
+
+GitLab calls a pull request a **merge request**. Control Center says "pull request" throughout its own model, and uses each forge's own noun where it is talking about that forge.
+
+## Troubleshooting
+
+### The PR list is empty and says a forge is not connected
+
+You have no credential for that forge. Sign in or paste a token in **Settings → You → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+
+### I connected a forge but its repos still show nothing
+
+Check the row's subtitle. If it reads "via this server's app" or "from the environment", a different credential is answering than the one you expected — your own credential wins for anything you ask for, so if it says otherwise yours was not saved.
+
+### A repo will not register
+
+Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/manual/guides/add-repos/).
+
+### Everything stops working for a while after heavy use
+
+That is the rate-limit circuit breaker. A forge signalling its primary limit makes the client fail further requests locally, without a network call, until the window elapses — so a retry storm cannot deepen the limit. Transient failures are retried with exponential backoff.
+
+## Related guides
+
+- [Add repos to a workspace](/manual/guides/add-repos/)
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Triage the inbox](/manual/guides/triage-inbox/)

@@ -1,0 +1,251 @@
+---
+title: Backup, export and import
+description: The snapshot layout, the manifest, every backup operation and transfer route, and exactly which files a backup does and does not contain.
+---
+
+Everything Control Center can copy, hand over or adopt, and the exact shape of each
+artifact. To actually take a backup, see
+[Back up and restore](/manual/guides/back-up-and-restore/); for why persistence is
+split this way, see [Workspaces and isolation](/manual/concepts/workspaces/).
+
+## Artifacts
+
+There are two, and they are not interchangeable.
+
+| Artifact                | Written by          | Shape                             | Covers                            |
+| ----------------------- | ------------------- | --------------------------------- | --------------------------------- |
+| **Install snapshot**    | `server.backupNow`  | A timestamped **directory**       | Every database on the install     |
+| **Workspace export**    | `workspace.export`  | A single `.db` **file**           | One workspace's database          |
+
+Both are written with SQLite `VACUUM INTO`, which is safe against a live WAL database:
+it takes a read transaction, produces a defragmented and transactionally consistent
+copy, and never requires stopping the server.
+
+## Snapshot layout
+
+```
+<dataDir>/backups/2026-07-28T09-12-33-000Z/
+  manifest.json
+  global.db
+  <workspaceId>/workspace.db      one directory per workspace
+```
+
+The layout mirrors the live data directory exactly, which is what makes restoring an
+install a copy back rather than a translation. The directory name is the UTC timestamp
+with `:` and `.` replaced by `-`, so it is filesystem-safe on Windows and sorts
+chronologically as a plain string.
+
+### `manifest.json`
+
+| Field                      | Type            | Meaning                                                             |
+| -------------------------- | --------------- | ------------------------------------------------------------------- |
+| `version`                  | int             | Manifest format version. Currently `1`                              |
+| `created_at`               | ISO-8601 UTC    | When the snapshot was taken                                         |
+| `global.file`              | string          | Always `global.db`                                                  |
+| `global.schema_version`    | int             | `GlobalDatabase` schema version at capture time                     |
+| `global.bytes`             | int             | Size of the written `global.db`                                     |
+| `workspace_schema_version` | int             | `WorkspaceDatabase` schema version shared by every workspace file   |
+| `workspaces[]`             | array           | One entry per captured workspace                                    |
+| `workspaces[].workspace_id`| string          | The workspace this file holds                                       |
+| `workspaces[].file`        | string          | Path relative to the snapshot root, `<workspaceId>/workspace.db`    |
+| `workspaces[].bytes`       | int             | Size of that file                                                   |
+| `skipped_workspaces[]`     | array of string | Workspaces the backup could **not** capture                         |
+
+A workspace is skipped when it is registered but has never been written to (so no file
+exists yet), or when its `VACUUM INTO` failed. Either way the snapshot still completes
+and the manifest names what is missing.
+
+### Completeness
+
+`server.listBackups` reports a `complete` flag per snapshot. It is false when the
+manifest is absent or unparseable, when `global.db` is missing, or when the manifest
+names a workspace file that is not on disk.
+
+An incomplete snapshot is still listed, because a snapshot an operator cannot see is a
+snapshot they believe they have. When the manifest is unreadable the listing falls back
+to the layout itself and reports whichever `<workspaceId>/workspace.db` files it finds —
+those remain individually adoptable through `workspace.import` even though the snapshot
+as a whole cannot restore an install.
+
+## What a backup does not contain
+
+Both artifacts are **databases only**. A workspace directory holds more than its
+database, and none of the rest travels:
+
+| Path                                | In a snapshot? | In a workspace export? |
+| ----------------------------------- | -------------- | ---------------------- |
+| `global.db`                         | Yes            | No                     |
+| `<workspaceId>/workspace.db`        | Yes            | Yes (it *is* the file) |
+| `<workspaceId>/blobs/`              | No             | No                     |
+| `<workspaceId>/skills/`             | No             | No                     |
+| `<workspaceId>/agents/`             | No             | No                     |
+| `<workspaceId>/chat_credentials/`   | No             | No                     |
+| `<workspaceId>/spaces/<spaceId>/`   | No             | No                     |
+| `<workspaceId>/pr_clones/`          | No             | No                     |
+| `secrets.json`                      | No             | No                     |
+| `models/`                           | No             | No                     |
+| `meetings/<meetingId>/`             | No             | No                     |
+| `rigs/`                             | No             | No                     |
+
+Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
+re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
+is machine state. Some of it is not: `blobs/` holds pasted images that rows in the
+database point at, `skills/` and `agents/` hold the files an agent runs with, and
+`secrets.json` holds every pairing key, provider credential and SSO setting on the
+install. See [Back up and restore](/manual/guides/back-up-and-restore/#copy-backups-off-the-machine)
+for covering the rest.
+
+:::note[Chat tokens deliberately stay behind]
+`chat_credentials/` sitting beside the database rather than inside it is why a workspace
+handed to somebody else carries no live bot tokens. See the
+[chat bridge reference](/manual/reference/chat-bridge/).
+:::
+
+## Operations
+
+All four are `fullClient`-only: a paired phone can never trigger them. All four are
+absent entirely — not refused, structurally missing — on a server with no backup port
+wired, which is what a demo server is.
+
+| Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
+| -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
+| `server.backupNow`   | mutate | Install   | —            | none          | `{ok, path}`                  |
+| `server.listBackups` | read   | Install   | —            | none          | `{backups: [...]}`            |
+| `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
+| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.delete`   | mutate | Install\* | `owner`      | `id`          | registry row marked deleted   |
+
+\* `workspace.delete` is unscoped because the row it marks lives in the global registry,
+so the dispatcher's role gate never fires for it; the handler checks the caller's
+membership of the named workspace itself and requires `owner`.
+
+`path` in every response is a path on the **server host**.
+
+:::note[Taking a snapshot is not owner-gated; downloading one is]
+`server.backupNow` and `server.listBackups` carry no server-admin gate — any full client
+may take a snapshot and see which ones exist, and what they get back is a list of paths,
+not bytes. `GET /backup/snapshot`, which hands over the actual archive of every
+workspace on the install, requires the install **owner**.
+:::
+
+### `server.listBackups` response
+
+Newest first, sorted by directory name (which is the timestamp, so the order holds even
+for a snapshot whose manifest could not be read).
+
+```json
+{
+  "backups": [
+    {
+      "path": "/…/backups/2026-07-28T09-12-33-000Z",
+      "name": "2026-07-28T09-12-33-000Z",
+      "created_at": "2026-07-28T09:12:33.000Z",
+      "bytes": 481203712,
+      "complete": true,
+      "workspaces": [
+        {
+          "workspace_id": "w_9f2c…",
+          "path": "/…/backups/2026-07-28T09-12-33-000Z/w_9f2c…/workspace.db",
+          "bytes": 190840832
+        }
+      ],
+      "skipped_workspace_ids": []
+    }
+  ]
+}
+```
+
+`created_at` is omitted when the manifest could not be read. `bytes` at the top level is
+the real size on disk of the whole directory, not the manifest's own sum — the question
+an operator pruning snapshots is asking is what the directory costs, not what the backup
+meant to write.
+
+Each `workspaces[].path` is exactly what `workspace.import` takes as `source_path`. That
+is deliberate: "restore this workspace from this snapshot" *is* the import op, so the two
+cannot drift into different treatments of the same file.
+
+### `workspace.import` validation
+
+Before anything is replaced, the candidate file is opened read-only with a short-lived
+raw SQLite connection and its `workspace_meta` row is read.
+
+| Condition                                        | Result                                                          |
+| ------------------------------------------------ | ---------------------------------------------------------------- |
+| Not a readable SQLite database, or no `workspace_meta` | Refused. Nothing is touched                                |
+| Recorded workspace id ≠ the target                | **Allowed**, logged. This is how a workspace is duplicated or restored under a new id |
+| Recorded install id ≠ this install                | **Allowed**, logged. Its paired devices and user ids belong to that install and will not resolve here |
+| Invalid workspace id, or file does not exist      | Refused                                                         |
+
+On acceptance the target workspace's database is closed and dropped from the manager
+before the file is copied over it (an open drift connection holds the file and its
+`-wal`), then reopened so `beforeOpen` reinstalls the FTS and sync triggers, and the FTS
+indexes are rebuilt — an imported file's content tables are populated but its index may
+be stale.
+
+## Transfer routes
+
+Every op above speaks in server-side paths, which is a complete answer only when the
+server is your own machine. These three carry the bytes, on the same PSK-signed lane the
+media proxy and blob store use. The caller signs a target string with its device
+pre-shared key and passes the signature as `s`.
+
+| Route                   | Method | Query           | Signed target                  | Requires                |
+| ----------------------- | ------ | --------------- | ------------------------------ | ----------------------- |
+| `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
+| `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+
+`w` is a workspace id, `n` a snapshot directory name, `d` the calling device id, `s` the
+signature. `n` is resolved against the backup listing rather than joined onto the backups
+root, so the route cannot be aimed at a directory the listing would not have shown.
+
+| Status | Cause                                                                              |
+| ------ | ----------------------------------------------------------------------------------- |
+| `400`  | A required query parameter is missing, or an upload body is empty                   |
+| `403`  | Unknown or revoked device, bad signature, or the caller lacks the role              |
+| `404`  | No backup port on this host, or the named snapshot/workspace file does not exist    |
+| `405`  | `/backup/restore` called with anything but `POST`                                   |
+| `413`  | Upload body exceeds 8 GiB, by declared content-length or by bytes actually read     |
+| `500`  | The export or archive failed server-side                                            |
+
+Both downloads respond `Cache-Control: no-store` with `Accept-Ranges: none`. Each request
+mints a **fresh** copy and deletes it once streamed, so a cached or resumed response
+would splice bytes from two different exports into one file that looks valid and is not.
+
+`/backup/snapshot` returns `<name>.zip`, entries relative to the snapshot root so
+unpacking reproduces `manifest.json` + `global.db` + `<workspaceId>/workspace.db`.
+Entries are written in sorted order, so two archives of the same snapshot are the same
+archive.
+
+`/backup/restore` streams the body straight to a staging file rather than buffering it,
+bounds it before and during the read, and deletes the staged file on **every** path out
+including a refusal.
+
+:::caution[A relayed connection has no HTTP origin]
+The brokered relay carries RPC frames, not file transfers. Everything that speaks in
+server-side paths keeps working over it; the three transfer routes need a direct
+connection, and the UI disables them with a note rather than failing mid-download.
+:::
+
+## Paths and limits
+
+| Thing                          | Value                                                        |
+| ------------------------------ | ------------------------------------------------------------ |
+| Snapshots                      | `<dataDir>/backups/<timestamp>/`                             |
+| Workspace exports              | `<dataDir>/backups/exports/<workspaceId>-<timestamp>.db`     |
+| Transfer staging               | `<dataDir>/backups/transfer/` — a workbench, swept by the route that writes it |
+| Snapshot archive name          | `<snapshot directory name>.zip`                              |
+| Upload ceiling                 | 8 GiB per `POST /backup/restore`                             |
+| Retention                      | None. Nothing rotates, prunes or schedules a snapshot        |
+
+The `exports/` directory sits under `backups/` and is excluded from the snapshot listing
+by name — it is a pile of single-workspace files, not a snapshot, and counting it as one
+would report an install as having backups it does not have.
+
+## See also
+
+- [Back up and restore](/manual/guides/back-up-and-restore/) — the recipes these operations belong to
+- [Workspaces and isolation](/manual/concepts/workspaces/) — why one workspace is one file
+- [`cc_server` CLI](/manual/reference/cc-server-cli/) — the data directory these paths sit in
+- [Route map](/manual/reference/route-map/) — where the UI lives
+- [Architecture](/manual/concepts/architecture/) — the client/server split the paths follow

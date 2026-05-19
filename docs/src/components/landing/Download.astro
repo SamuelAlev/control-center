@@ -1,0 +1,85 @@
+---
+/**
+ * Download — the install moment. One card per desktop OS plus the hosted
+ * web app and phone companion. All artifacts come from GitHub Releases;
+ * there is no package-manager tap (yet).
+ */
+
+const RELEASES = 'https://github.com/SamuelAlev/control-center/releases/latest';
+
+const osCards = [
+  {
+    os: 'macOS',
+    primary: 'Download .dmg',
+    files: ['Control-Center-<v>-arm64.dmg'],
+    note: 'Apple Silicon · macOS 13+ · signed and notarized',
+  },
+  {
+    os: 'Windows',
+    primary: 'Download .exe',
+    files: ['Control-Center-<v>-x64-setup.exe', 'Control-Center-<v>-windows-x64.zip'],
+    note: 'x64 · Windows 10+ · portable zip also available',
+  },
+  {
+    os: 'Linux',
+    primary: 'Download AppImage',
+    files: ['Control-Center-<v>-x86_64.AppImage', 'Control-Center-<v>-linux-x64.tar.gz'],
+    note: 'x86_64 · tar.gz also available',
+  },
+];
+---
+
+<section id="install" class="border-t border-border py-[clamp(56px,9vw,88px)]">
+  <div class="wrap flex flex-col items-center text-center">
+    <span class="eyebrow reveal">Get started</span>
+    <h2 class="reveal mt-4 max-w-[24ch] text-[clamp(30px,4.4vw,56px)] font-semibold leading-[1.0] tracking-[-0.03em]">
+      Every screen you own, one operation.
+    </h2>
+    <p class="reveal mt-5 max-w-[52ch] text-[clamp(15px,1.3vw,17px)] text-muted">
+      The same app runs native on macOS, Windows and Linux, in the browser at app.usectrl.dev and as a phone companion. Every client is a thin renderer over one cc_server that owns your data.
+    </p>
+
+    <div class="mt-[clamp(28px,4vw,44px)] grid w-full grid-cols-1 gap-5 text-left md:grid-cols-3">
+      {osCards.map((c) => (
+        <div class="reveal flex flex-col gap-4 border border-border bg-panel p-6">
+          <h3 class="text-[17px] font-semibold tracking-[-0.01em]">{c.os}</h3>
+          <div class="flex flex-col gap-[6px]">
+            {c.files.map((f) => (
+              <code class="font-mono text-[11.5px] text-muted">{f}</code>
+            ))}
+          </div>
+          <p class="text-[12.5px] leading-[1.55] text-muted">{c.note}</p>
+          <a
+            class="btn btn-primary mt-auto self-start"
+            href={RELEASES}
+            target="_blank"
+            rel="noopener noreferrer"
+          >{c.primary}</a>
+        </div>
+      ))}
+    </div>
+
+    <div class="reveal mt-5 grid w-full grid-cols-1 gap-5 text-left md:grid-cols-2">
+      <a href="https://app.usectrl.dev" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-4 border border-border bg-panel px-6 py-5 no-underline transition-colors hover:border-fg">
+        <div class="min-w-0">
+          <h3 class="text-[15px] font-semibold tracking-[-0.01em]">Web app</h3>
+          <p class="mt-1 text-[13px] text-muted">Nothing to install. Connects to a cc_server you run.</p>
+        </div>
+        <span class="ml-auto flex-none font-mono text-[12px] text-muted transition-colors group-hover:text-fg">app.usectrl.dev <span aria-hidden="true">→</span></span>
+      </a>
+      <a href="https://remote.usectrl.dev" target="_blank" rel="noopener noreferrer" class="group flex items-center gap-4 border border-border bg-panel px-6 py-5 no-underline transition-colors hover:border-fg">
+        <div class="min-w-0">
+          <h3 class="text-[15px] font-semibold tracking-[-0.01em]">Phone companion</h3>
+          <p class="mt-1 text-[13px] text-muted">Remote pairs with your server over a sealed relay.</p>
+        </div>
+        <span class="ml-auto flex-none font-mono text-[12px] text-muted transition-colors group-hover:text-fg">remote.usectrl.dev <span aria-hidden="true">→</span></span>
+      </a>
+    </div>
+
+    <p class="reveal mt-8 max-w-[64ch] text-center text-[13.5px] leading-[1.65] text-muted">
+      Self-hosting? Every release also ships the headless <code class="font-mono text-[12px]">cc_server</code> for macOS, Linux and Windows, plus Docker images on GHCR. See <a class="text-fg underline underline-offset-2 decoration-border hover:decoration-fg" href="/manual/guides/run-headless-server/">Run a headless server</a>.
+    </p>
+    <p class="reveal mt-6 font-mono text-xs tracking-[0.03em] text-idle">Free and open source · auto-updates on desktop</p>
+    <p class="reveal mt-4 text-sm text-muted">New to Control Center? Start with the <a class="text-fg underline underline-offset-2 decoration-border hover:decoration-fg" href="/manual/quick-start/">quick-start guide</a>, or browse the <a class="text-fg underline underline-offset-2 decoration-border hover:decoration-fg" href="/manual/">full documentation</a>.</p>
+  </div>
+</section>

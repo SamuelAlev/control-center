@@ -1,0 +1,67 @@
+---
+/**
+ * ScreenshotSlot — a placeholder frame for a real app screenshot.
+ *
+ * Flat hairline frame with corner registration marks; no chrome bars, no
+ * hatching, no shadow. Each slot names the capture it waits for: drop the PNG
+ * at the suggested path under `docs/public/shots/`, then swap the `.stage`
+ * div for `<img src={file} alt={title} />` (keep the frame + ticks).
+ */
+interface Props {
+  /** Slot number, rendered as `NN`. */
+  n: string;
+  /** Short name of the screen, e.g. "The deck". */
+  title: string;
+  /** What the screenshot should show — read this before capturing. */
+  description: string;
+  /** Suggested file under docs/public, e.g. "shots/01-dashboard.png". */
+  file: string;
+  /** CSS aspect-ratio. Default 16/10. */
+  ratio?: string;
+  /** Capture theme hint. */
+  theme?: 'light' | 'dark';
+  /**
+   * Reveal on scroll. Off for slots inside a carousel, where the container
+   * does the revealing and a per-slide entrance would fight the crossfade.
+   */
+  reveal?: boolean;
+  class?: string;
+}
+
+const { n, title, description, file, ratio = '16 / 10', theme = 'light', reveal = true, class: klass = '' } = Astro.props;
+---
+
+<figure class:list={['shot m-0 border border-border bg-panel', reveal && 'reveal', klass]} aria-label={`Screenshot placeholder: ${title}`}>
+  <!-- TODO: replace this stage with <img src="/{file}" alt="{title}" /> once captured -->
+  <div class="stage relative" style={`aspect-ratio: ${ratio};`}>
+    <span class="tick tick-tl" aria-hidden="true">+</span>
+    <span class="tick tick-tr" aria-hidden="true">+</span>
+    <span class="tick tick-bl" aria-hidden="true">+</span>
+    <span class="tick tick-br" aria-hidden="true">+</span>
+    <div class="absolute inset-0 grid place-items-center p-6">
+      <div class="max-w-[44ch] text-center">
+        <div class="font-mono text-[11px] uppercase tracking-[0.12em] text-fg">{n} · {title} · {theme}</div>
+        <p class="mt-3 text-[13px] leading-[1.6] text-muted">{description}</p>
+        <div class="mt-4 font-mono text-[11px] tracking-[0.02em] text-idle">→ public/{file}</div>
+      </div>
+    </div>
+  </div>
+</figure>
+
+<style>
+  .stage {
+    background: var(--color-rail);
+  }
+  .tick {
+    position: absolute;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1;
+    color: var(--color-idle);
+    z-index: 1;
+  }
+  .tick-tl { top: 9px; left: 11px; }
+  .tick-tr { top: 9px; right: 11px; }
+  .tick-bl { bottom: 9px; left: 11px; }
+  .tick-br { bottom: 9px; right: 11px; }
+</style>

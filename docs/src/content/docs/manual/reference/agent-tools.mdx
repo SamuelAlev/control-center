@@ -1,0 +1,208 @@
+---
+title: Built-in agent tools
+description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
+---
+
+These are the tools the **built-in agent runtime** registers directly, as opposed to the [MCP tools](/manual/reference/mcp-tools/) it bridges in. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+
+Every tool here is registered conditionally. A tool whose resource cannot exist on this host is not advertised at all, rather than advertised and failing on call.
+
+## Approval tiers
+
+Each tool declares a tier, and the tier decides **which surfaces see it** — not merely whether it prompts. Plan mode and read-only subagents are capped at `read`, so a `write`- or `exec`-tier tool is absent from their schema entirely.
+
+| Tier    | Meaning                                | Tools here                                         |
+| ------- | -------------------------------------- | -------------------------------------------------- |
+| `read`  | No side effects                        | `lsp`, `ast_grep`, `ask_user`, the five `vibe_*`   |
+| `write` | Changes files                          | `lsp_rename`, `ast_edit`, `resolve`                |
+| `exec`  | Starts or controls a process           | `debug`, `eval`                                    |
+
+---
+
+## `lsp` — language-server queries
+
+Registered when a language server is detected for the checkout. Detection is an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means the tool is not offered.
+
+Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
+
+| Action            | Arguments                        | Returns                                    |
+| ----------------- | -------------------------------- | ------------------------------------------ |
+| `diagnostics`     | `file` (or `"*"`)                | Errors and warnings; `"*"` runs the project checker instead |
+| `definition`      | `file`, `line`, `symbol`         | Where the symbol is declared               |
+| `type_definition` | `file`, `line`, `symbol`         | Where its type is declared                 |
+| `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
+| `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
+| `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
+| `symbols`         | `query`                          | Workspace symbol search, capped at 200     |
+| `code_actions`    | `file`, `line`                   | Quick fixes the server offers              |
+| `status`          | —                                | Which servers are running, and for which roots |
+| `reload`          | —                                | Restarts the server for this root          |
+
+### Diagnostics on write
+
+The payoff is not the tool. `write`, `edit` and `apply_patch` are **wrapped**: after the write the file is synced and saved through the language server, and only **newly introduced** diagnostics are folded into the tool result. An agent finds out it broke the build at the moment it broke it, without having to remember to ask.
+
+Already-reported diagnostics are suppressed by a per-run ledger keyed on severity, code and message — position deliberately excluded, so a diagnostic that merely moved down four lines is not re-reported as new.
+
+## `lsp_rename` — project-wide rename
+
+A separate, `write`-tier tool for exactly one reason: the tier decides visibility. Folding rename into `lsp` would either hand a read-only explorer the ability to rewrite the repo, or put every `hover` behind an approval prompt.
+
+| Argument | Meaning                                    |
+| -------- | ------------------------------------------ |
+| `file`   | Where the symbol is                        |
+| `line`   | 1-indexed line                             |
+| `symbol` | Substring identifying it on that line      |
+| `new_name` | What to call it                          |
+
+---
+
+## `ast_grep` — structural search
+
+Finds code by **shape** rather than by text. `$NAME` matches any node, `$$$NAME` matches a run of siblings, and `$_` is a wildcard that binds nothing.
+
+The property that makes it a matcher rather than a regex with extra steps: a metavariable repeated in one pattern must capture the same text.
+
+```
+ast_grep(pattern: "if ($X != null) $X.dispose()", language: "dart")
+```
+
+matches a guard that disposes what it tested, and does **not** match one that disposes something else.
+
+| Argument      | Meaning                                                     |
+| ------------- | ----------------------------------------------------------- |
+| `pattern`     | A code fragment with metavariables                          |
+| `path`        | File or directory to search; defaults to the whole workspace |
+| `language`    | `dart`, `javascript`, `typescript`, `tsx`, `php`. Inferred when `path` names a file |
+| `max_results` | Default 50                                                  |
+
+:::note[The pattern is parsed by the same grammar as the file]
+So `dispose(x)` matches the call however it is spaced, wrapped or commented — and never matches the same characters inside a string literal or a comment.
+:::
+
+:::caution[A fragment is parsed in a scaffold, not bare]
+`dispose(x)` parsed at Dart's top level is a valid *function signature*. The pattern compiler tries a ladder of contexts (statement, expression, class member, declaration) and uses the first that accepts the fragment. A pattern no context accepts is reported as unparseable rather than searched for and silently not found.
+:::
+
+## `ast_edit` — structural rewrite, staged
+
+Same matching, plus a `rewrite` template with the metavariables substituted back in. **Nothing is written.** The change is staged and the result names an `edit_id`.
+
+```
+ast_edit(pattern: "dispose($X)", rewrite: "$X.dispose()", language: "dart")
+→ (proposed) 12 replacements in 4 files … call resolve with edit_id "edit_1"
+```
+
+| Argument   | Meaning                                             |
+| ---------- | --------------------------------------------------- |
+| `pattern`  | What to match                                       |
+| `rewrite`  | What to put there, with `$NAME` substituted         |
+| `path`     | Scope; defaults to the whole workspace              |
+| `language` | Language id                                         |
+
+## `resolve` — commit or discard a staged change
+
+| Argument  | Meaning                          |
+| --------- | -------------------------------- |
+| `edit_id` | From the `(proposed)` result     |
+| `action`  | `accept` or `discard`            |
+
+Every file is compared against the content captured at staging time, and **any** mismatch refuses the whole change. A partly-applied structural rewrite leaves a tree that compiles under neither the old shape nor the new one.
+
+---
+
+## `debug` — drive a debugger
+
+Registered when a debug adapter is detected for the checkout, by the same intersection rule as the language server. `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+
+One session per conversation, with a hard TTL. A second `launch` is refused rather than silently replacing the first.
+
+| Op            | Arguments                     | Notes                                          |
+| ------------- | ----------------------------- | ---------------------------------------------- |
+| `adapters`    | —                             | Which adapters are usable here, and why not     |
+| `status`      | —                             | Whether a session is running, and where it stopped |
+| `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
+| `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
+| `attach`      | `port`                        | Connects to an already-running debuggee         |
+| `continue`    | `thread_id?`                  | Runs until the next stop                        |
+| `pause`       | `thread_id?`                  | Stops it where it is                            |
+| `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
+| `threads`     | —                             | Thread ids and names                            |
+| `stack`       | `thread_id?`                  | Frames, capped at 30                            |
+| `scopes`      | `frame_id`                    | Scopes on a frame, each with a `reference`      |
+| `variables`   | `reference`                   | Children, capped at 50, values capped at 400 chars |
+| `evaluate`    | `expression`, `frame_id?`     | Evaluated in the frame's own scope              |
+| `output`      | —                             | The debuggee's stdout/stderr, bounded           |
+| `terminate`   | —                             | Ends the session and kills the adapter          |
+
+### Adapters
+
+| Id        | Command                    | Root markers                                    |
+| --------- | -------------------------- | ----------------------------------------------- |
+| `dart`    | `dart debug_adapter`       | `pubspec.yaml`                                  |
+| `debugpy` | `python3 -m debugpy.adapter` | `pyproject.toml`, `setup.py`, `requirements.txt` |
+| `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
+| `delve`   | `dlv dap`                  | `go.mod`                                        |
+
+`debugpy` prefers a project-local `.venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+
+---
+
+## `eval` — persistent interpreters
+
+A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
+
+| Argument   | Meaning                                          |
+| ---------- | ------------------------------------------------ |
+| `code`     | The cell                                         |
+| `language` | `python` (default) or `javascript`               |
+| `reset`    | Discard the interpreter and start clean first    |
+
+- The last expression is echoed the way a notebook does.
+- `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
+- The IPython idioms people reflexively type — `%pip`, `%cd`, `!cmd`, `%%bash`, `%%timeit` — are rewritten into plain code. `%pip` also evicts `sys.modules`, so the next `import` sees what was just installed.
+
+### Calling your own tools from inside a cell
+
+```python
+contents = tool("read", {"path": "lib/auth.dart"})
+```
+
+The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
+
+The cell's timeout is an *inactivity* budget and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+
+:::note[Where the kernel runs]
+In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+:::
+
+---
+
+## `ask_user` — ask the human a question
+
+`read` tier. Renders a structured question in the conversation and blocks the run until someone answers.
+
+| Argument       | Meaning                                    |
+| -------------- | ------------------------------------------ |
+| `question`     | What to ask                                |
+| `options[]`    | Choices, each `{label, description?}`      |
+| `allow_free_text` | Whether a typed answer is accepted       |
+| `multi_select` | Whether several options may be chosen      |
+
+Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
+
+---
+
+## `vibe_*` — directing background workers
+
+Registered only while [vibe mode](/manual/guides/direct-background-workers/) is on. All five are `read` tier: the gate belongs on the worker's tools, where the edit actually happens.
+
+| Tool         | Arguments                                | Notes                                       |
+| ------------ | ---------------------------------------- | ------------------------------------------- |
+| `vibe_spawn` | `brief`, `label`, `tier?`                | Returns immediately; the worker runs on     |
+| `vibe_send`  | `worker_id`, `message`                   | Appends to the brief and re-runs            |
+| `vibe_wait`  | `worker_id`, `timeout_seconds?`          | Blocks until it settles                     |
+| `vibe_kill`  | `worker_id`                              | Stops it                                    |
+| `vibe_list`  | —                                        | Tier, status, elapsed and last result       |
+
+`tier` is `fast` (mechanical work with a clear specification) or `good` (design, judgment, or reviewing a `fast` worker's output).

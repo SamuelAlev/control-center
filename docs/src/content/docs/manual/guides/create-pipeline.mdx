@@ -1,0 +1,238 @@
+---
+title: Create a pipeline template
+description: Author a DAG workflow template in the pipeline editor — add nodes, wire them, declare inputs and make it runnable.
+---
+
+Pipeline templates are authored in workspace settings. The **Pipelines** entry
+in the workspace sidebar is the _run queue_, not the template list — it has no
+"create template" action.
+
+For what each step kind, body key and config field means, see the
+[pipeline steps reference](/manual/reference/pipeline-steps/).
+
+## Create a template
+
+1. Go to **Settings → Workspace → Pipeline templates**
+   (`/workspaces/<workspace-id>/settings/pipelines`).
+2. Press **New template**.
+3. Enter a **template ID** — a slug such as `my_pipeline`. It is the only field
+   in the dialog; the template's name starts out the same as its ID.
+4. Press **Create**.
+
+The editor opens on a seeded skeleton, not a blank canvas: a **Trigger** entry
+node, one prompt-agent node labelled **Step** and a terminal sentinel that ends
+the run. The sentinel is not drawn.
+
+## Add nodes
+
+The **Node library** sidebar sits permanently on the left of the editor. Filter
+it with the **Search nodes** box and drag an entry onto the canvas — the node
+lands where you drop it, with no incoming connection.
+
+| Palette node                    | Step kind | What it does                                                                         |
+| ------------------------------- | --------- | ------------------------------------------------------------------------------------ |
+| **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
+| **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
+| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
+| **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
+| **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
+| **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
+| **Hello: greet**                | listen    | Demo body that writes a greeting into state                                          |
+| **Hello: world**                | listen    | Demo body that appends to the greeting                                               |
+| **Post to space**               | listen    | Sends a message to a messaging space                                                 |
+| **Condition / switch (router)** | router    | Branches the flow on a state value                                                   |
+| **If file exists (router)**     | router    | Routes `"true"` when a path exists under the clone, else `"false"`                   |
+| **Any file exists (OR router)** | router    | Routes `"true"` when any listed path exists                                          |
+| **All conditions (AND router)** | router    | Routes `"true"` only when every listed path exists                                   |
+| **Team dispatch**               | listen    | Dispatches a whole team and suspends until it finishes                               |
+| **Approval gate**               | listen    | Pauses for an approval decision                                                      |
+| **For each (map)**              | forEach   | Runs an agent task once per item in a state collection, in parallel                  |
+| **Call sub-pipeline**           | listen    | Runs another template as a nested step                                               |
+| **Clean up worktrees**          | listen    | Removes stale isolated worktrees; deterministic, no agent dispatched                 |
+
+The library groups these under **Flow & logic**, **PR review**, **Agents**,
+**Messaging**, **Code** and **Demo**.
+
+## Wire nodes together
+
+There are no ports on the canvas and nothing to drag between nodes.
+Connections are edited from the node that _receives_ them:
+
+1. Select the downstream node. Its config panel opens on the right.
+2. Scroll to **Triggers from** and tap the chip for each upstream node this one
+   should listen to. Tapping a selected chip removes the connection.
+3. If an upstream node is a router, a **Route keys** block appears under the
+   chips with one **Route key from &lt;node&gt;** field per router edge. Enter
+   the key that edge fires on — `true` or `false` for the file-exists routers,
+   or the case name for a switch.
+
+The trigger node is the single entry point. A node may listen to several
+upstreams (fan-in) and feed several downstreams (fan-out) and the graph must
+stay acyclic — nothing in the editor stops you wiring a cycle, so check your
+work.
+
+:::caution[Build the chain upstream of the seeded step]
+The terminal sentinel is filtered out of the canvas, so it cannot be selected
+or repointed — it stays wired to the seeded **Step** node for the life of the
+template. The engine completes a run as soon as one of the terminal's incoming
+branches completes, which means anything you attach _downstream_ of **Step**
+never executes.
+
+Add your work _before_ **Step** instead: drop the new nodes, wire them to each
+other, then select **Step** and repoint its **Triggers from** chips at your last
+new node. **Step** stays the final piece of work before the run ends.
+:::
+
+## Configure a node
+
+Select a node to open its config panel. Which fields appear depends on the
+node's body; the panel is the same form for every node type, so there is no
+per-type editor beyond what is listed here.
+
+Every node has **Label**, **Input keys** (comma-separated state keys read at
+execution time) and, under **Advanced**, **Reducer**, **Timeout (ms)**,
+**Retry attempts**, **Continue on fail** and **Output schema**. Listen and join
+nodes can also switch their **Kind** between the two.
+
+### Prompt agent
+
+Adds **Agent** (which agent to dispatch), **Prompt** (use `{{key}}` to
+reference inputs or upstream outputs) and **Output key**.
+
+**Timeout (ms)** is in _milliseconds_, not seconds — `900000` is 15 minutes.
+Entering `900` gives the step 0.9 seconds.
+
+The conversation mode a prompt-agent node runs under has no editor field. It
+rides `extras['mode']` (`chat`, `plan` or `review`) on the node config, which
+only a generated or hand-edited template can set. The key is matched exactly:
+any other spelling is silently ignored and the body's default is used.
+
+### Bash script
+
+Adds **Script**. There are no working-directory or environment fields, because
+neither is configurable:
+
+- Every bash step in a run shares the cwd `<cc_root>/pipelines/<runId>/`.
+- `GITHUB_TOKEN` is injected from the credentials store, so `gh` and
+  `git clone https://x-access-token:$GITHUB_TOKEN@…` work without setup.
+- The script is spawned as the literal executable `bash`, so `bash` must be on
+  the server host's `PATH`. That is a Windows consideration.
+
+### Router
+
+A router evaluates a condition and returns a route key; the engine fires only
+the downstream edge whose route key matches and marks the other branches
+skipped.
+
+Selecting a router replaces the **Output key** field with the condition editor.
+Pick one of its four modes:
+
+- **File(s) exist — any** — routes `"true"` when any listed path exists.
+- **Files exist — all** — routes `"true"` only when every listed path exists.
+- **Comparison** — compares a state value against a literal.
+- **Switch** — routes on a state key's value, with a default case.
+
+Then set the matching route keys on the outgoing edges (see
+[Wire nodes together](#wire-nodes-together)).
+
+Boolean `and` / `or` / `not` groups are supported by the body but cannot be
+authored from this form — they need a hand-written predicate tree under
+`extras.predicate`. The full predicate and operator vocabulary is in the
+[pipeline steps reference](/manual/reference/pipeline-steps/).
+
+### Join
+
+No configuration of its own: it waits for all of its upstream steps.
+
+### Approval gate
+
+The gate dispatches the approver agent into a hidden conversation with the gate
+prompt and suspends. The approver seeks your decision in the conversation and submits it
+with `submit_output` as `{ "decision": "approved" | "rejected", "reason": "..." }`.
+The decision lands under the output key (default `approvalDecision`), so a
+switch router downstream can branch on it.
+
+Set **Agent** to the approver and **Prompt** to the gate question.
+
+:::caution[The palette description is stale]
+The node's description in the library names `approve_step` and `reject_step`.
+Neither tool exists — the gate resolves through `submit_output`, as above.
+:::
+
+### Team dispatch
+
+Adds **Team ID** and **Dispatch mode**. The picker offers exactly two modes:
+
+- `allParallel` — one task per member, suspends until all complete.
+- `manager` — dispatches the leader, who delegates.
+
+Any other stored value behaves as `allParallel`. Set **Reducer** to `append` to
+collect each member's result into a list under the output key.
+
+### For each and Call sub-pipeline
+
+:::caution[These two nodes cannot be fully configured from the app]
+Only the router has an extras editor. `extras.iterableKey`, `extras.itemKey`
+and `extras.templateId` have no field anywhere in the editor, so a **For each**
+node always maps over the default `items` state key and a **Call sub-pipeline**
+node cannot be pointed at a child template from the app at all.
+:::
+
+**For each** dispatches its agent once per item, referencing the current item as
+`{{item}}` and aggregates the per-item outputs into a list under the output key
+when the reducer is `append`. An empty collection completes immediately with an
+empty list.
+
+**Call sub-pipeline** suspends until the child run reaches a terminal state, then
+merges the child's final state under the output key (default `subflow_result`).
+A template cannot call itself; a failed or cancelled child fails the parent step,
+which then feeds that step's retry and continue-on-fail policy.
+
+## Declare inputs and allow manual runs
+
+Both live behind **Manual run** in the editor header.
+
+1. Press **Manual run**.
+2. Turn on **Allow manual run**. This switch persists immediately — it creates
+   (or deletes) the `manual` trigger row that makes the template appear in the
+   run launcher.
+3. Press **Add input** for each form field a manual run should collect:
+
+| Field             | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| **Key**           | State key the value is stored under; reference it as `{{key}}` |
+| **Label**         | Display label (defaults to the key)                            |
+| **Type**          | Text, Multi-line text, Number, Toggle, Select, Repository      |
+| **Options**       | Comma-separated choices, for Select only                       |
+| **Default value** | Pre-filled value                                               |
+| **Placeholder**   | Hint text inside the empty field                               |
+| **Help text**     | Helper text under the field                                    |
+| **Required**      | Whether the run form blocks on an empty value                  |
+
+A **Repository** input renders a picker over the workspace's repos and populates
+`repoId`, `repoLocalPath`, `repoFullName` and — when the repo has a GitHub
+remote — `repoOwner` and `repoName` into the run payload.
+
+4. Press **Save** in the dialog. Input edits are folded into the draft; they
+   persist when you save the template.
+
+## Save and enable
+
+1. Press **Save** in the editor header. The header shows "Unsaved changes"
+   until you do.
+2. Go back to **Settings → Workspace → Pipeline templates** and check the
+   template's row switch is on. The engine refuses to start a disabled
+   template and a disabled template never appears in the run launcher.
+3. To start it automatically, add triggers on the **Trigger** node — see
+   [Set up pipeline triggers](/manual/guides/pipeline-triggers/).
+
+## Related guides
+
+- [Run a pipeline manually](/manual/guides/run-pipeline/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/)
+- [Pipeline steps reference](/manual/reference/pipeline-steps/)
+
+## Related concepts
+
+- [Pipelines](/manual/concepts/pipelines/)

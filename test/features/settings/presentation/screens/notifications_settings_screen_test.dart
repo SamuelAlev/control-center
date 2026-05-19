@@ -1,0 +1,29 @@
+import 'package:control_center/features/settings/presentation/screens/notifications_settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../helpers/test_wrap.dart';
+
+void main() {
+  testWidgets('renders screen', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [],
+        child: testWrap(const NotificationsSettingsScreen()),
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(NotificationsSettingsScreen), findsOneWidget);
+  });
+
+  testWidgets('renders with title', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [],
+        child: testWrap(const NotificationsSettingsScreen()),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Notifications'), findsOneWidget);
+  });
+}

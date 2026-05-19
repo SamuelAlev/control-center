@@ -1,0 +1,111 @@
+---
+title: Record and summarize a meeting
+description: Record a call, get a transcript and turn it into notes, action items and decisions.
+---
+
+This guide shows you how to record a meeting and get an AI-generated writeup.
+See [Meetings and transcription](/manual/concepts/meetings/) for how it works.
+
+## Before you start
+
+- **Install a speech model on the server, then restart it.** Go to **Settings → Server → Voice & meeting models** and install one (Parakeet TDT 0.6B v3, the multilingual default, is about 600 MB). The server resolves the model **once at boot**, so a model installed while it is running does nothing until the next start. Without one, recording fails with `Could not start recording on the host: …` — the recording ops are simply absent from the server.
+- Grant **microphone** permission when your OS asks on the first record.
+- On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
+- On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.
+
+:::caution[Where your meeting audio goes]
+Capture, transcription, echo cancellation and speaker diarization all run
+on-device, with no cloud call — but "device" means the **cc_server host**, which
+is a different machine when you run the server remotely. And the final writeup is
+an ordinary agent run: the `meeting_summary` pipeline sends the full transcript
+and your rough notes to whatever model provider that agent uses. Point that agent
+at a local provider if the transcript must not leave the machine.
+
+The recording screen states this while you record, so the decision is in front of
+you before there is a transcript to send.
+:::
+
+## Start a recording
+
+1. Open **Meetings** in the sidebar.
+2. Click **Record meeting**. The live recording HUD opens at `/meetings/record`.
+
+Recording starts immediately and captures your microphone plus the system output
+audio — the other participants. There is no mode prompt and no audio-source
+picker: the in-person single-mic mode exists in the API but has no UI today.
+
+In the browser, the same flow works, with one difference: the "system audio" is a
+screenshare that must include an audio track. Share a browser tab (or your whole
+screen) and enable "Share tab audio" / "Share system audio" in the picker. Safari
+and Firefox and full-screen sharing on macOS, often cannot supply one.
+
+The HUD shows a level meter, the elapsed time and a live transcript building up
+on one side.
+
+## During the meeting
+
+- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
+- **Pick the note template** in the **Active template** row. It shapes this meeting's summary and is captured with the recording, so a later re-run reproduces the template you chose here.
+- **Pause and resume** with the pause control. Transcription stops while paused and the timer freezes.
+- The transcript streams in speaker-tagged: your words as **You**, everyone on the call as **Others** — until diarization splits Others into `Person 1`, `Person 2`, … which you can rename.
+
+:::note[A very quiet speaker may not be transcribed]
+Transcription skips any audio window that never rose above a silence threshold,
+without decoding it at all. That keeps a quiet channel from burning CPU on
+hallucinated non-speech tokens, but it also means a faint or distant speaker can
+produce no transcript. Check the level meter early rather than at the end.
+:::
+
+## Stop and summarize
+
+1. Click **Stop & summarize**.
+2. Control Center takes you straight to the meeting's detail view, marked **processing**: diarization splits the remote channel into individual speakers and the `meeting_summary` pipeline generates the writeup.
+3. The meeting flips to **done** once that pipeline finishes. You don't have to wait on it — the detail view updates itself.
+
+## Review the writeup
+
+The meeting detail (`/meetings/:meetingId`) has four tabs:
+
+| Tab              | What's there                                                                    |
+| ---------------- | ------------------------------------------------------------------------------- |
+| **Notes**        | The AI summary and enhanced notes, built from your rough notes + the transcript |
+| **Transcript**   | The full speaker-tagged transcript with timestamps                              |
+| **Action items** | Extracted to-dos, each with an optional owner                                   |
+| **Decisions**    | Decisions captured during the call                                              |
+
+From here you can:
+
+- **Rename speakers**: change `Person 1` to a real name; it applies across the transcript.
+- **Check off action items** as you complete them.
+- **Create ticket** from an action item: this files a new, unassigned ticket titled with the action item and links it back to the row. Assign it to an agent from the ticket itself (see [Delegate work to agents](/manual/guides/delegate-tickets/)).
+- **Re-run summary** for a fresh pass (for example after renaming speakers). It reuses the template captured when the meeting was recorded.
+
+Editing notes, the title, action items and decisions works everywhere.
+**Re-run summary** and cancelling a processing meeting are **desktop-only** — in
+the browser both buttons do nothing.
+
+## Record straight from a calendar event
+
+If you've [connected a calendar](/manual/guides/connect-calendar/), you can skip
+the manual start. This is **desktop-only**; the web client refuses it.
+
+1. Open the event from **Calendar**.
+2. Click **Start recording & link**.
+
+The recording is seeded with the event's title and linked back to it, so the
+notes and the calendar entry stay connected.
+
+:::note[Deleting a meeting does not delete its audio]
+Deleting a meeting removes its rows, but the recorded WAV files under
+`<dataDir>/meetings/<meetingId>/` stay on disk — there is no retention policy,
+size cap, or cleanup sweep. Remove that directory yourself if the audio matters.
+:::
+
+## Related guides
+
+- [Connect a Google Calendar](/manual/guides/connect-calendar/)
+- [Delegate work to agents](/manual/guides/delegate-tickets/)
+
+## Related concepts
+
+- [Meetings and transcription](/manual/concepts/meetings/)

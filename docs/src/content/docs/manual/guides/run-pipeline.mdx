@@ -1,0 +1,71 @@
+---
+title: Run a pipeline manually
+description: Start a pipeline run from the launcher, fill in its inputs and land on the run detail.
+---
+
+This guide covers starting a run by hand. For watching one, reading step
+output and recovering from a failure, see
+[Monitor pipeline runs](/manual/guides/monitor-pipelines/).
+
+## Start a run
+
+1. Click **Pipelines** in the workspace sidebar.
+2. Press **Run pipeline** in the header. You land on the launcher
+   (`/workspaces/<workspace-id>/pipelines/run`).
+3. Pick a template from the left rail. Each card shows the template's name, its
+   description and whether it takes inputs.
+4. Fill in the input form on the right. Required fields block the button until
+   they have a value; a template with no inputs says so.
+5. Press **Run pipeline**.
+
+You land on the run's detail page, with the timing waterfall and the graph
+canvas live.
+
+## If the rail is empty
+
+The launcher shows a template only when **both** are true:
+
+- The template's switch is on in **Settings → Workspace → Pipeline templates**.
+- **Allow manual run** is on in the template editor's **Manual run** dialog —
+  that switch is what creates the `manual` trigger the launcher reads.
+
+Eight of the thirteen built-in templates ship disabled: `external_pr_welcome`,
+`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `release_notes`,
+`dep_audit` and `pr_digest`. The engine refuses to start a disabled template, so
+turn its switch on before looking for it here.
+
+There is no per-template **Run** action on the templates list and no run button
+inside the editor — the launcher is the only manual entry point.
+
+## Fill in a repository input
+
+An input of type **Repository** renders a picker over the workspace's registered
+repos. Choosing one populates `repoId`, `repoLocalPath`, `repoFullName` and —
+when the repo has a GitHub remote — `repoOwner` and `repoName` into the run
+payload, so downstream steps can read whichever they need.
+
+## Watch it run
+
+The run detail page has three parts: a meta strip (start time, active duration,
+step progress, a failure banner, **Retry** and **Delete**), a collapsible timing
+waterfall with per-step duration and cost and the graph canvas. Selecting a
+node opens that step's detail panel.
+
+[Monitor pipeline runs](/manual/guides/monitor-pipelines/) covers all of it,
+including how to read a suspended step and what to do when one fails.
+
+:::caution[There is no dry-run toggle]
+`pipeline.start` accepts a `dry_run` flag on the wire and the bash body honours
+it, but no client sets it and there is no control for it in the launcher. Every
+run you start from the app is a real one.
+:::
+
+## Related guides
+
+- [Create a pipeline template](/manual/guides/create-pipeline/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/)
+
+## Related concepts
+
+- [Pipelines](/manual/concepts/pipelines/)

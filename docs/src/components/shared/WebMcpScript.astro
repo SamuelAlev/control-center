@@ -1,0 +1,81 @@
+---
+/**
+ * Registers this site's WebMCP tools with a browser-resident AI agent, on
+ * every page. Included from MarketingLayout (every marketing page, the
+ * landing page included) and from the Starlight `Head` override (every docs
+ * page), so the whole origin carries it.
+ *
+ * The tool table itself lives in src/agentic/webmcp-tools.ts — a pure module
+ * with no Astro imports, so a unit test can pin the names and schemas against
+ * the docs MCP server's.
+ *
+ * This is a bundled Astro `<script>` (like RevealScript), not `is:inline`:
+ * Astro hoists it to one deferred module shared by every page, so it never
+ * blocks rendering and the tool definitions are not re-inlined per page.
+ *
+ * `navigator.modelContext` / `document.modelContext` is absent in every
+ * browser by default, so the common path is a silent no-op — no console
+ * output, no thrown error.
+ */
+---
+
+<script>
+  import {
+    browserPagefindLoader,
+    createWebMcpTools,
+    findModelContext,
+    registerWebMcpTools,
+  } from '../../agentic/webmcp-tools.ts';
+
+  (() => {
+    'use strict';
+
+    let controller: AbortController | null = null;
+
+    const register = async () => {
+      try {
+        const context = findModelContext(window);
+        // No WebMCP in this browser: the whole feature is off, silently.
+        if (!context) return;
+
+        // Abort any previous registration first, so a re-register (view
+        // transition, bfcache restore) cannot collide on duplicate names.
+        controller?.abort();
+        controller = new AbortController();
+
+        const tools = createWebMcpTools({
+          // Same-origin relative URLs: the tools read this site's own
+          // /llms.txt, markdown twins and Pagefind index.
+          origin: '',
+          fetch: window.fetch.bind(window),
+          loadPagefind: browserPagefindLoader(),
+          navigate: (url: string) => {
+            window.location.assign(url);
+          },
+        });
+
+        await registerWebMcpTools(context, tools, controller.signal);
+      } catch {
+        // The API is experimental and its shape moves. A mismatch must cost
+        // the tools, never the page.
+      }
+    };
+
+    void register();
+
+    // Astro view transitions swap the document without a fresh load: drop the
+    // old registration and put a new one up. Both listeners are inert on a
+    // site with no view transitions configured.
+    document.addEventListener('astro:before-swap', () => controller?.abort());
+    document.addEventListener('astro:after-swap', () => void register());
+
+    // A page frozen into the bfcache should not keep tools live; a restore
+    // puts them back.
+    window.addEventListener('pagehide', (event) => {
+      if (!event.persisted) controller?.abort();
+    });
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) void register();
+    });
+  })();
+</script>

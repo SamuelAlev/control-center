@@ -1,0 +1,87 @@
+---
+title: Your first workspace
+description: Create a workspace, register a repo into it and see the isolation boundary for yourself.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- A workspace named after your project
+- A Git repository registered into it
+- Five seeded agents, one of which you have configured well enough to run
+- A second, empty workspace that proves the isolation boundary
+
+Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+
+Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
+
+- it is inside a git work tree
+- it has an `origin` remote
+- that remote points at github.com, gitlab.com or bitbucket.org
+
+## Step 1: Create a workspace
+
+1. Click the workspace chip in the title bar
+2. Choose **Add workspace…**
+3. Enter a name that identifies the project, like "api-service" or "frontend-v2"
+4. Optionally pick a logo
+5. Click **Add workspace**
+
+Control Center switches to the new workspace and lands on its inbox (`/workspaces/<id>/inbox`).
+
+Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
+
+- a **CEO agent**, whose persona is coordination and delegation
+- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
+- the built-in pipeline templates and their trigger rows
+
+Every workspace you create gets all of this, not just the first one.
+
+Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring; select one and its detail header reads "No runs yet".
+
+## Step 2: Register a repository
+
+1. Go to **Settings → Workspace → Repositories**
+2. Click **Add repository**
+3. Browse to your checkout. The dialog walks the folders on the machine running `cc_server` — not your client — and stays inside the roots that server exposes (its user's home directory by default). A git checkout gets a distinct folder icon and a checkbox; a plain folder gets neither, so only checkouts can be selected.
+4. Tick one or more checkouts and register the batch. Selections survive as you navigate, so you can gather several in one pass and one bad pick never drops the rest.
+
+Control Center reads each checkout's `origin` remote, resolves owner and repo and creates the repo row **inside this workspace**. There is no second step to link it: registration is what scopes it.
+
+Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
+
+Confirm it: the repo appears in the list with its GitHub `owner/repo` and current branch.
+
+## Step 3: Make one agent runnable
+
+The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto CEO agents only and only once, so a workspace you create afterwards starts with all five unset. Set one now.
+
+1. Open **Settings → Workspace → Agents**
+2. Select `engineer` in the roster
+3. On the **Settings** tab, set **Adapter** to `Control Center (built-in)` and pick a **Model** from a provider you have connected under Settings → Server → Model providers
+4. Press **Save changes**
+
+Confirm it: reopen the agent and the two fields hold your choices.
+
+Each agent carries its own adapter and model, so repeat this for any other agent you intend to use. [Create and configure an agent](/manual/guides/create-agent/) covers the rest of the form.
+
+## Step 4: See the isolation boundary
+
+Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
+
+- **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
+- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
+- The spaces list, tickets and memory are all empty.
+
+Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
+
+Switch back with the title-bar chip, or open **Manage workspaces** to see them side by side.
+
+For the full model, read [Workspaces and isolation](/manual/concepts/workspaces/).
+
+## Recap
+
+You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+
+**Next:** [Dispatch your first agent](/manual/tutorials/first-agent/) to put the workspace to work.

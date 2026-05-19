@@ -1,0 +1,116 @@
+---
+title: Create and configure an agent
+description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
+---
+
+This guide shows you how to add an agent to a workspace and configure it until it can actually run.
+
+Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+
+## Before you start
+
+- You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
+- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install an agent CLI on the machine hosting `cc_server`.
+- If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
+
+## Add the agent
+
+1. Open **Settings → Workspace → Agents**.
+2. Click **Add agent**.
+
+There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
+
+You should now see "Unnamed agent" in the roster on the left, with the **Settings** tab of its detail pane open and a **Name** field containing "Unnamed agent".
+
+## Name it
+
+- **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
+- **Title** — the human-readable label, for example "Senior coder".
+- **System prompt** — optional, replaces the default instructions for this agent.
+
+Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
+
+## Give it an adapter and a model
+
+The **Adapter** dropdown lists all eight built-in adapters, whether or not their CLI was found on the server host:
+
+| Adapter                   | Backend                                       |
+| ------------------------- | --------------------------------------------- |
+| Control Center (built-in) | The in-process agent loop — no external CLI   |
+| Pi                        | `pi` CLI                                      |
+| Claude Code               | `claude -p --output-format stream-json`       |
+| Codex                     | `codex` over the Agent Client Protocol        |
+| Gemini CLI                | `gemini` over the Agent Client Protocol       |
+| Goose                     | `goose` over the Agent Client Protocol        |
+| OpenCode                  | `opencode` over the Agent Client Protocol     |
+| Cursor                    | `cursor-agent` over the Agent Client Protocol |
+
+Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Every external CLI gives you none of those.
+
+:::note[An empty adapter means the built-in loop]
+An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
+:::
+
+The **Model** dropdown is driven by the adapter you picked. For the built-in adapter the list comes live from the providers you have connected under **Settings → Server → Model providers**, so a provider with no stored credential contributes zero models.
+
+## Add skills
+
+**Skills** is a chip picker over the skill bundles installed in this workspace. Tap a chip to toggle it; the check glyph marks the selected ones. If the workspace has no skills the field reads "No skills available. Create skills in Settings → Skills first."
+
+You do not pick a repo's own skills here. A repo that ships them (in `.agents/skills/`, `.claude/skills/` or `.opencode/skills/`) contributes them automatically to whichever agent is working in that repo, and they swap out when it moves to another — see [Repo-scoped skills](/manual/concepts/agent-model/#repo-scoped-skills).
+
+## Set the reporting line and persona
+
+- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header and it is the roster a team leader sees when it delegates.
+- **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
+
+## Tune the run
+
+- **Reasoning effort** — the options come from the selected model's own published levels: Low / Medium / High, plus Extra High on OpenAI-style models and Extra High + Max on Claude-style ones. The field is hidden entirely when the selected model declares no thinking levels and it defaults to the model's own default.
+- **Context window size** — pre-filled from the model's context window whenever you change model, with one-tap chips for the model default, 200k, 500k and 1M. A value you type after picking the model wins until the next model change.
+- **Silence timeout (minutes)** — terminate a run after this long with no output. Leave it empty to use the per-mode default.
+
+## Grant permissions
+
+**Sandbox permissions** starts on "Use workspace default". Turn the switch on to set them for this agent, then toggle:
+
+- **Allow git push** — injects the GitHub token the agent needs to push
+- **Allow GitHub API calls** — lets the agent read PRs, issues and repo metadata
+- **Allow ticketing API calls** — injects the ticketing provider key
+- **Allow general network access** — also enables the built-in harness's `web_fetch` and `web_search` tools
+
+Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
+
+:::caution[The default is conservative and it is not the setting you see]
+An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on** — the server's own conservative default. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference that the server does not read at dispatch time. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+
+Note also that these capabilities gate _credentials and harness tools_, which is a separate layer from the OS sandbox. `cc_server` does wrap agent runs in the host's sandbox where one exists — but Windows has no backend and Linux and WSL2 need `bwrap` and `socat`, so on those hosts the capability flags and the guardrails are what you have. See [Sandbox and security](/manual/concepts/sandbox-security/) for the full set of boundaries.
+:::
+
+**Strict identity check** is persisted but nothing reads it today; leaving it off changes nothing.
+
+## Verify it runs
+
+1. Open **Settings → Server → Model providers** and confirm the adapter you chose reports an installed version rather than "Not found". Click **Refresh** to re-probe — the probe runs on the machine hosting `cc_server`, not on the machine you are looking at.
+2. Open a space with the agent and send it a message, or @-mention it in an existing space.
+3. Come back to **Settings → Workspace → Agents**, select the agent and open its **Logs** tab. A run should appear with a status badge, a duration, a started time and the adapter it used. **View** opens that run's event stream.
+
+If no run appears at all, work through [Run agent diagnostics](/manual/guides/agent-diagnostics/).
+
+## Delete an agent
+
+Select it in the roster and click **Delete** in the detail pane header.
+
+## Related guides
+
+- [Run agents in parallel](/manual/guides/parallel-agents/)
+- [Build an agent team](/manual/guides/build-team/)
+- [Manage adapters and models](/manual/guides/adapters/)
+- [Run agent diagnostics](/manual/guides/agent-diagnostics/)
+- [Agent configuration reference](/manual/reference/agent-configuration/)
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/)
+- [Modes](/manual/concepts/modes/)
+- [Sandbox and security](/manual/concepts/sandbox-security/)

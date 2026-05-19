@@ -1,0 +1,122 @@
+---
+title: Delegate work to agents
+description: Hand a ticket to an agent in a conversation and let agents delegate sub-tasks to each other under the depth and cycle guards.
+---
+
+This guide covers getting work off your plate and onto an agent's and what
+happens when agents pass work between themselves.
+
+:::caution[Assigning a ticket does not dispatch anything]
+There is no ticket dispatcher. Assignment records ownership and nothing more —
+no space is created, no status changes, no agent starts. Agent work lives in
+conversations, so that is where you start it.
+:::
+
+## Hand a ticket to an agent
+
+1. [Create the ticket](/manual/guides/manage-tickets/) with a title and a
+   description precise enough to work from.
+2. Set its **Assignee** to the agent, so ownership is on the record.
+3. Open (or create) a space and @-mention that agent.
+4. Reference the ticket with a `#` mention in your message — the composer
+   autocompletes workspace tickets — and say what you want done.
+
+The agent picks the work up from the conversation. Its progress streams into
+that space.
+
+## What the agent receives
+
+- Your message, including the ticket reference you tagged.
+- The space to work and report in.
+- An isolated worktree from the workspace's linked repos.
+- The space's **mode**, which is what governs the run's tool surface.
+
+Mode is a property of the space, not of the ticket — a ticket has no
+mode. One agent can therefore be in `chat` in one space and `plan` in
+another. Pick it from the composer's mode dropdown (**Agent**, **Plan** or
+**Orchestrate**); `review` is set by PR-review spaces and is not selectable.
+See [Modes](/manual/concepts/modes/).
+
+## Require a structured result
+
+An output contract is declared on the dispatch, not on the ticket:
+`expected_output_schema` plus `output_contract_mode` (strict by default). The
+agent satisfies it by calling `submit_output`, which validates the payload
+against the schema and rejects a non-conforming one.
+
+Both the accepted output and any rejections land on the **agent run log**. The
+ticket's own status is untouched by this — a failed contract does not fail the
+ticket.
+
+## Monitor progress
+
+- **The space** — live agent activity, the primary view.
+- **The ticket** — its status, as whoever moves it sets it.
+- **Observability → Live** (`/workspaces/<workspace-id>/observability`) — the
+  live agent roster.
+- **Observability → Insights** — the run log, with cost and duration.
+
+There is no dashboard screen; a bare workspace URL redirects to the inbox.
+
+## Let agents delegate to each other
+
+An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
+It creates a child ticket assigned to another agent and — when you pass
+`parent_ticket_id` — records the chain so the guards can see it.
+
+Two guards are enforced server-side at the ticketing chokepoint, never by
+prompt instruction:
+
+- **Depth cap** — a chain deeper than 3 hops is refused.
+- **Cycle detection** — a hop back to an agent already in the chain is refused.
+
+A refusal is loud: the tool returns the guard's reason verbatim, so the
+delegating agent sees exactly why. The `delegatedByAgentId` field records who
+delegated, forming a delegation tree.
+
+:::caution[`delegate_ticket` skips both guards]
+The older `delegate_ticket` tool is still registered and calls the _unguarded_
+path — no depth cap, no cycle check. Prefer `delegate_task`.
+
+Two further guards exist in the code but are **not wired in**: the autonomy
+ceiling (a delegate must not act with more autonomy than its delegator) and the
+budget envelope (delegation cannot mint budget). Do not rely on either today.
+:::
+
+This delegation depth cap of 3 is a different limit from the built-in harness's
+subagent nesting cap of 2 — one bounds tickets between agents, the other bounds
+subagents inside a single run.
+
+## Put several agents on one ticket
+
+Add them as **collaborators** on the ticket (roles: assignee, collaborator,
+reviewer). That is a roster — a record of who is involved — and grants nothing
+by itself.
+
+To actually put agents in the same conversation, add them as participants from
+the space header. They can then @-mention each other there. See
+[Spaces](/manual/guides/spaces/).
+
+## Automated ticket creation
+
+No node in the pipeline palette creates tickets, so a pipeline cannot fan work
+out as assigned tickets.
+
+The path that does exist is orchestration: approving a proposal materializes its
+whole sub-ticket DAG, files every sub-ticket under a generated project, forms a
+team and starts the pipeline run that drives them. See
+[Run an orchestration](/manual/guides/run-orchestration/).
+
+## Related guides
+
+- [Create and manage tickets](/manual/guides/manage-tickets/)
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Run an orchestration](/manual/guides/run-orchestration/)
+- [Organize work with projects](/manual/guides/projects/)
+- [Ticket lifecycle reference](/manual/reference/ticket-lifecycle/)
+
+## Related concepts
+
+- [Tickets](/manual/concepts/tickets/)
+- [Dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)
+- [Modes](/manual/concepts/modes/)

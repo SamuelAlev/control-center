@@ -1,0 +1,143 @@
+---
+title: Dispatch reviewer agents
+description: Send specialist reviewer agents at a PR from the PR view, an MCP tool, or a pipeline step.
+---
+
+This guide shows you how to dispatch reviewer agents to review pull requests.
+
+## From the PR view
+
+1. Open the PR and go to its **Overview** tab
+2. Open the ⋯ overflow menu and choose **Ask AI**
+
+This starts the seeded `pr_review` pipeline, which opens the PR's review space
+and dispatches the reviewers for the workspace's review level — three by
+default (the seeded **qa**, **architect** and **engineer** agents) — then has
+the lead agent consolidate. You do not choose the
+roles on this path. For control over which roles run and which files each one
+looks at, use the MCP tool or a pipeline step below.
+
+## Via the `dispatch_reviewers` MCP tool
+
+Call it from inside an existing review space:
+
+```
+dispatch_reviewers(
+  space_id: "...",
+  workspace_id: "...",
+  reviewers: [
+    {role: "reviewer"},
+    {role: "security", scope: "src/auth/**"}
+  ]
+)
+```
+
+`space_id`, `workspace_id` and `reviewers` are all required. Each reviewer spec
+takes a `role` plus an optional file-glob `scope` and a `prompt_override` that
+replaces the default brief. An optional `concurrency` (1–8) caps parallel
+dispatches; when omitted, the workspace's `review_concurrency` setting applies
+(default 3, set at Settings → Workspace → General).
+
+The tool returns immediately with `dispatched` and `unmatched` lists. Every
+dispatched reviewer is added to the space as a participant, announced with a
+system message and dispatched with its brief. Findings land as `review_node`
+messages in that space.
+
+## From a pipeline step
+
+Open **Settings → Workspace → Pipeline templates**, open a template, then:
+
+1. Add a **Reviewer (prompt)** node from the palette
+2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
+   placeholders for upstream outputs (for example `{{repoLocalPath}}`,
+   `{{prNumber}}`)
+3. Set the output key (default `reviewer_findings`) so downstream steps can read
+   the findings
+
+The step dispatches the agent and suspends until that run finishes. The engine
+then harvests the run's `submit_output` payload into pipeline state under the
+node's output key. (The palette description still says the step waits for a
+`complete_task` call — that tool does not exist; ignore the string.)
+
+Fan out by wiring several reviewer nodes to the same upstream step, then
+consolidate their outputs with a **Consolidate (join)** node.
+
+:::caution[The terminal sentinel cannot be re-pointed]
+Every template ends in a hidden terminal sentinel and the editor filters it out
+of the canvas — so you cannot select it or re-thread it onto a node you add. The
+engine completes the run the moment the sentinel's incoming branch finishes and
+returns before scheduling anything else that became ready in the same tick. A
+node added _downstream_ of the step the sentinel is wired to therefore never
+executes. Fan-out nodes wired to an _upstream_ step still run.
+:::
+
+## Automatic dispatch on a new PR
+
+To have a review pipeline fire by itself:
+
+1. Open the template at **Settings → Workspace → Pipeline templates**
+2. Select the trigger entry node on the canvas to open the trigger panel
+3. Add an event trigger and pick the event
+4. Enable both the trigger and the template
+
+Two events matter here and they are not interchangeable:
+
+| Event                  | Fires when                                                                                                         | Payload keys                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.createOnGitHub` | `prId`, `workspaceId`, `repoOwner`, `repoName`           |
+| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                        | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author` |
+
+A PR opened on github.com never raises `PullRequestPublished`, so a template
+wired only to that event will not see it. Note also that `PullRequestPublished`
+carries no `prNumber` — a step whose script or prompt references `{{prNumber}}`
+must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
+
+Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the
+next matching PR. A template left disabled makes its trigger fire into nothing —
+the engine rejects a disabled template and returns without starting a run.
+
+## How a role is matched to an agent
+
+`dispatch_reviewers` scores every agent in the workspace against each requested
+role label, case-insensitively:
+
+| Match                                   | Score |
+| --------------------------------------- | ----- |
+| A skill containing the role label       | +3    |
+| A title containing the role label       | +2    |
+| An agent name containing the role label | +1    |
+
+Scores accumulate and the highest total wins (on a tie, the first candidate
+found). If no candidate scores above zero, the spec comes back in the tool's
+`unmatched` list instead of being dispatched — so a role nobody matches is
+reported, never silently skipped.
+
+## The review space
+
+A PR has exactly **one** review space, not one per reviewer. It is created
+idempotently by `pr.ensureSpace`, linked to the PR through a
+`ReviewSpaceAssociation` and provisioned against the PR's head ref. Every
+dispatched reviewer joins that space and posts its `review_node` findings there,
+which is what makes the findings comparable and lets the lead agent reach
+consensus across them.
+
+## Monitor the dispatch
+
+Each dispatched reviewer gets its own `AgentRunLog`. Follow progress in:
+
+- The **review space**, where findings stream in live
+- The PR's **Review** tab, which shows the review status bar and verdict
+- **Observability → Live** (`/workspaces/:id/observability`), the agent roster
+  with per-run status, live elapsed time, a transcript drawer and a kill control.
+  There is no keyboard shortcut for it — reach it from the sidebar footer.
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/)
+- [Review and merge a PR](/manual/guides/review-merge-pr/)
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+
+## Related concepts
+
+- [AI review](/manual/concepts/ai-review/)
+- [Pipelines](/manual/concepts/pipelines/)
