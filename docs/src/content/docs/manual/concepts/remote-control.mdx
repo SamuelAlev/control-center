@@ -1,0 +1,214 @@
+---
+title: Remote control and mobile
+description: How the phone reaches your server over a brokered, end-to-end-sealed relay rather than a peer-to-peer link and the layered access model that keeps that reach narrow.
+---
+
+Control Center is a desktop app, but the work it tracks doesn't stop when you
+step away from your desk. **Remote control** pairs your phone with your
+`cc_server`, using **[Remote](https://remote.usectrl.dev/)**, the companion app
+at remote.usectrl.dev, so you can follow the fleet from there: read messages
+and tickets, reply to an agent, triage your newsfeed, without the audio,
+transcript, source code, or credentials that live on the server ever leaving
+it.
+
+Think of it as a read-mostly companion to the deck. It is not meant to replace
+the full desktop client.
+
+:::note[Two different remote paths]
+The phone companion pairs with a `cc_server` over a **brokered WebSocket
+relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
+(and a desktop pointed at a remote server) is the other remote path; it dials
+`cc_server` over WebSocket and renders the complete app. See
+[Deployment and clients](/manual/concepts/deployment/) for how the two differ.
+:::
+
+## This is not WebRTC
+
+It is worth saying plainly, because the shape of the thing looks like it should
+be. There is **no peer-to-peer data channel**. The server owns one invite-gated
+room on a WebSocket signaling broker and relays sealed frames through it, or the
+client connects directly over loopback, LAN, tailnet, or `wss://`. That is the
+whole topology.
+
+`flutter_webrtc` is still listed in the root `pubspec.yaml` and the signaling
+broker can mint short-lived TURN credentials — but no Dart file imports the
+former and nothing consumes the latter. Both are provisioned against a possible
+future WebRTC transport. Neither is an active NAT-traversal mechanism today; the
+brokered relay is what guarantees reachability.
+
+## What the phone can do
+
+The paired phone reaches a small, intentional slice of the server's surface:
+
+- **Read** tickets, agents, spaces and their messages and your newsfeed
+- **Reply**: send a message in a space, update or assign a ticket, mark an
+  article read or saved
+- **Run a playbook**: instantiate a saved plan template with its parameters.
+  This only _proposes_ a plan; nothing executes or spends until an operator
+  approves it in Plan Studio on a full client
+- **Switch workspaces**, from the phone's own picker
+
+That is close to all of it. A phone is a **lower-privilege principal** than a
+full client. It cannot spawn processes, spend LLM budget, push to GitHub, hire
+or fire agents, or create workspaces. See
+[the access model](#the-access-model) for how that is enforced rather than
+merely intended.
+
+## How the link is built
+
+The connection rides a **brokered relay**: the server joins one invite-gated
+room on a `wss://` broker as its owner and every paired client — desktop, web,
+phone — joins the same room with a time-boxed admission token. Three pieces
+come together:
+
+| Piece                  | Role                                                                                                                                                                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Remote (phone app)** | The companion web app, hosted at `remote.usectrl.dev` by default, or self-hosted. Loads in a browser, holds the pairing record in IndexedDB.                                                                                                                                   |
+| **Relay broker**       | A stateless `wss://` relay (`cc_signaling_server`) hosting N-way rooms. It carries **only opaque frames**: every payload is sealed end-to-end between the phone and the server, so the broker never sees app data or the pairing secret and never interprets what it forwards. |
+| **`cc_server`**        | The room's owner. It answers the phone's calls through the same dispatcher every other client uses.                                                                                                                                                                            |
+
+A pairing offer carries a **connection descriptor** listing every path to the
+server (LAN, tailnet, public `wss://`, relay) plus its identity fingerprint.
+The phone's resolver picks the best reachable path and pins the fingerprint on
+first connect (TOFU); the relay guarantees connectivity even when no direct
+path exists, without ever being able to read the traffic.
+
+## What the pairing payload is
+
+Pairing is minted from the app and delivered as a deep link; see
+[Pair a device](/manual/guides/pair-a-device/) for the procedure. The anatomy is
+what matters here.
+
+```
+https://<pwa-host>/#<payload>
+```
+
+The payload rides in the URL **fragment**, the part after `#` that browsers
+never send to the server, so the PWA's HTTPS host never sees it. It carries
+everything the phone needs to reach the server and prove who it is: the
+connection descriptor (every path plus the identity fingerprint), a freshly
+minted device id, a 32-byte pre-shared key and an expiry stamp. The phone
+decodes it, stores a pairing record locally and strips the fragment so the
+secret leaves the URL.
+
+There are two payload shapes and they are **not interchangeable**. The phone QR
+minted from the in-app pairing panel is the v2 `PairingPayload` above, pointed
+at the Remote PWA host. `cc_server pair --client-url` emits a different, older
+v1 link (`{s, i, k}` — server URL, device id, key) intended for the **web**
+client only.
+
+They also differ in lifetime, which is easy to get wrong:
+
+| Minted by                             | Credential expiry                         |
+| ------------------------------------- | ----------------------------------------- |
+| In-app pairing panel (`pairing.mint`) | 30 days, always                           |
+| `cc_server pair` on the command line  | **None** — the credential does not expire |
+
+## The access model
+
+A paired device is **authenticated but untrusted**. Several independent gates
+keep an approved (or leaked) pairing from becoming full control of the server.
+
+### 1. Membership, not pairing, is the boundary
+
+A valid pairing key proves _which device_ you are. What you may read or change
+is decided by your **workspace role**, re-resolved on every single call and by
+per-repo grants on anything that exposes repo content. A device holding a
+perfectly good key but belonging to a user who is not a member of the named
+workspace is refused with "Not a member of this workspace".
+
+The role floor is derived from the operation's kind unless it declares its own:
+reads need `guest`, mutations need `member`, destructive operations need
+`admin`.
+
+### 2. A phone is a lower session tier
+
+Beyond the role check, a phone session carries a lower capability than a desktop
+or web session. Seventeen operations are declared full-client-only and are
+refused for a phone before the handler runs, regardless of how privileged the
+user behind it is: minting, listing, renaming and revoking device pairings;
+reading and setting tunnel connectivity; server backup and workspace
+export/import; process detection and kill; server settings; and taking over or
+handing back a running agent.
+
+### 3. A default-deny tool allow-list
+
+For the MCP tool surface specifically (`tools/call`), a default-deny allow-list
+governs which tools the phone may invoke. Anything not listed is rejected before
+it runs. The list is read-and-observe heavy plus a handful of **local-only**
+writes — a message, a ticket update, an article flag — that spend no LLM budget,
+spawn no process and touch no external system.
+
+Denied, for example: consulting an agent, starting an AI review, killing an
+agent, publishing a review to GitHub, hiring or firing agents, creating a
+workspace.
+
+### 4. Per-call workspace scoping
+
+The server holds **no** "current workspace". It is stateless by design: every
+workspace-scoped call must name its target `workspace_id` in its arguments and
+the dispatcher refuses the call outright when that is missing or names a
+workspace the server does not have registered — before anything opens a
+database. A phone can therefore never inherit or drift into another client's
+scope and naming a foreign workspace does not help either, because the
+membership check in gate 1 still applies. This is the same
+[workspace isolation](/manual/concepts/workspaces/) invariant the rest of the
+product enforces.
+
+### 5. End-to-end-sealed frames keyed by the pre-shared key
+
+Every frame between phone and server is sealed with the pairing key; the
+admission token only gets a client into the room, it decrypts nothing. The
+broker relays ciphertext and never sees the key. A device that is revoked finds
+its credential already gone, so it **fails closed** on reconnect.
+
+An app-minted credential is time-boxed to 30 days; past that the connect gate
+fails it and the phone must re-pair. Revocation is live: the server watches the
+device table and drops a revoked device's open sessions within seconds rather
+than waiting for its next connect.
+
+### 6. Rate limiting per principal
+
+A sliding-window limiter caps remote tool traffic at 120 calls a minute, with a
+tighter 30-a-minute sub-cap on the mutating verbs. The budget belongs to the
+**principal, not the session**: three of your devices draw from one allowance,
+so a hijacked client cannot buy headroom by opening more sessions and one noisy
+member cannot starve the others.
+
+### 7. A broker that learns nothing
+
+The relay broker is deliberately dumb: it hosts rooms, forwards sealed frames,
+and holds no accounts, no app data and no keys. Rooms are invite-gated and
+transient. The app data, audio, transcript, source and credentials all stay on
+the server.
+
+## Live updates
+
+Once paired, the phone receives **live updates** as notification frames — new
+agent messages, tickets assigned to you, status changes — mirroring the
+desktop's own notifications. The server broadcasts those frames to every
+connected session and the workspace filter is applied client-side, so what you
+see is scoped to the workspace you are looking at.
+
+## Where it lives
+
+| Surface                                                                             | What it shows                                                                                               |
+| ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| **Settings → You → Your devices** (`/workspaces/:workspaceId/settings/you/devices`) | Paired clients with live status, plus **Pair a new client** (web browser, desktop app, or phone) and revoke |
+
+The same panel mints pairings for a second browser or desktop app, not just
+phones — the flow is identical, only the deep link differs.
+
+::::note
+Remote control is server-side and is **not** exposed over MCP. The phone speaks
+to the server's own dispatcher over the relay; it is not an MCP client of an
+external server.
+::::
+
+## See also
+
+- [Workspaces and isolation](/manual/concepts/workspaces/): the per-call scoping this leans on
+- [Multiplayer — identity, membership and presence](/manual/concepts/multiplayer/): roles, membership and repo grants
+- [Deployment and clients](/manual/concepts/deployment/): where remote control sits among the client tiers
+- [Architecture](/manual/concepts/architecture/): where remote control sits in the stack
+- [Pair a device](/manual/guides/pair-a-device/)

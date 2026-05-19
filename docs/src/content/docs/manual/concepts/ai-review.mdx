@@ -1,0 +1,220 @@
+---
+title: AI review
+description: How a pull request becomes a reviewed one — review spaces, review nodes and peer consensus, cohorts and axes, the Ship/Hold/Block verdict, and why publishing stays a step you take.
+---
+
+## The shape of a review
+
+An AI review is one run of the seeded `pr_review` pipeline against one open pull
+request. The pipeline opens the PR's review space, fans out reviewer agents to
+read the diff in that space's isolated checkout, each files its findings as
+structured **review nodes**, a lead agent consolidates them into a walkthrough,
+and a finalizer computes one verdict: **Ship**, **Hold** or **Block**. What the
+pipeline never does is publish — posting to GitHub is a separate, deliberate
+step a human takes.
+
+The rest of this page explains the pieces and why they are shaped this way.
+
+## One review space per PR
+
+A PR's review context is a messaging space — mode `review`, kind `pr` — linked
+to the pull request by a **review space association**. It is created
+idempotently: the PR page, the review pipeline and the chat surfaces all
+resolve the PR's _one_ backing space through the same code path, so a template
+that reviews a PR and a human who opens it can never end up in two different
+rooms looking at two different checkouts.
+
+The space's isolated worktree has the PR checked out at its head ref. One room
+also means one checkout: every reviewer works in the same space rather than each
+getting its own clone of the workspace.
+
+Each reviewer posts into its own named stream inside that one space, and
+findings are `review_node` messages rather than plain prose. The space-wide
+gather at the end is deliberate — a verdict computed from one thread's findings
+would silently be a verdict on one reviewer.
+
+The association carries a status ladder — `requested` → `in progress` →
+`awaiting approval` → `completed` — which is what the status bar on the PR's
+Review tab renders.
+
+## Review levels
+
+How deep a review goes is a workspace policy with three levels, set at
+**Settings → Workspace → Workspace policy → Review level**:
+
+| Level       | Reviewers that fan out                        | Reporting                                     |
+| ----------- | --------------------------------------------- | --------------------------------------------- |
+| `light`     | Engineer only                                 | Only what materially matters                  |
+| `balanced`  | Engineer, QA, architect (the default)         | The standing pass                             |
+| `thorough`  | All five, including security and performance  | Nothing demoted                               |
+
+The level moves two dials at once: which reviewers fan out, enforced by the
+pipeline template's `runWhen` state gates rather than by prompt wording —
+prompt wording can be ignored, a gate cannot — and where sub-threshold findings
+are rendered. Neither dial ever deletes a finding: a level that reports less
+still files exactly as much and groups the remainder.
+
+The security and performance passes reuse the seeded architect and engineer
+agents rather than introducing new ones. The specialism is the brief the
+reviewer is dispatched with, not a separate agent per axis — an agent per axis
+would be five more rows in every workspace for no additional capability.
+Reviewer selection never inspects the diff for language or domain.
+
+## Review nodes: findings as data, not prose
+
+A finding filed with `add_review_node` becomes a **review node** on the PR —
+which is what the Review tab renders, what the verdict is computed from, and
+what "Publish to GitHub" turns into an inline comment. A reviewer that only
+returns prose produces a pipeline run that looks successful and a review
+surface that is empty; filing is the load-bearing part.
+
+Each node carries:
+
+| Field             | Values                                                                     |
+| ----------------- | -------------------------------------------------------------------------- |
+| Kind              | `bug`, `suggestion`, `recommendation`, `question`, `ticket`                 |
+| Priority          | P0 (critical) → P3 (nit)                                                    |
+| Triage triple     | category (`security`, `stability`, …), severity, effort                      |
+| Anchor            | File path, line start and end                                               |
+| Fix carriage      | Suggested replacement lines, an optional diff, an optional fix prompt       |
+| Confidence        | A [0, 1] score                                                              |
+| Reasoning         | The analysis, written before the finding                                    |
+
+Two details are deliberate. A one-click GitHub suggestion is only offered when
+the reviewer supplied exact replacement lines — inferring them from a unified
+diff goes wrong quietly, and a one-click commit of a wrong inference is worse
+than no button at all. And the reasoning must be written before the finding, so
+the finding is conditioned on the analysis rather than rationalized after it.
+A node whose payload is malformed disappears rather than polluting the review.
+
+## Peer consensus
+
+A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
+The middle step is the heart of the model: **a finding only graduates when a
+peer reviewer confirms it, and an agent can never confirm its own finding.**
+A single reviewer's opinion never reaches GitHub on its own — publishing
+includes peer-confirmed findings only, by default.
+
+The rule is enforced in three independent places — the confirm tool, the
+finalizer and the publisher — so it survives a buggy caller in any one of
+them. Status changes all route through one service, which is what makes a
+status mean something: before that, two half-paths could disagree about
+whether the same finding was resolved.
+
+When reviewers disagree — same file and line, priorities two or more levels
+apart, or one calling it a `bug` while the other calls it a `suggestion` — the
+disagreement is surfaced above the findings list. That is where the reviewers'
+opinions diverge and a human's judgement is worth the most.
+
+Dismissing a finding also writes a soft suppression fact into the memory
+domain, at low confidence — one dismissal is a preference, not a rule.
+
+## Cohorts: what the review is grouped around
+
+The review compute pass groups a PR's changed files into **cohorts** derived
+from the code graph: changed files map to the symbols they touch, symbols to connected
+components, and the cohorts are ranked by blast radius. A cohort carries a
+guided reading order, diagrams and insights rather than being a flat file
+list.
+
+Two honesty rules shape this. Cohort keys are content-derived and stable
+across pushes, so findings and review progress survive a rebase or force-push
+instead of orphaning. And when the repo has no code index, grouping falls back
+to plain paths and says so — the fallback never fakes semantic confidence.
+
+## Review axes and gates
+
+Alongside the reviewers' findings, a review accumulates **axis results**: six
+axes, of two kinds.
+
+| Axis                          | Kind          | Drawn from                          |
+| ----------------------------- | ------------- | ----------------------------------- |
+| `correctness`, `security`     | Token-driven  | The reviewers' own findings          |
+| `testGap`                     | Token-driven  | The reviewers' findings              |
+| `performance`, `visual`, `apiContract` | Deterministic | Computed without spending tokens |
+
+An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
+only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
+and `unavailable` is load-bearing: a gated axis that could not complete or
+could not run at all holds the overall verdict rather than passing it.
+**Absence of evidence never converts to a green gate.**
+
+Some axes are advisory on purpose. The test-gap axis derived from cohorts
+cannot see dependency-injection or factory coverage — an unindexed repo with a
+thorough suite and one with no tests at all look identical from there, so
+claiming either would be a lie; it surfaces in the dashboard without gating.
+The token axes are advisory because the finding priorities already drive the
+verdict, and re-gating on them would double-count.
+
+## The verdict
+
+The finalizer computes the verdict over the findings with status `open` or
+`consensus-ready`:
+
+- any P0 finding with confidence ≥ 0.7 → **Block**
+- otherwise, any P0 (low-confidence) or any P1 → **Hold**
+- otherwise → **Ship**
+
+The verdict carries an aggregate confidence derived from the spread of the
+contributing confidences — agreement raises it, divergence lowers it.
+
+The lead (CEO) agent's consolidation is an editorial pass, not a re-listing: a
+hand-written second copy of the findings is exactly what drifts from the real
+one. Duplicate findings are demoted rather than repeated — several reviewers
+are pointed at one diff with deliberately overlapping remits, so the same
+defect reaching the finalizer three times is the system working; publishing it
+three times is the system leaking its own architecture into the reader's
+inbox. On a re-review, findings are fingerprinted and diffed against the
+previous round, so the delta is what surfaces.
+
+Finally the axes fold in, and they can only make the verdict **more** severe:
+a gated failing axis forces Block — it cannot be out-voted by findings — and a
+gated axis that could not complete forces at least Hold.
+
+## Publishing stays with you
+
+The pipeline deliberately does not post to GitHub; publishing is user-gated so
+a review can never double-publish. When you press **Publish to GitHub**:
+
+- One GitHub review is submitted. Findings already resolved or dismissed are
+  skipped, and by default only peer-confirmed findings are included — the
+  precision-first wedge.
+- Findings anchored to a file and line become inline comments; everything else
+  folds into the summary body, each carrying a "— Control Center AI review"
+  footer so the source is unambiguous.
+- Anchors are re-verified against the PR's _current_ diff at publish time.
+  A comment on code that has already been rewritten is the most
+  trust-destroying thing a reviewer can leave; if GitHub rejects an inline
+  anchor anyway, the whole review is re-sent with every finding folded into
+  the body so nothing is silently dropped.
+- A **Block** verdict is submitted as `REQUEST_CHANGES`; anything else as
+  `COMMENT`. The bot never approves on the author's behalf unless you
+  explicitly opt in.
+- The review arrives under the account of the person who pressed the button.
+  Only agent-triggered auto-publishes ride the server's own identity.
+
+Publishing declares the `prPublish` action class, so the guardrail chokepoint
+gates it like any mutating action — it prompts by default and fails closed
+when no approver is connected. See [Guardrails](/manual/concepts/guardrails/).
+
+## What a reviewer may do
+
+Reviewer agents run in `review` mode: a read-only sandbox and a curated tool
+allowlist covering findings, commentary, tickets and peer review — but no
+mutations. A reviewer cannot fix the code it critiques; it can attach a
+suggested fix that a human applies. The mode's refusal message tells an agent
+that tries to act anyway to finalize the review and let the user act on the
+published summary.
+
+## Related concepts
+
+- [Guardrails](/manual/concepts/guardrails/) — the policy engine that gates publishing
+- [Modes](/manual/concepts/modes/) — what `review` mode changes for an agent
+- [Pipelines and automation](/manual/concepts/pipelines/) — the engine the review runs on
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/) — where the isolated worktree comes from
+
+## Related guides
+
+- [Use AI-powered review](/manual/guides/ai-review/) — run a review and publish it
+- [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/) — choose the reviewers yourself
+- [Review Studio](/manual/guides/review-studio/) — cohorts, axes and diffs, and why they have no viewer

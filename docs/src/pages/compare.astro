@@ -1,0 +1,219 @@
+---
+/**
+ * /compare/ — the comparison surface for search and AI answers. The matrix
+ * data lives in src/data/compare.ts (also feeding llms-full.txt); this page
+ * renders it with question-shaped sections and answer-first copy so snippets
+ * and answer engines can lift sentences verbatim. Cells must stay backed by
+ * each product's public claims — see the rules in the data file.
+ */
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import HeroShader from '../components/shared/HeroShader.astro';
+import StructuredData from '../components/shared/StructuredData.astro';
+import LandingScripts from '../components/landing/LandingScripts.astro';
+import CompareCell from '../components/compare/CompareCell.astro';
+import CompareTooltip from '../components/compare/CompareTooltip.astro';
+import { columns, tools, compareSummary, compareReviewed, priceNote, hasVsPage, trackedUrl } from '../data/compare';
+
+const cc = tools[0];
+const rivals = tools.slice(1, 6);
+const adjacent = tools.slice(6);
+
+const faqs = [
+  {
+    question: 'Which tool should a solo developer pick for parallel AI coding agents?',
+    answer:
+      'Pick Conductor for the smoothest turnkey experience on a Mac, Superset for maximum parallelism in a lightweight dashboard, or Orca for a free cross-platform desktop with a phone companion and a complete pull-request surface. Pick Control Center when you also want review, tickets, pipelines, meetings and memory on the same deck — and self-hosting for the data.',
+  },
+  {
+    question: 'Is Control Center an alternative to Cursor, OpenClaw or Hermes Agent?',
+    answer:
+      'It complements rather than replaces them. Cursor is an AI-first editor and Control Center can open any PR into it; OpenClaw and Hermes Agent are general-purpose personal assistants you reach from a chat app, not coding fleets. Control Center is the operation around coding agents — dispatch, review, orchestrate — not another editor or assistant.',
+  },
+  {
+    question: 'What does each tool cost to start?',
+    answer:
+      'Control Center, Orca, Paperclip, Goose and OpenClaw are free and open source. Superset is free on the desktop with a $15/user/month team tier, Multica is free to self-host with an unpriced cloud, Hermes Agent is free to run against your own keys with hosted credits from $20/month, Conductor is free on the Mac with Cloud and multiplayer from $50/month, and Cursor is free on Hobby with Pro from $20/month. None of those figures include model spend — every tool bills your provider separately.',
+  },
+];
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.question,
+    acceptedAnswer: { '@type': 'Answer', text: f.answer },
+  })),
+};
+---
+
+<MarketingLayout
+  title="Compare \\ Control Center"
+  description="Control Center compared with Conductor, Superset, Orca, Paperclip, Multica, OpenClaw, Hermes Agent, Goose, Cursor and plain terminals: parallel agents, PR review, pipelines, meetings, self-hosting, multiplayer and starting price, side by side."
+  breadcrumbName="Compare"
+>
+  <main id="top" tabindex="-1">
+    <!-- Intro: the direct answer first, for extraction. -->
+    <section class="relative overflow-hidden border-b border-border py-[clamp(56px,9vw,88px)]">
+      <HeroShader />
+
+      <div class="wrap relative z-[2]">
+        <div class="reveal max-w-[72ch]">
+          <span class="eyebrow">Compare</span>
+          <h1 class="mt-4 text-[clamp(30px,4.4vw,56px)] font-semibold leading-[1.0] tracking-[-0.03em]">How Control Center compares.</h1>
+          <p class="mt-[22px] max-w-[64ch] text-[clamp(16px,1.4vw,18px)] leading-[1.6] text-muted">{compareSummary}</p>
+          <p class="mt-5 font-mono text-[11px] uppercase tracking-[0.08em] text-idle">Checked against each product’s public site · {compareReviewed}</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- The matrix. -->
+    <section class="py-[clamp(56px,9vw,88px)]">
+      <div class="wrap">
+        <div class="reveal max-w-[62ch]">
+          <h2 class="text-[clamp(24px,3.2vw,40px)] font-semibold leading-[1.05] tracking-[-0.025em]">The field, side by side.</h2>
+          <p class="mt-[14px] max-w-[52ch] text-[15px] leading-[1.6] text-muted">
+            <span class="font-mono">✓</span> yes · <span class="font-mono">≈</span> partial — hover or focus a <span class="font-mono">≈</span> for the reason · <span class="font-mono">—</span> not offered. Every name links to a full head-to-head. Scroll sideways on a small screen.
+          </p>
+          <p class="mt-[10px] max-w-[56ch] text-[13.5px] leading-[1.6] text-idle">{priceNote}</p>
+        </div>
+
+        {/* Focusable + named: the matrix scrolls sideways under ~940px, and a
+            scroll container that only a pointer can move is unreachable by
+            keyboard (WCAG 2.1.1). */}
+        <div
+          class="reveal mt-[clamp(24px,3.5vw,40px)] overflow-x-auto border border-border rounded-lg"
+          tabindex="0"
+          role="region"
+          aria-label="Capability comparison matrix, scrollable"
+        >
+          <table class="w-full min-w-[940px] border-collapse text-left">
+            <caption class="sr-only">Control Center compared with agent orchestration tools across {columns.length} capabilities, with each tool’s starting price</caption>
+            <thead>
+              <tr class="border-b border-border bg-surface">
+                <th scope="col" class="w-[200px] px-4 py-3 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-idle">Tool</th>
+                {columns.map((c) => (
+                  <th scope="col" class="px-3 py-3 text-center font-mono text-[10.5px] font-medium uppercase leading-[1.4] tracking-[0.08em] text-idle">{c.label}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {tools.map((tool) => (
+                <tr class:list={['border-b border-border last:border-0', tool.id === 'control-center' ? 'bg-accent-soft' : 'bg-panel']}>
+                  <th scope="row" class="px-4 py-[14px] font-normal">
+                    <span class:list={['block text-[14px] font-semibold tracking-[-0.01em]', tool.id === 'control-center' ? 'text-accent-strong' : 'text-fg']}>
+                      {hasVsPage(tool) ? <a class="no-underline underline-offset-4 hover:underline" href={`/compare/${tool.id}/`}>{tool.name}</a> : tool.name}
+                    </span>
+                    <span class="mt-[2px] block font-mono text-[10.5px] uppercase tracking-[0.06em] text-idle">{tool.kind}</span>
+                    <span class="mt-[3px] block font-mono text-[10.5px] text-muted">{tool.price}</span>
+                  </th>
+                  {columns.map((c) => (
+                    <td class="px-3 py-[14px] text-center">
+                      <CompareCell tool={tool} columnId={c.id} />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Per-tool: the named competitors. -->
+    <section class="border-t border-border py-[clamp(56px,9vw,88px)]">
+      <div class="wrap">
+        <div class="reveal max-w-[62ch]">
+          <h2 class="text-[clamp(24px,3.2vw,40px)] font-semibold leading-[1.05] tracking-[-0.025em]">Why pick one of them over Control Center?</h2>
+          <p class="mt-[14px] max-w-[52ch] text-[15px] leading-[1.6] text-muted">Every tool below does its slice well. The honest case for each — and what it doesn’t try to be.</p>
+        </div>
+
+        <div class="mt-[clamp(24px,3.5vw,40px)] grid grid-cols-1 gap-5 md:grid-cols-2">
+          {rivals.map((tool) => (
+            <article class="reveal flex flex-col rounded-lg border border-border bg-panel p-6 shadow-soft">
+              <h3 class="m-0 text-[18px] font-semibold leading-[1.25] tracking-[-0.01em]">
+                <a class="text-fg no-underline underline-offset-4 hover:underline" href={trackedUrl(tool)} target="_blank" rel="noopener noreferrer">{tool.name}</a>
+                <span class="ml-2 font-mono text-[11px] font-normal uppercase tracking-[0.06em] text-idle">{tool.kind}</span>
+              </h3>
+              <p class="mt-[6px] font-mono text-[11px] text-muted">Starts at {tool.price}</p>
+              <p class="mt-3 text-[14px] leading-[1.65] text-muted">{tool.blurb}</p>
+              <p class="mt-3 text-[14px] leading-[1.65]"><span class="font-semibold">Pick it if</span> <span class="text-muted">{tool.bestFor}</span></p>
+              {tool.footnote && <p class="mt-3 border-t border-border pt-3 font-mono text-[11px] leading-[1.6] text-idle">{tool.footnote}</p>}
+              {hasVsPage(tool) && (
+                <p class="mb-0 mt-4">
+                  <a class="font-mono text-[11.5px] uppercase tracking-[0.06em] text-muted no-underline underline-offset-4 hover:text-fg hover:underline" href={`/compare/${tool.id}/`}>Control Center vs {tool.name} <span aria-hidden="true">→</span></a>
+                </p>
+              )}
+            </article>
+          ))}
+
+          <!-- Control Center's own card closes the grid. -->
+          <article class="reveal flex flex-col rounded-lg border border-[color-mix(in_oklab,var(--color-accent),transparent_55%)] bg-accent-soft p-6 shadow-soft">
+            <h3 class="m-0 text-[18px] font-semibold leading-[1.25] tracking-[-0.01em]">
+              {cc.name}
+              <span class="ml-2 font-mono text-[11px] font-normal uppercase tracking-[0.06em] text-idle">{cc.kind}</span>
+            </h3>
+            <p class="mt-[6px] font-mono text-[11px] text-muted">Starts at {cc.price}</p>
+            <p class="mt-3 text-[14px] leading-[1.65] text-muted">{cc.blurb}</p>
+            <p class="mt-3 text-[14px] leading-[1.65]"><span class="font-semibold">Pick it if</span> <span class="text-muted">{cc.bestFor}</span></p>
+            <p class="mt-4"><a class="btn btn-primary btn-sm-marketing no-underline" href="/#install">Download</a></p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Adjacent categories, grouped. -->
+    <section class="border-t border-border py-[clamp(56px,9vw,88px)]">
+      <div class="wrap">
+        <div class="reveal max-w-[62ch]">
+          <h2 class="text-[clamp(24px,3.2vw,40px)] font-semibold leading-[1.05] tracking-[-0.025em]">What about OpenClaw, Hermes Agent, Goose, Cursor and plain terminals?</h2>
+          <p class="mt-[14px] max-w-[56ch] text-[15px] leading-[1.6] text-muted">Different categories, same question — where the agents live versus what runs around them.</p>
+        </div>
+
+        <div class="mt-[clamp(24px,3.5vw,40px)] border-t border-border">
+          {adjacent.map((tool) => (
+            <div class="reveal grid grid-cols-1 gap-3 border-b border-border py-[clamp(20px,3vw,32px)] md:grid-cols-[220px_1fr] md:gap-[clamp(24px,4vw,56px)]">
+              <h3 class="m-0">
+                <a class="text-[16px] font-semibold text-fg no-underline underline-offset-4 hover:underline" href={trackedUrl(tool)} target="_blank" rel="noopener noreferrer">{tool.name}</a>
+                <span class="mt-[3px] block font-mono text-[10.5px] uppercase tracking-[0.06em] text-idle">{tool.kind}</span>
+                <span class="mt-[3px] block font-mono text-[10.5px] font-normal text-muted">Starts at {tool.price}</span>
+              </h3>
+              <div>
+                <p class="m-0 max-w-[64ch] text-[14px] leading-[1.65] text-muted">{tool.blurb}</p>
+                <p class="mb-0 mt-2 max-w-[64ch] text-[14px] leading-[1.65]"><span class="font-semibold">Pick it if</span> <span class="text-muted">{tool.bestFor}</span></p>
+                {tool.footnote && <p class="mb-0 mt-3 max-w-[64ch] font-mono text-[11px] leading-[1.6] text-idle">{tool.footnote}</p>}
+                {hasVsPage(tool) && (
+                  <p class="mb-0 mt-3">
+                    <a class="font-mono text-[11.5px] uppercase tracking-[0.06em] text-muted no-underline underline-offset-4 hover:text-fg hover:underline" href={`/compare/${tool.id}/`}>Control Center vs {tool.name} <span aria-hidden="true">→</span></a>
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing FAQ for the query-shaped tail. -->
+    <section class="border-t border-border py-[clamp(56px,9vw,88px)]">
+      <div class="wrap max-w-[72ch]">
+        <div class="reveal">
+          <span class="eyebrow">Questions</span>
+          <h2 class="mt-4 text-[clamp(24px,3.2vw,40px)] font-semibold leading-[1.05] tracking-[-0.025em]">Choosing, quickly.</h2>
+        </div>
+        {faqs.map((f) => (
+          <div class="reveal border-b border-border py-[clamp(20px,2.6vw,28px)]">
+            <h3 class="m-0 text-[16.5px] font-semibold leading-[1.3] tracking-[-0.01em]">{f.question}</h3>
+            <p class="mb-0 mt-3 text-[14.5px] leading-[1.65] text-muted">{f.answer}</p>
+          </div>
+        ))}
+        <p class="reveal mt-8 text-sm text-muted">A tool above changed? <a class="text-fg underline underline-offset-2 decoration-border hover:decoration-fg" href="https://github.com/SamuelAlev/control-center" target="_blank" rel="noopener noreferrer">Send a correction on GitHub</a> — the matrix lives in one data file.</p>
+      </div>
+
+      <StructuredData schema={schema} />
+    </section>
+  </main>
+
+  <LandingScripts />
+  <CompareTooltip />
+</MarketingLayout>

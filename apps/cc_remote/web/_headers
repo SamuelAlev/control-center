@@ -1,0 +1,160 @@
+# Cloudflare Pages response headers for the Control Center phone PWA.
+
+#
+
+# Flutter copies everything under web/ into build/web/ and Cloudflare Pages
+
+# reads this file from the deployed asset root — so these headers apply to the
+
+# hosted PWA (they are NOT applied by `flutter run -d chrome` locally, which is
+
+# deliberate: a strict CSP there would block the dev server's hot-reload socket).
+
+#
+
+# Why this exists (audit finding #4): the pairing PSK is persisted in cleartext
+
+# in IndexedDB. With no CSP, any script that gains a foothold on this origin (a
+
+# compromised transitive dep, a hijacked deploy, a malicious extension, a future
+
+# XSS) could read it and POST it out. The Content-Security-Policy below removes
+
+# the network egress an exfiltrator needs and locks down the script surface.
+
+#
+
+# Flutter-web specifics baked in:
+
+# \* script-src 'wasm-unsafe-eval' — CanvasKit/skwasm WebAssembly.
+
+# \* https://www.gstatic.com — Flutter fetches CanvasKit from gstatic
+
+# by default. If you self-host CanvasKit
+
+# (FLUTTER_WEB_CANVASKIT_URL / a local
+
+# build), drop gstatic from script-src
+
+# AND connect-src.
+
+# \* style-src 'unsafe-inline' — Flutter injects inline <style>.
+
+# \* font-src https://fonts.gstatic.com — CanvasKit downloads its Noto fallback
+
+# fonts (Noto Color Emoji, CJK — any glyph
+
+# the bundled Manrope/Fira Code lack) from
+
+# gstatic with a real `url()` font fetch,
+
+# which font-src governs, not connect-src.
+
+# Without it emoji render as tofu (▢) on the
+
+# hosted PWA while fine locally. A font the
+
+# user PICKS is a different path and needs
+
+# nothing: its bytes come from the cc-server
+
+# over connect-src and are registered from
+
+# memory (`new FontFace(family, bytes)`
+
+# performs no fetch).
+
+# \* connect-src 'self' wss: — same-origin asset fetches + the WebRTC
+
+# signaling broker (wss). The broker host
+
+# is operator-configured, so it can't be
+
+# pinned statically here; for the tightest
+
+# posture replace `wss:` with your exact
+
+# broker origin (e.g. wss://broker.example.com)
+
+# so a foothold can't open wss://evil.
+
+# \* connect-src https: + loopback — connecting is not only a socket: for any
+
+# DIRECT descriptor path (wss/LAN/tailnet),
+
+# ServerConnectionSupervisor's
+
+# ReachabilityResolver first fetches
+
+# `GET <server>/healthz` over http(s) and
+
+# that origin is unknown until the pairing
+
+# QR is scanned — so it cannot be named
+
+# statically either. Without these entries a
+
+# direct pairing fails its probe and only
+
+# relay-only descriptors connect. Plaintext
+
+# is loopback-only, mirroring the app's
+
+# TLS-or-loopback invariant
+
+# (TransportSecurityPolicy). The exfiltration
+
+# posture is set by `wss:` above, which is
+
+# already host-broad; pin BOTH to your exact
+
+# hosts for the tightest deployment.
+
+# Note: STUN/TURN ICE is not governed by connect-src, so STUN needs no entry.
+
+# \* base-uri 'self' — REQUIRED, do NOT tighten to 'none'.
+
+# main.dart calls usePathUrlStrategy(), whose
+
+# PathUrlStrategy reads the <base href="/">
+
+# element to derive route paths. `base-uri
+
+# 'none'` neutralizes <base>, so the engine
+
+# reads an empty href and throws "The base
+
+# href has to end with a '/' to work
+
+# correctly", aborting boot before runApp.
+
+# 'self' permits only a same-origin base
+
+# (the `/` Flutter emits), so it can't be
+
+# hijacked to redirect relative URLs off-origin.
+
+/_
+Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' wss: https: http://localhost:_ http://127.0.0.1:\* https://www.gstatic.com; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'none'
+X-Content-Type-Options: nosniff
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(self), display-capture=(self), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: credentialless
+
+# The version-orchestrating entry files must always revalidate, or a cached
+
+# index.html / bootstrap / service worker can pin an old bundle after a deploy.
+
+# /deploy.json is the update manifest the PWA polls to offer a refresh.
+
+/index.html
+Cache-Control: no-cache
+/flutter_bootstrap.js
+Cache-Control: no-cache
+/flutter_service_worker.js
+Cache-Control: no-cache
+/manifest.json
+Cache-Control: no-cache
+/deploy.json
+Cache-Control: no-cache

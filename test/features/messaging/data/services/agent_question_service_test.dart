@@ -1,0 +1,333 @@
+import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_infra/src/messaging/agent_question_service.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// Workspace owning every conversation in this suite; it selects the database
+/// the question messages are written into.
+const String _workspaceId = 'ws-1';
+
+/// Minimal fake [MessagingRepository] supporting just `sendMessage` + `updateMessage`.
+class _FakeMessagingRepo implements MessagingRepository {
+  @override
+  Future<Space?> getSpaceById(String workspaceId, String spaceId) async => null;
+
+  @override
+  Stream<({List<Message> messages, bool hasMore})> watchMessagesWindow(
+    String workspaceId,
+    String spaceId,
+    String conversationId, {
+    required int limit,
+  }) => Stream.value((messages: const <Message>[], hasMore: false));
+
+  final Map<String, Message> _messages = {};
+  int _nextId = 1;
+
+  @override
+  Future<String> sendMessage({
+    required String workspaceId,
+    required String spaceId,
+    required String content,
+    required String senderId,
+    required String senderType,
+    String messageType = 'text',
+    Map<String, dynamic>? metadata,
+    String? id,
+    String? conversationId,
+  }) async {
+    final msgId = id ?? 'msg-${_nextId++}';
+    _messages[msgId] = Message(
+      id: msgId,
+      spaceId: spaceId,
+      conversationId: spaceId,
+      content: content,
+      senderId: senderId,
+      senderType: _parseSenderType(senderType),
+      messageType: _parseMessageType(messageType),
+      metadata: metadata,
+      createdAt: DateTime.now(),
+    );
+    return msgId;
+  }
+
+  @override
+  Future<void> updateMessage(
+    String workspaceId,
+    String messageId, {
+    String? messageType,
+    String? content,
+    Map<String, dynamic>? metadata,
+    String? idempotencyKey,
+  }) async {
+    final msg = _messages[messageId];
+    if (msg != null) {
+      _messages[messageId] = msg.copyWith(
+        content: content ?? msg.content,
+        metadata: metadata ?? msg.metadata,
+      );
+    }
+  }
+
+  Message? getMessage(String id) => _messages[id];
+
+  SenderType _parseSenderType(String t) =>
+      t == 'agent' ? SenderType.agent : SenderType.user;
+
+  MessageType _parseMessageType(String t) => switch (t) {
+    'user_question' => MessageType.userQuestion,
+    _ => MessageType.text,
+  };
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  /// The tree is not exercised by this fake — a branch it silently accepted
+  /// would be a pointer move nothing could observe, so it refuses instead.
+  @override
+  Future<ConversationTree> conversationTree({
+    required String workspaceId,
+    required String conversationId,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<void> branchConversationAt({
+    required String workspaceId,
+    required String conversationId,
+    required String messageId,
+  }) async => throw UnimplementedError();
+
+  @override
+  Future<String> forkConversation({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    String? messageId,
+    String? title,
+  }) async => throw UnimplementedError();
+}
+
+void main() {
+  late _FakeMessagingRepo messaging;
+  late AgentQuestionService service;
+
+  setUp(() {
+    messaging = _FakeMessagingRepo();
+    service = AgentQuestionService(
+      messaging,
+      timeout: const Duration(seconds: 2),
+    );
+  });
+
+  group('ask', () {
+    test('returns null when conversationId is empty', () async {
+      final answer = await service.ask(
+        const AgentQuestionRequest(
+          workspaceId: _workspaceId,
+          spaceId: '',
+          question: 'What?',
+        ),
+      );
+      expect(answer, isNull);
+    });
+
+    test('posts a question message and awaits answer', () async {
+      const request = AgentQuestionRequest(
+        workspaceId: _workspaceId,
+        spaceId: 'ch-1',
+        question: 'Approve?',
+        options: [
+          AgentQuestionOption(label: 'Yes', value: 'yes'),
+          AgentQuestionOption(label: 'No', value: 'no'),
+        ],
+        askedByAgentId: 'agent-1',
+      );
+
+      final Future<AgentQuestionAnswer?> answerFuture = service.ask(request);
+
+      // Give time for message to be posted
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      // The message should have been sent
+      final msgId = messaging._messages.keys.firstWhere(
+        (k) => messaging._messages[k]!.senderId == 'agent-1',
+      );
+
+      final questionMsg = messaging._messages[msgId]!;
+      expect(questionMsg.messageType, MessageType.userQuestion);
+      expect(service.isPending(questionMsg.id), isTrue);
+
+      // Submit an answer
+      const answer = AgentQuestionAnswer(selectedLabels: ['Yes']);
+      await service.submitAnswer(_workspaceId, questionMsg, answer);
+
+      final result = await answerFuture;
+      expect(result, isNotNull);
+      expect(result!.selectedLabels, ['Yes']);
+      expect(service.isPending(questionMsg.id), isFalse);
+    });
+
+    test('returns null on timeout', () async {
+      final shortService = AgentQuestionService(
+        messaging,
+        timeout: const Duration(milliseconds: 50),
+      );
+
+      const request = AgentQuestionRequest(
+        workspaceId: _workspaceId,
+        spaceId: 'ch-1',
+        question: 'Timeout?',
+        askedByAgentId: 'agent-1',
+      );
+
+      final answer = await shortService.ask(request);
+      expect(answer, isNull);
+    });
+
+    test('Duration.zero waits indefinitely', () async {
+      final foreverService = AgentQuestionService(
+        messaging,
+        timeout: Duration.zero,
+      );
+
+      const request = AgentQuestionRequest(
+        workspaceId: _workspaceId,
+        spaceId: 'ch-1',
+        question: 'Wait forever',
+        askedByAgentId: 'agent-1',
+      );
+
+      final Future<AgentQuestionAnswer?> answerFuture = foreverService.ask(
+        request,
+      );
+
+      // Submit answer immediately after ask (synchronously, not via Future.delayed)
+      final msgIds = messaging._messages.keys
+          .where((k) => messaging._messages[k]!.senderId == 'agent-1')
+          .toList();
+      if (msgIds.isNotEmpty) {
+        await foreverService.submitAnswer(
+          _workspaceId,
+          messaging._messages[msgIds.first]!,
+          const AgentQuestionAnswer(selectedLabels: ['OK']),
+        );
+      }
+
+      final answer = await answerFuture.timeout(const Duration(seconds: 5));
+      expect(answer, isNotNull);
+      expect(answer!.selectedLabels, ['OK']);
+    });
+  });
+
+  group('submitAnswer', () {
+    test('marks message as answered in metadata', () async {
+      const request = AgentQuestionRequest(
+        workspaceId: _workspaceId,
+        spaceId: 'ch-1',
+        question: 'Test',
+        askedByAgentId: 'agent-1',
+      );
+
+      final Future<AgentQuestionAnswer?> answerFuture = service.ask(request);
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      final msgId = messaging._messages.keys.firstWhere(
+        (k) => messaging._messages[k]!.senderId == 'agent-1',
+      );
+      final questionMsg = messaging._messages[msgId]!;
+
+      await service.submitAnswer(
+        _workspaceId,
+        questionMsg,
+        const AgentQuestionAnswer(freeText: 'my answer'),
+      );
+      await answerFuture;
+
+      final updated = messaging._messages[msgId]!;
+      expect(updated.metadata?[kQuestionAnsweredKey], isTrue);
+      expect(updated.metadata?[kQuestionAnswerKey], isNotNull);
+    });
+
+    test('submitAnswer on non-pending message does nothing', () async {
+      final msg = Message(
+        id: 'fake',
+        spaceId: 'ch-1',
+        conversationId: 'ch-1',
+        content: 'not a question',
+        senderId: 'user',
+        senderType: SenderType.user,
+        messageType: MessageType.text,
+        createdAt: DateTime.now(),
+      );
+
+      // Should not throw
+      await service.submitAnswer(
+        _workspaceId,
+        msg,
+        const AgentQuestionAnswer(selectedLabels: ['x']),
+      );
+    });
+  });
+
+  group('isPending', () {
+    test('returns false for unknown message id', () {
+      expect(service.isPending('nonexistent'), isFalse);
+    });
+  });
+
+  group('metadata forwarding', () {
+    test('context is forwarded in message metadata', () async {
+      const request = AgentQuestionRequest(
+        workspaceId: _workspaceId,
+        spaceId: 'ch-1',
+        question: 'Choose',
+        context: 'This is why I need to know',
+        askedByAgentId: 'agent-1',
+      );
+
+      final Future<AgentQuestionAnswer?> answerFuture = service.ask(request);
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      final msgId = messaging._messages.keys.firstWhere(
+        (k) => messaging._messages[k]!.senderId == 'agent-1',
+      );
+      final questionMsg = messaging._messages[msgId]!;
+      expect(questionMsg.metadata?['context'], 'This is why I need to know');
+
+      await service.submitAnswer(
+        _workspaceId,
+        questionMsg,
+        const AgentQuestionAnswer(selectedLabels: ['A']),
+      );
+      await answerFuture;
+    });
+
+    test('askedByName is forwarded in metadata', () async {
+      const request = AgentQuestionRequest(
+        workspaceId: _workspaceId,
+        spaceId: 'ch-1',
+        question: 'Q',
+        askedByAgentId: 'agent-1',
+        askedByName: 'Codex',
+      );
+
+      final Future<AgentQuestionAnswer?> answerFuture = service.ask(request);
+      await Future.delayed(const Duration(milliseconds: 10));
+
+      final msgId = messaging._messages.keys.firstWhere(
+        (k) => messaging._messages[k]!.senderId == 'agent-1',
+      );
+      final questionMsg = messaging._messages[msgId]!;
+      expect(questionMsg.metadata?['askedByName'], 'Codex');
+
+      await service.submitAnswer(
+        _workspaceId,
+        questionMsg,
+        const AgentQuestionAnswer(selectedLabels: ['OK']),
+      );
+      await answerFuture;
+    });
+  });
+}

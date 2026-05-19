@@ -1,0 +1,141 @@
+---
+/**
+ * Licenses — the verbatim license of every component Control Center ships.
+ *
+ * This is the attribution the MIT, BSD, Apache and OFL licenses require to
+ * travel with the binary, published where anyone can read it without
+ * downloading anything. The same text ships inside each artifact as
+ * `THIRD-PARTY-LICENSES.txt`, generated from the same manifest
+ * (`scripts/lib/third_party.sh`), so the two cannot disagree.
+ *
+ * `/acknowledgements` is the readable credit; this page is the legal text.
+ */
+import MarketingLayout from '../layouts/MarketingLayout.astro';
+import LegalDoc from '../components/legal/LegalDoc.astro';
+import { components } from 'virtual:third-party';
+const copyleft = components.filter((c) => c.license.startsWith('LGPL'));
+
+const sections = [
+  { id: 'summary', title: 'What ships' },
+  ...(copyleft.length ? [{ id: 'relinking', title: 'LGPL and relinking' }] : []),
+  ...components.map((c) => ({ id: c.slug, title: c.name })),
+  { id: 'control-center', title: 'Control Center' },
+];
+---
+
+<MarketingLayout
+  title="Licenses \\ Control Center"
+  description="The full license text of every open-source component Control Center redistributes, including the LGPL relinking notice for libmp3lame."
+  breadcrumbName="Licenses"
+>
+  <LegalDoc
+    title="Licenses"
+    lastUpdated="Generated at build time"
+    intro="Control Center redistributes the components below, each under its own license, reproduced here in full. The identical text ships inside every download as THIRD-PARTY-LICENSES.txt — this page and that file are generated from one manifest, so neither can drift from what you installed."
+    sections={sections}
+  >
+    <section id="summary">
+      <h2>What ships</h2>
+      <p>
+        <strong>Linked</strong> components are compiled into our binaries;
+        <strong>bundled</strong> ones ship alongside them as their own files. The artifact column
+        says which download carries each — the desktop app embeds a server, so most components are
+        in both.
+      </p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="What ships, scrollable">
+        <table>
+          <thead>
+            <tr>
+              <th>Component</th><th>Version</th><th>License</th><th>How</th><th>Artifact</th>
+            </tr>
+          </thead>
+          <tbody>
+            {
+              components.map((c) => (
+                <tr>
+                  <td><a href={`#${c.slug}`}>{c.name}</a></td>
+                  <td><code>{c.version}</code></td>
+                  <td>{c.license}</td>
+                  <td>{c.linkage === 'static' ? 'linked' : c.linkage}</td>
+                  <td>{c.roles.join(', ')}</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
+      </div>
+      <p>
+        Dart and Flutter package dependencies are not listed here: the Flutter engine writes their
+        complete notices into a <code>NOTICES</code> file inside the application bundle. The direct
+        ones are credited on the <a href="/acknowledgements">acknowledgements page</a>.
+      </p>
+    </section>
+
+    {
+      copyleft.length > 0 && (
+        <section id="relinking">
+          <h2>LGPL and relinking</h2>
+          <p>
+            {copyleft.map((c) => c.name).join(', ')} is licensed under the GNU Lesser General Public
+            License and is linked <strong>statically</strong> into the libraries we ship. Section 6
+            of that license entitles you to modify it and relink it into this work, and everything
+            needed to do so is public:
+          </p>
+          <ul>
+            <li>
+              The exact upstream release and its SHA-256 are pinned in <code>scripts/lib/native_pins.env</code>.
+            </li>
+            <li>
+              The complete source of the shim that links it is <code>packages/cc_natives/native/lame_ffi.cc</code>.
+            </li>
+            <li>
+              The build recipe is <code>scripts/natives/build_lame.sh</code>, which accepts <code>LAME_PREFIX=&lt;dir&gt;</code> to link against a copy you built yourself.
+            </li>
+          </ul>
+          <p>
+            All three are in the <a href="https://github.com/SamuelAlev/control-center" rel="noopener">Control Center repository</a>. Upstream sources are at <a href="https://lame.sourceforge.io/" rel="noopener">lame.sourceforge.io</a>.
+          </p>
+        </section>
+      )
+    }
+
+    {
+      components.map((c) => (
+        <section id={c.slug}>
+          <h2>{c.name}</h2>
+          <p>
+            <code>{c.version}</code> — {c.license} —{' '}
+            <a href={c.homepage} rel="noopener">{c.homepage}</a>
+          </p>
+          <pre tabindex="0" role="region" aria-label={`${c.name} licence text, scrollable`}><code>{c.text}</code></pre>
+        </section>
+      ))
+    }
+
+    <section id="control-center">
+      <h2>Control Center</h2>
+      <p>Control Center itself is released under the MIT License.</p>
+      <pre tabindex="0" role="region" aria-label="Control Center MIT licence text, scrollable"><code>{`MIT License
+
+Copyright (c) 2026 Samuel Alev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`}</code></pre>
+    </section>
+  </LegalDoc>
+</MarketingLayout>

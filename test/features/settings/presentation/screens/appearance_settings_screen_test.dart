@@ -1,0 +1,41 @@
+import 'package:control_center/features/settings/presentation/screens/appearance_settings_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../helpers/test_wrap.dart';
+
+void main() {
+  testWidgets('renders with title', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [],
+        child: testWrap(const AppearanceSettingsScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
+    expect(find.text('Appearance'), findsOneWidget);
+  });
+
+  testWidgets('renders appearance sections', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [],
+        child: testWrap(const AppearanceSettingsScreen()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // Verify the screen renders with content.
+    expect(find.byType(AppearanceSettingsScreen), findsOneWidget);
+
+    // Verify the page title renders.
+    expect(find.text('Appearance'), findsOneWidget);
+
+    // Verify the subtitle renders.
+    expect(find.text('Theme, language and typography.'), findsOneWidget);
+  });
+}

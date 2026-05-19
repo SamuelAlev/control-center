@@ -1,0 +1,13 @@
+{
+  "name": "control-center-design-system",
+  "compatibility_date": "2026-06-08",
+  // The deploy workflow produces a Wasm bundle: SkWasm first, with CanvasKit
+  // retained as the generated compatibility fallback.
+  "assets": {
+    "directory": "./build/web",
+    "not_found_handling": "single-page-application",
+  },
+  "observability": {
+    "enabled": true,
+  },
+}

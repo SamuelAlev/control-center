@@ -1,0 +1,103 @@
+---
+title: SSO configuration reference
+description: Every knob, endpoint, op and error code of single sign-on.
+---
+
+Everything configurable about single sign-on, in one place. Values live in
+the `sso_connections` rows of `global.db` (server-wide by design), edited
+via **Settings → Server → Single sign-on** or the `sso.*` RPC ops; the
+`CC_SAML_*` / `CC_OIDC_*` environment variables seed a never-configured
+connection on first boot and are then overrides in spirit only — the saved
+row is the source of truth.
+
+## Connection fields
+
+| Field                  | Applies to | Default         | Meaning                                                                                                                                              |
+| ---------------------- | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`              | both       | off             | logins may use this connection                                                                                                                       |
+| `idpMetadataXml`       | SAML       | —               | the IdP's `EntityDescriptor` XML (required to enable)                                                                                                |
+| `spEntityId`           | SAML       | `<origin>/saml` | our entity ID, pinned when the origin varies                                                                                                         |
+| `emailAttribute`       | SAML       | `email`         | attribute carrying the email; an email-shaped NameID is the fallback                                                                                 |
+| `displayNameAttribute` | SAML       | `displayName`   | display-name attribute                                                                                                                               |
+| `groupsAttribute`      | SAML       | `groups`        | group-names attribute                                                                                                                                |
+| `clockSkewSeconds`     | SAML       | 90              | lifetime-validation skew allowance                                                                                                                   |
+| `allowIdpInitiated`    | SAML       | off             | accept unsolicited Responses (no `InResponseTo`)                                                                                                     |
+| `wantResponseSigned`   | SAML       | off             | require a Response-root signature (assertion signatures are always required)                                                                         |
+| `issuer`               | OIDC       | —               | issuer base URL (required to enable)                                                                                                                 |
+| `clientId`             | OIDC       | —               | public-client id (required to enable)                                                                                                                |
+| `clientSecret`         | OIDC       | —               | confidential clients only; stored in the 0600 secrets file, never the database — write-only over RPC (`sso.getConfig` reports `clientSecretPresent`) |
+| `groupsClaim`          | OIDC       | `groups`        | claim carrying group names                                                                                                                           |
+| `defaultRole`          | both       | `member`        | role when no group maps — never `owner`                                                                                                              |
+| `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
+| `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
+| `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+
+## Environment seeds
+
+| Variable                                                                                                                 | Meaning                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| `CC_SAML_IDP_METADATA` / `CC_SAML_IDP_METADATA_FILE`                                                                     | the metadata XML inline, or a path to it (enables SAML when set)                                             |
+| `CC_SAML_SP_ENTITY_ID`                                                                                                   | pins our entity ID                                                                                           |
+| `CC_SAML_EMAIL_ATTRIBUTE` / `CC_SAML_DISPLAY_NAME_ATTRIBUTE` / `CC_SAML_GROUPS_ATTRIBUTE`                                | attribute names                                                                                              |
+| `CC_SAML_DEFAULT_ROLE` / `CC_SAML_GROUP_ROLE_MAP` / `CC_SAML_AUTO_MEMBER` / `CC_SAML_ALLOW_JIT`                          | provisioning policy (`owner` is refused as a default role)                                                   |
+| `CC_SAML_ALLOW_IDP_INITIATED` / `CC_SAML_WANT_RESPONSE_SIGNED` / `CC_SAML_CLOCK_SKEW_SECS`                               | validation knobs                                                                                             |
+| `CC_OIDC_ISSUER` / `CC_OIDC_CLIENT_ID`                                                                                   | enables OIDC when both set; the issuer must be an `https` URL (`http` is accepted for loopback issuers only) |
+| `CC_OIDC_CLIENT_SECRET`                                                                                                  | confidential-client secret (seeds the secrets file on first boot)                                            |
+| `CC_OIDC_GROUPS_CLAIM` / `CC_OIDC_DEFAULT_ROLE` / `CC_OIDC_GROUP_ROLE_MAP` / `CC_OIDC_AUTO_MEMBER` / `CC_OIDC_ALLOW_JIT` | provisioning policy (`owner` is refused as a default role)                                                   |
+| `CC_SERVER_WEB_CLIENT_URL`                                                                                               | origin SSO callbacks bounce the browser to (credential rides the URL fragment)                               |
+
+## HTTP endpoints
+
+| Endpoint                                         | Auth                | Purpose                                                                                                                                                                                                         |
+| ------------------------------------------------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /saml/login?relay=…`                        | none (redirect)     | start SP-initiated login; `relay=desktop` hands off to the app, `relay=web-popup` postMessages the waiting connect tab (which declares its `client_origin`, honoured only when the origin allow-list trusts it) |
+| `POST /saml/acs`                                 | none (IdP POST)     | the assertion consumer — verifies, provisions, mints                                                                                                                                                            |
+| `GET /saml/metadata`                             | none                | our SP `EntityDescriptor`                                                                                                                                                                                       |
+| `GET /oidc/login?relay=…` / `GET /oidc/callback` | none                | the OIDC round-trip; `relay=desktop` hands off to the app, `relay=web-popup` to the waiting connect tab (same `client_origin` convention)                                                                       |
+| `GET /auth/providers`                            | none, CORS `*`      | the connect-screen probe: offered SSO connections (`id`/`kind`/`label`) + `pairingEnabled`                                                                                                                      |
+| `/scim/v2/Users…`                                | Bearer (SCIM token) | Users create/get/list+filter/PUT/PATCH/DELETE                                                                                                                                                                   |
+| `/scim/v2/Groups`                                | Bearer              | read-only; group push answers 501 by design                                                                                                                                                                     |
+| `/scim/v2/ServiceProviderConfig`                 | Bearer              | capability document                                                                                                                                                                                             |
+
+## RPC ops
+
+All `sso.*` ops are server-scoped and gated to the **server-admin role**
+(the caller must own at least one workspace); pairing alone never grants
+them.
+
+| Op                        | Purpose                                                                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `sso.getConfig`           | the saved connection for a kind                                                                                                                               |
+| `sso.saveConfig`          | validate, persist and live-apply                                                                                                                              |
+| `sso.status`              | enabled/configured flags, SCIM token presence, canonical origin                                                                                               |
+| `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
+| `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
+| `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
+| `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
+
+## Validation error codes
+
+`cc_saml_verify_response` failures carry a stable code:
+
+| Code                   | Meaning                                                                          |
+| ---------------------- | -------------------------------------------------------------------------------- |
+| `signature`            | missing/untrusted/tampered signature, or a disallowed algorithm/transform        |
+| `expired`              | outside `NotBefore`/`NotOnOrAfter` (beyond skew)                                 |
+| `audience`             | audience restriction does not name us                                            |
+| `destination`          | response destination is not our ACS                                              |
+| `request_match`        | `InResponseTo` does not match a pending request, or unsolicited while disallowed |
+| `issuer`               | issuer is not the configured IdP                                                 |
+| `recipient`            | subject-confirmation recipient is not our ACS                                    |
+| `malformed`            | XML/schema-level failure                                                         |
+| `status`               | IdP-reported status was not Success                                              |
+| `invalid` / `internal` | anything else / seam failure                                                     |
+
+## Database surfaces
+
+- `sso_connections` (global.db) — one row per kind, CROSS-WORKSPACE BY
+  DESIGN.
+- `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
+  unique per `(issuer, subject)` via a partial index.
+- `users.deactivated_at` — the SCIM deactivation stamp.
+- The SCIM bearer token and the OIDC client secret live in the 0600
+  secrets file, never the database.

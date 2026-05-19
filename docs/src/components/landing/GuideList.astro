@@ -1,0 +1,46 @@
+---
+/**
+ * GuideList — the manual as a cookbook-style index.
+ * Every row is a real guide that ships in the docs.
+ */
+
+const guides = [
+  { n: '01', title: 'Quick start: zero to first agent', href: '/manual/quick-start/', tag: 'Start here' },
+  { n: '02', title: 'Create an agent', href: '/manual/guides/create-agent/', tag: 'Agents' },
+  { n: '03', title: 'Run agents in parallel', href: '/manual/guides/parallel-agents/', tag: 'Agents' },
+  { n: '04', title: 'Give an agent a machine to test on', href: '/manual/guides/use-rigs/', tag: 'Rigs' },
+  { n: '05', title: 'Review and merge a PR', href: '/manual/guides/review-merge-pr/', tag: 'Review' },
+  { n: '06', title: 'Record a meeting', href: '/manual/guides/record-meeting/', tag: 'Meetings' },
+  { n: '07', title: 'Create a pipeline', href: '/manual/guides/create-pipeline/', tag: 'Pipelines' },
+  { n: '08', title: 'Delegate tickets to the fleet', href: '/manual/guides/delegate-tickets/', tag: 'Tickets' },
+  { n: '09', title: 'Manage agent memory', href: '/manual/guides/manage-memory/', tag: 'Memory' },
+];
+---
+
+<section id="guides" class="border-t border-border py-[clamp(56px,9vw,88px)]">
+  <div class="wrap">
+    <div class="reveal max-w-[62ch]">
+      <span class="eyebrow">The manual</span>
+      <h2 class="mt-4 text-[clamp(28px,4vw,48px)] font-semibold leading-[1.02] tracking-[-0.03em]">Learn the deck, guide by guide.</h2>
+      <p class="mt-[18px] max-w-[48ch] text-[clamp(16px,1.4vw,18px)] text-muted">Short, task-shaped guides. Each one ends with the thing working, not with homework.</p>
+    </div>
+
+    <div class="reveal mt-[clamp(28px,4vw,44px)] max-w-[880px] overflow-hidden border border-border bg-panel">
+      {guides.map((g) => (
+        <a
+          href={g.href}
+          class="group flex items-center gap-4 border-b border-border-soft px-5 py-[15px] no-underline transition-colors last:border-b-0 hover:bg-hover"
+        >
+          <span class="w-[26px] flex-none font-mono text-xs text-idle">{g.n}</span>
+          <span class="min-w-0 truncate text-[15px] tracking-[-0.01em]">{g.title}</span>
+          <span class="ml-auto hidden flex-none font-mono text-[10.5px] uppercase tracking-[0.08em] text-idle sm:block">{g.tag}</span>
+          <span class="flex-none text-muted transition-[transform,color] duration-150 group-hover:translate-x-[3px] group-hover:text-fg" aria-hidden="true">→</span>
+        </a>
+      ))}
+    </div>
+
+    <div class="reveal mt-4 max-w-[880px]">
+      <a class="link-arrow" href="/manual/">Browse the full manual <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,99 @@
+---
+title: Customize the chat bot
+description: Rename the bot, reword what it says about itself, or change its slash command from Control Center.
+---
+
+This guide shows you how to reshape the provider-side bot app without leaving Control Center.
+
+## Prerequisites
+
+- The `owner` or `admin` role in the workspace
+- A **connected** provider. The **Customize bot** row only appears once the workspace is connected
+- An app Control Center can manage. For Slack that means the connection holds an app configuration refresh token (`xoxe-…`); if it does not, the row says so and stays disabled
+
+## What you can change
+
+| Field                 | Meaning                                         | Limit                                                      |
+| --------------------- | ----------------------------------------------- | ---------------------------------------------------------- |
+| **App name**          | How the provider lists the app                  | 1–35 characters                                            |
+| **Bot display name**  | What members type after `@`                     | 1–80 characters                                            |
+| **Description**       | One line the provider shows                     | 140 characters or fewer                                    |
+| **Agent description** | Shown above a DM with the bot                   | 300 characters or fewer                                    |
+| **Slash command**     | The command members invoke, without the slash   | Lowercased, `a–z 0–9 _ -` only, truncated at 32 characters |
+| **Direct messages**   | Whether the bot exposes the DM/agent experience | On or off                                                  |
+
+Control Center validates the four text fields before calling the provider, so you get "the app name must be between 1 and 35 characters" instead of an opaque `invalid_manifest` from a server you cannot see. The command is not rejected but normalized: a leading slash is stripped, the rest is lowercased, anything outside `a–z 0–9 _ -` is dropped and an empty result falls back to `cc`.
+
+## Edit the bot
+
+1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
+2. On the provider block, click **Customize bot**
+3. The dialog opens on the app's _live_ values, read back from the provider — so a change someone made in Slack's own UI is what you start from
+4. Edit what you need and save
+
+Reading those live values costs a token rotation on Slack's side, which is why the row is a deliberate click rather than something the page does on load.
+
+The write overlays your changes onto the app's current definition. Anything Control Center does not model — a second slash command you added in Slack, a workflow step, an unrelated setting — survives untouched. Scopes and events are merged in, never subtracted.
+
+After saving, Control Center re-reads the bot's identity so the name in settings matches the name in the chat app.
+
+## Reinstall when permissions change
+
+:::caution[A permission change is inert until you reinstall]
+Slack applies the new app definition immediately but keeps the _installed grant_
+exactly as it was, so an edit that changes permissions does nothing at all until
+the app is reinstalled. The bridge keeps running on the old grant in the
+meantime — the connection is not broken, it is simply not using what you asked
+for and nothing else will tell you.
+:::
+
+When a save changes permissions, the dialog stays open and says "Slack changed
+the app's permissions. Reinstall the app for them to take effect", with a
+**Reinstall app** button that opens Slack's install-on-team page for that app.
+In Slack that is **Install App → Reinstall to Workspace**.
+
+## Rename the slash command
+
+Change **Slash command** and save. The bridge then writes instructions using whatever command it was last invoked with, so the help text and link instructions follow the rename instead of naming a command that no longer exists.
+
+Renaming does not break existing bridged threads: threads are keyed by conversation, not by command.
+
+## What Control Center will not change
+
+- **Structural settings.** The transport (Socket Mode), the required scopes and the event subscriptions are asserted, not offered. An app that can be configured into silence from a settings screen is a support ticket, not a feature
+- **The bot's icon.** Only the provider's own app settings can change it and the dialog says so
+- **The provider's own feature migrations.** An app already on Slack's legacy assistant shape keeps it; this dialog edits a description, it does not migrate an app
+
+## Troubleshooting
+
+### There is no Customize bot row at all
+
+The workspace is not connected yet. The row only appears once the provider block
+shows a live connection. See [Set up Slack integration](/manual/guides/slack-integration/).
+
+### The Customize bot row is disabled
+
+The connection has no app-management credential — the row's subtitle says
+"Control Center needs an app configuration token to edit the bot. Reconnect and
+include one." For Slack, generate an app configuration token pair on
+[api.slack.com/apps](https://api.slack.com/apps) and reconnect with the refresh
+token filled in. This is expected for an app built by hand or created through
+**Create in Slack**, because Slack never reports which app it made.
+
+### "Control Center does not know which app to edit"
+
+The stored connection carries no app id — typically an app connected by hand before an id was recorded. Reconnect the workspace, or create the app from Control Center.
+
+### The bot's new name has not appeared in chat
+
+Providers cache app metadata briefly. If the name is still stale after a minute, check whether the save asked you to reinstall the app.
+
+## Related guides
+
+- [Set up Slack integration](/manual/guides/slack-integration/)
+- [Link your Slack account](/manual/guides/link-chat-account/)
+- [Chat bridge](/manual/reference/chat-bridge/)
+
+## Related concepts
+
+- [Chat bridges](/manual/concepts/chat-bridges/)

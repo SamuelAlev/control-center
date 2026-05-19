@@ -1,0 +1,112 @@
+---
+title: Diagnose an agent
+description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
+---
+
+This guide shows you how to find out why an agent is not running, using the surfaces that exist in the app today.
+
+:::caution[There is no agent doctor]
+Earlier documentation described an "Agent doctor" run from an agent's context menu. There is no such menu item, no diagnostics screen for an agent and no `doctor` MCP tool — the tool class was deleted, so an agent calling it gets "unknown tool". Nothing in the product produces a per-agent diagnostic report. Work through the checks below instead.
+:::
+
+Work top down: the agent's own runs first, then its backend, then the server, then the host.
+
+## 1. Check the agent's run history
+
+**Settings → Workspace → Agents** → select the agent → **Logs**.
+
+Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+
+Read it like this:
+
+- **No runs at all** — the dispatch never happened. Check that you actually mentioned the agent by an exact name match (mention parsing matches `@` plus word characters only, so a name with a hyphen, dot or space can never be mentioned), then go to step 2.
+- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
+- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
+- **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
+
+The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
+
+## 2. Check the agent's backend
+
+**Settings → Server → Model providers** (`/settings/server/providers`).
+
+The **Detected runners** list shows every adapter with its probe result — an installed version, "Checking…", or "Not found" — plus the resolved path and the capability chips for a found CLI. Click **Refresh** in the page header to re-probe.
+
+The probe runs on the machine hosting `cc_server`, not on the machine you are looking at. If you are on the web client or a paired device, "Not found" means the CLI is missing on the server host.
+
+Two things to confirm:
+
+- **The agent has an adapter set at all.** An agent with an empty adapter is dispatched to **Control Center (built-in)** and the run log records `cc-harness`, so the transcript names what ran. With no model either, it asks Anthropic for its default — which fails with `No credential for provider "anthropic"` unless you have connected an Anthropic account. The seeded specialists ship with no adapter.
+- **The built-in adapter has a model.** Its model list comes live from the providers connected further down this same page, so a provider with no stored credential contributes zero models.
+
+The adapter catalogue itself is fixed — there is no way to register a new adapter. What you can change per adapter here is its launch arguments and environment variables. Note that a per-adapter environment override silently beats a connected provider account when credentials are resolved.
+
+## 3. Check the server
+
+**Settings → Server → Connection & status** (`/settings/server/connection`) shows which server this client is talking to and what it reports.
+
+For a headless server, `GET /healthz` is the same information without a client. It is unauthenticated and CORS-open by design:
+
+```
+curl http://localhost:9030/healthz
+```
+
+It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts.
+
+Two things worth knowing when a change "works in tests but not in the app":
+
+- The desktop launches a **prebuilt** `cc_server` binary in preference to source. A new RPC op or MCP tool does not appear until the binary is rebuilt and boot logs a warning when the child's git SHA differs from the app's.
+- The desktop kills a spawned server that has not printed its ready banner within 20 seconds and drops to an error screen.
+
+## 4. Check the host
+
+**Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
+
+- **Sandboxing** — the master toggle, the detected backend, an install hint, the default capability toggles and a reset. Only the detected backend comes from the server; see the caution below.
+- **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
+- **System behaviour** — keep the computer awake while agents run.
+- **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
+- **Log level** — raise it before reproducing a failure.
+- **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
+
+:::caution[This section reports the host and its controls are client-side]
+Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle, the backend picker and the default capability toggles are preferences stored on your device and the server reads none of them — the server's own switch is `--sandbox` (`on` by default, `off` to opt out) and for any agent left on "Use workspace default" the server falls back to its conservative default: no git push, no GitHub API, no ticketing key, network on.
+
+So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+
+Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, the capabilities that gate which credentials are minted into it, the action guardrails, environment sanitization and the tool surface its mode allows.
+:::
+
+## Common failures
+
+### The run never starts and the adapter shows "Not found"
+
+Install the CLI **on the server host**, then click **Refresh** on the Model providers page. Or switch the agent to the built-in adapter, which needs no CLI and connect a provider on the same page.
+
+### The agent cannot push or open a pull request
+
+Its capabilities are the gate. Open **Settings → Workspace → Agents** → the agent → **Sandbox permissions**, turn the switch on and enable **Allow git push** and **Allow GitHub API calls**. Leaving the switch on "Use workspace default" gives the agent none of them.
+
+### Semantic search returns nothing useful
+
+Check **Settings → Server → Diagnostics & privacy → Semantic search**. Until the embedding model is installed, search is keyword-only. Rows written before the model was installed are never backfilled, so they stay keyword-only even afterwards.
+
+### The server will not boot at all
+
+Native libraries are required and there is no degraded mode. A missing dylib makes `cc_server` refuse to start and name the offender in the error. Stage the natives with `scripts/natives/build_natives.sh` and rebuild the server binary.
+
+### An action is silently denied
+
+A `prompt` guardrail decision with no approver connected is denied, by design. Check the workspace's rules under **Settings → Workspace → Agent permissions**.
+
+## Related guides
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [Manage adapters and models](/manual/guides/adapters/)
+- [Configure guardrails](/manual/guides/configure-guardrails/)
+- [Run a headless server](/manual/guides/run-headless-server/)
+
+## Related concepts
+
+- [Sandbox and security](/manual/concepts/sandbox-security/)
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

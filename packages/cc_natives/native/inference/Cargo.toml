@@ -1,0 +1,37 @@
+[package]
+name = "cc_inference"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Control Center's native inference leaf: sherpa-onnx speech (ASR / VAD / diarization / speaker embeddings) plus a BERT sentence embedder, over ONE statically linked ONNX Runtime, behind a C ABI for Dart FFI."
+license = "MIT"
+
+[lib]
+name = "cc_inference"
+crate-type = ["cdylib"]
+
+[dependencies]
+# The k2-fsa `-sys` crate: raw C API declarations + the build script that
+# resolves the prebuilt static archive. We bind the C API directly rather than
+# the safe `sherpa-onnx` wrapper so no wrapper defaults sit between this crate
+# and the engine.
+#
+# PINNED EXACTLY. The archive it links is pinned by sha256 in
+# scripts/lib/native_pins.env; the two must be bumped together and
+# src/ort_sys.rs regenerated if the bundled ONNX Runtime version moves.
+sherpa-onnx-sys = "=1.13.5"
+
+# Parses the recognizer's result JSON (`SherpaOnnxGetOfflineStreamResultAsJson`).
+# That documented JSON is a stabler contract than the result *struct*, whose
+# field layout we would otherwise have to mirror by hand.
+serde_json = "1"
+
+# This crate is built standalone (--manifest-path), so it is its own profile
+# root despite living inside the repo.
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+# NOT "abort": every extern "C" entry point wraps its body in catch_unwind so
+# a panic becomes an error return instead of UB across the FFI boundary.
+panic = "unwind"

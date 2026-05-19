@@ -1,0 +1,93 @@
+/// Error surfaced by the bundled `rift` FFI library (`{status:"error",error:{…}}`).
+///
+/// The `code` strings come from `crates/ffi/src/lib.rs` in the rift project and
+/// are the contract callers branch on (e.g. [isCowUnavailable] decides whether
+/// to fall back to a plain `git worktree`).
+class RiftException implements Exception {
+  /// Creates a [RiftException].
+  const RiftException({required this.code, required this.message, this.path});
+
+  /// Stable error identifier (e.g. `cow_unavailable`, `unsafe_git`).
+  final String code;
+
+  /// Human-readable message from rift (safe to surface to the agent/user).
+  final String message;
+
+  /// Optional path the error refers to.
+  final String? path;
+
+  /// The `librift_ffi` native itself could not be loaded (absent dylib, wrong
+  /// arch, missing symbols) — synthesised by `RiftClient` and its worker
+  /// isolate, never returned by rift.
+  ///
+  /// This is a BROKEN INSTALL, not a runtime condition: the dylib ships inside
+  /// the host bundle and `cc_server` refuses to boot without it on macOS/Linux.
+  /// Callers must propagate rather than fall back — contrast
+  /// [isCowUnavailable], which is environment-driven and does fall back.
+  /// Windows is the documented exception (no MSVC CoW backend, so `git worktree`
+  /// is the backend there, not a degradation).
+  bool get isUnavailable => code == 'unavailable';
+
+  /// Copy-on-write is not available on this filesystem (non-APFS / non-reflink,
+  /// or source and destination on different volumes). Signal to fall back to a
+  /// plain `git worktree`. Environment-driven, so this fallback is legitimate
+  /// and stays — unlike [isUnavailable].
+  bool get isCowUnavailable => code == 'cow_unavailable';
+
+  /// The source repo is mid-operation (merge/rebase/cherry-pick/bisect) or has a
+  /// stale lock / inconsistent index, or is itself a linked worktree. Do NOT
+  /// fall back to `git worktree` (it would fail too) — surface the message.
+  bool get isUnsafeGit => code == 'unsafe_git';
+
+  /// The source was never `rift init`-ed. The adapter runs `init` then retries.
+  bool get isInitRequired =>
+      code == 'workspace_not_initialized' ||
+      code == 'initialization_required' ||
+      code == 'not_managed' ||
+      code == 'missing_rift';
+
+  /// The source carries a `.rift` marker this registry knows nothing about:
+  /// either it was written by a DIFFERENT registry file, or the registry it
+  /// belonged to was wiped (a data-dir reset) while the marker — which lives in
+  /// the source repo, outside our data dir — survived. `init` reports
+  /// `marker_mismatch`, `create` reports `unknown_marker`.
+  ///
+  /// Recoverable and it MUST be recovered from: the marker never expires on
+  /// its own, so degrading to `git worktree` here strands that repo on the slow
+  /// backend forever. Clear the marker (`RiftClient.clearMarker`) and re-`init`
+  /// to re-adopt the source.
+  bool get isStaleMarker =>
+      code == 'marker_mismatch' || code == 'unknown_marker';
+
+  /// The destination path is already claimed by an entry in this registry
+  /// (`path` is UNIQUE there).
+  ///
+  /// A REGISTRY verdict, not a filesystem one: it is returned just the same
+  /// when the directory the entry describes has since been deleted, which is
+  /// what a torn-down copy that never got pruned leaves behind. Nothing expires
+  /// such an entry, so callers must prune and retry rather than degrade to
+  /// `git worktree` — which would strand that path on the slow backend for
+  /// good, exactly as [isStaleMarker] does for the source side.
+  bool get isAlreadyExists => code == 'already_exists';
+
+  /// The managed copy is already gone from disk / registry. GC can treat this as
+  /// success and prune via `gc`.
+  bool get isMissing =>
+      code == 'missing_marker' ||
+      code == 'missing_rift' ||
+      code == 'not_managed' ||
+      code == 'unknown_marker';
+
+  @override
+  String toString() =>
+      'RiftException($code): $message${path != null ? ' [$path]' : ''}';
+}
+
+/// Thrown when `rift_ffi_call` returns a null pointer (should not happen).
+class RiftFfiNullResponse implements Exception {
+  /// Creates a [RiftFfiNullResponse].
+  const RiftFfiNullResponse();
+
+  @override
+  String toString() => 'rift_ffi_call returned a null response pointer';
+}

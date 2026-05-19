@@ -1,0 +1,162 @@
+---
+title: Talk to Control Center from a GitHub PR
+description: Ask the server's GitHub App bot for a review or a question from the PR conversation itself, with no webhook or public URL.
+---
+
+This guide shows you how to work with Control Center without leaving GitHub:
+request an AI review from the PR page, ask the bot a question in a comment, and
+keep the conversation going in its review threads.
+
+The bot is your server's own [GitHub App](/manual/guides/github-app/) — the same
+one that already signs people in and runs background work. Nothing new is
+registered, and nothing has to be reachable from the internet: the server
+discovers what was said on GitHub by polling, so a laptop behind NAT behaves
+exactly like a public deploy.
+
+## Prerequisites
+
+- The server has its GitHub App [registered and
+  installed](/manual/guides/github-app/), with **Pull requests: read and write**
+  (for comments, threads and reactions) and **Issues: read** (for the comment
+  search). Both are already in that guide's permission list
+- The repository is linked to a workspace in Control Center
+- No webhook URL, no tunnel, no callback — there is nothing to configure on the
+  network side
+
+## Find your bot's name
+
+The bot's login is `<appslug>[bot]`, where `appslug` is the name you gave the
+app when registering it.
+
+1. Go to **Settings → Server → Single sign-on** and scroll to the
+   **Provider apps** card
+2. Open the **GitHub** block and click **Test**
+3. The **Bot login** field fills in and is copyable
+
+GitHub does not offer app accounts in its `@` autocomplete, so the login has to
+be typed — that is why the settings card makes it one click to copy. The
+`[bot]` suffix is optional: `@myapp` and `@myapp[bot]` both address the bot.
+
+:::note[Pick a distinctive app name]
+The short form is matched as text. If a human GitHub user happens to share your
+app's slug, mentioning that user by the short form also reaches the bot. The
+full `@myapp[bot]` form is always unambiguous.
+:::
+
+## Request a review from GitHub
+
+Two ways, both starting the same seeded `pr_review` pipeline the **Ask AI**
+button starts:
+
+- **Add the `ai-review` label** to the PR. This is the closest thing GitHub
+  offers to assigning the bot as a reviewer — app accounts cannot hold the
+  native requested-reviewer slot
+- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation
+
+The bot reacts with 👀 to acknowledge, then replies when the review has started.
+The reviewers work in the PR's review space; read and publish the findings as
+in [Use AI-powered review](/manual/guides/ai-review/). Publishing back to GitHub
+stays a decision you make in Control Center — starting a review from GitHub
+does not publish anything to GitHub on its own.
+
+The label fires once per PR: adding it is the ask, and it is not re-armed when
+removed and re-added. To run a review again — after a push, say — mention the
+bot.
+
+## Ask a question
+
+Comment on the PR conversation:
+
+```text
+@myapp why does the flaky test in runner_test.dart fail on CI but not locally?
+```
+
+What happens, in order:
+
+1. The bot reacts with 👀 so you know the comment was seen
+2. The question is posted into the PR's review space **as you** — same
+   attribution as if you had typed it in Control Center
+3. An agent answers in the space, and the answer is posted back on the PR as a
+   comment that @-mentions you
+
+A question on a PR with no review yet wakes the workspace's lead agent; once a
+review has run, the agent that spoke last answers, so follow-ups land with
+whoever has the context.
+
+## Follow up in a review thread
+
+Reply inside any thread the bot is part of — an inline review comment it left,
+or an answer it posted. No mention is needed; the thread **is** the addressing:
+
+```text
+> @myapp the retry loop looks O(n²) to me
+
+what would the complexity be with the bounded queue instead?
+```
+
+Multi-turn works the same way: each reply is another question in the same
+conversation, with the prior thread as context, and the answer comes back in
+the thread.
+
+## Who the bot talks to
+
+A GitHub comment arrives as little more than a login, so the bot resolves the
+author before doing anything:
+
+- **Your GitHub account must be linked to your identity** in Control Center —
+  [sign in with GitHub](/manual/guides/github-integration/), or paste a token,
+  from **Settings → You → Profile & identity**
+- **You must be a member with a write role** in the workspace that links the
+  repository
+
+Anyone else gets one polite reply explaining what is missing, and their words
+never enter the workspace.
+
+## What to expect
+
+| Thing               | Behaviour                                                                 |
+| ------------------- | ------------------------------------------------------------------------ |
+| Acknowledgement     | 👀 reaction within about a minute — the sweep interval                    |
+| Answers             | Posted as the bot (the app), in the lane the question was asked in        |
+| In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
+| Reviews             | Findings land in the review space; publishing to GitHub is manual         |
+
+The roughly-one-minute latency is the trade for needing no inbound network
+access at all. Nothing about the sweep is urgent, and nothing is lost while the
+server is offline — a comment that arrives during downtime is caught on the
+next sweep.
+
+## Troubleshooting
+
+**Nothing happens for a comment that mentions the bot.**
+
+- Is the app **installed** on the account that owns the repo, and the repo
+  **linked** to a workspace? An unlinked repo is skipped before anything is
+  recorded, so linking it later still delivers
+- Is your GitHub account linked, and are you a member with a write role? Check
+  the PR for the bot's refusal reply — it says which
+- Still nothing? The server log names the sweep and the PR when something
+  fails; `github_pr_conversation:` is the prefix to look for
+
+**The label does not start a review.**
+
+It fires once per PR. If a review already ran, or the label was added before
+the server ever saw the PR (the first sweep records the backlog silently
+rather than storming it), mention the bot instead — `@myapp review` always
+starts one unless a review is already in flight.
+
+**The bot's answer never arrived on GitHub.**
+
+The answer itself is never lost — it is in the PR's review space in Control
+Center. A posting failure (GitHub down, permissions changed) is logged and the
+reply is not retried; ask again in the thread if it matters.
+
+## Related guides
+
+- [Create the GitHub App](/manual/guides/github-app/): the registration the bot
+  is born from
+- [Use AI-powered review](/manual/guides/ai-review/): reading the findings a
+  mention-started review produces
+- [Set up GitHub integration](/manual/guides/github-integration/): linking your
+  own GitHub account, which is what the bot resolves you by
+- [Use spaces](/manual/guides/spaces/): the room all of this lands in

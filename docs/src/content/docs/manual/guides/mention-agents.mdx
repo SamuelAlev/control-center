@@ -1,0 +1,119 @@
+---
+title: "@-mention agents"
+description: Mention agents in a space to dispatch them and teammates to notify them.
+---
+
+This guide shows you how to @-mention agents and teammates in a space.
+
+## Mention an agent
+
+Type `@` in the composer and pick an agent from the autocomplete, or type the name
+yourself:
+
+```
+@alice fix the login bug
+```
+
+The mentioned agent is added to the space as a participant if it is not already
+one and dispatched with the space's context and mode. Unmentioned participants
+see the message but do not dispatch.
+
+If you send a message with no agent mention, Control Center picks a responder
+itself: the agent that last spoke in the conversation, otherwise the first
+top-level agent among the space's participants. In a one-agent space that is
+always the sole agent.
+
+## Know how a name is matched
+
+A mention token is matched **case-insensitively**, by **exact name or prefix**. So
+`@arch` reaches an agent named `architect` and `@Alice` reaches `alice`.
+
+Two consequences worth planning around:
+
+- **A short token is not an error.** If two agents share a prefix, the first one
+  found wins and which one that is depends on ordering — not on any tie-break
+  rule. Use the full name whenever names overlap.
+- **Only letters, digits and underscores are part of a token.** The parser matches
+  `@(\w+)`, so `@code-reviewer` is read as the token `code` and `@my agent` as
+  `my`. An agent whose name contains a hyphen, a dot or a space cannot be mentioned
+  reliably — including through the autocomplete, which inserts the name as plain
+  text. Name agents in one word, or with underscores.
+
+Mentions are stripped from the text before it reaches the agent. A message that is
+_only_ mentions (`@alice`) therefore dispatches nothing — give it something to do.
+
+## Mention several agents at once
+
+```
+@alice refactor the auth module. @bob write tests for it.
+```
+
+Both agents dispatch in parallel into the same conversation and both receive the
+full message.
+
+They also **share that space's worktrees**. Repo worktrees are provisioned
+per space, not per agent; each agent gets its own overlay working directory for
+its `AGENTS.md`, skills and config, with the shared repos linked in read-write. So
+two agents mentioned together can see — and collide with — each other's edits.
+
+## Mention a teammate
+
+Any `@token` that does not match an agent is tried against the workspace's human
+members, by handle, with the same case-insensitive exact-or-prefix rule.
+
+A resolved human mention **dispatches nothing**. It rides on the message's metadata
+purely so the notification router can ping that person.
+
+Agent names are always tried first and a token claimed by an agent is never
+offered to the member list — one `@word` can only ever resolve to one principal.
+
+## What the agent receives
+
+A dispatched agent gets a "Summons" block in its prompt naming who summoned it and
+listing the space roster — the other agents (marked top-level or subordinate) and
+the human members — so it knows who it can hand off to. The block also tells it
+that mentioning another agent in its reply wakes that agent and that mentioning
+itself does nothing.
+
+## When an agent mentions an agent
+
+An agent can hand off in its own reply. When a turn **finishes cleanly**, the
+mentions in its text are resolved and those agents are added to the space and
+dispatched into the same conversation, with the mentioning turn as their prompt.
+A turn that failed or was interrupted wakes nobody — it stopped mid-thought.
+
+The rules are deliberately stricter than the composer's, because nobody is
+watching to correct a wrong guess:
+
+- **Exact names only.** No prefix match. `@arch` reaches `architect` when a human
+  types it; from an agent it reaches nobody. A name matching two agents also
+  reaches nobody.
+- **Code is not prose.** Mentions inside fenced blocks or `` `backticks` `` are
+  ignored, so quoting a `@Override` annotation or a `pip install foo@1.2` is safe.
+  An unterminated fence blanks everything after it.
+- **An `@` glued to the previous token is not a mention** — `sam@host.com`,
+  `pkg/@scope` and `node@20` resolve to nobody.
+- **Hyphens are kept**, so `@code-reviewer` resolves as itself rather than as the
+  token `code`.
+- **At most three agents per turn.** An agent listing six teammates in a summary
+  is listing them, not summoning them.
+
+A wake chain is bounded the same way delegation is: **depth 3**, and an agent
+already on the chain cannot be woken again by it (no `A → B → A`). An ordered pair
+is also rate-limited across chains. A refused wake posts a system message into the
+conversation saying which mention was not delivered and why — an unresolved name
+does not, since any `@` in a sentence would otherwise narrate itself.
+
+For a handoff that must not depend on prose — a request/reply, or reaching an
+agent outside the space — use the `send_to_agent`, `ask_agent` and `delegate_task`
+tools instead.
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Use spaces](/manual/guides/spaces/)
+- [Run agents in parallel](/manual/guides/parallel-agents/)
+
+## Related concepts
+
+- [Dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

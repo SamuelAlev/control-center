@@ -1,0 +1,33 @@
+name: cc_persistence
+description: "Pure-Dart persistence for the headless server — opens the Drift/SQLite database over package:sqlite3 with no Flutter (no drift_flutter, no path_provider). Compiles into a native `dart build cli` server binary; the desktop app keeps its own Flutter-provided connection."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  drift: ^2.34.3
+  sqlite3: ^3.5.1
+  # Vector-search SQLite extension (vector_init / vector_full_scan) for the
+  # memory-facts + code-graph embedding queries. Ships prebuilt native libraries
+  # for every desktop platform as a `DynamicLoadingBundled` code asset, which
+  # `dart build cli` bundles beside the server binary the same way it bundles
+  # libsqlite3 — no Flutter, no manual scripts/natives step. `openServerDatabase`
+  # registers it as a process-global auto-extension. (Pins hooks to ^1.x, which
+  # is why apps/cc_server's build-hook deps stay on the 1.x line too.)
+  sqlite_vector: ^1.0.0
+  # The schema + DAOs map rows to/from shared-kernel domain types (pure Dart).
+  cc_domain:
+    path: ../cc_domain
+  cc_harness:
+    path: ../cc_harness
+  uuid: ^4.6.0
+
+dev_dependencies:
+  lints: any
+  test: any
+  drift_dev: ^2.34.3
+  build_runner: ^2.15.2

@@ -1,0 +1,178 @@
+---
+title: Work in Plan Studio
+description: Review, edit, estimate, diff and approve a plan in the Plan Studio editor and run parameterized playbooks.
+---
+
+This guide shows you how to work with plans in Plan Studio. For what
+orchestrations and plan documents are, see
+[Orchestration](/manual/concepts/orchestration/) and
+[Use plan mode](/manual/guides/plan-mode/).
+
+## Open a plan
+
+A plan belongs to the conversation that produced it, so that is where you
+normally reach it: the plan's row in the conversation has an **Open** action and
+Plan Studio opens as an editor tab beside the conversation.
+
+:::note[There is no "Plans" sidebar entry]
+That is deliberate, not an oversight. The hub at
+`/workspaces/<workspace-id>/plans` is a routable deep link only, so bookmark it
+if you want a standing list.
+:::
+
+The hub lists three sections:
+
+- **Active plans** — orchestrations, proposed first, with their status, step
+  count and revision number.
+- **Plan documents** — plans a single agent submitted with `submit_plan` in
+  [plan mode](/manual/guides/plan-mode/), while they are proposed or approved.
+- **Playbooks** — saved, parameterized plan templates.
+
+Click a card to open it in Plan Studio. The route is
+`/workspaces/<workspace-id>/plans/<kind>/<plan-id>`, where `kind` is
+`orchestration` or `document`, so you can deep-link a single plan too.
+
+If you opened an **orchestration**, you get the editable canvas, the version
+timeline and the approval bar. If you opened a **plan document**, the same
+graph renders read-only — plan documents are agent-authored; you review,
+estimate and approve or reject them and an approved document shows live
+per-node run state from the orchestration it compiled into.
+
+## Edit the DAG
+
+Edits are possible on an **orchestration** while it is `proposed`. All canvas
+edits are keyboard-driven:
+
+1. Click the canvas, then move the selection with the **arrow keys**.
+2. Press **n** to add a step. It appears selected as "New step"; rename it in
+   the inspector on the right.
+3. Press **e** on the step that must run first, then click the dependent step
+   (or select it and press **Enter**) to connect a dependency. Press **Esc**
+   to abandon a pending connection.
+4. Press **x** to cut the selected step's newest dependency, or toggle exact
+   dependencies in the inspector's dependency editor.
+5. Press **Delete** to remove the selected step; references to it are removed
+   from the remaining steps' dependencies.
+
+In the inspector you can also edit the step's description, role and output
+schema. Edits save automatically as a new revision after a short pause; a
+validation error (shown in the approval bar) blocks the save until you fix it.
+
+Only work steps are editable. Structural nodes — research, discussion and
+synthesis — are read-only and so is any step whose work has already run (it is
+marked "already executed", because editing it would fork the plan).
+
+Saving is optimistically concurrent on the revision you started from. If the
+orchestrator replans underneath you, your save is refused with "the plan moved
+on" rather than merged or silently clobbered; re-read the current revision and
+redo your edit. Agent-initiated replans are themselves rate-limited to one
+every two minutes, so this stays rare.
+
+:::note
+The canvas has no drag-to-reposition: the layout is computed from the
+dependency structure, so "moving" a step means rewiring its dependencies.
+:::
+
+## Read cost, time and risk estimates
+
+Press **Estimate** in the approval bar.
+
+- Each step on the canvas gets a badge with a cost range and the sample size
+  behind it, or "No history yet" when the step's role has never run. Select a
+  step for the full detail in the inspector: cost range with sample size, a
+  duration range and a blast radius (files and symbols) derived from the
+  step's provenance — or "unknown" when the step carries no provenance.
+- The approval bar shows the plan total: an overall cost range, a duration
+  range for the critical path (parallel branches overlap, so this is not the
+  sum) and the budget ceiling when the plan sets one.
+- If only some steps have history, the total is marked **partial** and covers
+  only the estimable steps. If the estimate's high end exceeds the budget
+  ceiling, the total turns red with an over-budget warning.
+
+Estimates are honest or absent: a step whose role has no completed-run history
+reports a sample size of zero with no ranges at all and is shown as unknown
+rather than guessed at. Treat "No history yet" as "nobody knows", not "cheap".
+
+The budget ceiling is a display comparison against this estimate. Nothing
+enforces it once the plan is running — see
+[Manage costs](/manual/guides/manage-costs/) for controls that actually stop
+spending.
+
+## Diff a revision against an earlier proposal
+
+Every edit and every replan by the orchestrator appends to an append-only
+revision timeline, shown in the **Versions** panel on the left of an
+orchestration plan.
+
+1. Click a revision to diff it against the current proposal. With no
+   selection, the panel diffs the previous revision against the current one.
+2. Read the diff in the lower half of the panel: steps added, removed, or
+   changed between the two revisions.
+3. If the plan is still `proposed`, click the rewind icon on a revision to go
+   back to it. Rewinding saves that proposal as a **new** revision — nothing
+   is lost.
+
+If the orchestrator replans while the plan is executing, a banner tells you
+the live revision is ahead of the one you approved and the panel diffs
+against your approved revision.
+
+## Approve, reject, or widen a plan
+
+From the app a proposed plan is one decision, taken whole: **Approve plan** or
+**Reject** in the approval bar. **Approve plan** always approves every step —
+there is no way to select a subset first. Approval is blocked while the
+proposal has validation errors, which are shown next to the buttons.
+
+Approving is operator-only. There is no MCP tool for it, so an agent can
+propose and revise a plan but never approve one.
+
+Once an orchestration is executing, the bar changes:
+
+- If a step stopped to ask mid-run, select it and press **Continue node** to
+  resume it.
+- Press **Cancel run** to stop the whole orchestration.
+
+A plan that was approved _partially_ also gets a third control: steps outside
+the approved set render as deferred and do not run and **Approve selected**
+widens the set to a step plus everything it transitively depends on (a step can
+never be approved without its dependencies).
+
+:::note[Partial approvals cannot originate in the app]
+A partial approval only exists when something called `orchestration.approve`
+over RPC with an explicit `approved_node_keys` list. If you never see deferred
+steps or **Approve selected**, nothing is wrong — you cannot create that state
+from the desktop or web client. Plan documents are approved whole in every
+case, so an executing document offers **Cancel run** only.
+:::
+
+## Run a playbook with parameters
+
+A playbook is a saved plan template with typed `{{param}}` placeholders in its
+goal, step titles, descriptions and prompts. Substitution is literal — there
+is no expression language; if you need logic, use a
+[pipeline](/manual/guides/create-pipeline/) instead.
+
+1. In the hub's **Playbooks** section, press **Run** on the playbook (or open
+   the ⌘K palette and pick the playbook there).
+2. Fill in the parameters. Enumeration parameters render as dropdowns; repo
+   and agent parameters take a repo or agent reference; optional parameters
+   fall back to their default.
+3. Pick the **anchor ticket** the plan is proposed against, then confirm.
+
+Running a playbook only **proposes** a plan — the instantiated orchestration
+opens in Plan Studio as `proposed` and nothing executes until you approve it
+there. To remove a playbook, press the trash icon on its card.
+
+Agents create and run playbooks with the `create_playbook` and `run_playbook`
+MCP tools; see the [MCP tools reference](/manual/reference/mcp-tools/).
+
+## Related guides
+
+- [Use plan mode](/manual/guides/plan-mode/): how an agent produces a plan document with `submit_plan`
+- [Run an orchestration](/manual/guides/run-orchestration/): the approve-once lifecycle from the conversation side
+- [Create a pipeline template](/manual/guides/create-pipeline/): when you need logic a playbook cannot express
+- [Monitor pipeline runs](/manual/guides/monitor-pipelines/): the engine view of an approved plan
+
+## Related concepts
+
+- [Orchestration](/manual/concepts/orchestration/)

@@ -1,0 +1,74 @@
+---
+title: Tune an agent's tool context
+description: Inspect what a run actually sends, change which tools load up front, and work out whether a poor tool choice was a retrieval miss or a prompt problem.
+---
+
+This guide covers the practical work around the two-tier tool surface: seeing what a run sends, changing it, and diagnosing an agent that reached for the wrong tool. For why it works this way, read [Tool context and prompt caching](/manual/concepts/tool-context).
+
+## Look at what a run actually sends
+
+Open a conversation and use the **context explorer** (the context-usage indicator beside the composer). It rebuilds the exact surface the next dispatch would send, without running anything.
+
+Two segments matter here:
+
+- **Tool definitions** and **MCP & dynamic tools** — the resident set, with each tool's real token cost.
+- **Tools loaded on demand** — the deferred index. Each entry is charged only its name, because a name is all the request carries; opening one still shows the full description and schema, so you can see what it *would* cost if the run pulled it in.
+
+If the deferred segment is empty, deferral is off for this server. Check `--tool-deferral` on the [`cc_server` CLI](/manual/reference/cc-server-cli).
+
+## Change which tools load up front
+
+The resident set is policy, not configuration — it lives in `ModeToolPolicy` (`packages/cc_domain/lib/features/mcp/domain/value_objects/mode_tool_policy.dart`) and applies to every run:
+
+- `residentBuiltins` — the file and shell vocabulary.
+- `residentDiscovery` — `search_tools` and `list_my_tools`. Do not remove these; they are how an agent reaches everything else.
+- `residentMcpTools` — the handful of Control Center tools worth their schema on every request.
+- A per-mode block, for the tools a given [mode](/manual/concepts/modes) uses on nearly every turn.
+
+Two rules when editing it:
+
+**Add a tool only if most runs use it.** Every name costs its schema on every request of every run, forever. A tool that is important when it is used but rare overall belongs in the deferred half — the agent will still find it.
+
+**Use the tool's real name.** A resident name that matches no tool is inert: no error, no warning, the tool is simply deferred. `test/tooling/resident_tool_names_test.dart` catches this and also holds each mode under 40 resident tools, which is the point of the exercise — past that band, tool selection measurably degrades.
+
+A mode's required and pinned verbs are added automatically, so you never need to list a mode's own output verb.
+
+## Diagnose a bad tool choice
+
+When an agent used the wrong tool or claimed it could not do something, work out which of three things happened.
+
+### 1. Did it look?
+
+Each run records the deferred tools it loaded and what triggered it — a direct call by name, or a `search_tools` query. Open the run's event stream (**Settings → Workspace → Agents** → the agent → **Logs** → **View**) and look for `[harness] loaded N deferred tool(s)`.
+
+- **Nothing logged, and the agent said the capability was missing** — it never looked. That is a prompt problem, not a retrieval one: the deferred index is in its system prompt with an instruction not to declare a capability missing until a search has come back empty.
+- **A search logged, but nothing loaded** — a genuine retrieval miss. Go to step 2.
+- **Tools loaded, wrong one used** — the tools it found are too alike. Go to step 3.
+
+### 2. Fix a retrieval miss
+
+`search_tools` matches on names, descriptions and argument names. A miss almost always means the description does not contain the words the agent used.
+
+Add them. Descriptions are the retrieval index, so **lengthen them rather than trimming** — write the vocabulary an operator would actually type ("assign", "hand off", "give to"), not just the internal noun. Trimming a description to save tokens costs you both the search hit and the selection accuracy, and saves almost nothing next to the schema.
+
+If the right tool exists but ranks low, that is what the `limit` argument is for; the tool's own description tells the agent to widen a search that looks close but misses.
+
+### 3. Fix look-alike tools
+
+If two tools have descriptions that would read the same to someone who does not already know the difference, the model is guessing. Merge them into one tool with a discriminating argument.
+
+That is what `ticket_relation` and `ticket_pr_link` are: each replaced a `link_` / `unlink_` pair that took identical arguments and differed only in direction. A choice made *inside* one call, with the full context of the request, is more reliable than a choice made between two look-alike descriptions.
+
+Keep tools separate when they need different approval gating, different auditing or different rendering — those are reasons a merge would cost you something real.
+
+## Check the prompt cache is working
+
+Cache hit rate shows up in **Observability** as cache effectiveness. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+
+Common causes, in order of likelihood:
+
+- **Anything non-deterministic early in the prompt.** A timestamp, a request id, or a set iterated in varying order will do it.
+- **A model or effort change mid-conversation.** Both change the prefix. Subagents are especially easy to get wrong here: running children at a lower effort to save money can cost more in lost cache sharing than it saves.
+- **Frequent compaction.** Compaction rewrites history by design, so its cost is real; the fix is to compact rarely and deeply rather than often and shallowly.
+
+Turning deferral off with `--tool-deferral=off` is a valid A/B for isolating whether a behaviour change came from the two-tier surface. It reproduces the pre-deferral request exactly, so if the behaviour persists with it off, the surface is not the cause.

@@ -1,0 +1,10 @@
+# Shrinking allowlist: lib/core files that still import lib/features (a layering
+# inversion — core must not depend on features). Enforced by
+# architecture_constraints_test.dart. Migrate the feature-specific wiring out of
+# core (into di/ or the feature) + remove. No NEW entries.
+# Seeded 2026-07-06 to the current baseline; the check was a hard expect(empty)
+# that stayed red — the ratchet now forbids growth while this debt is paid down.
+# Drained 2026-08-22: the notification composition moved to di/, the RPC-client
+# workspace sync moved to the workspaces feature and the VS Code diff-color
+# mapping moved next to VsCodeEditorTheme (DiffColors.fromEditorTheme takes
+# plain fields).

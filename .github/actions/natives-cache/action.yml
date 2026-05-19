@@ -1,0 +1,72 @@
+name: Natives cache
+description: >
+  Restore the staged build/natives directory from the Actions cache (and, on a
+  miss, arrange its post-job save). THE single definition of the natives cache
+  key — the seeding workflow (natives.yml) and the release builds
+  (prepare-release-build) both go through this action, so the writer and the
+  reader can never drift onto different keys.
+
+# WHY THE KEY LIVES HERE AND NOWHERE ELSE
+#
+# A cache is only sound if the run that saves it and the run that restores it
+# agree, character for character, on what the key covers. Two hand-copied
+# hashFiles expressions in two files is exactly the "change them together"
+# comment scripts/lib/natives.sh was created to delete — so the key gets the
+# same treatment: one owner, two consumers.
+#
+# WHO SEEDS, WHO CONSUMES
+#
+# GitHub scopes caches by ref: a tag-triggered release run can RESTORE caches
+# created on the default branch, but a cache SAVED on a tag ref is never
+# readable again (every tag is new). So release runs are pure consumers, and
+# .github/workflows/natives.yml — which builds on every push to main touching a
+# native input — is the seeder. A PR run of natives.yml saves too, but that
+# save is scoped to the PR ref and invisible to main and tags: the only caches
+# a release can ever ingest were built by a push-to-main run, the same trust
+# boundary as the build scripts themselves.
+#
+# WHY THERE IS NO restore-keys
+#
+# Deliberate, and load-bearing. A prefix match would restore natives compiled
+# from OLDER pins or sources, and scripts/release/verify_natives.sh checks
+# presence, not version — a stale hit would be silently packaged into a
+# release. Exact key or full source build; nothing in between.
+#
+# THE KEY
+#
+# runner.os + runner.arch (a dylib is not a dll), plus a hash of everything
+# that determines build/natives' content: the pinned third-party refs
+# (native_pins.env), the shell library that loads them, the required-set
+# matrix, every build script (including the .scm queries they stage into the
+# same directory), the Windows toolchain script, and the in-repo native
+# sources (pty C, watcher + inference Rust crates, aec/lame FFI shims).
+#
+# The `v1` segment is the manual bust knob: bump it to force a rebuild whose
+# inputs did not change — e.g. after a runner-image toolchain update you want
+# reflected in the shipped artifacts. Runner toolchain drift alone does not
+# rotate the key on purpose: the cached libraries were built from identical
+# pinned sources and remain valid.
+#
+# What the key deliberately does NOT cover is the runner image's glibc, which
+# IS baked into the libraries and is not a pinned source. That is why the Linux
+# runners are pinned by version (release.yml, natives.yml) and why
+# verify_natives.sh checks the ABI floor on every run, hit or miss: a cache
+# restored from a differently-versioned image fails the gate instead of
+# shipping libraries the runtime base cannot load.
+
+outputs:
+  cache-hit:
+    description: >
+      "true" when the exact key was restored; anything else means build/natives
+      must be built from source.
+    value: ${{ steps.cache.outputs.cache-hit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Restore staged natives
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: build/natives
+        key: natives-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/lib/native_pins.env', 'scripts/lib/common.sh', 'scripts/lib/natives.sh', 'scripts/natives/**', 'scripts/release/windows_natives.sh', 'packages/cc_natives/native/**') }}

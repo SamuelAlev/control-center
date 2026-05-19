@@ -1,0 +1,178 @@
+---
+title: Keyboard shortcuts
+description: The complete keybinding registry, by scope, with the conditions each shortcut fires under.
+---
+
+Shortcuts come from one `const` registry, `KeybindingRegistry` in `lib/core/constants/keybindings.dart`. It holds **79 bindings**. Settings → You → Keybindings renders that registry as a **read-only reference**: there is no rebinding UI and no user keybindings file.
+
+`Cmd` below is the primary command modifier — ⌘ on macOS, Ctrl on Windows and Linux. A binding only fires when its command has a registered handler on the current screen and its `when` clause holds; `!textInputFocus` means the key is passed through to a focused text field instead.
+
+`Cmd/Ctrl + 6` is deliberately unassigned. There is no shortcut for Spaces and none for the Observability hub; both are reached from the sidebar.
+
+## Global (27)
+
+Scope `global`, so they are live anywhere in the shell.
+
+### Navigation
+
+| Shortcut       | Action              | Destination                  |
+| -------------- | ------------------- | ---------------------------- |
+| `Cmd/Ctrl + 1` | Go to inbox         | `/inbox`                     |
+| `Cmd/Ctrl + 2` | Go to tickets       | `/tickets`                   |
+| `Cmd/Ctrl + 3` | Go to pull requests | `/pull-requests`             |
+| `Cmd/Ctrl + 4` | Go to pipelines     | `/pipelines`                 |
+| `Cmd/Ctrl + 5` | Go to agents        | `/settings/workspace/agents` |
+| `Cmd/Ctrl + 7` | Go to memory        | `/settings/memory`           |
+| `Cmd/Ctrl + 8` | Go to newsfeed      | `/newsfeed`                  |
+| `Cmd/Ctrl + 9` | Go to meetings      | `/meetings`                  |
+
+### System
+
+| Shortcut                                    | Action                                           | Condition                                                  |
+| ------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------- |
+| `Cmd/Ctrl + K`                              | Command palette                                  | —                                                          |
+| `Shift + /` (`?`)                           | Keyboard shortcuts cheat sheet                   | Not typing in a field                                      |
+| `Cmd/Ctrl + Z`                              | Undo                                             | Not typing in a field (a focused field keeps its own undo) |
+| `Cmd/Ctrl + Shift + Z`                      | Redo                                             | Not typing in a field                                      |
+| `Cmd/Ctrl + Shift + T`                      | Toggle theme                                     | —                                                          |
+| `Cmd/Ctrl + ,`                              | Open settings (lands on `/settings/you/profile`) | —                                                          |
+| `Cmd/Ctrl + Shift + Alt + F`                | Toggle focus mode                                | —                                                          |
+| `Cmd/Ctrl + Shift + W`                      | Toggle workspace switcher                        | —                                                          |
+| `Cmd/Ctrl + ]`                              | Next workspace                                   | —                                                          |
+| `Cmd/Ctrl + [`                              | Previous workspace                               | —                                                          |
+| `Cmd/Ctrl + Alt + 1` … `Cmd/Ctrl + Alt + 9` | Switch to workspace 1–9                          | —                                                          |
+
+## Pull request list (10)
+
+Scope `/pull-requests`. All require `route == '/pull-requests'` and no focused text field, so they do not fire while the PR detail route is open over the list.
+
+| Shortcut       | Action                    |
+| -------------- | ------------------------- |
+| `J`            | Next PR                   |
+| `K`            | Previous PR               |
+| `Enter`        | Open PR                   |
+| `X`            | Select PR (toggle)        |
+| `E`            | Merge PR                  |
+| `Space`        | Peek PR (expand/collapse) |
+| `R`            | Refresh                   |
+| `/`            | Focus search              |
+| `Cmd/Ctrl + F` | Focus search              |
+| `F`            | Open filter menu          |
+
+## Pull request detail (9)
+
+Scope `/pull-requests/`. All require no focused text field.
+
+| Shortcut       | Action                              |
+| -------------- | ----------------------------------- |
+| `1`            | Overview tab                        |
+| `2`            | Diff tab                            |
+| `3`            | Review tab                          |
+| `V`            | Toggle viewed on the focused file   |
+| `C`            | Toggle collapse on the focused file |
+| `T`            | Show file list                      |
+| `R`            | Refresh                             |
+| `Cmd/Ctrl + F` | Search in diff                      |
+| `Cmd/Ctrl + W` | Close tab                           |
+
+## Inbox (1)
+
+| Shortcut | Action           |
+| -------- | ---------------- |
+| `F`      | Open filter menu |
+
+## GitHub user profile (7)
+
+Scope `/users/`, matched by regex against any `/users/<login>` location.
+
+| Shortcut       | Action       |
+| -------------- | ------------ |
+| `J`            | Next PR      |
+| `K`            | Previous PR  |
+| `Enter`        | Open PR      |
+| `Space`        | Peek PR      |
+| `R`            | Refresh      |
+| `/`            | Focus search |
+| `Cmd/Ctrl + F` | Focus search |
+
+## Spaces (9)
+
+Scope `/spaces`.
+
+| Shortcut               | Action                 | Condition             |
+| ---------------------- | ---------------------- | --------------------- |
+| `Enter`                | Send message           | —                     |
+| `Cmd/Ctrl + N`         | New space              | On a `/spaces` route  |
+| `J`                    | Next space             | Not typing in a field |
+| `K`                    | Previous space         | Not typing in a field |
+| `Cmd/Ctrl + Backspace` | Delete selected space  | Not typing in a field |
+| `Cmd/Ctrl + Shift + D` | Push-to-talk dictation | —                     |
+| `Cmd/Ctrl + T`         | Open editor tab        | On a `/spaces` route  |
+| `Cmd/Ctrl + W`         | Close editor tab       | On a `/spaces` route  |
+| `Cmd/Ctrl + B`         | Toggle editor sidebar  | On a `/spaces` route  |
+
+## Workspace picker (3)
+
+Scope `/workspaces`, live only on the picker itself.
+
+| Shortcut               | Action                    |
+| ---------------------- | ------------------------- |
+| `Cmd/Ctrl + N`         | New workspace             |
+| `Enter`                | Open selected workspace   |
+| `Cmd/Ctrl + Backspace` | Delete selected workspace |
+
+## Settings (6)
+
+| Shortcut               | Action                 | Screen                              |
+| ---------------------- | ---------------------- | ----------------------------------- |
+| `J`                    | Next settings page     | Any `/settings` route, not typing   |
+| `K`                    | Previous settings page | Any `/settings` route, not typing   |
+| `Cmd/Ctrl + N`         | New agent              | Settings → Workspace → Agents       |
+| `Cmd/Ctrl + Backspace` | Delete selected agent  | Settings → Workspace → Agents       |
+| `Cmd/Ctrl + N`         | Add repository         | Settings → Workspace → Repositories |
+| `R`                    | Rescan for adapters    | Settings → Server → Model providers |
+
+The last three bindings still declare the pre-namespacing scopes `/settings/agents`, `/settings/repositories` and `/settings/adapters`. Those paths no longer exist, so the bindings are filed under stale scopes on the cheat sheet; they still fire, because the screen that owns each one registers its handler.
+
+## Newsfeed (5)
+
+Scope `/newsfeed`. All require `route == '/newsfeed'` and no focused text field.
+
+| Shortcut | Action           |
+| -------- | ---------------- |
+| `J`      | Next article     |
+| `K`      | Previous article |
+| `Enter`  | Open article     |
+| `S`      | Toggle bookmark  |
+| `R`      | Refresh feeds    |
+
+## Peer review (2)
+
+| Shortcut                   | Action          |
+| -------------------------- | --------------- |
+| `Cmd/Ctrl + Enter`         | Approve         |
+| `Cmd/Ctrl + Shift + Enter` | Request changes |
+
+Both are declared in the registry and appear on the keybindings reference, but **no screen registers a handler for either**, so neither currently fires.
+
+## Diff viewer keys outside the registry
+
+The PR diff viewer handles these itself (`PrDiffKeyboardHandler`); they are not registry bindings and do not appear on the keybindings reference.
+
+| Shortcut        | Action                                               |
+| --------------- | ---------------------------------------------------- |
+| `Enter`         | Next search match (only while find-in-diff is open)  |
+| `Shift + Enter` | Previous search match                                |
+| `Escape`        | Close find-in-diff, or clear the diff text selection |
+| `Cmd/Ctrl + C`  | Copy the diff selection                              |
+
+## Browser-reserved combinations
+
+On the web build, the browser consumes some accelerators before the page sees them, so the matching bindings can never fire there. They work normally on desktop. Reserved when combined with the primary command modifier: `T`, `W`, `N` and the digits `1`–`9`.
+
+That covers `Cmd/Ctrl + 1`–`9` navigation, `Cmd/Ctrl + Alt + 1`–`9` workspace switching, `Cmd/Ctrl + N` (new space, new workspace, new agent, add repository) and `Cmd/Ctrl + T` / `Cmd/Ctrl + W` in spaces and PR detail.
+
+## See also
+
+- [Route map](/manual/reference/route-map/)
+- [Focus mode](/manual/guides/focus-mode/)

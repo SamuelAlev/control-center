@@ -1,0 +1,25 @@
+// Local, per-developer macOS code-signing override (NOT committed).
+//
+// Included by AppInfo.xcconfig via `#include? "Signing.local.xcconfig"`. Signs
+// local dev builds with a trusted, team-prefixed identity so the macOS
+// data-protection keychain (lib/core/providers/storage_providers.dart) reads the
+// app's secrets with NO prompt. An ad-hoc / no-team build can't satisfy the
+// keychain-access-groups entitlement (errSecMissingEntitlement, -34018).
+//
+// Don't edit this .example. Run, once:
+//     bash macos/scripts/create_local_signing_cert.sh [TEAM_ID]
+// It writes the real (git-ignored) Signing.local.xcconfig:
+//
+//     CODE_SIGN_STYLE = Automatic
+//     DEVELOPMENT_TEAM = <your-team-id>
+//     CODE_SIGN_IDENTITY = Apple Development
+//
+// Local dev always uses AUTOMATIC signing (free or paid account). Manual /
+// Developer ID can't be used locally: the keychain-access-groups "Keychain
+// Sharing" capability forces a provisioning profile under manual signing, which
+// `flutter run` can't mint. Automatic signing auto-provisions it; you mint the
+// profile once with xcodebuild -allowProvisioningUpdates (the script prints how).
+//
+// The debug entitlement uses $(DEVELOPMENT_TEAM), so your team auto-fills the
+// keychain access group — no source edits. CI ignores this file (builds ad-hoc,
+// then re-signs Developer ID in scripts/release/macos_package.sh).

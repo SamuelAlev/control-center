@@ -1,0 +1,606 @@
+import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space.dart';
+import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
+import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
+import 'package:control_center/features/messaging/presentation/widgets/context_meter_chip.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_search_dialog.dart';
+import 'package:control_center/features/messaging/providers/conversation_checkpoint_providers.dart';
+import 'package:control_center/features/messaging/providers/messaging_providers.dart';
+import 'package:control_center/features/messaging/providers/space_autonomy_provider.dart';
+import 'package:control_center/features/messaging/providers/space_checker_provider.dart';
+import 'package:control_center/features/messaging/providers/space_takeover_provider.dart';
+import 'package:control_center/features/presence/presentation/widgets/whos_here_strip.dart';
+import 'package:control_center/features/presence/providers/presence_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
+import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/agent_avatar.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Header bar displaying the open conversation (falling back to the space)
+/// and the space's actions.
+class SpaceHeader extends ConsumerWidget {
+  /// Creates a new [SpaceHeader].
+  const SpaceHeader({
+    super.key,
+    required this.space,
+    required this.onManage,
+    required this.onArchive,
+    this.conversation,
+  });
+
+  /// The space to display.
+  final Space space;
+
+  /// The open conversation, when one is resolved. Its title is the header's
+  /// title (empty → the untitled placeholder); null (still resolving) keeps
+  /// the space name so the header never blinks.
+  final Conversation? conversation;
+
+  /// Callback to manage participants.
+  final VoidCallback onManage;
+
+  /// Callback to archive the space.
+  final VoidCallback onArchive;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final participantsAsync = ref.watch(spaceParticipantsProvider(space.id));
+    final participants = participantsAsync.value ?? const [];
+    // The wire never carries the "reverted" flag, so a session-scoped notifier
+    // tracks whether this space has a revert the user can still undo (redo).
+    final hasUndoableRevert = ref.watch(
+      spaceHasUndoableRevertProvider(space.id),
+    );
+    final agents = participants.where((p) => !p.isUser).toList();
+    final meteredAgentId = ref.watch(spaceMeteredAgentIdProvider(space.id));
+    final l10n = AppLocalizations.of(context);
+
+    final conversation = this.conversation;
+    final title = conversation != null
+        ? conversationDisplayName(conversation, l10n)
+        : (space.name.isNotEmpty ? space.name : l10n.spaceLabel);
+    final subtitle = agents.isEmpty
+        ? l10n.noAgents
+        : l10n.agentCount(agents.length, agents.length);
+
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          Icon(AppIcons.users, size: 20, color: tokens.textTertiary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // One line, always: the header is a fixed 56px band, so a long
+                // space name that wrapped pushed the subtitle past the bottom
+                // edge (a 2px RenderFlex overflow). Truncate and disclose the
+                // full name on hover instead of stealing a second line.
+                CcTruncatedText(
+                  title,
+                  style: CcTypography.body.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: CcTypography.caption.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          // Context-window telemetry. A space can hold several agents but only
+          // ONE window fits in the header, so the meter follows whichever agent
+          // last worked here (see [spaceMeteredAgentIdProvider]) and names
+          // whose window it is reading as soon as there is more than one.
+          if (meteredAgentId != null)
+            ContextMeterChip(
+              spaceId: space.id,
+              agentId: meteredAgentId,
+              showAgent: agents.length > 1,
+            ),
+          const SizedBox(width: 8),
+          // Who else (human or agent) is here right now (PRD 16 §1–§3).
+          // Renders nothing in solo mode or when nobody targets this space.
+          WhosHereStrip(spaceId: space.id),
+          const SizedBox(width: 4),
+          _PresentToggleButton(spaceId: space.id),
+          const SizedBox(width: 4),
+          _TakeoverButton(spaceId: space.id),
+          const SizedBox(width: 4),
+          if (hasUndoableRevert) ...[
+            CcTooltip(
+              targetAnchor: Alignment.bottomCenter,
+              followerAnchor: Alignment.topCenter,
+              message: l10n.undoRevert,
+              child: CcIconButton(
+                icon: AppIcons.rotateCw,
+                semanticLabel: l10n.undoRevert,
+                onPressed: () => _undoRevert(context, ref),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
+          const SizedBox(width: 4),
+          CcTooltip(
+            targetAnchor: Alignment.bottomCenter,
+            followerAnchor: Alignment.topCenter,
+            message: l10n.searchInConversation,
+            child: CcIconButton(
+              icon: AppIcons.search,
+              semanticLabel: l10n.searchInConversation,
+              onPressed: () => showCcDialog<void>(
+                context: context,
+                builder: (_) => SpaceSearchDialog(spaceId: space.id),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          CcTooltip(
+            targetAnchor: Alignment.bottomCenter,
+            followerAnchor: Alignment.topCenter,
+            message: l10n.manageParticipants,
+            child: CcIconButton(
+              icon: AppIcons.users,
+              semanticLabel: l10n.manageParticipants,
+              onPressed: onManage,
+            ),
+          ),
+          const SizedBox(width: 4),
+          CcTooltip(
+            targetAnchor: Alignment.bottomCenter,
+            followerAnchor: Alignment.topCenter,
+            message: l10n.archiveSpace,
+            child: CcIconButton(
+              icon: AppIcons.archive,
+              semanticLabel: l10n.archiveSpace,
+              onPressed: onArchive,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Undoes the most-recent revert in this conversation (redo): the latest
+  /// reverted batch reappears in the live message stream. The toast handle is
+  /// captured before the await so it survives the async gap.
+  Future<void> _undoRevert(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final toast = CcToastScope.maybeOf(context);
+    final count = await ref
+        .read(conversationCheckpointControllerProvider)
+        .unrevert(space.id);
+    toast?.show(
+      count > 0 ? l10n.revertUndone : l10n.nothingToRevert,
+      variant: count > 0 ? CcToastVariant.success : CcToastVariant.neutral,
+    );
+  }
+}
+
+/// Icon button toggling whether this client is spotlighting (presenting)
+/// this space to everyone else on the roster (PRD 16 §5).
+class _PresentToggleButton extends ConsumerWidget {
+  const _PresentToggleButton({required this.spaceId});
+
+  final String spaceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final myPresence = ref.watch(myPresenceProvider);
+    final isPresenting = myPresence.spotlightSpaceId == spaceId;
+    final tooltip = isPresenting ? l10n.stopPresenting : l10n.startPresenting;
+
+    return CcTooltip(
+      targetAnchor: Alignment.bottomCenter,
+      followerAnchor: Alignment.topCenter,
+      message: tooltip,
+      child: CcIconButton(
+        icon: AppIcons.monitor,
+        semanticLabel: tooltip,
+        color: isPresenting ? t.accent : null,
+        onPressed: () => ref
+            .read(myPresenceProvider.notifier)
+            .setSpotlight(isPresenting ? null : spaceId),
+      ),
+    );
+  }
+}
+
+/// Icon button that begins a take-over of this space's worktree (PRD 16
+/// §8). Hidden while a take-over (by anyone) is already active — the
+/// conversation-pane banner covers hand-back / status in that case.
+class _TakeoverButton extends ConsumerWidget {
+  const _TakeoverButton({required this.spaceId});
+
+  final String spaceId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final takeover = ref.watch(takeoverStatusProvider(spaceId)).value;
+    if (takeover != null) {
+      return const SizedBox.shrink();
+    }
+
+    return CcTooltip(
+      targetAnchor: Alignment.bottomCenter,
+      followerAnchor: Alignment.topCenter,
+      message: l10n.takeoverTooltip,
+      child: CcIconButton(
+        icon: AppIcons.userCheck,
+        semanticLabel: l10n.takeoverTooltip,
+        onPressed: () => _begin(context, ref),
+      ),
+    );
+  }
+
+  /// Begins the take-over, then opens the code-server editor tab on the same
+  /// worktree — the natural take-over surface (PRD 16 §8). A failure (e.g.
+  /// someone else just took over) surfaces via toast with the server's
+  /// message rather than throwing into the widget tree.
+  Future<void> _begin(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final toast = CcToastScope.maybeOf(context);
+    try {
+      await beginSpaceTakeover(ref.read(rpcClientProvider), spaceId);
+    } on RemoteRpcException catch (e) {
+      toast?.show(
+        l10n.takeoverFailed(e.message),
+        variant: CcToastVariant.danger,
+      );
+      return;
+    }
+    ref.invalidate(takeoverStatusProvider(spaceId));
+    ref.read(openCodeServerTabRequestProvider(spaceId).notifier).request();
+  }
+}
+
+/// Dialog for managing space participants.
+class ManageSpaceDialog extends ConsumerStatefulWidget {
+  /// Creates a new [ManageSpaceDialog].
+  const ManageSpaceDialog({super.key, required this.spaceId});
+
+  /// Space to manage.
+  final String spaceId;
+
+  @override
+  ConsumerState<ManageSpaceDialog> createState() => _ManageSpaceDialogState();
+}
+
+class _ManageSpaceDialogState extends ConsumerState<ManageSpaceDialog> {
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final participants =
+        ref.watch(spaceParticipantsProvider(widget.spaceId)).value ?? const [];
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final agents = workspaceId != null
+        ? ref.watch(workspaceAgentsProvider(workspaceId)).value ?? const []
+        : ref.watch(agentsProvider).value ?? const [];
+    final l10n = AppLocalizations.of(context);
+    final existingIds = participants.map((p) => p.principalId).toSet();
+    final spaceParticipants = participants.where((p) => !p.isUser).toList();
+    final spaceAgentIds = spaceParticipants.map((p) => p.principalId).toSet();
+    final spaceAgents = agents
+        .where((a) => spaceAgentIds.contains(a.id))
+        .toList();
+
+    return CcDialog(
+      title: l10n.manageParticipants,
+      content: SizedBox(
+        width: 360,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (spaceParticipants.isNotEmpty) ...[
+              Text(
+                l10n.currentParticipants,
+                style: CcTypography.caption.copyWith(
+                  color: tokens.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              ...spaceParticipants.map(
+                (p) => _ParticipantRow(
+                  spaceId: widget.spaceId,
+                  participant: p,
+                  onRemove: () => _removeAgent(p.principalId),
+                ),
+              ),
+              const SizedBox(height: 24, child: Center(child: CcDivider())),
+            ],
+            Text(
+              l10n.inviteAgent,
+              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
+            ),
+            const SizedBox(height: 8),
+            _InviteSection(
+              agents: agents,
+              existingIds: existingIds,
+              onInvite: _inviteAgent,
+            ),
+            const SizedBox(height: 24, child: Center(child: CcDivider())),
+            _CheckerSection(spaceId: widget.spaceId, agents: spaceAgents),
+          ],
+        ),
+      ),
+      actions: [
+        CcButton(
+          variant: CcButtonVariant.secondary,
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.close),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _removeAgent(String agentId) async {
+    await ref
+        .read(messagingServiceProvider)
+        .removeParticipant(ref.requireWorkspaceId(), widget.spaceId, agentId);
+  }
+
+  Future<void> _inviteAgent(String agentId) async {
+    await ref
+        .read(messagingServiceProvider)
+        .addAgentToSpace(ref.requireWorkspaceId(), widget.spaceId, agentId);
+  }
+}
+
+class _ParticipantRow extends ConsumerWidget {
+  const _ParticipantRow({
+    required this.spaceId,
+    required this.participant,
+    required this.onRemove,
+  });
+
+  /// The space this participant belongs to — scopes the autonomy read/write.
+  final String spaceId;
+  final SpaceParticipant participant;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final agentAsync = ref.watch(agentDetailProvider(participant.principalId));
+    final name = agentAsync.value?.name ?? '...';
+    final title = agentAsync.value?.title ?? '';
+    final l10n = AppLocalizations.of(context);
+    final autonomy =
+        ref.watch(spaceAutonomyProvider(spaceId)).value ??
+        const <String, AutonomyLevel?>{};
+    final currentLevel = autonomy[participant.principalId];
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final canSetAutonomy =
+        workspaceId != null &&
+        (ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AgentAvatar(
+                agentId: participant.principalId,
+                name: name,
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: CcTypography.body.copyWith(
+                        color: tokens.textTertiary,
+                      ),
+                    ),
+                    if (title.isNotEmpty)
+                      Text(
+                        title,
+                        style: CcTypography.caption.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              CcTooltip(
+                message: l10n.remove,
+                child: CcIconButton(
+                  icon: AppIcons.x,
+                  semanticLabel: l10n.remove,
+                  onPressed: onRemove,
+                ),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 34, right: 4),
+            child: CcSelect<AutonomyLevel?>(
+              label: l10n.autonomyDialLabel,
+              // The dial decides whether this agent's risky effects are
+              // pre-approved, so it carries the same admin floor as the
+              // guardrail matrix it would otherwise neutralize (the server
+              // enforces it; this keeps the control honest rather than
+              // offering an action that will be refused).
+              enabled: canSetAutonomy,
+              options: [
+                CcSelectOption(value: null, label: l10n.autonomyDefaultOption),
+                CcSelectOption(
+                  value: AutonomyLevel.proposeOnly,
+                  label: l10n.autonomyProposeOnly,
+                ),
+                CcSelectOption(
+                  value: AutonomyLevel.actWithApproval,
+                  label: l10n.autonomyActWithApproval,
+                ),
+                CcSelectOption(
+                  value: AutonomyLevel.actFreely,
+                  label: l10n.autonomyActFreely,
+                ),
+              ],
+              value: currentLevel,
+              onChanged: (level) => setSpaceAutonomy(
+                ref.read(rpcClientProvider),
+                spaceId: spaceId,
+                agentId: participant.principalId,
+                level: level,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The space's checker-agent row (PRD 16 §13): a select over the space's
+/// own agent participants (+ "None"), bound to `checker.get`/
+/// `checker.setForSpace`.
+class _CheckerSection extends ConsumerWidget {
+  const _CheckerSection({required this.spaceId, required this.agents});
+
+  final String spaceId;
+  final List<Agent> agents;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final currentCheckerId = ref.watch(spaceCheckerProvider(spaceId)).value;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CcSelect<String?>(
+          label: l10n.checkerLabel,
+          options: [
+            CcSelectOption(value: null, label: l10n.checkerNone),
+            for (final a in agents) CcSelectOption(value: a.id, label: a.name),
+          ],
+          value: currentCheckerId,
+          onChanged: (agentId) async {
+            await setSpaceChecker(
+              ref.read(rpcClientProvider),
+              spaceId: spaceId,
+              agentId: agentId,
+            );
+            ref.invalidate(spaceCheckerProvider(spaceId));
+          },
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.checkerCaption,
+          style: CcTypography.caption.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _InviteSection extends StatefulWidget {
+  const _InviteSection({
+    required this.agents,
+    required this.existingIds,
+    required this.onInvite,
+  });
+
+  final List<Agent> agents;
+  final Set<String> existingIds;
+  final ValueChanged<String> onInvite;
+
+  @override
+  State<_InviteSection> createState() => _InviteSectionState();
+}
+
+class _InviteSectionState extends State<_InviteSection> {
+  Agent? _selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final available = widget.agents
+        .where((a) => !widget.existingIds.contains(a.id))
+        .toList();
+    final l10n = AppLocalizations.of(context);
+
+    if (available.isEmpty) {
+      return Text(
+        l10n.allAgentsAlreadyInSpace,
+        style: const TextStyle(fontSize: 12),
+      );
+    }
+
+    return Column(
+      children: [
+        if (available.length <= 5)
+          ...available.map(
+            (a) => CcTile(
+              leading: AgentAvatar(
+                agentId: a.id,
+                name: a.name,
+                size: 22,
+                showHoverCard: false,
+              ),
+              title: a.name,
+              subtitle: a.title.isNotEmpty ? Text(a.title) : null,
+              onTap: () {
+                widget.onInvite(a.id);
+                Navigator.of(context).pop();
+              },
+            ),
+          )
+        else ...[
+          CcSelect<Agent>(
+            value: _selected,
+            options: available
+                .map((a) => CcSelectOption<Agent>(value: a, label: a.name))
+                .toList(),
+            onChanged: (v) => setState(() => _selected = v),
+            hintText: l10n.selectAnAgent,
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: CcButton(
+              onPressed: _selected == null
+                  ? null
+                  : () {
+                      widget.onInvite(_selected!.id);
+                      Navigator.of(context).pop();
+                    },
+              child: Text(l10n.invite),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}

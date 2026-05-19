@@ -1,0 +1,447 @@
+import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_persistence/cc_persistence.dart';
+import 'package:test/test.dart';
+
+import 'helpers/test_database.dart';
+
+void main() {
+  late GlobalDatabase global;
+  late WorkspaceDatabaseManager dbs;
+  late DaoIsolatedRepoRepository repository;
+
+  setUp(() async {
+    global = createTestGlobalDatabase();
+    dbs = createTestWorkspaceDatabases(global: global);
+    // Both workspaces are REGISTERED so the two `*AcrossWorkspaces` fan-outs
+    // (which read the registry) can see them.
+    await seedTestWorkspace(global, dbs, 'ws1', name: 'Workspace 1');
+    await seedTestWorkspace(global, dbs, 'ws2', name: 'Workspace 2');
+    repository = DaoIsolatedRepoRepository(dbs);
+
+    // FK constraint: isolated_repos references repos(id) — and `repos` is now a
+    // per-workspace table, so each workspace needs its own rows.
+    for (final workspaceId in ['ws1', 'ws2']) {
+      await _insertRepo(
+        dbs.of(workspaceId),
+        'repo1',
+        'acme/project',
+        '/repos/acme',
+      );
+      await _insertRepo(
+        dbs.of(workspaceId),
+        'repo2',
+        'acme/other',
+        '/repos/other',
+      );
+    }
+  });
+
+  tearDown(() async {
+    await dbs.closeAll();
+    await global.close();
+  });
+
+  group('DaoIsolatedRepoRepository', () {
+    test(
+      'forUnitRepo returns null when not found',
+      timeout: const Timeout.factor(2),
+      () async {
+        final result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+        expect(result, isNull);
+      },
+    );
+
+    test('upsert and forUnitRepo', timeout: const Timeout.factor(2), () async {
+      final repo = _makeIsolatedRepo(
+        id: 'iso1',
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        repoId: 'repo1',
+      );
+      await repository.upsert(repo);
+
+      final result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+      expect(result, isNotNull);
+      expect(result!.id, 'iso1');
+      expect(result.workspaceId, 'ws1');
+      expect(result.spaceId, 'ch1');
+      expect(result.repoId, 'repo1');
+      expect(result.path, '/ws1/ch1/repos/acme');
+      expect(result.branch, 'feature-x');
+      expect(result.backend, RepoIsolationBackend.rift);
+      expect(result.sourcePath, '/repos/acme');
+    });
+
+    test(
+      'forSpace returns matching repos',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso2',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo2',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso3',
+            workspaceId: 'ws1',
+            spaceId: 'ch2',
+            repoId: 'repo1',
+          ),
+        );
+
+        final results = await repository.forSpace('ws1', 'ch1');
+        expect(results.length, 2);
+        expect(results.every((r) => r.spaceId == 'ch1'), isTrue);
+      },
+    );
+
+    test(
+      'forSpace returns empty for non-matching workspace',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+          ),
+        );
+
+        final results = await repository.forSpace('ws2', 'ch1');
+        expect(results, isEmpty);
+      },
+    );
+
+    test(
+      'forTicket returns matching repos',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+            ticketId: 'tick1',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso2',
+            workspaceId: 'ws1',
+            spaceId: 'ch2',
+            repoId: 'repo2',
+            ticketId: 'tick1',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso3',
+            workspaceId: 'ws1',
+            spaceId: 'ch3',
+            repoId: 'repo1',
+            ticketId: 'tick2',
+          ),
+        );
+
+        final results = await repository.forTicket('ws1', 'tick1');
+        expect(results.length, 2);
+        expect(results.every((r) => r.ticketId == 'tick1'), isTrue);
+      },
+    );
+
+    test(
+      'forTicket returns empty when no match',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+            ticketId: 'tick1',
+          ),
+        );
+
+        final results = await repository.forTicket('ws1', 'tick-nonexistent');
+        expect(results, isEmpty);
+      },
+    );
+
+    test(
+      'watchForWorkspace returns stream',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+          ),
+        );
+
+        final results = await repository.watchForWorkspace('ws1').first;
+        expect(results.length, 1);
+        expect(results.first.id, 'iso1');
+      },
+    );
+
+    test(
+      'watchForWorkspace returns empty for workspace with no isolated repos',
+      timeout: const Timeout.factor(2),
+      () async {
+        final results = await repository.watchForWorkspace('ws2').first;
+        expect(results, isEmpty);
+      },
+    );
+
+    test('deleteById removes', timeout: const Timeout.factor(2), () async {
+      await repository.upsert(
+        _makeIsolatedRepo(
+          id: 'iso1',
+          workspaceId: 'ws1',
+          spaceId: 'ch1',
+          repoId: 'repo1',
+        ),
+      );
+
+      await repository.deleteById('ws1', 'iso1');
+
+      final result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+      expect(result, isNull);
+    });
+
+    /// `ws1` and `ws2` are separate database files now, so this proves the
+    /// repository ROUTES by workspace (upsert reads it off the entity, reads
+    /// take it as a parameter) — the same guarantee, enforced one layer lower.
+    test(
+      'workspace isolation — repos from other workspace not returned',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-ws1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-ws2',
+            workspaceId: 'ws2',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+          ),
+        );
+
+        // forUnitRepo scoped to ws1 should only find ws1's repo
+        final ws1Result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+        expect(ws1Result, isNotNull);
+        expect(ws1Result!.id, 'iso-ws1');
+
+        // forUnitRepo scoped to ws2 finds ws2's repo
+        final ws2Result = await repository.forUnitRepo('ws2', 'ch1', 'repo1');
+        expect(ws2Result, isNotNull);
+        expect(ws2Result!.id, 'iso-ws2');
+
+        // forSpace scoped to ws1 should not include ws2's repos
+        final ws1Spaces = await repository.forSpace('ws1', 'ch1');
+        expect(ws1Spaces.length, 1);
+        expect(ws1Spaces.first.id, 'iso-ws1');
+
+        // watchForWorkspace scoped to ws1 should not include ws2's repos
+        final ws1Watched = await repository.watchForWorkspace('ws1').first;
+        expect(ws1Watched.length, 1);
+        expect(ws1Watched.first.id, 'iso-ws1');
+      },
+    );
+
+    test(
+      'forSpaceAcrossWorkspaces returns repos across all workspaces',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-ws1',
+            workspaceId: 'ws1',
+            spaceId: 'shared-ch',
+            repoId: 'repo1',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-ws2',
+            workspaceId: 'ws2',
+            spaceId: 'shared-ch',
+            repoId: 'repo1',
+          ),
+        );
+
+        final results = await repository.forSpaceAcrossWorkspaces('shared-ch');
+        expect(results.length, 2);
+      },
+    );
+
+    test(
+      'forTicketAcrossWorkspaces returns repos across all workspaces',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-ws1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+            ticketId: 'shared-ticket',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-ws2',
+            workspaceId: 'ws2',
+            spaceId: 'ch2',
+            repoId: 'repo2',
+            ticketId: 'shared-ticket',
+          ),
+        );
+
+        final results = await repository.forTicketAcrossWorkspaces(
+          'shared-ticket',
+        );
+        expect(results.length, 2);
+      },
+    );
+
+    test(
+      'upsert overwrites existing isolated repo',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+            branch: 'original-branch',
+          ),
+        );
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso1',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+            branch: 'updated-branch',
+          ),
+        );
+
+        final result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+        expect(result, isNotNull);
+        expect(result!.branch, 'updated-branch');
+      },
+    );
+
+    test(
+      'isolated repo with null ticketId',
+      timeout: const Timeout.factor(2),
+      () async {
+        await repository.upsert(
+          _makeIsolatedRepo(
+            id: 'iso-no-ticket',
+            workspaceId: 'ws1',
+            spaceId: 'ch1',
+            repoId: 'repo1',
+            ticketId: null,
+          ),
+        );
+
+        final result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+        expect(result, isNotNull);
+        expect(result!.ticketId, isNull);
+      },
+    );
+
+    test(
+      'isolated repo with gitWorktree backend',
+      timeout: const Timeout.factor(2),
+      () async {
+        final repo = IsolatedRepo(
+          id: 'iso-gwt',
+          workspaceId: 'ws1',
+          spaceId: 'ch1',
+          repoId: 'repo1',
+          path: '/ws1/ch1/repos/acme',
+          branch: 'feature-y',
+          backend: RepoIsolationBackend.gitWorktree,
+          sourcePath: '/repos/acme',
+          createdAt: DateTime(2026, 6, 1),
+        );
+        await repository.upsert(repo);
+
+        final result = await repository.forUnitRepo('ws1', 'ch1', 'repo1');
+        expect(result, isNotNull);
+        expect(result!.backend, RepoIsolationBackend.gitWorktree);
+      },
+    );
+  });
+}
+
+// -- Helpers --
+
+IsolatedRepo _makeIsolatedRepo({
+  required String id,
+  required String workspaceId,
+  required String spaceId,
+  required String repoId,
+  String? ticketId,
+  String branch = 'feature-x',
+}) {
+  return IsolatedRepo(
+    id: id,
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    repoId: repoId,
+    path: '/$workspaceId/$spaceId/repos/acme',
+    branch: branch,
+    backend: RepoIsolationBackend.rift,
+    sourcePath: '/repos/acme',
+    ticketId: ticketId,
+    createdAt: DateTime(2026, 6, 1),
+  );
+}
+
+Future<void> _insertRepo(
+  WorkspaceDatabase db,
+  String id,
+  String name,
+  String path,
+) {
+  return db.repoDao.upsertRepo(
+    ReposTableCompanion(
+      id: Value(id),
+      name: Value(name),
+      path: Value(path),
+      remoteOwner: const Value('acme'),
+      remoteName: const Value('project'),
+      createdAt: Value(DateTime(2026, 1, 1)),
+      updatedAt: Value(DateTime(2026, 1, 1)),
+    ),
+  );
+}

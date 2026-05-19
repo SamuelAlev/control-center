@@ -1,0 +1,97 @@
+---
+title: Dispatch your first agent
+description: Create an agent, give it a space and a task and watch the run stream back.
+---
+
+## What you will build
+
+By the end of this tutorial, you will have:
+
+- An agent you created and configured yourself
+- A space where you and that agent talk
+- One completed run, with committed work in an isolated worktree and a row in the agent's run log
+
+Prerequisites: [Your first workspace](/manual/tutorials/first-workspace/) completed, so this workspace has a repo registered and at least one model provider connected.
+
+## Step 1: Create an agent
+
+1. Go to **Settings → Workspace → Agents**
+2. Click **Add agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
+3. On the **Settings** tab, fill in:
+   - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
+   - **Title**: what it does, e.g. "Backend engineer"
+   - **Adapter**: `Control Center (built-in)`. Pick this one deliberately — only the built-in harness can be steered mid-run and paused at a turn boundary and it needs no CLI installed on the server host.
+   - **Model**: choose from the list the connected provider serves
+   - **Skills**: attach any that fit, e.g. `testing` or `architecture`
+4. Press **Save changes**
+
+:::note[An agent with no adapter runs on the built-in loop]
+When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
+:::
+
+**Checkpoint.** The roster row shows your agent's name and its detail header reads "No runs yet".
+
+## Step 2: Start a space
+
+1. In the sidebar, find the **Spaces** section and click the **+** button
+2. Give the space a name
+3. Under **Add agents**, select the agent you just created
+4. If the workspace has more than one repo, pick which ones this space should work on
+5. Click **Create**
+
+The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
+
+## Step 3: Send a task
+
+Type one concrete, small task against the repo you registered. Something with a checkable outcome works best — add a test, fix a lint, rename a symbol.
+
+Press Enter. You do not need to `@`-mention anyone: with a single agent in the space, a plain message wakes it. In a space with several agents, `@name` picks one.
+
+Control Center assembles the prompt from the agent's instructions, persona, skills and the space's context, then dispatches the run.
+
+**Checkpoint.** The composer's send button turns into a stop button — an agent is working in this conversation — and text starts arriving.
+
+## Step 4: Watch it work
+
+The conversation renders the run as it happens:
+
+- **Reasoning**, shown inline as the agent thinks
+- **Tool calls**: file reads and writes, searches, shell commands, each with its result
+- **Text**: summaries, explanations and questions for you
+
+If the agent asks something, answer in the conversation and it resumes.
+
+For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
+
+In the agent registry, the status badge moves from **No runs yet** to **Running**, then to **Idle** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**.
+
+What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/manual/concepts/guardrails/).
+
+## Step 5: Check the result
+
+1. Open **Settings → Workspace → Agents** and select your agent
+2. Open the **Logs** tab
+
+**Checkpoint.** One run row, showing its status, duration, start and finish times and the adapter it ran on.
+
+The agent's changes are committed on the conversation's branch, in its worktree. Commits are authored as the agent, with you credited in a `Co-Authored-By:` trailer.
+
+## Getting a pull request
+
+Nothing opens a pull request on its own. If you want one, ask for it in the same conversation:
+
+> Push this branch and open a pull request against the default branch.
+
+Pushing (`gitPush`) and PR creation (`prCreate`) both default to prompting for your approval, so expect a confirmation before each. If no approver is connected when the prompt fires, the action is denied rather than allowed — the guardrails fail closed.
+
+The PR is opened under the GitHub identity whose token the run used — yours, if you stored a personal token — not under the agent's name. The agent's authorship shows on the commits.
+
+You can also open it yourself: the space's **Source control** panel has a **Create pull request** button that carries the conversation's branch into the compose screen and **Pull requests → New PR** opens the same screen empty. That is where the next tutorial picks up.
+
+## Recap
+
+You created an agent, configured its adapter and model, gave it a space and a task and watched a real run finish in an isolated worktree without touching your checkout.
+
+**Next:** [Review your first pull request](/manual/tutorials/first-pr/) to learn the review workflow.
+
+For more on agents: [The agent model](/manual/concepts/agent-model/). For dispatch details: [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/).

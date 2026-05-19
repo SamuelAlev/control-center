@@ -1,0 +1,30 @@
+name: cc_demo_server
+description: "Control Center PUBLIC DEMO server — the real cc_server composition booted with demo wiring: no provider credentials, no execution surface, no outbound network, and a fictional world seeded per visitor. A separate binary rather than a flag on cc_server, so the demo's fixtures never ship to a desktop install and the lockdown cannot be switched off by a missing environment variable."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  # The entire backend composition, including the demo subtree. Passing
+  # `buildDemoWiring` to `runCcServer` is the only difference between this
+  # binary and `cc_server`.
+  cc_server_core:
+    path: ../../packages/cc_server_core
+  # The CI-stamped build identity printed by `--version`.
+  cc_domain:
+    path: ../../packages/cc_domain
+  # Build-hook deps for hook/build.dart — the same prebuilt-native bundling
+  # cc_server does. The demo runs no agents, but the server's boot preflight
+  # still REQUIRES every native (there is no degraded mode), so the demo image
+  # stages the same set.
+  hooks: ^1.0.3
+  code_assets: ^1.0.0
+  path: ^1.9.1
+
+dev_dependencies:
+  lints: any
+  test: any

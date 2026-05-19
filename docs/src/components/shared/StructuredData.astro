@@ -1,0 +1,28 @@
+---
+/**
+ * Emits one or more JSON-LD <script type="application/ld+json"> blocks.
+ *
+ * Accepts a single schema object or an array of them. Used by
+ * MarketingLayout (Organization / WebSite / SoftwareApplication /
+ * BreadcrumbList) and the Starlight `Head` override (TechArticle /
+ * BreadcrumbList) so every public surface carries machine-readable
+ * structured data for rich results and AI answer engines.
+ *
+ * Astro leaves `application/ld+json` scripts untouched (it only bundles
+ * JS-typed scripts), so `set:html` injects the serialized JSON verbatim.
+ * We escape `<` to `<` so a stray "</script>" in any string value
+ * cannot break out of the tag.
+ */
+interface Props {
+  schema: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { schema } = Astro.props;
+const items = Array.isArray(schema) ? schema : [schema];
+const serialize = (obj: Record<string, unknown>) =>
+  JSON.stringify(obj).replace(/</g, '\\u003c');
+---
+
+{items.map((item) => (
+  <script type="application/ld+json" set:html={serialize(item)} />
+))}

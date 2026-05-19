@@ -1,0 +1,24 @@
+# Line endings.
+#
+# The release pipeline runs its shell scripts on Windows too (Git Bash on the
+# windows-latest runner), where the checkout defaults to CRLF. Git Bash ignores
+# a trailing CR when it PARSES a script, so a CRLF *.sh still runs — but `read`
+# does NOT strip it from data, so every blank line in scripts/lib/native_pins.env
+# arrived as the variable name CR and killed the Windows release build.
+#
+# So: everything bash executes or reads is pinned to LF, regardless of the
+# checkout's platform defaults.
+*.sh    text eol=lf
+*.bash  text eol=lf
+*.env   text eol=lf
+
+# Tree-sitter extraction queries are read at runtime and hashed into the code
+# indexer's fingerprint and their bytes are pinned against the compiled-in
+# copies (test/tooling/embedded_queries_test.dart). CRLF here would make a
+# Windows checkout disagree with every other host.
+*.scm   text eol=lf
+
+# Windows-native scripts keep CRLF.
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+*.ps1   text eol=crlf

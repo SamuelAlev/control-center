@@ -1,0 +1,9 @@
+# Web-reachable files permitted to import `dart:isolate` (one relative path per line).
+#
+# Empty = a HARD BAN. `dart:isolate` does not exist on the web, so web-reachable
+# code (lib/ + cc_rpc/cc_data/cc_domain/cc_ui/cc_markdown + apps/cc_remote) must
+# offload heavy work through `isolate_manager` (isolates on native, Web Workers
+# on web) instead. See architecture_constraints_test.dart → "Web-safe compute".
+#
+# VM-only server/FFI packages (cc_infra, cc_natives, cc_persistence, cc_host,
+# cc_server_core, cc_mcp*) are NOT scanned — they never build for web.

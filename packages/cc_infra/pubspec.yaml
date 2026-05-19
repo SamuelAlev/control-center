@@ -1,0 +1,42 @@
+name: cc_infra
+description: "Server-side VM-only infrastructure adapters for Control Center — pure dart:io implementations of cc_domain ports (git / process / GitHub CLI), schema validation, agent-adapter/ACP-model detection and the rift/fff/tree-sitter native adapters (via the pure-Dart-FFI cc_natives leaf). Kept SEPARATE from the cc_host RPC kernel and NEVER depending on Flutter, so it links cleanly into the Flutter-free `dart build cli` server binary."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  cc_domain:
+    path: ../cc_domain
+  cc_harness:
+    path: ../cc_harness
+  cc_harness_runtime:
+    path: ../cc_harness_runtime
+  # Pure-Dart dart:ffi native bindings leaf (rift/fff/tree-sitter/aec). Allowed
+  # here since it was de-Fluttered (exodus 32) — cc_infra hosts the adapters
+  # that drive these natives and both stay linkable into the server binary.
+  cc_natives:
+    path: ../cc_natives
+  # SHA256 content-addressing for skill bundles + the skills-lock manifest.
+  crypto: ^3.0.7
+  dio: ^5.11.0
+
+  archive: ^4.0.9
+  any_date: 1.2.2
+  # Pure-Dart image decode/diff for the PR visual-diff golden harness
+  # (PRD 18 §4). Links into the Flutter-free server binary.
+  image: ^4.3.0
+  html: 0.15.6
+  path: ^1.9.1
+  pool: any
+  rss_dart: any
+  uuid: 4.6.0
+  yaml: 3.1.3
+  meta: any
+  dart_jsonwebtoken: ^3.4.1
+dev_dependencies:
+  test: any
+  lints: any

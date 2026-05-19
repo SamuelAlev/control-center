@@ -1,0 +1,95 @@
+name: Set up Flutter
+description: >
+  Install the pinned Flutter SDK and resolve dependencies WITH the local patches
+  applied. Requires the repo to be checked out already.
+
+# WHY THIS DOES NOT HARDEN THE RUNNER OR CHECK OUT THE REPO
+#
+# A local action is loaded from the workspace, so `actions/checkout` must have
+# run before GitHub can even read this file. That makes `uses: ./.github/...`
+# impossible as a job's first step — and `step-security/harden-runner` has to BE
+# the first step to intercept egress. The two constraints are mutually
+# exclusive, so harden-runner and checkout stay inline in each job and this
+# action owns everything after them.
+#
+# Every job resolves the same dependency graph through this one composite, so a
+# green CI proves the deployed bundle was built from the same deps it validated.
+
+inputs:
+  pub-get:
+    description: Run `flutter pub get`. Disable for a job that only needs the SDK.
+    required: false
+    default: "true"
+  working-directory:
+    description: Directory to resolve dependencies in.
+    required: false
+    default: "."
+  windowing:
+    description: >
+      Enable the experimental multi-window feature flag. Must stay ON for
+      desktop build jobs (see the step below). Windows TEST jobs pass
+      `windowing: false`: with the flag on, WidgetsBinding eagerly
+      constructs the Win32 windowing owner, whose FFI symbol
+      (InternalFlutterWindows_WindowManager_Initialize) flutter_tester
+      on Windows does not carry — every testWidgets file then fails to
+      LOAD. No package test uses multi-window.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    # `.fvmrc` pins a Flutter COMMIT, not a release channel, so flutter-action
+    # clones the full SDK repo and checks that sha out. On Windows that clone
+    # fails without this:
+    #
+    #   error: unable to create file engine/src/flutter/testing/ios_scenario_app/
+    #     ios/Scenarios/ScenariosUITests/golden_platform_view_clip_rsuperellipse_
+    #     multiple_clips_impeller_iPhone SE (3rd generation)_26.2_simulator.png:
+    #     Filename too long
+    #   fatal: unable to checkout working tree
+    #
+    # git's own long-path support is off by default and independent of the
+    # Windows MAX_PATH setting, and the SDK's iOS golden fixtures blow past 260
+    # characters. Nothing in this repo is that deeply nested, which is why only
+    # the SDK checkout trips it.
+    - name: Allow long paths in git (Windows)
+      if: runner.os == 'Windows'
+      shell: bash
+      run: git config --global core.longpaths true
+
+    - name: Install the pinned Flutter SDK
+      uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+      with:
+        channel: main
+        flutter-version-file: .fvmrc # single source of truth — synced via fvm
+        cache: true
+
+    # The desktop shell is built on Flutter's experimental multi-window
+    # ("windowing") APIs (lib/app/app_windows.dart). The feature flag lives in
+    # the MACHINE-global Flutter settings (~/.config/flutter/settings), not in
+    # the repo, so a fresh runner builds with it OFF — and that binary throws
+    #   Unsupported operation: Windowing APIs are not enabled.
+    # at its first WindowController. In a release desktop build that is a Dock
+    # icon with no window at all: the exception unwinds root-widget attach
+    # before anything is shown (v0.0.1 shipped exactly that). Enable it here,
+    # in the one composite every workflow installs the SDK through, so CI
+    # builds the way a configured dev machine does.
+    #
+    # EXCEPT on Windows test runs (`windowing: false`): the flag makes
+    # WidgetsBinding.initInstances construct the Win32 windowing owner at
+    # binding init, and flutter_tester there cannot resolve its FFI symbol —
+    # so with the flag on, every testWidgets suite fails to load rather than
+    # failing a test. `isWindowingEnabled` is read at binding init, so leaving
+    # the flag off is a clean "windowing unsupported here" owner, and no
+    # package test touches multi-window anyway.
+    - name: Enable the windowing feature flag
+      if: inputs.windowing != 'false'
+      shell: bash
+      run: flutter config --enable-windowing
+
+    - name: Resolve dependencies
+      if: inputs.pub-get == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: flutter pub get

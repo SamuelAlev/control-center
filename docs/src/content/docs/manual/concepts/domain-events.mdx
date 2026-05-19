@@ -1,0 +1,152 @@
+---
+title: Domain events
+description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
+---
+
+## What a domain event is
+
+Domain events are the decoupling mechanism that lets features communicate
+without direct dependencies. Instead of feature A calling feature B, feature A
+publishes an event and feature B subscribes to it.
+
+The `DomainEventBus` is an in-process broadcast publish/subscribe bus. Publishers
+call `publish(event)`; subscribers consume a typed `on<T>()` stream. Every event
+implements `DomainEvent` and carries `occurredAt`.
+
+**The bus runs inside `cc_server`.** Every publisher and every live subscriber
+lives there. No client sees this bus. What a client sees is a curated subset the
+server re-emits as `notifications/*` JSON-RPC frames.
+
+## Why a bus at all
+
+Without events, every cross-feature reaction is an import. The notification path
+would have to import the agents feature, the pull-request feature, ticketing,
+and meetings just to know when to raise a toast — and each of those would then
+have to know that notifications exist. Ticketing would import pipelines so a
+completed ticket could advance a run. The dependency graph closes into a knot,
+and the shared kernel stops being shared.
+
+Publishing an event breaks that. The notification path subscribes to eleven
+event classes and imports none of the features that raise them. The pipeline
+trigger dispatcher subscribes to the whole bus and knows nothing about pull
+requests, tickets, or meetings. Observability aggregates run outcomes without
+reaching into dispatch.
+
+The cost is the usual one: a publisher cannot tell whether anyone is listening,
+and a listener that is never constructed is silently inert. Several event classes
+in the catalog are published today with no subscriber at all.
+
+## What the bus is not
+
+It is worth being precise about one thing the bus does _not_ own.
+
+**The audit trail is not a projection of the event stream.** Every mutating RPC
+operation is audited by default — `RepoOp.audited` defaults to true and an
+operation opts out only by declaring `audited: false`, a deliberate act visible
+on the operation itself. The dispatcher appends the "who did what, from where"
+row directly after a successful call. A `DomainEventAuditBridge` exists in the
+shared kernel, but it is never constructed, so nothing bridges events into that
+trail.
+
+The event bus _is_ the transport for notifications and for automation. It is not
+the bookkeeping system of record.
+
+## What the bus does drive
+
+- **Notifications.** Eleven event classes are turned into `notifications/*` wire
+  frames by the server, recorded into a durable per-workspace feed and
+  broadcast to connected sessions. The workspace filter is applied client-side;
+  only the durable feed is structurally workspace-scoped.
+- **Event-driven automation.** Pipeline triggers subscribe to the bus and
+  auto-start matching pipelines (see below).
+- **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
+  agents plus the built-in pipeline templates. A completed agent run resumes a
+  suspended pipeline step, closes a task and feeds the goal supervisor. A merged
+  PR or a deleted space triggers worktree garbage collection.
+- **Cross-vendor sync.** Local ticket changes are pushed out to configured
+  vendors by a coordinator listening for five ticket events.
+
+## Event categories
+
+Events span the whole product surface. At a high level:
+
+- **Workspaces, agents and repos** — workspace creation, run completion, repo registration
+- **Pull requests** — publishing, status changes, merges, review requests, mentions, externally detected PRs
+- **Messaging** — messages, spaces, conversations and space provisioning progress
+- **Tickets** — the full lifecycle plus external webhook intake
+- **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
+- **Pipelines** — run and step start / finish / fail, the backbone of run tracking
+- **Orchestration and plan documents** — proposals, revisions, approvals, execution
+- **Artifacts** — work products published and revised by runs
+- **Memory** — facts, beliefs and conflicts as the memory system consolidates
+- **Approvals** — escalations routed to the people who can resolve them
+- **Observability** — audit entries, worktree merges, budget thresholds
+- **Identity and membership** — users, members, roles, invites and device revocation
+- **Calendar and meetings** — syncs, auth expiry, meetings starting and recordings finishing
+
+For the complete catalog — all 75 concrete event classes, their payloads and
+the 19 subscribers that consume them — see the
+[Domain events reference](/manual/reference/domain-events/). That page is the
+inventory; this one is the model.
+
+## Live access control rides two different mechanisms
+
+Membership and device events look symmetrical and are not, which matters if you
+are reasoning about how fast a revocation takes effect.
+
+**Revoking a device does terminate its sessions.** The server watches the paired
+device table and drops any live session whose device left the active set, within
+seconds.
+
+**Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
+published but has no subscriber. What denies the removed member is the role
+gate, which re-resolves membership on **every** call — so their next request is
+refused with "Not a member of this workspace". The effect is immediate for
+anything they try to do; it just is not achieved by hanging up on them.
+
+## Pipeline triggers
+
+Pipeline triggers subscribe to domain events and auto-start matching pipelines.
+`PipelineTriggerDispatcher` listens to the whole bus, then:
+
+1. Short-circuits unless the event type is one it knows how to map to a payload
+2. Looks up enabled triggers matching that event type, across every workspace
+3. Filters each to its own workspace and applies its payload match filter
+4. Starts a run for each trigger that survives
+
+The important constraint is step 1. The bus carries 53 event types; the
+add-trigger picker offers **16** of them (`EventPayloadMapper.knownEventTypes`):
+`ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
+`PrMerged`, `MessageReceived`, `TicketCreated`, `TicketAssigned`,
+`TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`,
+`BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
+and `SpaceDeleted`. Nothing else can start a pipeline.
+
+:::caution[Two of those can never fire]
+The picker's list and the payload mapper's branches are two separate lists, and
+`TicketCreated` and `TicketStatusChanged` are on the first but not the second —
+so **14 of the 16 actually carry a payload**. The dispatcher bails before it ever
+looks up triggers for the other two. A trigger on either is selectable, saveable
+and permanently inert.
+:::
+
+## How a client sees any of this
+
+`RemoteEventForwarder` translates the notification-class events into wire frames
+and pushes them over RPC to connected sessions, where a frame mapper turns them
+into in-app notifications. A thin client therefore sees a projection of the
+server's event stream without owning any execution — which is the whole point of
+the [thin-client split](/manual/concepts/architecture/).
+
+Not every pushed frame is a notification, though. The task-lifecycle stream and
+ticket reassignment are forwarded live to drive UI, but they are not recorded
+into the notification feed and raise no toast.
+
+## See also
+
+- [Pipelines and automation](/manual/concepts/pipelines/): what a trigger starts
+- [Tickets and delegation](/manual/concepts/tickets/): why `TicketAssigned` dispatches nothing
+- [Architecture](/manual/concepts/architecture/): how events fit the dependency rule
+- [Domain events reference](/manual/reference/domain-events/): the complete catalog and its subscribers
+- [Set up pipeline triggers](/manual/guides/pipeline-triggers/)
+- [Configure notifications](/manual/guides/notifications/)

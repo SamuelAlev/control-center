@@ -1,0 +1,67 @@
+---
+import { DEMO_HREF } from '../../data/demo';
+import { REPO_URL } from '../../data/site';
+import BrandMark from './BrandMark.astro';
+import ThemeToggle from './ThemeToggle.astro';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = '' } = Astro.props;
+
+const links = [
+  { href: '/#install', label: 'Install' },
+  { href: '/manual/', label: 'Documentation' },
+  { href: '/developers', label: 'Developers' },
+  { href: '/compare/', label: 'Compare' },
+  { href: '/changelog', label: 'Changelog' },
+  { href: REPO_URL, label: 'GitHub', external: true },
+];
+---
+<header
+  class="sticky top-0 z-[60] h-[var(--nav-h)] flex items-center border-b border-transparent transition-[border-color,background] duration-200 ease-[var(--ease-standard)] bg-bg [&.scrolled]:border-border"
+  id="nav"
+>
+  <div class="wrap flex items-center gap-3 lg:gap-5 xl:gap-[28px] w-full">
+    <a class="flex flex-none items-center gap-[11px] no-underline text-[15px] tracking-[-0.01em]" href="/" aria-label="Control Center home">
+      <BrandMark />
+      <!-- The wordmark yields between `lg` and `xl`: that is the one band where
+           the full link row and both CTAs are on screen together, and it is
+           exactly wide enough without it. -->
+      <span class="hidden sm:inline lg:hidden xl:inline">Control&nbsp;Center</span>
+    </a>
+    <!-- The row appears at `lg`, not `sm`. Six links plus the CTA cluster need
+         ~1040px; showing them from 640px overflowed the header (and the page)
+         on every tablet and small laptop window. Below `lg` the header is the
+         brand plus the CTAs, as it already was on a phone. -->
+    <nav class="hidden gap-[2px] ml-[6px] lg:flex" aria-label="Primary">
+      {links.map(({ href, label, external }) => (
+        <a
+          class="px-2 py-2 text-sm text-muted no-underline rounded-sm transition-colors duration-150 hover:text-fg aria-[current=page]:text-fg xl:px-3"
+          href={href}
+          {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+          {...(currentPath === href ? { 'aria-current': 'page' as const } : {})}
+        >{label}</a>
+      ))}
+    </nav>
+    <!-- Both CTAs stay visible on a phone — a visitor who cannot install a
+         desktop app is exactly who the demo is for. Under 360px the three-item
+         cluster no longer clears the 12px phone gutter, so the demo drops and
+         the header is exactly what it was before it existed. -->
+    <div class="ml-auto flex flex-none items-center gap-2 sm:gap-4">
+      <ThemeToggle />
+      <a class="btn btn-line btn-sm-marketing max-[359px]:hidden" href={DEMO_HREF}>Try demo</a>
+      <a class="btn btn-primary btn-sm-marketing" href="/#install">Download</a>
+    </div>
+  </div>
+</header>
+
+<script>
+  const nav = document.getElementById('nav');
+  if (nav) {
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 8);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+</script>

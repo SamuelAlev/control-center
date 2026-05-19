@@ -1,0 +1,37 @@
+# Analyzer config for the cc_ui gallery app.
+# ONE rule table: include the ROOT config (which itself includes
+# flutter_lints) instead of flutter_lints plus a hand-copied subset of the root
+# rules. The copies silently missed `avoid_print`, `avoid_dynamic_calls`,
+# `unawaited_futures`, `cancel_subscriptions`, `close_sinks` and ~20 more, and
+# every new root rule would have missed them too. Opt DOWN explicitly below.
+include: ../../analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.directories.g.dart"
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
+  errors:
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    # Opted down from the root, narrowly: a formatting preference this package
+    # predates, and a doc-link lint that false-positives on `[FrameworkType]`
+    # references the doc site does not import. The SAFETY rules from the root
+    # all apply.
+    # `public_member_api_docs` is opted down here (and only here): this is an
+    # APPLICATION, not a published library — the root's rule exists for the
+    # packages other code imports. Same call cc_domain makes.
+    public_member_api_docs: false
+    always_put_control_body_on_new_line: false
+    comment_references: false
+    always_use_package_imports: true
+    prefer_const_constructors: true
+    prefer_single_quotes: true

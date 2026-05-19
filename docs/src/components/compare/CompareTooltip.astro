@@ -1,0 +1,131 @@
+---
+/**
+ * The tooltip that explains a `≈` cell, drawn for any `[data-tip]` element on
+ * the page.
+ *
+ * One shared bubble appended to <body>, positioned `fixed`. It cannot live
+ * inside the cell: the matrix scrolls inside an `overflow-x-auto` container,
+ * and an overflow value other than `visible` on one axis computes to `auto` on
+ * the other — so an in-cell bubble is clipped on every side, which is exactly
+ * how it would silently fail.
+ *
+ * The bubble is decoration and is marked `aria-hidden`: the same sentence is
+ * already in the cell as visually-hidden text (see CompareCell), so exposing
+ * the bubble too would announce it twice.
+ *
+ * WCAG 2.1 §1.4.13 (content on hover or focus) is the contract here:
+ *   - dismissible: Escape closes it without moving the pointer;
+ *   - hoverable:   a short close delay lets the pointer cross the gap and rest
+ *                  on the bubble itself without it vanishing;
+ *   - persistent:  it stays until the pointer or focus leaves, or Escape.
+ * It opens on focus as well as hover, so it is reachable by keyboard and by
+ * tap; without JS the cell still reads correctly, it just has no bubble.
+ */
+---
+
+<script>
+  (function () {
+    'use strict';
+
+    var HIDE_DELAY = 140; // long enough to cross the gap onto the bubble
+    var tip = null;
+    var trigger = null;
+    var timer = 0;
+    /* Set by Escape. Without it the very next pointerover — a one-pixel drift
+       of a hand resting on the cell — reopens what was just dismissed, and
+       "dismissible" is only true until the user breathes. Cleared when the
+       pointer or focus actually leaves, so returning to the cell works. */
+    var dismissed = null;
+
+    function bubble() {
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.id = 'cc-tip';
+        tip.setAttribute('aria-hidden', 'true');
+        tip.hidden = true;
+        document.body.appendChild(tip);
+      }
+      return tip;
+    }
+
+    function place(el) {
+      var b = bubble();
+      var r = el.getBoundingClientRect();
+      var t = b.getBoundingClientRect();
+      var margin = 8;
+      var left = r.left + r.width / 2 - t.width / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - t.width - margin));
+      // Below the cell by default; flip above when that would go off-screen.
+      var below = r.bottom + 8;
+      var above = r.top - t.height - 8;
+      var top = below + t.height + margin > window.innerHeight && above > margin ? above : below;
+      b.style.left = Math.round(left) + 'px';
+      b.style.top = Math.round(top) + 'px';
+    }
+
+    function show(el) {
+      window.clearTimeout(timer);
+      var b = bubble();
+      if (trigger !== el) {
+        trigger = el;
+        b.textContent = el.getAttribute('data-tip') || '';
+      }
+      b.hidden = false;
+      place(el);
+    }
+
+    function hide(now) {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(
+        function () {
+          if (tip) tip.hidden = true;
+          trigger = null;
+        },
+        now ? 0 : HIDE_DELAY,
+      );
+    }
+
+    function triggerFor(node) {
+      if (!node || node.nodeType !== 1) return null;
+      if (tip && tip.contains(node)) return trigger; // resting on the bubble
+      return node.closest('[data-tip]');
+    }
+
+    document.addEventListener('pointerover', function (e) {
+      var el = triggerFor(e.target);
+      if (el) {
+        if (el !== dismissed) show(el);
+      } else {
+        dismissed = null;
+        if (trigger) hide(false);
+      }
+    });
+
+    document.addEventListener('focusin', function (e) {
+      var el = triggerFor(e.target);
+      if (el) {
+        if (el !== dismissed) show(el);
+      } else {
+        dismissed = null;
+        if (trigger) hide(true);
+      }
+    });
+
+    document.addEventListener('focusout', function () {
+      dismissed = null;
+      if (trigger) hide(false);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' && e.key !== 'Esc') return;
+      if (!trigger) return;
+      dismissed = trigger;
+      hide(true);
+    });
+
+    // A fixed bubble does not follow its cell, so any movement closes it —
+    // including the matrix's own horizontal scroll (capture phase).
+    window.addEventListener('scroll', function () { if (trigger) hide(true); }, true);
+    window.addEventListener('resize', function () { if (trigger) hide(true); }, { passive: true });
+  })();
+</script>

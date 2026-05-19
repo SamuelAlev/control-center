@@ -1,0 +1,211 @@
+name: Natives
+
+# Builds the native FFI libraries on every change to a native input, doing two
+# jobs the main CI cannot:
+#
+#   1. Pre-release validation. Nothing in ci.yml compiles the natives, so a
+#      Renovate bump to scripts/lib/native_pins.env or an edit under
+#      packages/cc_natives/native/ used to merge green without ever being
+#      compiled — and first fail on a release tag, the worst place to discover
+#      it (the same argument ci.yml's codegen job makes for generated code).
+#
+#   2. Cache seeding. GitHub scopes caches by ref: a tag-triggered release run
+#      can only RESTORE caches created on the default branch and a cache saved
+#      on a tag is never readable again. The push-to-main run of this workflow
+#      is therefore what stocks the build/natives cache that
+#      .github/actions/prepare-release-build restores. PR runs save too, but a
+#      PR-scoped cache is invisible to main and tags — it only speeds up
+#      re-runs of the same PR and can never reach a release.
+#
+# The cache key (and the no-restore-keys invariant) lives in ONE place:
+# .github/actions/natives-cache. actions/cache saves in its post step, only on
+# a key miss. A cache idle for more than 7 days is evicted by GitHub, in which
+# case the release simply falls back to a full source build — the cache is an
+# accelerator, never a correctness dependency.
+#
+# Runners MUST match release.yml's build jobs (macos-14, not macos-latest):
+# the key includes runner.os/arch and an artifact built on a different
+# image family is not the artifact the release would have built.
+
+# The path list is the union of what BUILDS build/natives and what CHECKS it.
+# verify_natives.sh is in it for the second reason: it is the only assertion
+# this workflow makes, so a change to the gate has to re-run the three jobs that
+# exercise it. It is deliberately NOT in the cache key — the gate does not
+# determine the directory's contents, so a hit stays valid and the run is just
+# the new gate against restored libraries.
+#
+# The list is written out twice because the Actions workflow parser rejects YAML
+# anchors; keep the two copies identical.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/lib/native_pins.env"
+      - "scripts/lib/common.sh"
+      - "scripts/lib/natives.sh"
+      - "scripts/natives/**"
+      - "scripts/release/windows_natives.sh"
+      - "scripts/release/verify_natives.sh"
+      - "packages/cc_natives/native/**"
+      - ".github/workflows/natives.yml"
+      - ".github/actions/natives-cache/**"
+  pull_request:
+    paths:
+      - "scripts/lib/native_pins.env"
+      - "scripts/lib/common.sh"
+      - "scripts/lib/natives.sh"
+      - "scripts/natives/**"
+      - "scripts/release/windows_natives.sh"
+      - "scripts/release/verify_natives.sh"
+      - "packages/cc_natives/native/**"
+      - ".github/workflows/natives.yml"
+      - ".github/actions/natives-cache/**"
+  # Manual seeding — e.g. right after this workflow lands, or after a cache
+  # eviction ahead of a planned release.
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: natives-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: natives (${{ matrix.os }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            os: linux
+          - runner: macos-14
+            os: macos
+          - runner: windows-latest
+            os: windows
+    steps:
+      # Every native is FATAL, so this allowlist is part of the build — a host
+      # missing from it fails the run rather than degrading a library. It is
+      # release.yml's build-linux list minus everything Flutter/Dart (this
+      # workflow compiles no Dart) and minus attestation. What needs what:
+      #   apt (*.archive.ubuntu.com, esm.ubuntu.com,      meson/ninja-build
+      #        *.microsoft.com — the Azure apt mirrors)
+      #   github.com + api. + objects. + release-assets.  rift, fff,
+      #                                                   tree-sitter +
+      #                                                   grammars, the pinned
+      #                                                   sherpa-onnx archive
+      #   index./static.crates.io, static.rust-lang.org   cargo (rift, fff,
+      #                                                   watcher, inference,
+      #                                                   saml)
+      #   gitlab.freedesktop.org                          webrtc-audio-
+      #                                                   processing (aec)
+      #   wrapdb.mesonbuild.com                           meson's abseil-cpp
+      #                                                   wrap (aec)
+      #   downloads. + *.dl.sourceforge.net               the pinned LAME
+      #                                                   tarball
+      #   *.blob.core.windows.net                         actions/cache blobs —
+      #                                                   the cache service
+      #                                                   stores on Azure, the
+      #                                                   same hosts as
+      #                                                   artifacts (see the
+      #                                                   war story in
+      #                                                   release.yml's
+      #                                                   release job)
+      - name: Harden runner
+        if: runner.os == 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: block
+          allowed-endpoints: >
+            *.archive.ubuntu.com:80
+            *.blob.core.windows.net:443
+            *.dl.sourceforge.net:443
+            *.microsoft.com:443
+            api.github.com:443
+            downloads.sourceforge.net:443
+            esm.ubuntu.com:443
+            github.com:443
+            gitlab.freedesktop.org:443
+            index.crates.io:443
+            objects.githubusercontent.com:443
+            release-assets.githubusercontent.com:443
+            static.crates.io:443
+            static.rust-lang.org:443
+            wrapdb.mesonbuild.com:443
+
+      - name: Harden runner
+        # `block` is Linux-only in harden-runner; audit is the ceiling on
+        # macOS and Windows.
+        if: runner.os != 'Linux'
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Restore natives cache
+        id: natives-cache
+        uses: ./.github/actions/natives-cache
+
+      # Toolchain setup only on a miss: a hit skips straight to verification.
+      # cargo, curl, tar, make and a C/C++ compiler are preinstalled on all
+      # three runner images (the release jobs already rely on that); meson,
+      # ninja and pkg-config drive the WebRTC AEC3 build (build_aec.sh) and are
+      # installed the same way release.yml's platform jobs install them.
+      - name: Install AEC build tools (meson/ninja)
+        if: runner.os == 'Linux' && steps.natives-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build pkg-config
+
+      - name: Install AEC build tools (meson/ninja)
+        if: runner.os == 'macOS' && steps.natives-cache.outputs.cache-hit != 'true'
+        run: brew install meson ninja
+
+      - name: Set up MSVC developer environment
+        if: runner.os == 'Windows' && steps.natives-cache.outputs.cache-hit != 'true'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: x64
+
+      - name: Install AEC build tools (meson/ninja)
+        if: runner.os == 'Windows' && steps.natives-cache.outputs.cache-hit != 'true'
+        run: pip install meson ninja
+
+      # Same two-branch dispatch as prepare-release-build: no rift on Windows
+      # (no MSVC copy-on-write backend — `git worktree` is the backend there).
+      #
+      # matrix.os reaches the script through env rather than a ${{ }}
+      # interpolation inside run:, the same way prepare-release-build threads
+      # its inputs — it keeps the shape uniform across every place this
+      # two-branch dispatch is written (zizmor's template-injection audit).
+      - name: Build native FFI libraries
+        if: steps.natives-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          OS: ${{ matrix.os }}
+        run: |
+          if [ "$OS" = "windows" ]; then
+            bash scripts/release/windows_natives.sh
+          else
+            bash scripts/natives/build_natives.sh build/natives
+          fi
+
+      # Runs on hit AND miss: the desktop and server roles together are the
+      # complete contents of build/natives (desktop adds aec_ffi; server adds
+      # the boot-preflight set), so this catches a bad restore and a bad build
+      # at the same chokepoint.
+      - name: Verify the staged set
+        shell: bash
+        env:
+          OS: ${{ matrix.os }}
+        run: |
+          bash scripts/release/verify_natives.sh build/natives "$OS" desktop
+          bash scripts/release/verify_natives.sh build/natives "$OS" server

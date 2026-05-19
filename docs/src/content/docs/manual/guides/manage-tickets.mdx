@@ -1,0 +1,189 @@
+---
+title: Create and manage tickets
+description: Create tickets, move them through their lifecycle, label and link them and record who owns what.
+---
+
+This guide shows you how to create and manage tickets.
+
+## Create a ticket
+
+### From the UI
+
+1. Click **Tickets** in the workspace sidebar.
+2. Press **New ticket**.
+3. Fill in:
+   - **Title** — short summary. It is the only required field.
+   - **Description** — markdown, with a formatting toolbar.
+   - **Status** — **Open** (the default) or **Backlog**. Started and terminal
+     states are reached through the lifecycle, not at creation.
+   - **Priority** — none, urgent, high, medium or low.
+   - **Assignee** — yourself or any agent in the workspace.
+   - **Project** — optional grouping.
+4. Press **Create**, or turn on **Create more** first to keep the dialog open
+   for rapid entry.
+
+There is no provider picker in the dialog. The ticket is created against the
+workspace's active ticket provider.
+
+### From an agent
+
+Ask an agent in a space:
+
+> Create a ticket for fixing the login timeout issue on slow connections.
+
+It calls the `create_ticket` MCP tool. Priority on that tool is an **integer**,
+not a name:
+
+```
+create_ticket(
+  workspace_id: "...",
+  title: "Fix login timeout on slow connections",
+  description: "...",
+  priority: 2
+)
+```
+
+| Value | Priority |
+| ----- | -------- |
+| `0`   | None     |
+| `1`   | Urgent   |
+| `2`   | High     |
+| `3`   | Medium   |
+| `4`   | Low      |
+
+Only `workspace_id` and `title` are required; `description`, `priority`,
+`assignee` (an agent id) and `team_id` are optional. The tool is classed as a
+vendor sync write and asks for your approval before it runs.
+
+## Update ticket status
+
+Tickets follow this lifecycle:
+
+```
+backlog → open → inProgress ⇄ blocked
+                    ↓   ↑
+                 inReview
+                    ↓
+              done / failed   (terminal)
+```
+
+`done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
+non-terminal status. `done` and `failed` are reachable from `inProgress` or
+`inReview`; `open` can also move directly to `blocked`.
+
+To change it, use any of:
+
+- the **Status** row in the ticket's properties rail,
+- the **Status** submenu on a ticket's right-click menu in the list,
+- the **Status** chip on the floating bar after multi-selecting tickets.
+
+:::note[The lifecycle graph binds agents, not you]
+Every status change made from the UI is forced through, bypassing the graph
+entirely — you can move a ticket to any status, including reopening a `done`,
+`failed` or `cancelled` one. The diagram above governs agents and automation:
+an illegal transition attempted by an MCP tool or a reconciler is logged and
+ignored, not applied.
+:::
+
+Status changes emit domain events (`TicketStarted`, `TicketCompleted` and
+others) that can trigger pipelines. See
+[Set up pipeline triggers](/manual/guides/pipeline-triggers/).
+
+## Assign a ticket
+
+1. Open the ticket.
+2. In the properties rail, set **Assignee** — yourself, another workspace
+   member, or an agent.
+
+:::caution[Assigning does not start any work]
+Assignment records ownership and nothing else. It creates no space, changes
+no status and dispatches no agent — `TicketAssigned` is a pure audit signal
+with no dispatcher behind it. To get an agent working, message it in a space
+(see [Chat with an agent](/manual/guides/chat-with-agent/)).
+
+The one exception: `TicketAssigned` is an event type you can wire a pipeline
+trigger to, so a template of your own can react to an assignment.
+:::
+
+## Add labels
+
+Labels are applied in bulk from the ticket list, not from a single ticket —
+the properties rail has no label control.
+
+1. Hover a row in the ticket list and tick its checkbox. Tick as many as you
+   need; a floating bar appears once anything is selected.
+2. In that bar, open the **Labels** chip.
+3. Pick a label. It is added to every selected ticket that lacks it; existing
+   labels are never wiped. **Clear labels** removes all of them.
+
+:::caution[You cannot create a label from the app]
+The picker offers only labels that already exist on some ticket in the
+workspace and reads "No labels yet" when none do. There is no field anywhere
+in the UI to type a new label name. Agents can introduce one by setting
+`labels` through the `tickets.patch` operation.
+:::
+
+## Link tickets
+
+Relations live on the ticket's **Relations** card in the properties rail, or
+behind **Relate to** in the list's right-click menu.
+
+1. Open the ticket and find the **Relations** card.
+2. Press its add control and choose the relation:
+
+| Relation          | Meaning                                 |
+| ----------------- | --------------------------------------- |
+| **Sub-issue of…** | This ticket's parent is the other one   |
+| **Parent of…**    | The other ticket is a child of this one |
+| **Blocked by…**   | This ticket is blocked by the other     |
+| **Blocking…**     | This ticket blocks the other            |
+| **Related to…**   | Symmetric, no direction implied         |
+| **Duplicate of…** | This ticket duplicates the other        |
+
+3. Pick the target ticket.
+
+**Duplicated by** appears in the card but not in the picker — it is the inverse
+of **Duplicate of** and is set from the other ticket. Each listed relation is
+clickable to open the linked ticket and removable on hover.
+
+Parent and sub-issue relations are stored on the ticket itself rather than as
+link rows, so deleting a parent cascades to its children (see below), while
+blocking and related links do not.
+
+## Add collaborators
+
+Collaborators are a roster on the ticket — who is involved, in what capacity.
+
+1. Open the ticket.
+2. Press the person-plus control on the **Add collaborator** card.
+3. Pick an agent.
+
+The three roles are **assignee**, **collaborator** (the default) and
+**reviewer**. Collaborators can be human users as well as agents.
+
+Adding a collaborator writes a row and publishes an event; it grants no space
+access. To put an agent into a conversation, add it as a participant from the
+space header instead — see [Spaces](/manual/guides/spaces/).
+
+## Delete a ticket
+
+Use **Delete ticket** at the bottom of the properties rail, the right-click
+menu, or the floating bar's delete action after multi-selecting.
+
+:::caution[Deletion is local only]
+A ticket that came from an external tracker is not deleted there — no provider
+supports it — so it can reappear on the next sync. Deleting also cascades: the
+ticket's collaborators and any child tickets go with it.
+:::
+
+## Related guides
+
+- [Delegate work to agents](/manual/guides/delegate-tickets/)
+- [Organize work with projects](/manual/guides/projects/)
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Ticket lifecycle reference](/manual/reference/ticket-lifecycle/)
+
+## Related concepts
+
+- [Tickets](/manual/concepts/tickets/)
+- [Domain events](/manual/concepts/domain-events/)

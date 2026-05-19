@@ -1,0 +1,92 @@
+---
+title: Modes
+description: Why a space, not an agent, carries a mode; what each of the four modes guarantees; and where that guarantee is structural rather than merely prompted.
+---
+
+## What a mode is
+
+A mode is a property of a **space**, stored as one column on the space row. Every conversation inside a space shares it, threads included — a thread inherits its space's mode like any other conversation. The same agent can therefore be in different modes in different spaces at the same time and switching a space's mode changes what happens on the next turn without touching the agent.
+
+There are exactly four: `chat`, `review`, `plan`, `orchestrate`. The enum itself carries no policy. Everything a mode guarantees is declared once, in a **capability profile**, which every enforcement layer projects from:
+
+1. **Tool surface** — which tools exist at all in that mode, expressed as a maximum approval tier, an allow-list, a deny-list and a set of refused effect classes.
+2. **Required output verb** — what the run must call to have delivered anything.
+3. **Denied effect classes** — what the action guard refuses outright.
+4. **Worktree posture** — whether the worktree may be written. This is enforced by stripping the mutating tools out of the surface, which is what makes it hold on every host. Where the host has an OS sandbox, the same posture also carves the filesystem write rules — a read-only mode mounts the worktree read-only — but that is a second copy of the guarantee, not the one doing the work.
+5. **System prompt block** — a _generated_ capability preamble derived from the actual materialized tool list, plus hand-written guidance.
+
+That single declaration exists because these five used to be asserted independently and drifted. Plan mode's prompt once instructed the agent to write plan files into a directory whose write tools had been removed, so the instructed deliverable was impossible and the run reported success anyway. Orchestrate mode's guard preset once denied the exact effect class its only output verb declares, so the mode could not produce its own deliverable. Both bugs are the same bug: a fact with more than one writable home.
+
+## The four modes
+
+### Chat — displayed as "Agent"
+
+The default and the only mode with no extra constraints: the full tool surface up to the execution tier, a writable worktree, no denied effect classes and no completion contract. Use it for implementation, bug fixes, questions about the codebase and anything ad hoc.
+
+Note the label: in the composer the mode is shown as **"Agent"**, not "Chat".
+
+### Plan — read-only, one deliverable
+
+Plan mode makes the worktree read-only and strips the write tools from the surface entirely, so the restriction is structural rather than instructed. The agent reads, searches and researches and delivers exactly one thing: a `submit_plan` call carrying a typed dependency graph — a goal plus nodes with keys, titles, descriptions and the node keys each depends on.
+
+The plan renders as a compact row in the conversation and opens Plan Studio in a tab beside it. Approving it compiles the graph into an orchestration, runs the generated work and flips the authoring space back out of plan mode — the two halves of "leaving plan mode" are linked deliberately, because they used to be separate and the plan's own room stayed read-only after approval.
+
+If a plan-mode run ends without ever calling `submit_plan`, the loop first injects a nudge saying the plan does not exist until that call succeeds. The nudge explicitly authorizes an honest "no plan is needed here" exit, because plan mode is a space setting and a plain question asked inside it should not force a bogus plan.
+
+:::note[An unmet contract is not a failed run]
+A run that ends without its plan is still recorded with status `completed` — the process exited cleanly. The truth rides on the run's liveness (`empty`), error family (`silentRun`) and a summary that names what was not produced. See [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/).
+:::
+
+There is a second, separate way out: `exit_plan_mode`. It is a hard approval gate, not an output verb — an agent that calls it instead of `submit_plan` has delivered nothing. The first call opens a durable `plan_exit` approval and returns `pending` and the space stays read-only; repeat calls stay `pending` rather than opening a second gate. Only once the approval is granted does a subsequent call flip the space to chat. A rejection lets the agent open a fresh request for a revised plan.
+
+:::caution[There is no screen for deciding a plan-exit approval]
+The durable approval entity has no human user interface. It can be decided over the `decide_approval` MCP tool — that is, by another agent — but nothing in the app lists pending approvals of this kind. The Inbox's "agent approval" rows are a different thing: per-turn confirmation prompts from a running agent. In practice, take a space out of plan mode from the composer.
+:::
+
+### Review — read-only, no contract
+
+Review mode is for PR review. It makes the worktree read-only, caps the tool surface below the execution tier and applies a curated allow-list of review, ticketing and communication tools. A space opened for a pull request is created in review mode automatically.
+
+The agent's output is structured findings — **review nodes** — and, when a review is finalized, a **verdict**. A node carries a kind (`bug`, `suggestion`, `recommendation`, `question`, or `ticket`), a priority from P0 (blocks release) to P3 (nice-to-have), a self-assessed confidence, an optional anchor (file plus a line range; repository-wide notes have none) and a lifecycle status that moves from `open` to `consensusReady` once a peer — never the author — confirms it. A finding whose priority or confidence is missing or out of range is dropped at the read boundary rather than polluting the verdict.
+
+The verdict is ship, hold, or block and it is only ever made _more_ severe by the per-axis results folded into it: a gated axis that failed forces `block` and a gated axis that could not run forces at least `hold`. Absence of evidence never greens a gate.
+
+Unlike plan and orchestrate, review carries **no completion contract**. Findings accumulate through `add_review_node` and are published by `finalize_review` and both may legitimately be called zero times — a pipeline agent running in review mode may be there to complete a ticket instead.
+
+### Orchestrate — read-only, proposes a team
+
+Orchestrate mode turns one goal into a whole-team plan. Like plan mode it is read-only and cannot write files; on top of the research surface it has a single privileged verb, `propose_orchestration`, which emits a structured proposal: roles, a sub-ticket tree, a synthesis step and a budget. Its prompt also names the hiring, delegation and ticket lifecycle verbs as unavailable — not to enforce anything (they are already absent from the surface) but so a weak model does not burn turns narrating work it has no tool for.
+
+Nothing in the proposal executes until you approve it. On approval a deterministic materializer hires the agents, creates the tickets and a project and runs a generated pipeline. Approving is operator-only: there is no MCP tool for it, so an agent can propose but never approve its own plan. Agent-initiated re-proposals are rate-limited by a two-minute cooldown, so consecutive replans are refused and told to coalesce. See [Orchestration](/manual/concepts/orchestration/).
+
+## Two rules worth knowing
+
+**A mode's own output verb can never be denied.** `submit_plan` and `propose_orchestration` are pinned into the tool surface and pre-approved past the tool filter, the approval gate and the action guard alike. This is what fixed orchestrate mode being structurally unable to emit its only deliverable and it also means the per-space autonomy dial cannot silence a mode's deliverable. The harness's `ask_user` is pinned for the same reason: it _is_ how a run reaches the operator, so gating it would deadlock a run that needs to ask something. It is read-tier, so every read-only mode keeps it, and it is exempt from the approval wrapper — a prompt in front of a prompt fails closed with no approver connected, which would deny an agent the act of asking.
+
+**Read-only modes do not deny network access or secrets.** The effect classes review, plan and orchestrate refuse are the ones that change the world: file deletion, writes outside the worktree, commits, pushes, PR creation and publication, vendor sync writes, package installs, process spawning and workspace mutation. Network egress and secret access stay at their defaults on purpose — research is the entire point of a read-only mode.
+
+## Choosing and changing a mode
+
+The composer's mode dropdown offers **three** options: Agent (chat), Plan and Orchestrate. `review` is **not user-selectable** — it is set by the system when a PR review space is created and by pipeline steps.
+
+A pipeline node can pin its step's mode with an `extras['mode']` key. The key is exact-match: any other spelling is silently ignored and the step gets the body's default, which is how generated orchestration steps once ended up read-only by accident.
+
+Resolution itself is simple. The dispatcher reads the space's `mode` column; a dispatch with no space — a one-shot, a CLI invocation, or a space id from another workspace, which is simply not in this workspace's database file — resolves to `chat`. Changing the mode takes effect from the next turn.
+
+## Where the guarantee actually holds
+
+A mode's tool surface is built and enforced by the **built-in harness**. It is the only transport that can make a tool invisible rather than merely denied, gate every call before it runs and observe a completion contract.
+
+:::caution[External CLIs get much less]
+On the Claude Code transport a non-chat mode is passed as `--permission-mode plan`, which Claude honours by convention rather than by our enforcement and its own read, write, edit and shell tools run unseen. On a structured-JSON CLI the mode reaches the agent as prompt text only. Over ACP nothing about mode is negotiated at all. For those transports the mode is guidance, not a boundary — see [The agent model](/manual/concepts/agent-model/).
+
+The allow-lists are not an inventory of what exists. They constrain only write-tier-and-above tools, so the built-in harness's read tier reaches tools no list names; and on the external-CLI path, where the allow-list is the whole enforcement, a tool it omits is refused whether or not the server has it.
+:::
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/): where the mode is resolved and projected
+- [The agent model](/manual/concepts/agent-model/): which transports can enforce a mode
+- [Guardrails](/manual/concepts/guardrails/): the effect-class policy a mode's preset feeds into
+- [Orchestration](/manual/concepts/orchestration/): what an approved orchestrate proposal does
+- [Use plan mode](/manual/guides/plan-mode/): the practical walkthrough

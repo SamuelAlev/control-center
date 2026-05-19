@@ -1,0 +1,132 @@
+---
+title: Agent configuration
+description: Every field on the agent entity, the enums it uses and which persisted fields have no effect.
+---
+
+This reference lists every field on the agent entity, plus the enums and flags it uses. For a step-by-step walkthrough of creating or editing an agent in the app, see [Create and configure an agent](/manual/guides/create-agent/).
+
+## Agent entity fields
+
+| Field                   | Type                   | Required | Description                                                                                                                                                                                         |
+| ----------------------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                    | `String`               | Yes      | Unique agent identifier                                                                                                                                                                             |
+| `name`                  | `String`               | Yes      | Short identifier for @-mentions                                                                                                                                                                     |
+| `title`                 | `String`               | Yes      | Human-readable role title                                                                                                                                                                           |
+| `agentMdPath`           | `String`               | Yes      | Absolute path to the agent's `.md` definition file                                                                                                                                                  |
+| `workspaceId`           | `String`               | Yes      | Owning workspace (non-null)                                                                                                                                                                         |
+| `reportsTo`             | `String?`              | No       | Parent agent ID                                                                                                                                                                                     |
+| `skills`                | `AgentSkills`          | Yes      | Set of skill identifiers                                                                                                                                                                            |
+| `persona`               | `String?`              | No       | Free-text behavioral instructions                                                                                                                                                                   |
+| `systemPrompt`          | `String?`              | No       | Override the default system prompt                                                                                                                                                                  |
+| `adapterId`             | `String?`              | No       | Inference adapter id                                                                                                                                                                                |
+| `modelId`               | `String?`              | No       | Model id within the adapter                                                                                                                                                                         |
+| `strictMode`            | `bool`                 | No       | Default `false`. **Inert** — persisted and editable in the agent form, read by no dispatch, prompt, or policy path                                                                                  |
+| `effort`                | `String?`              | No       | Reasoning level id (e.g. `'low'`, `'xhigh'`), sourced from the selected model's `thinkingLevels`                                                                                                    |
+| `contextSize`           | `int?`                 | No       | Max context window size                                                                                                                                                                             |
+| `role`                  | `AgentRole?`           | No       | Agent role (see below); null for legacy agents                                                                                                                                                      |
+| `capabilities`          | `AgentCapabilities?`   | No       | Per-agent capability default; when null the user-level default applies at dispatch and a conversation may still override                                                                            |
+| `monthlyBudgetCents`    | `int`                  | No       | Monthly spending cap in cents (default `0`, unlimited)                                                                                                                                              |
+| `silenceTimeoutMinutes` | `int?`                 | No       | Silence-timeout override in minutes; must be null or in 1–240 (constructor-asserted)                                                                                                                |
+| `maxConcurrentTasks`    | `int`                  | No       | Default `1`. The capacity figure the presence model reports (running and queued counts are compared against it); **not** a dispatch concurrency limit — nothing refuses a run for exceeding it      |
+| `visibility`            | `AgentVisibility`      | No       | Default `workspace`. **Inert** — parsed and round-tripped, but no roster, peer-discovery, or UI filter consumes it                                                                                  |
+| `lifecycleStatus`       | `AgentLifecycleStatus` | No       | Governance status (default `active`). Written by the budget hard-stop and rendered on the org chart and presence roster. **Not consulted by the dispatch path** — a `paused` agent still dispatches |
+| `budgetPolicyId`        | `String?`              | No       | Shared budget policy id; when null `monthlyBudgetCents` applies directly                                                                                                                            |
+| `runtimeProfileId`      | `String?`              | No       | Custom runtime profile id. **Inert** — no reader in `cc_infra`, `cc_mcp`, or the client                                                                                                             |
+| `createdAt`             | `DateTime`             | Yes      | Creation timestamp                                                                                                                                                                                  |
+
+`name` and `title` must both be non-empty (constructor-asserted).
+
+`monthlyBudgetCents` and `budgetPolicyId` have no form control, no MCP tool and no dedicated RPC op. The only write path is a raw `agents.upsert`, so in practice every agent keeps the default `0` (unlimited).
+
+## AgentRole enum
+
+| Role       | Label    | Description                      |
+| ---------- | -------- | -------------------------------- |
+| `ceo`      | CEO      | Coordination, hiring, delegation |
+| `coder`    | Coder    | Code implementation              |
+| `reviewer` | Reviewer | PR review and analysis           |
+| `qa`       | QA       | Testing and quality assurance    |
+| `designer` | Designer | UI/UX implementation             |
+| `security` | Security | Security review and auditing     |
+| `devops`   | DevOps   | Infrastructure and deployment    |
+| `pm`       | PM       | Product management               |
+| `general`  | General  | Flexible, multi-purpose          |
+
+## AgentVisibility enum
+
+Stored and round-tripped only; no code branches on the value.
+
+| Value       | Description                                                                                                                             |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `workspace` | The default; unknown and null stored values parse to it                                                                                 |
+| `private`   | Intended as "private to the creating user". No visibility filter exists, so a `private` agent is visible exactly like a `workspace` one |
+
+## AgentLifecycleStatus enum
+
+| Value      | Description                                                                           |
+| ---------- | ------------------------------------------------------------------------------------- |
+| `active`   | The default. `isDispatchable` is true only for this value                             |
+| `paused`   | Set by the budget hard-stop. Shown on the presence roster; does **not** stop dispatch |
+| `archived` | Retired and hidden from active rosters                                                |
+
+`Agent.isDispatchable` is defined but has no caller: no dispatch path reads it.
+
+## AgentCapabilities flags
+
+Resolved per dispatch: the agent's default, falling back to the user-level default when null, with a per-conversation override on top. Enforced by absence — the credential broker simply does not mint or inject what a disabled capability covers.
+
+| Flag               | Type   | Default | Description                                                                              |
+| ------------------ | ------ | ------- | ---------------------------------------------------------------------------------------- |
+| `canPushToRepo`    | `bool` | `false` | Push commits to the remote; gates GitHub token injection alongside `canCallGitHubApi`    |
+| `canCallGitHubApi` | `bool` | `false` | Call api.github.com; gates `GH_TOKEN` injection and the GitHub egress domains            |
+| `canCallTicketing` | `bool` | `false` | Call the ticketing provider API; gates provider API-key injection and its egress domains |
+| `canAccessNetwork` | `bool` | `true`  | Arbitrary outbound egress. Also gates the harness `web_fetch` and `web_search` tools     |
+
+`AgentCapabilities.safeDefault` is all four constructor defaults. `legacyDefault` (all four true) is used only by the migration that backfilled conversations created before capabilities existed. A malformed or empty stored blob parses to `safeDefault`; the legacy key `canCallLinear` is read as `canCallTicketing`.
+
+## AgentSkills
+
+An immutable, case-insensitive set of skill identifiers. Skills are matched at prompt assembly time to inject relevant context.
+
+```
+{'flutter', 'dart', 'rest-api'}
+```
+
+## AgentLiveState (derived)
+
+Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:
+
+| State       | `sortPriority` | Condition                                                                                                           |
+| ----------- | -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `running`   | 0              | Any run log has status `running`                                                                                    |
+| `blocked`   | 1              | The latest run's liveness is `blocked`, `stalled`, or `looping`                                                     |
+| `failed`    | 2              | The latest run's status is `error`, or its liveness is `failed` or `dead`                                           |
+| `queued`    | 3              | A run is dispatched but not executing — parked behind another run of the same agent, or written but not yet started |
+| `succeeded` | 4              | The run finished successfully                                                                                       |
+| `idle`      | 5              | The agent has run before and has nothing in flight                                                                  |
+| `neverRun`  | 6              | No run logs exist                                                                                                   |
+
+`queued` and `succeeded` are **per-run only**. `deriveAgentLiveState`, which computes the roster state for an agent, never produces either — it returns `neverRun`, `running`, `failed`, `blocked`, or `idle`.
+
+## DiscoveredAgent
+
+An agent definition parsed from an `AGENTS.md` on disk that is not yet registered in the workspace:
+
+| Field         | Type           | Description                             |
+| ------------- | -------------- | --------------------------------------- |
+| `name`        | `String`       | Unique name from the file's frontmatter |
+| `title`       | `String`       | Display title                           |
+| `skills`      | `List<String>` | Skills declared in the file             |
+| `agentMdPath` | `String`       | Absolute path to the `AGENTS.md`        |
+| `reportsTo`   | `String?`      | Name of the declared manager agent      |
+| `persona`     | `String?`      | Persona markdown body                   |
+
+:::caution[Not reachable from the app]
+On-disk agent discovery has no UI and no wire. `AgentDiscoveryService.findImportable` produces these on the server, but no RPC operation returns them and no client code references the type, so there is no way to import a discovered agent from within the app.
+:::
+
+## See also
+
+- [Create and configure an agent](/manual/guides/create-agent/)
+- [The agent model](/manual/concepts/agent-model/)
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/)

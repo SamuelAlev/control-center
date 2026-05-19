@@ -1,0 +1,228 @@
+import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/widgets.dart';
+import 'package:widgetbook/widgetbook.dart';
+import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
+
+/// Use-cases for [CcSidebar] — the app-shell navigation container.
+///
+/// Each builder is annotated with `@widgetbook.UseCase`; widgetbook_generator
+/// groups them under `Components → Navigation & Overlays → CcSidebar`. Builders
+/// return the component directly inside a sized box — the gallery's theme addon
+/// supplies the [CcTheme] + canvas.
+
+const _path = '[Components]/Navigation & Overlays';
+
+/// The workspace header pinned above the scrolling body.
+Widget _header(BuildContext context) => Padding(
+  padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+  child: Row(
+    children: [
+      const CcAvatar(initials: 'CC', size: 28),
+      const SizedBox(width: 8),
+      Text(
+        'Control Center',
+        style: TextStyle(color: context.designSystem?.textPrimary),
+      ),
+    ],
+  ),
+);
+
+/// The expanded sidebar with a header, grouped destinations, a count badge and
+/// the current selection.
+@widgetbook.UseCase(name: 'Expanded', type: CcSidebar, path: _path)
+Widget ccSidebarExpandedUseCase(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SizedBox(
+      height: 460,
+      child: CcSidebar(
+        header: _header(context),
+        footer: const CcSidebarItem(icon: CcIcons.settings, label: 'Settings'),
+        children: const [
+          CcSidebarGroup(
+            label: 'Workspace',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.layoutDashboard,
+                label: 'Dashboard',
+                selected: true,
+              ),
+              CcSidebarItem(
+                icon: CcIcons.gitPullRequest,
+                label: 'Pull requests',
+                badge: Text('12'),
+              ),
+              CcSidebarItem(icon: CcIcons.users, label: 'Agents'),
+              CcSidebarItem(icon: CcIcons.listTodo, label: 'Tickets'),
+            ],
+          ),
+          CcSidebarGroup(
+            label: 'Automation',
+            children: [
+              CcSidebarItem(icon: CcIcons.workflow, label: 'Pipelines'),
+              CcSidebarItem(icon: CcIcons.folderGit2, label: 'Repos'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// The collapsed icon-only rail — labels hide, items become fixed 32px
+/// squares and the pull requests badge keeps its count straddling the
+/// item's top-right corner.
+@widgetbook.UseCase(name: 'Collapsed rail', type: CcSidebar, path: _path)
+Widget ccSidebarCollapsedUseCase(BuildContext context) {
+  return const Padding(
+    padding: EdgeInsets.all(24),
+    child: SizedBox(
+      height: 460,
+      child: CcSidebar(
+        collapsed: true,
+        footer: CcSidebarItem(icon: CcIcons.settings, label: 'Settings'),
+        children: [
+          CcSidebarGroup(
+            label: 'Workspace',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.layoutDashboard,
+                label: 'Dashboard',
+                selected: true,
+              ),
+              CcSidebarItem(
+                icon: CcIcons.gitPullRequest,
+                label: 'Pull requests',
+                badge: Text('12'),
+              ),
+              CcSidebarItem(icon: CcIcons.users, label: 'Agents'),
+              CcSidebarItem(icon: CcIcons.listTodo, label: 'Tickets'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Collapsible groups — each section header is tappable with a rotating chevron
+/// that expands or collapses its destinations.
+@widgetbook.UseCase(name: 'Collapsible groups', type: CcSidebar, path: _path)
+Widget ccSidebarCollapsibleGroupsUseCase(BuildContext context) {
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SizedBox(
+      height: 460,
+      child: CcSidebar(
+        header: _header(context),
+        children: const [
+          CcSidebarGroup(
+            label: 'Workspace',
+            collapsible: true,
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.layoutDashboard,
+                label: 'Dashboard',
+                selected: true,
+              ),
+              CcSidebarItem(icon: CcIcons.users, label: 'Agents'),
+            ],
+          ),
+          CcSidebarGroup(
+            label: 'Automation',
+            collapsible: true,
+            initiallyExpanded: false,
+            children: [
+              CcSidebarItem(icon: CcIcons.workflow, label: 'Pipelines'),
+              CcSidebarItem(icon: CcIcons.folderGit2, label: 'Repos'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// A state-reporting dot badge beside its label — the badge hugs the text
+/// with a small gap instead of pinning to the trailing gutter, which is how
+/// a status signal (not a count on the row) reads.
+@widgetbook.UseCase(name: 'Badge beside label', type: CcSidebarItem, path: _path)
+Widget ccSidebarBadgeBesideLabelUseCase(BuildContext context) {
+  final t = context.designSystem;
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SizedBox(
+      height: 220,
+      child: CcSidebar(
+        children: [
+          CcSidebarGroup(
+            label: 'Footer',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.activity,
+                label: 'Service status',
+                badge: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: t?.success,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                badgeBesideLabel: true,
+              ),
+              const CcSidebarItem(icon: CcIcons.house, label: 'Newsfeed'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// Interactive playground — toggle the rail and the expanded width.
+@widgetbook.UseCase(name: 'Playground', type: CcSidebar, path: _path)
+Widget ccSidebarPlaygroundUseCase(BuildContext context) {
+  final collapsed = context.knobs.boolean(label: 'Collapsed');
+  final withHeader = context.knobs.boolean(label: 'Header', initialValue: true);
+  final withFooter = context.knobs.boolean(label: 'Footer', initialValue: true);
+  final width = context.knobs.double.slider(
+    label: 'Expanded width',
+    initialValue: 248,
+    min: 180,
+    max: 320,
+  );
+
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SizedBox(
+      height: 460,
+      child: CcSidebar(
+        collapsed: collapsed,
+        width: width,
+        header: withHeader ? _header(context) : null,
+        footer: withFooter
+            ? const CcSidebarItem(icon: CcIcons.settings, label: 'Settings')
+            : null,
+        children: const [
+          CcSidebarGroup(
+            label: 'Workspace',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.layoutDashboard,
+                label: 'Dashboard',
+                selected: true,
+              ),
+              CcSidebarItem(
+                icon: CcIcons.gitPullRequest,
+                label: 'Pull requests',
+                badge: Text('12'),
+              ),
+              CcSidebarItem(icon: CcIcons.users, label: 'Agents'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}

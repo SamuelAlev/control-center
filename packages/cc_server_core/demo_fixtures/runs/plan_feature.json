@@ -1,0 +1,43 @@
+{
+  "id": "plan-feature",
+  "triggers": ["plan", "design", "how would you", "approach", "break down", "roadmap"],
+  "steps": [
+    {
+      "kind": "thinking",
+      "text": "Before proposing a shape I should know what already exists — half of this may be a rename rather than new code."
+    },
+    {
+      "kind": "say",
+      "text": "Let me look at what's already there before proposing anything.\n\n"
+    },
+    {
+      "kind": "tool",
+      "tool": "grep",
+      "args": { "pattern": "class .*Export", "path": "lib/" },
+      "result": "lib/reports/csv_exporter.dart:14:class CsvExporter {\nlib/reports/closing_bundle.dart:31:class ClosingExportJob {"
+    },
+    {
+      "kind": "say",
+      "text": "There is already a `CsvExporter` and a `ClosingExportJob`, so scheduled closing exports are mostly wiring rather than new machinery.\n\nHere's the shape I'd propose:\n\n**1. Schedule storage.** A `closing_export_schedules` table (broker id, cron, recipients, last run). Reuse the existing cron parser from the pipeline triggers — it already handles the timezone edge cases.\n\n**2. Execution.** `ClosingExportJob` runs unchanged; the scheduler just calls it. Nothing new to test in the export path itself.\n\n**3. Delivery.** This is the only genuinely new piece, and it is where the risk is: an email to a broker that silently fails is worse than no feature. It needs a delivery log and a visible failure state.\n\n"
+    },
+    {
+      "kind": "usage",
+      "input": 9880,
+      "output": 420,
+      "cache_read": 6100,
+      "cache_write": 1100,
+      "thought": 180
+    },
+    {
+      "kind": "say",
+      "text": "The part I would push back on is the weekly digest in the ticket. It sounds small, but a digest spanning multiple closings needs its own composition step and a different failure story from a single export. I would ship single-closing schedules first and treat the digest as its own piece of work.\n\nI've written this up as a plan with four nodes — the delivery log is a blocking dependency for the digest node, so it cannot be quietly skipped."
+    },
+    {
+      "kind": "usage",
+      "input": 11400,
+      "output": 236,
+      "cache_read": 9700,
+      "cache_write": 180
+    }
+  ]
+}

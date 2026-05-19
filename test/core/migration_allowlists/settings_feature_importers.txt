@@ -1,0 +1,16 @@
+# Files under lib/features/settings/ that import another feature's
+# presentation layer.
+#
+# EMPTY, AND MEANT TO STAY THAT WAY. Settings owns routes, the nav model, the
+# page shell and the generic section cards. Anything a feature wants on a
+# settings page it contributes through lib/features/settings/settings_extensions.dart,
+# aggregated once in lib/di/settings_registry.dart.
+#
+# If you are about to add a line here, the alternative is almost always
+# cheaper: declare a SettingsSectionContribution / SettingsBody /
+# AgentSettingsTab / AgentRegistryView in the feature's own
+# presentation/settings_contributions.dart and add it to the composition root.
+#
+# The reverse direction is fine and is NOT checked here: a feature may import
+# settings' card vocabulary (settings_shared.dart, scope_badge.dart,
+# SettingsPage) so a contributed card looks native.

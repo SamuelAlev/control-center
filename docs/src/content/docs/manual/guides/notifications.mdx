@@ -1,0 +1,150 @@
+---
+title: Configure notifications
+description: Turn categories on or off, set quiet hours and a sound and know which notifications reach you where.
+---
+
+This guide shows you how to configure notifications and what each setting really
+controls.
+
+Notifications arrive on two surfaces. The **notification centre** — the bell in
+the title bar — reads a durable per-workspace feed on the server. **OS toasts**
+are a separate, desktop-only path fed by live frames pushed from the server.
+
+:::note[The web build shows no OS notifications]
+The toast pipeline is constructed only by the desktop bootstrap. On
+`app.usectrl.dev` there are no OS toasts, no notification sounds and no ambient
+banners — the bell and its history still work, because they read the server feed.
+The phone client has no notification surface at all.
+:::
+
+## Turn categories on or off
+
+1. Go to **Settings → You → Notifications**
+2. Leave **Enable notifications** on
+3. Toggle the categories you want. There are exactly ten:
+
+| Category                  | Fires when                                            |
+| ------------------------- | ----------------------------------------------------- |
+| Agent finished            | An agent finished a run                               |
+| PR published              | An agent published a PR                               |
+| PR merged                 | A PR was merged                                       |
+| New messages              | A message arrived in a space you are not looking at   |
+| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR  |
+| Review requested          | Your review was actually requested on a non-draft PR  |
+| Ticket assigned           | A ticket was assigned                                 |
+| Ticket status changed     | A ticket changed status                               |
+| Meeting starting soon     | A calendar meeting is inside your lead window         |
+| Calendar disconnected     | A connected calendar's OAuth token expired            |
+
+Anything outside this list cannot be notified or filtered — there is no
+"everything else" category.
+
+These preferences follow your user across devices, so a phone and a laptop stay
+in step. Volume is the deliberate exception and stays per device.
+
+## Set quiet hours
+
+1. On the same page, turn **Quiet hours** on
+2. Type a start and an end time in `HH:MM` (the default window is 22:00–08:00)
+
+During quiet hours, non-urgent notifications are dropped — not queued and
+replayed later.
+
+Two categories are **urgent** and always deliver, bypassing quiet hours _and_
+focus mode: **Meeting starting soon** and **PR published**. A meeting
+alert you only see afterwards is worthless, which is the reason.
+
+## Choose a sound
+
+1. Scroll to **Notification sound**
+2. Pick one of the twelve bundled sounds, or **None**
+3. Press the test button to hear it and set the volume with the slider
+
+The app plays the sound itself; the OS notification is delivered silently so you
+never hear it twice.
+
+## Set the meeting lead time
+
+1. Scroll to **Alert lead time**
+2. Pick **5**, **10**, **15** or **30** minutes
+
+That is how far ahead of a calendar event the **Meeting starting soon**
+notification fires.
+
+## Know when a notification is suppressed
+
+A notification is dropped, silently, when any of these is true:
+
+- Notifications are globally off, or its category is off
+- You are already on the route it would take you to — and, for a message, already
+  in that space
+- Focus mode is active and the category is not urgent
+- Quiet hours are active and the category is not urgent
+
+Two more suppressions live further upstream, in what the server sends at all:
+
+- An un-mentioned message from another **human** never becomes a notification
+- Agent-to-agent spaces are muted by construction. They never bump an unread
+  badge and never fire a toast
+
+Within a space there is no quiet corner: every conversation notifies equally,
+threads included. Read state is space-scoped, so unread aggregates across a
+space's conversations rather than being tracked per conversation.
+
+:::caution[Two settings that look live but are not]
+**Delivery schedule** (real-time / every 2 hours / daily digest) is read only by
+the settings row that draws it. Delivery is always real-time whatever you pick,
+and the value the dropdown shows by default disagrees with the value actually
+stored. Ignore it.
+
+Focus mode's **Block notifications** switch is persisted but never consulted:
+suppression is gated on the session being active, so non-urgent notifications are
+suppressed either way.
+:::
+
+## Read and clear the notification centre
+
+1. Click the bell in the title bar
+
+The popover shows recent activity, deep-linking each entry to what it is about.
+Opening it marks everything read and read state follows your user across
+devices.
+
+:::note[Clear all is a watermark, not a delete]
+**Clear all** stamps a per-user watermark that hides everything older; the rows
+stay. Separately, each workspace retains only its most recent **200** feed rows,
+pruned as new ones arrive, while the bell subscribes to the newest **50**. History
+past that is gone regardless of read state.
+:::
+
+## Troubleshooting
+
+### No OS notifications on macOS
+
+Authorization is requested natively when the app launches. If you declined it,
+re-enable Control Center under System Settings → Notifications; there is no
+in-app prompt to re-trigger it.
+
+### Nothing arrives on the web build
+
+Expected — the web build has no OS-notification pipeline. Use the bell.
+
+### The bell badge shows zero but there is clearly new activity
+
+Until your identity resolves after connecting, entries render as read to avoid a
+badge that flashes and then empties. It settles once the session identifies you.
+
+### An agent's run finished but nothing pinged me
+
+Check that you were not already on the space it happened in — an active route
+suppresses its own notification.
+
+## Related guides
+
+- [Use focus mode and soundscapes](/manual/guides/focus-mode/)
+- [Triage your inbox](/manual/guides/triage-inbox/)
+- [Curate your newsfeed](/manual/guides/newsfeed/)
+
+## Related concepts
+
+- [Domain events](/manual/concepts/domain-events/)

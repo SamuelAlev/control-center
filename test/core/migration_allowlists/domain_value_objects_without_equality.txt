@@ -1,0 +1,45 @@
+# Shrinking allowlist: cc_domain VALUE-OBJECT files that do not override both
+# `==` and `hashCode`. Enforced by architecture_constraints_test.dart.
+#
+# Seeded 2026-08-22, when the guard was re-aimed at packages/cc_domain (it had
+# been scanning `lib/**/domain/value_objects`, emptied by the backend exodus,
+# and passing vacuously on the missing directories).
+#
+# Unlike the ENTITY list — which seeded with two files, both fixed on the spot,
+# and is therefore empty — this one seeds with 28. They are not all bugs: a
+# sealed action union, a codec, a paths holder and a descriptor are types you
+# never compare by value, and forcing equality onto them would be ceremony. The
+# ones that ARE bugs are the value objects a set/map/diff is keyed on. So this
+# list is a starting point to work DOWN, file by file, with a judgement each
+# time — not a to-do list to clear mechanically.
+#
+# The list only shrinks: a new value object without equality fails, and an entry
+# that now overrides both (or was deleted) fails as stale.
+packages/cc_domain/lib/core/domain/value_objects/embedding_model_paths.dart
+packages/cc_domain/lib/core/domain/value_objects/forge_git_conventions.dart
+packages/cc_domain/lib/core/domain/value_objects/forge_urls.dart
+packages/cc_domain/lib/core/domain/value_objects/transcript_update_codec.dart
+packages/cc_domain/lib/features/chat_bridge/domain/value_objects/chat_app_creation.dart
+packages/cc_domain/lib/features/chat_bridge/domain/value_objects/chat_provider_descriptor.dart
+packages/cc_domain/lib/features/dispatch/domain/value_objects/teammate_brief.dart
+packages/cc_domain/lib/features/evals/domain/value_objects/agent_config_hash.dart
+packages/cc_domain/lib/features/evals/domain/value_objects/eval_outcome.dart
+packages/cc_domain/lib/features/evals/domain/value_objects/eval_scorecard.dart
+packages/cc_domain/lib/features/evals/domain/value_objects/eval_task.dart
+packages/cc_domain/lib/features/evals/domain/value_objects/session_recording_data.dart
+packages/cc_domain/lib/features/fleet/domain/value_objects/job_spec.dart
+packages/cc_domain/lib/features/fleet/domain/value_objects/lease_protocol.dart
+packages/cc_domain/lib/features/governance/domain/value_objects/org_node.dart
+packages/cc_domain/lib/features/governance/domain/value_objects/runtime_health.dart
+packages/cc_domain/lib/features/mcp/domain/value_objects/capability_tier.dart
+packages/cc_domain/lib/features/mcp/domain/value_objects/mcp_call_scope.dart
+packages/cc_domain/lib/features/meetings/domain/value_objects/voice_model_paths.dart
+packages/cc_domain/lib/features/messaging/domain/value_objects/message_page.dart
+packages/cc_domain/lib/features/plan_studio/domain/value_objects/plan_graph.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/browser_action.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/computer_action.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/mobile_action.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/rig_action.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/rig_action_result.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/rig_capabilities.dart
+packages/cc_domain/lib/features/rigs/domain/value_objects/rig_file_transfer.dart

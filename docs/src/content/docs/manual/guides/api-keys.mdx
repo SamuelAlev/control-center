@@ -1,0 +1,115 @@
+---
+title: Manage API keys
+description: Where each credential lives — your user account on the server, the server itself, or an external CLI — and how to set, rotate and remove it.
+---
+
+This guide shows you where each credential Control Center uses is stored and how
+to change it.
+
+**Nothing is stored on the machine you are typing on.** Every credential lives
+on the server; which one answers a given request depends on whether there is a
+human behind it.
+
+| Credential                           | Stored                                                    | Who uses it                                                     |
+| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------- |
+| Your forge / ticketing credential    | The server's 0600 secrets file, keyed by your user id      | Anything you ask for: the PR surface, your agent runs, your images |
+| The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
+| Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
+| Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
+| External CLI credentials             | Whatever that CLI uses                                    | Claude Code and friends, on the server host                      |
+
+## Two GitHub credentials, and they answer different questions
+
+- **Yours**, from signing in (device flow) or pasting a token. It is what every
+  request made *on your behalf* uses, so a comment posted for you carries your
+  name. Another member cannot read it, and they connect their own
+- **The server's**, from the GitHub App the operator registered. It answers
+  everything with no caller — so forge access does not disappear when one
+  person leaves or rotates a token
+
+Yours is set in the **Code hosting** card at **Settings → You → Profile &
+identity**; the server's in **Provider apps** at **Settings → Server → Single
+sign-on**. See [Set up GitHub integration](/manual/guides/github-integration/)
+and [Create the GitHub App](/manual/guides/github-app/).
+
+:::note[There is also a URL-only screen]
+`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
+first step. It has **no navigation entry anywhere in the UI**; it is reachable
+only by typing the URL. Use Settings → You → Profile & identity instead.
+:::
+
+## Set model provider keys
+
+The built-in adapter authenticates providers itself and those credentials live
+on the server.
+
+1. Go to **Settings → Server → Model providers**
+2. Scroll to **Providers & models**
+3. Connect the provider — browser OAuth for Anthropic, OpenAI and Kimi Code; an
+   API key for the rest
+
+See [Manage adapters and models](/manual/guides/adapters/) for the full list and
+for adding a custom endpoint.
+
+These credentials are **host-global**: one key serves every workspace on the
+install. OAuth tokens are refreshed before they expire.
+
+External adapter CLIs keep their own credentials, in their own configuration, on
+the server host — Control Center does not manage them. Authenticate each CLI the
+way its own documentation says, on the machine `cc_server` runs on.
+
+The per-adapter **Environment variables** dialog looks like a place to put a key
+for one of them, but it is not: it writes to your device, while the server reads
+its own copy and nothing bridges the two. See
+[Manage adapters and models](/manual/guides/adapters/).
+
+## Connect a ticketing vendor
+
+The **Ticketing** card holds both halves of one decision: which vendor your
+tickets live in, and the credential for it. Choosing **Local** hides the
+credential row — local tickets live in this server's own database and have
+nothing to authenticate to.
+
+Your key is stored on the server against your user id, like the forge one. The
+server keeps its own Linear key separately (**Provider apps**), which is what
+ticket sync runs on when no human asked. A key an agent receives is only
+injected when the agent has the **Allow ticketing API calls** capability. See
+[Set up Linear integration](/manual/guides/linear-integration/) for what is and is
+not wired.
+
+## Rotate or revoke
+
+- **Your GitHub credential**: press **Disconnect**, then sign in again or paste
+  the new token. Revoke the old one on GitHub
+- **The server's app**: generate a new private key or client secret on the app's
+  GitHub page, paste it in **Provider apps** and press **Test**
+- **A model provider**: on its row, sign out (OAuth) or remove the key, then
+  connect again
+- **Slack**: re-paste the tokens in the connect dialog. See
+  [Set up Slack integration](/manual/guides/slack-integration/)
+
+## Troubleshooting
+
+### The PR list is empty but my token works in `curl`
+
+Check the **Code hosting** row's subtitle. If it names another source ("via this
+server's app", "from the environment"), the credential you are testing is not
+the one answering — yours was not saved.
+
+### A token I just pasted is not working
+
+The token is probed as it is stored, so the row names the account behind it —
+but only the account, not the scopes. A token with too few scopes connects and
+then fails individual requests. Check the scopes and the expiry:
+
+```bash
+curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
+```
+
+## Related guides
+
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Create the GitHub App](/manual/guides/github-app/)
+- [Manage adapters and models](/manual/guides/adapters/)
+- [Set up Slack integration](/manual/guides/slack-integration/)
+- [Set up Linear integration](/manual/guides/linear-integration/)

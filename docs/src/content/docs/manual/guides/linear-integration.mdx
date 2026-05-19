@@ -1,0 +1,86 @@
+---
+title: Set up Linear integration
+description: What exists of the Linear ticket sync today, why there is no in-app way to turn it on and what to do instead.
+---
+
+:::caution[Linear sync has no in-app configuration path]
+The multi-vendor sync engine is complete and wired on the server, with a Linear
+adapter among four. What it needs to do anything is a per-workspace, per-vendor
+connection row (`ticket_sync_configs`) — and **nothing in the product creates
+one**. There is no screen, no RPC op and no MCP tool that writes it and the thin
+client's config repository throws `UnsupportedError` on write. A row has to be
+inserted out of band.
+
+Until that changes, treat this page as an account of what is built rather than a
+set of steps you can follow. Nothing you can click in the app connects Linear.
+:::
+
+## What is actually there
+
+| Piece                                                                    | State                                                   |
+| ------------------------------------------------------------------------ | ------------------------------------------------------- |
+| `TicketSyncEngine` with Linear, GitHub Issues, Jira and ClickUp adapters | Constructed at server boot                              |
+| Outbound push (Control Center → vendor)                                  | Event-driven coordinator, started at boot               |
+| Inbound webhooks (vendor → Control Center)                               | Handler behind HMAC verification                        |
+| `ticket_sync.syncNow` RPC op                                             | Exists, pulls for the bound workspace's enabled configs |
+| The `ticket_sync_configs` row that enables any of it                     | **Never written by anything**                           |
+| A UI to create that row                                                  | Does not exist                                          |
+
+Credentials come from the **server's environment**, not from anything you type in
+the app:
+
+| Vendor        | Environment                                     |
+| ------------- | ----------------------------------------------- |
+| Linear        | `LINEAR_API_KEY`                                |
+| GitHub Issues | `GITHUB_TOKEN`                                 |
+| Jira          | `JIRA_BASE_URL`, `JIRA_EMAIL`, `JIRA_API_TOKEN` |
+| ClickUp       | `CLICKUP_API_TOKEN`                             |
+
+## What the in-app Linear settings really do
+
+Two controls mention a ticketing provider. Neither connects Linear.
+
+**Ticketing provider** (onboarding's first step and the URL-only
+`/workspaces/<workspaceId>/api-keys` screen) is a dropdown offering `local` and
+`linear`, with `jira` and `clickup` shown as "(soon)". Picking `linear` stamps
+`provider: linear` on tickets you create from then on. It records an intent; it
+starts no sync.
+
+**Ticketing API key** (that same screen and **Settings → You → Profile &
+identity → Accounts**) stores a key in your device's secure store. It is never
+sent to the server. The server's own ticketing key for an agent comes from
+`CC_TICKETING_API_KEY` in its environment and is injected as `TICKETING_API_KEY`
+only when that agent has the **Allow ticketing API calls** capability.
+
+## Work with tickets locally instead
+
+Everything the ticketing pillar does — tickets, projects, links, collaborators,
+delegation, agent assignment, pipeline coupling — works against the local
+provider with no external service. See
+[Create and manage tickets](/manual/guides/manage-tickets/).
+
+Control Center's ticket data is primary in the sync design anyway: a vendor
+connection mirrors it out and pulls changes back, rather than the vendor owning
+the record.
+
+## Things to know if sync is enabled out of band
+
+- **Deleting a ticket is local only.** No adapter deletes on the remote tracker,
+  so a vendor-backed ticket can reappear on the next pull
+- **`tickets.patch` accepts only four fields** — title, description, priority,
+  labels. Status and workflow changes go through the optimistic-locked
+  `tickets.update`
+- **The transition graph is enforced for agents and automation only.** Every
+  user-driven status change in the UI bypasses it, so a human can move a ticket
+  anywhere, including reopening a terminal one
+- **`ticket_sync.syncNow` is irreversible** and never enters the undo stack
+
+## Related guides
+
+- [Create and manage tickets](/manual/guides/manage-tickets/)
+- [Set up GitHub integration](/manual/guides/github-integration/)
+- [Manage API keys](/manual/guides/api-keys/)
+
+## Related concepts
+
+- [Tickets and delegation](/manual/concepts/tickets/)

@@ -1,0 +1,125 @@
+---
+title: Search code with the code graph
+description: Index a repo and use the code-graph tools to find symbols and see what a change would break.
+---
+
+This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
+
+The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent, not from a code-graph screen. There is no human-facing view of the graph at all today: the blast-radius pane that was one went with Review Studio.
+
+## Before you start
+
+:::caution[Five languages only]
+The graph indexes **Dart, JavaScript, TypeScript, TSX and PHP** and nothing else. Files in any other language are never parsed, so they will never appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`. This is the shipped grammar set, not a configuration.
+:::
+
+Two more things shape what gets indexed:
+
+- In a git work tree, enumeration defers to `git ls-files --cached --others --exclude-standard`, so every `.gitignore`, nested ignore file, `.git/info/exclude` and the global excludes file is honoured. That is what keeps `node_modules` and build output out of the graph.
+- Generated Dart is dropped regardless. Generated files are usually committed, so git alone would not exclude them and they churn on every codegen run.
+
+## Get a repo indexed
+
+Registering a checkout fires `RepoAdded`, which starts the `index_code` pipeline for it automatically. See [Add repos to a workspace](/manual/guides/add-repos/).
+
+To re-index by hand:
+
+1. Open **Settings → Workspace → Repositories**.
+2. Click the **Index code** button on the repo's row.
+3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
+
+The graph is partitioned by workspace and repo, so each workspace-plus-repo pair has its own graph.
+
+Two throttles are worth knowing about, because they explain a wait that looks like a hang:
+
+- Only **one** index run may be in flight at a time across all workspaces. A second repo queues.
+- Worktrees belonging to **dormant spaces** are neither watched nor indexed. The judgement is re-evaluated every five minutes, so a space that becomes active again gets picked up.
+
+:::caution[A missing grammar stops the server, not the search]
+Tree-sitter and its five grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+:::
+
+## Find a symbol
+
+Ask an agent to search. The tool is `search_code` and it needs both a workspace and a repo:
+
+```
+search_code(workspace_id: "...", repo_id: "...", query: "authentication middleware")
+```
+
+Repo ids come from `list_repos`. The optional `mode` argument is `keyword`, `semantic` or `hybrid` and it defaults to hybrid — BM25 over names, signatures and doc comments, fused with vector similarity.
+
+Each result carries the symbol's id, name, qualified name, kind, file path, start and end line and its signature when it has one. The **id** is the handle you feed to every other tool on this page.
+
+When you know the exact name, look it up directly instead:
+
+```
+code_symbol(workspace_id: "...", repo_id: "...", name: "MyClass")
+```
+
+## Trace calls
+
+Both take a `symbol_id` from a search result, plus an optional `limit` (default 50):
+
+```
+code_callers(workspace_id: "...", symbol_id: "...")
+code_callees(workspace_id: "...", symbol_id: "...")
+```
+
+`code_callers` returns the symbols with an incoming edge to this one; `code_callees` returns the ones it depends on.
+
+## Check what a change would break
+
+This is the tool the whole page exists for:
+
+```
+code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
+```
+
+It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol. `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+
+The result is three fields:
+
+- `root` — the symbol you asked about
+- `impacted` — every dependent symbol, each carrying its `depth` from the root
+- `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
+
+Run it before you rename or change a signature and give the agent the impacted list as its scope.
+
+## Results are checked against the caller's own working copy
+
+For an agent caller, the conversation id is injected automatically and results are verified against **that conversation's** checkout. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+
+This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Verification fails open: a stale answer is preferred to an empty one.
+
+## See the graph as a human
+
+You cannot, today. The blast-radius pane lived in Review Studio, and that surface was folded into the PR's review artifact tab — the graph view went with it. `review_studio.blastRadius` still answers over RPC and the cohort grouping still falls back to plain paths on an unindexed repo, but nothing in the app draws either. See [Review Studio](/manual/guides/review-studio/).
+
+## Semantic search needs the embedding model
+
+Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
+
+:::caution[Rows written before the model was installed stay keyword-only]
+The embedding backfill job is a stub that always returns zero, so there is no retroactive pass — and re-running the index does not help either, because a file whose content hash has not moved is skipped before it reaches the ingest that would embed it. Only a symbol whose file actually changes gains a vector. Install the model first — **Settings → Server → Diagnostics & privacy → Semantic search** — and index afterwards.
+:::
+
+Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
+
+## What is in the graph
+
+**Symbol kinds:** function, method, class, field, enum, constructor, getter, setter, typedef, extension, mixin, variable.
+
+**Edge kinds:** calls, imports, extends, implements, mixes in, references.
+
+The canonical signatures for these tools live in [MCP tools](/manual/reference/mcp-tools/).
+
+## Related guides
+
+- [Add repos to a workspace](/manual/guides/add-repos/)
+- [Review Studio (cohorts and axes)](/manual/guides/review-studio/)
+- [Use the MCP server](/manual/guides/mcp-server/)
+
+## Related concepts
+
+- [Workspaces and isolation](/manual/concepts/workspaces/)

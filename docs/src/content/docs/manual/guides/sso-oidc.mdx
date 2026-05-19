@@ -1,0 +1,78 @@
+---
+title: Connect an OpenID Connect provider
+description: Wire any OIDC issuer — Pocket ID, Keycloak, Auth0, Zitadel — to Control Center sign-in.
+---
+
+Use this guide when your identity provider speaks **OpenID Connect** rather
+than SAML. Any OIDC-certified issuer works — Pocket ID, Keycloak, Auth0,
+Zitadel, Google Workspace and friends all follow the same steps; only the
+spot where your provider shows the values differs.
+
+## Prerequisites
+
+- an OIDC provider where you can create a client — note its **client id**
+  and its **issuer URL** (the base the
+  `.well-known/openid-configuration` document lives under), plus its
+  **client secret** when the client is the confidential kind (public
+  PKCE clients have none),
+- a Control Center server you administer.
+
+## Steps
+
+1. Open **Settings → Server → Single sign-on** and switch to the
+   **OpenID Connect** tab.
+2. Fill in the **issuer URL** and the **client id** and the **client
+   secret** when the provider issued one. Control Center
+   discovers the endpoints from the issuer's standard discovery document —
+   no per-provider configuration.
+3. At the provider, register the redirect
+   `https://<your-server>/oidc/callback` on that client.
+4. If your groups live under a claim other than `groups`, set the
+   **groups claim** name; map groups to roles if you want (SSO can never
+   grant the owner role).
+5. Choose the membership policy (auto-add to every workspace, or require
+   per-workspace invites), flip **Enable this connection** and **Save**.
+6. Press **Test connection** — the server fetches the issuer's discovery
+   document and confirms its endpoints, so a green toast means everything
+   short of the browser round-trip works.
+7. Take a login: the web connect screen shows **Sign in with OpenID
+   Connect**, or open `https://<your-server>/oidc/login` directly.
+
+Claims (email, name, groups) are read from the issuer's token endpoint over
+TLS by your server — the browser never supplies them, so no local JWT
+signature verification is involved. The client should be allowed to request
+the `openid profile email` scope, which is exactly what Control Center asks
+for.
+
+Because that TLS channel is the only thing authenticating the claims, the
+issuer URL must be **https** — a plaintext issuer would let any on-path
+attacker forge identities wholesale. `http` is accepted for loopback
+issuers (`localhost`, `127.0.0.1`) only, for local development.
+
+:::note[Public client or confidential client?]
+The default — and recommended — shape is a **public client** using
+authorization code flow with **PKCE** (RFC 7634): the one-time code
+verifier the server holds replaces the secret and the token exchange is
+bound to the authorization request that started it. There is no secret to
+leak and a stolen authorization code is useless without the verifier. Some
+providers call this "SPA" or "native" client type when you create it.
+
+If your provider issued a **confidential** client instead, either mark the
+client as public at the provider (PKCE stays on either way), or paste the
+client secret into the connection's **Client secret** field. The
+secret is stored in the server's 0600 secrets file (never the database),
+sent to the token endpoint as `client_secret_post` and never returned over
+RPC; leaving the field blank on save keeps the stored secret. When a login
+fails at the token exchange, the server log names the provider's own error
+(`invalid_client` almost always means the secret is missing or wrong).
+:::
+
+:::note[Reachability]
+Login itself is browser-mediated: the issuer only redirects the user's
+browser back to `/oidc/callback` and your server makes an outbound HTTPS
+call to the token endpoint — no inbound connection from the issuer is
+needed, so a server behind NAT works as long as users' browsers can reach
+it (LAN, VPN, Tailscale, or a tunnel). **SCIM provisioning is the
+exception**: the IdP calls your server directly, which requires a tunnel or
+a public URL — see [provision users with SCIM](/manual/guides/sso-scim).
+:::
