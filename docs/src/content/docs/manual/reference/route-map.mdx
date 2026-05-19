@@ -1,0 +1,69 @@
+---
+title: Route map
+description: All routes in Control Center and their corresponding screens.
+---
+
+## App shell
+
+The app shell (`ControlCenterLayout`) wraps every route via a `ShellRoute`. `/splash` and `/onboarding` render full-screen outside the shell.
+
+The auth guard redirects to `/onboarding` until GitHub auth (PAT or `gh` CLI) and at least one workspace exist.
+
+## Routes
+
+| Path | Screen |
+|---|---|
+| `/splash` | Startup splash — resolves onboarding gate |
+| `/onboarding` | API keys + first workspace setup (full-screen) |
+| `/dashboard` | Global dashboard with system metrics |
+| `/pull-requests` | PR list |
+| `/pull-requests/compose` | Compose a new pull request |
+| `/pull-requests/:prNumber` | PR detail with diff viewer |
+| `/agents` | Agent registry |
+| `/messaging` | Agent chat + channels |
+| `/tickets` | Ticket board |
+| `/tickets/:ticketId` | Ticket master-detail |
+| `/projects/:projectId` | Project overview |
+| `/meetings` | Meetings list with stats |
+| `/meetings/record` | Live meeting recording HUD |
+| `/meetings/:meetingId` | Meeting detail — notes, transcript, action items, decisions |
+| `/calendar` | Calendar — month / week / agenda views |
+| `/calendar/:eventId` | Calendar event detail (master-detail) |
+| `/newsfeed` | Newsfeed list |
+| `/newsfeed/settings` | Feed management |
+| `/newsfeed/article/:articleId` | Article webview |
+| `/workspaces` | Workspace list |
+| `/workspaces/:workspaceId` | Workspace detail |
+| `/analytics` | Analytics overview |
+| `/analytics/agents/:agentId` | Agent analytics detail |
+| `/pipelines` | Pipeline template list |
+| `/pipelines/run` | Pipeline run launcher |
+| `/pipelines/:runId` | Pipeline run detail |
+| `/memory` | Workspace knowledge memory |
+| `/users/:login` | GitHub user profile |
+| `/api-keys` | API key management |
+| `/settings/*` | Settings screens |
+
+## Settings sub-routes
+
+| Path | Screen |
+|---|---|
+| `/settings/appearance` | Theme, font, density |
+| `/settings/notifications` | Notification preferences |
+| `/settings/integrations` | GitHub, Linear connections |
+| `/settings/advanced` | Advanced configuration |
+| `/settings/adapters` | Adapter detection and registration |
+| `/settings/agents` | Agent defaults |
+| `/settings/repositories` | Global repo management |
+| `/settings/skills` | Skill configuration |
+| `/settings/keybindings` | Keyboard shortcut customization |
+| `/settings/sandboxing` | Sandbox backend and policies |
+| `/settings/pipelines` | Pipeline defaults |
+| `/settings/teams` | Team management |
+
+## Route configuration
+
+- **Router**: `go_router` configured in `lib/router/app_router.dart`
+- **Route constants**: `lib/router/routes.dart`
+- **Auth guards**: `lib/router/guards.dart`
+- **Onboarding gate**: `lib/features/auth/providers/onboarding_providers.dart`

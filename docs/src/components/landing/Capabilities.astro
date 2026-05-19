@@ -1,0 +1,157 @@
+---
+// Capabilities — tabbed product capabilities section.
+// Tab buttons toggle aria-selected; a script toggles data-active on the panels.
+---
+
+<section id="capabilities" class="py-[clamp(56px,9vw,80px)]">
+  <div class="wrap">
+    <div class="cap-head reveal flex justify-between items-end gap-6 flex-wrap mb-9 md:mb-9 max-md:mb-[26px]">
+      <div>
+        <span class="eyebrow">One vocabulary, end to end</span>
+        <h2 class="text-[clamp(30px,4vw,48px)] leading-[1.0] tracking-[-0.025em] max-w-[16ch] mt-4">Command the work, not the chaos.</h2>
+      </div>
+      <div class="tabs flex gap-1 border border-border rounded-sm p-1 bg-panel flex-wrap" role="tablist" aria-label="Capabilities">
+        <button class="tab px-4 py-[9px] text-sm text-muted rounded-sm whitespace-nowrap transition-[background,color] duration-150 hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on" role="tab" id="tab-review" aria-selected="true" aria-controls="panel-review">Review</button>
+        <button class="tab px-4 py-[9px] text-sm text-muted rounded-sm whitespace-nowrap transition-[background,color] duration-150 hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on" role="tab" id="tab-pipelines" aria-selected="false" aria-controls="panel-pipelines">Pipelines</button>
+        <button class="tab px-4 py-[9px] text-sm text-muted rounded-sm whitespace-nowrap transition-[background,color] duration-150 hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on" role="tab" id="tab-presence" aria-selected="false" aria-controls="panel-presence">Agents</button>
+        <button class="tab px-4 py-[9px] text-sm text-muted rounded-sm whitespace-nowrap transition-[background,color] duration-150 hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on" role="tab" id="tab-isolation" aria-selected="false" aria-controls="panel-isolation">Sandbox &amp; API</button>
+      </div>
+    </div>
+
+    <!-- Presence -->
+    <div class="cap-panel hidden data-[active=true]:block" tabindex="0" id="panel-presence" role="tabpanel" aria-labelledby="tab-presence" data-active="false">
+      <div class="split grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-[clamp(28px,5vw,64px)] items-center">
+        <div>
+          <h3 class="text-[clamp(24px,2.6vw,32px)] leading-[1.05] tracking-[-0.02em]">See what every agent is doing.</h3>
+          <p class="text-muted mt-4 max-w-[36em]">Thinking, running, blocked, failed, idle — each state reads differently at a glance. Presence is earned by representing the agent model truthfully, never by decoration.</p>
+          <ul class="feat-list list-none m-0 mt-[22px] p-0 flex flex-col gap-3">
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Thinking, running, blocked, failed, idle — every state reads at a glance.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Live token cost and last-output age per run.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Ownership and attribution stay legible for team use.</li>
+          </ul>
+        </div>
+        <div class="mini order-2 lg:order-none bg-panel border border-border rounded-lg shadow-soft overflow-hidden">
+          <div class="mini-head flex items-center gap-[10px] px-[15px] py-3 border-b border-border"><span class="t text-[12.5px]">Fleet</span><span class="s font-mono text-[11px] text-muted ml-auto">6 agents · 3 running</span></div>
+          <div class="mini-body py-[6px]">
+            <div class="agent grid grid-cols-[26px_1fr_auto] max-[720px]:grid-cols-[24px_1fr] items-center gap-3 px-4 py-[11px] [&+.agent]:border-t [&+.agent]:border-border-soft hover:bg-hover"><span class="ava w-[26px] h-[26px] rounded-sm grid place-items-center font-mono text-[11px] text-accent-on bg-inverse-surface">EN</span><span class="agent-id flex flex-col gap-[2px] min-w-0"><span class="agent-name text-[13.5px] tracking-[-0.01em]">Engineer</span><span class="agent-task mono font-mono text-[11px] text-muted whitespace-nowrap overflow-hidden text-ellipsis">core-api/feat-broker</span></span><span class="pill run inline-flex items-center gap-[7px] font-mono text-[11px] tracking-[0.02em] px-[9px] py-1 rounded-sm border whitespace-nowrap text-success bg-success-soft border-[color-mix(in_oklab,var(--color-success),transparent_70%)] max-[720px]:col-start-2 max-[720px]:justify-self-start"><svg class="ic w-[11px] h-[11px] flex-none" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="currentColor"/></svg>Running</span></div>
+            <div class="agent grid grid-cols-[26px_1fr_auto] max-[720px]:grid-cols-[24px_1fr] items-center gap-3 px-4 py-[11px] [&+.agent]:border-t [&+.agent]:border-border-soft hover:bg-hover"><span class="ava w-[26px] h-[26px] rounded-sm grid place-items-center font-mono text-[11px] text-accent-on bg-inverse-surface">QA</span><span class="agent-id flex flex-col gap-[2px] min-w-0"><span class="agent-name text-[13.5px] tracking-[-0.01em]">QA</span><span class="agent-task font-mono text-[11px] text-muted whitespace-nowrap overflow-hidden text-ellipsis">awaiting approval</span></span><span class="pill block inline-flex items-center gap-[7px] font-mono text-[11px] tracking-[0.02em] px-[9px] py-1 rounded-sm border whitespace-nowrap text-[color-mix(in_oklab,var(--color-warn),var(--color-fg)_22%)] bg-warn-soft border-[color-mix(in_oklab,var(--color-warn),transparent_60%)] max-[720px]:col-start-2 max-[720px]:justify-self-start"><svg class="ic w-[11px] h-[11px] flex-none" viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.4" height="8" fill="currentColor"/><rect x="7.1" y="2" width="2.4" height="8" fill="currentColor"/></svg>Blocked</span></div>
+            <div class="agent grid grid-cols-[26px_1fr_auto] max-[720px]:grid-cols-[24px_1fr] items-center gap-3 px-4 py-[11px] [&+.agent]:border-t [&+.agent]:border-border-soft hover:bg-hover"><span class="ava w-[26px] h-[26px] rounded-sm grid place-items-center font-mono text-[11px] text-accent-on bg-inverse-surface">DO</span><span class="agent-id flex flex-col gap-[2px] min-w-0"><span class="agent-name text-[13.5px] tracking-[-0.01em]">DevOps</span><span class="agent-task mono font-mono text-[11px] text-muted whitespace-nowrap overflow-hidden text-ellipsis">pipeline · analyze</span></span><span class="pill fail inline-flex items-center gap-[7px] font-mono text-[11px] tracking-[0.02em] px-[9px] py-1 rounded-sm border whitespace-nowrap text-danger bg-danger-soft border-[color-mix(in_oklab,var(--color-danger),transparent_70%)] max-[720px]:col-start-2 max-[720px]:justify-self-start"><svg class="ic w-[11px] h-[11px] flex-none" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3 L9 9 M9 3 L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Failed</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Review -->
+    <div class="cap-panel hidden data-[active=true]:block" tabindex="0" id="panel-review" role="tabpanel" aria-labelledby="tab-review" data-active="true">
+      <div class="split grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-[clamp(28px,5vw,64px)] items-center">
+        <div>
+          <h3 class="text-[clamp(24px,2.6vw,32px)] leading-[1.05] tracking-[-0.02em]">Review and merge what the fleet ships.</h3>
+          <p class="text-muted mt-4 max-w-[36em]">Priority pull requests surface first. Read the diff, drop inline comments, dispatch reviewer agents, and land a ship / hold / block verdict — without leaving the deck.</p>
+          <ul class="feat-list list-none m-0 mt-[22px] p-0 flex flex-col gap-3">
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Inline threads with GitHub sync and suggested edits.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>AI reviewers with P0–P3 findings and a rolled-up verdict.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>An ephemeral focus mode for distraction-free review.</li>
+          </ul>
+        </div>
+        <div class="mini order-2 lg:order-none bg-panel border border-border rounded-lg shadow-soft overflow-hidden">
+          <div class="mini-head flex items-center gap-[10px] px-[15px] py-3 border-b border-border"><span class="t text-[12.5px]">Priority reviews</span><span class="s font-mono text-[11px] text-muted ml-auto">3 awaiting you</span></div>
+          <div class="mini-body py-[6px]">
+            <div class="pr px-[15px] py-[13px] [&+.pr]:border-t [&+.pr]:border-border-soft">
+              <div class="pr-top flex items-center gap-[10px]"><span class="pr-repo font-mono text-[11px] text-muted">web-client</span><span class="pill block ml-auto inline-flex items-center gap-[7px] font-mono text-[11px] tracking-[0.02em] px-[9px] py-1 rounded-sm border whitespace-nowrap text-[color-mix(in_oklab,var(--color-warn),var(--color-fg)_22%)] bg-warn-soft border-[color-mix(in_oklab,var(--color-warn),transparent_60%)]"><svg class="ic w-[11px] h-[11px] flex-none" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="2.2" fill="currentColor"/></svg>Review requested</span></div>
+              <div class="pr-title text-sm tracking-[-0.01em] mt-[6px]">#1642 · Debounce workspace switcher fetches</div>
+              <div class="pr-meta flex items-center gap-[14px] mt-[10px] font-mono text-[11px] text-muted flex-wrap">
+                <span class="branch inline-flex items-center gap-[6px]"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="4" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="12" cy="6" r="1.6"/><path d="M4 5.6v4.8M5.6 4H9a2 2 0 012 2"/></svg>feat/debounce-switch</span>
+                <span><span class="diff-add text-success">+128</span> <span class="diff-del text-danger">−34</span></span>
+                <span class="revs flex"><span class="rev w-[19px] h-[19px] rounded-full grid place-items-center font-mono text-[9px] text-accent-on bg-inverse-surface border-[1.5px] border-panel">VA</span><span class="rev w-[19px] h-[19px] rounded-full grid place-items-center font-mono text-[9px] text-accent-on bg-inverse-surface border-[1.5px] border-panel -ml-[6px]">NU</span></span>
+              </div>
+            </div>
+            <div class="pr px-[15px] py-[13px] [&+.pr]:border-t [&+.pr]:border-border-soft">
+              <div class="pr-top flex items-center gap-[10px]"><span class="pr-repo font-mono text-[11px] text-muted">design-system</span><span class="pill run ml-auto inline-flex items-center gap-[7px] font-mono text-[11px] tracking-[0.02em] px-[9px] py-1 rounded-sm border whitespace-nowrap text-success bg-success-soft border-[color-mix(in_oklab,var(--color-success),transparent_70%)]"><svg class="ic w-[11px] h-[11px] flex-none" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>Ship</span></div>
+              <div class="pr-title text-sm tracking-[-0.01em] mt-[6px]">#318 · Cache parsed Drift schema on open</div>
+              <div class="pr-meta flex items-center gap-[14px] mt-[10px] font-mono text-[11px] text-muted flex-wrap">
+                <span class="branch inline-flex items-center gap-[6px]"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="4" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="12" cy="6" r="1.6"/><path d="M4 5.6v4.8M5.6 4H9a2 2 0 012 2"/></svg>perf/schema-cache</span>
+                <span><span class="diff-add text-success">+61</span> <span class="diff-del text-danger">−9</span></span>
+                <span class="revs flex"><span class="rev w-[19px] h-[19px] rounded-full grid place-items-center font-mono text-[9px] text-accent-on bg-inverse-surface border-[1.5px] border-panel">VA</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pipelines -->
+    <div class="cap-panel hidden data-[active=true]:block" tabindex="0" id="panel-pipelines" role="tabpanel" aria-labelledby="tab-pipelines" data-active="false">
+      <div class="split grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-[clamp(28px,5vw,64px)] items-center">
+        <div>
+          <h3 class="text-[clamp(24px,2.6vw,32px)] leading-[1.05] tracking-[-0.02em]">Orchestrate the fleet as a DAG.</h3>
+          <p class="text-muted mt-4 max-w-[36em]">Compose steps into a graph — prompt an agent, run a script, fan out reviewers, join the results. Runs start by hand, on a schedule, or off a domain event, and every node carries its own retry and continue-on-fail policy.</p>
+          <ul class="feat-list list-none m-0 mt-[22px] p-0 flex flex-col gap-3">
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Three triggers — manual, scheduled, or domain-event.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Router and join nodes for conditional, parallel work.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Resumable runs that survive a restart mid-flight.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Per-run cost and token totals rolled up.</li>
+          </ul>
+        </div>
+        <div class="mini order-2 lg:order-none bg-panel border border-border rounded-lg shadow-soft overflow-hidden">
+          <div class="mini-head flex items-center gap-[10px] px-[15px] py-3 border-b border-border"><span class="t text-[12.5px]">Run · review-incoming-pr</span><span class="s mono font-mono text-[11px] text-muted ml-auto">#run_8f3a</span></div>
+          <div class="flex flex-wrap gap-[6px] px-4 pt-3">
+            <span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">trigger · pr.opened</span>
+            <span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">retries · 3</span>
+            <span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">continue-on-fail</span>
+          </div>
+          <div class="dag px-[18px] py-[22px] flex items-center gap-0 max-[720px]:gap-[6px] flex-wrap">
+            <span class="node border border-border rounded-sm bg-bg px-3 py-[9px] text-[12.5px] flex items-center gap-2 relative [&_.ic]:text-success"><svg class="ic w-3 h-3 flex-none" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>Trigger</span>
+            <span class="edge w-[22px] h-px bg-line-strong flex-none"></span>
+            <span class="node border border-border rounded-sm bg-bg px-3 py-[9px] text-[12.5px] flex items-center gap-2 relative [&_.ic]:text-success"><svg class="ic w-3 h-3 flex-none" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.5 5 9l4.5-5.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>Fan out reviewers</span>
+            <span class="edge w-[22px] h-px bg-line-strong flex-none"></span>
+            <span class="node fail border rounded-sm px-3 py-[9px] text-[12.5px] flex items-center gap-2 relative border-[color-mix(in_oklab,var(--color-danger),transparent_55%)] bg-danger-soft [&_.ic]:text-danger"><svg class="ic w-3 h-3 flex-none" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3 L9 9 M9 3 L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>Analyze architecture</span>
+            <span class="edge w-[22px] h-px bg-line-strong flex-none"></span>
+            <span class="node border border-border rounded-sm bg-bg px-3 py-[9px] text-[12.5px] flex items-center gap-2 relative"><svg class="ic w-3 h-3 flex-none" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>Join · post verdict</span>
+            <span class="dag-note w-full mt-[14px] font-mono text-[11px] text-danger flex gap-[7px] items-center"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 3 L9 9 M9 3 L3 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>ConcurrencyConflictException · attempt 2 of 3 · retrying in 4s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Isolation -->
+    <div class="cap-panel hidden data-[active=true]:block" tabindex="0" id="panel-isolation" role="tabpanel" aria-labelledby="tab-isolation" data-active="false">
+      <div class="split grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-[clamp(28px,5vw,64px)] items-center">
+        <div>
+          <h3 class="text-[clamp(24px,2.6vw,32px)] leading-[1.05] tracking-[-0.02em]">Isolated by default, open by design.</h3>
+          <p class="text-muted mt-4 max-w-[36em]">Each conversation runs over copy-on-write worktrees inside an OS-native sandbox, with credentials minted per launch and revoked on teardown. The same surface is exposed over an open MCP / JSON-RPC API, so anything the app can do, your own tools can drive too.</p>
+          <ul class="feat-list list-none m-0 mt-[22px] p-0 flex flex-col gap-3">
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Seatbelt / bubblewrap isolation, capability controls.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Secrets brokered in memory, never written to disk.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>71 tools over an open MCP / JSON-RPC + REST surface.</li>
+            <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-[2px] text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Mode gating and approval prompts on every call.</li>
+          </ul>
+        </div>
+        <div class="mini order-2 lg:order-none bg-panel border border-border rounded-lg shadow-soft overflow-hidden">
+          <div class="mini-head flex items-center gap-[10px] px-[15px] py-3 border-b border-border"><span class="t text-[12.5px]">Sandbox &amp; API</span><span class="s mono font-mono text-[11px] text-muted ml-auto">rift · CoW</span></div>
+          <div class="iso p-[18px] grid gap-[14px]">
+            <span class="iso-src inline-flex self-start items-center gap-[9px] px-[13px] py-[9px] border border-border rounded-sm bg-bg font-mono text-xs"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="1"/></svg>core-api <span class="text-muted">· source</span></span>
+            <div class="iso-tree grid gap-[9px] pl-5 border-l border-line-strong">
+              <div class="wt flex items-center gap-[10px] px-3 py-[9px] border border-border rounded-sm bg-panel text-[12.5px] relative before:content-[''] before:absolute before:left-[-20px] before:top-1/2 before:w-[18px] before:h-px before:bg-line-strong"><span class="br font-mono text-[11px] text-muted">feat-broker</span><span class="caps flex gap-[6px] ml-auto flex-wrap"><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">git push</span><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">github</span></span></div>
+              <div class="wt flex items-center gap-[10px] px-3 py-[9px] border border-border rounded-sm bg-panel text-[12.5px] relative before:content-[''] before:absolute before:left-[-20px] before:top-1/2 before:w-[18px] before:h-px before:bg-line-strong"><span class="br font-mono text-[11px] text-muted">fix-retry-map</span><span class="caps flex gap-[6px] ml-auto flex-wrap"><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">github</span></span></div>
+              <div class="wt flex items-center gap-[10px] px-3 py-[9px] border border-border rounded-sm bg-panel text-[12.5px] relative before:content-[''] before:absolute before:left-[-20px] before:top-1/2 before:w-[18px] before:h-px before:bg-line-strong"><span class="br font-mono text-[11px] text-muted">spike-acp</span><span class="caps flex gap-[6px] ml-auto flex-wrap"><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">no egress</span></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Fade-in on panel activation (source: .panel[data-active="true"] animation) */
+  .cap-panel[data-active="true"] {
+    animation: cap-fade var(--motion-base, 200ms) var(--ease-standard, cubic-bezier(0.2, 0, 0, 1));
+  }
+  @keyframes cap-fade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cap-panel[data-active="true"] { animation: none; }
+  }
+</style>

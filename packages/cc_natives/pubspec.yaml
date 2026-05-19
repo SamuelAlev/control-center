@@ -1,0 +1,36 @@
+name: cc_natives
+description: >-
+  Dart FFI surface for Control Center's runtime-loaded native libraries — rift
+  (copy-on-write git worktrees), fff (fast file search), tree-sitter (code
+  indexing) and aec (acoustic echo cancellation). This package owns ONLY the
+  Dart bindings, loaders and path resolution; it builds NO native code. The
+  dylibs themselves are produced by scripts/natives/*.sh and loaded at runtime
+  via dart:ffi DynamicLibrary.open, with graceful degradation when absent.
+#
+# Intentionally NOT a Flutter plugin / ffiPlugin. Converting it to one would
+# move native compilation into `flutter build` (no continue-on-error there),
+# make cargo/meson/ninja/C++ mandatory for every contributor, collapse
+# tree-sitter to a single build-time dylib (killing runtime grammar download),
+# and destroy the install-to-app-support dev loop. Keep it a plain Dart leaf.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  ffi: ^2.2.0
+  path: ^1.9.1
+  crypto: ^3.0.7
+  dio: ^5.9.2
+  meta: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0

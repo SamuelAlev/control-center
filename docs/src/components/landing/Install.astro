@@ -1,0 +1,127 @@
+---
+---
+
+<section
+  id="install"
+  class="border-t border-border bg-[color-mix(in_oklab,var(--color-panel)_55%,var(--color-bg))] py-[clamp(56px,9vw,80px)]"
+>
+  <div class="wrap">
+    <span class="eyebrow reveal">Available now</span>
+    <h2 class="reveal mt-4 text-[clamp(32px,5vw,56px)] leading-[1.0] tracking-[-0.03em]">Install Control Center.</h2>
+    <p class="reveal mt-4 max-w-[48ch] text-muted text-[clamp(16px,1.4vw,18px)]">A native desktop build, shipping today on macOS. Windows and Linux are close behind.</p>
+
+    <div
+      class="reveal mt-[30px] flex w-max max-w-full flex-wrap gap-1 rounded-sm border border-border bg-panel p-1"
+      role="tablist"
+      aria-label="Operating system"
+    >
+      <button
+        class="os-tab inline-flex items-center gap-[9px] rounded-sm px-4 py-[9px] text-sm text-muted transition-[background,color] duration-[var(--motion-fast)] hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on"
+        role="tab"
+        id="os-mac"
+        aria-selected="true"
+        aria-controls="panel-mac"
+      >macOS</button>
+      <button
+        class="os-tab inline-flex items-center gap-[9px] rounded-sm px-4 py-[9px] text-sm text-muted transition-[background,color] duration-[var(--motion-fast)] hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on"
+        role="tab"
+        id="os-win"
+        aria-selected="false"
+        aria-controls="panel-win"
+      >Windows <span class="rounded-sm bg-surface px-[6px] py-[2px] font-mono text-[9px] tracking-[.08em] uppercase text-idle [[aria-selected=true]>&]:bg-accent-on/18 [[aria-selected=true]>&]:text-accent-on/75">Soon</span></button>
+      <button
+        class="os-tab inline-flex items-center gap-[9px] rounded-sm px-4 py-[9px] text-sm text-muted transition-[background,color] duration-[var(--motion-fast)] hover:text-fg aria-selected:bg-inverse-surface aria-selected:text-accent-on"
+        role="tab"
+        id="os-linux"
+        aria-selected="false"
+        aria-controls="panel-linux"
+      >Linux <span class="rounded-sm bg-surface px-[6px] py-[2px] font-mono text-[9px] tracking-[.08em] uppercase text-idle [[aria-selected=true]>&]:bg-accent-on/18 [[aria-selected=true]>&]:text-accent-on/75">Soon</span></button>
+    </div>
+
+    <!-- macOS — available -->
+    <div
+      class="os-panel reveal mt-[22px] hidden max-w-[680px] data-[active=true]:block"
+      id="panel-mac"
+      role="tabpanel"
+      aria-labelledby="os-mac"
+      data-active="true"
+    >
+      <div class="overflow-hidden rounded-lg bg-inverse-surface shadow-soft">
+        <div class="flex items-center gap-[7px] border-b border-accent-on/12 px-[14px] py-[11px]">
+          <i class="h-[11px] w-[11px] rounded-full bg-accent-on/28"></i><i class="h-[11px] w-[11px] rounded-full bg-accent-on/28"></i><i class="h-[11px] w-[11px] rounded-full bg-accent-on/28"></i><span class="ml-2 font-mono text-[11px] text-accent-on/55">zsh — install</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-[14px] p-4 min-[720px]:flex-nowrap">
+          <div class="flex min-w-0 flex-[1] flex-col gap-[9px]">
+            <code class="min-w-0 flex-none overflow-x-auto whitespace-nowrap font-mono text-[clamp(13px,1.5vw,15px)] text-accent-on"><span class="select-none text-sunshine-300">$ </span>brew tap control-center/tap</code>
+            <code class="min-w-0 flex-none overflow-x-auto whitespace-nowrap font-mono text-[clamp(13px,1.5vw,15px)] text-accent-on"><span class="select-none text-sunshine-300">$ </span>brew install --cask control-center</code>
+          </div>
+          <button
+            class="copy-btn flex-none inline-flex w-full items-center justify-center gap-[7px] rounded-sm border border-accent-on/20 bg-accent-on/12 px-3 py-2 font-mono text-xs text-accent-on transition-[background,color] duration-[var(--motion-fast)] hover:not-disabled:bg-accent-on/22 disabled:cursor-not-allowed disabled:opacity-[.65] [&.copied]:text-[color-mix(in_oklab,var(--color-success),var(--color-accent-on)_30%)] [&.copied]:border-[color-mix(in_oklab,var(--color-success),transparent_50%)] min-[720px]:w-auto min-[720px]:justify-start"
+            type="button"
+            data-copy="brew tap control-center/tap && brew install --cask control-center"
+            aria-label="Copy install commands"
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M11 5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2"/></svg>
+            <span class="copy-label">Copy</span>
+          </button>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-[14px] text-sm text-muted">
+        <span>Prefer a direct download?</span>
+        <a class="btn btn-secondary btn-sm" href="https://github.com/SamuelAlev/control-center/releases/latest" target="_blank" rel="noopener noreferrer">Download .dmg · Apple Silicon</a>
+      </div>
+    </div>
+
+    <!-- Windows — disabled for now -->
+    <div
+      class="os-panel mt-[22px] hidden max-w-[680px] data-[active=true]:block"
+      id="panel-win"
+      role="tabpanel"
+      aria-labelledby="os-win"
+      data-active="false"
+    >
+      <div class="overflow-hidden rounded-lg bg-inverse-surface opacity-50 grayscale-[.35] shadow-soft">
+        <div class="flex items-center gap-[7px] border-b border-accent-on/12 px-[14px] py-[11px]">
+          <i class="h-[11px] w-[11px] rounded-full bg-accent-on/28"></i><i class="h-[11px] w-[11px] rounded-full bg-accent-on/28"></i><i class="h-[11px] w-[11px] rounded-full bg-accent-on/28"></i><span class="ml-2 font-mono text-[11px] text-accent-on/55">powershell — install</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-[14px] p-4 min-[720px]:flex-nowrap">
+          <code class="min-w-0 flex-[1] overflow-x-auto whitespace-nowrap font-mono text-[clamp(13px,1.5vw,15px)] text-accent-on"><span class="select-none text-sunshine-300">&gt; </span>choco install control-center</code>
+          <button
+            class="copy-btn flex-none inline-flex w-full items-center justify-center gap-[7px] rounded-sm border border-accent-on/20 bg-accent-on/12 px-3 py-2 font-mono text-xs text-accent-on transition-[background,color] duration-[var(--motion-fast)] hover:not-disabled:bg-accent-on/22 disabled:cursor-not-allowed disabled:opacity-[.65] [&.copied]:text-[color-mix(in_oklab,var(--color-success),var(--color-accent-on)_30%)] [&.copied]:border-[color-mix(in_oklab,var(--color-success),transparent_50%)] min-[720px]:w-auto min-[720px]:justify-start"
+            type="button"
+            disabled
+            aria-label="Windows build coming soon"
+          >
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="5" width="9" height="9" rx="1"/><path d="M11 5V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h2"/></svg>
+            <span class="copy-label">Soon</span>
+          </button>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-[14px] text-sm text-muted">
+        <span>Or a direct download:</span>
+        <a class="btn btn-secondary btn-sm opacity-50 pointer-events-none" href="#" aria-disabled="true" tabindex="-1">Download .exe</a>
+      </div>
+      <div class="mt-4 inline-flex items-center gap-[10px] font-mono text-[12.5px] text-muted">
+        <span class="badge flex-none border border-border bg-surface text-idle">Coming soon</span>Chocolatey and a signed Windows installer are in testing.
+      </div>
+    </div>
+
+    <!-- Linux — disabled for now -->
+    <div
+      class="os-panel mt-[22px] hidden max-w-[680px] data-[active=true]:block"
+      id="panel-linux"
+      role="tabpanel"
+      aria-labelledby="os-linux"
+      data-active="false"
+    >
+      <div class="px-1 py-[26px]">
+        <div class="mt-0 inline-flex items-center gap-[10px] font-mono text-[12.5px] text-muted">
+          <span class="badge flex-none border border-border bg-surface text-idle">Coming soon</span>A Linux build — AppImage with a bubblewrap sandbox — is on the roadmap.
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-6 font-mono text-xs text-idle">Free and open source · auto-updates · macOS 13 or later.</p>
+    <p class="reveal mt-3 text-sm text-muted">New to Control Center? Start with the <a class="text-fg underline underline-offset-2 decoration-border hover:decoration-fg" href="/manual/quick-start/">quick-start guide</a>, or browse the <a class="text-fg underline underline-offset-2 decoration-border hover:decoration-fg" href="/manual/">full documentation</a>.</p>
+  </div>
+</section>

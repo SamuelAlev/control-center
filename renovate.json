@@ -1,0 +1,128 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+  "schedule": ["before 9am on the first day of the month"],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  },
+  "customManagers": [
+    {
+      "description": "rift FFI source pin (RIFT_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "RIFT_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "anomalyco/rift",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "fff (fast file finder) source pin (FFF_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "FFF_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "dmtrKovalenko/fff",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter runtime source pin (TREE_SITTER_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "TREE_SITTER_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-javascript grammar pin (TS_JAVASCRIPT_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "TS_JAVASCRIPT_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-javascript",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-typescript grammar pin (TS_TYPESCRIPT_REF; covers typescript + tsx)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "TS_TYPESCRIPT_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-typescript",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-php grammar pin (TS_PHP_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "TS_PHP_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-php",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-dart grammar pin (TS_DART_REF; no releases — track master HEAD)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": ["TS_DART_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})"],
+      "depNameTemplate": "UserNobody14/tree-sitter-dart",
+      "datasourceTemplate": "git-refs",
+      "currentValueTemplate": "master"
+    },
+    {
+      "description": "webrtc-audio-processing (AEC3) source pin (WAP_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/natives/build_.+\\.sh$/",
+        "/\\.github/workflows/release\\.yml$/"
+      ],
+      "matchStrings": [
+        "WAP_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "pulseaudio/webrtc-audio-processing",
+      "datasourceTemplate": "gitlab-tags",
+      "registryUrlTemplate": "https://gitlab.freedesktop.org"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Bump the tree-sitter runtime + all grammars together so the ABI stays consistent.",
+      "matchPackageNames": [
+        "tree-sitter/tree-sitter",
+        "tree-sitter/tree-sitter-javascript",
+        "tree-sitter/tree-sitter-typescript",
+        "tree-sitter/tree-sitter-php",
+        "UserNobody14/tree-sitter-dart"
+      ],
+      "groupName": "tree-sitter native libs"
+    }
+  ]
+}

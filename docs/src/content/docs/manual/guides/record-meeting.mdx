@@ -1,0 +1,71 @@
+---
+title: Record and summarize a meeting
+description: Record a call, get a transcript, and turn it into notes, action items, and decisions.
+---
+
+This guide shows you how to record a meeting and get an AI-generated writeup. Everything runs on-device — see [Meetings and transcription](/manual/concepts/meetings/) for how it works.
+
+## Before you start
+
+- Grant Control Center **microphone** permission when prompted (your OS asks on first record).
+- On macOS, system-audio capture is driver-free — no extra setup. On Linux, make sure a PipeWire/PulseAudio session is running.
+
+## Start a recording
+
+1. Open **Meetings** in the sidebar.
+2. Click **Record**. The live recording HUD opens at `/meetings/record`.
+3. Pick the mode if prompted:
+   - **Remote** — captures your mic plus the system audio (the other participants).
+   - **In person** — captures the room through your mic.
+
+Recording starts immediately. The HUD shows a level meter, the elapsed time, and a live transcript building up on one side.
+
+## During the meeting
+
+- **Take rough notes** in the notes pane. They're saved as you type and handed to the summary agent later, so jot down anything the transcript might miss.
+- **Pause and resume** with the pause control — transcription stops while paused and the timer freezes.
+- The transcript streams in speaker-tagged: your words as **me**, everyone else as **them**.
+
+## Stop and summarize
+
+1. Click **Stop**.
+2. The meeting moves to **processing** — diarization splits the remote channel into individual speakers, and the `meeting_summary` pipeline generates the writeup.
+3. When it finishes, the meeting flips to **done** and opens its detail view.
+
+You don't have to wait on the summary — stopping returns immediately, and the meeting finishes processing in the background.
+
+## Review the writeup
+
+The meeting detail (`/meetings/:meetingId`) has four tabs:
+
+| Tab | What's there |
+|---|---|
+| **Notes** | The AI summary and enhanced notes, built from your rough notes + the transcript |
+| **Transcript** | The full speaker-tagged transcript with timestamps |
+| **Action items** | Extracted to-dos, each with an optional owner |
+| **Decisions** | Decisions captured during the call |
+
+From here you can:
+
+- **Rename speakers** — change `Person 1` to a real name; it applies across the transcript.
+- **Check off action items** as you complete them.
+- **Link an action item to a ticket** to hand it to an agent — see [Delegate work to agents](/manual/guides/delegate-tickets/).
+- **Re-run the summary** if you want a fresh pass (for example after renaming speakers).
+
+## Record straight from a calendar event
+
+If you've [connected a calendar](/manual/guides/connect-calendar/), you can skip the manual start:
+
+1. Open the event from **Calendar** or the **"meeting starting soon"** notification.
+2. Click **Start recording & link**.
+
+The recording is seeded with the event's title and linked back to it, so the notes and the calendar entry stay connected.
+
+## Related guides
+
+- [Connect a Google Calendar](/manual/guides/connect-calendar/)
+- [Delegate work to agents](/manual/guides/delegate-tickets/)
+
+## Related concepts
+
+- [Meetings and transcription](/manual/concepts/meetings/)

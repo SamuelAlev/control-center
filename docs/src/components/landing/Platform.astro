@@ -1,0 +1,127 @@
+<section class="specs border-t border-border py-[clamp(56px,9vw,80px)]" id="under-hood">
+  <div class="wrap">
+    <div class="under-head reveal from-left max-w-[62ch]">
+      <span class="eyebrow">The platform</span>
+      <h2 class="text-[clamp(30px,4.4vw,56px)] leading-[1.0] tracking-[-0.03em] mt-4">Four systems that keep a fleet legible.</h2>
+      <p class="text-muted text-[clamp(16px,1.4vw,18px)] mt-[18px] max-w-[48ch]">Agents, review and pipelines all sit on the same foundation. Each system below exists so an agent starts a run with more context — and you keep more control — than the run before it.</p>
+    </div>
+
+    <!-- 01 · Memory -->
+    <div class="feature grid grid-cols-1 lg:grid-cols-2 gap-[30px] lg:gap-[clamp(32px,5vw,72px)] items-center py-[clamp(40px,6vw,64px)] pt-[clamp(36px,5vw,52px)]">
+      <div class="feature-text reveal from-left">
+        <span class="feature-num font-mono text-xs tracking-[0.14em] text-accent uppercase">01 · Memory</span>
+        <h3 class="text-[clamp(24px,2.8vw,34px)] leading-[1.04] tracking-[-0.025em] mt-3">Memory that compounds across runs.</h3>
+        <p class="text-muted text-[clamp(15px,1.3vw,17px)] mt-4 max-w-[40em]">Every workspace keeps facts, policies and domains in one hybrid store — full-text and vector search over a knowledge graph. An agent opens its run with the context the last run earned, gated to exactly what its role is allowed to read.</p>
+        <ul class="feat-list list-none mt-[22px] p-0 flex flex-col gap-3">
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Hybrid FTS + vector retrieval over a single graph.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Facts, policies and domains as first-class nodes.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Role-gated reads — no agent sees beyond its scope.</li>
+        </ul>
+      </div>
+      <div class="viz reveal from-right order-2 lg:order-none bg-panel border border-border rounded-lg shadow-golden overflow-hidden">
+        <div class="viz-head px-[15px] py-[11px] border-b border-border flex items-center gap-[9px] text-[12.5px]"><svg class="vic w-[14px] h-[14px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="2"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3M3 3l2 2M11 11l2 2M13 3l-2 2M5 11l-2 2"/></svg>Workspace memory<span class="s ml-auto font-mono text-[11px] text-muted">role-gated</span></div>
+        <div class="viz-body p-4">
+          <div class="mem-row flex items-center gap-3 py-[10px] text-[13px]"><span class="mem-k font-mono text-[10px] text-idle w-[56px] flex-none uppercase tracking-[0.06em]">Fact</span><span class="mem-v text-fg tracking-[-0.01em]">Payments flow through the broker service.</span><span class="mem-tag ml-auto font-mono text-[10px] text-muted border border-border rounded-sm px-[7px] py-0.5 flex-none">vector</span></div>
+          <div class="mem-row flex items-center gap-3 py-[10px] text-[13px] border-t border-border-soft"><span class="mem-k font-mono text-[10px] text-idle w-[56px] flex-none uppercase tracking-[0.06em]">Policy</span><span class="mem-v text-fg tracking-[-0.01em]">No schema change without a review agent.</span><span class="mem-tag ml-auto font-mono text-[10px] text-muted border border-border rounded-sm px-[7px] py-0.5 flex-none">graph</span></div>
+          <div class="mem-row flex items-center gap-3 py-[10px] text-[13px] border-t border-border-soft"><span class="mem-k font-mono text-[10px] text-idle w-[56px] flex-none uppercase tracking-[0.06em]">Domain</span><span class="mem-v text-fg tracking-[-0.01em]">Billing · 42 symbols · 6 owners</span><span class="mem-tag ml-auto font-mono text-[10px] text-muted border border-border rounded-sm px-[7px] py-0.5 flex-none">fts</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 02 · Code graph -->
+    <div class="feature grid grid-cols-1 lg:grid-cols-2 gap-[30px] lg:gap-[clamp(32px,5vw,72px)] items-center py-[clamp(40px,6vw,64px)] border-t border-border">
+      <div class="feature-text reveal from-right lg:order-2">
+        <span class="feature-num font-mono text-xs tracking-[0.14em] text-accent uppercase">02 · Code graph</span>
+        <h3 class="text-[clamp(24px,2.8vw,34px)] leading-[1.04] tracking-[-0.025em] mt-3">Your codebase, read as a graph.</h3>
+        <p class="text-muted text-[clamp(15px,1.3vw,17px)] mt-4 max-w-[40em]">A tree-sitter symbol-and-edge index per repo lets an agent jump from a symbol to its callers, its callees and its blast radius before it edits a line — the same impact view you get when you sit down to review the result.</p>
+        <ul class="feat-list list-none mt-[22px] p-0 flex flex-col gap-3">
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Tree-sitter symbol + edge index per repo.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Callers, callees and impact radius on demand.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Powers code search across the whole workspace.</li>
+        </ul>
+      </div>
+      <div class="viz reveal from-left order-2 lg:order-1 bg-panel border border-border rounded-lg shadow-golden overflow-hidden">
+        <div class="viz-head px-[15px] py-[11px] border-b border-border flex items-center gap-[9px] text-[12.5px]"><svg class="vic w-[14px] h-[14px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="8" r="1.8"/><circle cx="12" cy="4" r="1.8"/><circle cx="12" cy="12" r="1.8"/><path d="M5.6 7l5-2.2M5.6 9l5 2.2"/></svg>Code graph<span class="s ml-auto font-mono text-[11px] text-muted">impact radius</span></div>
+        <div class="viz-body graph p-4 grid gap-[9px]">
+          <span class="gnode root inline-flex items-center gap-2 self-start font-mono text-[11.5px] px-[11px] py-[7px] rounded-sm text-fg border border-[color-mix(in_oklab,var(--color-accent),transparent_50%)] bg-accent-soft">resolveTicket()</span>
+          <div class="gchildren grid gap-[9px] pl-[22px] ml-2 border-l border-line-strong">
+            <span class="gedge font-mono text-[10px] text-idle tracking-[0.04em]">called by</span>
+            <span class="gnode inline-flex items-center gap-2 self-start font-mono text-[11.5px] px-[11px] py-[7px] border border-border rounded-sm bg-bg">PipelineRunner.start</span>
+            <span class="gnode inline-flex items-center gap-2 self-start font-mono text-[11.5px] px-[11px] py-[7px] border border-border rounded-sm bg-bg">TicketController.create</span>
+            <span class="gedge font-mono text-[10px] text-idle tracking-[0.04em]">calls</span>
+            <span class="gnode inline-flex items-center gap-2 self-start font-mono text-[11.5px] px-[11px] py-[7px] border border-border rounded-sm bg-bg">acquireLock()</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 03 · MCP -->
+    <div class="feature grid grid-cols-1 lg:grid-cols-2 gap-[30px] lg:gap-[clamp(32px,5vw,72px)] items-center py-[clamp(40px,6vw,64px)] border-t border-border">
+      <div class="feature-text reveal from-left">
+        <span class="feature-num font-mono text-xs tracking-[0.14em] text-accent uppercase">03 · Open tool surface</span>
+        <h3 class="text-[clamp(24px,2.8vw,34px)] leading-[1.04] tracking-[-0.025em] mt-3">Seventy-one tools, one open protocol.</h3>
+        <p class="text-muted text-[clamp(15px,1.3vw,17px)] mt-4 max-w-[40em]">A JSON-RPC server exposes agents, review, the code graph, memory and ticketing to any MCP client. Mode gating and approval prompts sit in front of every call, so a tool can never outrun the policy you set for it.</p>
+        <ul class="feat-list list-none mt-[22px] p-0 flex flex-col gap-3">
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>71 tools over JSON-RPC, spoken by any MCP client.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Mode gating + approval prompts on every call.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>The same surface the app itself is built on.</li>
+        </ul>
+      </div>
+      <div class="viz reveal from-right order-2 lg:order-none bg-panel border border-border rounded-lg shadow-golden overflow-hidden">
+        <div class="viz-head px-[15px] py-[11px] border-b border-border flex items-center gap-[9px] text-[12.5px]"><svg class="vic w-[14px] h-[14px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 11V5l3-2 3 2 3-2 3 2v6M5 11V6.5M8 11V5M11 11V6.5"/></svg>MCP server<span class="s ml-auto font-mono text-[11px] text-muted">JSON-RPC</span></div>
+        <div class="viz-body p-4">
+          <div class="rpc font-mono text-xs leading-[1.7] bg-bg border border-border rounded-sm px-[14px] py-3 text-muted whitespace-pre-wrap"><span class="k text-fg">"method"</span>: <span class="v text-accent">"agents.spawn"</span>,
+          <span class="k text-fg">"params"</span>: &#123; <span class="v text-accent">"role"</span>: <span class="v text-accent">"reviewer"</span>, <span class="v text-accent">"mode"</span>: <span class="v text-accent">"ask"</span> &#125;</div>
+          <div class="mcp-tools flex flex-wrap gap-1.5 mt-[14px]">
+            <span class="mcp-chip on font-mono text-[10.5px] px-2 py-1 rounded-sm text-accent border border-[color-mix(in_oklab,var(--color-accent),transparent_55%)] bg-accent-soft">agents.*</span>
+            <span class="mcp-chip font-mono text-[10.5px] px-2 py-1 border border-border rounded-sm text-muted bg-panel">review.*</span>
+            <span class="mcp-chip font-mono text-[10.5px] px-2 py-1 border border-border rounded-sm text-muted bg-panel">graph.*</span>
+            <span class="mcp-chip font-mono text-[10.5px] px-2 py-1 border border-border rounded-sm text-muted bg-panel">memory.*</span>
+            <span class="mcp-chip font-mono text-[10.5px] px-2 py-1 border border-border rounded-sm text-muted bg-panel">tickets.*</span>
+            <span class="mcp-chip font-mono text-[10.5px] px-2 py-1 border border-border rounded-sm text-muted bg-panel">+65 more</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 04 · Security -->
+    <div class="feature grid grid-cols-1 lg:grid-cols-2 gap-[30px] lg:gap-[clamp(32px,5vw,72px)] items-center py-[clamp(40px,6vw,64px)] border-t border-border">
+      <div class="feature-text reveal from-right lg:order-2">
+        <span class="feature-num font-mono text-xs tracking-[0.14em] text-accent uppercase">04 · Security</span>
+        <h3 class="text-[clamp(24px,2.8vw,34px)] leading-[1.04] tracking-[-0.025em] mt-3">Secure by construction.</h3>
+        <p class="text-muted text-[clamp(15px,1.3vw,17px)] mt-4 max-w-[40em]">Each conversation runs inside an OS-native sandbox — Seatbelt on macOS, bubblewrap on Linux — over copy-on-write worktrees. Credentials are minted per launch, capability-gated, brokered in memory and revoked on teardown. Agents never mutate your source, and secrets never touch disk.</p>
+        <ul class="feat-list list-none mt-[22px] p-0 flex flex-col gap-3">
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Seatbelt / bubblewrap isolation per conversation.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Per-launch, capability-gated credentials.</li>
+          <li class="flex gap-[11px] items-start text-[15px]"><svg class="tick flex-none w-4 h-4 mt-0.5 text-accent" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8.5 6.5 12 13 4"/></svg>Secrets brokered in memory, never written to disk.</li>
+        </ul>
+      </div>
+      <div class="viz reveal from-left order-2 lg:order-1 bg-panel border border-border rounded-lg shadow-golden overflow-hidden">
+        <div class="viz-head px-[15px] py-[11px] border-b border-border flex items-center gap-[9px] text-[12.5px]"><svg class="vic w-[14px] h-[14px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1 2 4v4c0 3.5 2.5 6 6 7 3.5-1 6-3.5 6-7V4L8 1Z"/></svg>Sandbox<span class="s ml-auto font-mono text-[11px] text-muted">per-launch</span></div>
+        <div class="viz-body iso p-[18px] grid gap-[14px]">
+          <span class="iso-src inline-flex self-start items-center gap-[9px] px-[13px] py-[9px] border border-border rounded-sm bg-bg font-mono text-xs"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="12" rx="1"/></svg>seatbelt <span class="text-muted">· macOS</span></span>
+          <div class="iso-tree grid gap-[9px] pl-5 border-l border-line-strong">
+            <div class="wt relative flex items-center gap-2.5 px-3 py-[9px] border border-border rounded-sm bg-panel text-[12.5px] before:content-[''] before:absolute before:left-[-20px] before:top-1/2 before:w-[18px] before:h-px before:bg-line-strong"><span class="br font-mono text-[11px] text-muted">core-api · feat-broker</span><span class="caps flex gap-1.5 ml-auto flex-wrap"><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">git push</span><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">github</span></span></div>
+            <div class="wt relative flex items-center gap-2.5 px-3 py-[9px] border border-border rounded-sm bg-panel text-[12.5px] before:content-[''] before:absolute before:left-[-20px] before:top-1/2 before:w-[18px] before:h-px before:bg-line-strong"><span class="br font-mono text-[11px] text-muted">creds · minted 14:02</span><span class="caps flex gap-1.5 ml-auto flex-wrap"><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">in-memory</span><span class="cap-chip font-mono text-[10px] px-[7px] py-[3px] rounded-sm bg-surface text-muted border border-border">revoked on exit</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- closing fact strip -->
+    <div class="fact-strip reveal from-scale grid grid-cols-2 md:grid-cols-3 gap-0 mt-2 border border-border rounded-lg overflow-hidden bg-panel">
+      <div class="fact p-[20px_22px] border-r border-border-soft last:border-r-0 [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r md:last:border-r-0">
+        <div class="fact-k flex items-center gap-[9px] text-sm tracking-[-0.01em]"><svg class="ic w-[15px] h-[15px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="12" height="9" rx="1"/><path d="M5 14h6M8 11v3"/></svg>Native desktop</div>
+        <div class="fact-v text-muted text-[13px] mt-[9px] leading-[1.5]">A single app for macOS, Windows and Linux. No browser, no server to keep running.</div>
+      </div>
+      <div class="fact p-[20px_22px] border-r border-border-soft last:border-r-0 [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r md:last:border-r-0">
+        <div class="fact-k flex items-center gap-[9px] text-sm tracking-[-0.01em]"><svg class="ic w-[15px] h-[15px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c2 2 2 11 0 13M8 1.5c-2 2-2 11 0 13"/></svg>Seven languages</div>
+        <div class="fact-v text-muted text-[13px] mt-[9px] leading-[1.5]">A fully localized UI, so the deck reads in the operator's own language.</div>
+      </div>
+      <div class="fact p-[20px_22px] border-r border-border-soft last:border-r-0 [&:nth-child(2n)]:border-r-0 md:[&:nth-child(2n)]:border-r md:last:border-r-0">
+        <div class="fact-k flex items-center gap-[9px] text-sm tracking-[-0.01em]"><svg class="ic w-[15px] h-[15px] text-accent flex-none" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1.5" y="4" width="13" height="8" rx="1"/><path d="M4 6.5h0M7 6.5h0M10 6.5h0M5.5 9.5h5"/></svg>Keyboard-first</div>
+        <div class="fact-v text-muted text-[13px] mt-[9px] leading-[1.5]">Every action reachable without a mouse, with a visible focus ring throughout.</div>
+      </div>
+    </div>
+  </div>
+</section>

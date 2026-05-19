@@ -1,0 +1,94 @@
+---
+title: Sandbox and security
+description: How Control Center isolates agent execution with OS-native sandboxes.
+---
+
+## Why sandboxing?
+
+Agents execute arbitrary code — they read files, run shell commands, and interact with external APIs. Without isolation, a misconfigured or misbehaving agent could modify your source checkout, access secrets, or make unintended network requests.
+
+Control Center sandboxes every agent execution so agents can only do what they're explicitly allowed to do.
+
+## Sandbox backends
+
+| Backend | Platform | Description |
+|---|---|---|
+| `native` | macOS, Linux | OS-native sandbox (Seatbelt on macOS, bubblewrap on Linux) |
+| `none` | all | No isolation (opt-out, for development) |
+
+The `native` backend is the default. It provides filesystem isolation, network controls, and capability gating.
+
+The `none` backend disables sandboxing entirely. Use it only for development or when you trust the agent completely.
+
+Previous `docker` and `auto` backends were removed when the in-project native sandbox landed.
+
+## Sandbox lifecycle
+
+1. **Probe** — `SandboxDetectorPort` checks what sandbox capabilities are available on the host
+2. **Launch** — `SandboxPort.launch` starts the sandbox with a `SandboxSpec`:
+   - Bind mounts for the isolated worktree and workspace files
+   - Network/egress policy
+   - Working directory
+   - Conversation mode
+3. **Execute** — the agent CLI runs inside the sandbox
+4. **Events** — the sandbox emits events (stdio, violations, lifecycle) on a stream
+5. **Destroy** — when the agent finishes, the sandbox is torn down
+
+## Capability gating
+
+The `CredentialBroker` mints scoped credentials for each sandbox launch:
+
+- Environment variables with API tokens (GitHub, Linear)
+- Tokens are gated by the agent's capabilities — if the agent doesn't have the "GitHub API" capability, it doesn't receive GitHub tokens
+- Credentials are revoked on sandbox teardown — they never persist in the sandbox filesystem
+
+Capabilities are checked at launch time, not runtime. If an agent tries to access a capability it wasn't granted, the sandbox denies the action and emits a `SandboxViolation` event.
+
+## Filesystem isolation
+
+Agents work in an isolated worktree — a copy-on-write clone of the repo. The source checkout is never mounted into the sandbox. The agent sees only:
+
+- Its worktree (read-write)
+- Workspace configuration files (read-only)
+- Skill and prompt resources (read-only)
+
+On macOS, Seatbelt enforces filesystem rules. On Linux, bubblewrap creates a mount namespace.
+
+## Network controls
+
+Network access is controlled per-sandbox:
+
+- **Full egress** — the agent can make any outbound network request
+- **Restricted** — only whitelisted domains (e.g. api.github.com)
+- **None** — no network access
+
+The network policy is derived from the agent's capabilities and conversation mode.
+
+## Confirmation prompts
+
+For destructive or privileged actions, the sandbox can interrupt the agent and ask the user for confirmation via the `ConfirmationPort`:
+
+- The agent proposes an action (e.g. force-push, delete a branch)
+- A confirmation prompt appears in the channel
+- The user approves or denies
+- The sandbox allows or blocks the action
+
+This provides a safety net for operations that can't be undone.
+
+## Agent diagnostics
+
+The **Agent doctor** runs environment diagnostics to verify that sandboxing is working correctly:
+
+- Sandbox backend detection and availability
+- Database integrity
+- CLI tool availability and versions
+- Disk space and permissions
+- Network connectivity
+
+Run doctor from any agent's context menu, or use the `doctor` MCP tool.
+
+## Related concepts
+
+- [Agent dispatch lifecycle](/manual/concepts/dispatch-lifecycle/) — where sandboxing fits in the dispatch flow
+- [Conversation modes](/manual/concepts/conversation-modes/) — how modes affect sandbox policies
+- [Sandbox backends reference](/manual/reference/sandbox-backends/) — detailed backend configuration

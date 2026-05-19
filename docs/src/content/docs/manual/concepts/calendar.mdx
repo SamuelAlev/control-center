@@ -1,0 +1,57 @@
+---
+title: Calendar and scheduling
+description: How Control Center syncs Google Calendar, alerts you before meetings, and turns events into recordings.
+---
+
+Control Center connects to Google Calendar so your day sits alongside your fleet. It syncs your events, shows them in month, week, and agenda views, warns you before a meeting starts, lets you RSVP to invitations, and turns any event into a recorded, summarized [meeting](/manual/concepts/meetings/) in one click.
+
+## What it changes
+
+Control Center pulls your events into a local store and renders them, and it can **RSVP to invitations** on your behalf. Beyond your own attendance response, it never creates, edits, or deletes calendar entries. Events live in the app's local database and your sign-in tokens in your platform keychain; nothing else is written to Google.
+
+## Per-workspace accounts
+
+Calendar accounts are workspace-scoped, like everything else in Control Center. Each [workspace](/manual/concepts/workspaces/) connects its own Google account (or several), and one workspace's events and tokens are never visible from another. Switching workspaces switches which calendars you see.
+
+A workspace can connect **multiple** Google accounts — a work account and a personal one, say — and their events are merged into the same views.
+
+## How sign-in works
+
+Connecting an account signs you in with Google in your browser, then hands control back to the app. No secret ships in the binary, so a forked build is safe to distribute.
+
+Each account's tokens are stored in your operating-system keychain, scoped per account, so one workspace's calendars are never readable from another. The app refreshes access automatically and, if Google permanently invalidates an account (a revoked or long-expired session), surfaces a **reconnect** banner instead of silently failing.
+
+For running your own Google project, see [Connect a Google Calendar](/manual/guides/connect-calendar/).
+
+## Sync
+
+`CalendarSyncService` pulls a rolling window of each connected account's events — every calendar on the account, not just the primary — on a timer and on demand (app start, connect, manual refresh). Recurring events are expanded server-side, so the app never parses recurrence rules. Navigating to a month outside the current window lazily loads that range. Deleted or moved-out-of-range events are reconciled away on the next sync.
+
+## Views
+
+| View | What it shows |
+|---|---|
+| **Month** | A full month grid (powered by the `kalender` package) |
+| **Week** | A week's timed events |
+| **Agenda** | A scrollable list of upcoming events |
+
+Open the calendar at `/calendar`; selecting an event opens its detail at `/calendar/:eventId`.
+
+## Meeting alerts
+
+A per-minute scheduler scans for events starting within a configurable lead window and fires a **"meeting starting soon"** desktop notification (a `MeetingStartingSoon` [domain event](/manual/concepts/domain-events/)). The notification carries the join URL when one is present, and clicking it opens the event detail — where the **Start recording & link** action lives. Alerts are de-duplicated and persisted, so the same meeting never alerts twice, even across restarts.
+
+## Record and link
+
+From a calendar event you can start a [meeting recording](/manual/concepts/meetings/) seeded with the event's title. Control Center stores a one-to-one link between the recording and the event, so the meeting's notes and the calendar entry stay connected without either feature depending on the other.
+
+## Related concepts
+
+- [Meetings and transcription](/manual/concepts/meetings/) — what happens after you start a recording
+- [Workspaces and isolation](/manual/concepts/workspaces/) — why calendar accounts are per-workspace
+- [Domain events](/manual/concepts/domain-events/) — the `MeetingStartingSoon` and `CalendarAuthExpired` events
+
+## Related guides
+
+- [Connect a Google Calendar](/manual/guides/connect-calendar/)
+- [Record and summarize a meeting](/manual/guides/record-meeting/)

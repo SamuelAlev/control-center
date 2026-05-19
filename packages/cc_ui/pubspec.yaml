@@ -1,0 +1,25 @@
+name: cc_ui
+description: "Control Center design system — tokens, theme, foundation primitives, and components."
+publish_to: "none"
+version: 0.0.1
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^8.1.0
+  lucide_icons_flutter: ^3.1.14+2
+  meta: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
