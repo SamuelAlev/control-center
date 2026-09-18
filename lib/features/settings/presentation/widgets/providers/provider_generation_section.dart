@@ -68,8 +68,8 @@ class _ProviderGenerationSectionState
       badge: configured
           ? SettingsModifiedBadge(label: l10n.providerGenerationOverridden)
           : null,
-      childPadding: const EdgeInsets.only(
-        left: AppSpacing.xl,
+      childPadding: const EdgeInsetsDirectional.only(
+        start: AppSpacing.xl,
         top: AppSpacing.sm,
         bottom: AppSpacing.md,
       ),

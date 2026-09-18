@@ -1,3 +1,4 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/material.dart';
@@ -78,6 +79,61 @@ void main() {
       await tester.pumpWidget(testWrap(const AppearanceSection()));
 
       expect(find.byType(AppearanceSection), findsOneWidget);
+    });
+
+    testWidgets('language picker is a searchable autocomplete', (tester) async {
+      await tester.pumpWidget(testWrap(const AppearanceSection()));
+
+      expect(find.byType(CcAutocomplete<Locale>), findsOneWidget);
+      expect(
+        tester
+            .widget<EditableText>(
+              find.descendant(
+                of: find.byType(CcAutocomplete<Locale>),
+                matching: find.byType(EditableText),
+              ),
+            )
+            .controller
+            .text,
+        'System',
+      );
+    });
+
+    testWidgets('typing filters locales by name and tag', (tester) async {
+      await tester.pumpWidget(testWrap(const AppearanceSection()));
+
+      final field = find.descendant(
+        of: find.byType(CcAutocomplete<Locale>),
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.enterText(field, 'fr-FR');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Français (France)'), findsOneWidget);
+      expect(find.text('Français (Canada)'), findsNothing);
+      expect(find.text('Deutsch (Deutschland)'), findsNothing);
+    });
+
+    testWidgets('selecting a locale fills the field', (tester) async {
+      await tester.pumpWidget(testWrap(const AppearanceSection()));
+
+      final field = find.descendant(
+        of: find.byType(CcAutocomplete<Locale>),
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+      await tester.enterText(field, 'français');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Français (France)'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<EditableText>(field).controller.text,
+        'Français (France)',
+      );
     });
   });
 }

@@ -53,4 +53,25 @@ void main() {
     expect(find.text('   '), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('sm size uses body type and a smaller default icon', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ccTestApp(
+        const CcEmptyState(
+          icon: CcIcons.inbox,
+          size: CcEmptyStateSize.sm,
+          message: 'No decisions recorded yet.',
+        ),
+      ),
+    );
+
+    final icon = tester.widget<Icon>(find.byIcon(CcIcons.inbox));
+    expect(icon.size, 24);
+
+    final text = tester.widget<Text>(find.text('No decisions recorded yet.'));
+    expect(text.style?.fontSize, CcTypography.bodySm.fontSize);
+    expect(text.style?.fontWeight, CcTypography.bodySm.fontWeight);
+  });
 }

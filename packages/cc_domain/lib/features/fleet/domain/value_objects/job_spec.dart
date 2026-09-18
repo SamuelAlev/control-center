@@ -87,8 +87,22 @@ sealed class JobSpec {
   String toJsonString() => jsonEncode(toJson());
 }
 
+/// Value equality over the canonical JSON payload. Specs of the same kind
+/// with the same fields compare equal; the scheduler keys jobs on this.
+mixin _JobSpecEquality on JobSpec {
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is JobSpec &&
+          runtimeType == other.runtimeType &&
+          jsonEncode(toJson()) == jsonEncode(other.toJson());
+
+  @override
+  int get hashCode => Object.hash(runtimeType, jsonEncode(toJson()));
+}
+
 /// A single agent run (PRD 20 §2).
-class AgentRunJobSpec extends JobSpec {
+class AgentRunJobSpec extends JobSpec with _JobSpecEquality {
   /// Creates an [AgentRunJobSpec].
   const AgentRunJobSpec({
     required this.agentId,
@@ -179,7 +193,7 @@ class AgentRunJobSpec extends JobSpec {
 }
 
 /// A pipeline step execution (PRD 20 §2).
-class PipelineStepJobSpec extends JobSpec {
+class PipelineStepJobSpec extends JobSpec with _JobSpecEquality {
   /// Creates a [PipelineStepJobSpec].
   const PipelineStepJobSpec({
     required this.pipelineRunId,
@@ -221,7 +235,7 @@ class PipelineStepJobSpec extends JobSpec {
 }
 
 /// A repo code-index build (PRD 20 §2).
-class CodeIndexJobSpec extends JobSpec {
+class CodeIndexJobSpec extends JobSpec with _JobSpecEquality {
   /// Creates a [CodeIndexJobSpec].
   const CodeIndexJobSpec({required this.repoId, this.repoRemote, this.headSha});
 
@@ -254,7 +268,7 @@ class CodeIndexJobSpec extends JobSpec {
 }
 
 /// A PRD 18 UI visual golden render (PRD 20 §6 — requires `flutter`).
-class GoldenRenderJobSpec extends JobSpec {
+class GoldenRenderJobSpec extends JobSpec with _JobSpecEquality {
   /// Creates a [GoldenRenderJobSpec].
   const GoldenRenderJobSpec({
     required this.prExternalId,
@@ -300,7 +314,7 @@ class GoldenRenderJobSpec extends JobSpec {
 }
 
 /// A performance benchmark run (PRD 20 §2).
-class BenchmarkJobSpec extends JobSpec {
+class BenchmarkJobSpec extends JobSpec with _JobSpecEquality {
   /// Creates a [BenchmarkJobSpec].
   const BenchmarkJobSpec({required this.name, this.paramsJson = '{}'});
 
@@ -325,7 +339,7 @@ class BenchmarkJobSpec extends JobSpec {
 }
 
 /// A PRD 21 eval batch fanned out to parallel workers (PRD 20 §6).
-class EvalBatchJobSpec extends JobSpec {
+class EvalBatchJobSpec extends JobSpec with _JobSpecEquality {
   /// Creates an [EvalBatchJobSpec].
   const EvalBatchJobSpec({
     required this.evalRunId,

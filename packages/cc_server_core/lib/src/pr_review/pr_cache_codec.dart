@@ -4,6 +4,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart'
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
@@ -102,6 +103,35 @@ class PrCacheCodec {
     for (final m in _maps(raw)) ?userFromCache(m),
   ];
 
+  // ── PrLabel ──────────────────────────────────────────────────────────────
+
+  /// Serializes a label.
+  static Map<String, dynamic> labelToCache(PrLabel l) => {
+    'name': l.name,
+    'color': l.color,
+    if (l.description.isNotEmpty) 'description': l.description,
+  };
+
+  /// Reads a label, or null when the key was absent.
+  static PrLabel? labelFromCache(dynamic raw) {
+    if (raw is! Map<String, dynamic>) {
+      return null;
+    }
+    final name = _str(raw['name']) ?? '';
+    if (name.isEmpty) {
+      return null;
+    }
+    return PrLabel(
+      name: name,
+      color: _str(raw['color']) ?? '',
+      description: _str(raw['description']) ?? '',
+    );
+  }
+
+  static List<PrLabel> _labelsFromCache(dynamic raw) => [
+    for (final m in _maps(raw)) ?labelFromCache(m),
+  ];
+
   // ── ReactionGroup ────────────────────────────────────────────────────────
 
   /// Serializes reaction groups.
@@ -156,6 +186,7 @@ class PrCacheCodec {
     ],
     'requested_team_slugs': pr.requestedTeamSlugs,
     'assignees': [for (final u in pr.assignees) userToCache(u)],
+    'labels': [for (final l in pr.labels) labelToCache(l)],
     'reviewed_by_me': pr.reviewedByMe,
     'reactions': reactionsToCache(pr.reactions),
     // A cached `body_html` can carry image JWTs that expire after ~5 minutes.
@@ -197,6 +228,7 @@ class PrCacheCodec {
       requestedReviewers: _usersFromCache(m['requested_reviewers']),
       requestedTeamSlugs: _strings(m['requested_team_slugs']),
       assignees: _usersFromCache(m['assignees']),
+      labels: _labelsFromCache(m['labels']),
       mergedAt: _date(m['merged_at']),
       reviewedByMe: _bool(m['reviewed_by_me']),
       reactions: reactionsFromCache(m['reactions']),
@@ -374,6 +406,7 @@ class PrCacheCodec {
     'reviewer_name': e.reviewerName,
     'reviewer_is_team': e.reviewerIsTeam,
     'reviewer_avatar_url': e.reviewerAvatarUrl,
+    if (e.label != null) 'label': labelToCache(e.label!),
     'created_at': e.createdAt?.toIso8601String(),
   };
 
@@ -389,6 +422,7 @@ class PrCacheCodec {
         reviewerName: _str(m['reviewer_name']) ?? '',
         reviewerIsTeam: _bool(m['reviewer_is_team']),
         reviewerAvatarUrl: _str(m['reviewer_avatar_url']) ?? '',
+        label: labelFromCache(m['label']),
         createdAt: _date(m['created_at']),
       );
 

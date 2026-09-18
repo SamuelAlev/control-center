@@ -1,5 +1,6 @@
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_native_text_menu.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -123,22 +124,25 @@ class CcTextContextMenu extends StatelessWidget {
               // Edge-to-edge rows: no panel padding, so the hover wash spans
               // the full width of the menu (the CcMenu panel treatment).
               child: IntrinsicWidth(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (final action in actions)
-                      _CcTextMenuRow(
-                        label: labels.of(action),
-                        onPressed: () {
-                          performCcTextMenuAction(state, action);
-                          // The delegate methods hide the toolbar themselves
-                          // for a toolbar-caused change; this covers the ones
-                          // that only do so on some platforms.
-                          state.hideToolbar();
-                        },
-                      ),
-                  ],
+                child: CcFluidHover(
+                  itemCount: actions.length,
+                  itemBuilder: (context, index) {
+                    final action = actions[index];
+                    return _CcTextMenuRow(
+                      label: labels.of(action),
+                      onPressed: () {
+                        performCcTextMenuAction(state, action);
+                        // Some platform delegates do not hide after every
+                        // toolbar-caused change.
+                        state.hideToolbar();
+                      },
+                    );
+                  },
+                  layoutBuilder: (context, items) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: items,
+                  ),
                 ),
               ),
             ),
@@ -173,15 +177,18 @@ class _CcTextMenuRow extends StatelessWidget {
       semanticLabel: label,
       builder: (context, states) {
         final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
         final wash = pressed
             ? t.hoverStrong
+            : fluidActive
+            ? _transparent
             : states.contains(WidgetState.hovered)
             ? t.hover
             : _transparent;
 
         return Container(
           constraints: const BoxConstraints(minHeight: 32),
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           decoration: BoxDecoration(color: wash),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,

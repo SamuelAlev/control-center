@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// A full-width footer row that adds a new item, shared by the action-item and
 /// decision tabs (an accent "+ {label}" affordance at the bottom of the list).
@@ -18,7 +18,7 @@ class MeetingAddRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.ds;
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(

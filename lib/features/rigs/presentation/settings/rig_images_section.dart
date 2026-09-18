@@ -120,6 +120,50 @@ class _RigImagesSectionState extends ConsumerState<RigImagesSection> {
     }
   }
 
+  Future<void> _delete(RigImageView image) async {
+    final l10n = AppLocalizations.of(context);
+    final confirmed = await showCcDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CcDialog(
+        title: l10n.rigsImagesTitle,
+        content: Text(l10n.deleteConfirmName(image.id)),
+        actions: [
+          CcButton(
+            variant: CcButtonVariant.secondary,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          CcButton(
+            variant: CcButtonVariant.destructive,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    setState(() {
+      _busyImageId = image.id;
+      _error = null;
+    });
+    try {
+      await ref.read(rigRepositoryProvider).removeImage(image.id);
+      if (mounted) {
+        _refresh();
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() => _error = '$e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _busyImageId = null);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -182,6 +226,9 @@ class _RigImagesSectionState extends ConsumerState<RigImagesSection> {
                       unawaited(_import(image.id, path));
                     }
                   },
+                  onDelete: image.present
+                      ? () => unawaited(_delete(image))
+                      : null,
                 ),
               ],
               if (_error != null) ...[

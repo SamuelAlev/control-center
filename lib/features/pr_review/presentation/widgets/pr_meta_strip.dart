@@ -12,7 +12,7 @@ import 'package:control_center/shared/providers/github_user_profile_provider.dar
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

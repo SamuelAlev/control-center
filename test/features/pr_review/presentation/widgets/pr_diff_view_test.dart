@@ -9,11 +9,14 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
+import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/pr_diff_toolbar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -780,6 +783,218 @@ void main() {
         findsWidgets,
       );
     });
+  });
+
+  group('PrDiffView - gutter hover stability', () {
+    testWidgets(
+      'gutter add pill remains visible while the pointer moves over it',
+      (tester) async {
+        final controller = _createController();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          _wrap(
+            PrimaryScrollController(
+              controller: scrollController,
+              child: CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  PrDiffView(
+                    files: [_testFile()],
+                    comments: const [],
+                    inlineCommentsController: controller,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final pill = find.byKey(const ValueKey('diff-gutter-add-pill'));
+        final viewport = tester.getRect(find.byType(CustomScrollView));
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        addTearDown(gesture.removePointer);
+        await gesture.addPointer(location: Offset.zero);
+        await tester.pump();
+
+        for (var y = 8.0; y < viewport.height; y += kDiffLineHeight / 2) {
+          await gesture.moveTo(Offset(viewport.left + 200, viewport.top + y));
+          await tester.pump();
+          if (pill.evaluate().isNotEmpty) {
+            break;
+          }
+        }
+        expect(pill, findsOneWidget);
+
+        final center = tester.getCenter(pill);
+        for (final offset in const [
+          Offset.zero,
+          Offset(2, 0),
+          Offset(-2, 1),
+          Offset(1, -2),
+        ]) {
+          await gesture.moveTo(center + offset);
+          await tester.pump();
+          expect(
+            pill,
+            findsOneWidget,
+            reason: 'the pill must not invalidate its own row hover',
+          );
+        }
+      },
+    );
+  });
+
+  group('PrDiffView - code suggestions', () {
+    testWidgets(
+      'creates multiple highlighted suggestion fences from a selected line',
+      (tester) async {
+        final controller = _createController();
+        final scrollController = ScrollController();
+        addTearDown(scrollController.dispose);
+
+        await tester.pumpWidget(
+          _wrap(
+            PrimaryScrollController(
+              controller: scrollController,
+              child: CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  PrDiffView(
+                    files: [_testFile()],
+                    comments: const [],
+                    inlineCommentsController: controller,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final pill = find.byKey(const ValueKey('diff-gutter-add-pill'));
+        final viewport = tester.getRect(find.byType(CustomScrollView));
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        addTearDown(mouse.removePointer);
+        await mouse.addPointer(location: Offset.zero);
+        await tester.pump();
+
+        for (var y = 8.0; y < viewport.height; y += kDiffLineHeight / 2) {
+          await mouse.moveTo(Offset(viewport.left + 200, viewport.top + y));
+          await tester.pump();
+          if (pill.evaluate().isNotEmpty) {
+            break;
+          }
+        }
+        expect(pill, findsOneWidget);
+
+        await tester.tap(pill);
+        await tester.pump();
+        expect(find.byType(PrCommentComposer), findsOneWidget);
+
+        final commentField = find.descendant(
+          of: find.byType(PrCommentComposer),
+          matching: find.byType(CcTextField),
+        );
+        await tester.enterText(commentField, 'Use the guarded form.');
+        final addSuggestion = find.text('Add a suggestion');
+        await tester.ensureVisible(addSuggestion);
+        await tester.pump();
+        await tester.tap(addSuggestion);
+        await tester.pump();
+
+        final suggestion = find.byType(SuggestionComposer);
+        expect(suggestion, findsOneWidget);
+        final suggestionFields = find.descendant(
+          of: suggestion,
+          matching: find.byType(CcTextField),
+        );
+        expect(suggestionFields, findsNWidgets(2));
+        expect(
+          tester.widget<CcTextField>(suggestionFields.at(0)).controller?.text,
+          isNotEmpty,
+          reason: 'the replacement starts with the selected source code',
+        );
+        expect(
+          tester.widget<CcTextField>(suggestionFields.at(1)).controller?.text,
+          'Use the guarded form.',
+          reason: 'switching composer types must preserve the comment draft',
+        );
+
+        await tester.enterText(
+          suggestionFields.at(0),
+          'final int answer = guardedCall();',
+        );
+        await tester.pumpAndSettle();
+        final syntaxController =
+            tester.widget<CcTextField>(suggestionFields.at(0)).controller
+                as DiffSyntaxTextEditingController;
+        final syntaxSpan = syntaxController.buildTextSpan(
+          context: tester.element(suggestionFields.at(0)),
+          style: const TextStyle(),
+          withComposing: false,
+        );
+        final syntaxColors = <Color>{};
+        syntaxSpan.visitChildren((span) {
+          if (span is TextSpan && span.style?.color != null) {
+            syntaxColors.add(span.style!.color!);
+          }
+          return true;
+        });
+        expect(
+          syntaxColors.length,
+          greaterThan(1),
+          reason: 'the editable replacement should use grammar token colors',
+        );
+
+        final addAnother = find.descendant(
+          of: suggestion,
+          matching: find.text('Add a suggestion'),
+        );
+        await tester.ensureVisible(addAnother);
+        await tester.tap(addAnother);
+        await tester.pump();
+
+        expect(suggestionFields, findsNWidgets(3));
+        expect(
+          tester.widget<CcTextField>(suggestionFields.at(1)).controller?.text,
+          isNotEmpty,
+          reason: 'each added block starts with the selected source code',
+        );
+        expect(
+          tester.widget<CcTextField>(suggestionFields.at(2)).controller?.text,
+          'Use the guarded form.',
+        );
+        await tester.enterText(
+          suggestionFields.at(1),
+          'final int answer = fallbackCall();',
+        );
+
+        final submitSuggestion = find.text('Suggest a change');
+        await tester.ensureVisible(submitSuggestion);
+        await tester.pump();
+        await tester.tap(submitSuggestion);
+        await tester.pump();
+
+        final thread = controller.threads.single;
+        expect(thread.originalCode, isNotEmpty);
+        expect(thread.suggestedCode, 'final int answer = guardedCall();');
+        expect(
+          thread.entries.single.body,
+          'Use the guarded form.\n\n'
+          '```suggestion\n'
+          'final int answer = guardedCall();\n'
+          '```\n\n'
+          '```suggestion\n'
+          'final int answer = fallbackCall();\n'
+          '```',
+        );
+      },
+    );
   });
 
   group('PrDiffView - open dropdown blocks row hover', () {

@@ -7,7 +7,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/github_markdown_preprocessor.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -163,9 +163,9 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
         children: [
           widget.readChild,
           if (_hovered)
-            Positioned(
+            PositionedDirectional(
               top: 0,
-              right: 0,
+              end: 0,
               child: CcTooltip(
                 message: AppLocalizations.of(context).editDescription,
                 child: CcTappable(
@@ -197,7 +197,7 @@ class _PrBodyEditorState extends ConsumerState<PrBodyEditor> {
   Widget _buildEmptyAffordance(BuildContext context, DesignSystemTokens t) {
     final l10n = AppLocalizations.of(context);
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: CcTappable(
         onPressed: _startEdit,
         builder: (context, states) => Padding(

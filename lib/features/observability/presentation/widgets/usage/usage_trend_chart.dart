@@ -6,9 +6,15 @@ import 'package:control_center/features/observability/presentation/obs_format.da
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/charts/chart_hover.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
+
+/// Must match [UsageTrendChart] titles: left reservedSize 44, bottom 28.
+///
+/// RTL carve-out: fl_chart lays axes on the physical left/bottom.
+const _plotPadding = EdgeInsets.only(left: 44, bottom: 28);
 
 /// A y-axis rounded to human steps: the gridline spacing and the ceiling the
 /// plot is scaled to.
@@ -120,60 +126,66 @@ class UsageTrendChart extends StatelessWidget {
           excludeSemantics: true,
           child: SizedBox(
             height: height,
-            child: LineChart(
-              duration: Duration.zero,
-              LineChartData(
-                minY: 0,
-                maxY: axis.max,
-                gridData: FlGridData(
-                  drawVerticalLine: false,
-                  horizontalInterval: axis.step,
-                  getDrawingHorizontalLine: (_) =>
-                      FlLine(color: t.borderSecondary, strokeWidth: 1),
-                ),
-                borderData: FlBorderData(show: false),
-                titlesData: _titles(labels, axis, t),
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => t.bgPrimary,
-                    tooltipBorder: BorderSide(color: t.borderPrimary),
-                    tooltipBorderRadius: AppRadii.brMd,
-                    getTooltipItems: (spots) => [
-                      for (final spot in spots)
-                        LineTooltipItem(
-                          '${_modelLabel(l10n, plotted[spot.barIndex].model)}\n'
-                          '${labels[spot.x.toInt()]} · '
-                          '${fmtTokens(spot.y.round())}',
-                          CcTypography.caption.copyWith(color: t.textPrimary),
-                        ),
-                    ],
+            child: ChartHoverHost(
+              plotPadding: _plotPadding,
+              pointCount: days.length,
+              maxY: axis.max,
+              seriesColors: [
+                for (var i = 0; i < plotted.length; i++) colorAt(i),
+              ],
+              seriesValuesAt: (index) => [
+                for (final series in plotted)
+                  series.points[index].tokens.toDouble(),
+              ],
+              flyoutBuilder: (index) => _UsageFlyoutBody(
+                labels: labels,
+                plotted: plotted,
+                index: index,
+                l10n: l10n,
+              ),
+              child: LineChart(
+                duration: Duration.zero,
+                LineChartData(
+                  minY: 0,
+                  maxY: axis.max,
+                  gridData: FlGridData(
+                    drawVerticalLine: false,
+                    horizontalInterval: axis.step,
+                    getDrawingHorizontalLine: (_) =>
+                        FlLine(color: t.borderSecondary, strokeWidth: 1),
                   ),
+                  borderData: FlBorderData(show: false),
+                  titlesData: _titles(labels, axis, t),
+                  // Hover is owned by [ChartHoverHost]: fl_chart's built-in
+                  // tooltip only fires within 10px of a spot, so sweeping
+                  // along the line flickered it off between days.
+                  lineTouchData: const LineTouchData(enabled: false),
+                  lineBarsData: [
+                    for (var i = 0; i < plotted.length; i++)
+                      LineChartBarData(
+                        isCurved: true,
+                        // Without this a spike to a daily peak and back swings
+                        // the spline well below the baseline on the way down —
+                        // a visible dip into negative tokens. It flattens the
+                        // vertical tangent at peaks and along quiet runs, which
+                        // is also what keeps a zero stretch reading as a
+                        // straight baseline rather than a gentle wave.
+                        preventCurveOverShooting: true,
+                        isStrokeJoinRound: true,
+                        isStrokeCapRound: true,
+                        color: colorAt(i),
+                        barWidth: 2,
+                        dotData: const FlDotData(show: false),
+                        spots: [
+                          for (var d = 0; d < plotted[i].points.length; d++)
+                            FlSpot(
+                              d.toDouble(),
+                              plotted[i].points[d].tokens.toDouble(),
+                            ),
+                        ],
+                      ),
+                  ],
                 ),
-                lineBarsData: [
-                  for (var i = 0; i < plotted.length; i++)
-                    LineChartBarData(
-                      isCurved: true,
-                      // Without this a spike to a daily peak and back swings
-                      // the spline well below the baseline on the way down —
-                      // a visible dip into negative tokens. It flattens the
-                      // vertical tangent at peaks and along quiet runs, which
-                      // is also what keeps a zero stretch reading as a
-                      // straight baseline rather than a gentle wave.
-                      preventCurveOverShooting: true,
-                      isStrokeJoinRound: true,
-                      isStrokeCapRound: true,
-                      color: colorAt(i),
-                      barWidth: 2,
-                      dotData: const FlDotData(show: false),
-                      spots: [
-                        for (var d = 0; d < plotted[i].points.length; d++)
-                          FlSpot(
-                            d.toDouble(),
-                            plotted[i].points[d].tokens.toDouble(),
-                          ),
-                      ],
-                    ),
-                ],
               ),
             ),
           ),
@@ -249,6 +261,10 @@ class UsageTrendChart extends StatelessWidget {
             return Text(
               fmtTokens(value.round()),
               style: style,
+              // RTL carve-out: fl_chart draws in physical coordinates — the
+              // y-axis gutter is fixed to the plot's left edge, so its labels
+              // align against the axis line; the time x-axis stays LTR per
+              // the chart-canvas policy.
               textAlign: TextAlign.right,
             );
           },
@@ -278,3 +294,46 @@ class UsageTrendChart extends StatelessWidget {
     );
   }
 }
+
+class _UsageFlyoutBody extends StatelessWidget {
+  const _UsageFlyoutBody({
+    required this.labels,
+    required this.plotted,
+    required this.index,
+    required this.l10n,
+  });
+
+  final List<String> labels;
+  final List<UsageTrendSeries> plotted;
+  final int index;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final date = labels[index];
+    if (plotted.length == 1) {
+      return Text(
+        '${UsageTrendChart._modelLabel(l10n, plotted.single.model)}\n'
+        '$date · ${fmtTokens(plotted.single.points[index].tokens)}',
+      );
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          date,
+          style: CcTypography.caption.copyWith(color: tokens.textTertiary),
+        ),
+        const SizedBox(height: AppSpacing.xxs),
+        for (final series in plotted)
+          Text(
+            '${UsageTrendChart._modelLabel(l10n, series.model)} · '
+            '${fmtTokens(series.points[index].tokens)}',
+          ),
+      ],
+    );
+  }
+}
+

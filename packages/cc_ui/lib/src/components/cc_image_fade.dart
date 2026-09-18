@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/primitives/image_fade.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/widgets.dart';
@@ -35,7 +36,7 @@ class CcImageFade extends StatelessWidget {
     this.errorBuilder,
     this.fit = BoxFit.cover,
     this.alignment = Alignment.center,
-    this.duration = const Duration(milliseconds: 300),
+    this.duration = CcMotion.slow,
   });
 
   /// The full-resolution image to display; cross-fades in over [placeholder]
@@ -60,19 +61,18 @@ class CcImageFade extends StatelessWidget {
   /// does not reserve space. The parent's box does.
   final BoxFit fit;
 
-  /// How to align the image within its bounds.
-  final Alignment alignment;
+  /// How to align the image within its bounds. [AlignmentGeometry], so
+  /// directional alignments mirror under RTL.
+  final AlignmentGeometry alignment;
 
-  /// Cross-fade duration. Honours the ambient `disableAnimations` media query
-  /// (collapses to [Duration.zero] under reduced motion).
+  /// Cross-fade duration. Under reduced motion this becomes [CcMotion.fade]
+  /// so the image still appears, just without a long wash.
   final Duration duration;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final effectiveDuration = reduceMotion ? Duration.zero : duration;
+    final effectiveDuration = CcMotion.resolveFade(context, duration);
 
     final Widget basePlaceholder =
         placeholder ??

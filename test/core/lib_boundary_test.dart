@@ -145,23 +145,19 @@ void main() {
       label: 'repository IMPLEMENTATIONS (class X implements YRepository)',
       match: (s) =>
           RegExp(r'class\s+\w+\s+implements\s+\w*Repository').hasMatch(s),
-      baseline: 3,
+      baseline: 0,
       why:
-          'Repository implementations are the data layer — they belong in cc_persistence/cc_infra. '
-          'The three sanctioned client-side exceptions are all thin-client wiring, not backend: '
-          'SecureCredentialsRepository (macOS/Windows/Linux keychain — inherently on-device), '
-          'RpcCacheRepository (implements CacheRepository purely over cache.read/write RPC — the '
-          'server owns the data) and SharedPrefsSiteAllowlistRepository (a local UI preference for '
-          'the in-app webview ad-blocker). A FOURTH impl must be backend-backed (drift/dio) and '
-          'belongs in a package — do not raise this baseline to admit one.',
+          'Repository implementations are the data layer — they belong in '
+          'cc_data / cc_persistence / cc_infra. RpcCacheRepository and '
+          'KeyValueSiteAllowlistRepository now live in cc_data. Do not raise '
+          'this baseline to admit a lib/ impl.',
     ),
     (
       label: 'icon package imports (phosphor)',
       // Match the import directive only (not the package name appearing in a
       // doc comment or in AppIcons `_package` string constants).
-      match: (s) => RegExp(
-        "import\\s+'package:phosphoricons_flutter",
-      ).hasMatch(s),
+      match: (s) =>
+          RegExp("import\\s+'package:phosphoricons_flutter").hasMatch(s),
       baseline: 0,
       why:
           'Icon font packages expose ~1500-member classes of static const '
@@ -175,56 +171,33 @@ void main() {
     (
       label: 'package:dio imports (direct HTTP client)',
       match: (s) => s.contains("import 'package:dio/"),
-      baseline: 3,
+      baseline: 0,
       why:
           'External network I/O belongs in cc_server, not the client — clients call '
-          'server RPC ops. The 3 current hits are: di/providers.dart (the shared dio '
-          'factory the desktop passes to its embedded server) and two genuine leaks '
-          'still to migrate — calendar/google_oauth_service.dart (token exchange should '
-          'be server-side) and newsfeed/filter_list_bindings_io.dart (ad-block list '
-          'download should route through the server). Do NOT raise this baseline; lower '
-          'it as those two move server-side.',
+          'server RPC ops. Filter-list downloads now go through '
+          '`newsfeed.filterLists.*`. Do NOT raise this baseline.',
     ),
     (
       label: 'Process.run / Process.start (process execution)',
       match: (s) => RegExp(r'Process\.(run|start)\(').hasMatch(s),
-      baseline: 4,
+      baseline: 0,
       why:
-          'Process execution belongs in cc_server. All four remaining hits are '
-          'sanctioned on-device launchers: core/server/cc_server_process.dart (the '
-          'desktop spawning its own local cc_server — the one blessed thick-client '
-          'exception), core/infrastructure/ide/native_editor_launcher.dart (launching an '
-          'on-device editor), core/infrastructure/ide/reveal_in_file_manager.dart '
-          '(the shared reveal-in-file-manager service) and '
-          'core/server/tailscale_discovery.dart (`tailscale status --json` to enumerate '
-          'tailnet peers). That last one qualifies for a STRUCTURAL reason, not a '
-          'convenience one: it runs BEFORE any server connection exists — it is how the '
-          'client finds a server to connect to — so there is no server to delegate it '
-          'to, exactly like the mDNS browse beside it. Anything that could run after a '
-          'connection is established does NOT qualify. The former leak '
-          'pr_review/.../pr_doc_agent.dart was UNWIRED dead code (spawned `claude` + '
-          '`git diff`, dead on web, zero callers) and was DELETED (§20.2) rather than '
-          'have an unused server RPC op built for it — when PR-doc generation is actually '
-          'wired to a UI it must be built server-side through the harness (cost/budget/'
-          'governance/logs), reusing ProcessGitCommandAdapter + the harness providers. '
-          'Never raise this baseline.',
+          'Process execution belongs in cc_server / cc_infra. NativeEditorLauncher, '
+          'RevealInFileManager, CcServerProcess and the Tailscale CLI now live in '
+          'cc_infra. The former leak pr_review/.../pr_doc_agent.dart was UNWIRED '
+          'dead code and was DELETED rather than have an unused server RPC op built '
+          'for it. Do not raise this baseline.',
     ),
     (
       label: 'package:cc_infra imports (server-side infra coupling)',
       match: (s) => s.contains("import 'package:cc_infra"),
-      baseline: 24,
+      baseline: 5,
       why:
           'cc_infra is the server-side VM-only adapter package (git, process, dio '
-          'clients, sandbox). A thin client should not link it. The current 24 hits are '
-          'the documented "live-desktop data flip not yet complete" debt: the desktop '
-          'still wires some cc_infra impls directly (its embedded-server composition '
-          'root in di/*_bindings_io.dart is legitimate — GitRepoInspector is now bound '
-          'there behind its port, not inline in the widget, so add_repo_form is off the '
-          'list — but feature-level imports like the github_user_profile widgets, '
-          'google_oauth_service and agent_registry_provider are leaks). Was 27; the '
-          'GitHubUser DTO moved to cc_domain (§20.9) and GitRepoInspector moved to the '
-          'di seam (§20.7). This is a blunt anti-growth ratchet — never raise it; every '
-          'data-flip batch lowers it toward 0.',
+          'clients, sandbox). A thin client should not link it. Remaining hits are '
+          'honest IO seams: logging (CcInfraLog), CcPaths, spawning the local '
+          'cc_server, Tailscale discovery before a connection exists, and the '
+          'desktop process-meeting signal collector. Never raise this.',
     ),
   ];
 

@@ -5,7 +5,7 @@ import 'package:control_center/features/meetings/providers/meeting_providers.dar
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -105,25 +105,17 @@ class _LinkMeetingSheetState extends ConsumerState<LinkMeetingSheet> {
             return da.compareTo(db);
           });
 
-    return Dialog(
-      backgroundColor: t.bgPrimary,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 460, maxHeight: 560),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+    return CcDialog(
+      title: l10n.calendarLinkMeetingTitle,
+      maxWidth: 460,
+      content: SizedBox(
+        width: 420,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 440),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                l10n.calendarLinkMeetingTitle,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: t.textPrimary,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
               CcTextField(
                 controller: _searchController,
                 hintText: l10n.calendarLinkMeetingSearchHint,
@@ -162,20 +154,18 @@ class _LinkMeetingSheetState extends ConsumerState<LinkMeetingSheet> {
                         },
                       ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              Align(
-                alignment: Alignment.centerRight,
-                child: CcButton(
-                  variant: CcButtonVariant.secondary,
-                  size: CcButtonSize.sm,
-                  onPressed: _busy ? null : () => Navigator.of(context).pop(),
-                  child: Text(l10n.cancel),
-                ),
-              ),
             ],
           ),
         ),
       ),
+      actions: [
+        CcButton(
+          variant: CcButtonVariant.secondary,
+          size: CcButtonSize.sm,
+          onPressed: _busy ? null : () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+      ],
     );
   }
 }
@@ -197,9 +187,8 @@ class _MeetingRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
-      borderRadius: AppRadii.brSm,
       child: Padding(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.sm,

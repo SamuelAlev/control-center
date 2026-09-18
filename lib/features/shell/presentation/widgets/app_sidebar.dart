@@ -14,12 +14,13 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/calendar_day_icon.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// Primary application navigation, rendered as a single grouped left sidebar
-/// built on cc_ui's [CcSidebar] / [CcSidebarGroup] / [CcSidebarItem].
+/// built on cc_ui's [CcSidebar] / [CcSidebarGroup] / [CcSidebarItem] /
+/// [CcSidebarBranch].
 ///
 /// Replaces the previous "layered topbar" (title bar + main pill row +
 /// conditional settings pill row). The workspace switcher and a search
@@ -242,8 +243,11 @@ class _SpacesNavSlot extends StatelessWidget {
 /// degrades to a plain nav item.
 ///
 /// [CcSidebarItem] is a flat row with no nesting, so the accordion is composed
-/// here from a header [CcSidebarItem] plus an [AnimatedSize]-gated list of
-/// indented child items.
+/// here from a header [CcSidebarItem] plus an [AnimatedSize]-gated
+/// [CcSidebarBranch] (tree rail, flush children, nested hover). The composite
+/// is not itself a [CcFluidHoverTarget], so the enclosing group treats it as
+/// a hover boundary: the header row and the nested branch keep their own
+/// wash instead of the parent highlighting Inbox or Pull requests.
 class _TicketsAccordion extends ConsumerStatefulWidget {
   const _TicketsAccordion({required this.location, required this.workspaceId});
 
@@ -296,11 +300,6 @@ class _TicketsAccordionState extends ConsumerState<_TicketsAccordion> {
             .toList();
 
     final expanded = _expanded;
-    // While the rail is animating (or settled) the children lose their indent:
-    // at the rail's width the indent would push the rows past the edge.
-    final railMode =
-        (CcSidebarScope.collapsedOf(context) ?? false) ||
-        (CcSidebarScope.transitioningOf(context) ?? false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -319,58 +318,52 @@ class _TicketsAccordionState extends ConsumerState<_TicketsAccordion> {
           onPressed: () => GoRouter.of(context).go(ticketsRoute(wsId)),
         ),
         AnimatedSize(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeInOut,
+          duration: CcMotion.resolve(context, CcMotion.moderate),
+          curve: CcMotion.standard,
           alignment: Alignment.topCenter,
           child: expanded
-              ? Padding(
-                  padding: EdgeInsets.only(left: railMode ? 0 : AppSpacing.md),
-                  // A label-less group so the children keep the sidebar's 4px
-                  // inter-item rhythm.
-                  child: CcSidebarGroup(
-                    children: [
-                      CcSidebarItem(
-                        icon: AppIcons.list,
-                        label: l10n.allTickets,
-                        selected: _ticketsActive,
-                        onPressed: () =>
-                            GoRouter.of(context).go(ticketsRoute(wsId)),
-                      ),
-                      for (final p in projects)
-                        () {
-                          final selected =
-                              widget.location ==
-                              projectOverviewRoute(wsId, p.id);
-                          return CcSidebarItem(
-                            icon: AppIcons.dot,
-                            label: p.name,
-                            selected: selected,
-                            badge: ProjectGlyph(
-                              color: p.color,
-                              onBrandFill: selected,
-                            ),
-                            onPressed: () => GoRouter.of(
-                              context,
-                            ).go(projectOverviewRoute(wsId, p.id)),
-                          );
-                        }(),
-                      CcSidebarItem(
-                        icon: AppIcons.plus,
-                        label: l10n.newProject,
-                        onPressed: () async {
-                          final id = await showProjectDialog(
+              ? CcSidebarBranch(
+                  children: [
+                    CcSidebarItem(
+                      icon: AppIcons.list,
+                      label: l10n.allTickets,
+                      selected: _ticketsActive,
+                      onPressed: () =>
+                          GoRouter.of(context).go(ticketsRoute(wsId)),
+                    ),
+                    for (final p in projects)
+                      () {
+                        final selected =
+                            widget.location == projectOverviewRoute(wsId, p.id);
+                        return CcSidebarItem(
+                          icon: AppIcons.dot,
+                          label: p.name,
+                          selected: selected,
+                          badge: ProjectGlyph(
+                            color: p.color,
+                            onBrandFill: selected,
+                          ),
+                          onPressed: () => GoRouter.of(
                             context,
-                            workspaceId: wsId,
-                          );
-                          if (id != null && context.mounted) {
-                            GoRouter.of(
-                              context,
-                            ).go(projectOverviewRoute(wsId, id));
-                          }
-                        },
-                      ),
-                    ],
-                  ),
+                          ).go(projectOverviewRoute(wsId, p.id)),
+                        );
+                      }(),
+                    CcSidebarItem(
+                      icon: AppIcons.plus,
+                      label: l10n.newProject,
+                      onPressed: () async {
+                        final id = await showProjectDialog(
+                          context,
+                          workspaceId: wsId,
+                        );
+                        if (id != null && context.mounted) {
+                          GoRouter.of(
+                            context,
+                          ).go(projectOverviewRoute(wsId, id));
+                        }
+                      },
+                    ),
+                  ],
                 )
               : const SizedBox(width: double.infinity, height: 0),
         ),
@@ -394,20 +387,18 @@ class _ExpandChevron extends StatelessWidget {
     return CcTappable(
       onPressed: onTap,
       semanticLabel: expanded ? l10n.collapse : l10n.expand,
-      builder:
-          (context, states) => AnimatedRotation(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeInOut,
-            turns: expanded ? 0 : -0.25,
-            child: Icon(
-              AppIcons.chevronDown,
-              size: 14,
-              color:
-                  states.contains(WidgetState.hovered)
-                      ? t.textSecondary
-                      : t.textTertiary,
-            ),
-          ),
+      builder: (context, states) => AnimatedRotation(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeInOut,
+        turns: expanded ? 0 : -0.25,
+        child: Icon(
+          AppIcons.chevronDown,
+          size: 14,
+          color: states.contains(WidgetState.hovered)
+              ? t.textSecondary
+              : t.textTertiary,
+        ),
+      ),
     );
   }
 }

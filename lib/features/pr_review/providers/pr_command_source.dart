@@ -42,8 +42,7 @@ class PrCommandSource implements CommandSource {
     items.add(
       CommandItem(
         id: 'pr-list',
-        label: 'Go to Pull Requests',
-        description: 'Navigate to pull requests list',
+        label: 'Go to pull requests',
         icon: AppIcons.gitPullRequest,
         category: category,
         onExecute: () => router.go(

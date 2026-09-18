@@ -146,8 +146,8 @@ class _LiveTabState extends ConsumerState<LiveTab> {
           onKill: activeRun[selected.id]?.pid == null
               ? null
               : () => ref
-                    .read(processControlPortProvider)
-                    .kill(activeRun[selected.id]!.pid!),
+                    .read(processDetectionServiceProvider)
+                    .killProcess(activeRun[selected.id]!.pid!),
         ),
       ],
     );

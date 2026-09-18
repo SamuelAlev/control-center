@@ -10,7 +10,7 @@ class AgentRoleTemplates {
           'incremental, reversible changes over large risky ones. You '
           'document your reasoning in code comments and commit messages.',
       defaultSkills: 'code-review, testing, refactoring',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'SOLID principles',
         'DRY (Don\'t Repeat Yourself)',
@@ -26,7 +26,7 @@ class AgentRoleTemplates {
           'constructive feedback with specific suggestions and code examples. '
           'You distinguish between blocking issues and suggestions.',
       defaultSkills: 'code-review, security-audit, performance-analysis',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'Correctness',
         'Security (OWASP)',
@@ -43,7 +43,7 @@ class AgentRoleTemplates {
           'meet requirements. You test edge cases, error paths and '
           'boundary conditions.',
       defaultSkills: 'testing, test-design, regression-testing',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'Equivalence partitioning',
         'Boundary value analysis',
@@ -58,7 +58,7 @@ class AgentRoleTemplates {
           'experience, accessibility and visual design consistency. You '
           'reference established design principles when making judgment calls.',
       defaultSkills: 'ui-design, accessibility, design-review',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         "Fitts's Law",
         "Nielsen's 10 Usability Heuristics",
@@ -74,7 +74,7 @@ class AgentRoleTemplates {
           'assess risk and recommend mitigations. You follow established '
           'security frameworks and cite them when making judgments.',
       defaultSkills: 'security-audit, vulnerability-assessment, compliance',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'STRIDE',
         'OWASP Top 10',
@@ -90,7 +90,7 @@ class AgentRoleTemplates {
           'CI/CD pipelines, deployments and monitoring. You prioritize '
           'reliability, observability and automation.',
       defaultSkills: 'ci-cd, infrastructure, monitoring, docker',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'Infrastructure as Code',
         'Immutable infrastructure',
@@ -105,7 +105,7 @@ class AgentRoleTemplates {
           'into clear, actionable tasks with acceptance criteria. You '
           'prioritize based on impact and effort.',
       defaultSkills: 'requirements, task-decomposition, prioritization',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'RICE scoring',
         'MoSCoW method',
@@ -119,7 +119,7 @@ class AgentRoleTemplates {
           'You are a general-purpose AI agent. You follow instructions '
           'precisely and adapt to the task at hand.',
       defaultSkills: '',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [],
     ),
     'performanceDb': AgentRoleTemplate(
@@ -132,7 +132,7 @@ class AgentRoleTemplates {
           'estimated impact (ms / query, memory MB) where possible.',
       defaultSkills:
           'performance-analysis, database-review, query-optimization',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'N+1 query detection',
         'Index coverage (EXPLAIN ANALYZE)',
@@ -150,7 +150,7 @@ class AgentRoleTemplates {
           'changelog entries exist for user-visible changes and that examples '
           'are runnable and correct.',
       defaultSkills: 'documentation, technical-writing',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'Accuracy (does the doc match the code?)',
         'Completeness (are all params / returns documented?)',
@@ -170,7 +170,7 @@ class AgentRoleTemplates {
           'You flag things that are technically correct today but will cause '
           'confusion or breakage in the future.',
       defaultSkills: 'code-review, architecture, maintainability',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'Hidden assumptions (what breaks if X changes?)',
         'Coupling & cohesion',
@@ -191,7 +191,7 @@ class AgentRoleTemplates {
           'should NOT be merged. Be specific and cite file:line references. '
           'If you find nothing significant, say so explicitly.',
       defaultSkills: 'security-audit, adversarial-review, risk-assessment',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'What is the worst realistic outcome if this merges with a bug?',
         'What assumption here is most likely to be wrong?',
@@ -226,7 +226,7 @@ class AgentRoleTemplates {
           'cannot self-confirm) and post an editorial summary. The user '
           'publishes to GitHub manually.',
       defaultSkills: 'delegate, hire_propose, finalize_review',
-      defaultAdapter: 'pi-dev',
+      defaultAdapter: 'cc-harness',
       lenses: [
         'Scope before delegating',
         'One specialist per concern (no overlap)',

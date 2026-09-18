@@ -4,6 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/meetings/providers/meeting_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -50,7 +51,22 @@ final _testOverrides = [
 /// `Overlay.initialEntries` is only consumed once. Tests whose toast is raised
 /// from a *dialog* context (which mounts into the root navigator overlay, a
 /// sibling of `home`) must use [testWrapWithToastOverlay] instead.
-Widget testWrap(Widget child) {
+///
+/// [locale] picks the l10n strings (default English). [textDirection] forces
+/// the ambient [Directionality] under `home` — pass [TextDirection.rtl] to
+/// exercise a widget's RTL mirroring without needing an RTL locale's strings.
+Widget testWrap(
+  Widget child, {
+  Locale locale = const Locale('en'),
+  TextDirection? textDirection,
+}) {
+  Widget home = CcTheme(
+    data: CcThemeData.light(),
+    child: CcToastScope(child: Scaffold(body: child)),
+  );
+  if (textDirection != null) {
+    home = Directionality(textDirection: textDirection, child: home);
+  }
   return ProviderScope(
     overrides: _testOverrides,
     child: MaterialApp(
@@ -60,12 +76,9 @@ Widget testWrap(Widget child) {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('en'),
-      home: CcTheme(
-        data: CcThemeData.light(),
-        child: CcToastScope(child: Scaffold(body: child)),
-      ),
+      supportedLocales: kSupportedAppLocales,
+      locale: locale,
+      home: home,
     ),
   );
 }
@@ -79,7 +92,15 @@ Widget testWrap(Widget child) {
 /// rebuild-safe across `pumpWidget` re-pumps (the toast Overlay strands the
 /// previous tree), so never use it for tests that re-pump to exercise
 /// `didUpdateWidget`; use [testWrap] there.
-Widget testWrapWithToastOverlay(Widget child) {
+///
+/// [locale] / [textDirection] behave as on [testWrap]; the direction override
+/// wraps the whole `builder` result so dialogs mounted into the root navigator
+/// overlay inherit it too.
+Widget testWrapWithToastOverlay(
+  Widget child, {
+  Locale locale = const Locale('en'),
+  TextDirection? textDirection,
+}) {
   return ProviderScope(
     overrides: _testOverrides,
     child: MaterialApp(
@@ -89,19 +110,28 @@ Widget testWrapWithToastOverlay(Widget child) {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('en'),
-      builder: (context, navigator) => CcTheme(
-        data: CcThemeData.light(),
-        child: Overlay(
-          initialEntries: [
-            OverlayEntry(
-              builder: (context) =>
-                  CcToastScope(child: navigator ?? const SizedBox.shrink()),
-            ),
-          ],
-        ),
-      ),
+      supportedLocales: kSupportedAppLocales,
+      locale: locale,
+      builder: (context, navigator) {
+        Widget wrapped = CcTheme(
+          data: CcThemeData.light(),
+          child: Overlay(
+            initialEntries: [
+              OverlayEntry(
+                builder: (context) =>
+                    CcToastScope(child: navigator ?? const SizedBox.shrink()),
+              ),
+            ],
+          ),
+        );
+        if (textDirection != null) {
+          wrapped = Directionality(
+            textDirection: textDirection,
+            child: wrapped,
+          );
+        }
+        return wrapped;
+      },
       home: Scaffold(body: child),
     ),
   );

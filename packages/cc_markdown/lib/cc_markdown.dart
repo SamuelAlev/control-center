@@ -56,6 +56,7 @@ export 'package:cc_markdown/src/mermaid/render/mermaid_view.dart'
 export 'package:cc_markdown/src/parser/emoji_shortcodes.dart';
 export 'package:cc_markdown/src/parser/parse_options.dart';
 export 'package:cc_markdown/src/parser/parser.dart';
+export 'package:cc_markdown/src/parser/task_list.dart';
 
 // Plugins.
 export 'package:cc_markdown/src/plugins/ai/ai_nodes.dart';

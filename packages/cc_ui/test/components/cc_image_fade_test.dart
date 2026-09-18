@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/components/cc_image_fade.dart';
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/primitives/image_fade.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/widgets.dart';
@@ -46,9 +47,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('collapses the fade duration to zero under reduced motion', (
-      tester,
-    ) async {
+    testWidgets('keeps a short fade under reduced motion', (tester) async {
       await tester.pumpWidget(
         ccTestApp(
           const MediaQuery(
@@ -65,8 +64,9 @@ void main() {
         ),
       );
 
-      // Reduced-motion collapses duration to Duration.zero; the widget still
-      // builds the same ImageFade stack.
+      // Travel drops out; the opacity fade stays so the image still appears.
+      final fade = tester.widget<ImageFade>(find.byType(ImageFade).first);
+      expect(fade.duration, CcMotion.fade);
       expect(find.byType(ImageFade), findsWidgets);
       expect(tester.takeException(), isNull);
     });

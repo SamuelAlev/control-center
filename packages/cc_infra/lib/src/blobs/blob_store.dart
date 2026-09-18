@@ -50,7 +50,7 @@ class StoredBlob {
 }
 
 /// Content-addressed storage for binary payloads an agent produced — today,
-/// the screenshots `computer_use` / `browser_use` / `mobile_use` return.
+/// screenshots from `computer_use`, `browser_use`, `mobile_use`, or `ios_use`.
 ///
 /// **Why this exists.** A tool-result image arrives as base64 in the model's
 /// message content. Persisting that inline would put megabytes of base64 into

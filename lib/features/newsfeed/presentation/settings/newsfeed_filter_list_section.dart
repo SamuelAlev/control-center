@@ -5,10 +5,10 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Settings → You → Newsfeed: status of the desktop ad-block filter lists
+/// Settings → You → Newsfeed: status of the host-cached ad-block filter lists
 /// (rule counts, last update, manual refresh). Only shown while content
 /// blocking is on.
 class NewsfeedFilterListSection extends ConsumerWidget {
@@ -44,36 +44,28 @@ class _FilterListStatus extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final tokens = context.designSystem;
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final isUpdating = state.isUpdating;
     final l10n = AppLocalizations.of(context);
 
     return SectionCard(
       label: l10n.filterLists,
       padding: const EdgeInsets.fromLTRB(0, 14, 0, 8),
-      headerPadding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (state.lastSuccess == null)
             Text(
               _lastUpdatedLabel(l10n),
-              style: CcTypography.caption.copyWith(
-                color:
-                    tokens?.textTertiary ?? theme.colorScheme.onSurfaceVariant,
-              ),
+              style: CcTypography.caption.copyWith(color: t.textTertiary),
             )
           else
             AppTimestamp(
               dateTime: state.lastSuccess!,
               child: Text(
                 _lastUpdatedLabel(l10n),
-                style: CcTypography.caption.copyWith(
-                  color:
-                      tokens?.textTertiary ??
-                      theme.colorScheme.onSurfaceVariant,
-                ),
+                style: CcTypography.caption.copyWith(color: t.textTertiary),
               ),
             ),
           const SizedBox(width: 8),
@@ -127,7 +119,7 @@ class _FilterListStatus extends ConsumerWidget {
                     Text(
                       error,
                       style: CcTypography.caption.copyWith(
-                        color: theme.colorScheme.error,
+                        color: t.textErrorPrimary,
                       ),
                     ),
                 ],
@@ -147,28 +139,22 @@ class _CountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.designSystem;
+    final t = context.designSystem ?? DesignSystemTokens.light();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: tokens?.bgSecondary ?? theme.colorScheme.surfaceContainerHighest,
+        color: t.bgSecondary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 14,
-            color: tokens?.fgTertiary ?? theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 14, color: t.fgTertiary),
           const SizedBox(width: 6),
           Text(
             label,
             style: CcTypography.caption.copyWith(
-              color:
-                  tokens?.textSecondary ?? theme.colorScheme.onSurfaceVariant,
+              color: t.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),

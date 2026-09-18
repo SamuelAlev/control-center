@@ -10,7 +10,9 @@ import 'package:cc_domain/core/domain/repositories/user_preferences_repository.d
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_invite_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
 import 'package:cc_persistence/database/daos/user_activity_dao.dart';
@@ -353,6 +355,7 @@ class DaoUserActivityRepository implements UserActivityRepository {
           deviceId: Value(entry.deviceId),
           ip: Value(entry.ip),
           countryCode: Value(entry.countryCode),
+          details: Value(IdentityMapper.detailsToJson(entry.details)),
           createdAt: Value(entry.createdAt),
         ),
       );
@@ -373,6 +376,103 @@ class DaoUserActivityRepository implements UserActivityRepository {
   }) => _dao(workspaceId)
       .watchForWorkspace(workspaceId, limit: limit)
       .map((rows) => rows.map(_mapper.activityToDomain).toList());
+
+  @override
+  Future<UserActivityPage> getPage(
+    String workspaceId, {
+    int limit = defaultUserActivityPageSize,
+    String? cursor,
+    UserActivityFilter filter = const UserActivityFilter(),
+  }) async {
+    final decoded = ActivityCursor.decode(cursor);
+    final rows = await _dao(workspaceId).getPageRows(
+      workspaceId,
+      limit: limit + 1,
+      cursor: decoded,
+      filter: filter,
+    );
+    return _assemblePage(workspaceId, rows, limit: limit, filter: filter);
+  }
+
+  @override
+  Stream<UserActivityPage> watchPage(
+    String workspaceId, {
+    int limit = defaultUserActivityPageSize,
+    String? cursor,
+    UserActivityFilter filter = const UserActivityFilter(),
+  }) {
+    final decoded = ActivityCursor.decode(cursor);
+    return _dao(workspaceId)
+        .watchPageRows(
+          workspaceId,
+          limit: limit + 1,
+          cursor: decoded,
+          filter: filter,
+        )
+        .asyncMap(
+          (rows) =>
+              _assemblePage(workspaceId, rows, limit: limit, filter: filter),
+        );
+  }
+
+  Future<UserActivityPage> _assemblePage(
+    String workspaceId,
+    List<UserActivityTableData> rows, {
+    required int limit,
+    required UserActivityFilter filter,
+  }) async {
+    final hasMore = rows.length > limit;
+    final page = hasMore ? rows.sublist(0, limit) : rows;
+    final total = await _dao(
+      workspaceId,
+    ).countForWorkspace(workspaceId, filter: filter);
+    if (page.isEmpty) {
+      return UserActivityPage(
+        entries: const [],
+        total: total,
+        start: total == 0 ? 1 : total + 1,
+      );
+    }
+    final first = ActivityCursor(
+      createdAtMs: page.first.createdAt.toUtc().millisecondsSinceEpoch,
+      id: page.first.id,
+    );
+    final start =
+        await _dao(
+          workspaceId,
+        ).countNewerThan(workspaceId, first, filter: filter) +
+        1;
+    String? nextCursor;
+    if (hasMore) {
+      nextCursor = ActivityCursor(
+        createdAtMs: page.last.createdAt.toUtc().millisecondsSinceEpoch,
+        id: page.last.id,
+      ).encode();
+    }
+    String? prevCursor;
+    if (start > 1) {
+      final newer = await _dao(workspaceId).getNewerRows(
+        workspaceId,
+        cursor: first,
+        limit: limit + 1,
+        filter: filter,
+      );
+      if (newer.length > limit) {
+        final boundary = newer[limit];
+        prevCursor = ActivityCursor(
+          createdAtMs: boundary.createdAt.toUtc().millisecondsSinceEpoch,
+          id: boundary.id,
+        ).encode();
+      }
+    }
+    return UserActivityPage(
+      entries: page.map(_mapper.activityToDomain).toList(growable: false),
+      total: total,
+      start: start,
+      nextCursor: nextCursor,
+      prevCursor: prevCursor,
+    );
+  }
 }
 
 /// DAO-backed [UserPreferencesRepository].

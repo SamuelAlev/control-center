@@ -96,11 +96,9 @@ class DispatchAgentUseCase {
   }) async {
     final agent = await _agentRepo.getById(workspaceId, agentId);
     // An agent with no adapter — every seeded specialist until someone picks
-    // one — runs on the BUILT-IN loop, not on an external CLI. The default was
-    // `pi`, so a fresh workspace's agents dispatched to a binary almost no host
-    // has installed and the run died with "command not found" in a conversation
-    // that said nothing else. The built-in adapter ships inside the server, so
-    // the worst case is a legible "connect a provider" error instead.
+    // one — runs on the BUILT-IN loop, not on an external CLI. The built-in
+    // adapter ships inside the server, so the worst case is a legible
+    // "connect a provider" error instead of a missing binary.
     final resolvedAdapter =
         predefinedAdapters
             .where((a) => a.id == (adapterId ?? agent?.adapterId))

@@ -18,10 +18,8 @@ void main() {
       expect(registry.handles('cc-harness'), isTrue);
       // claude is a claudeCli-transport predefined adapter.
       expect(registry.handles('claude'), isTrue);
-      // pi is a structuredCli-transport predefined adapter.
-      expect(registry.handles('pi'), isTrue);
-      // goose is an acp-transport predefined adapter.
-      expect(registry.handles('goose'), isTrue);
+      // Cursor is a harness LLM provider, not a CLI.
+      expect(registry.handles('cursor-agent'), isFalse);
     });
 
     test('maps harness transport to HarnessBackend', () {
@@ -63,36 +61,21 @@ void main() {
       expect(acp.defaultEnvironment, isEmpty);
     });
 
-    test('goose ACP backend gets the GOOSE_MODE=auto env', () {
+    test('ACP backends start with empty default env', () {
       final registry = buildBackendRegistry(
         adapters: [
           const Adapter(
             id: 'x',
             name: 'X',
             description: '',
-            cliName: 'goose',
+            cliName: 'acp-test',
             transport: AdapterTransport.acp,
             acpArgs: 'acp',
           ),
         ],
       );
-      final backend = registry.backendFor('goose') as AcpBackend;
-      expect(backend.defaultEnvironment, {'GOOSE_MODE': 'auto'});
-    });
-
-    test('maps structuredCli to StructuredCliBackend', () {
-      final registry = buildBackendRegistry(
-        adapters: [
-          const Adapter(
-            id: 'x',
-            name: 'X',
-            description: '',
-            cliName: 'pi',
-            transport: AdapterTransport.structuredCli,
-          ),
-        ],
-      );
-      expect(registry.backendFor('pi'), isA<StructuredCliBackend>());
+      final backend = registry.backendFor('acp-test') as AcpBackend;
+      expect(backend.defaultEnvironment, isEmpty);
     });
 
     test('maps claudeCli to ClaudeCliBackend', () {
@@ -125,7 +108,7 @@ void main() {
             name: 'Second',
             description: '',
             cliName: 'shared',
-            transport: AdapterTransport.structuredCli,
+            transport: AdapterTransport.claudeCli,
           ),
         ],
       );

@@ -52266,8 +52266,7 @@ class RuntimeProfilesTableData extends DataClass
   /// Display name of the profile.
   final String name;
 
-  /// Protocol family the runtime speaks: `claude`, `acp`, `pi`, `codex`,
-  /// or `cli`.
+  /// Protocol family the runtime speaks: `claude`, `acp`, or `cli`.
   final String protocolFamily;
 
   /// The CLI command (executable) the runtime launches.
@@ -58892,6 +58891,17 @@ class $UserActivityTableTable extends UserActivityTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _detailsMeta = const VerificationMeta(
+    'details',
+  );
+  @override
+  late final GeneratedColumn<String> details = GeneratedColumn<String>(
+    'details',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -58915,6 +58925,7 @@ class $UserActivityTableTable extends UserActivityTable
     deviceId,
     ip,
     countryCode,
+    details,
     createdAt,
   ];
   @override
@@ -58991,6 +59002,12 @@ class $UserActivityTableTable extends UserActivityTable
         ),
       );
     }
+    if (data.containsKey('details')) {
+      context.handle(
+        _detailsMeta,
+        details.isAcceptableOrUnknown(data['details']!, _detailsMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -59042,6 +59059,10 @@ class $UserActivityTableTable extends UserActivityTable
         DriftSqlType.string,
         data['${effectivePrefix}country_code'],
       ),
+      details: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}details'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -59085,6 +59106,11 @@ class UserActivityTableData extends DataClass
   /// when resolvable (null for private/loopback/unknown).
   final String? countryCode;
 
+  /// Sanitized JSON object of the mutation's arguments (and a few
+  /// contextual result fields). Null on rows recorded before this column
+  /// existed, or when nothing useful survived redaction.
+  final String? details;
+
   /// When the action happened.
   final DateTime createdAt;
   const UserActivityTableData({
@@ -59097,6 +59123,7 @@ class UserActivityTableData extends DataClass
     this.deviceId,
     this.ip,
     this.countryCode,
+    this.details,
     required this.createdAt,
   });
   @override
@@ -59121,6 +59148,9 @@ class UserActivityTableData extends DataClass
     if (!nullToAbsent || countryCode != null) {
       map['country_code'] = Variable<String>(countryCode);
     }
+    if (!nullToAbsent || details != null) {
+      map['details'] = Variable<String>(details);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -59144,6 +59174,9 @@ class UserActivityTableData extends DataClass
       countryCode: countryCode == null && nullToAbsent
           ? const Value.absent()
           : Value(countryCode),
+      details: details == null && nullToAbsent
+          ? const Value.absent()
+          : Value(details),
       createdAt: Value(createdAt),
     );
   }
@@ -59163,6 +59196,7 @@ class UserActivityTableData extends DataClass
       deviceId: serializer.fromJson<String?>(json['deviceId']),
       ip: serializer.fromJson<String?>(json['ip']),
       countryCode: serializer.fromJson<String?>(json['countryCode']),
+      details: serializer.fromJson<String?>(json['details']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -59179,6 +59213,7 @@ class UserActivityTableData extends DataClass
       'deviceId': serializer.toJson<String?>(deviceId),
       'ip': serializer.toJson<String?>(ip),
       'countryCode': serializer.toJson<String?>(countryCode),
+      'details': serializer.toJson<String?>(details),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -59193,6 +59228,7 @@ class UserActivityTableData extends DataClass
     Value<String?> deviceId = const Value.absent(),
     Value<String?> ip = const Value.absent(),
     Value<String?> countryCode = const Value.absent(),
+    Value<String?> details = const Value.absent(),
     DateTime? createdAt,
   }) => UserActivityTableData(
     id: id ?? this.id,
@@ -59204,6 +59240,7 @@ class UserActivityTableData extends DataClass
     deviceId: deviceId.present ? deviceId.value : this.deviceId,
     ip: ip.present ? ip.value : this.ip,
     countryCode: countryCode.present ? countryCode.value : this.countryCode,
+    details: details.present ? details.value : this.details,
     createdAt: createdAt ?? this.createdAt,
   );
   UserActivityTableData copyWithCompanion(UserActivityTableCompanion data) {
@@ -59223,6 +59260,7 @@ class UserActivityTableData extends DataClass
       countryCode: data.countryCode.present
           ? data.countryCode.value
           : this.countryCode,
+      details: data.details.present ? data.details.value : this.details,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -59239,6 +59277,7 @@ class UserActivityTableData extends DataClass
           ..write('deviceId: $deviceId, ')
           ..write('ip: $ip, ')
           ..write('countryCode: $countryCode, ')
+          ..write('details: $details, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -59255,6 +59294,7 @@ class UserActivityTableData extends DataClass
     deviceId,
     ip,
     countryCode,
+    details,
     createdAt,
   );
   @override
@@ -59270,6 +59310,7 @@ class UserActivityTableData extends DataClass
           other.deviceId == this.deviceId &&
           other.ip == this.ip &&
           other.countryCode == this.countryCode &&
+          other.details == this.details &&
           other.createdAt == this.createdAt);
 }
 
@@ -59284,6 +59325,7 @@ class UserActivityTableCompanion
   final Value<String?> deviceId;
   final Value<String?> ip;
   final Value<String?> countryCode;
+  final Value<String?> details;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const UserActivityTableCompanion({
@@ -59296,6 +59338,7 @@ class UserActivityTableCompanion
     this.deviceId = const Value.absent(),
     this.ip = const Value.absent(),
     this.countryCode = const Value.absent(),
+    this.details = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -59309,6 +59352,7 @@ class UserActivityTableCompanion
     this.deviceId = const Value.absent(),
     this.ip = const Value.absent(),
     this.countryCode = const Value.absent(),
+    this.details = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -59325,6 +59369,7 @@ class UserActivityTableCompanion
     Expression<String>? deviceId,
     Expression<String>? ip,
     Expression<String>? countryCode,
+    Expression<String>? details,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -59338,6 +59383,7 @@ class UserActivityTableCompanion
       if (deviceId != null) 'device_id': deviceId,
       if (ip != null) 'ip': ip,
       if (countryCode != null) 'country_code': countryCode,
+      if (details != null) 'details': details,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -59353,6 +59399,7 @@ class UserActivityTableCompanion
     Value<String?>? deviceId,
     Value<String?>? ip,
     Value<String?>? countryCode,
+    Value<String?>? details,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -59366,6 +59413,7 @@ class UserActivityTableCompanion
       deviceId: deviceId ?? this.deviceId,
       ip: ip ?? this.ip,
       countryCode: countryCode ?? this.countryCode,
+      details: details ?? this.details,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -59401,6 +59449,9 @@ class UserActivityTableCompanion
     if (countryCode.present) {
       map['country_code'] = Variable<String>(countryCode.value);
     }
+    if (details.present) {
+      map['details'] = Variable<String>(details.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -59422,6 +59473,7 @@ class UserActivityTableCompanion
           ..write('deviceId: $deviceId, ')
           ..write('ip: $ip, ')
           ..write('countryCode: $countryCode, ')
+          ..write('details: $details, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -112667,6 +112719,7 @@ typedef $$UserActivityTableTableCreateCompanionBuilder =
       Value<String?> deviceId,
       Value<String?> ip,
       Value<String?> countryCode,
+      Value<String?> details,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -112681,6 +112734,7 @@ typedef $$UserActivityTableTableUpdateCompanionBuilder =
       Value<String?> deviceId,
       Value<String?> ip,
       Value<String?> countryCode,
+      Value<String?> details,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -112736,6 +112790,11 @@ class $$UserActivityTableTableFilterComposer
 
   ColumnFilters<String> get countryCode => $composableBuilder(
     column: $table.countryCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get details => $composableBuilder(
+    column: $table.details,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -112799,6 +112858,11 @@ class $$UserActivityTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get details => $composableBuilder(
+    column: $table.details,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -112846,6 +112910,9 @@ class $$UserActivityTableTableAnnotationComposer
     column: $table.countryCode,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get details =>
+      $composableBuilder(column: $table.details, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -112900,6 +112967,7 @@ class $$UserActivityTableTableTableManager
                 Value<String?> deviceId = const Value.absent(),
                 Value<String?> ip = const Value.absent(),
                 Value<String?> countryCode = const Value.absent(),
+                Value<String?> details = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserActivityTableCompanion(
@@ -112912,6 +112980,7 @@ class $$UserActivityTableTableTableManager
                 deviceId: deviceId,
                 ip: ip,
                 countryCode: countryCode,
+                details: details,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -112926,6 +112995,7 @@ class $$UserActivityTableTableTableManager
                 Value<String?> deviceId = const Value.absent(),
                 Value<String?> ip = const Value.absent(),
                 Value<String?> countryCode = const Value.absent(),
+                Value<String?> details = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserActivityTableCompanion.insert(
@@ -112938,6 +113008,7 @@ class $$UserActivityTableTableTableManager
                 deviceId: deviceId,
                 ip: ip,
                 countryCode: countryCode,
+                details: details,
                 createdAt: createdAt,
                 rowid: rowid,
               ),

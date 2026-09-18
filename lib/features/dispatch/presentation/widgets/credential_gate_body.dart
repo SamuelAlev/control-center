@@ -239,7 +239,7 @@ class _ClaudeFix extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: CcButton(
               variant: CcButtonVariant.secondary,
               size: CcButtonSize.sm,

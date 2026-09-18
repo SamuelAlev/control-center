@@ -56,26 +56,36 @@ message instead.
 
 When an agent hits an action its guardrails gate — a destructive command, a
 privileged tool — the server **blocks the run** and publishes an approval request
-to every connected client. An always-on-top panel appears in the shell listing what
-is waiting; approve or deny it inline and the agent continues.
+to every connected client. If you have that conversation open, the request
+appears **in the chat**, above the composer, as the same numbered-option card
+used for `ask_user` (deny, approve, and optionally approve for eight hours).
+There is no skip: a blocked agent is waiting on a decision.
 
-There is no timeout: a blocked agent waits until someone decides. The same request
-also appears in the inbox's attention strip and on the phone client, so you can
-unblock it from wherever you are.
+If you are somewhere else in the app, an always-on-top panel in the shell still
+lists what is waiting, so you can unblock the agent without hunting for the
+space. The overlay hides a request the moment that space's conversation is on
+screen, so you never answer the same prompt twice.
+
+There is no timeout: a blocked agent waits until someone decides. The same
+request also appears in the inbox's attention strip and on the phone client.
 
 ## Answer an agent's question
 
-An agent can also just ask you something. The `ask_user` tool renders a form
-directly in the conversation — a question with options, free text, or both — and
-the run blocks on your answer. It is a separate mechanism from the approval panel
-above: an approval is "may I do this?", a question is "which of these did you
-mean?".
+An agent that needs a preference, a missing requirement, or a genuine fork
+**must** call `ask_user`. Writing the question as a chat message ends the turn
+and you have to re-prompt. The tool renders a numbered card in the conversation
+— options, optional free text, or both — and the run waits on your answer.
 
-It is available on the built-in harness in every mode, including the read-only
-ones (asking mutates nothing), and it is deliberately not wrapped in an approval
-prompt — a dialog in front of a dialog would fail closed with no approver
-connected, denying the agent the act of asking. A run with no conversation to
-render into simply does not get the tool.
+Tap a single option to send it (the trailing number becomes an arrow on hover).
+Multi-select and typed answers use **Continue** (`⌘↵` / `Ctrl↵`). **Skip**
+tells the agent to pick a reasonable default and not ask again.
+
+It is a separate mechanism from the approval card above: an approval is "may I
+do this?", a question is "which of these did you mean?". Asking is available on
+the built-in harness in every mode, including the read-only ones (it mutates
+nothing), and it is deliberately not wrapped in an approval prompt — a dialog in
+front of a dialog would fail closed with no approver connected. A run with no
+conversation to render into simply does not get the tool.
 
 ## Stop an agent
 

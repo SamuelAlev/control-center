@@ -5,7 +5,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/github_reference_parser.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/widgets/reference_chip_shell.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Inline chip-style preview for a GitHub commit reference rendered inside

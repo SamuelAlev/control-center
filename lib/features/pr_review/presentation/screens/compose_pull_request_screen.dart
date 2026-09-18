@@ -630,7 +630,7 @@ class _BodyState extends ConsumerState<_Body>
           );
         }
         return SliverPadding(
-          padding: EdgeInsets.only(left: showTree ? _treeWidth : 0),
+          padding: EdgeInsetsDirectional.only(start: showTree ? _treeWidth : 0),
           sliver: PrDiffView(
             key: _diffKey,
             files: diff.files,

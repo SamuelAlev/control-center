@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/primitives/focus_modality.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/widgets.dart';
@@ -139,7 +140,14 @@ class _FocusRingState extends State<FocusRing> {
       clipBehavior: Clip.none,
       children: [
         widget.child,
-        if (_visible && widget.enabled) Positioned.fill(child: ring),
+        Positioned.fill(
+          child: AnimatedOpacity(
+            opacity: _visible && widget.enabled ? 1 : 0,
+            duration: CcMotion.resolveFade(context, CcMotion.fast),
+            curve: CcMotion.standard,
+            child: ring,
+          ),
+        ),
       ],
     );
   }
@@ -176,11 +184,10 @@ class RingPainter extends CustomPainter {
     // gap + width and its inner edge leaves exactly `gap` of clear space.
     final grow = gap + width / 2;
     final centerline = (Offset.zero & size).inflate(grow);
-    final paint =
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = width
-          ..color = color;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..color = color;
     canvas.drawRRect(
       RRect.fromRectAndCorners(
         centerline,

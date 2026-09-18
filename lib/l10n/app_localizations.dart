@@ -5,13 +5,34 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
+import 'app_localizations_ar.dart';
+import 'app_localizations_cs.dart';
 import 'app_localizations_de.dart';
+import 'app_localizations_el.dart';
 import 'app_localizations_en.dart';
 import 'app_localizations_es.dart';
+import 'app_localizations_fa.dart';
 import 'app_localizations_fr.dart';
+import 'app_localizations_he.dart';
+import 'app_localizations_hu.dart';
+import 'app_localizations_id.dart';
 import 'app_localizations_it.dart';
+import 'app_localizations_ja.dart';
+import 'app_localizations_ko.dart';
+import 'app_localizations_ms.dart';
+import 'app_localizations_nb.dart';
 import 'app_localizations_nl.dart';
+import 'app_localizations_pl.dart';
 import 'app_localizations_pt.dart';
+import 'app_localizations_ro.dart';
+import 'app_localizations_ru.dart';
+import 'app_localizations_sv.dart';
+import 'app_localizations_th.dart';
+import 'app_localizations_tr.dart';
+import 'app_localizations_uk.dart';
+import 'app_localizations_ur.dart';
+import 'app_localizations_vi.dart';
+import 'app_localizations_zh.dart';
 
 // ignore_for_file: type=lint
 
@@ -99,13 +120,40 @@ abstract class AppLocalizations {
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
+    Locale('ar'),
+    Locale('cs'),
     Locale('de'),
+    Locale('el'),
     Locale('en'),
+    Locale('en', 'GB'),
     Locale('es'),
+    Locale('es', 'MX'),
+    Locale('fa'),
     Locale('fr'),
+    Locale('fr', 'CA'),
+    Locale('he'),
+    Locale('hu'),
+    Locale('id'),
     Locale('it'),
+    Locale('ja'),
+    Locale('ko'),
+    Locale('ms'),
+    Locale('nb'),
     Locale('nl'),
+    Locale('pl'),
     Locale('pt'),
+    Locale('pt', 'PT'),
+    Locale('ro'),
+    Locale('ru'),
+    Locale('sv'),
+    Locale('th'),
+    Locale('tr'),
+    Locale('uk'),
+    Locale('ur'),
+    Locale('vi'),
+    Locale('zh'),
+    Locale('zh', 'HK'),
+    Locale('zh', 'TW'),
   ];
 
   /// Run status: the run finished successfully (green status dot)
@@ -411,7 +459,7 @@ abstract class AppLocalizations {
   /// No description provided for @rigsUnsupportedServer.
   ///
   /// In en, this message translates to:
-  /// **'This server cannot host enclosed VMs. Rigs need a hypervisor on the machine running cc_server.'**
+  /// **'This server cannot host any rig surfaces. Check the host requirements for the machine you want to use.'**
   String get rigsUnsupportedServer;
 
   /// No description provided for @rigSurfaceComputer.
@@ -426,11 +474,17 @@ abstract class AppLocalizations {
   /// **'Browser'**
   String get rigSurfaceBrowser;
 
-  /// No description provided for @rigSurfaceMobile.
+  /// No description provided for @rigSurfaceAndroid.
   ///
   /// In en, this message translates to:
-  /// **'Mobile'**
-  String get rigSurfaceMobile;
+  /// **'Android'**
+  String get rigSurfaceAndroid;
+
+  /// No description provided for @rigSurfaceIosSimulator.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS Simulator'**
+  String get rigSurfaceIosSimulator;
 
   /// Browser rig surface name, by engine.
   ///
@@ -540,6 +594,18 @@ abstract class AppLocalizations {
   /// **'Starts a disposable VM you and your agents share for this conversation. It is destroyed when it closes, and nothing in it touches your computer.'**
   String get rigStartHint;
 
+  /// No description provided for @rigStartAndroidHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connects to an Android emulator already running on the server. Network access is not enclosed.'**
+  String get rigStartAndroidHint;
+
+  /// No description provided for @rigStartIosHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.'**
+  String get rigStartIosHint;
+
   /// No description provided for @rigStopMachine.
   ///
   /// In en, this message translates to:
@@ -564,11 +630,11 @@ abstract class AppLocalizations {
   /// **'Tools'**
   String get ideMenuSectionTools;
 
-  /// Heading over the enclosed-machine rows of the editor's [+] menu. It is what lets those rows drop their '(VM)' suffix.
+  /// Heading over the machine rows of the editor's [+] menu. It is what lets those rows drop their '(VM)' suffix.
   ///
   /// In en, this message translates to:
-  /// **'Virtual machine'**
-  String get ideMenuSectionVirtualMachine;
+  /// **'Machines'**
+  String get ideMenuSectionMachines;
 
   /// Heading over the rows of the editor's [+] menu that bring back a closed view.
   ///
@@ -588,23 +654,29 @@ abstract class AppLocalizations {
   /// **'No matches'**
   String get ideMenuNoMatches;
 
-  /// Desktop rig, named inside the [+] menu's VIRTUAL MACHINE group — no '(VM)' suffix because the heading already says it. The TAB keeps rigTabComputer.
+  /// Desktop rig, named inside the [+] menu's MACHINES group — no '(VM)' suffix because the heading already says it. The TAB keeps rigTabComputer.
   ///
   /// In en, this message translates to:
   /// **'Computer'**
   String get rigMenuComputer;
 
-  /// Browser rig with no named engine, inside the [+] menu's VIRTUAL MACHINE group. The TAB keeps rigTabBrowser.
+  /// Browser rig with no named engine, inside the [+] menu's MACHINES group. The TAB keeps rigTabBrowser.
   ///
   /// In en, this message translates to:
   /// **'Browser'**
   String get rigMenuBrowser;
 
-  /// Android rig, inside the [+] menu's VIRTUAL MACHINE group. The TAB keeps rigTabMobile.
+  /// Android rig, inside the [+] menu's MACHINES group. The TAB keeps rigTabMobile.
   ///
   /// In en, this message translates to:
-  /// **'Phone'**
-  String get rigMenuMobile;
+  /// **'Android'**
+  String get rigMenuAndroid;
+
+  /// No description provided for @rigMenuIosSimulator.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS Simulator'**
+  String get rigMenuIosSimulator;
 
   /// Names one of several identical machines in a conversation, e.g. "WebKit 2". Only the frame is translated; the label and the suffix are supplied.
   ///
@@ -671,6 +743,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This server'**
   String get rigsCapabilitiesTitle;
+
+  /// No description provided for @rigInstallIosAutomation.
+  ///
+  /// In en, this message translates to:
+  /// **'Install iOS automation bridge'**
+  String get rigInstallIosAutomation;
+
+  /// No description provided for @rigInstallingIosAutomation.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing iOS automation bridge…'**
+  String get rigInstallingIosAutomation;
+
+  /// No description provided for @rigIosAutomationInstalled.
+  ///
+  /// In en, this message translates to:
+  /// **'iOS automation bridge installed'**
+  String get rigIosAutomationInstalled;
 
   /// No description provided for @rigsImagesTitle.
   ///
@@ -2778,23 +2868,11 @@ abstract class AppLocalizations {
   /// **'The speech and diarization models this server hosts.'**
   String get voiceAndMeetingsSettingsDescription;
 
-  /// No description provided for @filterSettingsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Filter settings'**
-  String get filterSettingsHint;
-
   /// No description provided for @needsSetupLabel.
   ///
   /// In en, this message translates to:
   /// **'Needs setup'**
   String get needsSetupLabel;
-
-  /// No description provided for @noSettingsMatch.
-  ///
-  /// In en, this message translates to:
-  /// **'No settings match \"{query}\"'**
-  String noSettingsMatch(String query);
 
   /// No description provided for @collapseSidebar.
   ///
@@ -2891,12 +2969,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No runs yet'**
   String get noRunsYet;
-
-  /// Relative time since an agent was last active
-  ///
-  /// In en, this message translates to:
-  /// **'Active {duration} ago'**
-  String lastActiveAgo(String duration);
 
   /// No description provided for @copyPath.
   ///
@@ -4359,8 +4431,8 @@ abstract class AppLocalizations {
   /// Agent count label
   ///
   /// In en, this message translates to:
-  /// **'{count} agent{plural, plural, =1{} other{s}}'**
-  String agentCount(int count, int plural);
+  /// **'{count, plural, =1{1 agent} other{{count} agents}}'**
+  String agentCount(int count);
 
   /// Agent MD Path
   ///
@@ -4613,6 +4685,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Approved'**
   String get approved;
+
+  /// No description provided for @articleNoun.
+  ///
+  /// In en, this message translates to:
+  /// **'Article'**
+  String get articleNoun;
 
   /// No description provided for @articlesSubscribed.
   ///
@@ -5339,6 +5417,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Deny'**
   String get deny;
+
+  /// No description provided for @detailsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get detailsLabel;
 
   /// Description
   ///
@@ -6523,48 +6607,6 @@ abstract class AppLocalizations {
   /// **'Kill running'**
   String get killRunning;
 
-  /// Dutch language option
-  ///
-  /// In en, this message translates to:
-  /// **'Nederlands'**
-  String get languageDutch;
-
-  /// English language option
-  ///
-  /// In en, this message translates to:
-  /// **'English'**
-  String get languageEnglish;
-
-  /// French language option
-  ///
-  /// In en, this message translates to:
-  /// **'Français'**
-  String get languageFrench;
-
-  /// German language option
-  ///
-  /// In en, this message translates to:
-  /// **'Deutsch'**
-  String get languageGerman;
-
-  /// Italian language option
-  ///
-  /// In en, this message translates to:
-  /// **'Italiano'**
-  String get languageItalian;
-
-  /// Portuguese language option
-  ///
-  /// In en, this message translates to:
-  /// **'Português'**
-  String get languagePortuguese;
-
-  /// Spanish language option
-  ///
-  /// In en, this message translates to:
-  /// **'Español'**
-  String get languageSpanish;
-
   /// Option to use the system locale
   ///
   /// In en, this message translates to:
@@ -7501,6 +7543,12 @@ abstract class AppLocalizations {
   /// **'Open in browser'**
   String get openInBrowser;
 
+  /// No description provided for @openedInYourBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened in your browser.'**
+  String get openedInYourBrowser;
+
   /// No description provided for @openLabel.
   ///
   /// In en, this message translates to:
@@ -7890,6 +7938,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1 {A repository can\'t be accessed} other {{count} repositories can\'t be accessed}}'**
   String repoAccessNoticeTitle(int count);
+
+  /// Title of the notice when the GitHub App installation covering linked repos is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub App installation suspended'**
+  String get repoAccessNoticeSuspendedTitle;
+
+  /// Body telling the operator the lists are cached because the GitHub App installation is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'Showing last known data for {repos}. Resume the installation on GitHub, or connect a token that has access.'**
+  String repoAccessNoticeSuspendedBody(String repos);
 
   /// Badge on a repo row the server's forge credential cannot access
   ///
@@ -11959,6 +12019,30 @@ abstract class AppLocalizations {
   /// **'Your answer'**
   String get agentQuestionAnswerLabel;
 
+  /// Caption on an ask-user card locating this question in a batch
+  ///
+  /// In en, this message translates to:
+  /// **'Question {index} of {count}'**
+  String agentQuestionProgress(int index, int count);
+
+  /// No description provided for @agentQuestionSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get agentQuestionSkip;
+
+  /// No description provided for @agentQuestionSkippedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get agentQuestionSkippedLabel;
+
+  /// No description provided for @agentQuestionFreeformOptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe in your own words…'**
+  String get agentQuestionFreeformOptionHint;
+
   /// No description provided for @reviewRequested.
   ///
   /// In en, this message translates to:
@@ -12021,6 +12105,30 @@ abstract class AppLocalizations {
     String actor,
     String requested,
     String removed,
+  );
+
+  /// Activity feed: one or more labels added to the pull request
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} added the {labels} {count, plural, =1{label} other{labels}}'**
+  String prTimelineAddedLabels(String actor, String labels, int count);
+
+  /// Activity feed: one or more labels removed from the pull request
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} removed the {labels} {count, plural, =1{label} other{labels}}'**
+  String prTimelineRemovedLabels(String actor, String labels, int count);
+
+  /// Activity feed: grouped label add and remove events by the same actor
+  ///
+  /// In en, this message translates to:
+  /// **'{actor} added the {added} {addedCount, plural, =1{label} other{labels}} and removed the {removed} {removedCount, plural, =1{label} other{labels}}'**
+  String prTimelineAddedAndRemovedLabels(
+    String actor,
+    String added,
+    int addedCount,
+    String removed,
+    int removedCount,
   );
 
   /// Activity feed: commit pushed event (sha + message follow)
@@ -12130,6 +12238,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No checks have run yet'**
   String get noChecksYet;
+
+  /// No description provided for @noChangesToReview.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes to review'**
+  String get noChangesToReview;
 
   /// Sidebar checks summary: number of failing checks
   ///
@@ -12484,12 +12598,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear all'**
   String get clearAll;
-
-  /// No description provided for @agentsRunningCount.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 agent running} other{{count} agents running}}'**
-  String agentsRunningCount(int count);
 
   /// No description provided for @reviewSummary.
   ///
@@ -17867,6 +17975,66 @@ abstract class AppLocalizations {
   /// **'Open in editor'**
   String get openInEditor;
 
+  /// No description provided for @regexTesterTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Test regular expression'**
+  String get regexTesterTitle;
+
+  /// No description provided for @regexTesterHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a sample'**
+  String get regexTesterHint;
+
+  /// No description provided for @regexMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Match'**
+  String get regexMatch;
+
+  /// No description provided for @regexNoMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'No match'**
+  String get regexNoMatch;
+
+  /// No description provided for @regexInvalidPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid pattern'**
+  String get regexInvalidPattern;
+
+  /// No description provided for @symbolLookupNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No definition in the index or this pull request'**
+  String get symbolLookupNone;
+
+  /// No description provided for @symbolLookupInDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'Found in this pull request'**
+  String get symbolLookupInDiff;
+
+  /// No description provided for @symbolLookupFromBase.
+  ///
+  /// In en, this message translates to:
+  /// **'From the base checkout — this PR\'s worktree isn\'t indexed yet'**
+  String get symbolLookupFromBase;
+
+  /// No description provided for @symbolImplementations.
+  ///
+  /// In en, this message translates to:
+  /// **'Implementations'**
+  String get symbolImplementations;
+
+  /// No description provided for @symbolCallersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} callers'**
+  String symbolCallersCount(int count);
+
   /// No description provided for @commitMessageHint.
   ///
   /// In en, this message translates to:
@@ -17986,6 +18154,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search across the pull request\'s files'**
   String get searchInFilesHint;
+
+  /// No description provided for @searchInWholeRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in the whole repo'**
+  String get searchInWholeRepo;
+
+  /// No description provided for @searchInThisPullRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Search in this pull request'**
+  String get searchInThisPullRequest;
 
   /// No description provided for @searchNoResults.
   ///
@@ -18610,48 +18790,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overridden'**
   String get providerGenerationOverridden;
-
-  /// No description provided for @spaceFlyoutNeedsInput.
-  ///
-  /// In en, this message translates to:
-  /// **'Needs input'**
-  String get spaceFlyoutNeedsInput;
-
-  /// No description provided for @spaceFlyoutPreparing.
-  ///
-  /// In en, this message translates to:
-  /// **'Preparing'**
-  String get spaceFlyoutPreparing;
-
-  /// No description provided for @spaceFlyoutSetupFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup failed'**
-  String get spaceFlyoutSetupFailed;
-
-  /// No description provided for @spaceFlyoutSetupStopped.
-  ///
-  /// In en, this message translates to:
-  /// **'Setup stopped'**
-  String get spaceFlyoutSetupStopped;
-
-  /// No description provided for @spaceFlyoutNeverRun.
-  ///
-  /// In en, this message translates to:
-  /// **'No agent has run here yet'**
-  String get spaceFlyoutNeverRun;
-
-  /// Accessible description of an agent's context-window meter in the space hover flyout.
-  ///
-  /// In en, this message translates to:
-  /// **'Context window {used} used, {percent} full'**
-  String spaceFlyoutContextUsage(String used, String percent);
-
-  /// Count of subagent runs in flight, shown beside the agent count in the space hover flyout.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 subagent} other{{count} subagents}}'**
-  String subagentsRunningCount(int count);
 
   /// No description provided for @branchNotPushed.
   ///
@@ -22960,6 +23098,18 @@ abstract class AppLocalizations {
   /// **'Rename conversation'**
   String get renameConversation;
 
+  /// Accessible name for the space row overflow menu trigger
+  ///
+  /// In en, this message translates to:
+  /// **'Space actions'**
+  String get spaceActions;
+
+  /// Accessible name for the conversation row overflow menu trigger
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation actions'**
+  String get conversationActions;
+
   /// Edit a space's repository selection — sidebar row menu item
   ///
   /// In en, this message translates to:
@@ -24039,6 +24189,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open settings'**
   String get credentialGateOpenSettings;
+
+  /// Title of the model browser dialog and hint of the model picker field
+  ///
+  /// In en, this message translates to:
+  /// **'Select model'**
+  String get selectModel;
+
+  /// Model browser rail item that clears the provider filter
+  ///
+  /// In en, this message translates to:
+  /// **'All models'**
+  String get allModels;
+
+  /// Model browser footer when the search matches nothing
+  ///
+  /// In en, this message translates to:
+  /// **'No models match your search'**
+  String get noModelsMatchSearch;
+
+  /// Model browser row offering the raw search text as a custom model id
+  ///
+  /// In en, this message translates to:
+  /// **'Use “{id}”'**
+  String useCustomModelId(String id);
+
+  /// Price shown for a model with zero cost on both lanes
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get modelFree;
+
+  /// Compact output-token ceiling, e.g. '131k output'
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} output'**
+  String modelOutputTokens(String tokens);
+
+  /// Model price breakdown, e.g. '$1.40 in / $4.40 out per 1M tokens'
+  ///
+  /// In en, this message translates to:
+  /// **'{input} in / {output} out per 1M tokens'**
+  String modelPricePerMTokens(String input, String output);
+
+  /// The reasoning effort levels a model accepts, e.g. 'Reasoning effort: Low · Medium'
+  ///
+  /// In en, this message translates to:
+  /// **'Reasoning effort: {levels}'**
+  String modelEffortLevels(String levels);
+
+  /// Tooltip on the icon marking a model with a reasoning-effort control
+  ///
+  /// In en, this message translates to:
+  /// **'Supports reasoning effort'**
+  String get modelSupportsReasoning;
+
+  /// No description provided for @profileDeliveryMetrics.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery metrics'**
+  String get profileDeliveryMetrics;
+
+  /// Number of pull requests sampled for profile metrics
+  ///
+  /// In en, this message translates to:
+  /// **'PRs analyzed: {count}'**
+  String profileMetricsSample(int count);
+
+  /// No description provided for @profileMergeRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge rate'**
+  String get profileMergeRate;
+
+  /// No description provided for @profileReviewCoverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Review coverage'**
+  String get profileReviewCoverage;
+
+  /// No description provided for @profilePrSize.
+  ///
+  /// In en, this message translates to:
+  /// **'PR size'**
+  String get profilePrSize;
+
+  /// No description provided for @profileTimeToMerge.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to merge'**
+  String get profileTimeToMerge;
+
+  /// No description provided for @profileMergeTimeTrend.
+  ///
+  /// In en, this message translates to:
+  /// **'Merge time trend'**
+  String get profileMergeTimeTrend;
+
+  /// No description provided for @profileWeeklyMedian.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly median, log scale'**
+  String get profileWeeklyMedian;
+
+  /// No description provided for @profilePrOpeningPattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekday × hour, local time'**
+  String get profilePrOpeningPattern;
+
+  /// No description provided for @profileFirstReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Time to first review'**
+  String get profileFirstReview;
+
+  /// No description provided for @profileMetricsTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentiles use a limited sample of the available pull requests.'**
+  String get profileMetricsTruncated;
+
+  /// Compact count of lines changed
+  ///
+  /// In en, this message translates to:
+  /// **'{count} lines'**
+  String profileLinesChanged(String count);
+
+  /// Compact duration in minutes
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String profileDurationMinutes(int count);
+
+  /// Compact duration in hours
+  ///
+  /// In en, this message translates to:
+  /// **'{count} hr'**
+  String profileDurationHours(int count);
+
+  /// Compact duration in days and hours
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d {hours}h'**
+  String profileDurationDaysHours(int days, int hours);
+
+  /// Median and 90th percentile values
+  ///
+  /// In en, this message translates to:
+  /// **'p50 {median} · p90 {p90}'**
+  String profilePercentiles(String median, String p90);
+
+  /// Team member count
+  ///
+  /// In en, this message translates to:
+  /// **'Members: {count}'**
+  String profileTeamMembers(int count);
+
+  /// Empty state for a team with no workspace pull requests
+  ///
+  /// In en, this message translates to:
+  /// **'No pull requests by {team} in this workspace'**
+  String noPrsByTeamInWorkspace(String team);
+
+  /// No description provided for @profilePrStateFilterLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter pull requests by state'**
+  String get profilePrStateFilterLabel;
+
+  /// No description provided for @noProfilePrsMatchSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another title or pull request number'**
+  String get noProfilePrsMatchSearchHint;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'Network unrestricted'**
+  String get rigNetworkUnrestricted;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'Allow all hosts'**
+  String get rigNetworkAllowAllHosts;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'Allow every network host?'**
+  String get rigNetworkBypassTitle;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'This restarts the enclosure and discards uncommitted work inside it. The guest can then reach any network host until it is closed.'**
+  String get rigNetworkBypassBody;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'Restart unrestricted'**
+  String get rigNetworkRestartUnrestricted;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'This enclosure can reach every network host. Close it and open a new one to restore the default restrictions.'**
+  String get rigNetworkUnrestrictedBody;
+
+  /// Enclosure network security control
+  ///
+  /// In en, this message translates to:
+  /// **'This Android emulator already manages its own networking, so Control Center cannot enforce a per-host allowlist. No restart is needed.'**
+  String get rigNetworkAlreadyUnrestrictedBody;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Paste clipboard into this enclosure?'**
+  String get rigClipboardPermissionHostToRigTitle;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center will read your device clipboard and send its contents to the enclosure. Clipboard content may contain passwords or other secrets.'**
+  String get rigClipboardPermissionHostToRigBody;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Copy clipboard out of this enclosure?'**
+  String get rigClipboardPermissionRigToHostTitle;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Control Center will read the enclosure clipboard and replace your device clipboard with its contents. Treat content from the enclosure as untrusted.'**
+  String get rigClipboardPermissionRigToHostBody;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Allow for 10 minutes'**
+  String get rigClipboardAllowTenMinutes;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow'**
+  String get rigClipboardAlwaysAllow;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard access'**
+  String get rigClipboardSettingsTitle;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which clipboard transfers can run without asking. Temporary permissions expire after 10 minutes.'**
+  String get rigClipboardSettingsHint;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow paste into enclosures'**
+  String get rigClipboardAlwaysPasteTitle;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Send this device\'s clipboard to any enclosure without asking.'**
+  String get rigClipboardAlwaysPasteDescription;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Always allow copy from enclosures'**
+  String get rigClipboardAlwaysCopyTitle;
+
+  /// Rig clipboard permission and settings
+  ///
+  /// In en, this message translates to:
+  /// **'Put clipboard content from any enclosure on this device without asking.'**
+  String get rigClipboardAlwaysCopyDescription;
 }
 
 class _AppLocalizationsDelegate
@@ -24052,13 +24490,34 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) => <String>[
+    'ar',
+    'cs',
     'de',
+    'el',
     'en',
     'es',
+    'fa',
     'fr',
+    'he',
+    'hu',
+    'id',
     'it',
+    'ja',
+    'ko',
+    'ms',
+    'nb',
     'nl',
+    'pl',
     'pt',
+    'ro',
+    'ru',
+    'sv',
+    'th',
+    'tr',
+    'uk',
+    'ur',
+    'vi',
+    'zh',
   ].contains(locale.languageCode);
 
   @override
@@ -24066,22 +24525,110 @@ class _AppLocalizationsDelegate
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+  // Lookup logic when language+country codes are specified.
+  switch (locale.languageCode) {
+    case 'en':
+      {
+        switch (locale.countryCode) {
+          case 'GB':
+            return AppLocalizationsEnGb();
+        }
+        break;
+      }
+    case 'es':
+      {
+        switch (locale.countryCode) {
+          case 'MX':
+            return AppLocalizationsEsMx();
+        }
+        break;
+      }
+    case 'fr':
+      {
+        switch (locale.countryCode) {
+          case 'CA':
+            return AppLocalizationsFrCa();
+        }
+        break;
+      }
+    case 'pt':
+      {
+        switch (locale.countryCode) {
+          case 'PT':
+            return AppLocalizationsPtPt();
+        }
+        break;
+      }
+    case 'zh':
+      {
+        switch (locale.countryCode) {
+          case 'HK':
+            return AppLocalizationsZhHk();
+          case 'TW':
+            return AppLocalizationsZhTw();
+        }
+        break;
+      }
+  }
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
+    case 'ar':
+      return AppLocalizationsAr();
+    case 'cs':
+      return AppLocalizationsCs();
     case 'de':
       return AppLocalizationsDe();
+    case 'el':
+      return AppLocalizationsEl();
     case 'en':
       return AppLocalizationsEn();
     case 'es':
       return AppLocalizationsEs();
+    case 'fa':
+      return AppLocalizationsFa();
     case 'fr':
       return AppLocalizationsFr();
+    case 'he':
+      return AppLocalizationsHe();
+    case 'hu':
+      return AppLocalizationsHu();
+    case 'id':
+      return AppLocalizationsId();
     case 'it':
       return AppLocalizationsIt();
+    case 'ja':
+      return AppLocalizationsJa();
+    case 'ko':
+      return AppLocalizationsKo();
+    case 'ms':
+      return AppLocalizationsMs();
+    case 'nb':
+      return AppLocalizationsNb();
     case 'nl':
       return AppLocalizationsNl();
+    case 'pl':
+      return AppLocalizationsPl();
     case 'pt':
       return AppLocalizationsPt();
+    case 'ro':
+      return AppLocalizationsRo();
+    case 'ru':
+      return AppLocalizationsRu();
+    case 'sv':
+      return AppLocalizationsSv();
+    case 'th':
+      return AppLocalizationsTh();
+    case 'tr':
+      return AppLocalizationsTr();
+    case 'uk':
+      return AppLocalizationsUk();
+    case 'ur':
+      return AppLocalizationsUr();
+    case 'vi':
+      return AppLocalizationsVi();
+    case 'zh':
+      return AppLocalizationsZh();
   }
 
   throw FlutterError(

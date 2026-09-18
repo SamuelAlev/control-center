@@ -7,7 +7,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/toolbar_chips.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// A toolbar displayed above the PR diff, showing file stats, comment count,
 /// commit selector and view mode toggle.
@@ -81,7 +81,7 @@ class PrDiffToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens =
         context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
+        ((context.ccTheme?.isDark ?? false)
             ? DesignSystemTokens.dark()
             : DesignSystemTokens.light());
     return Container(

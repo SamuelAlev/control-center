@@ -34,8 +34,8 @@ class WorkspaceGeneralSettingsScreen extends StatelessWidget {
     return SettingsPage(
       title: l10n.settingsWorkspaceGeneral,
       subtitle: l10n.settingsWorkspaceGeneralDescription,
-      // The chat-bridge setup card is `chat_bridges`' contribution to this
-      // slot, not something this page names.
+      // Ticketing, conversation titles and chat-bridge setup land here via
+      // [SettingsSlot.workspaceGeneral], not by name.
       slot: SettingsSlot.workspaceGeneral,
       sections: [
         WorkspacePolicySection(workspaceId: workspaceId),

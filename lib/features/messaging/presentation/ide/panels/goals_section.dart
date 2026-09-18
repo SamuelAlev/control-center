@@ -131,8 +131,8 @@ class GoalRunRow extends ConsumerWidget {
             ),
             if (!terminal)
               Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.sm + 14,
+                padding: const EdgeInsetsDirectional.only(
+                  start: AppSpacing.sm + 14,
                   top: 2,
                 ),
                 child: Text(

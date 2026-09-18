@@ -1,5 +1,7 @@
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_sidebar.dart';
+import 'package:cc_ui/src/components/cc_sidebar_item.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -15,13 +17,17 @@ import 'package:flutter/widgets.dart';
 /// + [CcFonts.code], colored `textTertiary`) above its [children]. When
 /// [collapsible] the label becomes a tappable header with a rotating chevron
 /// that expands/collapses the children through an [AnimatedSize]
-/// ([CcMotion.normal], reduced-motion aware).
+/// ([CcMotion.moderate], reduced-motion aware).
 ///
-/// Children are separated by a 4px ([AppSpacing.xs]) gap owned by the group —
-/// the sidebar's inter-item rhythm, identical in the expanded sidebar and the
-/// collapsed rail. (Owning it here, rather than as a trailing margin on each
-/// item, keeps the gap BETWEEN items only, so a divider butted against a group
-/// sits exactly 4px away on both sides.)
+/// Expanded and collapsed rows sit flush (no gutter between them) so the
+/// pointer stays a click cursor while travelling the list. A 4px [SizedBox]
+/// between rows is not a [CcTappable], and the cursor would snap back to
+/// the default arrow in every gap.
+///
+/// Hover follows [CcFluidHoverTarget]: [CcSidebarItem]s wash on nearest-target
+/// hover. A child that is not a target (a nested accordion, a popover-wrapped
+/// row) is a boundary — hovering it does not highlight a neighbour, and the
+/// nested interactive row keeps its own wash.
 ///
 /// In the enclosing [CcSidebar]'s collapsed rail mode the label is hidden (the
 /// group reduces to its icon-only items).
@@ -62,18 +68,39 @@ class _CcSidebarGroupState extends State<CcSidebarGroup> {
     final railCollapsed = CcSidebarScope.collapsedOf(context) ?? false;
     final transitioning = CcSidebarScope.transitioningOf(context) ?? false;
 
-    // Inter-item rhythm: a 4px separator BETWEEN siblings (never after the
-    // last one), so the group's own vertical padding is the only space at its
-    // edges.
-    final body = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < widget.children.length; i++) ...[
-          if (i > 0) const SizedBox(height: AppSpacing.xs),
-          widget.children[i],
+    // Rows sit flush in both modes so a gutter never drops the cursor to
+    // the default arrow. The collapsed rail still wraps each item in a
+    // 32px square; the squares stack without a separator.
+    final body = CcFluidHover(
+      mouseCursor: SystemMouseCursors.click,
+      itemCount: widget.children.length,
+      // Same contract as [CcSidebar]: only [CcFluidHoverTarget]s (typically
+      // [CcSidebarItem]) are rows. A composite child — Tickets accordion,
+      // Service status popover wrapper, a nested group — is a boundary so
+      // hovering it does not wash a neighbour, and nested tappables keep
+      // their own hover (see [CcFluidHover] item-scope wrapping).
+      isItemBoundary: (index) => widget.children[index] is! CcFluidHoverTarget,
+      isItemDisabled: (index) {
+        final child = widget.children[index];
+        if (child case final CcFluidHoverTarget target) {
+          return !target.fluidHoverEnabled;
+        }
+        return true;
+      },
+      itemBuilder: (context, index) => widget.children[index],
+      layoutBuilder: (context, items) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < items.length; i++)
+            if (railCollapsed)
+              Align(
+                child: SizedBox(width: kCcSidebarItemExtent, child: items[i]),
+              )
+            else
+              items[i],
         ],
-      ],
+      ),
     );
 
     // In the icon-only rail — and while the width is animating toward it —
@@ -102,7 +129,7 @@ class _CcSidebarGroupState extends State<CcSidebarGroup> {
             family: context.ccTheme?.monoFontFamily,
           ),
           AnimatedSize(
-            duration: CcMotion.resolve(context, CcMotion.normal),
+            duration: CcMotion.resolve(context, CcMotion.moderate),
             curve: CcMotion.standard,
             alignment: Alignment.topCenter,
             child: expanded
@@ -133,7 +160,7 @@ class _GroupHeader extends StatelessWidget {
   final Color color;
   final String? family;
 
-  Widget _buildRow() {
+  Widget _buildRow(BuildContext context) {
     final labelWidget = Text(
       label.toUpperCase(),
       maxLines: 1,
@@ -154,7 +181,7 @@ class _GroupHeader extends StatelessWidget {
           Expanded(child: labelWidget),
           if (collapsible)
             AnimatedRotation(
-              duration: CcMotion.normal,
+              duration: CcMotion.resolve(context, CcMotion.moderate),
               curve: CcMotion.standard,
               turns: expanded ? 0 : -0.25,
               child: Icon(CcIcons.chevronDown, size: 14, color: color),
@@ -167,7 +194,7 @@ class _GroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!collapsible || onToggle == null) {
-      return _buildRow();
+      return _buildRow(context);
     }
     return Semantics(
       expanded: expanded,
@@ -175,7 +202,7 @@ class _GroupHeader extends StatelessWidget {
         onPressed: onToggle,
         borderRadius: AppRadii.brSm,
         semanticLabel: label,
-        builder: (context, states) => _buildRow(),
+        builder: (context, states) => _buildRow(context),
       ),
     );
   }

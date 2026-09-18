@@ -478,7 +478,8 @@ void main() {
       expect(
         b.fake.requests,
         hasLength(2),
-        reason: 'statusCheckRollup is the query GitHub 504s on, so it is '
+        reason:
+            'statusCheckRollup is the query GitHub 504s on, so it is '
             'chunked tighter than the list it enriches',
       );
     });
@@ -668,7 +669,8 @@ void main() {
       final b = build(
         (_) => _json({
           'data': {
-            'user': {
+            'repositoryOwner': {
+              '__typename': 'User',
               'login': 'sam',
               'name': 'Sam',
               'avatarUrl': 'a',
@@ -696,10 +698,10 @@ void main() {
       expect(profile?.contributionCalendar?.grandTotal, 102);
     });
 
-    test('getUserProfile returns null when user is null', () async {
+    test('getUserProfile returns null when repositoryOwner is null', () async {
       final b = build(
         (_) => _json({
-          'data': {'user': null},
+          'data': {'repositoryOwner': null},
         }),
       );
       expect(await b.client.getUserProfile(login: 'x'), isNull);
@@ -709,12 +711,18 @@ void main() {
       final b = build(
         (_) => _json({
           'data': {
-            'user': {'login': 'sam', 'name': 'Sam', 'avatarUrl': 'a'},
+            'repositoryOwner': {
+              '__typename': 'User',
+              'login': 'sam',
+              'name': 'Sam',
+              'avatarUrl': 'a',
+            },
           },
         }),
       );
       await b.client.getUserProfile(login: 'sam');
       final body = b.fake.requests.single.data as Map<String, dynamic>;
+      expect(body['query'], contains('repositoryOwner(login: \$login)'));
       final variables = body['variables'] as Map;
       expect(variables['login'], 'sam');
       expect(variables['from'], isA<String>());
@@ -729,7 +737,8 @@ void main() {
       final b = build(
         (_) => _json({
           'data': {
-            'user': {
+            'repositoryOwner': {
+              '__typename': 'User',
               'login': 'sam',
               'name': 'Sam',
               'avatarUrl': 'a',
@@ -749,7 +758,7 @@ void main() {
           'errors': [
             {
               'type': 'FORBIDDEN',
-              'path': ['user', 'organizations', 'nodes', 0, 'teams'],
+              'path': ['repositoryOwner', 'organizations', 'nodes', 0, 'teams'],
               'message': 'Resource not accessible by integration',
             },
           ],
@@ -764,10 +773,10 @@ void main() {
       expect(profile?.orgTeams, isEmpty);
     });
 
-    test('getUserProfile throws when errors come back with no user', () async {
+    test('getUserProfile throws when errors come back with no owner', () async {
       final b = build(
         (_) => _json({
-          'data': {'user': null},
+          'data': {'repositoryOwner': null},
           'errors': [
             {'message': 'Bad credentials'},
           ],
@@ -781,6 +790,88 @@ void main() {
               .having((e) => e.message, 'message', 'Bad credentials'),
         ),
       );
+    });
+
+    test('getUserProfile maps an organization owner', () async {
+      final b = build(
+        (_) => _json({
+          'data': {
+            'repositoryOwner': {
+              '__typename': 'Organization',
+              'login': 'acme',
+              'name': 'Acme',
+              'avatarUrl': 'org.png',
+              'description': 'Widgets',
+              'location': 'Earth',
+              'websiteUrl': 'https://acme.example',
+            },
+          },
+        }),
+      );
+      final profile = await b.client.getUserProfile(login: 'acme');
+      expect(profile?.login, 'acme');
+      expect(profile?.name, 'Acme');
+      expect(profile?.bio, 'Widgets');
+      expect(profile?.location, 'Earth');
+      expect(profile?.websiteUrl, 'https://acme.example');
+      expect(profile?.contributionCalendar, isNull);
+    });
+
+    test(
+      'getUserProfile does not throw when GitHub cannot resolve a User',
+      () async {
+        final b = build((o) {
+          if (o.method == 'GET') {
+            return _json({'message': 'Not Found'}, status: 404);
+          }
+          return _json({
+            'data': {'repositoryOwner': null},
+            'errors': [
+              {
+                'type': 'NOT_FOUND',
+                'message':
+                    "Could not resolve to a User with the login of 'parced'.",
+              },
+            ],
+          });
+        });
+        expect(await b.client.getUserProfile(login: 'parced'), isNull);
+      },
+    );
+
+    test('getUserProfile falls back to GET /apps/{slug}', () async {
+      final b = build((o) {
+        if (o.path == '/apps/parced') {
+          return _json({
+            'id': 42,
+            'slug': 'parced',
+            'name': 'Parced',
+            'description': 'A GitHub App',
+            'html_url': 'https://github.com/apps/parced',
+            'external_url': 'https://parced.example',
+          });
+        }
+        return _json({
+          'data': {'repositoryOwner': null},
+          'errors': [
+            {
+              'type': 'NOT_FOUND',
+              'message':
+                  "Could not resolve to a User with the login of 'parced'.",
+            },
+          ],
+        });
+      });
+      final profile = await b.client.getUserProfile(login: 'parced');
+      expect(profile?.login, 'parced');
+      expect(profile?.name, 'Parced');
+      expect(profile?.bio, 'A GitHub App');
+      expect(profile?.websiteUrl, 'https://parced.example');
+      expect(
+        profile?.avatarUrl,
+        'https://avatars.githubusercontent.com/in/42?v=4',
+      );
+      expect(b.fake.requests.map((r) => r.path), ['/graphql', '/apps/parced']);
     });
 
     test('getUserProfile does not query GitHub App bot logins', () async {
@@ -1227,11 +1318,7 @@ void main() {
                               'content': 'THUMBS_UP',
                               'user': {'login': 'ada'},
                             },
-                            {
-                              'id': 'REACT_3',
-                              'content': 'ROCKET',
-                              'user': {},
-                            },
+                            {'id': 'REACT_3', 'content': 'ROCKET', 'user': {}},
                           ],
                         },
                       }
@@ -1267,7 +1354,11 @@ void main() {
     });
 
     test('addReaction maps the shortcode to the enum name', () async {
-      final b = build((_) => _json({'data': {'addReaction': null}}));
+      final b = build(
+        (_) => _json({
+          'data': {'addReaction': null},
+        }),
+      );
       await b.client.addReaction(subjectId: 'PRR_1', content: '+1');
       final body = b.fake.requests.single.data as Map<String, dynamic>;
       expect(body['query'], contains('addReaction'));
@@ -1276,11 +1367,133 @@ void main() {
     });
 
     test('removeReaction sends the reaction node id', () async {
-      final b = build((_) => _json({'data': {'removeReaction': null}}));
+      final b = build(
+        (_) => _json({
+          'data': {'removeReaction': null},
+        }),
+      );
       await b.client.removeReaction(reactionId: 'REACT_1');
       final body = b.fake.requests.single.data as Map<String, dynamic>;
       expect(body['query'], contains('removeReaction'));
       expect((body['variables'] as Map)['reactionId'], 'REACT_1');
     });
+  });
+
+  group('GitHubGraphQLClient profile activity', () {
+    test('paginates every visible team member', () async {
+      var page = 0;
+      final b = build((_) {
+        page++;
+        return _json({
+          'data': {
+            'organization': {
+              'team': {
+                'name': 'Platform',
+                'slug': 'platform',
+                'description': 'Owns the paved road',
+                'avatarUrl': 'https://avatars.example/team',
+                'url': 'https://github.com/orgs/acme/teams/platform',
+                'members': {
+                  'totalCount': 2,
+                  'nodes': [
+                    {
+                      'login': page == 1 ? 'ada' : 'grace',
+                      'name': page == 1 ? 'Ada' : 'Grace',
+                      'avatarUrl': 'https://avatars.example/$page',
+                    },
+                  ],
+                  'pageInfo': {
+                    'hasNextPage': page == 1,
+                    if (page == 1) 'endCursor': 'member-cursor',
+                  },
+                },
+              },
+            },
+          },
+        });
+      });
+
+      final profile = await b.client.getTeamProfile(
+        organization: 'acme',
+        slug: 'platform',
+      );
+
+      expect(b.fake.requests, hasLength(2));
+      expect(profile?.organization, 'acme');
+      expect(profile?.memberCount, 2);
+      expect(profile?.members.map((member) => member.login), ['ada', 'grace']);
+      final secondBody = b.fake.requests[1].data as Map<String, dynamic>;
+      expect((secondBody['variables'] as Map)['after'], 'member-cursor');
+    });
+
+    test('chunks team authors while preserving exact outcome totals', () async {
+      var request = 0;
+      final b = build((_) {
+        request++;
+        return _json({
+          'data': {
+            'open': {'issueCount': request},
+            'draft': {'issueCount': request},
+            'merged': {'issueCount': request},
+            'closed': {'issueCount': request},
+          },
+        });
+      });
+
+      final counts = await b.client.prCountsByAuthors(
+        logins: [for (var i = 0; i < 11; i++) 'user$i'],
+        repos: [(owner: 'acme', name: 'app')],
+      );
+
+      expect(b.fake.requests, hasLength(2));
+      expect(counts, (open: 3, draft: 3, merged: 3, closed: 3));
+      final firstVariables =
+          (b.fake.requests.first.data as Map<String, dynamic>)['variables']
+              as Map;
+      final secondVariables =
+          (b.fake.requests.last.data as Map<String, dynamic>)['variables']
+              as Map;
+      expect(firstVariables['open'], contains('author:user9'));
+      expect(firstVariables['open'], isNot(contains('author:user10')));
+      expect(secondVariables['open'], contains('author:user10'));
+    });
+
+    test(
+      'returns detailed all-state PR nodes for percentile analysis',
+      () async {
+        final b = build(
+          (_) => _json({
+            'data': {
+              'search': {
+                'issueCount': 1,
+                'nodes': [
+                  {
+                    'number': 42,
+                    'title': 'Ship profile metrics',
+                    'state': 'MERGED',
+                    'repository': {'nameWithOwner': 'acme/app'},
+                  },
+                ],
+                'pageInfo': {'hasNextPage': false},
+              },
+            },
+          }),
+        );
+
+        final result = await b.client.searchProfilePullRequestNodes(
+          logins: const ['ada'],
+          repos: const [(owner: 'acme', name: 'app')],
+        );
+
+        expect(result.truncated, isFalse);
+        expect(result.nodes, hasLength(1));
+        expect(result.nodes.single['number'], 42);
+        final variables =
+            (b.fake.requests.single.data as Map<String, dynamic>)['variables']
+                as Map;
+        expect(variables['q'], contains('author:ada'));
+        expect(variables['q'], contains('repo:acme/app'));
+      },
+    );
   });
 }

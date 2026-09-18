@@ -144,7 +144,7 @@ void main() {
           const Center(
             child: CcTooltip(
               message: 'Pull requests',
-              placement: CcTooltipPlacement.right,
+              placement: CcTooltipPlacement.end,
               showDelay: Duration(milliseconds: 100),
               child: SizedBox(width: 32, height: 32),
             ),

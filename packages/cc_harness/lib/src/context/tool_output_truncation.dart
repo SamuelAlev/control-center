@@ -131,6 +131,7 @@ class ToolOutputLimitTable {
       'computer_use': ToolOutputLimits(characterLimit: 30000, lineLimit: 1000),
       'browser_use': ToolOutputLimits(characterLimit: 30000, lineLimit: 1000),
       'mobile_use': ToolOutputLimits(characterLimit: 30000, lineLimit: 1000),
+      'ios_use': ToolOutputLimits(characterLimit: 30000, lineLimit: 1000),
     },
   );
 

@@ -168,7 +168,7 @@ class _FileLayout {
     if (r < 0 || r >= raw.length) {
       return 0;
     }
-    return PrDiffDocument._expandedWidth(raw.contents[r]);
+    return PrDiffDocument.expandedWidth(raw.contents[r]);
   }
 
   /// Recomputes the wrap prefix sums and [_maxDisplayCols] for [mode] /
@@ -535,7 +535,7 @@ class PrDiffDocument {
     if (r < 0 || r >= raw.length) {
       return 0;
     }
-    return _expandedWidth(raw.contents[r]);
+    return expandedWidth(raw.contents[r]);
   }
 
   /// Assembles the raw source of `(aFile, aLine, aCol)`..`(bFile, bLine, bCol)`
@@ -589,13 +589,13 @@ class PrDiffDocument {
         final atStart = f == sf && d == sl;
         final atEnd = f == ef && d == el;
         if (atStart && atEnd) {
-          final lo = _displayColToRawCol(text, math.min(sc, ec));
-          final hi = _displayColToRawCol(text, math.max(sc, ec));
+          final lo = displayColToRawCol(text, math.min(sc, ec));
+          final hi = displayColToRawCol(text, math.max(sc, ec));
           text = text.substring(lo, hi);
         } else if (atStart) {
-          text = text.substring(_displayColToRawCol(text, sc));
+          text = text.substring(displayColToRawCol(text, sc));
         } else if (atEnd) {
-          text = text.substring(0, _displayColToRawCol(text, ec));
+          text = text.substring(0, displayColToRawCol(text, ec));
         }
         out.add(text);
       }
@@ -604,7 +604,7 @@ class PrDiffDocument {
   }
 
   /// Display width (tabs expanded to [kDiffTabWidth] stops) of [content].
-  static int _expandedWidth(String content) {
+  static int expandedWidth(String content) {
     var col = 0;
     for (var i = 0; i < content.length; i++) {
       col += content[i] == '\t' ? kDiffTabWidth - (col % kDiffTabWidth) : 1;
@@ -615,7 +615,7 @@ class PrDiffDocument {
   /// Maps a *display* column (tabs expanded) to the raw character index in
   /// [content] — the inverse of the painter's tab expansion. Clamps to the
   /// string bounds.
-  static int _displayColToRawCol(String content, int displayCol) {
+  static int displayColToRawCol(String content, int displayCol) {
     if (displayCol <= 0) {
       return 0;
     }
@@ -627,6 +627,17 @@ class PrDiffDocument {
       col += content[i] == '\t' ? kDiffTabWidth - (col % kDiffTabWidth) : 1;
     }
     return content.length;
+  }
+
+  /// Maps a raw character index in [content] to a display column (tabs
+  /// expanded to [kDiffTabWidth] stops).
+  static int rawColToDisplayCol(String content, int rawCol) {
+    var col = 0;
+    final end = rawCol.clamp(0, content.length);
+    for (var i = 0; i < end; i++) {
+      col += content[i] == '\t' ? kDiffTabWidth - (col % kDiffTabWidth) : 1;
+    }
+    return col;
   }
 
   // ── Within-file layout (file-local Y, measured from the file's top) ───
@@ -895,10 +906,24 @@ class PrDiffDocument {
   /// Index of file matching [filename], or -1.
   int indexOfFile(String filename) {
     for (var i = 0; i < _files.length; i++) {
-      if (_files[i].filename == filename) {
+      if (_fileNamesMatch(_files[i].filename, filename)) {
+        return i;
+      }
+      final previous = _files[i].previousFilename;
+      if (previous != null && _fileNamesMatch(previous, filename)) {
         return i;
       }
     }
     return -1;
+  }
+
+  static bool _fileNamesMatch(String a, String b) {
+    String norm(String path) => path.replaceAll(r'\', '/');
+    final left = norm(a);
+    final right = norm(b);
+    if (left == right) {
+      return true;
+    }
+    return left.endsWith('/$right') || right.endsWith('/$left');
   }
 }

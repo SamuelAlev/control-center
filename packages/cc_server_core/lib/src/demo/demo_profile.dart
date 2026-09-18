@@ -181,6 +181,18 @@ class DemoProfile {
     'newsfeed.markAllRead',
     'providers.list',
     'providers.listModels',
+    // Cached models.dev document (install-wide reference data). The fetch
+    // itself is host-side and gated off on the demo (`allowNetwork: false`);
+    // this exception is the READ of whatever is already on disk. Refresh and
+    // on-device model install/uninstall stay under the denied `models.` prefix.
+    'models.catalog',
+    // Cached EasyList / uBlock document (install-wide reference data). The
+    // fetch itself is host-side and gated off on the demo (`allowNetwork:
+    // false`); these exceptions are the READ of whatever is already on disk.
+    // Manual refresh stays under the denied `newsfeed.` prefix.
+    'newsfeed.filterLists.state',
+    'newsfeed.filterLists.blocklist',
+    'newsfeed.filterLists.removeParams',
     // One-shot reads of data the demo SEEDS. Their watch variants were already
     // reviewed and admitted, but a screen that opens a detail view calls the
     // one-shot — so denying it turned a furnished run transcript or PR page
@@ -254,6 +266,7 @@ class DemoProfile {
     'blob.put',
     // Agents + the scripted run lane.
     'agents.upsert',
+    'agents.create',
     'agents.delete',
     'dispatch.sendAndDispatch',
     'dispatch.sendUserMessage',
@@ -438,6 +451,7 @@ class DemoProfile {
     'pr_review.mergePullRequest',
     'pr_review.closePullRequest',
     'pr_review.updatePullRequest',
+    'pr_review.updateIssueComment',
     'pr_review.setPullRequestDraft',
     'pr_review.publishReview',
     'pr_review.commentFindings',
@@ -482,6 +496,7 @@ class DemoProfile {
     'newsfeed.refreshAll',
     'newsfeed.refreshFeed',
     'newsfeed.seedDefaultFeedsIfEmpty',
+    'newsfeed.filterLists.refresh',
     // Providers: every one of these writes or spends a credential.
     'providers.addCustom',
     'providers.removeCustom',
@@ -497,6 +512,7 @@ class DemoProfile {
     // delete, reorder or re-point it. `workspace.import` would also write an
     // operator-supplied database file onto the host.
     'workspace.upsert',
+    'workspace.create',
     'workspace.delete',
     'workspace.import',
     'workspace.reorder',

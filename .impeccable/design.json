@@ -179,23 +179,23 @@
     "motion": [
       {
         "name": "fast",
-        "value": "120ms ease-out",
-        "purpose": "Hover / press color washes."
+        "value": "80ms cubic-bezier(0.2, 0, 0.38, 0.9)",
+        "purpose": "Hover washes, fades, focus rings, checkbox, radio, tooltip, slider. Exit: 60ms."
       },
       {
-        "name": "normal",
-        "value": "180ms ease-out",
-        "purpose": "Dropdown / popover / tooltip open."
+        "name": "moderate",
+        "value": "160ms cubic-bezier(0.2, 0, 0.38, 0.9)",
+        "purpose": "Dropdowns, tabs, switch thumb, toasts, short panels. Alias: normal. Exit: 120ms."
       },
       {
         "name": "slow",
-        "value": "240ms cubic-bezier(0.22,1,0.36,1)",
-        "purpose": "Sidebar collapse, drawer, larger chrome (emphasized = ease-out-cubic)."
+        "value": "240ms cubic-bezier(0, 0, 0.38, 0.9)",
+        "purpose": "Dialogs, drawers, sidebar collapse. Exit: 160ms. Emphasized curve, no bounce."
       },
       {
         "name": "reduced",
-        "value": "0ms",
-        "purpose": "CcMotion.resolve collapses every duration to zero under prefers-reduced-motion / MediaQuery.disableAnimations."
+        "value": "80ms fade / 0ms travel",
+        "purpose": "CcMotion.resolve / resolveTravel drop translate/scale/size. resolveFade keeps an 80ms opacity fade under prefers-reduced-motion / MediaQuery.disableAnimations."
       }
     ],
     "breakpoints": [
@@ -274,7 +274,7 @@
   ],
   "narrative": {
     "northStar": "The Golden-Hour Deck",
-    "overview": "Control Center is the operator deck for a one-person developer operations hub: a single technical operator running many concurrent streams of work — coding agents on isolated worktrees, a meeting recording, a calendar filling up, PRs to review, feeds and conversations updating — and holding all of it in view at once. The personality is alive, warm, confident: alive because the surface reports real work as it happens, warm in the Anthropic register (intelligent, on-your-side, never cold or corporate), confident because it is direct and technical with no hype. The canvas is near-white with ink-black as the structural color; the warm gold is confined to bounded graphics (the logo mosaic, one golden-hour horizon, the dark sunset CTA) and the single orange signal is rationed to at most twice per screen. Warmth is a moment you earn at a threshold, not a wash you apply everywhere — which is how the system reads warm and confident while staying quiet and dense for ten-hours-a-day use across desktop, web and a touch-first phone remote.",
+    "overview": "Control Center is the operator deck for a one-person developer operations hub: a single technical operator running many concurrent streams of work — coding agents on isolated worktrees, a meeting recording, a calendar filling up, PRs to review, feeds and conversations updating — and holding all of it in view at once. The personality is alive, warm, confident: alive because the surface reports real work as it happens, warm in the Anthropic register (intelligent, on-your-side, never cold or corporate), confident because it is direct and technical with no hype. The canvas is near-white with ink-black as the structural color; the warm gold is confined to bounded graphics (the brand mark, one golden-hour horizon, the dark sunset CTA) and the single orange signal is rationed to at most twice per screen. Warmth is a moment you earn at a threshold, not a wash you apply everywhere — which is how the system reads warm and confident while staying quiet and dense for ten-hours-a-day use across desktop, web and a touch-first phone remote.",
     "keyCharacteristics": [
       "Near-white canvas, ink-black structure, one rationed orange signal — black does the structural work, orange is a signal not a highlight.",
       "Earned warmth — golden-hour gold lives only in bounded brand graphics and the amber elevation shadows, never as a page wash.",
@@ -293,7 +293,7 @@
       },
       {
         "name": "The Earned-Warmth Rule",
-        "body": "All warm gold is confined to bounded graphics (mosaic, horizon, sunset CTA) and the amber elevation shadows. Gold is never a text color and never a page background.",
+        "body": "All warm gold is confined to bounded graphics (brand mark, horizon, sunset CTA) and the amber elevation shadows. Gold is never a text color and never a page background.",
         "section": "colors"
       },
       {
@@ -334,7 +334,7 @@
     ],
     "dos": [
       "Do keep the canvas near-white and let ink-black be the structural color; reserve pure white for data surfaces.",
-      "Do confine all warm gold to bounded graphics — mosaic, horizon, sunset CTA — and amber elevation shadows.",
+      "Do confine all warm gold to bounded graphics — brand mark, horizon, sunset CTA — and amber elevation shadows.",
       "Do ration the accent to two uses per screen; default primary buttons to dark and let orange arrive on hover.",
       "Do pair every status with an icon/shape and a text label, never color alone.",
       "Do target AAA contrast (7:1) for body and essential text; keep muted as the lightest color you trust for meaningful text, AA (4.5:1) as the hard floor.",
@@ -354,7 +354,7 @@
       "Don't add a bold weight or a second display typeface.",
       "Don't carry meaningful text in placeholder or idle grays — they clear the disabled bar, not the 4.5:1 body bar.",
       "Don't round corners to feel friendlier, or add radius to hero imagery; sharpness is the point.",
-      "Don't spend the accent on decoration — it is a signal, not a highlight; and never lead the block mosaic with yellow.",
+      "Don't spend the accent on decoration — it is a signal, not a highlight; and never lead the brand-mark gradient with yellow.",
       "Don't nest a card inside a card and don't let color be the only carrier of meaning (status, validation, diffs)."
     ]
   }

@@ -17,6 +17,7 @@ class RigSpec {
     this.backend,
     this.browserEngine = RigBrowserEngine.chromium,
     this.egressAllowlist = const [],
+    this.unrestrictedNetwork = false,
     int? memoryMb,
     int? cpuCount,
     RigDisplaySize? display,
@@ -64,6 +65,7 @@ class RigSpec {
     required String conversationId,
     String? worktreePath,
     List<String> egressAllowlist = const [],
+    bool unrestrictedNetwork = false,
     EnclosureBackend? backend,
     int memoryMb = 512,
     int cpuCount = 2,
@@ -75,6 +77,7 @@ class RigSpec {
     surface: RigSurface.computer,
     backend: backend,
     egressAllowlist: egressAllowlist,
+    unrestrictedNetwork: unrestrictedNetwork,
     memoryMb: memoryMb,
     cpuCount: cpuCount,
     ttl: const Duration(hours: 8),
@@ -127,6 +130,14 @@ class RigSpec {
   /// guest is forced through.
   final List<String> egressAllowlist;
 
+  /// Whether this rig may reach every network host without an egress gate.
+  ///
+  /// False is the secure default. True is only minted by the explicit,
+  /// confirmed restart flow; it is persisted so the live session and every
+  /// backend launch plan state the exception instead of inferring it from an
+  /// empty allowlist.
+  final bool unrestrictedNetwork;
+
   /// Guest RAM.
   final int memoryMb;
 
@@ -160,16 +171,16 @@ class RigSpec {
   /// WHICH machine of this kind, within [conversationId].
   ///
   /// Null is the conversation's DEFAULT machine: the one an agent's
-  /// `browser_use`/`computer_use` reaches, the one every tab addressed before
-  /// slots existed, and the one a persisted row with no slot resolves to. That
-  /// default is what keeps "the human's tab and the agent's tool calls drive
-  /// ONE machine" true — an agent never picks a slot, so it can never end up
-  /// on a machine a person opened to compare against.
+  /// `browser_use` / `computer_use` / `mobile_use` / `ios_use` reaches, the
+  /// one every tab addressed before slots existed, and the one a persisted
+  /// row with no slot resolves to. That default is what keeps "the human's
+  /// tab and the agent's tool calls drive ONE machine" true — an agent never
+  /// ends up on a machine a person opened to compare against.
   ///
   /// A non-null slot is a deliberate SECOND machine of the same surface and
   /// engine, opened from the UI to run two of something side by side. It is
-  /// part of the reuse key, so two slots are two VMs; everything else about
-  /// them (image, envelope, egress) is identical.
+  /// part of the reuse key, so two slots are two sessions; everything else
+  /// about them (image, envelope, egress) is identical.
   ///
   /// Never a path or a command-line argument — a matching key only — but
   /// validated to `[A-Za-z0-9_-]{1,64}` at construction anyway, because it
@@ -222,6 +233,7 @@ class RigSpec {
     EnclosureBackend? backend,
     RigBrowserEngine? browserEngine,
     List<String>? egressAllowlist,
+    bool? unrestrictedNetwork,
     int? memoryMb,
     int? cpuCount,
     RigDisplaySize? display,
@@ -242,6 +254,7 @@ class RigSpec {
     backend: backend ?? this.backend,
     browserEngine: browserEngine ?? this.browserEngine,
     egressAllowlist: egressAllowlist ?? this.egressAllowlist,
+    unrestrictedNetwork: unrestrictedNetwork ?? this.unrestrictedNetwork,
     memoryMb: memoryMb ?? this.memoryMb,
     cpuCount: cpuCount ?? this.cpuCount,
     display: display ?? this.display,
@@ -265,6 +278,7 @@ class RigSpec {
     if (backend != null) 'backend': backend!.wire,
     'browserEngine': browserEngine.wire,
     'egressAllowlist': egressAllowlist,
+    'unrestrictedNetwork': unrestrictedNetwork,
     'memoryMb': memoryMb,
     'cpuCount': cpuCount,
     'display': display.toJson(),
@@ -306,6 +320,7 @@ class RigSpec {
         for (final e in (json['egressAllowlist'] as List? ?? const []))
           if (e is String && e.trim().isNotEmpty) e.trim(),
       ],
+      unrestrictedNetwork: json['unrestrictedNetwork'] as bool? ?? false,
       memoryMb: json['memoryMb'] as int?,
       cpuCount: json['cpuCount'] as int?,
       display: json['display'] is Map
@@ -355,18 +370,18 @@ class RigSpec {
           RigBrowserEngine.firefox => 2560,
           RigBrowserEngine.webkit => 2560,
         },
-        RigSurface.mobile => 4096,
+        RigSurface.mobile || RigSurface.ios => 4096,
       };
 
   static int _defaultCpuCount(RigSurface surface) => switch (surface) {
     RigSurface.computer => 4,
     RigSurface.browser => 2,
-    RigSurface.mobile => 4,
+    RigSurface.mobile || RigSurface.ios => 4,
   };
 
   static RigDisplaySize _defaultDisplay(RigSurface surface) =>
       switch (surface) {
-        RigSurface.mobile => RigDisplaySize.defaultMobile,
+        RigSurface.mobile || RigSurface.ios => RigDisplaySize.defaultMobile,
         _ => RigDisplaySize.defaultDesktop,
       };
 
@@ -390,6 +405,7 @@ class RigSpec {
         backend == other.backend &&
         browserEngine == other.browserEngine &&
         _sameList(egressAllowlist, other.egressAllowlist) &&
+        unrestrictedNetwork == other.unrestrictedNetwork &&
         memoryMb == other.memoryMb &&
         cpuCount == other.cpuCount &&
         display == other.display &&
@@ -411,6 +427,7 @@ class RigSpec {
     backend,
     browserEngine,
     Object.hashAll(egressAllowlist),
+    unrestrictedNetwork,
     memoryMb,
     cpuCount,
     display,
@@ -441,9 +458,8 @@ class RigSpec {
     }
     // The Android emulator is a HOST device, not a machine this server boots:
     // two mobile rigs would drive the same phone while claiming to be two.
-    // Refused rather than silently collapsed, because "I opened a second
-    // device" and "both tabs drive one device" look identical right up until
-    // an action lands somewhere nobody was looking.
+    // iOS is intentionally different: each slot owns a distinct ephemeral
+    // CoreSimulator device.
     if (surface == RigSurface.mobile) {
       return 'The mobile surface drives the host\'s attached device, so a '
           'conversation has exactly one phone rig.';
@@ -464,7 +480,7 @@ class RigSpec {
       // that omits the slot describes both of them.
       '${slotId == null ? '' : '#$slotId'}, '
       '${memoryMb}MB, ${cpuCount}cpu, $display, '
-      '${egressAllowlist.length} allowed host(s))';
+      '${unrestrictedNetwork ? 'unrestricted network' : '${egressAllowlist.length} allowed host(s)'})';
 
   /// Order-sensitive list equality. Order matters here: the allowlist is
   /// interpolated into a command line one entry at a time, so two orders are

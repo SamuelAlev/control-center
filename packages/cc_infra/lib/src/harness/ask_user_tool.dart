@@ -45,14 +45,18 @@ class AskUserTool extends HarnessTool {
 
   @override
   String get description =>
-      'Ask the user a question and wait for their answer. Use ONLY when the '
-      'answer changes what you build and you cannot settle it from the code, '
-      'the request, or a sensible default — a preference between real '
-      'alternatives, a missing requirement, an ambiguity where the readings '
-      'lead to materially different work. Do NOT use it to report progress, '
-      'to ask permission for an action (that is handled separately), or to '
-      'confirm something you can verify yourself. Offer concrete options when '
-      'you can; set allow_free_text when the list may not cover the answer.';
+      'Ask the operator a structured question. This is the ONLY way to ask '
+      'them anything: it renders a form in the conversation and the run waits '
+      'for the answer. Never write a question as a chat message — that ends '
+      'the turn and they have to re-prompt. Use it when the answer changes '
+      'what you build and you cannot settle it from the code, the request, or '
+      'a sensible default (a preference between real alternatives, a missing '
+      'requirement, an ambiguity whose readings lead to different work). Do '
+      'NOT use it to report progress, to ask permission (the approval gate '
+      'handles that), or to confirm something you can verify yourself. Offer '
+      'concrete {label, description?} options when you can; set '
+      'allow_free_text when the list may not cover the answer; set '
+      'multi_select when several options may apply.';
 
   /// Read tier: asking a question mutates nothing. The tool gathers the human's
   /// own input, so it is never itself approval-gated.
@@ -160,15 +164,20 @@ class AskUserTool extends HarnessTool {
       ),
     );
 
-    // Null is a dismissal or a timeout. Say which state we are in rather than
-    // returning an empty answer the model would read as "the user said
-    // nothing" — the correct next move (proceed on a stated assumption) is
-    // different from the one for a deliberate empty answer.
+    // Null is a timeout (or a client that vanished). Skip is a deliberate
+    // "you pick" and is not an error — the agent should proceed, not retry.
     if (answer == null) {
       return HarnessToolResult.error(
         'No answer: the question timed out or was dismissed. Do not ask '
         'again. Choose the most reasonable option, state the assumption you '
         'are proceeding under, and continue.',
+      );
+    }
+    if (answer.skipped) {
+      return HarnessToolResult.success(
+        'The user skipped this question. Choose the most reasonable option, '
+        'state the assumption you are proceeding under, and continue. Do not '
+        'ask again.',
       );
     }
     if (answer.isEmpty) {

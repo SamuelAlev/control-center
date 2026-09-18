@@ -30,6 +30,8 @@ import 'package:cc_gallery/use_cases/cc_checkbox_use_cases.dart'
     as _cc_gallery_use_cases_cc_checkbox_use_cases;
 import 'package:cc_gallery/use_cases/cc_chip_use_cases.dart'
     as _cc_gallery_use_cases_cc_chip_use_cases;
+import 'package:cc_gallery/use_cases/cc_color_tag_use_cases.dart'
+    as _cc_gallery_use_cases_cc_color_tag_use_cases;
 import 'package:cc_gallery/use_cases/cc_config_row_use_cases.dart'
     as _cc_gallery_use_cases_cc_config_row_use_cases;
 import 'package:cc_gallery/use_cases/cc_diagram_use_cases.dart'
@@ -289,6 +291,26 @@ final directories = <_widgetbook.WidgetbookNode>[
             ],
           ),
           _widgetbook.WidgetbookComponent(
+            name: 'CcColorTag',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Compact',
+                builder: _cc_gallery_use_cases_cc_color_tag_use_cases
+                    .ccColorTagCompactUseCase,
+              ),
+              _widgetbook.WidgetbookUseCase(
+                name: 'Fallback',
+                builder: _cc_gallery_use_cases_cc_color_tag_use_cases
+                    .ccColorTagFallbackUseCase,
+              ),
+              _widgetbook.WidgetbookUseCase(
+                name: 'GitHub colors',
+                builder: _cc_gallery_use_cases_cc_color_tag_use_cases
+                    .ccColorTagGitHubColorsUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
             name: 'CcDivider',
             useCases: [
               _widgetbook.WidgetbookUseCase(
@@ -316,6 +338,11 @@ final directories = <_widgetbook.WidgetbookNode>[
           _widgetbook.WidgetbookComponent(
             name: 'CcEmptyState',
             useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Compact',
+                builder: _cc_gallery_use_cases_cc_empty_state_use_cases
+                    .ccEmptyStateCompactUseCase,
+              ),
               _widgetbook.WidgetbookUseCase(
                 name: 'Message only',
                 builder: _cc_gallery_use_cases_cc_empty_state_use_cases
@@ -1222,6 +1249,11 @@ final directories = <_widgetbook.WidgetbookNode>[
                     .ccSidebarExpandedUseCase,
               ),
               _widgetbook.WidgetbookUseCase(
+                name: 'Nested branch',
+                builder: _cc_gallery_use_cases_cc_sidebar_use_cases
+                    .ccSidebarNestedBranchUseCase,
+              ),
+              _widgetbook.WidgetbookUseCase(
                 name: 'Playground',
                 builder: _cc_gallery_use_cases_cc_sidebar_use_cases
                     .ccSidebarPlaygroundUseCase,
@@ -1415,12 +1447,32 @@ final directories = <_widgetbook.WidgetbookNode>[
             ],
           ),
           _widgetbook.WidgetbookComponent(
+            name: 'FluidHoverSpecimen',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Fluid hover',
+                builder: _cc_gallery_use_cases_foundation_motion_use_cases
+                    .fluidHoverSpecimenUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
             name: 'MotionSpecimen',
             useCases: [
               _widgetbook.WidgetbookUseCase(
                 name: 'Durations & curves',
                 builder: _cc_gallery_use_cases_foundation_motion_use_cases
                     .motionSpecimenUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'MotionSpeedsSpecimen',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Three speeds',
+                builder: _cc_gallery_use_cases_foundation_motion_use_cases
+                    .motionSpeedsUseCase,
               ),
             ],
           ),

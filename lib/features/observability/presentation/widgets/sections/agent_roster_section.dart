@@ -68,7 +68,7 @@ class AgentRosterSection extends ConsumerWidget {
   final ValueChanged<String?> onSelectAgent;
 
   Future<void> _kill(WidgetRef ref, int pid) async {
-    await ref.read(processControlPortProvider).kill(pid);
+    await ref.read(processDetectionServiceProvider).killProcess(pid);
   }
 
   @override

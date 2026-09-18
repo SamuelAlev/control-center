@@ -26,11 +26,11 @@ void main() {
       final text = tester.widget<Text>(find.byType(Text));
       expect(text.data, 'https://tuple.app/c/jsqjD6');
       // The engine underline (baseline-hugging, descender-crossing) never
-      // paints — the custom skip-ink underline replaces it.
+      // paints — the custom below-glyph underline replaces it.
       expect(text.style?.decoration, TextDecoration.none);
     });
 
-    testWidgets('wraps the text in a paint layer for the skip-ink underline', (
+    testWidgets('wraps the text in a paint layer for the offset underline', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -46,11 +46,29 @@ void main() {
           (w) =>
               w is CustomPaint &&
               w.foregroundPainter != null &&
-              w.child is Text,
+              w.child is Padding,
         ),
         findsOneWidget,
       );
+      expect(find.text('alev.dev'), findsOneWidget);
     });
+
+    testWidgets(
+      'reserves space below the glyphs so the underline is not clipped',
+      (tester) async {
+        const style = TextStyle(fontSize: 12, height: 16 / 12);
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: CcLinkText('alev.dev', style: style)),
+          ),
+        );
+
+        final textSize = tester.getSize(find.byType(Text));
+        final linkSize = tester.getSize(find.byType(CcLinkText));
+        // gap (10% of 12) + thickness (clamped 1.0) = 2.2
+        expect(linkSize.height, closeTo(textSize.height + 2.2, 0.01));
+      },
+    );
 
     testWidgets('honours maxLines/overflow pass-through', (tester) async {
       await tester.pumpWidget(

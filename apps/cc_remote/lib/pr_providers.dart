@@ -329,6 +329,26 @@ final prFilesProvider = StreamProvider.autoDispose
       return repository.watchFiles(coords.number);
     });
 
+/// The caller's permission on [coords]'s repo: `admin` / `write` / `read` /
+/// `none`. Used to decide whether a GFM task-list checkbox is clickable.
+final prRepoPermissionProvider = FutureProvider.autoDispose
+    .family<String, PrCoords>((ref, coords) async {
+      final client = ref.watch(rpcClientProvider).value;
+      final repo = ref.watch(prRepoProvider(coords));
+      if (client == null || repo == null) {
+        return 'none';
+      }
+      try {
+        final data = await client.call('github.repoPermission', {
+          'owner': repo.remoteOwner,
+          'repo': repo.remoteName,
+        });
+        return data['permission'] as String? ?? 'none';
+      } on Object {
+        return 'none';
+      }
+    });
+
 /// Prepends [value] to a stream — the seed-then-live shape used above.
 extension _StartWith<T> on Stream<T> {
   Stream<T> startWith(T value) async* {

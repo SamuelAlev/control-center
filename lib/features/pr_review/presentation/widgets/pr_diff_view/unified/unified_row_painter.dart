@@ -127,6 +127,7 @@ class UnifiedRowPainter {
     required this.expandGapTextColor,
     required this.commentHighlightColor,
     required this.commentHighlightActiveColor,
+    this.gotoUnderlineColor = const Color(0xFFB0370C),
   }) : _addBgPaint = _fill(DiffPalette.forBrightness(brightness).additionBg),
        _delBgPaint = _fill(DiffPalette.forBrightness(brightness).deletionBg),
        _dragPaint = _fill(
@@ -138,7 +139,12 @@ class UnifiedRowPainter {
          DiffPalette.forBrightness(
            brightness,
          ).currentSearchMatchBg.withValues(alpha: 0.38),
-       ) {
+       ),
+       _gotoUnderlinePaint = Paint()
+         ..color = gotoUnderlineColor
+         ..strokeWidth = 1.5
+         ..style = PaintingStyle.stroke
+         ..strokeCap = StrokeCap.square {
     final dark = brightness == Brightness.dark;
     _hunkBgPaint = _fill(
       dark ? const Color(0xFF1A1F26) : const Color(0xFFF1F3F5),
@@ -238,12 +244,16 @@ class UnifiedRowPainter {
   /// Background drawn over the commented range whose thread is focused.
   final Color commentHighlightActiveColor;
 
+  /// Cmd/Ctrl+hover underline colour (VS Code go-to-definition).
+  final Color gotoUnderlineColor;
+
   final Paint _addBgPaint;
   final Paint _delBgPaint;
   final Paint _dragPaint;
   final Paint _commentPaint;
   final Paint _commentActivePaint;
   final Paint _searchPaint;
+  final Paint _gotoUnderlinePaint;
   late final Paint _hunkBgPaint;
   late final Paint _indentGuidePaint;
   late final Paint _hoverBgPaint;
@@ -313,6 +323,10 @@ class UnifiedRowPainter {
     int? commentStartCol,
     int? commentEndCol,
     bool commentActive = false,
+    int? gotoStartCol,
+    int? gotoEndCol,
+    int? landingStartCol,
+    int? landingEndCol,
   }) {
     final kind = raw.kindAt(line);
     final isHunkHeader = kind == DiffLineKind.hunkHeader;
@@ -383,6 +397,22 @@ class UnifiedRowPainter {
           paint: commentActive ? _commentActivePaint : _commentPaint,
         );
       }
+      if (landingStartCol != null) {
+        // "You landed here" after a go-to jump. Same yellow as the current
+        // search hit, but scoped to the identifier so the name is findable
+        // after the scroll. A null end covers the rest of the line when the
+        // name could not be placed.
+        _paintColSpan(
+          canvas: canvas,
+          y: y,
+          startCol: landingStartCol,
+          endCol: landingEndCol,
+          displayWidth: displayWidth,
+          visualRows: visualRows,
+          width: width,
+          paint: _searchPaint,
+        );
+      }
       if (selStartCol != null) {
         // Character-precise selection: [selStartCol, selEndCol) in display
         // columns, one rect per wrapped sub-row. A null end means "to the right
@@ -422,6 +452,23 @@ class UnifiedRowPainter {
           ? y
           : y + (kDiffLineHeight - painter.height) / 2;
       painter.paint(canvas, Offset(codeStartX, textY));
+      if (gotoStartCol != null && gotoEndCol != null) {
+        _paintUnderlineSpan(
+          canvas: canvas,
+          y: y,
+          startCol: gotoStartCol,
+          endCol: gotoEndCol,
+          visualRows: visualRows,
+        );
+      } else if (landingStartCol != null && landingEndCol != null) {
+        _paintUnderlineSpan(
+          canvas: canvas,
+          y: y,
+          startCol: landingStartCol,
+          endCol: landingEndCol,
+          visualRows: visualRows,
+        );
+      }
       _paintLeadingWhitespaceMarkers(
         canvas: canvas,
         linePainter: painter,
@@ -558,6 +605,48 @@ class UnifiedRowPainter {
     }
   }
 
+  /// 1.5px accent underline under `[startCol, endCol)` (the hovered token).
+  void _paintUnderlineSpan({
+    required Canvas canvas,
+    required double y,
+    required int startCol,
+    required int endCol,
+    required int visualRows,
+  }) {
+    final double codeStartX = gutterWidth + kDiffCodePadLeft;
+    const thickness = 1.5;
+    void stroke(double left, double right, double rowY) {
+      if (right <= left) {
+        return;
+      }
+      final double yy = rowY + kDiffLineHeight - thickness - 1;
+      canvas.drawLine(Offset(left, yy), Offset(right, yy), _gotoUnderlinePaint);
+    }
+
+    if (overflowMode != DiffOverflowMode.wrap || visualRows <= 1) {
+      stroke(
+        codeStartX + startCol * _monoAdvance,
+        codeStartX + endCol * _monoAdvance,
+        y,
+      );
+      return;
+    }
+    final int end = endCol > startCol ? endCol : startCol + 1;
+    final int firstRow = startCol ~/ colsPerRow;
+    final int lastRow = (end - 1) ~/ colsPerRow;
+    for (var row = firstRow; row <= lastRow; row++) {
+      final int rowStartCol = row == firstRow ? startCol % colsPerRow : 0;
+      final int rowEndCol = row == lastRow
+          ? ((end - 1) % colsPerRow) + 1
+          : colsPerRow;
+      stroke(
+        codeStartX + rowStartCol * _monoAdvance,
+        codeStartX + rowEndCol * _monoAdvance,
+        y + row * kDiffLineHeight,
+      );
+    }
+  }
+
   void _paintGutter({
     required Canvas canvas,
     required double y,
@@ -628,6 +717,7 @@ class UnifiedRowPainter {
     return 0;
   }
 
+  // RTL carve-out: diff row painter — code and line-number gutters stay LTR.
   TextPainter _gutterPainter(String text, TextStyle style) => TextPainter(
     text: TextSpan(text: text, style: style),
     textDirection: TextDirection.ltr,

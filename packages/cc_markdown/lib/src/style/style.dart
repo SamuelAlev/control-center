@@ -1,6 +1,14 @@
 import 'package:cc_markdown/src/mermaid/mermaid_style.dart';
 import 'package:flutter/widgets.dart';
 
+/// Builds the task-list checkbox shown beside a list item.
+///
+/// [onChanged] is null when the document is read-only; a non-null callback
+/// makes the control interactive. Named so a visual-only builder can ignore
+/// it, and so the stylesheet can stay a tear-off (value-equal across builds).
+typedef CcMarkdownCheckboxBuilder =
+    Widget Function(bool checked, {ValueChanged<bool>? onChanged});
+
 /// How soft line breaks (single newlines inside a paragraph) render.
 enum CcSoftBreakMode {
   /// Render as a newline (GitHub-comment / chat behavior — the default).
@@ -102,8 +110,9 @@ class CcMarkdownStyle {
   /// Blockquote container decoration.
   final BoxDecoration? blockquoteDecoration;
 
-  /// Blockquote container padding.
-  final EdgeInsets? blockquotePadding;
+  /// Blockquote container padding. [EdgeInsetsGeometry], so directional
+  /// insets (the default) mirror under RTL.
+  final EdgeInsetsGeometry? blockquotePadding;
 
   /// Code-block container decoration (default code builder only).
   final BoxDecoration? codeblockDecoration;
@@ -139,8 +148,9 @@ class CcMarkdownStyle {
   final double listItemGap;
 
   /// Task-list checkbox factory — the app plugs its design-system checkbox in
-  /// here; null renders a plain unicode marker.
-  final Widget Function(bool checked)? checkbox;
+  /// here; null renders a plain unicode marker. The renderer supplies
+  /// [CcMarkdownCheckboxBuilder.onChanged] when the host asked to toggle.
+  final CcMarkdownCheckboxBuilder? checkbox;
 
   /// Soft line break behavior.
   final CcSoftBreakMode softBreakMode;
@@ -221,7 +231,7 @@ class CcMarkdownStyle {
     EdgeInsets? h5Padding,
     EdgeInsets? h6Padding,
     BoxDecoration? blockquoteDecoration,
-    EdgeInsets? blockquotePadding,
+    EdgeInsetsGeometry? blockquotePadding,
     BoxDecoration? codeblockDecoration,
     EdgeInsets? codeblockPadding,
     EdgeInsets? inlineCodePadding,
@@ -233,7 +243,7 @@ class CcMarkdownStyle {
     double? blockSpacing,
     double? listIndent,
     double? listItemGap,
-    Widget Function(bool checked)? checkbox,
+    CcMarkdownCheckboxBuilder? checkbox,
     CcSoftBreakMode? softBreakMode,
     CcMermaidStyle? mermaid,
   }) {

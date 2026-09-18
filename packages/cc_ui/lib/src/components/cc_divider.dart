@@ -59,8 +59,8 @@ class CcDivider extends StatelessWidget {
       ),
     );
 
-    final padding = isHorizontal
-        ? EdgeInsets.only(left: indent, right: endIndent)
+    final EdgeInsetsGeometry padding = isHorizontal
+        ? EdgeInsetsDirectional.only(start: indent, end: endIndent)
         : EdgeInsets.only(top: indent, bottom: endIndent);
 
     if (indent == 0 && endIndent == 0) {

@@ -226,7 +226,7 @@ class AccountPoolEditor extends ConsumerWidget {
         ] else if (scope.agentId != null) ...[
           const SizedBox(height: 6),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: CcButton(
               variant: CcButtonVariant.ghost,
               size: CcButtonSize.sm,

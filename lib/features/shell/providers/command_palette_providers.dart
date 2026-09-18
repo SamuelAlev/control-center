@@ -65,8 +65,7 @@ class _NavigationCommandSource implements CommandSource {
       ),
       CommandItem(
         id: 'pull-requests',
-        label: 'Go to Pull Requests',
-        description: 'Navigate to pull requests',
+        label: 'Go to pull requests',
         shortcut: '\u23182',
         icon: AppIcons.gitPullRequest,
         category: l10n.categoryNavigation,
@@ -74,8 +73,7 @@ class _NavigationCommandSource implements CommandSource {
       ),
       CommandItem(
         id: 'agents',
-        label: 'Go to Agents',
-        description: 'Navigate to agents registry',
+        label: 'Go to agents',
         shortcut: '\u23183',
         icon: AppIcons.bot,
         category: l10n.categoryNavigation,
@@ -83,8 +81,7 @@ class _NavigationCommandSource implements CommandSource {
       ),
       CommandItem(
         id: 'workspaces',
-        label: 'Go to Workspaces',
-        description: 'Navigate to workspaces list',
+        label: 'Go to workspaces',
         shortcut: '\u23184',
         icon: AppIcons.folder,
         category: l10n.categoryNavigation,
@@ -93,7 +90,6 @@ class _NavigationCommandSource implements CommandSource {
       CommandItem(
         id: 'new-workspace',
         label: 'New workspace',
-        description: 'Create a new isolated workspace',
         shortcut: '\u2318N',
         icon: AppIcons.plus,
         category: 'Workspace',
@@ -132,7 +128,6 @@ class _ViewCommandSource implements CommandSource {
       CommandItem(
         id: 'toggle-theme',
         label: 'Toggle theme',
-        description: 'Switch between light and dark mode',
         shortcut: '\u2318\u21E7T',
         icon: AppIcons.sun,
         category: 'View',
@@ -148,9 +143,6 @@ class _ViewCommandSource implements CommandSource {
       CommandItem(
         id: 'focus-mode',
         label: focusActive ? 'Exit focus mode' : 'Start focus session',
-        description: focusActive
-            ? 'End the current session and resume normal notifications'
-            : 'Configure and start a focused work session',
         icon: AppIcons.focus,
         category: 'Focus',
         onExecute: () {
@@ -170,7 +162,6 @@ class _ViewCommandSource implements CommandSource {
       CommandItem(
         id: 'soundscape',
         label: 'Soundscape',
-        description: 'Play adaptive ambient sound for focus or relaxation',
         icon: AppIcons.audioLines,
         category: 'Focus',
         onExecute: () {
@@ -183,7 +174,6 @@ class _ViewCommandSource implements CommandSource {
       CommandItem(
         id: 'settings',
         label: 'Settings',
-        description: l10n.openApplicationSettings,
         icon: AppIcons.settings,
         category: l10n.settingsLabel,
         onExecute: () => router.go(nav(settingsRoute)),
@@ -236,16 +226,14 @@ class _AgentActionCommandSource implements CommandSource {
     return [
       CommandItem(
         id: 'go-newsfeed',
-        label: 'Go to Feed',
-        description: 'Navigate to the newsfeed',
+        label: 'Go to feed',
         icon: AppIcons.rss,
         category: 'Quick actions',
         onExecute: () => router.go(nav(newsfeedRoute)),
       ),
       CommandItem(
         id: 'go-agents',
-        label: 'Go to Agents',
-        description: 'Navigate to the agent registry',
+        label: 'Go to agents',
         icon: AppIcons.users,
         category: 'Agents',
         onExecute: () => router.go(nav(settingsAgentsRoute)),

@@ -34,12 +34,10 @@ void main() {
       }
     });
 
-    test('the catalog exercises every transport', () {
-      // If a transport has no adapter, its row in the matrix is never shown to
-      // anyone and the declaration silently rots.
+    test('the catalog ships harness and Claude Code', () {
       expect(
         predefinedAdapters.map((a) => a.transport).toSet(),
-        AdapterTransport.values.toSet(),
+        {AdapterTransport.harness, AdapterTransport.claudeCli},
       );
     });
   });
@@ -143,20 +141,6 @@ void main() {
         claude.caveats,
         isNot(contains(AdapterEnforcementCaveat.inProcessToolsUnsandboxed)),
       );
-    });
-  });
-
-  group('structuredCli — prompt and sandbox only', () {
-    final structured = enforcementForTransport(AdapterTransport.structuredCli);
-
-    test('declares no mode mapping of any kind', () {
-      // There is no flag or protocol message telling a structured-JSON CLI it
-      // is in a read-only mode, so the mode reaches it as prompt text only.
-      expect(structured.filtersToolSurface, isFalse);
-      expect(structured.interceptsToolCalls, isFalse);
-      expect(structured.nativeToolsInterceptable, isFalse);
-      expect(structured.observesCompletionContract, isFalse);
-      expect(structured.inProcessToolsSandboxed, isTrue);
     });
   });
 

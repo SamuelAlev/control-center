@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +13,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// the provider debounces the server push; the audio glides over ~1.5 s, so
 /// dragging feels live but never clicks. Double-tap resets to the neutral
 /// center. Keyboard-first: focus the pad and nudge with the arrow keys.
+// RTL carve-out: the tune pad is a spatial X/Y control. Pointer math, arrow-key
+// nudges, the puck's FractionalOffset and the edge labels all address physical
+// screen coordinates (X = mellow→energetic left-to-right by definition), so
+// none of it mirrors with the reading direction.
 class SoundscapeTunePad extends ConsumerStatefulWidget {
   /// Creates a [SoundscapeTunePad].
   const SoundscapeTunePad({super.key});

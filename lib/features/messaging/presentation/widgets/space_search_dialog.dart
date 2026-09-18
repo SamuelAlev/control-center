@@ -7,7 +7,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/format_utils.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// In-space full-text search (§8.4): a debounced search field over a live
@@ -153,32 +153,28 @@ class _SearchResultRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      type: MaterialType.transparency,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadii.brSm,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                content,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: tokens?.textPrimary),
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              content,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: tokens?.textPrimary),
+            ),
+            const SizedBox(height: 2),
+            AppTimestamp(
+              dateTime: createdAt,
+              child: Text(
+                time,
+                style: TextStyle(fontSize: 11, color: tokens?.textQuaternary),
               ),
-              const SizedBox(height: 2),
-              AppTimestamp(
-                dateTime: createdAt,
-                child: Text(
-                  time,
-                  style: TextStyle(fontSize: 11, color: tokens?.textQuaternary),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

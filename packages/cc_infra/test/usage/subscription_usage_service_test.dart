@@ -44,7 +44,6 @@ typedef Handler = ResponseBody Function(RequestOptions options);
   Handler handler, {
   String? homeDir,
   Map<String, String>? environment,
-  String codexExecutable = 'definitely-not-a-real-codex-binary',
   bool readClaudeKeychain = false,
 }) {
   final adapter = _FakeAdapter(handler);
@@ -53,39 +52,9 @@ typedef Handler = ResponseBody Function(RequestOptions options);
     dio: dio,
     homeDir: homeDir,
     environment: environment ?? const <String, String>{},
-    codexExecutable: codexExecutable,
     readClaudeKeychain: readClaudeKeychain,
   );
   return (service, adapter);
-}
-
-/// Writes an executable shell script that fakes the `codex app-server`
-/// JSON-RPC handshake enough to drive [SubscriptionUsageService]'s rate-limit
-/// reader. It responds to `initialize` (id 1) then, after a short delay,
-/// responds to nothing and instead emits the id-2 rateLimits result with
-/// [limits]. Exits after emitting so stdout closes and the reader completes.
-String writeFakeCodex(Directory dir, Map<String, dynamic> limits) {
-  final script = File('${dir.path}/fake-codex.sh');
-  script.writeAsStringSync('''
-#!/bin/sh
-# Drain stdin (the reader writes initialize/initialized/read requests).
-cat > /dev/null &
-CATPID=\$!
-# Respond to the initialize handshake (id 1).
-printf '%s\\n' '${jsonEncode({'jsonrpc': '2.0', 'id': 1, 'result': {}})}'
-# Give the reader time to send `initialized` then the rateLimits read.
-sleep 0.2
-# Emit the rateLimits result (id 2).
-printf '%s\\n' '${jsonEncode({
-    'jsonrpc': '2.0',
-    'id': 2,
-    'result': {'rateLimits': limits},
-  })}'
-kill \$CATPID 2>/dev/null
-''');
-  // chmod +x for portability across temp-dir setups.
-  Process.runSync('chmod', ['+x', script.path]);
-  return script.path;
 }
 
 void main() {
@@ -94,7 +63,7 @@ void main() {
       'returns an unconfigured snapshot per provider with no credentials',
       () async {
         // Empty environment + null home → no Claude token, no Codex auth dir,
-        // no z.ai key, no Kimi Code token.
+        // no z.ai key, no Kimi Code token, no Cursor token.
         final (service, _) = build(
           (_) => _json(const {}),
           homeDir: null,
@@ -103,7 +72,7 @@ void main() {
 
         final results = await service.fetchAll();
 
-        expect(results, hasLength(4));
+        expect(results, hasLength(5));
         for (final usage in results) {
           expect(usage.status, SubscriptionStatus.unconfigured);
         }
@@ -112,12 +81,13 @@ void main() {
           'codex',
           'zai',
           'kimi-code',
+          'cursor',
         });
         // Every unconfigured provider explains how to connect it, so the usage
         // card is never a bare blank. The wording is per provider (some name the
         // settings page, some just the sign-in), so this asserts the actionable
         // shape rather than one exact sentence.
-        for (final id in ['claude', 'codex', 'zai', 'kimi-code']) {
+        for (final id in ['claude', 'codex', 'zai', 'kimi-code', 'cursor']) {
           expect(
             results.firstWhere((u) => u.providerId == id).error,
             contains('to see usage'),
@@ -542,8 +512,194 @@ void main() {
       // The batch still resolves for everyone else.
       expect(
         results.map((u) => u.providerId),
-        containsAll(<String>['claude', 'codex', 'zai']),
+        containsAll(<String>['claude', 'codex', 'zai', 'cursor']),
       );
+    });
+  });
+
+  group('Cursor', () {
+    test(
+      'parses period usage percentages, spend and billing-cycle reset',
+      () async {
+        ResponseBody handler(RequestOptions options) {
+          expect(options.method, 'POST');
+          expect(options.path, contains('GetCurrentPeriodUsage'));
+          expect(options.headers['Authorization'], 'Bearer cursor-tok');
+          expect(options.headers['Connect-Protocol-Version'], '1');
+          return _json({
+            'billingCycleEnd': '2030-02-01T00:00:00Z',
+            'planUsage': {
+              'totalSpend': 141,
+              'includedSpend': 141,
+              'limit': 2000,
+              'totalPercentUsed': 7.05,
+              'autoPercentUsed': 12,
+              'apiPercentUsed': 40,
+            },
+          });
+        }
+
+        final (service, _) = build(handler);
+        final cursor = (await service.fetchAll(
+          cursorAccessToken: 'cursor-tok',
+        )).firstWhere((u) => u.providerId == 'cursor');
+
+        expect(cursor.status, SubscriptionStatus.ok);
+        expect(cursor.displayName, 'Cursor');
+        expect(cursor.windows.map((w) => w.id), ['total', 'auto', 'api']);
+        expect(cursor.windows[0].usedFraction, closeTo(0.0705, 1e-9));
+        expect(cursor.windows[1].label, 'Cursor models');
+        expect(cursor.windows[1].usedFraction, closeTo(0.12, 1e-9));
+        expect(cursor.windows[2].label, 'API');
+        expect(cursor.windows[2].usedFraction, closeTo(0.40, 1e-9));
+        expect(cursor.windows[0].resetsAt, DateTime.utc(2030, 2, 1));
+        expect(cursor.spend, isNotNull);
+        expect(cursor.spend!.usedMinor, 141);
+        expect(cursor.spend!.limitMinor, 2000);
+        expect(cursor.spend!.currency, 'USD');
+      },
+    );
+
+    test(
+      'reads percentages from individualUsage.plan when planUsage is absent',
+      () async {
+        ResponseBody handler(RequestOptions options) => _json({
+          'billingCycleEnd': 1893456000,
+          'individualUsage': {
+            'plan': {
+              'totalPercentUsed': 98.5,
+              'autoPercentUsed': 98.1,
+              'apiPercentUsed': 100,
+            },
+          },
+        });
+
+        final (service, _) = build(handler);
+        final cursor = (await service.fetchAll(
+          cursorAccessToken: 't',
+        )).firstWhere((u) => u.providerId == 'cursor');
+
+        expect(cursor.status, SubscriptionStatus.ok);
+        expect(
+          cursor.windows.singleWhere((w) => w.id == 'total').usedFraction,
+          closeTo(0.985, 1e-9),
+        );
+        expect(
+          cursor.windows.singleWhere((w) => w.id == 'api').usedFraction,
+          1.0,
+        );
+        // Epoch seconds, not millis.
+        expect(cursor.windows.first.resetsAt, DateTime.utc(2030, 1, 1));
+      },
+    );
+
+    test(
+      'falls back to GET /auth/usage when the period RPC has no quota',
+      () async {
+        ResponseBody handler(RequestOptions options) {
+          if (options.path.contains('GetCurrentPeriodUsage')) {
+            return _json({'billingCycleEnd': '2030-02-01T00:00:00Z'});
+          }
+          expect(options.method, 'GET');
+          expect(options.path, endsWith('/auth/usage'));
+          expect(options.headers['Authorization'], 'Bearer cursor-tok');
+          return _json({
+            'gpt-4': {'numRequests': 150, 'maxRequestUsage': 500},
+            'startOfMonth': '2030-03-01T00:00:00.000Z',
+          });
+        }
+
+        final (service, _) = build(handler);
+        final cursor = (await service.fetchAll(
+          cursorAccessToken: 'cursor-tok',
+        )).firstWhere((u) => u.providerId == 'cursor');
+
+        expect(cursor.status, SubscriptionStatus.ok);
+        expect(cursor.windows, hasLength(1));
+        expect(cursor.windows.single.id, 'gpt-4');
+        expect(cursor.windows.single.usedFraction, closeTo(0.3, 1e-9));
+        expect(cursor.windows.single.resetsAt, DateTime.utc(2030, 4, 1));
+      },
+    );
+
+    test('falls back to request usage when the period RPC 404s', () async {
+      ResponseBody handler(RequestOptions options) {
+        if (options.path.contains('GetCurrentPeriodUsage')) {
+          return _json(const {'message': 'not found'}, status: 404);
+        }
+        return _json({
+          'gpt-4': {'numRequests': 1, 'maxRequestUsage': 10},
+        });
+      }
+
+      final (service, _) = build(handler);
+      final cursor = (await service.fetchAll(
+        cursorAccessToken: 't',
+      )).firstWhere((u) => u.providerId == 'cursor');
+      expect(cursor.status, SubscriptionStatus.ok);
+      expect(cursor.windows.single.usedFraction, closeTo(0.1, 1e-9));
+    });
+
+    test('a 401 on the period RPC is an error, not a second probe', () async {
+      var gets = 0;
+      ResponseBody handler(RequestOptions options) {
+        if (options.path.contains('/auth/usage')) {
+          gets++;
+        }
+        return _json(const {'message': 'unauthorized'}, status: 401);
+      }
+
+      final (service, _) = build(handler);
+      final cursor = (await service.fetchAll(
+        cursorAccessToken: 'stale',
+      )).firstWhere((u) => u.providerId == 'cursor');
+      expect(cursor.status, SubscriptionStatus.error);
+      expect(cursor.error, 'HTTP 401');
+      expect(gets, 0);
+    });
+
+    test('spend-only period usage still reports a reading', () async {
+      ResponseBody handler(RequestOptions options) => _json({
+        'billingCycleEnd': '2030-02-01T00:00:00Z',
+        'planUsage': {'includedSpend': 141, 'limit': 2000},
+      });
+
+      final (service, _) = build(handler);
+      final cursor = (await service.fetchAll(
+        cursorAccessToken: 't',
+      )).firstWhere((u) => u.providerId == 'cursor');
+      expect(cursor.status, SubscriptionStatus.ok);
+      expect(cursor.hasReading, isTrue);
+      expect(cursor.windows.single.id, 'spend');
+      expect(cursor.windows.single.usedFraction, closeTo(141 / 2000, 1e-9));
+      expect(cursor.spend!.usedMinor, 141);
+    });
+
+    test(
+      'without a token it reports unconfigured and makes no request',
+      () async {
+        final (service, adapter) = build((_) => _json(const {}));
+        final cursor = (await service.fetchAll()).firstWhere(
+          (u) => u.providerId == 'cursor',
+        );
+        expect(cursor.status, SubscriptionStatus.unconfigured);
+        expect(cursor.error, contains('Settings'));
+        expect(
+          adapter.requests.where((r) => r.path.contains('cursor')),
+          isEmpty,
+        );
+      },
+    );
+
+    test('the session token is never sent to a non-Cursor host', () async {
+      final (service, adapter) = build((_) => _json(const {}));
+      final cursor = (await service.fetchAll(
+        cursorAccessToken: 'secret',
+        cursorBaseUrl: 'https://evil.example',
+      )).firstWhere((u) => u.providerId == 'cursor');
+      expect(cursor.status, SubscriptionStatus.error);
+      expect(cursor.error, contains('Invalid'));
+      expect(adapter.requests, isEmpty);
     });
   });
 
@@ -734,184 +890,179 @@ void main() {
   });
 
   group('OpenAI Codex', () {
-    test('reports unconfigured when the auth file is absent', () async {
-      final tmpHome = Directory.systemTemp.createTempSync('cc_codex_none_');
-      addTearDown(() => tmpHome.deleteSync(recursive: true));
-
-      final (service, _) = build((_) => _json(const {}), homeDir: tmpHome.path);
-      final codex = (await service.fetchAll(
-        zaiApiKey: '',
-      )).firstWhere((u) => u.providerId == 'codex');
+    test('reports unconfigured when no OAuth token is supplied', () async {
+      final (service, adapter) = build((_) => _json(const {}));
+      final codex = (await service.fetchAll()).firstWhere(
+        (u) => u.providerId == 'codex',
+      );
       expect(codex.status, SubscriptionStatus.unconfigured);
+      expect(adapter.requests, isEmpty);
     });
 
-    test(
-      'reports error when auth.json exists but the CLI is unavailable',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync(
-          'cc_codex_missing_',
-        );
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        Directory('${tmpHome.path}/.codex').createSync();
-        File('${tmpHome.path}/.codex/auth.json').writeAsStringSync('{}');
-
-        // codexExecutable is overridden to a binary that does not exist, so
-        // Process.start throws and _readCodexRateLimits returns null.
-        final (service, _) = build(
-          (_) => _json(const {}),
-          homeDir: tmpHome.path,
-        );
-        final codex = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'codex');
-        expect(codex.status, SubscriptionStatus.error);
-        expect(codex.error, 'Codex did not report limits.');
-      },
-    );
-
-    test('honours CODEX_HOME over the default ~/.codex path', () async {
-      final codexHome = Directory.systemTemp.createTempSync('cc_codex_home_');
-      addTearDown(() => codexHome.deleteSync(recursive: true));
-      File('${codexHome.path}/auth.json').writeAsStringSync('{}');
-
-      final (service, _) = build(
-        (_) => _json(const {}),
-        environment: {'CODEX_HOME': codexHome.path},
-      );
+    test('refuses to send the token to a non-ChatGPT host', () async {
+      final (service, adapter) = build((_) => _json(const {}));
       final codex = (await service.fetchAll(
-        zaiApiKey: '',
+        codexAccessToken: 'tok',
+        codexBaseUrl: 'https://evil.example/backend-api',
       )).firstWhere((u) => u.providerId == 'codex');
       expect(codex.status, SubscriptionStatus.error);
-      expect(codex.error, 'Codex did not report limits.');
+      expect(codex.error, 'Invalid Codex base URL.');
+      expect(adapter.requests, isEmpty);
     });
 
-    test(
-      'reports unconfigured when home is null and CODEX_HOME is unset',
-      () async {
-        final (service, _) = build(
-          (_) => _json(const {}),
-          homeDir: null,
-          environment: const {},
-        );
-        final codex = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'codex');
-        expect(codex.status, SubscriptionStatus.unconfigured);
-      },
-    );
-
-    test(
-      'parses primary/secondary windows from a faked codex handshake',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync('cc_codex_fake_');
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        Directory('${tmpHome.path}/.codex').createSync();
-        File('${tmpHome.path}/.codex/auth.json').writeAsStringSync('{}');
-
-        final fakeCodex = writeFakeCodex(tmpHome, {
-          'primary': {'used_percent': 55, 'resets_at': 1700000000},
-          'secondary': {'used_percent': 20, 'resets_in_seconds': 86400},
+    test('parses primary/secondary windows from /wham/usage', () async {
+      final (service, adapter) = build((options) {
+        expect(options.uri.toString(), contains('/wham/usage'));
+        expect(options.headers['Authorization'], 'Bearer plan-token');
+        expect(options.headers['ChatGPT-Account-Id'], 'acct-1');
+        return _json({
+          'plan_type': 'plus',
+          'rate_limit': {
+            'primary_window': {
+              'used_percent': 55,
+              'reset_at': 1700000000,
+            },
+            'secondary_window': {
+              'used_percent': 20,
+              'reset_after_seconds': 86400,
+            },
+          },
         });
+      });
+      final codex = (await service.fetchAll(
+        codexAccessToken: 'plan-token',
+        codexAccountId: 'acct-1',
+      )).firstWhere((u) => u.providerId == 'codex');
+      expect(codex.status, SubscriptionStatus.ok);
+      expect(codex.windows, hasLength(2));
+      final five = codex.windows.firstWhere((w) => w.id == '5h');
+      expect(five.label, 'Session');
+      expect(five.usedFraction, closeTo(0.55, 1e-9));
+      expect(five.resetsAt!.millisecondsSinceEpoch, 1700000000000);
+      final seven = codex.windows.firstWhere((w) => w.id == '7d');
+      expect(seven.usedFraction, closeTo(0.2, 1e-9));
+      expect(seven.resetsAt, isNotNull);
+      expect(adapter.requests, hasLength(1));
+    });
 
-        final (service, _) = build(
-          (_) => _json(const {}),
-          homeDir: tmpHome.path,
-          codexExecutable: fakeCodex,
-        );
-        final codex = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'codex');
-        expect(codex.status, SubscriptionStatus.ok);
-        expect(codex.windows, hasLength(2));
-        final five = codex.windows.firstWhere((w) => w.id == '5h');
-        expect(five.label, 'Session');
-        expect(five.usedFraction, closeTo(0.55, 1e-9));
-        expect(five.resetsAt!.millisecondsSinceEpoch, 1700000000000);
-        final seven = codex.windows.firstWhere((w) => w.id == '7d');
-        expect(seven.usedFraction, closeTo(0.2, 1e-9));
-        expect(seven.resetsAt, isNotNull);
-      },
-      skip: Platform.isWindows
-          ? 'fake codex is a #!/bin/sh script; POSIX exec only'
-          : false,
-    );
+    test('labels windows from limit_window_seconds when present', () async {
+      final (service, _) = build(
+        (_) => _json({
+          'rate_limit': {
+            'primary_window': {
+              'used_percent': 10,
+              'limit_window_seconds': 18000,
+            },
+            'secondary_window': {
+              'used_percent': 40,
+              'limit_window_seconds': 604800,
+            },
+          },
+        }),
+      );
+      final codex = (await service.fetchAll(
+        codexAccessToken: 't',
+      )).firstWhere((u) => u.providerId == 'codex');
+      expect(codex.windows.map((w) => w.id), ['5h', '7d']);
+      expect(codex.windows.map((w) => w.label), ['5 hours', '7 days']);
+    });
 
-    test(
-      'accepts camelCase usedPercent / resetsAt codex fields',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync('cc_codex_camel_');
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        Directory('${tmpHome.path}/.codex').createSync();
-        File('${tmpHome.path}/.codex/auth.json').writeAsStringSync('{}');
+    test('accepts camelCase usedPercent / resetsAt fields', () async {
+      final (service, _) = build(
+        (_) => _json({
+          'rate_limit': {
+            'primaryWindow': {'usedPercent': 80, 'resetsAt': 1700000000},
+          },
+        }),
+      );
+      final codex = (await service.fetchAll(
+        codexAccessToken: 't',
+      )).firstWhere((u) => u.providerId == 'codex');
+      expect(codex.status, SubscriptionStatus.ok);
+      expect(codex.windows.single.usedFraction, closeTo(0.8, 1e-9));
+    });
 
-        final fakeCodex = writeFakeCodex(tmpHome, {
-          'primary': {'usedPercent': 80, 'resetsAt': 1700000000},
+    test('reports error when the payload has no windows', () async {
+      final (service, _) = build((_) => _json(const <String, dynamic>{}));
+      final codex = (await service.fetchAll(
+        codexAccessToken: 't',
+      )).firstWhere((u) => u.providerId == 'codex');
+      expect(codex.status, SubscriptionStatus.error);
+      expect(codex.error, 'Could not read Codex usage.');
+    });
+  });
+
+  group('multi-account fan-out', () {
+    test('two Kimi logins return two stamped snapshots', () async {
+      var n = 0;
+      final (service, adapter) = build((options) {
+        n += 1;
+        expect(options.path, endsWith('/usages'));
+        return _json({
+          'usage': {'used': n * 10, 'limit': 100},
         });
+      });
+      final results = await service.fetchAll(
+        accounts: const [
+          SubscriptionUsageAccount(
+            providerId: 'kimi-code',
+            accountId: 'oauth:one@example.com',
+            accountLabel: 'one@example.com',
+            accessToken: 'tok-a',
+            deviceId: 'dev-a',
+          ),
+          SubscriptionUsageAccount(
+            providerId: 'kimi-code',
+            accountId: 'oauth:two@example.com',
+            accountLabel: 'two@example.com',
+            accessToken: 'tok-b',
+            deviceId: 'dev-b',
+          ),
+        ],
+      );
+      final kimi = [
+        for (final u in results)
+          if (u.providerId == 'kimi-code') u,
+      ];
+      expect(kimi, hasLength(2));
+      expect(kimi.map((u) => u.accountId), [
+        'oauth:one@example.com',
+        'oauth:two@example.com',
+      ]);
+      expect(kimi.map((u) => u.accountLabel), [
+        'one@example.com',
+        'two@example.com',
+      ]);
+      expect(kimi.every((u) => u.status == SubscriptionStatus.ok), isTrue);
+      expect(adapter.requests, hasLength(2));
+      expect(
+        results.map((u) => u.providerId),
+        containsAll(<String>['claude', 'codex', 'zai', 'cursor']),
+      );
+    });
 
-        final (service, _) = build(
-          (_) => _json(const {}),
-          homeDir: tmpHome.path,
-          codexExecutable: fakeCodex,
-        );
-        final codex = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'codex');
-        expect(codex.status, SubscriptionStatus.ok);
-        expect(codex.windows.single.usedFraction, closeTo(0.8, 1e-9));
-      },
-      skip: Platform.isWindows
-          ? 'fake codex is a #!/bin/sh script; POSIX exec only'
-          : false,
-    );
-
-    test(
-      'reports error "No usage reported" when limits have no windows',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync('cc_codex_empty_');
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        Directory('${tmpHome.path}/.codex').createSync();
-        File('${tmpHome.path}/.codex/auth.json').writeAsStringSync('{}');
-
-        // Handshake returns an empty rateLimits object → no windows parsed.
-        final fakeCodex = writeFakeCodex(tmpHome, <String, dynamic>{});
-
-        final (service, _) = build(
-          (_) => _json(const {}),
-          homeDir: tmpHome.path,
-          codexExecutable: fakeCodex,
-        );
-        final codex = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'codex');
-        expect(codex.status, SubscriptionStatus.error);
-        expect(codex.error, 'No usage reported.');
-      },
-      skip: Platform.isWindows
-          ? 'fake codex is a #!/bin/sh script; POSIX exec only'
-          : false,
-    );
-
-    test(
-      'returns null limits when the codex process exits without replying',
-      () async {
-        final tmpHome = Directory.systemTemp.createTempSync('cc_codex_silent_');
-        addTearDown(() => tmpHome.deleteSync(recursive: true));
-        Directory('${tmpHome.path}/.codex').createSync();
-        File('${tmpHome.path}/.codex/auth.json').writeAsStringSync('{}');
-
-        // `/usr/bin/true` starts, prints nothing, exits → onDone completes null.
-        final (service, _) = build(
-          (_) => _json(const {}),
-          homeDir: tmpHome.path,
-          codexExecutable: '/usr/bin/true',
-        );
-        final codex = (await service.fetchAll(
-          zaiApiKey: '',
-        )).firstWhere((u) => u.providerId == 'codex');
-        expect(codex.status, SubscriptionStatus.error);
-        expect(codex.error, 'Codex did not report limits.');
-      },
-    );
+    test('a knownStatus Claude account is not fetched', () async {
+      final (service, adapter) = build((_) => _json(const {}));
+      final results = await service.fetchAll(
+        accounts: const [
+          SubscriptionUsageAccount(
+            providerId: 'claude',
+            accountId: 'signed-out',
+            accountLabel: 'old@example.com',
+            knownStatus: SubscriptionStatus.signInRequired,
+            knownReason: 'Sign in again.',
+          ),
+        ],
+      );
+      final claude = results.singleWhere((u) => u.providerId == 'claude');
+      expect(claude.status, SubscriptionStatus.signInRequired);
+      expect(claude.accountId, 'signed-out');
+      expect(claude.error, 'Sign in again.');
+      expect(
+        adapter.requests.where((r) => r.path.contains('anthropic')),
+        isEmpty,
+      );
+    });
   });
 
   group('z.ai error shape', () {

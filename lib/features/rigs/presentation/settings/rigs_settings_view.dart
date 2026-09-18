@@ -1,4 +1,5 @@
 import 'package:control_center/features/rigs/presentation/settings/rig_capabilities_section.dart';
+import 'package:control_center/features/rigs/presentation/settings/rig_clipboard_settings_section.dart';
 import 'package:control_center/features/rigs/presentation/settings/rig_images_section.dart';
 import 'package:control_center/features/rigs/presentation/settings/rig_running_section.dart';
 import 'package:control_center/features/rigs/presentation/settings/rig_workspace_sections.dart';
@@ -27,6 +28,7 @@ class RigsSettingsView extends StatelessWidget {
       subtitle: l10n.rigsSettingsSubtitle,
       sections: const [
         CapabilitiesSection(),
+        RigClipboardSettingsSection(),
         RigImagesSection(),
         CustomImagesSection(),
         BrowserEgressSection(),

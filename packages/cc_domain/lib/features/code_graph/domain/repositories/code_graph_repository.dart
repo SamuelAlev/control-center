@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_edge.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_file_ingest.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_index_checkpoint.dart';
@@ -39,6 +40,9 @@ abstract class CodeGraphRepository {
   /// [workspaceId] and as seen from the [checkoutId] partition. Capped to
   /// [limit] rows when provided.
   ///
+  /// [kinds] defaults to [CodeEdgeKind.calls]. Pass `implementsType` /
+  /// `extendsType` / `mixesIn` to list implementors of a type.
+  ///
   /// [checkoutId] is REQUIRED for isolation, not just relevance. Ids alone used
   /// to be enough — every partition held a full copy of the repo, so edges never
   /// pointed outside their own partition. Now a worktree stores only its delta
@@ -51,6 +55,7 @@ abstract class CodeGraphRepository {
     String symbolId, {
     int? limit,
     String? checkoutId,
+    Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
   });
 
   /// Symbols that [symbolId] calls/depends on (outgoing edges), within

@@ -309,9 +309,9 @@ String? rejectGuestPath(String guestPath) {
 ///    file must never turn up as an untracked change in somebody's repo.
 ///  * A terminal rig gets `~/drops` beside its worktree, for the same reason
 ///    and with the lowercase name shells are used to.
-///  * The browser image is `chromedp/headless-shell`, which has no home
-///    directory worth speaking of and runs as root; `/tmp` is the one place
-///    that is guaranteed writable and reachable by the browser process.
+///  * Browser guests are disposable Debian microVMs whose workloads use
+///    `/tmp` for profiles and local pages; it is writable and shared by every
+///    supported engine without inventing an engine-specific home contract.
 String rigDropDirectory({required RigSurface surface, required bool exec}) {
   if (exec) {
     return '/home/cc/drops';
@@ -319,10 +319,12 @@ String rigDropDirectory({required RigSurface surface, required bool exec}) {
   return switch (surface) {
     RigSurface.computer => '/home/cc/Drops',
     RigSurface.browser => '/tmp/cc-drops',
-    // Never reached: the mobile driver refuses drops outright, because an
-    // Android device has no drop target a host can address. Named anyway so
-    // the switch is exhaustive rather than defaulting into a wrong path.
-    RigSurface.mobile => '/sdcard/Download',
+    RigSurface.mobile => throw UnsupportedError(
+      'Android devices do not expose a guest drop directory.',
+    ),
+    RigSurface.ios => throw UnsupportedError(
+      'iOS Simulator does not expose a guest drop directory.',
+    ),
   };
 }
 

@@ -460,6 +460,19 @@ abstract interface class ForgePrClient {
     Object? cancelToken,
   });
 
+  /// Replaces the body of a top-level conversation comment.
+  ///
+  /// [commentId] is the forge's issue-comment / note id, carried as a string
+  /// because GitLab and Bitbucket ids are not GitHub's integers at this
+  /// seam. Used to persist a GFM task-list toggle without opening the
+  /// editor.
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    Object? cancelToken,
+  });
+
   /// Marks a review thread resolved (or reopens it).
   ///
   /// [threadId] is a [PrReviewThreadState.id], not a comment id. Capability:

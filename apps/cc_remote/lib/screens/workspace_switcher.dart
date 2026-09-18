@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/app_icons.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/widgets/touch_target.dart';
 import 'package:cc_remote/widgets/workspace_avatar.dart';
@@ -22,10 +23,12 @@ class WorkspaceSwitcherButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     final activeId = ref.watch(activeWorkspaceIdProvider).value;
     final workspaces = ref.watch(workspacesProvider).value ?? const [];
     final active = _resolve(activeId, workspaces);
-    final name = active?.name ?? (activeId == null ? null : 'Choose workspace');
+    final name =
+        active?.name ?? (activeId == null ? null : l10n.chooseWorkspace);
 
     return CcTappable(
       onPressed: () => context.push('/workspaces'),
@@ -47,7 +50,7 @@ class WorkspaceSwitcherButton extends ConsumerWidget {
                 Icon(AppIcons.layers, size: 16, color: t.fgSecondary),
               const SizedBox(width: 8),
               Text(
-                name ?? 'Choose workspace',
+                name ?? l10n.chooseWorkspace,
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -113,18 +116,18 @@ class WorkspaceSwitcherScreen extends ConsumerWidget {
 
   Widget _header(BuildContext context, DesignSystemTokens t) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(8, 8, 16, 8),
       child: Row(
         children: [
           PhoneIconButton(
             icon: AppIcons.arrowLeft,
-            semanticLabel: 'Back',
+            semanticLabel: AppLocalizations.of(context).back,
             onPressed: () => context.pop(),
             color: t.fgSecondary,
           ),
           const SizedBox(width: 8),
           Text(
-            'Workspaces',
+            AppLocalizations.of(context).workspaces,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -147,14 +150,14 @@ class WorkspaceSwitcherScreen extends ConsumerWidget {
       loading: () => const Center(child: CcSpinner(size: 22)),
       error: (e, _) => CcEmptyState(
         icon: AppIcons.triangleAlert,
-        message: "Couldn't load workspaces",
+        message: AppLocalizations.of(context).workspacesLoadFailed,
         description: e.toString(),
       ),
       data: (workspaces) {
         if (workspaces.isEmpty) {
-          return const CcEmptyState(
+          return CcEmptyState(
             icon: AppIcons.layers,
-            message: 'No workspaces yet',
+            message: AppLocalizations.of(context).noWorkspacesYet,
           );
         }
         return ListView(
@@ -162,7 +165,9 @@ class WorkspaceSwitcherScreen extends ConsumerWidget {
             for (final w in workspaces)
               CcCard(
                 interactive: true,
-                semanticLabel: 'Select ${w.name}',
+                semanticLabel: AppLocalizations.of(
+                  context,
+                ).selectWorkspace(w.name),
                 onPressed: () {
                   ref.read(remoteSessionProvider).setActiveWorkspace(w.id);
                   context.pop();

@@ -71,7 +71,7 @@ class PlanVersionPanel extends StatelessWidget {
       width: 280,
       decoration: BoxDecoration(
         color: ds.bgSecondary,
-        border: Border(right: BorderSide(color: ds.borderPrimary)),
+        border: BorderDirectional(end: BorderSide(color: ds.borderPrimary)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

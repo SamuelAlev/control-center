@@ -5,6 +5,7 @@ import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
@@ -440,8 +441,14 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
                               ),
                             )
                           else
-                            for (var i = 0; i < options.length; i++)
-                              KeyedSubtree(
+                            CcFluidHover(
+                              itemCount: options.length,
+                              onActiveIndexChanged: (index) {
+                                if (index != null && _highlighted != index) {
+                                  setState(() => _highlighted = index);
+                                }
+                              },
+                              itemBuilder: (context, i) => KeyedSubtree(
                                 key: _rows.keyAt(i),
                                 child: _CcMultiSelectRow<T>(
                                   option: options[i],
@@ -452,6 +459,12 @@ class _CcMultiSelectState<T> extends State<CcMultiSelect<T>> {
                                   onToggle: () => _toggleOption(options[i]),
                                 ),
                               ),
+                              layoutBuilder: (context, items) => Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: items,
+                              ),
+                            ),
                         ],
                       );
                     },
@@ -973,8 +986,11 @@ class _CcMultiSelectRow<T> extends StatelessWidget {
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
         final wash = pressed
             ? t.hoverStrong
+            : fluidActive
+            ? _transparent
             : (hovered || highlighted)
             ? t.hover
             : _transparent;

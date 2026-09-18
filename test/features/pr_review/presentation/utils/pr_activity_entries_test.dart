@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
@@ -247,6 +248,102 @@ void main() {
       expect(tail[2], isA<PrReviewRequestEntry>());
       expect(tail[3], isA<PrCommitEntry>()); // sam again, but run broken
       expect(tail[4], isA<PrCommitEntry>()); // zoe: different author
+    });
+
+    test('maps a labeled event to a label-change row', () {
+      const bug = PrLabel(name: 'bug', color: 'd73a4a');
+      final entries = buildPrActivityEntries(
+        pr: pr(),
+        reviews: const [],
+        comments: const [],
+        commits: const [],
+        events: [
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.labeled,
+            actor: const PrUser(login: 'renovate[bot]', avatarUrl: ''),
+            label: bug,
+            createdAt: t0.add(const Duration(minutes: 1)),
+          ),
+        ],
+      );
+
+      final labels = entries.whereType<PrLabelChangeEntry>().toList();
+      expect(labels, hasLength(1));
+      expect(labels.single.actor?.login, 'renovate[bot]');
+      expect(labels.single.added, [bug]);
+      expect(labels.single.removed, isEmpty);
+    });
+
+    test('groups burst label add and remove events by the same actor', () {
+      const bug = PrLabel(name: 'bug', color: 'd73a4a');
+      const deps = PrLabel(name: 'dependencies', color: '0366d6');
+      const wip = PrLabel(name: 'wip', color: 'eeeeee');
+      final entries = buildPrActivityEntries(
+        pr: pr(),
+        reviews: const [],
+        comments: const [],
+        commits: const [],
+        events: [
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.labeled,
+            actor: const PrUser(login: 'alice', avatarUrl: ''),
+            label: bug,
+            createdAt: t0.add(const Duration(minutes: 1)),
+          ),
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.labeled,
+            actor: const PrUser(login: 'alice', avatarUrl: ''),
+            label: wip,
+            createdAt: t0.add(const Duration(minutes: 1, seconds: 5)),
+          ),
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.unlabeled,
+            actor: const PrUser(login: 'alice', avatarUrl: ''),
+            label: wip,
+            createdAt: t0.add(const Duration(minutes: 1, seconds: 10)),
+          ),
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.labeled,
+            actor: const PrUser(login: 'alice', avatarUrl: ''),
+            label: deps,
+            createdAt: t0.add(const Duration(minutes: 1, seconds: 20)),
+          ),
+        ],
+      );
+
+      final labels = entries.whereType<PrLabelChangeEntry>().toList();
+      expect(labels, hasLength(1));
+      expect(labels.single.added.map((l) => l.name), ['bug', 'dependencies']);
+      expect(labels.single.removed.map((l) => l.name), ['wip']);
+    });
+
+    test('does not mix review-request and label events in one burst', () {
+      const bug = PrLabel(name: 'bug', color: 'd73a4a');
+      final entries = buildPrActivityEntries(
+        pr: pr(),
+        reviews: const [],
+        comments: const [],
+        commits: const [],
+        events: [
+          request('bob', t0.add(const Duration(minutes: 1))),
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.labeled,
+            actor: const PrUser(login: 'alice', avatarUrl: ''),
+            label: bug,
+            createdAt: t0.add(const Duration(minutes: 1, seconds: 5)),
+          ),
+        ],
+      );
+
+      expect(entries.whereType<PrReviewRequestEntry>(), hasLength(1));
+      expect(entries.whereType<PrLabelChangeEntry>(), hasLength(1));
+      expect(entries.whereType<PrReviewRequestEntry>().single.requestedNames, [
+        'bob',
+      ]);
+      expect(
+        entries.whereType<PrLabelChangeEntry>().single.added.single.name,
+        'bug',
+      );
     });
 
     test('sorts null timestamps first, keeping insertion order', () {

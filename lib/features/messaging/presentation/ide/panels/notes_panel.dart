@@ -257,7 +257,7 @@ class _NoteEditorState extends ConsumerState<_NoteEditor> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Align(
-          alignment: Alignment.centerRight,
+          alignment: AlignmentDirectional.centerEnd,
           child: CcTappable(
             onPressed: () => _startEdit(note.content),
             builder: (context, states) => Row(

@@ -8,6 +8,7 @@
 /// fall-through via [CcNodeBuilder.canBuild].
 library;
 
+import 'dart:math' as math;
 import 'dart:ui' show BoxHeightStyle;
 
 import 'package:cc_markdown/src/ast/nodes.dart';
@@ -158,13 +159,13 @@ final class CcRenderer {
           decoration:
               style.blockquoteDecoration ??
               const BoxDecoration(
-                border: Border(
-                  left: BorderSide(color: Color(0x33888888), width: 3),
+                border: BorderDirectional(
+                  start: BorderSide(color: Color(0x33888888), width: 3),
                 ),
               ),
           padding:
               style.blockquotePadding ??
-              const EdgeInsets.only(left: 12, top: 2, bottom: 2),
+              const EdgeInsetsDirectional.only(start: 12, top: 2, bottom: 2),
           child: DefaultTextStyle.merge(
             style: style.blockquote,
             child: ctx.renderBlocks!(children),
@@ -223,17 +224,37 @@ final class CcRenderer {
         );
       }
       Widget marker;
-      if (item.checked != null && style.checkbox != null) {
-        marker = style.checkbox!(item.checked!);
-      } else if (item.checked != null) {
-        marker = Text(
-          item.checked! ? '☑' : '☐',
+      final checked = item.checked;
+      ValueChanged<bool>? onChanged;
+      if (checked != null &&
+          ctx.onTaskCheckboxChanged != null &&
+          ctx.taskCheckboxCursor != null) {
+        final index = ctx.taskCheckboxCursor!.take();
+        onChanged = (value) => ctx.onTaskCheckboxChanged!(index, value);
+      }
+      if (checked != null && style.checkbox != null) {
+        marker = style.checkbox!(checked, onChanged: onChanged);
+      } else if (checked != null) {
+        final glyph = Text(
+          checked ? '☑' : '☐',
           style: style.listBullet ?? style.paragraph,
         );
+        marker = onChanged == null
+            ? glyph
+            : GestureDetector(
+                onTap: () => onChanged!(!checked),
+                behavior: HitTestBehavior.opaque,
+                child: glyph,
+              );
       } else if (list.ordered) {
         marker = Text('$number.', style: style.listBullet ?? style.paragraph);
       } else {
         marker = Text('•', style: style.listBullet ?? style.paragraph);
+      }
+      if (onChanged != null) {
+        // SelectionArea on selectable documents otherwise wins the tap and
+        // the box never flips — same reason CcButton wraps this way.
+        marker = SelectionContainer.disabled(child: marker);
       }
       number++;
       rows.add(
@@ -346,17 +367,17 @@ final class CcRenderer {
     // Size the table to the available width rather than a hardcoded 900 (which
     // forced even a two-column table to overflow — and clip — any narrower
     // surface and left a stub 900px table stranded on a wide one). The table
-    // now fills the surface width (a readable 320px floor engages the
-    // horizontal scroll on a very narrow bubble); when every column is short it
-    // shrink-wraps to its content instead of stretching (see below).
+    // fills the surface when any column is flexible; when every column is short
+    // it shrink-wraps to its content instead of stretching (see below).
     //
     // Short, media-free columns get IntrinsicColumnWidth via [_tableColumnWidths]
-    // so a "Name / Link"-style table hugs its labels instead of splitting 50/50,
-    // while columns carrying media or long text stay FlexColumnWidth (the
-    // default) and absorb the remaining width — matching GitHub, where the label
-    // column hugs and the link column fills. Intrinsic width is only ever
-    // assigned to media-free columns: image/custom builders use LayoutBuilder,
-    // which throws during the intrinsic measurement pass.
+    // so a "Name / Link"-style table hugs its labels instead of splitting 50/50.
+    // Columns carrying media or long text get a *weighted* FlexColumnWidth so a
+    // "Package" cell with a badge + name outranks a shields.io "Age" sibling
+    // instead of splitting the remainder equally and overflowing the name.
+    // Intrinsic width is only ever assigned to media-free columns: image/custom
+    // builders use LayoutBuilder, which throws during the intrinsic measurement
+    // pass.
     final Table tableWidget;
     if (hasSpans) {
       tableWidget = Table(
@@ -397,9 +418,11 @@ final class CcRenderer {
     return LayoutBuilder(
       builder: (context, constraints) {
         final avail = constraints.maxWidth;
-        final maxTableWidth = avail.isFinite
-            ? avail.clamp(320.0, double.infinity)
-            : 900.0;
+        // Cap at the surface, never above it: a 320px floor made a 289px
+        // comment overflow by exactly that delta. Unbreakable cell content
+        // (inline chips, badges) is handled by weighted flex, not by forcing
+        // the table wider than its parent.
+        final maxTableWidth = avail.isFinite ? avail : 900.0;
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: ConstrainedBox(
@@ -793,6 +816,10 @@ class _CcDetailsViewState extends State<_CcDetailsView> {
     final summary = widget.details.summary.isEmpty
         ? [const CcText('Details')]
         : widget.details.summary;
+    // The closed disclosure points toward the reading direction.
+    final closedGlyph = Directionality.of(context) == TextDirection.rtl
+        ? '◂ '
+        : '▸ ';
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -802,7 +829,7 @@ class _CcDetailsViewState extends State<_CcDetailsView> {
           onTap: () => setState(() => _open = !_open),
           child: Row(
             children: [
-              Text(_open ? '▾ ' : '▸ ', style: style.paragraph),
+              Text(_open ? '▾ ' : closedGlyph, style: style.paragraph),
               Expanded(
                 child: widget.renderer.renderInline(
                   summary,
@@ -817,7 +844,7 @@ class _CcDetailsViewState extends State<_CcDetailsView> {
         ),
         if (_open)
           Padding(
-            padding: const EdgeInsets.only(left: 16, top: 6),
+            padding: const EdgeInsetsDirectional.only(start: 16, top: 6),
             child: widget.context.renderBlocks!(widget.details.children),
           ),
       ],
@@ -961,10 +988,18 @@ int _tableColumnCount(CcTable table) {
 /// values) and left flexible rather than shrunk to its intrinsic width.
 const int _kNarrowColumnCharBudget = 24;
 
+/// Flex floor for a column that holds media (badges, icons). A shields.io
+/// badge is ~80px, roughly this many body characters — without a floor, an
+/// "Age" column with a 3-character header would share remaining width equally
+/// with a "Package" sibling and squeeze the name past the cell.
+const int _kMediaColumnFlexFloor = 12;
+
 /// Per-column [TableColumnWidth] overrides. Short, media-free columns are set
 /// to [IntrinsicColumnWidth] so they hug their content (a "Name / Link" table
-/// no longer splits 50/50); every other column falls through to the table's
-/// default [FlexColumnWidth] and absorbs the remaining width.
+/// no longer splits 50/50). Every other column gets a weighted
+/// [FlexColumnWidth]: remaining width is split by content length (with
+/// [_kMediaColumnFlexFloor] for badge-only columns) so a Package cell with a
+/// name outranks an Age badge instead of sharing 1/N and overflowing.
 ///
 /// The two outcomes this produces, both GitHub-like:
 ///  * mixed — some short, some wide/media columns: the short ones hug while the
@@ -1003,6 +1038,12 @@ Map<int, TableColumnWidth> _tableColumnWidths(CcTable table, int columnCount) {
   for (var i = 0; i < columnCount; i++) {
     if (!hasMedia[i] && maxLen[i] <= _kNarrowColumnCharBudget) {
       widths[i] = const IntrinsicColumnWidth();
+    } else {
+      final weight = math.max(
+        hasMedia[i] ? _kMediaColumnFlexFloor : 1,
+        maxLen[i],
+      );
+      widths[i] = FlexColumnWidth(weight.toDouble());
     }
   }
   return widths;

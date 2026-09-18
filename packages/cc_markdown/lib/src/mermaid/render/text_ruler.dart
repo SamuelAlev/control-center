@@ -4,6 +4,11 @@
 /// Layout asks it for sizes, the painter asks it for glyphs — both go through
 /// the same cache, so a label can never be measured with one style and drawn
 /// with another (the classic source of text spilling out of a box).
+// RTL carve-out: the mermaid engine lays diagrams out left→right in every
+// locale — flipping a layout engine is large, specialized work with near-zero
+// user value (diagrams are a drawing convention, like code). The default
+// paragraph direction here therefore stays LTR. See "RTL & directionality" in
+// AGENTS.md.
 library;
 
 import 'package:cc_markdown/src/mermaid/layout/scene.dart';

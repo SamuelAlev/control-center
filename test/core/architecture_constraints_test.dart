@@ -157,9 +157,21 @@ void main() {
       final allow = _readAllowlist(
         projectRoot,
         'test/core/migration_allowlists/'
-            'domain_value_objects_without_equality.txt',
+        'domain_value_objects_without_equality.txt',
       );
       final stale = <String>{...allow};
+      final rigActionBase = File(
+        '$projectRoot/packages/cc_domain/lib/features/rigs/domain/'
+        'value_objects/rig_action.dart',
+      ).readAsStringSync();
+      final rigActionHasValueSemantics =
+          rigActionBase.contains('bool operator ==(') &&
+          rigActionBase.contains('int get hashCode');
+      expect(
+        rigActionHasValueSemantics,
+        isTrue,
+        reason: 'RigAction subclasses rely on value semantics from their base.',
+      );
       final violations = <String>[];
       for (final voDir in valueObjectDirs) {
         for (final file in voDir.listSync().whereType<File>()) {
@@ -190,7 +202,11 @@ void main() {
 
           final hasEqualsOverride = content.contains('bool operator ==(');
           final hasHashCodeOverride = content.contains('int get hashCode');
-          if (hasEqualsOverride && hasHashCodeOverride) {
+          final inheritsRigActionValueSemantics =
+              rigActionHasValueSemantics &&
+              RegExp(r'extends RigAction\b').hasMatch(content);
+          if ((hasEqualsOverride && hasHashCodeOverride) ||
+              inheritsRigActionValueSemantics) {
             continue;
           }
           final rel = file.path
@@ -258,7 +274,7 @@ void main() {
       final allow = _readAllowlist(
         projectRoot,
         'test/core/migration_allowlists/'
-            'domain_repositories_without_implementations.txt',
+        'domain_repositories_without_implementations.txt',
       );
       final stale = <String>{...allow};
 
@@ -270,10 +286,9 @@ void main() {
           final content = file.readAsStringSync();
           // EVERY interface in the file, not just the first — a file
           // declaring three ports used to be judged by one of them.
-          final names = RegExp(r'abstract\s+(?:interface\s+)?class (\w+)')
-              .allMatches(content)
-              .map((m) => m.group(1)!)
-              .toList();
+          final names = RegExp(
+            r'abstract\s+(?:interface\s+)?class (\w+)',
+          ).allMatches(content).map((m) => m.group(1)!).toList();
           if (names.isEmpty) {
             continue;
           }
@@ -325,6 +340,7 @@ void main() {
   group('Clean Architecture layer boundaries', () {
     test('domain layer files do not import dio', () {
       final violations = <String>[];
+      var filesScanned = 0;
 
       void checkDir(Directory dir) {
         if (!dir.existsSync()) {
@@ -334,6 +350,7 @@ void main() {
             .substring(projectRoot.length + 1)
             .replaceAll(r'\', '/');
         for (final rel in _dartFilesRelative(projectRoot, relDir)) {
+          filesScanned++;
           final content = File('$projectRoot/$rel').readAsStringSync();
           if (content.contains("import 'package:dio") ||
               content.contains('import "package:dio')) {
@@ -342,21 +359,17 @@ void main() {
         }
       }
 
-      final coreDomainDir = Directory('$projectRoot/lib/core/domain');
-      if (coreDomainDir.existsSync()) {
-        checkDir(coreDomainDir);
-      }
+      // The shared kernel is the real domain. lib/features/*/domain is nearly
+      // empty after the exodus — scanning only that tree is vacuous.
+      checkDir(Directory('$projectRoot/packages/cc_domain/lib'));
 
-      final featuresDir = Directory('$projectRoot/lib/features');
-      if (featuresDir.existsSync()) {
-        for (final feature in featuresDir.listSync().whereType<Directory>()) {
-          final domainDir = Directory('${feature.path}/domain');
-          if (domainDir.existsSync()) {
-            checkDir(domainDir);
-          }
-        }
-      }
-
+      expect(
+        filesScanned,
+        greaterThan(0),
+        reason:
+            'Domain dio scan found no files under packages/cc_domain/lib. '
+            'Re-aim this guard rather than letting it pass vacuously.',
+      );
       expect(violations, isEmpty, reason: violations.join('\n'));
     });
 
@@ -681,31 +694,49 @@ void main() {
   });
 
   group('Vendor isolation — ticketing', () {
-    test('Linear transport stays inside its adapter folder', () {
-      const adapterFolder = 'features/ticketing/data/providers/linear/';
-      // Symbols that must never leak outside the Linear adapter folder. The
-      // rest of the codebase talks only to TicketProviderPort.
+    test('Linear transport stays inside cc_infra', () {
+      // The client lives at packages/cc_infra/lib/src/tickets/linear/. A scan
+      // of emptied lib/features/ticketing/data would pass vacuously. Forbid the
+      // GraphQL client and its src import outside cc_infra itself.
       final forbidden = <RegExp>[
         RegExp(r'\bLinearGraphQlClient\b'),
         RegExp(r'\bLinearIssueDto\b'),
-        RegExp('linear_graphql_client'),
-        RegExp('linear_issue_dto'),
+        RegExp(r"package:cc_infra/src/tickets/linear"),
       ];
 
       final violations = <String>[];
-      for (final rel in _dartFilesRelative(projectRoot, 'lib')) {
-        final content = File('$projectRoot/$rel').readAsStringSync();
-        final normalized = rel.replaceAll(r'\', '/');
-        if (normalized.contains(adapterFolder)) {
-          continue;
+      var filesScanned = 0;
+
+      void scan(String relRoot) {
+        final dir = Directory('$projectRoot/$relRoot');
+        if (!dir.existsSync()) {
+          return;
         }
-        for (final pattern in forbidden) {
-          if (pattern.hasMatch(content)) {
-            violations.add('$rel matches ${pattern.pattern}');
+        for (final rel in _dartFilesRelative(projectRoot, relRoot)) {
+          final normalized = rel.replaceAll(r'\', '/');
+          if (normalized.startsWith('packages/cc_infra/')) {
+            continue;
+          }
+          filesScanned++;
+          final content = File('$projectRoot/$rel').readAsStringSync();
+          for (final pattern in forbidden) {
+            if (pattern.hasMatch(content)) {
+              violations.add('$rel matches ${pattern.pattern}');
+            }
           }
         }
       }
 
+      scan('lib');
+      scan('packages');
+
+      expect(
+        filesScanned,
+        greaterThan(0),
+        reason:
+            'Linear isolation scan found no files outside cc_infra. '
+            'Re-aim this guard rather than letting it pass vacuously.',
+      );
       expect(violations, isEmpty, reason: violations.join('\n'));
     });
   });
@@ -1237,39 +1268,44 @@ void main() {
   });
 
   group('cc_harness_runtime package layering (PRD 26)', () {
-    test('cc_harness_runtime imports only dart + cc_harness + crypto/path', () {
-      // The runtime is "batteries for the kernel", VM-only but Control-Center
-      // free: raw dart:io HTTP providers, OAuth/PKCE, credential stores, the
-      // generic tool set. It must never import cc_domain/cc_infra/cc_natives —
-      // CC-coupled adapters (sandboxed bash, MCP bridge, apply_patch, the
-      // cc_natives file-search port) live in cc_infra instead.
-      final allowed = RegExp(
-        r"^(import|export)\s+'(dart:"
-        r'|package:crypto/'
-        r'|package:path/'
-        r'|package:meta/'
-        r'|package:cc_harness/'
-        r'|package:cc_harness_runtime/'
-        r'|src/|\.\./|[a-z_]+(/|\.dart))',
-      );
-      final offenders = <String>[];
-      for (final rel in _dartFilesRelative(
-        projectRoot,
-        'packages/cc_harness_runtime/lib',
-      )) {
-        for (final line in File('$projectRoot/$rel').readAsLinesSync()) {
-          final trimmed = line.trimLeft();
-          if (!trimmed.startsWith('import ') &&
-              !trimmed.startsWith('export ')) {
-            continue;
-          }
-          if (!allowed.hasMatch(trimmed)) {
-            offenders.add('$rel → $trimmed');
+    test(
+      'cc_harness_runtime imports only dart + cc_harness + crypto/path/http2',
+      () {
+        // The runtime is "batteries for the kernel", VM-only but Control-Center
+        // free: raw dart:io HTTP providers, OAuth/PKCE, credential stores, the
+        // generic tool set, and HTTP/2 for Cursor Connect (`package:http2`).
+        // It must never import cc_domain/cc_infra/cc_natives —
+        // CC-coupled adapters (sandboxed bash, MCP bridge, apply_patch, the
+        // cc_natives file-search port) live in cc_infra instead.
+        final allowed = RegExp(
+          r"^(import|export)\s+'(dart:"
+          r'|package:crypto/'
+          r'|package:path/'
+          r'|package:meta/'
+          r'|package:http2/'
+          r'|package:cc_harness/'
+          r'|package:cc_harness_runtime/'
+          r'|src/|\.\./|[a-z_]+(/|\.dart))',
+        );
+        final offenders = <String>[];
+        for (final rel in _dartFilesRelative(
+          projectRoot,
+          'packages/cc_harness_runtime/lib',
+        )) {
+          for (final line in File('$projectRoot/$rel').readAsLinesSync()) {
+            final trimmed = line.trimLeft();
+            if (!trimmed.startsWith('import ') &&
+                !trimmed.startsWith('export ')) {
+              continue;
+            }
+            if (!allowed.hasMatch(trimmed)) {
+              offenders.add('$rel → $trimmed');
+            }
           }
         }
-      }
-      expect(offenders, isEmpty, reason: offenders.join('\n'));
-    });
+        expect(offenders, isEmpty, reason: offenders.join('\n'));
+      },
+    );
 
     test('clients never import the harness runtime (server-side only)', () {
       // The runtime executes commands and dials LLM providers — thin clients
@@ -1423,10 +1459,11 @@ void main() {
         '$projectRoot/packages/cc_domain/lib/features/rigs',
       );
       if (rigDomain.existsSync()) {
-        for (final file in rigDomain
-            .listSync(recursive: true)
-            .whereType<File>()
-            .where((f) => f.path.endsWith('.dart'))) {
+        for (final file
+            in rigDomain
+                .listSync(recursive: true)
+                .whereType<File>()
+                .where((f) => f.path.endsWith('.dart'))) {
           final src = file.readAsStringSync();
           if (src.contains("import 'dart:io'") ||
               src.contains("import 'dart:ffi'") ||
@@ -1540,8 +1577,15 @@ List<String> _publicTopLevelNames(Directory dir) {
     for (final match in topLevelValue.allMatches(source)) {
       final name = match.group(1)!;
       // Skip Dart keywords that can start a line-anchored match.
-      if (const {'return', 'if', 'for', 'while', 'switch', 'await', 'yield'}
-          .contains(name)) {
+      if (const {
+        'return',
+        'if',
+        'for',
+        'while',
+        'switch',
+        'await',
+        'yield',
+      }.contains(name)) {
         continue;
       }
       names.add(name);
@@ -1597,7 +1641,9 @@ Iterable<String> _dartFilesRelative(String projectRoot, String dirPath) sync* {
 /// pointed at `lib/` were scanning directories that no longer exist.
 List<Directory> _domainDirs(String projectRoot, String leaf) {
   final dirs = <Directory>[];
-  final core = Directory('$projectRoot/packages/cc_domain/lib/core/domain/$leaf');
+  final core = Directory(
+    '$projectRoot/packages/cc_domain/lib/core/domain/$leaf',
+  );
   if (core.existsSync()) {
     dirs.add(core);
   }

@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 /// multi-line constructs (block comments, strings) keep their colour across
 /// line boundaries. Blocks longer than [maxLines] render only their head with
 /// a "Show all N lines" expander.
+// RTL carve-out: code lines and their number gutter lay out LTR (source code).
 class CodePreview extends StatefulWidget {
   /// Creates a [CodePreview].
   const CodePreview({
@@ -99,68 +100,75 @@ class _CodePreviewState extends State<CodePreview> {
       constraints: BoxConstraints(maxHeight: widget.maxHeight),
       // No explicit scrollbar: the app-wide [CcScrollBehavior] injects the
       // design-system one, wired to this scrollable's controller.
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: SelectionArea(
-          child: HighlightedCodeLines(
-            code: displayCode,
-            languageId: widget.languageId,
-            builder: (context, highlighted) {
-              final lines = highlighted.toList();
-              // Drop a single trailing empty line from a final newline.
-              if (lines.isNotEmpty &&
-                  lines.last.isEmpty &&
-                  displayCode.endsWith('\n')) {
-                lines.removeLast();
-              }
-              final gutterWidth = '${widget.startLine + lines.length}'.length;
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < lines.length; i++)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 10, right: 10),
-                          child: Text(
-                            '${widget.startLine + i}'.padLeft(gutterWidth),
-                            style: gutterStyle,
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 10),
-                            child: Text.rich(
-                              TextSpan(style: baseStyle, children: lines[i]),
+      child: Directionality(
+        // Pinned per the carve-out above: gutter + code rows never mirror.
+        textDirection: TextDirection.ltr,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: SelectionArea(
+            child: HighlightedCodeLines(
+              code: displayCode,
+              languageId: widget.languageId,
+              builder: (context, highlighted) {
+                final lines = highlighted.toList();
+                // Drop a single trailing empty line from a final newline.
+                if (lines.isNotEmpty &&
+                    lines.last.isEmpty &&
+                    displayCode.endsWith('\n')) {
+                  lines.removeLast();
+                }
+                final gutterWidth = '${widget.startLine + lines.length}'.length;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < lines.length; i++)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 10, right: 10),
+                            child: Text(
+                              '${widget.startLine + i}'.padLeft(gutterWidth),
+                              style: gutterStyle,
                             ),
                           ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 10),
+                              child: Text.rich(
+                                TextSpan(style: baseStyle, children: lines[i]),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    if (truncated)
+                      Padding(
+                        padding: const EdgeInsetsDirectional.only(
+                          start: 10,
+                          top: 4,
                         ),
-                      ],
-                    ),
-                  if (truncated)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 10, top: 4),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: CcButton(
-                          onPressed: () => setState(() => _showAll = true),
-                          variant: CcButtonVariant.ghost,
-                          size: CcButtonSize.sm,
-                          child: Text(
-                            AppLocalizations.of(
-                              context,
-                            ).transcriptShowAllLines(totalLines),
-                            style: CcTypography.caption.copyWith(
-                              color: tokens.accent,
+                        child: Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: CcButton(
+                            onPressed: () => setState(() => _showAll = true),
+                            variant: CcButtonVariant.ghost,
+                            size: CcButtonSize.sm,
+                            child: Text(
+                              AppLocalizations.of(
+                                context,
+                              ).transcriptShowAllLines(totalLines),
+                              style: CcTypography.caption.copyWith(
+                                color: tokens.accent,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

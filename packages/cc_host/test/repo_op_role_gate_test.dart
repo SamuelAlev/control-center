@@ -53,6 +53,7 @@ void main() {
             String? targetType,
             String? targetId,
             String? ip,
+            Map<String, Object?>? details,
           }) async {
             auditSink.add({
               'workspace_id': workspaceId,
@@ -60,6 +61,7 @@ void main() {
               'action': action,
               'target_id': targetId,
               'ip': ip,
+              'details': details,
             });
           },
   );
@@ -253,6 +255,131 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(sink, hasLength(1));
       expect(sink.single['ip'], isNull);
+    });
+
+    test('audit details capture the setting that changed', () async {
+      final sink = <Map<String, Object?>>[];
+      final d = dispatcher(
+        roles: {'mia': WorkspaceRole.member},
+        auditSink: sink,
+        ops: [
+          RepoOp(
+            name: 'workspace_settings.set',
+            kind: RepoOpKind.mutate,
+            handler: (ctx) async => {'ok': true},
+          ),
+        ],
+      );
+      await call(
+        d,
+        'workspace_settings.set',
+        'mia',
+        args: const {
+          'workspace_id': 'ws-1',
+          'key': 'conversation_titles',
+          'value': 'llm',
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(sink, hasLength(1));
+      expect(sink.single['target_id'], 'conversation_titles');
+      expect(sink.single['details'], {
+        'key': 'conversation_titles',
+        'value': 'llm',
+      });
+    });
+
+    test('audit details name the rig and the space it lived in', () async {
+      final sink = <Map<String, Object?>>[];
+      final d = dispatcher(
+        roles: {'mia': WorkspaceRole.member},
+        auditSink: sink,
+        ops: [
+          RepoOp(
+            name: 'rig.destroy',
+            kind: RepoOpKind.mutate,
+            handler: (ctx) async => {
+              'conversation_id': 'space-9',
+              'surface': 'computer',
+            },
+          ),
+        ],
+      );
+      await call(
+        d,
+        'rig.destroy',
+        'mia',
+        args: const {
+          'workspace_id': 'ws-1',
+          'rig_id': 'rig-abc',
+          'reason': 'requested',
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(sink.single['target_id'], 'rig-abc');
+      expect(sink.single['details'], {
+        'rig_id': 'rig-abc',
+        'reason': 'requested',
+        'conversation_id': 'space-9',
+        'surface': 'computer',
+      });
+    });
+
+    test('auditWhen false skips the trail', () async {
+      final sink = <Map<String, Object?>>[];
+      final d = dispatcher(
+        roles: {'mia': WorkspaceRole.member},
+        auditSink: sink,
+        ops: [
+          RepoOp(
+            name: 'terminal.write',
+            kind: RepoOpKind.mutate,
+            auditWhen: (_, result) => result['sent'] == true,
+            handler: (ctx) async => const {},
+          ),
+        ],
+      );
+      await call(
+        d,
+        'terminal.write',
+        'mia',
+        args: const {'workspace_id': 'ws-1', 'session_id': 'tty1', 'data': 'bHM='},
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(sink, isEmpty);
+    });
+
+    test('auditWhen true records a sent terminal command', () async {
+      final sink = <Map<String, Object?>>[];
+      final d = dispatcher(
+        roles: {'mia': WorkspaceRole.member},
+        auditSink: sink,
+        ops: [
+          RepoOp(
+            name: 'terminal.write',
+            kind: RepoOpKind.mutate,
+            auditWhen: (_, result) => result['sent'] == true,
+            handler: (ctx) async => {'sent': true, 'command': 'ls -la'},
+          ),
+        ],
+      );
+      await call(
+        d,
+        'terminal.write',
+        'mia',
+        args: const {
+          'workspace_id': 'ws-1',
+          'session_id': 'tty1',
+          'data': 'DQ==',
+        },
+      );
+      await Future<void>.delayed(Duration.zero);
+      expect(sink, hasLength(1));
+      expect(sink.single['target_id'], 'tty1');
+      expect(sink.single['details'], {
+        'session_id': 'tty1',
+        'command': 'ls -la',
+      });
     });
 
     test('an op declared unaudited appends nothing', () async {

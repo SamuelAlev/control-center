@@ -1,7 +1,8 @@
 import 'package:cc_markdown/cc_markdown.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Renders inline `code` as the app's soft chip (Container background — NOT
 /// `TextStyle.backgroundColor`, which would paint over the selection
@@ -68,14 +69,13 @@ class _AppDetailsViewState extends State<_AppDetailsView> {
   Widget build(BuildContext context) {
     final style = widget.style;
     final summary = widget.details.summary.isEmpty
-        ? const [CcText('Details')]
+        ? [CcText(AppLocalizations.of(context).detailsLabel)]
         : widget.details.summary;
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(6),
+        GestureDetector(
           onTap: () => setState(() => _open = !_open),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
@@ -100,7 +100,11 @@ class _AppDetailsViewState extends State<_AppDetailsView> {
         ),
         if (_open)
           Padding(
-            padding: const EdgeInsets.only(left: 20, top: 6, bottom: 2),
+            padding: const EdgeInsetsDirectional.only(
+              start: 20,
+              top: 6,
+              bottom: 2,
+            ),
             child: widget.renderContext.renderBlocks!(widget.details.children),
           ),
       ],

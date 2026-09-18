@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_ui/src/components/cc_dialog.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:flutter/widgets.dart';
@@ -206,6 +207,40 @@ void main() {
 
     // Still present — the barrier is not dismissible.
     expect(find.text('Stay put'), findsOneWidget);
+  });
+
+  testWidgets('showCcDialog leaves a tier faster than it enters', (
+    tester,
+  ) async {
+    late BuildContext dialogHost;
+    await tester.pumpWidget(
+      ccTestApp(
+        Navigator(
+          onGenerateRoute: (settings) => PageRouteBuilder<void>(
+            pageBuilder: (context, animation, secondaryAnimation) {
+              dialogHost = context;
+              return const SizedBox.expand();
+            },
+          ),
+        ),
+      ),
+    );
+
+    unawaited(
+      showCcDialog<void>(
+        context: dialogHost,
+        builder: (context) => const CcDialog(content: Text('Quick leave')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Quick leave'), findsOneWidget);
+
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pump();
+    // [CcMotion.slowExit] is 160ms. A close that reused [CcMotion.slow]
+    // (240ms) would still be mid-fade here.
+    await tester.pump(CcMotion.slowExit + const Duration(milliseconds: 10));
+    expect(find.text('Quick leave'), findsNothing);
   });
 
   testWidgets('CcDialog renders a close control that fires onClose', (

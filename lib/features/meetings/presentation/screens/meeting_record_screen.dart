@@ -22,7 +22,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/live_dot.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -202,10 +202,10 @@ class _MeetingRecordScreenState extends ConsumerState<MeetingRecordScreen> {
           child: Text(l10n.meetingRecordStop),
         ),
       ],
-      // Left-aligned so the capped column starts at the same inset as the
+      // Start-aligned so the capped column starts at the same inset as the
       // pinned header above it (see the meetings list for the same note).
       child: Align(
-        alignment: Alignment.topLeft,
+        alignment: AlignmentDirectional.topStart,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: _kContentMaxWidth),
           child: Padding(

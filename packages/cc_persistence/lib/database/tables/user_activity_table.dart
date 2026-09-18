@@ -38,6 +38,11 @@ class UserActivityTable extends Table {
   /// when resolvable (null for private/loopback/unknown).
   TextColumn get countryCode => text().nullable()();
 
+  /// Sanitized JSON object of the mutation's arguments (and a few
+  /// contextual result fields). Null on rows recorded before this column
+  /// existed, or when nothing useful survived redaction.
+  TextColumn get details => text().nullable()();
+
   /// When the action happened.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 

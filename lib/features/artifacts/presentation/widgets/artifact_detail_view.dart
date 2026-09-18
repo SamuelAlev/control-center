@@ -121,7 +121,12 @@ class _ArtifactDetailViewState extends ConsumerState<ArtifactDetailView> {
                     revisions: list,
                     selected: shown.revisionNumber,
                     isHead: shown.id == list.last.id,
-                    padding: const EdgeInsets.fromLTRB(16, 10, 12, 0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      16,
+                      10,
+                      12,
+                      0,
+                    ),
                     onSelect: (n) => setState(
                       () => _pinnedRevision = n == list.last.revisionNumber
                           ? null

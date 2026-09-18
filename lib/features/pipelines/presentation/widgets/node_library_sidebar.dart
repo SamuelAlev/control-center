@@ -2,7 +2,7 @@ import 'package:cc_domain/features/pipelines/domain/services/node_type_library.d
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Editor palette categories. The mandatory trigger entry node is not in the
 /// palette (it is a fixed, single entry node), so there is no trigger category.
@@ -225,10 +225,7 @@ class _DraggableEntry extends StatelessWidget {
     return Draggable<NodeType>(
       data: type,
       dragAnchorStrategy: pointerDragAnchorStrategy,
-      feedback: Material(
-        color: Colors.transparent,
-        child: SizedBox(width: 220, child: card),
-      ),
+      feedback: SizedBox(width: 220, child: card),
       childWhenDragging: Opacity(opacity: 0.4, child: card),
       child: card,
     );

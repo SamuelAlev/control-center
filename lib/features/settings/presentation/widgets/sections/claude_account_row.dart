@@ -147,7 +147,7 @@ class ClaudeAccountRow extends ConsumerWidget {
                 onSelected: () => _confirmRemove(context, ref, account),
               ),
             ],
-            target: Icon(
+            target: CcIcon(
               AppIcons.moreHorizontal,
               size: 16,
               color: t.fgSecondary,

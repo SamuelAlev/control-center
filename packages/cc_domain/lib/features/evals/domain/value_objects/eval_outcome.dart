@@ -47,6 +47,33 @@ class EvalOutcome {
   /// Failure detail when [completed] is false.
   final String? error;
 
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EvalOutcome &&
+          completed == other.completed &&
+          costCents == other.costCents &&
+          turnCount == other.turnCount &&
+          sandboxViolations == other.sandboxViolations &&
+          durationMs == other.durationMs &&
+          error == other.error &&
+          _listEq(toolCalls, other.toolCalls) &&
+          _listEq(filesTouched, other.filesTouched) &&
+          _mapEq(signals, other.signals);
+
+  @override
+  int get hashCode => Object.hash(
+    completed,
+    costCents,
+    turnCount,
+    sandboxViolations,
+    durationMs,
+    error,
+    toolCalls.length,
+    filesTouched.length,
+    signals.length,
+  );
+
   /// Reads a boolean signal (missing → false).
   bool signalBool(String key) => signals[key] == true;
 
@@ -73,3 +100,27 @@ class EvalOutcome {
 /// Its value is the negation of the run's completion contract going unmet: a
 /// plan-mode run that ends `contractUnmet` never called `submit_plan`.
 const String evalSignalPlanSubmitted = 'planSubmitted';
+
+bool _listEq(List<Object?> a, List<Object?> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool _mapEq(Map<String, Object> a, Map<String, Object> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (final e in a.entries) {
+    if (b[e.key] != e.value) {
+      return false;
+    }
+  }
+  return true;
+}

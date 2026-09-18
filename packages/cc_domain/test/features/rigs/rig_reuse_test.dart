@@ -133,6 +133,21 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('iOS slots identify distinct ephemeral simulators', () {
+      final primary = RigSpec(
+        surface: RigSurface.ios,
+        conversationId: 'c1',
+      );
+      final second = RigSpec(
+        surface: RigSurface.ios,
+        conversationId: 'c1',
+        slotId: 's2',
+      );
+      expect(RigSpec.slotIdError('s2', RigSurface.ios), isNull);
+      expect(primary, isNot(second));
+      expect(RigSpec.fromJson(second.toJson()).slotId, 's2');
+    });
   });
 
   group('credentials', () {

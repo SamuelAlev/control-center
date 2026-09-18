@@ -1,5 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// A short text label with an animated left-to-right shimmer sweep, used for
 /// live "Thinking…" / status lines.
@@ -64,17 +64,14 @@ class _ShimmerTextState extends State<ShimmerText>
   Widget build(BuildContext context) {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final theme = Theme.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final resolved =
         widget.style ??
         CcTypography.caption.copyWith(color: context.ds.textTertiary);
     // Honour the caller's colour as the floor rather than overwriting it — the
     // callers pass design-system text tokens that are already contrast-checked.
-    final base =
-        widget.baseColor ??
-        resolved.color ??
-        theme.colorScheme.onSurfaceVariant;
-    final highlight = widget.highlightColor ?? theme.colorScheme.onSurface;
+    final base = widget.baseColor ?? resolved.color ?? t.textTertiary;
+    final highlight = widget.highlightColor ?? t.textPrimary;
     final style = resolved.copyWith(color: base);
 
     final label = Text(

@@ -4,7 +4,7 @@ import 'package:control_center/features/ticketing/presentation/widgets/project_v
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -106,130 +106,128 @@ class _ProjectDialogState extends ConsumerState<_ProjectDialog> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: t.panel,
-          borderRadius: AppRadii.brLg,
           border: Border.all(color: t.borderPrimary),
           boxShadow: CcElevation.floating,
         ),
         child: ClipRRect(
-          borderRadius: AppRadii.brLg,
-          child: Material(
-            type: MaterialType.transparency,
-            child: CallbackShortcuts(
-              bindings: {
-                const SingleActivator(LogicalKeyboardKey.enter, meta: true):
-                    _submit,
-                const SingleActivator(LogicalKeyboardKey.enter, control: true):
-                    _submit,
-                const SingleActivator(LogicalKeyboardKey.escape): () =>
-                    Navigator.of(context).maybePop(),
-              },
-              child: SizedBox(
-                width: 460,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-                      child: Row(
-                        children: [
-                          Icon(AppIcons.box, size: 14, color: t.fgTertiary),
-                          const SizedBox(width: 8),
-                          Text(
-                            _isEdit ? l10n.editProject : l10n.newProject,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              color: t.textTertiary,
-                            ),
+          child: CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.enter, meta: true):
+                  _submit,
+              const SingleActivator(LogicalKeyboardKey.enter, control: true):
+                  _submit,
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  Navigator.of(context).maybePop(),
+            },
+            child: SizedBox(
+              width: 460,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+                    child: Row(
+                      children: [
+                        Icon(AppIcons.box, size: 14, color: t.fgTertiary),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isEdit ? l10n.editProject : l10n.newProject,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: t.textTertiary,
                           ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                      child: CcTextField(
-                        controller: _nameController,
-                        autofocus: true,
-                        textInputAction: TextInputAction.next,
-                        textStyle: TextStyle(
-                          fontSize: 18,
-                          height: 1.3,
-                          fontWeight: FontWeight.w600,
-                          color: t.textPrimary,
                         ),
-                        hintText: l10n.projectNamePlaceholder,
-                        chromeless: true,
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                    child: CcTextField(
+                      controller: _nameController,
+                      autofocus: true,
+                      textInputAction: TextInputAction.next,
+                      textStyle: TextStyle(
+                        fontSize: 18,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
+                      hintText: l10n.projectNamePlaceholder,
+                      chromeless: true,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
+                    child: CcTextField(
+                      controller: _descriptionController,
+                      minLines: 2,
+                      maxLines: 5,
+                      textStyle: TextStyle(
+                        fontSize: 14,
+                        height: 1.45,
+                        color: t.textSecondary,
+                      ),
+                      hintText: l10n.projectDescriptionPlaceholder,
+                      chromeless: true,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+                    child: Text(
+                      l10n.projectColorLabel,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: t.textTertiary,
                       ),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
-                      child: CcTextField(
-                        controller: _descriptionController,
-                        minLines: 2,
-                        maxLines: 5,
-                        textStyle: TextStyle(
-                          fontSize: 14,
-                          height: 1.45,
-                          color: t.textSecondary,
-                        ),
-                        hintText: l10n.projectDescriptionPlaceholder,
-                        chromeless: true,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-                      child: Text(
-                        l10n.projectColorLabel,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: t.textTertiary,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          for (final c in ProjectColor.values)
-                            _ColorSwatch(
-                              color: c,
-                              selected: c == _color,
-                              onTap: () => setState(() => _color = c),
-                            ),
-                        ],
-                      ),
-                    ),
-                    Container(height: 1, color: t.borderSecondary),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 16, 14),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          CcButton(
-                            variant: CcButtonVariant.secondary,
-                            onPressed: _submitting
-                                ? null
-                                : () => Navigator.of(context).pop(),
-                            child: Text(l10n.cancel),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 8, 18, 16),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final c in ProjectColor.values)
+                          _ColorSwatch(
+                            color: c,
+                            selected: c == _color,
+                            onTap: () => setState(() => _color = c),
                           ),
-                          const SizedBox(width: 8),
-                          CcButton(
-                            onPressed: _submitting ? null : _submit,
-                            child: _submitting
-                                ? const CcSpinner(size: 16)
-                                : Text(
-                                    _isEdit ? l10n.save : l10n.createProject,
-                                  ),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                  Container(height: 1, color: t.borderSecondary),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      12,
+                      16,
+                      14,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        CcButton(
+                          variant: CcButtonVariant.secondary,
+                          onPressed: _submitting
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          child: Text(l10n.cancel),
+                        ),
+                        const SizedBox(width: 8),
+                        CcButton(
+                          onPressed: _submitting ? null : _submit,
+                          child: _submitting
+                              ? const CcSpinner(size: 16)
+                              : Text(_isEdit ? l10n.save : l10n.createProject),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

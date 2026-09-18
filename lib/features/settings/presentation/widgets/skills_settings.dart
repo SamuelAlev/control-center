@@ -20,7 +20,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:yaml/yaml.dart';
 
@@ -603,7 +603,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 12),
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: CcSegmentedToggle<_SkillsTab>(
               value: _tab,
               onChanged: (t) => setState(() => _tab = t),
@@ -652,7 +652,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
           child: SectionCard(
             label: l10n.skills,
             padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-            headerPadding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+            headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
             expands: true,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
@@ -823,14 +823,14 @@ class _SkillsListTile extends StatelessWidget {
                 : hovered
                 ? tokens?.hover
                 : null,
-            border: Border(
-              left: BorderSide(
-                color: selected ? accentColor : Colors.transparent,
+            border: BorderDirectional(
+              start: BorderSide(
+                color: selected ? accentColor : const Color(0x00000000),
                 width: 2,
               ),
             ),
           ),
-          padding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

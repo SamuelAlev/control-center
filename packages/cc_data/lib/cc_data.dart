@@ -6,9 +6,8 @@
 /// the `cc_domain` wire DTOs and carry no `workspace_id`: the host binds the
 /// authoritative workspace per session, so isolation is enforced server-side.
 ///
-/// Web-safe — depends only on `cc_domain` + `cc_rpc` (no `dart:io`/`dart:ffi`,
-/// no Flutter). The desktop in LOCAL mode keeps its Drift-backed repositories;
-/// a composition root picks local vs. remote.
+/// Web-safe — depends on `cc_domain` + `cc_rpc` + `cc_harness` (no `dart:io`/`dart:ffi`,
+/// no Flutter). Every client, including desktop LOCAL, uses these adapters.
 library;
 
 export 'src/repositories/pr_dto_mapping.dart'
@@ -68,6 +67,7 @@ export 'src/repositories/rpc_agent_goal_run_repository.dart';
 export 'src/repositories/rpc_agent_repository.dart';
 export 'src/repositories/rpc_agent_run_log_repository.dart';
 export 'src/repositories/rpc_agent_working_memory_repository.dart';
+export 'src/repositories/rpc_cache_repository.dart';
 export 'src/repositories/rpc_calendar_repository.dart';
 export 'src/repositories/rpc_chat_client.dart';
 export 'src/repositories/rpc_claude_accounts_repository.dart';
@@ -79,6 +79,7 @@ export 'src/repositories/rpc_fleet_client.dart';
 export 'src/repositories/rpc_font_catalog_repository.dart';
 export 'src/repositories/rpc_governance_repositories.dart';
 export 'src/repositories/rpc_harness_provider_repository.dart';
+export 'src/repositories/key_value_site_allowlist_repository.dart';
 export 'src/repositories/rpc_isolated_repo_repository.dart';
 export 'src/repositories/rpc_meeting_recording_control.dart';
 export 'src/repositories/rpc_meeting_repository.dart';
@@ -88,6 +89,8 @@ export 'src/repositories/rpc_memory_fact_repository.dart';
 export 'src/repositories/rpc_memory_policy_repository.dart';
 export 'src/repositories/rpc_messaging_port.dart';
 export 'src/repositories/rpc_messaging_repository.dart';
+export 'src/repositories/rpc_filter_list_port.dart';
+export 'src/repositories/rpc_models_dev_source.dart';
 export 'src/repositories/rpc_newsfeed_repository.dart';
 export 'src/repositories/rpc_notification_feed_repository.dart';
 export 'src/repositories/rpc_open_pr_list_repository.dart';
@@ -102,6 +105,7 @@ export 'src/repositories/rpc_presence_repository.dart';
 export 'src/repositories/rpc_process_detection_port.dart';
 export 'src/repositories/rpc_project_repository.dart';
 export 'src/repositories/rpc_provider_policy_repository.dart';
+export 'src/repositories/rpc_code_graph_lookup_repository.dart';
 export 'src/repositories/rpc_repo_repository.dart';
 export 'src/repositories/rpc_repo_script_repository.dart';
 export 'src/repositories/rpc_review_space_repository.dart';

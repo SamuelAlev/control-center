@@ -112,13 +112,38 @@ void main() {
   });
 
   group('BashTool', () {
-    test('reports command output and exit code', () async {
+    test('requires a per-call description in the schema', () {
+      final runner = _FakeCommandRunner(
+        const HarnessCommandResult(exitCode: 0, stdout: '', stderr: ''),
+      );
+      final schema = BashTool(runner).inputSchema;
+      expect(schema['required'], contains('description'));
+      expect(
+        (schema['properties'] as Map).containsKey('description'),
+        isTrue,
+      );
+    });
+
+    test('rejects a call without a description before running', () async {
       final runner = _FakeCommandRunner(
         const HarnessCommandResult(exitCode: 0, stdout: 'hi', stderr: ''),
       );
       final result = await BashTool(
         runner,
       ).execute({'command': 'echo hi'}, ctx);
+      expect(result.isError, isTrue);
+      expect(result.content, contains('description'));
+      expect(runner.lastCommand, isNull, reason: 'the command must not run');
+    });
+
+    test('reports command output and exit code', () async {
+      final runner = _FakeCommandRunner(
+        const HarnessCommandResult(exitCode: 0, stdout: 'hi', stderr: ''),
+      );
+      final result = await BashTool(runner).execute({
+        'command': 'echo hi',
+        'description': 'Echo a greeting',
+      }, ctx);
       expect(runner.lastCommand, 'echo hi');
       expect(result.isError, isFalse);
       expect(result.content, contains('hi'));
@@ -129,9 +154,10 @@ void main() {
       final runner = _FakeCommandRunner(
         HarnessCommandResult.deny('denied by policy'),
       );
-      final result = await BashTool(
-        runner,
-      ).execute({'command': 'rm -rf /'}, ctx);
+      final result = await BashTool(runner).execute({
+        'command': 'rm -rf /',
+        'description': 'Delete everything',
+      }, ctx);
       expect(result.isError, isTrue);
       expect(result.content, contains('denied by policy'));
     });
@@ -140,7 +166,10 @@ void main() {
       final runner = _FakeCommandRunner(
         const HarnessCommandResult(exitCode: 1, stdout: '', stderr: 'boom'),
       );
-      final result = await BashTool(runner).execute({'command': 'false'}, ctx);
+      final result = await BashTool(runner).execute({
+        'command': 'false',
+        'description': 'Run a failing command',
+      }, ctx);
       expect(result.isError, isTrue);
       expect(result.content, contains('boom'));
     });

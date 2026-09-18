@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/components/cc_checkbox.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -146,5 +147,30 @@ void main() {
       await tester.pump();
       expect(node.hasFocus, isTrue);
     });
+
+    testWidgets(
+      'unchecked hover fill is opaque so the exit lerp cannot flash dark',
+      (tester) async {
+        await tester.pumpWidget(
+          ccTestApp(CcCheckbox(value: false, onChanged: (_) {})),
+        );
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+        await tester.pump();
+        await gesture.moveTo(tester.getCenter(find.byType(CcCheckbox)));
+        await tester.pumpAndSettle();
+
+        final box = tester.widget<AnimatedContainer>(
+          find.byType(AnimatedContainer),
+        );
+        final color = (box.decoration! as BoxDecoration).color!;
+        // Translucent hover as a fill is what Color.lerp's alpha-bump turns
+        // into a dark flash on the way back to opaque surface.
+        expect(color.a, 1.0);
+      },
+    );
   });
 }

@@ -458,7 +458,9 @@ class _RunRow extends ConsumerWidget {
                   variant: CcButtonVariant.ghost,
                   size: CcButtonSize.sm,
                   onPressed: () async {
-                    await ref.read(processControlPortProvider).kill(log.pid!);
+                    await ref
+                        .read(processDetectionServiceProvider)
+                        .killProcess(log.pid!);
                     await ref
                         .read(agentRunLogRepositoryProvider)
                         .upsert(

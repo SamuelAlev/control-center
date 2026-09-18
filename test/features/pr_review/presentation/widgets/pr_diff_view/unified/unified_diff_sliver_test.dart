@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/diff_overflow_
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_structure_store.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_config.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';

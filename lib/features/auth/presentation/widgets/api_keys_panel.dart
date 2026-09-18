@@ -5,10 +5,10 @@ import 'package:flutter/widgets.dart';
 /// The two things a fresh install has to connect: a code-hosting forge and
 /// (optionally) a ticketing vendor.
 ///
-/// Both cards are the SAME widgets Settings → Integrations renders, so the
-/// onboarding step and the settings screen cannot drift — they were two
-/// implementations of the same idea, and only one of them knew the app is
-/// multi-forge.
+/// Both cards are the SAME widgets settings renders (forge on Profile,
+/// ticketing on Workspace → General), so the onboarding step and the settings
+/// screen cannot drift — they were two implementations of the same idea, and
+/// only one of them knew the app is multi-forge.
 ///
 /// No credential typed here is stored on this machine. Every token goes to the
 /// server, attached to the signed-in user, which is what lets the same setup

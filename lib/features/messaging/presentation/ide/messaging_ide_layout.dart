@@ -37,6 +37,7 @@ import 'package:control_center/features/plan_studio/presentation/screens/plan_st
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_pane.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
@@ -235,10 +236,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// switches (which swap the controller).
   late final EditorTabOpener _tabOpener = EditorTabOpener(_openTabFromScope);
 
-  /// The pending run target already claimed by this build, if any — see
-  /// [_consumePendingRun].
-  String? _claimedPendingRunId;
-
   @override
   void initState() {
     super.initState();
@@ -323,18 +320,20 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
 
   // ── URL tab sync (`?tab=`) ────────────────────────────────────────────────
 
-  /// Two-way sync between the focused editor tab and the URL's `?tab=`
-  /// param: a tab switch navigates (joining the back/forward stack and
-  /// surviving a refresh) and back/forward or a deep-link re-focuses the
-  /// named tab. The state machine lives in [EditorTabUrlTracker]; only the
-  /// focus/write actions are messaging-specific.
+  /// Two-way sync between the focused editor tab and the URL's `?tab=` param:
+  /// a tab switch publishes lightweight browser history, while back/forward or
+  /// a deep link re-focuses the named tab. The state machine lives in
+  /// [EditorTabUrlTracker]; only the focus/write actions are messaging-specific.
   late final EditorTabUrlTracker _tabUrl;
 
-  /// Navigates to the current location with `?tab=` set to [key], preserving
-  /// every other query param (`?m=` permalinks).
+  /// Mirrors focus into browser history without routing the active page again.
+  ///
+  /// A tab press is local editor state. Sending it through `context.go` rebuilt
+  /// the whole messaging route and every visited tab body before the selected
+  /// tab could paint.
   void _writeTabKey(String? key) {
     final uri = GoRouterState.of(context).uri;
-    context.go(locationWithEditorTab(uri, key));
+    unawaited(updateEditorTabRoute(uri, key));
   }
 
   /// Back/forward to a tab-less location returns to the surface's initial
@@ -562,40 +561,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     if (!_layout.focusTab((t) => t.kind == MessagingTabKinds.chat)) {
       _layout.openInActiveLeaf(_chatTab(spaceId));
     }
-  }
-
-  /// Claims a run target parked by a surface that cannot open a tab itself (the
-  /// global sidebar's space flyout, which navigates here and leaves the run in
-  /// [pendingAgentRunProvider]).
-  ///
-  /// Claimed synchronously into [_claimedPendingRunId] so a rebuild before the
-  /// post-frame callback cannot re-trigger it; the provider itself can only be
-  /// cleared off-frame, because this runs from [build] and writing to a provider
-  /// during a build throws.
-  void _consumePendingRun(PendingAgentRun? pending) {
-    if (pending == null ||
-        pending.spaceId != widget.selectedSpaceId ||
-        _claimedPendingRunId == pending.runId) {
-      return;
-    }
-    _claimedPendingRunId = pending.runId;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      if (ref.read(pendingAgentRunProvider)?.runId == pending.runId) {
-        ref.read(pendingAgentRunProvider.notifier).set(null);
-      }
-      // Releasing the claim lets the same run be opened again later instead of
-      // being swallowed.
-      _claimedPendingRunId = null;
-      _openAgentRun((
-        agentId: pending.agentId,
-        runId: pending.runId,
-        label: pending.label,
-        isSubAgent: pending.isSubAgent,
-      ));
-    });
   }
 
   /// Opens (or refocuses) a run-scoped activity tab.
@@ -895,7 +860,9 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     // rig tab is NOT one of those — closing it puts away the viewer, not the
     // machine (see [_reconcileBodyHost]).
     _reconcileBodyHost(killOrphanedTerminals: true);
-    setState(() {});
+    // EditorWorkspace already listens to the layout and rebuilds only the
+    // workbench. Rebuilding this host too used to rebuild the sidebar and every
+    // visited body a second time for each tab press.
     _schedulePersist();
     _tabUrl.writeFromLayout(_layout);
   }
@@ -1169,6 +1136,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
           engine: RigTabSurfaces.engineFromArgs(tab.args),
           slotId: RigTabSurfaces.slotFromArgs(tab.args),
           conversationId: widget.selectedSpaceId,
+          audioTabKey: tab,
           // A hidden rig tab stops streaming: the guest keeps encoding and the
           // link keeps carrying frames otherwise, for a picture on no screen.
           isVisible: isVisible,
@@ -1489,11 +1457,6 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       }
     }
 
-    // A run target parked by the sidebar's space flyout before it navigated
-    // here. Watched (not listened) because the value is usually set BEFORE this
-    // layout mounts, so there is no transition for a listener to catch.
-    _consumePendingRun(ref.watch(pendingAgentRunProvider));
-
     // In-editor navigation → app tab: the embedded editor's bridge extension
     // reports a file the user navigated to (cmd-click "go to definition", an
     // Explorer open, …). Open it as its OWN app tab in the active leaf, leaving
@@ -1542,10 +1505,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
 
       // A take-over just began (PRD 16 §8): open the code-server editor tab
       // on this space's worktree the same way ⌘T / a file open would.
-      ref.listen<int>(openCodeServerTabRequestProvider(spaceId), (
-        previous,
-        next,
-      ) {
+      ref.listen<int>(codeServerTabRequestProvider(spaceId), (previous, next) {
         if (previous != null && next != previous) {
           openEditor();
         }
@@ -1709,18 +1669,25 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         // doubled edge. Mirrors CcResizable's divider treatment. Hidden when the
         // sidebar is toggled off.
         if (_sidebarVisible)
-          Positioned(
+          PositionedDirectional(
             top: 0,
             bottom: 0,
-            right: _sidebarWidth - _dividerHitSize / 2,
+            end: _sidebarWidth - _dividerHitSize / 2,
             width: _dividerHitSize,
             child: _SidebarDivider(
               hitSize: _dividerHitSize,
               color: t.lineStrong,
               activeColor: t.fgBrandPrimary,
               onDrag: (delta) {
+                // The divider reports a physical dx. The sidebar hangs off the
+                // trailing edge, so growth is a drag toward the start: negate
+                // under RTL, where "toward the start" is a positive dx.
+                final logicalDelta =
+                    Directionality.of(context) == TextDirection.rtl
+                    ? -delta
+                    : delta;
                 setState(() {
-                  _sidebarWidth = (_sidebarWidth - delta).clamp(
+                  _sidebarWidth = (_sidebarWidth - logicalDelta).clamp(
                     _minSidebar,
                     _maxSidebar,
                   );
@@ -1935,6 +1902,16 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   /// conversation"; a terminal tab gets "Restart shell"; a code-server (file)
   /// tab gets Copy path / Copy relative path. Browser tabs carry no extras.
   List<CcMenuItem> _tabContextExtras(EditorTab tab) {
+    if (tab.kind == MessagingTabKinds.rig) {
+      final surface = tab.args['surface'] as String? ?? RigTabSurfaces.computer;
+      return rigTabAudioMenuItems(
+        context: context,
+        ref: ref,
+        tabKey: tab,
+        supportsOutput: RigTabSurfaces.supportsAudioOutput(surface),
+        supportsMicrophone: RigTabSurfaces.supportsMicrophone(surface),
+      );
+    }
     if (tab.kind == MessagingTabKinds.chat) {
       final l10n = AppLocalizations.of(context);
       final conv = _tabConversation(tab);
@@ -2091,6 +2068,15 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
         orElse: () => const <RigBrowserEngine>{},
       );
 
+  Set<String> get _serverRigSurfaces => ref
+      .read(rigCapabilitiesProvider)
+      .maybeWhen(
+        data: (backends) => {
+          for (final backend in backends) ...backend.surfaces,
+        },
+        orElse: () => const <String>{},
+      );
+
   /// Whether the connected server can host a terminal inside an enclosed VM
   /// right now (QEMU present + the exec image downloaded).
   bool get _serverHostsVmTerminals => ref
@@ -2236,6 +2222,18 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
             color: color,
           )
         : null,
+    trailingFor: (tab) {
+      if (tab.kind != MessagingTabKinds.rig) {
+        return null;
+      }
+      final surface = tab.args['surface'] as String? ?? RigTabSurfaces.computer;
+      return (color) => RigTabAudioIndicators(
+        tabKey: tab,
+        color: color,
+        supportsOutput: RigTabSurfaces.supportsAudioOutput(surface),
+        supportsMicrophone: RigTabSurfaces.supportsMicrophone(surface),
+      );
+    },
     // A terminal with a live title — an OSC 0/2 the shell set, or the
     // server-polled foreground process ("pnpm dev serve") — shows that
     // instead of its default label: wezterm/ghostty/iTerm tab behaviour. The
@@ -2303,7 +2301,7 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       // rig in visibly different groups — the confusion that suffix existed to
       // prevent, now handled structurally instead of by making the reader
       // parse to the end of each line.
-      CcMenuItem.section(l10n.ideMenuSectionVirtualMachine),
+      CcMenuItem.section(l10n.ideMenuSectionMachines),
       // A shell inside the conversation's enclosed VM. Offered only when the
       // connected server can actually host one (QEMU + the exec image);
       // otherwise the entry would be a button whose only outcome is an error
@@ -2320,9 +2318,12 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
       // One entry per machine an agent can drive, and one per BROWSER: a rig
       // runs exactly one engine for its whole life, so which browser is a
       // choice made here or not at all. Scoped to this conversation, so the
-      // tab and the agent's `computer_use`/`browser_use`/`mobile_use` calls
-      // address the SAME machine rather than copies of it.
-      for (final kind in RigTabSurfaces.targets(_serverBrowserEngines))
+      // tab and the agent's `computer_use` / `browser_use` / `mobile_use` /
+      // `ios_use` calls address the same default machine.
+      for (final kind in RigTabSurfaces.targets(
+        _serverBrowserEngines,
+        advertisedSurfaces: _serverRigSurfaces,
+      ))
         _rigMenuItem(l10n, leafId, kind),
     ],
   );

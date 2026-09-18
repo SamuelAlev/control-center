@@ -20,8 +20,30 @@ void main() {
       await tester.pumpWidget(ccTestApp(CcTextField(controller: controller)));
       await tester.enterText(find.byType(EditableText), 'hello');
       expect(controller.text, 'hello');
-      // Hint disappears once there is text.
       await tester.pump();
+    });
+
+    // Regression: the hint is a Stack sibling of EditableText, rebuilt only
+    // when emptiness flips. The flip flag used to be a lazy `late` default
+    // that first ran on the first edit — after the controller already held
+    // the pasted text — so the rebuild was skipped and the placeholder
+    // stayed painted under the value.
+    testWidgets('hint hides on the first paste without a parent rebuild', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ccTestApp(const CcTextField(hintText: '/path/to/disk.qcow2')),
+      );
+      expect(find.text('/path/to/disk.qcow2'), findsOneWidget);
+
+      await tester.enterText(
+        find.byType(EditableText),
+        '/Users/me/image.qcow2',
+      );
+      await tester.pump();
+
+      expect(find.text('/path/to/disk.qcow2'), findsNothing);
+      expect(find.text('/Users/me/image.qcow2'), findsOneWidget);
     });
 
     testWidgets('focusing the field changes appearance', (tester) async {

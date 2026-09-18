@@ -267,7 +267,7 @@ void main() {
         });
         expect(
           badgeParent?.padding,
-          const EdgeInsets.only(left: AppSpacing.sm),
+          const EdgeInsetsDirectional.only(start: AppSpacing.sm),
         );
         // …and because the badge trails the TEXT rather than the flex slot,
         // everything after the last glyph stays empty: the words end well

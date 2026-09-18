@@ -31,7 +31,8 @@ import 'package:cc_domain/features/sandboxing/domain/ports/sandbox_detector_port
 import 'package:cc_domain/features/settings/domain/repositories/acp_model_repository.dart';
 import 'package:cc_domain/features/settings/domain/repositories/adapter_repository.dart';
 import 'package:cc_domain/features/weather/domain/repositories/weather_repository.dart';
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/features/model_routing/domain/services/model_catalog_service.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/meetings/data/web/web_audio_capture.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,13 +95,12 @@ AdapterRepository buildAdapterRepository(Ref ref) =>
 AcpModelRepository buildAcpModelRepository(Ref ref) =>
     RpcAcpModelRepository(ref.watch(rpcClientProvider));
 
-/// Model catalog on web (PRD 05): served from the bundled models.dev snapshot
-/// (no disk, no network — both are unavailable in the browser sandbox). The
-/// catalog is global reference data, so the snapshot is a faithful read-only
-/// view; provider enablement defaults to disabled (the browser has no provider
-/// env keys).
-ModelCatalogService buildModelCatalogService(Ref ref) =>
-    ModelCatalogService(source: InMemoryModelsDevSource());
+/// Model catalog (PRD 05): the host fetches models.dev and caches it under its
+/// data dir; this client reads that document over `models.catalog`. Identical
+/// to desktop — no bundled snapshot, no client-side download.
+ModelCatalogService buildModelCatalogService(Ref ref) => ModelCatalogService(
+  source: RpcModelsDevSource(ref.watch(rpcClientProvider)),
+);
 
 /// Calendar over RPC: the calendar screens READ synced events + connected
 /// accounts from the host catalog's `calendar.*` ops/watches. The writes

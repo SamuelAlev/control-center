@@ -85,11 +85,15 @@ void main() {
     final node = FocusNode();
     await tester.pumpWidget(host(node, 0));
     expect(
-      find.descendant(
-        of: find.byType(FocusRing),
-        matching: find.byType(DecoratedBox),
-      ),
-      findsNothing,
+      tester
+          .widget<AnimatedOpacity>(
+            find.descendant(
+              of: find.byType(FocusRing),
+              matching: find.byType(AnimatedOpacity),
+            ),
+          )
+          .opacity,
+      0,
     );
     node.dispose();
   });

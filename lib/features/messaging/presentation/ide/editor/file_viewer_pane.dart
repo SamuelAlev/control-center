@@ -4,7 +4,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/highlighted_code_lines.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Read-only file viewer editor tab. Fetches a single file's content via the

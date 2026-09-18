@@ -84,7 +84,7 @@ void main() {
     ) async {
       final seen = <bool>[];
       final styled = style.copyWith(
-        checkbox: (checked) {
+        checkbox: (checked, {onChanged}) {
           seen.add(checked);
           return Text(checked ? '[x]' : '[ ]');
         },
@@ -94,6 +94,70 @@ void main() {
       );
       expect(seen, containsAll(<bool>[true, false]));
     });
+
+    testWidgets('tapping a task-list checkbox reports document-order index', (
+      tester,
+    ) async {
+      final toggled = <(int, bool)>[];
+      final styled = style.copyWith(
+        checkbox: (checked, {onChanged}) {
+          return GestureDetector(
+            onTap: onChanged == null ? null : () => onChanged(!checked),
+            child: Text(checked ? 'checked' : 'unchecked'),
+          );
+        },
+      );
+      await tester.pumpWidget(
+        _host(
+          CcMarkdown(
+            data: '- [ ] first\n- [x] second',
+            style: styled,
+            onTaskCheckboxChanged: (index, checked) =>
+                toggled.add((index, checked)),
+          ),
+        ),
+      );
+      await tester.tap(find.text('unchecked'));
+      await tester.tap(find.text('checked'));
+      expect(toggled, [(0, true), (1, false)]);
+    });
+
+    testWidgets(
+      'tapping still works when the document is selectable',
+      (tester) async {
+        final toggled = <(int, bool)>[];
+        final styled = style.copyWith(
+          checkbox: (checked, {onChanged}) {
+            return GestureDetector(
+              onTap: onChanged == null ? null : () => onChanged(!checked),
+              child: Text(checked ? 'checked' : 'unchecked'),
+            );
+          },
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Align(
+                alignment: Alignment.topCenter,
+                child: SizedBox(
+                  width: 600,
+                  child: CcMarkdown(
+                    data: '- [ ] first\n- [x] second',
+                    style: styled,
+                    selectable: true,
+                    onTaskCheckboxChanged: (index, checked) =>
+                        toggled.add((index, checked)),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.tap(find.text('unchecked'));
+        await tester.tap(find.text('checked'));
+        expect(toggled, [(0, true), (1, false)]);
+      },
+    );
 
     testWidgets('footnotes render a definitions section after the content', (
       tester,

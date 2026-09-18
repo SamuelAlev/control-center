@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/entities/github_team_profile.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_infra/src/network/error_mapper.dart';
@@ -835,7 +836,7 @@ class GitHubGraphQLClient {
   /// `statusCheckRollup` makes GitHub walk every open PR's head commit and
   /// roll up its check runs, so this query is far heavier per repo than the
   /// list it enriches — at 5 repos × 100 PRs it draws **HTTP 502/504 several
-  /// times an hour** against a busy org (measured across five Frontify repos),
+  /// times an hour** against a busy org (measured across five repos),
   /// and those chunks come back with no data at all. Two repos per request
   /// keeps each one inside the gateway budget and, when one does fail anyway,
   /// costs the sweep two repos' fresh checks instead of five.
@@ -1034,6 +1035,9 @@ class GitHubGraphQLClient {
         ... on Team { name slug avatarUrl databaseId }
       }
     }
+  }
+  labels(first: 20) {
+    nodes { name color description }
   }
 ''';
 
@@ -1478,8 +1482,28 @@ fragment viewerPr on PullRequest {
     required String login,
     required List<({String owner, String name})> repos,
     CancelToken? cancelToken,
+  }) => prCountsByAuthors(
+    logins: [login],
+    repos: repos,
+    cancelToken: cancelToken,
+  );
+
+  /// Exact PR outcome counts authored by any of [logins] across [repos].
+  ///
+  /// Repeated `author:` and `repo:` qualifiers are ORed within each GitHub
+  /// search. Authors and repositories are chunked to keep queries bounded;
+  /// summing author chunks is exact because one pull request has one author.
+  Future<({int open, int draft, int merged, int closed})> prCountsByAuthors({
+    required List<String> logins,
+    required List<({String owner, String name})> repos,
+    CancelToken? cancelToken,
   }) async {
-    if (login.isEmpty || repos.isEmpty) {
+    final authors = logins
+        .map((login) => login.trim())
+        .where((login) => login.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (authors.isEmpty || repos.isEmpty) {
       return (open: 0, draft: 0, merged: 0, closed: 0);
     }
     const query =
@@ -1491,51 +1515,66 @@ fragment viewerPr on PullRequest {
         '  closed: search(query: \$closed, type: ISSUE, first: 1) { issueCount }\n'
         '}';
 
+    const authorChunkSize = 10;
     var open = 0, draft = 0, merged = 0, closed = 0;
-    for (var start = 0; start < repos.length; start += _reviewSearchChunkSize) {
-      final end = (start + _reviewSearchChunkSize) > repos.length
+    for (
+      var repoStart = 0;
+      repoStart < repos.length;
+      repoStart += _reviewSearchChunkSize
+    ) {
+      final repoEnd = (repoStart + _reviewSearchChunkSize) > repos.length
           ? repos.length
-          : start + _reviewSearchChunkSize;
-      final chunk = repos.sublist(start, end);
-
-      // Shared `author:<login> repo:<o/r> …` scope; the state qualifiers
-      // (is:open/draft/merged/unmerged) are prepended per alias. Values go in
-      // via variables, never interpolated into the query body, so they need no
-      // GraphQL escaping.
-      final scope = StringBuffer('author:')..write(login);
-      for (final r in chunk) {
-        scope
-          ..write(' repo:')
-          ..write(r.owner)
-          ..write('/')
-          ..write(r.name);
-      }
-      final base = scope.toString();
-
-      Map<String, dynamic>? response;
-      try {
-        response = await _runQuery(query, <String, dynamic>{
-          'open': 'is:pr is:open draft:false $base',
-          'draft': 'is:pr is:open draft:true $base',
-          'merged': 'is:pr is:merged $base',
-          'closed': 'is:pr is:closed is:unmerged $base',
-        }, cancelToken);
-      } on DioException catch (e) {
-        if (e.type == DioExceptionType.cancel) {
-          return (open: open, draft: draft, merged: merged, closed: closed);
+          : repoStart + _reviewSearchChunkSize;
+      final repoChunk = repos.sublist(repoStart, repoEnd);
+      for (
+        var authorStart = 0;
+        authorStart < authors.length;
+        authorStart += authorChunkSize
+      ) {
+        final authorEnd = (authorStart + authorChunkSize) > authors.length
+            ? authors.length
+            : authorStart + authorChunkSize;
+        final authorChunk = authors.sublist(authorStart, authorEnd);
+        final scope = StringBuffer();
+        for (final login in authorChunk) {
+          scope
+            ..write(' author:')
+            ..write(login);
         }
-        rethrow;
-      }
+        for (final repo in repoChunk) {
+          scope
+            ..write(' repo:')
+            ..write(repo.owner)
+            ..write('/')
+            ..write(repo.name);
+        }
+        final base = scope.toString();
 
-      final data = response?['data'] as Map<String, dynamic>?;
-      int countOf(String alias) =>
-          ((data?[alias] as Map<String, dynamic>?)?['issueCount'] as num?)
-              ?.toInt() ??
-          0;
-      open += countOf('open');
-      draft += countOf('draft');
-      merged += countOf('merged');
-      closed += countOf('closed');
+        Map<String, dynamic>? response;
+        try {
+          response = await _runQuery(query, <String, dynamic>{
+            'open': 'is:pr is:open draft:false$base',
+            'draft': 'is:pr is:open draft:true$base',
+            'merged': 'is:pr is:merged$base',
+            'closed': 'is:pr is:closed is:unmerged$base',
+          }, cancelToken);
+        } on DioException catch (e) {
+          if (e.type == DioExceptionType.cancel) {
+            return (open: open, draft: draft, merged: merged, closed: closed);
+          }
+          rethrow;
+        }
+
+        final data = response?['data'] as Map<String, dynamic>?;
+        int countOf(String alias) =>
+            ((data?[alias] as Map<String, dynamic>?)?['issueCount'] as num?)
+                ?.toInt() ??
+            0;
+        open += countOf('open');
+        draft += countOf('draft');
+        merged += countOf('merged');
+        closed += countOf('closed');
+      }
     }
     return (open: open, draft: draft, merged: merged, closed: closed);
   }
@@ -1607,11 +1646,21 @@ fragment viewerPr on PullRequest {
     }
   }
 
-  /// Fetches a GitHub user's profile (name, bio, avatar, contribution
+  /// Fetches a GitHub identity's profile (name, bio, avatar, contribution
   /// calendar) via the GraphQL API.
   ///
-  /// GitHub App bots (`login[bot]`) are skipped: `user(login:)` cannot
-  /// resolve them (they are `Bot` nodes, not `User`).
+  /// GitHub App bots (`login[bot]`) are skipped: they are `Bot` nodes, not
+  /// `User` or `Organization`. The app *slug* (no `[bot]`) is a different
+  /// identity — `repositoryOwner(login:)` cannot resolve it either — so a
+  /// GraphQL `NOT_FOUND` falls through to `GET /apps/{slug}` rather than
+  /// throwing. That is what a hover on a check-run app or an `@parced`-style
+  /// mention hits; throwing `Could not resolve to a User` logged a server
+  /// error for a login GitHub never claimed was a person.
+  ///
+  /// `repositoryOwner` covers User *and* Organization in one field: asking
+  /// `user(login:)` for an org (or an app) always came back `NOT_FOUND` in
+  /// the errors array with `user: null`, which the previous parser treated
+  /// as a hard failure.
   ///
   /// Tolerant of a PARTIAL answer, because one credential kind cannot read all
   /// of it: a GitHub App installation token is refused `organizations.nodes
@@ -1623,8 +1672,9 @@ fragment viewerPr on PullRequest {
   /// blanked the hover card. The caller fetches on the acting user's own token,
   /// where nothing is forbidden; this keeps the app-identity FALLBACK — a
   /// member who has not connected GitHub — showing a profile without orgs
-  /// instead of an error. A response with no `user` at all and an errors array
-  /// still throws: that is a real failure, not a partial one.
+  /// instead of an error. A response with no owner at all and a *non*-NOT_FOUND
+  /// errors array still throws: that is a real failure (bad credential, schema
+  /// error), not "this login is an org or an app".
   Future<GitHubUserProfile?> getUserProfile({
     required String login,
     CancelToken? cancelToken,
@@ -1637,45 +1687,55 @@ fragment viewerPr on PullRequest {
 
     const query = r'''
       query($login: String!, $from: DateTime!, $to: DateTime!) {
-        user(login: $login) {
+        repositoryOwner(login: $login) {
+          __typename
           login
-          name
           avatarUrl
-          bio
-          location
-          company
-          websiteUrl
-          twitterUsername
-          status {
-            message
-            emoji
-            indicatesLimitedAvailability
-          }
-          organizations(first: 6) {
-            nodes {
-              login
-              name
-              avatarUrl
-              url
-              teams(first: 10, userLogins: [$login]) {
-                nodes {
-                  name
-                  slug
+          ... on User {
+            name
+            bio
+            location
+            company
+            websiteUrl
+            twitterUsername
+            status {
+              message
+              emoji
+              indicatesLimitedAvailability
+            }
+            organizations(first: 6) {
+              nodes {
+                login
+                name
+                avatarUrl
+                url
+                teams(first: 10, userLogins: [$login]) {
+                  nodes {
+                    name
+                    slug
+                  }
+                }
+              }
+            }
+            contributionsCollection(from: $from, to: $to) {
+              restrictedContributionsCount
+              contributionCalendar {
+                totalContributions
+                weeks {
+                  contributionDays {
+                    contributionCount
+                    date
+                  }
                 }
               }
             }
           }
-          contributionsCollection(from: $from, to: $to) {
-            restrictedContributionsCount
-            contributionCalendar {
-              totalContributions
-              weeks {
-                contributionDays {
-                  contributionCount
-                  date
-                }
-              }
-            }
+          ... on Organization {
+            name
+            description
+            location
+            websiteUrl
+            twitterUsername
           }
         }
       }
@@ -1692,7 +1752,246 @@ fragment viewerPr on PullRequest {
       cancelToken,
       variables: variables,
     );
-    return _parseUserProfile(result);
+    if (result == null) {
+      return null;
+    }
+    final profile = _parseUserProfile(result);
+    if (profile != null) {
+      return profile;
+    }
+    // `repositoryOwner` is User | Organization. A GitHub App slug is
+    // neither, so GraphQL answers NOT_FOUND — look the app up by slug.
+    if (_graphqlErrorsAreNotFound(result['errors'] as List?)) {
+      return _fetchAppProfile(login, cancelToken);
+    }
+    return null;
+  }
+
+  /// Fetches an organization team and every member visible to the caller.
+  ///
+  /// Membership is paginated because the profile activity query must represent
+  /// the whole team rather than the first 100 people GitHub returns.
+  Future<GitHubTeamProfile?> getTeamProfile({
+    required String organization,
+    required String slug,
+    CancelToken? cancelToken,
+  }) async {
+    if (organization.trim().isEmpty || slug.trim().isEmpty) {
+      return null;
+    }
+    const query = r'''
+      query($organization: String!, $slug: String!, $after: String) {
+        organization(login: $organization) {
+          team(slug: $slug) {
+            name
+            slug
+            description
+            avatarUrl
+            url
+            members(first: 100, after: $after) {
+              totalCount
+              nodes { login name avatarUrl }
+              pageInfo { hasNextPage endCursor }
+            }
+          }
+        }
+      }
+    ''';
+
+    final members = <Map<String, dynamic>>[];
+    Map<String, dynamic>? team;
+    String? cursor;
+    while (true) {
+      final result = await _postTolerant(
+        query,
+        cancelToken,
+        variables: <String, dynamic>{
+          'organization': organization,
+          'slug': slug,
+          'after': cursor,
+        },
+      );
+      final data = result?['data'] as Map<String, dynamic>?;
+      final org = data?['organization'] as Map<String, dynamic>?;
+      final pageTeam = org?['team'] as Map<String, dynamic>?;
+      if (pageTeam == null) {
+        return null;
+      }
+      team ??= Map<String, dynamic>.from(pageTeam);
+      final connection = pageTeam['members'] as Map<String, dynamic>?;
+      members.addAll(
+        (connection?['nodes'] as List? ?? const [])
+            .whereType<Map<String, dynamic>>(),
+      );
+      final pageInfo = connection?['pageInfo'] as Map<String, dynamic>?;
+      if (pageInfo?['hasNextPage'] != true) {
+        final combined = Map<String, dynamic>.from(team)
+          ..['members'] = <String, dynamic>{
+            'totalCount':
+                (connection?['totalCount'] as num?)?.toInt() ?? members.length,
+            'nodes': members,
+          };
+        return GitHubTeamProfile.fromGraphQl(
+          combined,
+          organization: organization,
+        );
+      }
+      final next = pageInfo?['endCursor'] as String?;
+      if (next == null || next.isEmpty || next == cursor) {
+        return null;
+      }
+      cursor = next;
+    }
+  }
+
+  /// Fetches a detailed, all-state PR sample authored by any of [logins]
+  /// across [repos], newest activity first.
+  ///
+  /// GitHub search exposes at most 1,000 results. The returned `truncated` flag
+  /// makes that limit explicit so percentile metrics are never exhaustive.
+  Future<({List<Map<String, dynamic>> nodes, bool truncated})>
+  searchProfilePullRequestNodes({
+    required List<String> logins,
+    required List<({String owner, String name})> repos,
+    CancelToken? cancelToken,
+  }) async {
+    final authors = logins
+        .map((login) => login.trim())
+        .where((login) => login.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    if (authors.isEmpty || repos.isEmpty) {
+      return (nodes: const <Map<String, dynamic>>[], truncated: false);
+    }
+
+    const query = r'''
+      query($q: String!, $first: Int!, $after: String) {
+        search(query: $q, type: ISSUE, first: $first, after: $after) {
+          issueCount
+          nodes {
+            ... on PullRequest {
+              number
+              title
+              state
+              isDraft
+              createdAt
+              updatedAt
+              closedAt
+              mergedAt
+              url
+              id
+              baseRefName
+              headRefName
+              headRefOid
+              author { login avatarUrl }
+              additions
+              deletions
+              comments { totalCount }
+              reviews(first: 25) {
+                totalCount
+                nodes {
+                  author { login }
+                  submittedAt
+                }
+              }
+              repository { nameWithOwner }
+            }
+          }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    ''';
+
+    const authorChunkSize = 10;
+    const maxResults = 1000;
+    final byKey = <String, Map<String, dynamic>>{};
+    var truncated = false;
+    for (
+      var repoStart = 0;
+      repoStart < repos.length && byKey.length < maxResults;
+      repoStart += _reviewSearchChunkSize
+    ) {
+      final repoEnd = (repoStart + _reviewSearchChunkSize) > repos.length
+          ? repos.length
+          : repoStart + _reviewSearchChunkSize;
+      final repoChunk = repos.sublist(repoStart, repoEnd);
+      for (
+        var authorStart = 0;
+        authorStart < authors.length && byKey.length < maxResults;
+        authorStart += authorChunkSize
+      ) {
+        final authorEnd = (authorStart + authorChunkSize) > authors.length
+            ? authors.length
+            : authorStart + authorChunkSize;
+        final authorChunk = authors.sublist(authorStart, authorEnd);
+        final qualifiers = StringBuffer('is:pr sort:updated-desc');
+        for (final login in authorChunk) {
+          qualifiers
+            ..write(' author:')
+            ..write(login);
+        }
+        for (final repo in repoChunk) {
+          qualifiers
+            ..write(' repo:')
+            ..write(repo.owner)
+            ..write('/')
+            ..write(repo.name);
+        }
+
+        String? cursor;
+        var fetchedForQuery = 0;
+        while (byKey.length < maxResults) {
+          Map<String, dynamic>? response;
+          try {
+            response = await _runQuery(query, <String, dynamic>{
+              'q': qualifiers.toString(),
+              'first': _reviewSearchPageSize,
+              'after': cursor,
+            }, cancelToken);
+          } on DioException catch (e) {
+            if (e.type == DioExceptionType.cancel) {
+              return (nodes: byKey.values.toList(), truncated: truncated);
+            }
+            rethrow;
+          }
+          final data = response?['data'] as Map<String, dynamic>?;
+          final search = data?['search'] as Map<String, dynamic>?;
+          final nodes = (search?['nodes'] as List? ?? const [])
+              .whereType<Map<String, dynamic>>();
+          for (final node in nodes) {
+            final repo =
+                (node['repository'] as Map<String, dynamic>?)?['nameWithOwner']
+                    as String?;
+            final number = (node['number'] as num?)?.toInt() ?? 0;
+            if (repo != null && repo.isNotEmpty && number > 0) {
+              byKey['${repo.toLowerCase()}#$number'] = node;
+            }
+          }
+          fetchedForQuery += nodes.length;
+          final issueCount = (search?['issueCount'] as num?)?.toInt() ?? 0;
+          final pageInfo = search?['pageInfo'] as Map<String, dynamic>?;
+          final hasNext = pageInfo?['hasNextPage'] == true;
+          if (!hasNext) {
+            truncated = truncated || issueCount > fetchedForQuery;
+            break;
+          }
+          if (fetchedForQuery >= maxResults || byKey.length >= maxResults) {
+            truncated = true;
+            break;
+          }
+          final next = pageInfo?['endCursor'] as String?;
+          if (next == null || next.isEmpty || next == cursor) {
+            truncated = truncated || issueCount > fetchedForQuery;
+            break;
+          }
+          cursor = next;
+        }
+      }
+    }
+    if (byKey.length >= maxResults) {
+      truncated = true;
+    }
+    return (nodes: byKey.values.toList(growable: false), truncated: truncated);
   }
 
   /// Fetches GitHub's suggested reviewers for a PR — the users GitHub
@@ -2044,18 +2343,21 @@ fragment viewerPr on PullRequest {
 
   GitHubUserProfile? _parseUserProfile(Map<String, dynamic>? result) {
     final data = result?['data'] as Map<String, dynamic>?;
-    final user = data?['user'] as Map<String, dynamic>?;
-    if (user != null) {
+    final owner = data?['repositoryOwner'] as Map<String, dynamic>?;
+    if (owner != null) {
       // Partial answers land here too: `fromJson` already drops nulled org
       // nodes, so a forbidden `teams` sub-field costs the org list, not the
       // card.
-      return GitHubUserProfile.fromJson(user);
+      return _profileFromRepositoryOwner(owner);
     }
-    // No user AND an errors array is a real failure (a bad credential, a
-    // rate limit) — surface it rather than passing it off as "no such user",
-    // which is what a plain null means here.
+    // No owner AND a non-NOT_FOUND errors array is a real failure (a bad
+    // credential, a schema error) — surface it rather than passing it off
+    // as "no such user". NOT_FOUND is the miss for an org, an app, or a
+    // login GitHub has never heard of; the caller may still try GET /apps.
     final errors = result?['errors'] as List?;
-    if (errors != null && errors.isNotEmpty) {
+    if (errors != null &&
+        errors.isNotEmpty &&
+        !_graphqlErrorsAreNotFound(errors)) {
       final first = errors.first as Map?;
       throw NetworkException(
         first?['message'] as String? ?? 'Unknown GraphQL error',
@@ -2064,6 +2366,94 @@ fragment viewerPr on PullRequest {
     }
     return null;
   }
+
+  /// Public GitHub App metadata for [login] (`GET /apps/{slug}`), or null
+  /// when that slug is not an app. 404 is a miss, not an error — the GraphQL
+  /// NOT_FOUND that got us here is equally true of a made-up login.
+  Future<GitHubUserProfile?> _fetchAppProfile(
+    String login,
+    CancelToken? cancelToken,
+  ) async {
+    try {
+      final response = await _dio.get<dynamic>(
+        '/apps/${Uri.encodeComponent(login)}',
+        cancelToken: cancelToken,
+      );
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        return null;
+      }
+      return _profileFromGitHubApp(data, fallbackLogin: login);
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        return null;
+      }
+      if (e.response?.statusCode == 404) {
+        return null;
+      }
+      throw mapDioException(e);
+    }
+  }
+}
+
+GitHubUserProfile _profileFromRepositoryOwner(Map<String, dynamic> owner) {
+  if (owner['__typename'] == 'Organization') {
+    return GitHubUserProfile.fromJson({...owner, 'bio': owner['description']});
+  }
+  return GitHubUserProfile.fromJson(owner);
+}
+
+GitHubUserProfile _profileFromGitHubApp(
+  Map<String, dynamic> json, {
+  required String fallbackLogin,
+}) {
+  final slug = json['slug'] as String? ?? '';
+  final name = json['name'] as String? ?? '';
+  final description = (json['description'] as String?)?.trim();
+  final htmlUrl = (json['html_url'] as String?)?.trim();
+  final externalUrl = (json['external_url'] as String?)?.trim();
+  final id = json['id'];
+  final owner = json['owner'];
+  final ownerAvatar = owner is Map
+      ? owner['avatar_url'] as String? ?? owner['avatarUrl'] as String?
+      : null;
+  final avatarUrl = id is num
+      ? 'https://avatars.githubusercontent.com/in/${id.toInt()}?v=4'
+      : (ownerAvatar ?? '');
+  final website = (externalUrl != null && externalUrl.isNotEmpty)
+      ? externalUrl
+      : (htmlUrl != null && htmlUrl.isNotEmpty ? htmlUrl : null);
+  return GitHubUserProfile(
+    login: slug.isNotEmpty ? slug : fallbackLogin,
+    name: name.isNotEmpty ? name : (slug.isNotEmpty ? slug : fallbackLogin),
+    avatarUrl: avatarUrl,
+    bio: (description != null && description.isNotEmpty) ? description : null,
+    websiteUrl: website,
+  );
+}
+
+/// GitHub puts `NOT_FOUND` in the errors array whenever `repositoryOwner`
+/// (or the older `user(login:)`) does not match that type — orgs, apps,
+/// and unknown logins all look like this. Only *that* miss is silent.
+bool _graphqlErrorsAreNotFound(List? errors) {
+  if (errors == null || errors.isEmpty) {
+    return false;
+  }
+  for (final error in errors) {
+    if (error is! Map) {
+      return false;
+    }
+    final type = error['type'] as String?;
+    if (type == 'NOT_FOUND') {
+      continue;
+    }
+    final message = error['message'] as String? ?? '';
+    if (message.contains('Could not resolve to a')) {
+      continue;
+    }
+    return false;
+  }
+  return true;
 }
 
 /// Reaction shortcodes (`+1`, `rocket`, …) mapped to the GraphQL

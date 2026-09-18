@@ -11,7 +11,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -303,7 +303,7 @@ class _TemplateTriggerChips extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: t.enabled ? ds.bgSecondary : Colors.transparent,
+              color: t.enabled ? ds.bgSecondary : const Color(0x00000000),
               borderRadius: BorderRadius.circular(4),
               border: t.enabled ? null : Border.all(color: ds.borderSecondary),
             ),

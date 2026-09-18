@@ -45,6 +45,7 @@ class SandboxExecGrantsSection extends ConsumerWidget {
         data: (rows) => rows.isEmpty
             ? CcEmptyState(
                 icon: AppIcons.shield,
+                size: CcEmptyStateSize.sm,
                 message: l10n.sandboxExecGrantsEmpty,
               )
             : Column(

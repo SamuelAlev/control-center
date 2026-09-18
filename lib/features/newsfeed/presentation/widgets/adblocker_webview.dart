@@ -8,11 +8,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/features/newsfeed/presentation/helpers/content_blocker_mapper.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/adblocker_webview_controller.dart';
-import 'package:control_center/features/newsfeed/providers/filter_list_bindings_io.dart';
+import 'package:control_center/features/newsfeed/providers/filter_list_bindings.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
 import 'package:control_center/features/newsfeed/providers/site_allowlist_providers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -169,7 +169,7 @@ class _AdBlockerWebViewState extends ConsumerState<AdBlockerWebView> {
       return const [];
     }
     AppLog.d('AdBlockerWebView', '_loadContentBlockers: readBlocklist…');
-    final entries = await ref.read(filterListServiceProvider).readBlocklist();
+    final entries = await ref.read(filterListPortProvider).readBlocklist();
     final scoped = _filterEntriesForHost(entries, _renderedHost);
     AppLog.d(
       'AdBlockerWebView',
@@ -250,7 +250,7 @@ class _AdBlockerWebViewState extends ConsumerState<AdBlockerWebView> {
     if (!blockingEnabled) {
       return const [];
     }
-    final entries = await ref.read(filterListServiceProvider).readBlocklist();
+    final entries = await ref.read(filterListPortProvider).readBlocklist();
     final scripts = <UserScript>[];
 
     // Scriptlets (all platforms).

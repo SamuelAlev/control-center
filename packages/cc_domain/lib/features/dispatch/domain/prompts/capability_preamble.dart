@@ -124,6 +124,23 @@ String buildCapabilityPreamble(
       ..writeln();
   }
 
+  // Same derived-from-the-surface guarantee: a run without `ask_user` must
+  // never be told to call it, and a run that has it must never fall back to
+  // asking in prose (that ends the turn and the operator has to re-prompt).
+  if (allCallable.contains('ask_user')) {
+    buf
+      ..writeln(
+        'Questions to the operator go through `ask_user`. It renders a form '
+        'in this conversation and the run waits for the answer. Do NOT write '
+        'the question as a chat message. Use it when a preference, missing '
+        'requirement, or genuine fork would change what you build; offer '
+        'concrete options when you can. Do not use it to ask permission '
+        '(approvals are a separate gate) or to report progress. If a sensible '
+        'default exists, take it, state the assumption, and continue.',
+      )
+      ..writeln();
+  }
+
   final exit = profile.sanctionedExitVerb;
   if (exit != null) {
     buf

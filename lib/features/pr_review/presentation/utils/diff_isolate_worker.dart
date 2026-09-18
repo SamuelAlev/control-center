@@ -596,6 +596,10 @@ DiffTokensChunk _decodeTok(Map<String, dynamic> e) {
   final texts = _strings(e[DiffWire.texts]);
   final colors = _nullableInts(e[DiffWire.colors]);
   final bgs = _nullableInts(e[DiffWire.bgs]);
+  final rawKinds = e[DiffWire.kinds];
+  final kinds = rawKinds == null
+      ? List<int>.filled(texts.length, DiffTokenKind.none)
+      : _ints(rawKinds);
   final tokens = <List<DiffToken>>[];
   var offset = 0;
   for (final len in lineLens) {
@@ -606,6 +610,7 @@ DiffTokensChunk _decodeTok(Map<String, dynamic> e) {
           texts[offset],
           colors[offset],
           backgroundColorValue: bgs[offset],
+          kind: offset < kinds.length ? kinds[offset] : DiffTokenKind.none,
         ),
       );
       offset++;

@@ -1,12 +1,14 @@
 import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+part 'comment_inbox_chip.dart';
 
 /// Toggle between unified and split diff views.
 class ViewModeToggle extends StatelessWidget {
@@ -25,11 +27,7 @@ class ViewModeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
+    final tokens = resolveDesignTokens(context);
     return Container(
       decoration: BoxDecoration(
         color: tokens.bgSecondary.withValues(alpha: 0.5),
@@ -82,11 +80,7 @@ class ViewModeSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
+    final tokens = resolveDesignTokens(context);
     return CcTooltip(
       message: tooltip,
       child: CcTappable(
@@ -94,139 +88,30 @@ class ViewModeSegment extends StatelessWidget {
         // the `active` styling below still carries the selection.
         onPressed: active ? null : onTap,
         semanticLabel: tooltip,
-        builder:
-            (context, states) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              color:
-                  active
+        builder: (context, states) => Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          color: active
+              ? tokens.textPrimary
+              : (states.contains(WidgetState.hovered)
+                    ? tokens.hover
+                    : const Color(0x00000000)),
+          child: Icon(
+            icon,
+            size: 14,
+            color: active
+                ? tokens.bgPrimary
+                : (states.contains(WidgetState.hovered)
                       ? tokens.textPrimary
-                      : (states.contains(WidgetState.hovered)
-                            ? tokens.hover
-                            : Colors.transparent),
-              child: Icon(
-                icon,
-                size: 14,
-                color:
-                    active
-                        ? tokens.bgPrimary
-                        : (states.contains(WidgetState.hovered)
-                              ? tokens.textPrimary
-                              : tokens.textTertiary),
-              ),
-            ),
+                      : tokens.textTertiary),
+          ),
+        ),
       ),
     );
   }
 }
 
 /// A chip showing the inline comment count; tapping it opens the comment inbox.
-class CommentInboxChip extends StatefulWidget {
-  /// Creates a [CommentInboxChip].
-  const CommentInboxChip({
-    super.key,
-    required this.count,
-    required this.controller,
-    this.issueComments = const [],
-    this.reviewComments = const [],
-  });
 
-  /// Number of inline comments.
-  final int count;
-
-  /// Controller for inline comment state.
-  final PrInlineCommentsController controller;
-
-  /// Issue-level comments to display in the inbox.
-  final List<IssueComment> issueComments;
-
-  /// Review-level comments to display in the inbox.
-  final List<PrCodeReviewComment> reviewComments;
-  @override
-  State<CommentInboxChip> createState() => _CommentInboxChipState();
-}
-
-class _CommentInboxChipState extends State<CommentInboxChip> {
-  final LayerLink _layerLink = LayerLink();
-  OverlayEntry? _overlay;
-
-  @override
-  void dispose() {
-    _overlay?.remove();
-    _overlay = null;
-    super.dispose();
-  }
-
-  void _toggle() {
-    if (_overlay != null) {
-      _close();
-    } else {
-      _open();
-    }
-  }
-
-  void _open() {
-    _overlay = OverlayEntry(builder: _buildOverlay);
-    Overlay.of(context).insert(_overlay!);
-    setState(() {});
-  }
-
-  void _close() {
-    _overlay?.remove();
-    _overlay = null;
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CompositedTransformTarget(
-      link: _layerLink,
-      child: InkWell(
-        onTap: _toggle,
-        borderRadius: BorderRadius.circular(999),
-        child: CommentCountChip(count: widget.count),
-      ),
-    );
-  }
-
-  Widget _buildOverlay(BuildContext overlayContext) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onTap: _close,
-          ),
-        ),
-        CompositedTransformFollower(
-          link: _layerLink,
-          showWhenUnlinked: false,
-          targetAnchor: Alignment.bottomLeft,
-          followerAnchor: Alignment.topLeft,
-          offset: const Offset(0, 8),
-          child: Consumer(
-            builder: (context, ref, _) {
-              final ctl = widget.controller;
-              final cs = ref.watch(
-                prInlineCommentsControllerProvider(ctl.pr),
-              );
-              return PrCommentsInbox(
-                threads: cs.threads,
-                onToggleResolved: ctl.toggleResolved,
-                onClose: _close,
-                issueComments: widget.issueComments,
-                reviewComments: widget.reviewComments,
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// A non-interactive chip displaying the comment count.
 class CommentCountChip extends StatelessWidget {
   /// Creates a [CommentCountChip].
   const CommentCountChip({super.key, required this.count});
@@ -236,11 +121,7 @@ class CommentCountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
+    final tokens = resolveDesignTokens(context);
     return Container(
       decoration: BoxDecoration(
         color: tokens.bgSecondary.withValues(alpha: 0.6),
@@ -275,17 +156,13 @@ class DiffUpdateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
+    final tokens = resolveDesignTokens(context);
     return CcTooltip(
       message: AppLocalizations.of(context).newCommitsPushed,
-      child: InkWell(
-        onTap: onRefresh,
+      child: CcTappable(
+        onPressed: onRefresh,
         borderRadius: BorderRadius.circular(999),
-        child: Container(
+        builder: (context, states) => Container(
           decoration: BoxDecoration(
             color: const Color(0xFF1F75FE).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(999),

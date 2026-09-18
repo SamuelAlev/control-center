@@ -1,7 +1,9 @@
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_empty_state.dart';
+import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
 import 'package:control_center/features/service_status/providers/service_status_providers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,6 +35,7 @@ Widget _wrap({
   required GitHubStatusIndicator indicator,
   String login = 'samuelalev',
   List<GitHubStatusIncident> incidents = const [],
+  List<InaccessibleRepo> inaccessible = const [],
 }) => ProviderScope(
   overrides: [
     githubStatusProvider.overrideWithValue(
@@ -41,9 +44,27 @@ Widget _wrap({
     viewerLoginsProvider.overrideWith(
       (ref) => login.isEmpty ? const {} : {ForgeHost.github: login},
     ),
+    prsByRepoProvider.overrideWith(
+      () => _SeededPrsByRepoNotifier(inaccessible),
+    ),
   ],
   child: testWrap(const InboxEmptyState()),
 );
+
+class _SeededPrsByRepoNotifier extends PrsByRepoNotifier {
+  _SeededPrsByRepoNotifier(this.inaccessible);
+
+  final List<InaccessibleRepo> inaccessible;
+
+  @override
+  Future<PrsByRepoState> build() async => PrsByRepoState(
+    repos: const [],
+    hasMore: const {},
+    nextPage: const {},
+    loadingMore: const {},
+    inaccessibleRepos: inaccessible,
+  );
+}
 
 void main() {
   group('resolveInboxEmptyCaveat', () {
@@ -93,6 +114,28 @@ void main() {
         resolveInboxEmptyCaveat(
           indicator: GitHubStatusIndicator.critical,
           viewerLogins: const {},
+        ),
+        InboxEmptyCaveat.identityUnresolved,
+      );
+    });
+
+    test('a suspended installation outranks a degraded GitHub', () {
+      expect(
+        resolveInboxEmptyCaveat(
+          indicator: GitHubStatusIndicator.critical,
+          viewerLogins: const {ForgeHost.github: 'octocat'},
+          installationSuspended: true,
+        ),
+        InboxEmptyCaveat.installationSuspended,
+      );
+    });
+
+    test('an unresolved login still outranks a suspended installation', () {
+      expect(
+        resolveInboxEmptyCaveat(
+          indicator: GitHubStatusIndicator.none,
+          viewerLogins: const {},
+          installationSuspended: true,
         ),
         InboxEmptyCaveat.identityUnresolved,
       );
@@ -190,6 +233,34 @@ void main() {
       );
       expect(find.textContaining('Incident with GitHub.com'), findsOneWidget);
       expect(find.text('Open githubstatus.com'), findsOneWidget);
+    });
+
+    testWidgets('names a suspended install instead of claiming a clear queue', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          indicator: GitHubStatusIndicator.none,
+          inaccessible: const [
+            InaccessibleRepo(
+              repoId: 'r1',
+              repoFullName: 'Frontify/web-app',
+              reason: InaccessibleRepo.installationSuspended,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text("You're all caught up"), findsNothing);
+      expect(find.text('GitHub App installation suspended'), findsOneWidget);
+      expect(
+        find.text(
+          'Showing last known data for Frontify/web-app. Resume the '
+          'installation on GitHub, or connect a token that has access.',
+        ),
+        findsOneWidget,
+      );
     });
   });
 }

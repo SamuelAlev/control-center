@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -111,17 +112,18 @@ class _ReviewCodePaneState extends ConsumerState<ReviewCodePane> {
   }
 
   Widget _empty(DesignSystemTokens t) {
+    final l10n = AppLocalizations.of(context);
     return ColoredBox(
       color: t.bgPrimary,
-      child: const Center(
+      child: Center(
         child: Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(AppIcons.gitCompareArrows, size: 16),
-              SizedBox(width: 8),
-              Text('No changes to review'),
+              const Icon(AppIcons.gitCompareArrows, size: 16),
+              const SizedBox(width: 8),
+              Text(l10n.noChangesToReview),
             ],
           ),
         ),

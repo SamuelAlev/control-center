@@ -527,7 +527,9 @@ class _GoalAccordionState extends State<_GoalAccordion> {
           alignment: Alignment.topCenter,
           child: _expanded
               ? Padding(
-                  padding: const EdgeInsets.only(left: AppSpacing.md),
+                  padding: const EdgeInsetsDirectional.only(
+                    start: AppSpacing.md,
+                  ),
                   child: widget.child,
                 )
               : const SizedBox(width: double.infinity),
@@ -557,9 +559,9 @@ class _TodoRow extends StatelessWidget {
     return InkWell(
       onTap: onToggle,
       child: Padding(
-        padding: const EdgeInsets.only(
-          left: AppSpacing.sm,
-          right: AppSpacing.sm,
+        padding: const EdgeInsetsDirectional.only(
+          start: AppSpacing.sm,
+          end: AppSpacing.sm,
           top: 5,
           bottom: 5,
         ),

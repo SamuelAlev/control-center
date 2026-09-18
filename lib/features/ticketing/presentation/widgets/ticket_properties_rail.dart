@@ -534,7 +534,10 @@ class _PropertyRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Align(alignment: Alignment.centerLeft, child: picker),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: picker,
+            ),
           ),
         ],
       ),

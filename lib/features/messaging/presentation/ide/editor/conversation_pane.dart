@@ -10,10 +10,12 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
+import 'package:control_center/features/messaging/presentation/widgets/conversation_permission_prompt.dart';
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
+import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';
 import 'package:control_center/features/messaging/presentation/widgets/takeover_banner.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
@@ -26,7 +28,7 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/composer/composer.dart'
     show composerHorizontalMargin;
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -105,64 +107,68 @@ class ConversationPane extends ConsumerWidget {
             .where((c) => c.id == convId)
             .firstOrNull;
 
-    return Column(
-      children: [
-        SpaceHeader(
-          space: space,
-          conversation: conversation,
-          onManage: () => _handleManage(context, ref),
-          onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
-        ),
-        // Thread parent link: when this pane shows a thread, a compact row
-        // points back at the anchor message's conversation.
-        _ThreadParentLink(spaceId: spaceId, conversationId: convId),
-        const CcDivider(),
-        // Someone else is spotlighting this space (PRD 16 §5).
-        SpotlightBanner(spaceId: spaceId),
-        // A take-over of this space's worktree is active (PRD 16 §8).
-        TakeoverBanner(spaceId: spaceId),
-        Expanded(
-          child: SpaceMessageFeed(
-            key: ValueKey('feed-$convId'),
-            spaceId: spaceId,
-            conversationId: convId,
-            onStartThread: (message) => _startThread(context, ref, message),
-            // A thread opens exactly the way the switcher opens any
-            // conversation — it IS one.
-            onOpenThread: onSelectConversation,
+    return VisibleConversationRegistrar(
+      spaceId: spaceId,
+      child: Column(
+        children: [
+          SpaceHeader(
+            space: space,
+            conversation: conversation,
+            onManage: () => _handleManage(context, ref),
+            onArchive: () => unawaited(_handleArchiveSpace(context, ref)),
           ),
-        ),
-        const CcDivider(),
-        // The provisioning banner, the typing line and the composer share ONE
-        // centered-column wrapper so they can never drift apart: each status
-        // line's text now starts on the composer's own left border instead of
-        // hugging the pane edge (~65px further left on a wide pane).
-        Align(
-          alignment: Alignment.topCenter,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: conversationColumnWidth,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _SpaceProvisioningBanner(spaceId: spaceId),
-                _TypingIndicator(spaceId: spaceId),
-                // Queued steering cards: mid-run nudges the user typed while
-                // an agent works, waiting to be injected. Between the trail
-                // and the composer, where "what I asked for that hasn't
-                // landed yet" is read at a glance — and drawn onto the
-                // composer's top edge, so it owns its own insets rather than
-                // being padded from here. Renders nothing when the
-                // conversation's queue is empty.
-                SteeringQueueList(spaceId: spaceId, conversationId: convId),
-                SpaceInputBar(spaceId: spaceId, conversationId: convId),
-              ],
+          // Thread parent link: when this pane shows a thread, a compact row
+          // points back at the anchor message's conversation.
+          _ThreadParentLink(spaceId: spaceId, conversationId: convId),
+          const CcDivider(),
+          // Someone else is spotlighting this space (PRD 16 §5).
+          SpotlightBanner(spaceId: spaceId),
+          // A take-over of this space's worktree is active (PRD 16 §8).
+          TakeoverBanner(spaceId: spaceId),
+          Expanded(
+            child: SpaceMessageFeed(
+              key: ValueKey('feed-$convId'),
+              spaceId: spaceId,
+              conversationId: convId,
+              onStartThread: (message) => _startThread(context, ref, message),
+              // A thread opens exactly the way the switcher opens any
+              // conversation — it IS one.
+              onOpenThread: onSelectConversation,
             ),
           ),
-        ),
-      ],
+          const CcDivider(),
+          // The provisioning banner, the typing line and the composer share ONE
+          // centered-column wrapper so they can never drift apart: each status
+          // line's text now starts on the composer's own left border instead of
+          // hugging the pane edge (~65px further left on a wide pane).
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: conversationColumnWidth,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SpaceProvisioningBanner(spaceId: spaceId),
+                  _TypingIndicator(spaceId: spaceId),
+                  // Queued steering cards: mid-run nudges the user typed while
+                  // an agent works, waiting to be injected. Between the trail
+                  // and the composer, where "what I asked for that hasn't
+                  // landed yet" is read at a glance — and drawn onto the
+                  // composer's top edge, so it owns its own insets rather than
+                  // being padded from here. Renders nothing when the
+                  // conversation's queue is empty.
+                  SteeringQueueList(spaceId: spaceId, conversationId: convId),
+                  ConversationPermissionPrompt(spaceId: spaceId),
+                  SpaceInputBar(spaceId: spaceId, conversationId: convId),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -329,17 +335,12 @@ class _NoConversationState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final ds = context.designSystem ?? DesignSystemTokens.light();
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            AppIcons.messageSquareDashed,
-            size: 56,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(AppIcons.messageSquareDashed, size: 56, color: ds.fgTertiary),
           const SizedBox(height: 16),
           Text(
             l10n.selectConversation,
@@ -355,12 +356,15 @@ class _NoConversationState extends StatelessWidget {
 /// is provisioning, was stopped, or failed. Hidden when ready.
 ///
 /// Every variant aligns to the composer box below: the progress line starts its
-/// spinner on the composer's left border and the tinted stopped/failed card
-/// spans exactly the composer's width, so the strip reads as attached to the
+/// spinner on the composer's leading border, the stop control sits on the
+/// trailing border (leading in RTL), and the tinted stopped/failed card spans
+/// exactly the composer's width, so the strip reads as attached to the
 /// composer rather than to the pane.
-class _SpaceProvisioningBanner extends ConsumerWidget {
-  const _SpaceProvisioningBanner({required this.spaceId});
+class SpaceProvisioningBanner extends ConsumerWidget {
+  /// Creates a [SpaceProvisioningBanner] for [spaceId].
+  const SpaceProvisioningBanner({super.key, required this.spaceId});
 
+  /// The space whose workspace preparation this strip reports.
   final String spaceId;
 
   @override
@@ -431,32 +435,42 @@ class _SpaceProvisioningBanner extends ConsumerWidget {
         children: [
           const CcSpinner(size: 14),
           const SizedBox(width: AppSpacing.xs),
-          Flexible(
-            child: Text(
-              provisioningStepLabel(l10n, step),
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: ds.fgSecondary,
-                fontSize: 13,
-                decoration: TextDecoration.none,
-              ),
+          // Expanded (not Flexible + Spacer): Flexible is loose-fit, so a
+          // short status line leaves unused flex space that Row parks after
+          // the stop button. That is how the stop sat inset from the
+          // composer's trailing edge instead of on it. Expanded consumes the
+          // rest of the row; the button is trailing in LTR and leading in RTL.
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    provisioningStepLabel(l10n, step),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: ds.fgSecondary,
+                      fontSize: 13,
+                      decoration: TextDecoration.none,
+                    ),
+                  ),
+                ),
+                if (pendingCount > 0) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: Text(
+                      l10n.messageWillSendWhenReady(pendingCount),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: ds.fgTertiary,
+                        fontSize: 12,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-          if (pendingCount > 0) ...[
-            const SizedBox(width: AppSpacing.xs),
-            Flexible(
-              child: Text(
-                l10n.messageWillSendWhenReady(pendingCount),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: ds.fgTertiary,
-                  fontSize: 12,
-                  decoration: TextDecoration.none,
-                ),
-              ),
-            ),
-          ],
-          const Spacer(),
           // Cloning a large repo is minutes of work with nothing to do but
           // wait, and it is not always the repo you meant. The stop is here,
           // next to what it stops.

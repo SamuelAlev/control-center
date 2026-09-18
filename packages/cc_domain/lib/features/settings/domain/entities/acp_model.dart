@@ -6,7 +6,7 @@
 ///
 /// Model traits — [contextWindow] and the [thinkingLevels] vocabulary — drive
 /// the agent form's auto-inference: picking a model pre-fills its context size
-/// and offers that model's reasoning levels in the effort dropdown. They are
+/// and offers that model's reasoning levels as named slider steps. They are
 /// display/inference only; equality stays by [id].
 class AcpModel {
   /// Reconstructs a model from its JSON shape (the inverse of [toJson]).

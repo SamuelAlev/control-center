@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart'
-    show RemoteAgentRepository, RemoteAgentRunLogRepository;
+    show RemoteAgentRepository, RemoteAgentRunLogRepository, RpcAgentRepository;
+import 'package:cc_domain/features/agents/domain/usecases/create_agent.dart';
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/features/agents/domain/value_objects/agent_live_state.dart';
@@ -20,6 +21,74 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// locally).
 final remoteAgentOpsProvider = Provider<RemoteAgentRepository>(
   (ref) => RemoteAgentRepository(ref.watch(rpcClientProvider)),
+);
+
+/// Creates an agent on the host. Duplicate-name refusal lives in
+/// `agents.create`, not in a client use case.
+///
+/// Tests override this with [UseCaseAgentCreatePort] over a fake repository
+/// so widget tests never need a live RPC host.
+abstract interface class AgentCreatePort {
+  /// Creates an agent in [workspaceId].
+  Future<Agent> create({
+    required String workspaceId,
+    required String name,
+    required String title,
+    List<String> skills = const [],
+  });
+}
+
+/// RPC implementation of [AgentCreatePort].
+class RpcAgentCreatePort implements AgentCreatePort {
+  /// Creates a [RpcAgentCreatePort] over [remote].
+  RpcAgentCreatePort(this._remote);
+
+  final RemoteAgentRepository _remote;
+
+  @override
+  Future<Agent> create({
+    required String workspaceId,
+    required String name,
+    required String title,
+    List<String> skills = const [],
+  }) async {
+    final dto = await _remote.create(
+      workspaceId: workspaceId,
+      name: name,
+      title: title,
+      skills: skills,
+    );
+    return RpcAgentRepository.fromDto(dto);
+  }
+}
+
+/// In-process implementation used by widget tests (no RPC host).
+class UseCaseAgentCreatePort implements AgentCreatePort {
+  /// Creates a [UseCaseAgentCreatePort] over [useCase].
+  UseCaseAgentCreatePort(this._useCase);
+
+  final CreateAgentUseCase _useCase;
+
+  @override
+  Future<Agent> create({
+    required String workspaceId,
+    required String name,
+    required String title,
+    List<String> skills = const [],
+  }) {
+    return _useCase.execute(
+      CreateAgentCommand(
+        name: name,
+        title: title,
+        skills: skills,
+        workspaceId: workspaceId,
+      ),
+    );
+  }
+}
+
+final agentCreatePortProvider = Provider<AgentCreatePort>(
+  (ref) => RpcAgentCreatePort(ref.watch(remoteAgentOpsProvider)),
 );
 
 /// Host-side run-log operations beyond the repository contract: reading a run's

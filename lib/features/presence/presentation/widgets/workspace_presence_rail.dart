@@ -59,12 +59,12 @@ class WorkspacePresenceRail extends ConsumerWidget {
               children: [
                 for (final p in shown)
                   Padding(
-                    padding: const EdgeInsets.only(left: 4),
+                    padding: const EdgeInsetsDirectional.only(start: 4),
                     child: PresenceAvatarChip(participant: p, size: 20),
                   ),
                 if (overflow > 0)
                   Padding(
-                    padding: const EdgeInsets.only(left: 4),
+                    padding: const EdgeInsetsDirectional.only(start: 4),
                     child: CcAvatar(
                       size: 20,
                       initials: l10n.presencePlusCount(overflow),

@@ -77,7 +77,7 @@ class ClaudeAccountsSection extends ConsumerWidget {
           ),
         const SizedBox(height: AppSpacing.md),
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: CcButton(
             variant: CcButtonVariant.secondary,
             size: CcButtonSize.sm,

@@ -6,7 +6,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_status
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -103,8 +103,7 @@ class _EditablePrTitleState extends ConsumerState<EditablePrTitle> {
     // edit affordance against the first line (not the whole block, which can
     // wrap to two lines). Derived from the title style so it tracks the font.
     final titleStyle = PrTitle.styleOf(context);
-    final lineHeight =
-        (titleStyle?.fontSize ?? 18) * (titleStyle?.height ?? 1.35);
+    final lineHeight = titleStyle.fontSize! * titleStyle.height!;
     return MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
@@ -138,7 +137,7 @@ class _EditablePrTitleState extends ConsumerState<EditablePrTitle> {
                         decoration: BoxDecoration(
                           color: hovered
                               ? t.bgPrimaryHover
-                              : Colors.transparent,
+                              : const Color(0x00000000),
                           borderRadius: AppRadii.brSm,
                         ),
                         child: Padding(
@@ -187,7 +186,7 @@ class _EditablePrTitleState extends ConsumerState<EditablePrTitle> {
               const SizedBox(width: 8),
               Text(
                 '#${widget.pr.number} ',
-                style: titleStyle?.copyWith(
+                style: titleStyle.copyWith(
                   fontWeight: CcTypography.regularWeight,
                   color: t.textTertiary,
                 ),
@@ -208,7 +207,7 @@ class _EditablePrTitleState extends ConsumerState<EditablePrTitle> {
                     child: CcTextField(
                       controller: _controller,
                       focusNode: _focusNode,
-                      textStyle: titleStyle?.copyWith(color: t.textPrimary),
+                      textStyle: titleStyle.copyWith(color: t.textPrimary),
                       hintText: l10n.prTitlePlaceholder,
                       chromeless: true,
                     ),

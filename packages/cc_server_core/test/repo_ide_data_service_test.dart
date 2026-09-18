@@ -817,6 +817,97 @@ void main() {
         isEmpty,
       );
     });
+
+    test('paths greps only those files', () async {
+      final wt = await gitRepo('wt', {
+        'lib/in_pr.dart': 'needle in the PR\n',
+        'lib/outside.dart': 'needle in the rest of the tree\n',
+      });
+      final iso = _FakeIsolatedRepoRepo()
+        ..bySpace['ws:ch'] = [_worktree('repo1', wt)];
+      final svc = RepoIdeDataService(
+        repoRepository: _FakeRepoRepo(),
+        workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+        isolatedRepoRepository: iso,
+        fileSearch: DartFileSearch(),
+      );
+
+      final hits = await svc.searchContentInWorktree(
+        'ws',
+        'ch',
+        'repo1',
+        'needle',
+        options: const SearchContentOptions(paths: ['lib/in_pr.dart']),
+      );
+
+      final paths = hits.map((h) => h['relativePath'] as String).toSet();
+      expect(paths, {'lib/in_pr.dart'});
+    });
+
+    test('a missing path does not fail or widen to the whole tree', () async {
+      final wt = await gitRepo('wt', {
+        'lib/alive.dart': 'needle\n',
+        'lib/other.dart': 'needle\n',
+      });
+      final iso = _FakeIsolatedRepoRepo()
+        ..bySpace['ws:ch'] = [_worktree('repo1', wt)];
+      final svc = RepoIdeDataService(
+        repoRepository: _FakeRepoRepo(),
+        workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+        isolatedRepoRepository: iso,
+        fileSearch: DartFileSearch(),
+      );
+
+      final mixed = await svc.searchContentInWorktree(
+        'ws',
+        'ch',
+        'repo1',
+        'needle',
+        options: const SearchContentOptions(
+          paths: ['lib/alive.dart', 'lib/deleted.dart'],
+        ),
+      );
+      expect(mixed.map((h) => h['relativePath'] as String).toSet(), {
+        'lib/alive.dart',
+      });
+
+      final missingOnly = await svc.searchContentInWorktree(
+        'ws',
+        'ch',
+        'repo1',
+        'needle',
+        options: const SearchContentOptions(paths: ['lib/deleted.dart']),
+      );
+      expect(missingOnly, isEmpty);
+    });
+
+    test('paths on the wire are parsed as a JSON list', () async {
+      final wt = await gitRepo('wt', {
+        'lib/in_pr.dart': 'needle\n',
+        'lib/outside.dart': 'needle\n',
+      });
+      final iso = _FakeIsolatedRepoRepo()
+        ..bySpace['ws:ch'] = [_worktree('repo1', wt)];
+      final svc = RepoIdeDataService(
+        repoRepository: _FakeRepoRepo(),
+        workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+        isolatedRepoRepository: iso,
+        fileSearch: DartFileSearch(),
+      );
+
+      final hits = await svc.searchWorktreeContentWithOptions(
+        'ws',
+        'ch',
+        'repo1',
+        'needle',
+        options: const {
+          'paths': ['lib/in_pr.dart'],
+        },
+      );
+      expect(hits.map((h) => h['relativePath'] as String).toSet(), {
+        'lib/in_pr.dart',
+      });
+    });
   });
 
   group('searchFilesInWorktree', () {

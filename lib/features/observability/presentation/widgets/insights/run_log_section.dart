@@ -74,7 +74,7 @@ class _RunHeader extends StatelessWidget {
 
     Widget cell(String label, double width) => SizedBox(
       width: width,
-      child: Text(label, style: style, textAlign: TextAlign.right, maxLines: 1),
+      child: Text(label, style: style, textAlign: TextAlign.end, maxLines: 1),
     );
 
     return Padding(
@@ -135,7 +135,7 @@ class _RunRow extends StatelessWidget {
       child: Text(
         text,
         style: numStyle,
-        textAlign: TextAlign.right,
+        textAlign: TextAlign.end,
         maxLines: 1,
       ),
     );

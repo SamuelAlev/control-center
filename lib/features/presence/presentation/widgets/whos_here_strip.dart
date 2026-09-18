@@ -53,7 +53,7 @@ class WhosHereStrip extends ConsumerWidget {
       children: [
         for (final p in here)
           Padding(
-            padding: const EdgeInsets.only(left: 4),
+            padding: const EdgeInsetsDirectional.only(start: 4),
             child: PresenceAvatarChip(participant: p, spaceId: spaceId),
           ),
       ],

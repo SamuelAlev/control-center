@@ -1,49 +1,72 @@
-import 'dart:async';
-
-import 'package:cc_domain/features/dispatch/domain/registry/agent_lifecycle.dart';
+import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/features/dispatch/domain/registry/agent_ref.dart';
-import 'package:cc_domain/features/dispatch/domain/registry/agent_registry.dart';
-import 'package:cc_infra/cc_infra_web.dart';
-// Import the impl directly, NOT via the `cc_infra.dart` barrel: the barrel
-// re-exports `code_extractor.dart` → `cc_natives` (FFI/onnxruntime), which would
-// drag native code into the web compile and break `flutter build web`. This
-// impl only depends on `cc_domain`, so it is web-safe. See
-// test/core/web_no_native_leak_test.dart.
+import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/observability/providers/observability_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The process-global [AgentRegistry] — the single source of truth for which
-/// agents are alive and what they are doing right now.
+/// Work-aware roster for one workspace, derived from durable agents + run logs.
 ///
-/// Returns the same instance the dispatch service writes to
-/// (`AgentDispatchService` is constructed with `AgentRegistryImpl.global()`),
-/// so the UI observes live dispatch activity without any extra plumbing.
-final agentRegistryProvider = Provider<AgentRegistry>(
-  (ref) => AgentRegistryImpl.global(),
-);
-
-/// Streams the work-aware roster for a single workspace: every agent owned by
-/// `workspaceId`, re-emitted whenever that workspace's roster changes.
+/// Dispatch writes the in-process [AgentRegistry] **inside `cc_server`**. A
+/// client that watched `AgentRegistryImpl.global()` in the Flutter isolate
+/// always saw an empty map. The live tab reads the same RPC streams the rest
+/// of the app already uses (`agents.watchForWorkspace` + recent run logs).
 ///
-/// Workspace-scoped — never surfaces agents from another workspace, honoring
-/// the workspace-isolation invariant for this process-global registry.
+/// Status is honest for a thin client: [AgentStatus.running] when the agent
+/// has an uncompleted run, otherwise [AgentStatus.idle]. Parked/aborted are
+/// server-process states the client does not reconstruct.
 final workspaceAgentRosterProvider =
-    StreamProvider.family<List<AgentRef>, String>((ref, workspaceId) {
-      final registry = ref.watch(agentRegistryProvider);
-      return registry.watchWorkspaceRoster(workspaceId);
+    Provider.family<AsyncValue<List<AgentRef>>, String>((ref, workspaceId) {
+      final agentsAsync = ref.watch(workspaceAgentsProvider(workspaceId));
+      final runs = ref.watch(workspaceRunLogsProvider);
+      return agentsAsync.whenData(
+        (agents) => mapAgentsToRoster(agents, runs),
+      );
     });
 
-/// Process-global [AgentLifecycleManager] bound to the registry. Owns the
-/// idle → parked → revived lifecycle of adopted agents (TTL parking, on-demand
-/// revival). Kept alive for the app's lifetime; disposed with the container.
+/// Maps durable [Agent] rows plus recent run logs into roster [AgentRef]s.
 ///
-/// The runtime hooks — the persisted cold-revive factory (Feature #3) and an
-/// agent reviver — are installed by the dispatch integration; this provider
-/// just owns the singleton bound to the shared registry.
-final agentLifecycleManagerProvider = Provider<AgentLifecycleManager>((ref) {
-  final manager = AgentLifecycleManager(ref.watch(agentRegistryProvider));
-  ref.onDispose(() => unawaited(manager.dispose()));
-  return manager;
-});
+/// Exposed for tests; the provider is the production call site.
+List<AgentRef> mapAgentsToRoster(
+  List<Agent> agents,
+  List<AgentRunLog> runs,
+) {
+  final latestRun = <String, AgentRunLog>{};
+  final activeRun = <String, AgentRunLog>{};
+  for (final run in runs) {
+    final prev = latestRun[run.agentId];
+    if (prev == null || run.startedAt.isAfter(prev.startedAt)) {
+      latestRun[run.agentId] = run;
+    }
+    if (run.completedAt == null) {
+      final prevActive = activeRun[run.agentId];
+      if (prevActive == null || run.startedAt.isAfter(prevActive.startedAt)) {
+        activeRun[run.agentId] = run;
+      }
+    }
+  }
+
+  return [
+    for (final agent in agents)
+      AgentRef(
+        id: agent.id,
+        displayName: agent.title.isNotEmpty ? agent.title : agent.name,
+        kind: AgentKind.main,
+        workspaceId: agent.workspaceId,
+        status: activeRun.containsKey(agent.id)
+            ? AgentStatus.running
+            : AgentStatus.idle,
+        createdAt: agent.createdAt,
+        lastActivity:
+            latestRun[agent.id]?.startedAt ??
+            activeRun[agent.id]?.startedAt ??
+            agent.createdAt,
+        conversationId: activeRun[agent.id]?.conversationId,
+        dispatchId: activeRun[agent.id]?.id,
+        activity: activeRun[agent.id]?.summary,
+      ),
+  ];
+}
 
 // Peer-to-peer agent messaging (PRD 22) no longer rides an in-memory IRC bus:
 // `IrcBusImpl` and its mailboxes were deleted. Agent↔agent messages are now

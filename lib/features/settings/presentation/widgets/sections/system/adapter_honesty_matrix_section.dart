@@ -193,7 +193,7 @@ class AdapterHonestyMatrixSection extends StatelessWidget {
                   SizedBox(
                     width: _adapterColWidth,
                     child: Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: _enforcementTag(l10n, _matrix[cls]![a]!),
                     ),
                   ),

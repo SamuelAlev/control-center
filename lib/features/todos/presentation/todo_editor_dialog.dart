@@ -4,7 +4,6 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/todos/providers/todo_command_controller.dart';
 import 'package:control_center/features/todos/providers/todo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart' show Material, MaterialType;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,12 +41,7 @@ Future<void> showTodoEditorDialog({
               style: TextStyle(color: t.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: AppSpacing.sm),
-            // A multiline editor. Wrapped in a transparent Material so the
-            // Material TextField resolves its ancestor inside the off-Material
-            // dialog overlay.
-            Material(
-              type: MaterialType.transparency,
-              child: DecoratedBox(
+            DecoratedBox(
                 decoration: BoxDecoration(
                   color: t.surface,
                   borderRadius: AppRadii.brMd,
@@ -68,7 +62,6 @@ Future<void> showTodoEditorDialog({
                   ),
                 ),
               ),
-            ),
           ],
         ),
         actions: [

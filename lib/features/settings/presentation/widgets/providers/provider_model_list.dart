@@ -217,7 +217,7 @@ class _ModelRow extends ConsumerWidget {
             child: contextWindow == null
                 ? const SizedBox.shrink()
                 : Align(
-                    alignment: Alignment.centerRight,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: _ContextPill(label: _compactTokens(contextWindow)),
                   ),
           ),

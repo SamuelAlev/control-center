@@ -26,6 +26,7 @@ class QemuLaunchPlan {
     this.httpProxyHostPort,
     this.socksProxyHostPort,
     this.credentialHostPort,
+    this.unrestrictedNetwork = false,
     this.seedImagePath,
     this.machineType,
     this.firmwarePath,
@@ -78,6 +79,11 @@ class QemuLaunchPlan {
 
   /// Host port of the credential-broker endpoint.
   final int? credentialHostPort;
+
+  /// Whether to give the guest a direct, unrestricted user-mode network.
+  ///
+  /// False keeps `restrict=on`; true is the explicit confirmed exception.
+  final bool unrestrictedNetwork;
 
   /// A cloud-init/seed image carrying the per-VM keys and tokens.
   final String? seedImagePath;
@@ -201,9 +207,10 @@ String qemuProcessName(String rigId) => 'ccrig-$rigId';
 ///
 /// The security-critical parts, all pinned by `qemu_argv_test.dart`:
 ///
-///  * `restrict=on` on the user-mode netdev. Without it the guest reaches the
-///    host's LAN and the internet directly and every egress control in this
-///    system is decoration.
+///  * Restricted rigs carry `restrict=on` on the user-mode netdev. Without it
+///    the guest reaches the host's LAN and the internet directly.
+///  * An explicitly unrestricted rig omits `restrict=on`; that exception is
+///    carried in its persisted spec and only minted by the confirmed restart.
 ///  * Every host-facing forward binds `127.0.0.1` explicitly. A bare
 ///    `hostfwd=tcp::2222-:22` listens on 0.0.0.0 and publishes a shell on the
 ///    rig to the local network.
@@ -212,24 +219,29 @@ String qemuProcessName(String rigId) => 'ccrig-$rigId';
 ///  * No host filesystem is passed through — no `-virtfs`, no `-fsdev`. The
 ///    worktree is copied in, not mounted.
 List<String> buildQemuArgv(QemuLaunchPlan plan) {
+  final accelerator = switch (plan.backend) {
+    EnclosureBackend.qemuHvf => 'hvf',
+    EnclosureBackend.qemuKvm => 'kvm',
+    EnclosureBackend.qemuTcg => 'tcg',
+    EnclosureBackend.smolvm ||
+    EnclosureBackend.androidEmulator ||
+    EnclosureBackend.iosSimulator => throw ArgumentError.value(
+      plan.backend.wire,
+      'plan.backend',
+      'QEMU argv requires a QEMU backend.',
+    ),
+  };
   final argv = <String>[
     // Accelerator. `tcg` is emulation — correct, and roughly an order of
     // magnitude slower, which is why it is never selected automatically.
     '-accel',
-    switch (plan.backend) {
-      EnclosureBackend.qemuHvf => 'hvf',
-      EnclosureBackend.qemuKvm => 'kvm',
-      _ => 'tcg',
-    },
+    accelerator,
     // Explicit CPU model. Recent QEMU resolves a usable default under
     // hvf/kvm, but older builds refuse to start the aarch64 `virt` machine's
     // 32-bit default CPU under a 64-bit hypervisor — `host` (accelerated) /
     // `max` (emulated) is correct on every version.
     '-cpu',
-    plan.backend == EnclosureBackend.qemuHvf ||
-            plan.backend == EnclosureBackend.qemuKvm
-        ? 'host'
-        : 'max',
+    accelerator == 'tcg' ? 'max' : 'host',
     '-m', '${plan.memoryMb}',
     '-smp', '${plan.cpuCount}',
     // No display window on the host: the frames come from inside the guest.
@@ -269,7 +281,9 @@ List<String> buildQemuArgv(QemuLaunchPlan plan) {
   }
 
   // ── Network ────────────────────────────────────────────────────────────
-  final netdev = StringBuffer('user,id=net0,restrict=on');
+  final netdev = StringBuffer(
+    'user,id=net0${plan.unrestrictedNetwork ? '' : ',restrict=on'}',
+  );
   // Host → guest. Bound to loopback so nothing on the LAN can reach the rig.
   netdev.write(',hostfwd=tcp:127.0.0.1:${plan.sshHostPort}-:22');
   netdev.write(',hostfwd=tcp:127.0.0.1:${plan.agentHostPort}-:7811');
@@ -360,7 +374,7 @@ List<String> buildQemuOverlayArgs({
 /// tablet and a keyboard.
 bool _surfaceNeedsDisplay(RigSurface surface) => switch (surface) {
   RigSurface.browser => false,
-  RigSurface.computer || RigSurface.mobile => true,
+  RigSurface.computer || RigSurface.mobile || RigSurface.ios => true,
 };
 
 /// The QEMU binary name for [architecture] (`arm64`/`x64`).

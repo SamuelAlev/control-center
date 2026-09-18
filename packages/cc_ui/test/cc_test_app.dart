@@ -4,11 +4,18 @@ import 'package:flutter/widgets.dart';
 /// Minimal ancestors cc_ui widgets need in tests, with no Material, Riverpod, or
 /// l10n: a [CcTheme] for tokens, plus Directionality, MediaQuery, a default text
 /// style and an [Overlay] so overlay-based components work.
-Widget ccTestApp(Widget child, {CcThemeData? theme}) {
+///
+/// Pass [textDirection] as [TextDirection.rtl] to exercise a component's RTL
+/// mirroring.
+Widget ccTestApp(
+  Widget child, {
+  CcThemeData? theme,
+  TextDirection textDirection = TextDirection.ltr,
+}) {
   return CcTheme(
     data: theme ?? CcThemeData.light(),
     child: Directionality(
-      textDirection: TextDirection.ltr,
+      textDirection: textDirection,
       child: MediaQuery(
         data: const MediaQueryData(),
         child: DefaultTextStyle(

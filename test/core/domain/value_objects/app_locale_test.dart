@@ -17,6 +17,27 @@ void main() {
           'de': 'German',
           'pt': 'Portuguese',
           'nl': 'Dutch',
+          'zh': 'Chinese',
+          'ja': 'Japanese',
+          'ko': 'Korean',
+          'ru': 'Russian',
+          'uk': 'Ukrainian',
+          'pl': 'Polish',
+          'tr': 'Turkish',
+          'id': 'Indonesian',
+          'vi': 'Vietnamese',
+          'ar': 'Arabic',
+          'he': 'Hebrew',
+          'cs': 'Czech',
+          'sv': 'Swedish',
+          'ro': 'Romanian',
+          'hu': 'Hungarian',
+          'nb': 'Norwegian',
+          'el': 'Greek',
+          'ms': 'Malay',
+          'fa': 'Persian',
+          'ur': 'Urdu',
+          'th': 'Thai',
         };
         for (final entry in cases.entries) {
           expect(
@@ -49,7 +70,11 @@ void main() {
 
     group('hasLocalization', () {
       test('returns true for codes in the map', () {
-        for (final code in ['fr', 'es', 'it', 'de', 'pt', 'nl']) {
+        for (final code in [
+          'fr', 'es', 'it', 'de', 'pt', 'nl',
+          'zh', 'ja', 'ko', 'ru', 'uk', 'pl', 'tr', 'id', 'vi', 'ar', 'he',
+          'cs', 'sv', 'ro', 'hu', 'nb', 'el', 'ms', 'fa', 'ur', 'th',
+        ]) {
           expect(AppLocale(code).hasLocalization, isTrue, reason: code);
         }
       });
@@ -60,7 +85,6 @@ void main() {
 
       test('returns false for unknown codes', () {
         expect(const AppLocale('xx').hasLocalization, isFalse);
-        expect(const AppLocale('ja').hasLocalization, isFalse);
       });
     });
 

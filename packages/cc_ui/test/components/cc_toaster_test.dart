@@ -112,7 +112,7 @@ void main() {
     );
 
     toaster.show('Copied timestamp');
-    // Mount, first ticker tick, then past the 180ms entry animation.
+    // Mount, first ticker tick, then past the 160ms entry animation.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
     await tester.pump(const Duration(milliseconds: 250));
@@ -144,7 +144,7 @@ void main() {
 
     toaster.show('First toast');
     toaster.show('Second toast');
-    // Mount, first ticker tick, then past the 180ms entry animation.
+    // Mount, first ticker tick, then past the 160ms entry animation.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
     await tester.pump(const Duration(milliseconds: 250));
@@ -176,7 +176,7 @@ void main() {
     );
 
     toaster.show('Reading this');
-    // Mount, first ticker tick, then past the 180ms entry animation —
+    // Mount, first ticker tick, then past the 160ms entry animation —
     // keeping total elapsed time under the 500ms dwell.
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));

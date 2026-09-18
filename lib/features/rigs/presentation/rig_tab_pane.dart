@@ -33,6 +33,7 @@ class RigTabPane extends ConsumerStatefulWidget {
     required this.conversationId,
     this.engine,
     this.slotId,
+    this.audioTabKey,
     this.isVisible = true,
   });
 
@@ -63,6 +64,9 @@ class RigTabPane extends ConsumerStatefulWidget {
 
   /// The conversation the rig belongs to (a space, or a PR's space).
   final String? conversationId;
+
+  /// Identity of the editor tab that owns media choices and mute state.
+  final Object? audioTabKey;
 
   /// Whether this tab is the one on screen. A hidden tab holds its last frame
   /// and stops streaming.
@@ -166,6 +170,7 @@ class _RigTabPaneState extends ConsumerState<RigTabPane> {
         workspaceId: workspaceId,
         rig: rig,
         paused: !widget.isVisible,
+        audioTabKey: widget.audioTabKey,
         onStop: () => unawaited(_stop(workspaceId, rig.id)),
       );
     }

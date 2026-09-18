@@ -6,7 +6,7 @@ import 'package:flutter/widgets.dart';
 /// A flat on/off switch.
 ///
 /// A 36x20 rounded-pill track holding a 16px circular thumb that slides between
-/// the off and on positions ([CcMotion.fast]). On, the track fills with the
+/// the off and on positions ([CcMotion.moderate]). On, the track fills with the
 /// accent color; off, it shows a neutral tertiary fill with a hairline border.
 /// Built on [CcTappable] so it picks up the shared hover/press/focus treatment
 /// and keyboard activation. Passing a null [onChanged] disables the control.
@@ -45,7 +45,8 @@ class CcSwitch extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ds;
     final enabled = onChanged != null;
-    final duration = CcMotion.resolve(context, CcMotion.fast);
+    final travel = CcMotion.resolve(context, CcMotion.moderate);
+    final fade = CcMotion.resolveFade(context, CcMotion.fast);
 
     // Exposed as a semantic *switch* (with `toggled`) rather than the generic
     // button role CcTappable emits by default, so assistive tech announces
@@ -82,7 +83,9 @@ class CcSwitch extends StatelessWidget {
 
           return Opacity(
             opacity: enabled ? 1 : 0.6,
-            child: Container(
+            child: AnimatedContainer(
+              duration: fade,
+              curve: CcMotion.standard,
               width: _trackWidth,
               height: _trackHeight,
               padding: const EdgeInsets.all(_thumbInset),
@@ -94,8 +97,11 @@ class CcSwitch extends StatelessWidget {
                 border: Border.all(color: borderColor),
               ),
               child: AnimatedAlign(
-                alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-                duration: duration,
+                // Directional: "on" sits at the end of the reading direction.
+                alignment: value
+                    ? AlignmentDirectional.centerEnd
+                    : AlignmentDirectional.centerStart,
+                duration: travel,
                 curve: CcMotion.standard,
                 child: Container(
                   width: _thumbSize,

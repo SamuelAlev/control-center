@@ -1,49 +1,41 @@
-import 'dart:convert';
-
 import 'package:cc_domain/features/model_routing/model_routing.dart';
 import 'package:cc_infra/src/model_routing/in_memory_models_dev_source.dart';
 import 'package:cc_infra/src/model_routing/model_catalog_service.dart';
-import 'package:cc_infra/src/model_routing/models_dev_snapshot.dart';
 import 'package:test/test.dart';
 
+Map<String, dynamic> _fixture() => {
+  'anthropic': {
+    'id': 'anthropic',
+    'name': 'Anthropic',
+    'env': ['ANTHROPIC_API_KEY'],
+    'models': {
+      'claude-opus-4-5': {
+        'id': 'claude-opus-4-5',
+        'name': 'Claude Opus 4.5',
+        'limit': {'context': 200000, 'output': 64000},
+        'cost': {'input': 5, 'output': 25},
+      },
+    },
+  },
+  'openai': {
+    'id': 'openai',
+    'name': 'OpenAI',
+    'env': ['OPENAI_API_KEY'],
+    'models': {
+      'gpt-5': {
+        'id': 'gpt-5',
+        'name': 'GPT-5',
+        'limit': {'context': 128000, 'output': 16384},
+      },
+    },
+  },
+};
+
 void main() {
-  test('bundled snapshot parses into a non-trivial catalog', () {
-    final json =
-        jsonDecode(bundledModelsDevSnapshotJson) as Map<String, dynamic>;
-    final catalog = ModelCatalog.fromModelsDev(json);
-    expect(catalog.providerCount, greaterThanOrEqualTo(8));
-    expect(catalog.modelCount, greaterThanOrEqualTo(100));
-    // Anthropic + a known model are present with cost + context.
-    final opus = catalog.modelGet('anthropic', 'claude-opus-4-5');
-    expect(opus, isNotNull);
-    expect(opus!.cost!.input, greaterThan(0));
-    expect(opus.limits.context, greaterThan(0));
-  });
-
-  test('kimi-code/k3 inherits image and video from kimi-for-coding', () {
-    final json =
-        jsonDecode(bundledModelsDevSnapshotJson) as Map<String, dynamic>;
-    final catalog = ModelCatalog.fromModelsDev(json);
-    // Harness id is `kimi-code`; models.dev publishes the same plan as
-    // `kimi-for-coding`. Without the alias the editor stays text-only.
-    expect(catalog.modelGet('kimi-code', 'k3'), isNull);
-    final k3 = catalog.resolve('kimi-code/k3');
-    expect(k3, isNotNull);
-    expect(k3!.id, 'k3');
-    expect(k3.inputModalities, [
-      ModelModality.text,
-      ModelModality.image,
-      ModelModality.video,
-    ]);
-    expect(k3.limits.context, 1048576);
-    expect(k3.limits.maxOutput, 131072);
-  });
-
-
   group('ModelCatalogService', () {
     test('finalizes enablement + policy over the loaded catalog', () async {
       final service = ModelCatalogService(
-        source: InMemoryModelsDevSource(),
+        source: InMemoryModelsDevSource(_fixture()),
         presentEnvKeys: () => {'ANTHROPIC_API_KEY'},
       );
 

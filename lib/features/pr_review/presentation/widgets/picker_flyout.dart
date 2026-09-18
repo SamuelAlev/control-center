@@ -1,6 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
 /// Shared chrome for the reviewer/assignee picker flyouts: a dismiss barrier, a
@@ -59,71 +59,71 @@ class PickerFlyoutPanel extends StatelessWidget {
         ),
         CompositedTransformFollower(
           link: link,
-          targetAnchor: Alignment.bottomRight,
-          followerAnchor: Alignment.topRight,
+          targetAnchor: AlignmentDirectional.bottomEnd.resolve(
+            Directionality.of(context),
+          ),
+          followerAnchor: AlignmentDirectional.topEnd.resolve(
+            Directionality.of(context),
+          ),
           offset: const Offset(0, 6),
           child: Align(
-            alignment: Alignment.topRight,
+            alignment: AlignmentDirectional.topEnd,
             child: CallbackShortcuts(
               bindings: {
                 const SingleActivator(LogicalKeyboardKey.escape): onClose,
               },
-              child: Material(
-                type: MaterialType.transparency,
-                child: Container(
-                  width: 300,
-                  constraints: const BoxConstraints(maxHeight: 400),
-                  decoration: BoxDecoration(
-                    color: t.bgPrimary,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: t.borderSecondary),
-                    boxShadow: AppShadows.golden,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
-                        child: Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: t.textPrimary,
+              child: Container(
+                width: 300,
+                constraints: const BoxConstraints(maxHeight: 400),
+                decoration: BoxDecoration(
+                  color: t.bgPrimary,
+                  border: Border.all(color: t.borderSecondary),
+                  boxShadow: AppShadows.golden,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: t.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                      child: Row(
+                        children: [
+                          Icon(
+                            AppIcons.search,
+                            size: 15,
+                            color: t.fgQuaternary,
                           ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
-                        child: Row(
-                          children: [
-                            Icon(
-                              AppIcons.search,
-                              size: 15,
-                              color: t.fgQuaternary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: CcTextField(
-                                controller: searchController,
-                                focusNode: searchFocus,
-                                textStyle: TextStyle(
-                                  fontSize: 13.5,
-                                  color: t.textPrimary,
-                                ),
-                                onChanged: onQueryChanged,
-                                hintText: hintText,
-                                chromeless: true,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: CcTextField(
+                              controller: searchController,
+                              focusNode: searchFocus,
+                              textStyle: TextStyle(
+                                fontSize: 13.5,
+                                color: t.textPrimary,
                               ),
+                              onChanged: onQueryChanged,
+                              hintText: hintText,
+                              chromeless: true,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      Container(height: 1, color: t.borderSecondary),
-                      Flexible(child: CcScrollArea(child: list)),
-                    ],
-                  ),
+                    ),
+                    Container(height: 1, color: t.borderSecondary),
+                    Flexible(child: CcScrollArea(child: list)),
+                  ],
                 ),
               ),
             ),
@@ -210,7 +210,6 @@ class PickerCheckBox extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: fill,
-        borderRadius: AppRadii.brSm,
         border: Border.all(color: border),
       ),
       child: checked
@@ -275,14 +274,12 @@ class CompactPickerAddButton extends StatelessWidget {
     return CcTappable(
       onPressed: onPressed,
       semanticLabel: semanticLabel,
-      borderRadius: AppRadii.brSm,
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         return Container(
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
             color: hovered ? t.hover : t.hover.withValues(alpha: 0),
-            borderRadius: AppRadii.brSm,
           ),
           child: Icon(
             AppIcons.plus,

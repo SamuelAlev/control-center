@@ -3,7 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/avatar_initials.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Shows a picker of [candidates] (workspace agents not yet on the team) and
 /// returns the agent ids the user chose to add, or `null` if dismissed.
@@ -89,10 +89,7 @@ class _MemberPickerState extends State<_MemberPicker> {
                                 children: [
                                   Text(
                                     agent.name,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
+                                    style: CcTypography.body.copyWith(
                                           fontWeight: FontWeight.w600,
                                           color: tokens?.textPrimary,
                                         ),
@@ -100,10 +97,7 @@ class _MemberPickerState extends State<_MemberPicker> {
                                   if (agent.title.isNotEmpty)
                                     Text(
                                       agent.title,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
+                                      style: CcTypography.caption.copyWith(
                                             color: tokens?.textTertiary,
                                           ),
                                       overflow: TextOverflow.ellipsis,

@@ -114,6 +114,45 @@ void main() {
       expect(find.text('V7'), findsOneWidget);
     });
 
+    testWidgets(
+      'a long list stays attached to the trigger instead of covering it',
+      (tester) async {
+        final manyOptions = [
+          for (var i = 0; i < 40; i++)
+            CcSelectOption(value: 'v$i', label: 'Option $i'),
+        ];
+        const triggerKey = Key('select-trigger');
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: SizedBox(
+                key: triggerKey,
+                width: 240,
+                child: CcSelect<String>(
+                  options: manyOptions,
+                  value: null,
+                  hintText: 'Pick fruit',
+                  onChanged: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Pick fruit'));
+        await tester.pumpAndSettle();
+
+        final trigger = tester.getRect(find.byKey(triggerKey));
+        final panel = tester.getRect(find.byType(SingleChildScrollView));
+        expect(panel.overlaps(trigger), isFalse);
+        expect(
+          panel.top >= trigger.bottom - 0.5 ||
+              panel.bottom <= trigger.top + 0.5,
+          isTrue,
+        );
+      },
+    );
+
     testWidgets('selecting a row updates the value and closes', (tester) async {
       String? chosen;
       await tester.pumpWidget(

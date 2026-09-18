@@ -33,9 +33,6 @@ ResponseBody _json(Object body, [int status = 200]) => ResponseBody.fromString(
 );
 
 void main() {
-  // A binary name that will never resolve, so the Codex path never spawns.
-  const noCodex = '__cc_no_such_codex_binary__';
-
   late Directory home;
 
   setUp(() {
@@ -82,7 +79,6 @@ void main() {
       dio: dio,
       homeDir: home.path,
       environment: {'HOME': home.path},
-      codexExecutable: noCodex,
       readClaudeKeychain: false,
     );
     final result = await svc.fetchAll(zaiApiKey: 'zai-secret');
@@ -115,7 +111,6 @@ void main() {
         dio: dio,
         homeDir: home.path,
         environment: {'HOME': home.path},
-        codexExecutable: noCodex,
         readClaudeKeychain: false,
       );
       final zai = byId(await svc.fetchAll(zaiApiKey: 'k'), 'zai');
@@ -141,7 +136,6 @@ void main() {
       dio: dio,
       homeDir: home.path,
       environment: {'HOME': home.path},
-      codexExecutable: noCodex,
       readClaudeKeychain: false,
     );
     final result = await svc.fetchAll();
@@ -182,7 +176,6 @@ void main() {
         dio: dio,
         homeDir: home.path,
         environment: {'HOME': home.path},
-        codexExecutable: noCodex,
         readClaudeKeychain: false,
       );
       final result = await svc.fetchAll();
@@ -201,7 +194,6 @@ void main() {
       dio: dio,
       homeDir: home.path,
       environment: {'HOME': home.path},
-      codexExecutable: noCodex,
       readClaudeKeychain: false,
     );
     final result = await svc.fetchAll();
@@ -216,7 +208,6 @@ void main() {
       dio: dio,
       homeDir: home.path,
       environment: {'HOME': home.path},
-      codexExecutable: noCodex,
       readClaudeKeychain: false,
     );
     final result = await svc.fetchAll();
@@ -225,6 +216,7 @@ void main() {
       'codex',
       'zai',
       'kimi-code',
+      'cursor',
     });
   });
 }

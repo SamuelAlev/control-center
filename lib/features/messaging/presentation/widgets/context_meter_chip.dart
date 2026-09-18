@@ -123,8 +123,8 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      followerAnchor: Alignment.topRight,
-      targetAnchor: Alignment.bottomRight,
+      followerAnchor: AlignmentDirectional.topEnd,
+      targetAnchor: AlignmentDirectional.bottomEnd,
       offset: const Offset(0, 6),
       semanticLabel: label,
       overlayBuilder: (context, _) => ContextUsageFlyout(
@@ -144,7 +144,7 @@ class _ContextMeterChipState extends ConsumerState<ContextMeterChip> {
             button: true,
             label: label,
             child: Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsetsDirectional.only(end: 8),
               // The header row STRETCHES its children vertically; Center
               // hands the wash loose constraints so it hugs the meter
               // instead of filling the header's full height. The tap

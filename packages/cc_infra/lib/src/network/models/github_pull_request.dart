@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_infra/src/network/models/date_parser.dart';
+import 'package:cc_infra/src/network/models/github_label.dart';
 import 'package:cc_infra/src/network/models/github_reaction.dart';
 
 /// Typed representation of a GitHub pull request.
@@ -24,6 +25,7 @@ class GitHubPullRequest {
     this.headRef = '',
     this.requestedReviewers = const <GitHubUser>[],
     this.assignees = const <GitHubUser>[],
+    this.labels = const <GitHubLabel>[],
     this.reactions,
     this.bodyHtml,
     this.changedFiles = 0,
@@ -77,6 +79,7 @@ class GitHubPullRequest {
           (head is Map<String, dynamic> ? head['ref'] as String? : null) ?? '',
       requestedReviewers: _parseUsers(json['requested_reviewers']),
       assignees: _parseUsers(json['assignees']),
+      labels: _parseLabels(json['labels']),
       reactions: json['reactions'] is Map<String, dynamic>
           ? GitHubReactionSummary.fromJson(
               json['reactions'] as Map<String, dynamic>,
@@ -97,6 +100,17 @@ class GitHubPullRequest {
     return raw
         .whereType<Map<String, dynamic>>()
         .map(GitHubUser.fromJson)
+        .toList(growable: false);
+  }
+
+  static List<GitHubLabel> _parseLabels(Object? raw) {
+    if (raw is! List) {
+      return const <GitHubLabel>[];
+    }
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(GitHubLabel.fromJson)
+        .where((l) => l.name.isNotEmpty)
         .toList(growable: false);
   }
 
@@ -122,6 +136,7 @@ class GitHubPullRequest {
         .map((u) => u.toJson())
         .toList(growable: false),
     'assignees': assignees.map((u) => u.toJson()).toList(growable: false),
+    'labels': labels.map((l) => l.toJson()).toList(growable: false),
     if (reactions != null) 'reactions': reactions!.toJson(),
     if (bodyHtml != null) 'body_html': bodyHtml,
     if (changedFiles > 0) 'changed_files': changedFiles,
@@ -192,6 +207,9 @@ class GitHubPullRequest {
 
   /// Users assigned to the PR.
   final List<GitHubUser> assignees;
+
+  /// Labels currently on the PR.
+  final List<GitHubLabel> labels;
 
   /// Reaction summary counts.
   final GitHubReactionSummary? reactions;

@@ -22,7 +22,7 @@ import 'package:flutter/widgets.dart' show IconData;
 /// missing icon is a hole in a row of them.
 IconData rigSurfaceIcon(RigSurface? surface) => switch (surface) {
   RigSurface.browser => AppIcons.globe,
-  RigSurface.mobile => AppIcons.smartphone,
+  RigSurface.mobile || RigSurface.ios => AppIcons.smartphone,
   RigSurface.computer || null => AppIcons.monitor,
 };
 
@@ -43,7 +43,8 @@ String rigSurfaceLabel(
     engine == null
         ? l10n.rigSurfaceBrowser
         : l10n.rigSurfaceBrowserEngine(engine.label),
-  RigSurface.mobile => l10n.rigSurfaceMobile,
+  RigSurface.mobile => l10n.rigSurfaceAndroid,
+  RigSurface.ios => l10n.rigSurfaceIosSimulator,
   RigSurface.computer || null => l10n.rigSurfaceComputer,
 };
 

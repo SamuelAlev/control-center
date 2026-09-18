@@ -22,6 +22,16 @@ class ToolFingerprint {
 
   /// Canonical `[name, schemaHash]` pair for the config document.
   List<String> toCanonical() => [name, schemaHash];
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ToolFingerprint &&
+          name == other.name &&
+          schemaHash == other.schemaHash;
+
+  @override
+  int get hashCode => Object.hash(name, schemaHash);
 }
 
 /// The effective agent configuration and its content hash (PRD 21 §1, §6).
@@ -93,6 +103,53 @@ class AgentConfigSnapshot {
 
   /// The stored config JSON (same as the canonical document — self-describing).
   String toJsonString() => jsonEncode(canonicalDocument());
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AgentConfigSnapshot &&
+          systemPrompt == other.systemPrompt &&
+          modelId == other.modelId &&
+          routingHash == other.routingHash &&
+          hashVersion == other.hashVersion &&
+          _stringListEq(modePrompts, other.modePrompts) &&
+          _fingerprintListEq(tools, other.tools) &&
+          _stringListEq(memoryPolicies, other.memoryPolicies);
+
+  @override
+  int get hashCode => Object.hash(
+    systemPrompt,
+    modelId,
+    routingHash,
+    hashVersion,
+    Object.hashAll(modePrompts),
+    Object.hashAll(tools),
+    Object.hashAll(memoryPolicies),
+  );
+}
+
+bool _stringListEq(List<String> a, List<String> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool _fingerprintListEq(List<ToolFingerprint> a, List<ToolFingerprint> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /// SHA-256 over a value's canonical JSON encoding (sorted keys, recursively).

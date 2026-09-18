@@ -13,7 +13,7 @@ import 'package:control_center/shared/widgets/markdown/markdown_registries.dart'
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/shimmer_text.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Renders an agent turn as one **continuous, inline flow** — the reasoning,
 /// tool calls and answer text in the exact chronological order they were
@@ -360,11 +360,11 @@ class _ReasoningBlockState extends State<_ReasoningBlock> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: tokens.borderSecondary, width: 2),
+        border: BorderDirectional(
+          start: BorderSide(color: tokens.borderSecondary, width: 2),
         ),
       ),
-      padding: const EdgeInsets.only(left: 10),
+      padding: const EdgeInsetsDirectional.only(start: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

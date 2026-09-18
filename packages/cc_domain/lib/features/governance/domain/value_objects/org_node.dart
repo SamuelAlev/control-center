@@ -24,4 +24,26 @@ class OrgNode {
   int get depth => reports.isEmpty
       ? 0
       : 1 + reports.map((r) => r.depth).reduce((a, b) => a > b ? a : b);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is OrgNode &&
+          agent == other.agent &&
+          _orgListEq(reports, other.reports);
+
+  @override
+  int get hashCode => Object.hash(agent, reports.length);
+}
+
+bool _orgListEq(List<OrgNode> a, List<OrgNode> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }

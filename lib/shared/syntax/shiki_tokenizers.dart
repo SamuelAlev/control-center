@@ -47,12 +47,16 @@ class CcShikiTokenizer {
   bool _themesReady = false;
   final Set<String> _ensuredLangs = <String>{};
 
-  TokenizeOptions _options(String langId, {required bool dark}) =>
-      TokenizeOptions(
-        lang: langId,
-        theme: ccThemeId(dark: dark),
-        tokenizeMaxLineLength: kShikiMaxTokenizedLineLength,
-      );
+  TokenizeOptions _options(
+    String langId, {
+    required bool dark,
+    bool includeExplanation = false,
+  }) => TokenizeOptions(
+    lang: langId,
+    theme: ccThemeId(dark: dark),
+    tokenizeMaxLineLength: kShikiMaxTokenizedLineLength,
+    includeExplanation: includeExplanation,
+  );
 
   void _ensureThemes() {
     if (_themesReady) {
@@ -91,6 +95,7 @@ class CcShikiTokenizer {
     String code, {
     required String? langId,
     required bool dark,
+    bool includeExplanation = false,
   }) {
     if (langId == null || code.isEmpty) {
       return null;
@@ -102,7 +107,11 @@ class CcShikiTokenizer {
     try {
       final lines = _highlighter.codeToTokens(
         code,
-        _options(langId, dark: dark),
+        _options(
+          langId,
+          dark: dark,
+          includeExplanation: includeExplanation,
+        ),
       );
       return reattachCarriageReturns(code, lines);
     } on Object {

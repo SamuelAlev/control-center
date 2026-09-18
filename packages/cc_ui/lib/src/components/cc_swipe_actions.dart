@@ -320,6 +320,9 @@ class _CcSwipeActionsState extends State<CcSwipeActions>
   }
 }
 
+// RTL carve-out: the panel tracks the PHYSICAL drag offset (the strip sits on
+// whichever screen edge the content moved away from); which ACTION that edge
+// carries is what resolves through Directionality, in `_actionFor`.
 /// The strip uncovered behind the row.
 ///
 /// Sized to exactly what the drag has uncovered and clipped, so the fill never

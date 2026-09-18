@@ -119,7 +119,7 @@ class _Header extends ConsumerWidget {
     final progress = ticketCount == 0 ? 0.0 : doneCount / ticketCount;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 16, 18),
+      padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 16, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -253,7 +253,7 @@ class _ProjectMenuState extends ConsumerState<_ProjectMenu> {
         onPressed: _controller.toggle,
         builder: (context, states) => Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(AppIcons.ellipsis, size: 18, color: t.fgTertiary),
+          child: CcIcon(AppIcons.ellipsis, size: 18, color: t.fgTertiary),
         ),
       ),
       overlayBuilder: (context, _) => ConstrainedBox(
@@ -491,7 +491,7 @@ class _ProjectTicketRow extends ConsumerWidget {
                 bottom: BorderSide(color: t.borderSecondary, width: 0.5),
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 10, 20, 10),
+            padding: const EdgeInsetsDirectional.fromSTEB(24, 10, 20, 10),
             child: Row(
               children: [
                 TicketPriorityIndicator(

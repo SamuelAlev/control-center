@@ -8,7 +8,7 @@ import 'package:control_center/features/repos/providers/repo_index_providers.dar
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Compact per-repo "index code" action: a button that starts the `index_code`
@@ -99,11 +99,11 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem;
+    final tokens = context.ds;
 
     Widget idleButton() => _IconAction(
       icon: AppIcons.scanSearch,
-      color: tokens?.textTertiary ?? const Color(0xFF656D76),
+      color: tokens.textTertiary,
       tooltip: l10n.indexCode,
       onPress: _start,
     );
@@ -126,21 +126,15 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            AppIcons.clock,
-            size: 14,
-            color: tokens?.textTertiary ?? const Color(0xFF656D76),
-          ),
+          Icon(AppIcons.clock, size: 14, color: tokens.textTertiary),
           const SizedBox(width: 6),
           Text(
             l10n.pipelineStatusQueued,
-            style: CcTypography.caption.copyWith(
-              color: tokens?.textTertiary ?? const Color(0xFF656D76),
-            ),
+            style: CcTypography.caption.copyWith(color: tokens.textTertiary),
           ),
           _IconAction(
             icon: AppIcons.x,
-            color: tokens?.textTertiary ?? const Color(0xFF656D76),
+            color: tokens.textTertiary,
             tooltip: l10n.cancel,
             onPress: _cancel,
           ),
@@ -162,14 +156,12 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
             const SizedBox(width: 6),
             Text(
               '${progress.done}/${progress.total}',
-              style: CcTypography.caption.copyWith(
-                color: tokens?.textTertiary ?? const Color(0xFF656D76),
-              ),
+              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
             ),
           ],
           _IconAction(
             icon: AppIcons.x,
-            color: tokens?.textTertiary ?? const Color(0xFF656D76),
+            color: tokens.textTertiary,
             tooltip: l10n.cancel,
             onPress: _cancel,
           ),
@@ -192,7 +184,7 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
     if (run.status == PipelineRunStatus.completed && nativeAvailable) {
       return _IconAction(
         icon: AppIcons.circleCheck,
-        color: tokens?.textPrimary ?? const Color(0xFF1A1A1A),
+        color: tokens.textPrimary,
         tooltip: l10n.indexedSymbolsCount(symbols),
         onPress: _start,
       );
@@ -201,7 +193,7 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
       // Completed but nothing indexed — grammars aren't installed.
       return _IconAction(
         icon: AppIcons.triangleAlert,
-        color: tokens?.warn ?? Colors.amber.shade700,
+        color: tokens.warn,
         tooltip: l10n.indexNoGrammars,
         onPress: _start,
       );
@@ -210,7 +202,7 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
     // Failed.
     return _IconAction(
       icon: AppIcons.triangleAlert,
-      color: Theme.of(context).colorScheme.error,
+      color: tokens.danger,
       tooltip: l10n.indexFailed,
       onPress: _start,
     );

@@ -1,0 +1,455 @@
+{
+  "@@locale": "fa",
+
+  "appTitle": "Control Center",
+  "back": "بازگشت",
+  "cancel": "لغو",
+  "retry": "تلاش مجدد",
+  "tryAgain": "دوباره تلاش کنید",
+  "settings": "تنظیمات",
+  "refresh": "تازه‌سازی",
+  "approve": "تأیید",
+  "deny": "رد",
+  "continueLabel": "ادامه",
+  "agentQuestionHeader": "پرسش برای شما",
+  "agentQuestionAnsweredLabel": "پاسخ‌داده‌شده",
+  "agentQuestionSkip": "رد شدن",
+  "agentQuestionSkippedLabel": "رد شد",
+  "agentQuestionFreeformHint": "پاسختان را بنویسید…",
+  "agentApprovalRequired": "تأیید لازم است",
+  "approveAndRemember": "تأیید برای ۸ ساعت",
+  "decline": "نپذیرفتن",
+  "confirm": "تأیید",
+  "send": "ارسال",
+  "close": "بستن",
+  "expand": "گستردن",
+  "zoomIn": "بزرگ‌نمایی",
+  "zoomOut": "کوچک‌نمایی",
+  "resetZoom": "بازنشانی بزرگ‌نمایی",
+
+  "scanQrPrompt": "کد \u2068QR\u2069 را از \u2068Mac\u2069 اسکن کنید تا این تلفن جفت شود.",
+  "scanQrHelp": "دوربین را باز کنید و به‌سمت کد \u2068QR\u2069 نشان‌داده‌شده در \u2068Control Center\u2069 روی \u2068Mac\u2069 بگیرید. این تلفن مستقیم از طریق یک پیوند خصوصی به \u2068Mac\u2069 وصل می‌شود.",
+  "connectingToMac": "در حال اتصال به \u2068Mac\u2069…",
+  "connectingDetail": "در حال برقراری پیوند امن و مستقیم.",
+  "identityChangedTitle": "هویت سرور تغییر کرد",
+  "identityChangedBody": "این سرور دیگر با هویت ذخیره‌شده هنگام جفت‌سازی مطابقت ندارد. ممکن است سرور از نو نصب شده باشد — یا چیزی در حال رهگیری اتصال باشد. برای ایمنی، این دستگاه وصل نخواهد شد. جفت‌سازی را بردارید، سپس یک کد \u2068QR\u2069 تازه از \u2068Mac\u2069 اسکن کنید تا دوباره جفت شود.",
+  "removePairing": "برداشتن جفت‌سازی",
+  "couldntConnect": "اتصال ممکن نشد",
+  "pendingPairingTitle": "به این سرور وصل شوید؟",
+  "pendingPairingBody": "یک پیوند از \u2068Control Center\u2069 خواست با این سرور جفت شود. فقط اگر خودتان شروعش کرده‌اید ادامه دهید.",
+  "connect": "اتصال",
+
+  "failureNotPaired": "جفت نشده — کد \u2068QR\u2069 را از \u2068Mac\u2069 اسکن کنید",
+  "failureUnreachable": "از هیچ مسیری به سرور نرسیدیم — مطمئن شوید در حال اجراست، یا همان شبکه را امتحان کنید",
+  "failureIdentityChanged": "هویت سرور تغییر کرد — اگر از نو نصب شده، این دستگاه را دوباره جفت کنید",
+  "failureAuthRejected": "سرور این دستگاه را نپذیرفت — دوباره از \u2068Mac\u2069 جفتش کنید",
+  "failureUnknown": "اتصال ممکن نشد — برای تلاش مجدد ضربه بزنید",
+
+  "statusConnected": "متصل",
+  "statusConnecting": "در حال اتصال",
+  "statusOffline": "آفلاین",
+  "statusIdentityMismatch": "عدم تطابق هویت",
+  "statusNotPaired": "جفت‌نشده",
+  "statusConfirmPairing": "تأیید جفت‌سازی",
+
+  "connectionFailed": "اتصال ناموفق بود",
+  "identityMismatchBanner": "هویت سرور تغییر کرد — اتصال متوقف شد. برای ادامه این دستگاه را دوباره جفت کنید.",
+  "tabInbox": "صندوق ورودی",
+  "tabTickets": "تیکت‌ها",
+  "tabChat": "گفتگو",
+  "tabPrs": "PRs",
+  "tabCalendar": "تقویم",
+  "tabNews": "اخبار",
+  "tabWaitingCount": "{label}، {count} در انتظار",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "updateAvailable": "Control Center جدید در دسترس است",
+
+  "appearance": "ظاهر",
+  "language": "زبان",
+  "device": "دستگاه",
+  "themeSystem": "سیستم",
+  "themeLight": "روشن",
+  "themeDark": "تاریک",
+  "languageSystem": "سیستم",
+  "disconnectTapAgain": "دوباره ضربه بزنید تا این دستگاه از \u2068Mac\u2069 قطع شود",
+  "disconnectDevice": "قطع اتصال این دستگاه",
+  "disconnect": "قطع اتصال",
+
+  "chooseWorkspace": "انتخاب فضای کاری",
+  "workspaces": "فضاهای کاری",
+  "workspacesLoadFailed": "بارگذاری فضاهای کاری ممکن نشد",
+  "noWorkspacesYet": "هنوز فضای کاری نیست",
+  "selectWorkspace": "انتخاب {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "inboxLoadFailed": "بارگذاری صندوق ورودی ممکن نشد",
+  "allCaughtUp": "همه را دیده‌اید",
+  "inboxNoForgeAccount": "هیچ حساب میزبانی کدی روی سرور وصل نیست، بنابراین هنوز نمی‌توان pull requestها را به شما نسبت داد.",
+  "inboxNothingWaiting": "چیزی مسدود نیست و هیچ pull requestی منتظر شما نیست.",
+  "blocked": "مسدود",
+  "sectionNeedsYourReview": "نیاز به بازبینی شما",
+  "sectionReturnedToYou": "بازگشته به شما",
+  "sectionApprovedAndReady": "تأییدشده و آماده",
+  "sectionYourDrafts": "پیش‌نویس‌های شما",
+  "sectionWaitingForReviewers": "در انتظار بازبین‌ها",
+  "sectionMergingAndMerged": "در حال ادغام و اخیراً ادغام‌شده",
+  "sectionWaitingForAuthor": "در انتظار نویسنده",
+  "waitingAgo": "در انتظار {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": { "type": "String" }
+    }
+  },
+  "openConversation": "باز کردن گفتگو",
+
+  "calendarLoadFailed": "بارگذاری تقویم ممکن نشد",
+  "nothingScheduled": "چیزی زمان‌بندی نشده",
+  "calendarEmptyDescription": "رویدادهای تقویم‌های وصل‌شده اینجا ظاهر می‌شوند.",
+  "agenda": "برنامه",
+  "syncCalendarsNow": "همگام‌سازی تقویم‌ها اکنون",
+  "event": "رویداد",
+  "eventNotFound": "رویداد پیدا نشد",
+  "eventNotFoundDescription": "ممکن است بیرون از بازهٔ برنامه باشد، یا در مبدأ حذف شده باشد.",
+  "joinMeeting": "پیوستن به جلسه",
+  "join": "پیوستن",
+  "attendeesCount": "شرکت‌کنندگان ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "details": "جزئیات",
+  "allDay": "تمام روز",
+  "happeningNow": "در حال برگزاری",
+  "inDuration": "تا {duration} دیگر",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "attendeeAccepted": "پذیرفته",
+  "attendeeDeclined": "نپذیرفته",
+  "attendeeMaybe": "شاید",
+  "attendeeNoReply": "بدون پاسخ",
+  "organizer": "برگزارکننده",
+  "calendarNoAccounts": "هیچ تقویمی برای این فضای کاری وصل نیست. یکی را از برنامهٔ دسکتاپ وصل کنید — ورود، توکن را روی سرور ذخیره می‌کند.",
+  "calendarReauthNeeded": "یک حساب تقویم باید دوباره وصل شود — آنچه پایین می‌بینید ممکن است قدیمی باشد. از برنامهٔ دسکتاپ دوباره وصلش کنید.",
+
+  "spacesLoadFailed": "بارگذاری فضاها ممکن نشد",
+  "noSpaces": "فضایی نیست",
+  "spacesEmptyDescription": "فضاهای این فضای کاری اینجا ظاهر می‌شوند.",
+  "thread": "رشته",
+  "agentWorking": "عامل در حال کار است",
+  "messagesLoadFailed": "بارگذاری پیام‌ها ممکن نشد",
+  "noMessagesYet": "هنوز پیامی نیست",
+  "noMessagesDescription": "پیامی بفرستید تا گفتگو شروع شود.",
+  "agentResponding": "عامل در حال پاسخ",
+  "agentFinished": "عامل تمام کرد",
+  "attachmentsTooLarge": "{count, plural, =1{\u2068{names}\u2069 برای ارسال از اینجا خیلی بزرگ است.} other{\u2068{names}\u2069 برای ارسال از اینجا خیلی بزرگ هستند.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{\u2068{names}\u2069 برای ارسال از اینجا روی رله خیلی بزرگ است.} other{\u2068{names}\u2069 برای ارسال از اینجا روی رله خیلی بزرگ هستند.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentUploadFailed": "بارگذاری پیوست ممکن نشد. دوباره تلاش کنید.",
+  "attachmentsLeftOut": "{count, plural, =1{1 پیوست بارگذاری نشد و کنار گذاشته شد.} other{{count} پیوست بارگذاری نشد و کنار گذاشته شد.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teammate": "هم‌تیمی",
+  "agent": "عامل",
+  "attachFile": "پیوست کردن فایل",
+  "messageHint": "پیام",
+  "removeAttachment": "برداشتن \u2068{name}\u2069",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "articlesLoadFailed": "بارگذاری مقاله‌ها ممکن نشد",
+  "noArticles": "مقاله‌ای نیست",
+  "articlesEmptyDescription": "مقاله‌های تازه با به‌روزرسانی خوراک‌ها اینجا ظاهر می‌شوند.",
+  "unread": "خوانده‌نشده",
+  "allFeeds": "همهٔ خوراک‌ها",
+  "save": "ذخیره",
+  "unsave": "لغو ذخیره",
+  "readFullArticle": "خواندن مقالهٔ کامل",
+
+  "ticketsLoadFailed": "بارگذاری تیکت‌ها ممکن نشد",
+  "noTickets": "تیکتی نیست",
+  "ticketsEmptyDescription": "تیکت‌های این فضای کاری اینجا ظاهر می‌شوند.",
+  "all": "همه",
+  "ticket": "تیکت",
+  "ticketLoadFailed": "بارگذاری تیکت ممکن نشد",
+  "assignedTo": "تخصیص به {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openInBrowser": "باز کردن در مرورگر",
+  "status": "وضعیت",
+  "assign": "تخصیص",
+  "reassign": "تخصیص دوباره",
+  "noAgents": "عاملی نیست",
+  "noAgentsDescription": "عاملی از این فضای کاری تخصیص دهید.",
+  "statusOpen": "برای انجام",
+  "statusInProgress": "در جریان",
+  "statusBlocked": "مسدود",
+  "statusInReview": "در بازبینی",
+  "statusDone": "انجام‌شده",
+  "statusBacklog": "بک‌لاگ",
+
+  "lensNeedsMe": "نیاز به من",
+  "lensMine": "مال من",
+  "prsLoadFailed": "بارگذاری pull requestها ممکن نشد",
+  "noOpenPullRequests": "هیچ pull request بازی نیست",
+  "nothingWaitingOnReview": "چیزی منتظر بازبینی شما نیست",
+  "noOwnOpenPullRequests": "هیچ pull request بازی ندارید",
+  "nothingBlocked": "چیزی مسدود نیست",
+  "prsEmptyDescription": "pull requestهای مخزن‌های این فضای کاری اینجا ظاهر می‌شوند.",
+  "refreshPullRequests": "تازه‌سازی pull requestها",
+  "noForgeConnected": "هیچ میزبانی کدی روی سرور وصل نیست، بنابراین نمی‌توان pull requestها را گرفت. یکی را از برنامهٔ دسکتاپ وصل کنید.",
+  "reposUnreadable": "{count, plural, =1{خواندن 1 مخزن ممکن نشد.} other{خواندن {count} مخزن ممکن نشد.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reposNotReadable": "خوانده نشد: \u2068{names}\u2069",
+  "installationSuspendedTitle": "نصب GitHub App معلق شده است",
+  "installationSuspendedBody": "آخرین داده‌های شناخته‌شده برای ⁨{names}⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید یا توکنی با دسترسی وصل کنید.",
+  "installationSuspendedNotice": "نصب GitHub App معلق شده است. آخرین داده‌های شناخته‌شده برای ⁨{names}⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید یا توکنی با دسترسی وصل کنید.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+
+  "draft": "پیش‌نویس",
+  "merged": "ادغام‌شده",
+  "closed": "بسته",
+  "open": "باز",
+  "approved": "تأییدشده",
+  "changesRequested": "درخواست تغییرات",
+  "reviewRequired": "نیاز به بازبینی",
+  "checksPassing": "بررسی‌ها موفق",
+  "checksFailing": "بررسی‌ها ناموفق",
+  "checksRunning": "بررسی‌ها در حال اجرا",
+  "prSemanticLabel": "{title}، {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+
+  "pullRequest": "Pull request",
+  "prLoadFailed": "بارگذاری این pull request ممکن نشد",
+  "openOnForge": "باز کردن در میزبانی کد",
+  "requestChangesNeedsComment": "نظری بنویسید که توضیح دهد چه چیزی باید تغییر کند.",
+  "conversation": "گفتگو",
+  "files": "فایل‌ها",
+  "checks": "بررسی‌ها",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 فایل} other{{count} فایل}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 کامیت} other{{count} کامیت}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "conflicts": "تعارض‌ها",
+  "reviewers": "بازبین‌ها",
+  "noDescriptionNoComments": "هنوز توضیح و نظری نیست.",
+  "noChangedFiles": "فایل تغییریافته‌ای نیست.",
+  "noChecksReported": "برای کامیت \u2068head\u2069 هیچ بررسی‌ای گزارش نشده.",
+  "reviewCommentHint": "نظر بازبینی بنویسید…",
+  "comment": "نظر",
+  "commentPosted": "نظر ثبت شد",
+  "request": "درخواست",
+  "squashAndMerge": "اسکواش و ادغام",
+  "noActionsAvailable": "{status} — اقدامی در دسترس نیست.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "reviewApproved": "تأیید کرد",
+  "reviewRequestedChanges": "درخواست تغییرات کرد",
+  "reviewCommented": "بازبینی کرد",
+  "reviewPending": "در انتظار",
+  "unknownAuthor": "ناشناخته",
+  "hideDiffFor": "پنهان کردن دیف \u2068{file}\u2069",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "showDiffFor": "نمایش دیف \u2068{file}\u2069",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "checkRunning": "در حال اجرا",
+  "checkPassed": "موفق",
+  "checkFailed": "ناموفق",
+  "checkCancelled": "لغوشده",
+  "checkSkipped": "ردشده",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "checkSemanticLabel": "\u2068{name}\u2069، {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+
+  "noTextDiff": "برای این فایل دیف متنی نیست — باینری است، یا برای میزبانی کد خیلی بزرگ است که برگرداند.",
+  "showRemainingLines": "{count, plural, =1{نمایش خط باقی‌مانده} other{نمایش {count} خط باقی‌مانده}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 خط بدون تغییر} other{{count} خط بدون تغییر}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "jumpToLatest": "پرش به آخرین",
+  "streaming": "در حال استریم",
+
+  "working": "در حال کار",
+  "input": "ورودی",
+  "output": "خروجی",
+
+  "now": "الان",
+  "agoMinutes": "{count} د",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoHours": "{count} س",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoDays": "{count} ر",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "today": "امروز",
+  "tomorrow": "فردا",
+  "yesterday": "دیروز",
+  "durationMinutes": "{count} د",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count} س",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours} س {minutes} د",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  }
+}

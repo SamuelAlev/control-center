@@ -358,12 +358,12 @@ class GitLabForgePrClient implements ForgePrClient {
 
   /// Always empty on GitLab.
   ///
-  /// [PrTimelineEventKind] models exactly two things — a review request made
-  /// and withdrawn — and GitLab publishes neither. Its resource-event
-  /// endpoints (`resource_label_events`, `resource_state_events`,
-  /// `resource_milestone_events`) cover labels, open/close/merge and
-  /// milestones; reviewer assignment changes exist only as system notes, whose
-  /// wording is untyped, localized prose that would have to be regex-guessed.
+  /// GitHub's issue timeline is typed (`review_requested`, `labeled`, …).
+  /// GitLab's equivalent (`resource_label_events`, `resource_state_events`,
+  /// `resource_milestone_events`) is a different API, and reviewer assignment
+  /// changes exist only as system notes whose wording is untyped, localized
+  /// prose. Current labels still ride the merge-request payload; activity
+  /// rows for add/remove are GitHub-only until those endpoints are mapped.
   ///
   /// Empty is the honest answer and not a capability lie: no timeline
   /// capability flag exists, and the activity feed simply renders the comment,
@@ -860,6 +860,30 @@ class GitLabForgePrClient implements ForgePrClient {
     await _client.createMergeRequestNote(
       _projectId,
       prNumber,
+      body: body,
+      cancelToken: _token(cancelToken),
+    );
+  }
+
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    Object? cancelToken,
+  }) async {
+    final noteId = int.tryParse(commentId.trim());
+    if (noteId == null || noteId <= 0) {
+      throw ArgumentError.value(
+        commentId,
+        'commentId',
+        'GitLab note ids are integers',
+      );
+    }
+    await _client.updateMergeRequestNote(
+      _projectId,
+      prNumber,
+      noteId: noteId,
       body: body,
       cancelToken: _token(cancelToken),
     );

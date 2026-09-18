@@ -40,7 +40,7 @@ colors:
   # Accent, the single orange signal fire. The FUNCTIONAL accent is the
   # brand's accessible burnt orange (#b0370c): white on it clears 4.5:1 (6.2:1)
   # and it clears 4.5:1 as colored text on the canvas. The BRIGHT signal
-  # #fa500f (brand600) is reserved for the bounded brand graphics (logo mosaic,
+  # #fa500f (brand600) is reserved for the bounded brand graphics (brand mark,
   # golden-hour horizon), where it is large/decorative and carries no contrast
   # duty. See "The Contrast Rule".
   accent: "#b0370c" # Signal orange (functional), used <= twice/screen; white on it = 6.2:1
@@ -66,7 +66,7 @@ colors:
   sunshine-500: "#ffb83e"
   sunshine-300: "#ffd06a"
   bright-yellow: "#ffd900"
-  block-edge: "#c03e0f" # burnt-orange terminus of the block mosaic
+  block-edge: "#c03e0f" # burnt-orange terminus of the brand-mark gradient
 
 # ── TYPOGRAPHY ────────────────────────────────────────────────────────────
 # One family (Manrope) for UI/body, one (Fira Code) for mono. TWO weights:
@@ -78,6 +78,8 @@ colors:
 # (`CcTypography.numeralFeatures`) rides the family, applied by `CcFonts.code`,
 # so mono digits share one advance width — columns align, ticking values never
 # jitter — while Manrope prose keeps its natural proportional figures.
+# Script companions (Sarabun / Rubik / IBM Plex Sans Arabic) load only for the
+# active locale; they are not a second display family.
 #
 # Flutter web optical compensation: SkWasm/CanvasKit renders nominal regular
 # and medium cuts lighter than the native desktop engine. `CcTypography` maps
@@ -254,7 +256,7 @@ components:
 
 Control Center is the operator deck for a one-person developer operations hub: a single technical operator running many concurrent streams of work (coding agents on isolated worktrees, a meeting recording, a calendar filling up, PRs to review, feeds and conversations updating) and holding all of it in view at once. The interface has to do something most product UI doesn't: sit open all day next to real work, report live machine state honestly across every pillar and never shout. The personality is **alive, warm, confident**: alive because the surface reports real work as it happens, warm in the Anthropic register (intelligent, on-your-side, never cold or corporate), confident because it is direct and technical with no hype.
 
-The visual roots are golden-amber warmth, sharp architectural geometry and one near-single type weight, but tuned for a deck, not a billboard. A pure marketing treatment would flood the canvas with ivory and cream; on an operator deck that reads as "ugly yellow" and fights the data. So the canvas is **near-white with ink-black as the structural color**, the warm gold is **confined to bounded graphics** (the 3×3 logo mosaic, one golden-hour horizon, the dark sunset CTA) and the single orange signal is **rationed to at most twice per screen**. Warmth is a moment you earn at a threshold, not a wash you apply everywhere. This is how the system reads warm and confident while staying quiet and dense for ten-hours-a-day use.
+The visual roots are golden-amber warmth, sharp architectural geometry and one near-single type weight, but tuned for a deck, not a billboard. A pure marketing treatment would flood the canvas with ivory and cream; on an operator deck that reads as "ugly yellow" and fights the data. So the canvas is **near-white with ink-black as the structural color**, the warm gold is **confined to bounded graphics** (the brand mark, one golden-hour horizon, the dark sunset CTA) and the single orange signal is **rationed to at most twice per screen**. Warmth is a moment you earn at a threshold, not a wash you apply everywhere. This is how the system reads warm and confident while staying quiet and dense for ten-hours-a-day use.
 
 This system explicitly rejects two looks. It is **not a generic SaaS dashboard**. No gradient hero-metric cards, no identical rounded card grids marching down a page, no decorative charts, no purple gradients. And it is **not the default component-kit / template look**. Distinction comes from making the underlying model legible (an agent thinking vs. blocked, a meeting recording, a conversation threading a PR), never from decoration. Density is welcome; density _without hierarchy_ is not.
 
@@ -285,7 +287,7 @@ A four-rung surface ladder, a warm-neutral text/border set, one accent, three st
 
 ### Tertiary (brand sunshine, bounded graphics ONLY)
 
-- The golden-hour scale: `{colors.sunshine-900}` `#ff8a00` → `{colors.sunshine-700}` `#ffa110` → `{colors.sunshine-500}` `#ffb83e` → `{colors.sunshine-300}` `#ffd06a` → `{colors.bright-yellow}` `#ffd900`, terminating in `{colors.block-edge}` `#c03e0f`. Appears only in the logo mosaic, the horizon flourish and the CTA sunset. Never as text, never as a page background.
+- The golden-hour scale: `{colors.sunshine-900}` `#ff8a00` → `{colors.sunshine-700}` `#ffa110` → `{colors.sunshine-500}` `#ffb83e` → `{colors.sunshine-300}` `#ffd06a` → `{colors.bright-yellow}` `#ffd900`, terminating in `{colors.block-edge}` `#c03e0f`. Appears only in the brand mark, the horizon flourish and the CTA sunset. Never as text, never as a page background.
 
 ### Neutral
 
@@ -316,14 +318,17 @@ A full **dark theme** ships under the same token names (`DesignSystemTokens.ligh
 
 **The Contrast Rule (AAA where feasible, AA is the floor).** Body and essential text target **7:1 (AAA)**; `{colors.fg}` (~14:1) and `{colors.muted}` (~9:1) on the canvas clear it comfortably and are the defaults. AA (4.5:1) is the _minimum_, never the target. The lightest grays, `{colors.placeholder}` (~3.3:1) and `{colors.idle}`, clear only the disabled-state bar; never carry meaningful text in them. Promote any hint or label that must be read to `{colors.muted}`.
 
-**The Derivation Contract.** Alpha tokens (`idle`, `line-strong`, `accent-soft`, the `*-soft` set, hovers) are an opacity of a base token, `idle` = fg @ 38%, `accent-soft` = accent @ 12%, etc. Keep the relationship in code (Flutter `Color.withValues` / web `color-mix(... in oklab)`) so a base-color change propagates. The block mosaic gradient is orange-dominant (never yellow-led, or the small logo reads as a lemon square): `linear-gradient(135deg, #ffb83e 0%, #ff8105 34%, #fa500f 70%, #c03e0f 100%)`.
+**The Derivation Contract.** Alpha tokens (`idle`, `line-strong`, `accent-soft`, the `*-soft` set, hovers) are an opacity of a base token, `idle` = fg @ 38%, `accent-soft` = accent @ 12%, etc. Keep the relationship in code (Flutter `Color.withValues` / web `color-mix(... in oklab)`) so a base-color change propagates. The brand-mark gradient (`assets/logo_with_background.svg`) is orange-dominant (never yellow-led, or the small mark reads as a lemon square): `linear-gradient(135deg, #ffb83e 0%, #ff8105 34%, #fa500f 70%, #c03e0f 100%)`.
 
 ## 3. Typography
 
 **Display / Body Font:** Manrope (with `ui-sans-serif, system-ui, sans-serif`)
 **Label / Mono Font:** Fira Code (with `ui-monospace, "SF Mono", Menlo, Consolas, monospace`)
+**Script companions (active locale only):** Sarabun (Thai), Rubik (Hebrew), IBM Plex Sans Arabic (Arabic / Persian / Urdu). CJK uses the platform UI face.
 
 **Character:** A warm grotesque (Manrope) carries everything human-readable; a structural monospace (Fira Code) carries everything machine: counts, IDs, diffs, timestamps and uppercase labels. The pairing reads as "considered, technical, honest." Both are bundled as host assets by `cc_ui` and resolved via `CcFonts.ui` / `CcFonts.code`. Never pass a raw family string.
+
+Manrope covers Latin (including Vietnamese), Cyrillic, and limited Greek. Locales outside that set attach **one** companion, loaded only while that language is active — Hebrew does not download Sarabun. The companions are package _assets_, not `fonts:` entries, because Flutter web fetches every `FontManifest.json` family at engine boot. CJK stays on PingFang / Hiragino / Apple SD Gothic Neo: a bundled Noto CJK would dwarf the UI font.
 
 ### Hierarchy
 
@@ -409,7 +414,7 @@ Live "running" presence uses 2px equalizer bars or a pinging dot; both have a fu
 ### Navigation
 
 - Desktop: a ~248px `CcSidebar` rail (collapses to a ~64px icon rail) under a frosted top bar. Active item = a solid `{colors.bg-brand-solid}` fill with bold `{colors.accent-on}` ink and a 1px `{colors.accent}` rim (invisible in light, a brighter edge in dark). A badge on the active row **inverts** — `{colors.accent-on}` pill, `{colors.bg-brand-solid}` content — because an accent-tinted badge is the fill's own hue and would disappear into it; a badge carrying identity (a project swatch) keeps its hue on an opaque `{colors.accent-on}` backing instead. Fill, ink and badge lerp on one `{motion.fast}` timing so white ink never lands on a mid-lerp pale fill.
-- Brand lockup = the `.mark` 3×3 mosaic + wordmark.
+- Brand lockup = `assets/logo_with_background.svg` (square mark) + wordmark. Use `assets/logo.svg` (ink figure) or `assets/logo_white.svg` (reversed) when the mark sits on a filled field. Never a 3×3 color grid.
 
 ### Supporting
 
@@ -421,7 +426,7 @@ A fenced code block and a rendered ` ```mermaid ` diagram share one anatomy: `{c
 
 ### Signature brand components
 
-- **Block mosaic (`.mark`).** The 3×3 amber→burnt-orange logo grid, the one place the full sunshine scale appears at small size. Keep it orange-dominant.
+- **Brand mark.** `assets/logo_with_background.svg` is the square lockup (sunshine gradient + white figure). `assets/logo.svg` and `assets/logo_white.svg` are the figure alone. Do not substitute a 3×3 color grid.
 - **Golden-hour horizon.** A faint ridge + lake + low sun in SVG at the bottom of a hero, masked to ~40-50% opacity. The _one_ warm brand moment per page and the hook for subtle, us-controlled regional cues. Never a page wash.
 - **Sunset CTA.** A dark `{colors.fg}` band with a top-left radial of `{colors.sunshine-700}` fading to black, the page literally sets like the sun at the final call to action.
 - **Product window.** A faithful slice of the live dashboard inside a traffic-light titlebar, on golden float, the hero visual instead of a stock screenshot.
@@ -430,25 +435,25 @@ A fenced code block and a rendered ` ```mermaid ` diagram share one anatomy: `{c
 
 Settings is where density stops being a virtue and starts being a wall, so it has its own four-layer vocabulary in `lib/features/settings/presentation/widgets/kit/` (`settings_kit.dart`), built entirely on `cc_ui` primitives and tokens. A settings surface picks only the layers it needs:
 
-| Layer | Component | Job |
-| --- | --- | --- |
-| Page | `SettingsPage` | Title, subtitle, page actions, scroll. |
-| Card | `SectionCard` | One subject. Its uppercase label is the eyebrow; nothing inside outranks it. |
-| Group | `SettingsGroup` | A titled block *inside* a card — a heading and a rule, never a nested card. |
-| Row | `SettingsField` / `SettingsToggle` / `SettingsEntityRow` | One labelled control, one switch, or one repeating thing with a state. |
+| Layer | Component                                                | Job                                                                          |
+| ----- | -------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Page  | `SettingsPage`                                           | Title, subtitle, page actions, scroll.                                       |
+| Card  | `SectionCard`                                            | One subject. Its uppercase label is the eyebrow; nothing inside outranks it. |
+| Group | `SettingsGroup`                                          | A titled block _inside_ a card — a heading and a rule, never a nested card.  |
+| Row   | `SettingsField` / `SettingsToggle` / `SettingsEntityRow` | One labelled control, one switch, or one repeating thing with a state.       |
 
 Four rules govern the layer choice, and a dense surface that reads badly is almost always breaking one of them:
 
 - **State before configuration.** Open with `SettingsSummary`: three to five facts (what is on, what is connected, what is missing) before the first input. Not a row of stat cards — that is the SaaS-dashboard reflex — but a wrapped strip of label-over-value pairs on the card's own surface, values in mono.
 - **Progressive disclosure by default.** Expert, per-item and rarely-touched controls live behind `SettingsDisclosure`, whose header states what is inside (`summary`) and carries a `SettingsModifiedBadge` when the values within are not the defaults. A collapsed section may hide detail; it may never hide that something was changed.
-- **A long list gets a filter, not a scroll.** Past roughly eight repeating rows, add `SettingsFilterBar` (search + facets with counts + a live result count) and sort what is in use to the top. `SettingsEntityRow` collapses each item to status marker, name, the one line identifying *this* install of it, small meta facts and at most one control; everything else is built only when the row is opened.
+- **A long list gets a filter, not a scroll.** Past roughly eight repeating rows, add `SettingsFilterBar` (search + facets with counts + a live result count) and sort what is in use to the top. `SettingsEntityRow` collapses each item to status marker, name, the one line identifying _this_ install of it, small meta facts and at most one control; everything else is built only when the row is opened.
 - **Edits are committed, not ambient.** A form that saves as a unit uses `SettingsSaveBar`, which exists only while there is something to commit. A permanently greyed Save teaches the reader to ignore that corner of the card.
 
 Supporting pieces: `SettingsCopyField` for a read-only value the operator must hand to something else (mono, selectable, one copy button); `SettingsKeyValueEditor` for a map, in place of a text field holding JSON; `SettingsMetaFact` for the small mono facts on a row.
 
 ### Motion
 
-`CcMotion` tokens: `fast` 120ms (hover/press washes), `normal` 180ms (dropdown / popover / tooltip), `slow` 240ms (sidebar collapse, drawer). Easing: `standard` = `cubic-bezier(0.2, 0, 0.38, 0.9)` (quick to commit, gentle to settle), `emphasized` = `cubic-bezier(0, 0, 0.38, 0.9)` for larger movement (no bounce, no elastic). `CcMotion.resolve(context, …)` collapses every duration to zero under reduced motion. Motion must report real state, never animate for flourish.
+`CcMotion` tokens — three enter speeds, a faster exit for each: `fast` 80ms / `fastExit` 60ms (hover washes, fades, focus rings, checkbox, radio, tooltip, slider), `moderate` 160ms / `moderateExit` 120ms (`normal` is an alias; dropdowns, tabs, switch thumb, toasts, short panels), `slow` 240ms / `slowExit` 160ms (dialogs, drawers, sidebar collapse). Easing: `standard` = `cubic-bezier(0.2, 0, 0.38, 0.9)` (quick to commit, gentle to settle), `emphasized` = `cubic-bezier(0, 0, 0.38, 0.9)` for larger movement (no bounce, no elastic). `CcMotion.resolve` / `resolveTravel` drop translate/scale/size under reduced motion; `resolveFade` keeps an 80ms opacity fade so presence still reports. Motion must report real state, never animate for flourish.
 
 ### Implementation & gallery
 
@@ -461,7 +466,7 @@ This spec is shipped by **`cc_ui`** (`packages/cc_ui/`), a Material-/Cupertino-f
 | Spacing (4px base)             | `AppSpacing`, `xxs`(2) → `xxxl`(48) + gap widgets.                                                                           |
 | Rounded (0 / pill)             | `AppRadii`, 0 everywhere (`sm`/`md`/`lg` all 0), `pill` 999.                                                                 |
 | Elevation (warm amber shadows) | `AppShadows.golden` / `.soft`, `CcElevation` z-index scale.                                                                  |
-| Motion + reduced-motion        | `CcMotion` (`fast`/`normal`/`slow`, `standard`/`emphasized`, `.resolve`).                                                    |
+| Motion + reduced-motion        | `CcMotion` (`fast`/`moderate`/`slow` + `*Exit`, `standard`/`emphasized`, `.resolve` / `.resolveFade`).                        |
 | Focus ring                     | `FocusRing` + `FocusModality` (keyboard-only `:focus-visible`).                                                              |
 | Components                     | 35 `Cc*` widgets, `CcButton`, `CcSelect`, `CcCard`, `CcSidebar`, `CcDialog`, …                                               |
 
@@ -484,6 +489,7 @@ The living reference is **`apps/cc_gallery`** (Widgetbook): interactive use-case
 - **Do** design every surface for its platform: dense + keyboard-first on desktop, ≥44px touch targets and no hover-only affordances on the phone remote and verify both light and dark themes.
 - **Do** open a dense configuration surface with its state (`SettingsSummary`), put expert controls behind a disclosure that badges its own overrides, and give any list past ~8 repeating rows a filter bar.
 - **Do** render embedded artifacts (code, diagrams) in OUR ink: theme them from tokens, keep their chrome identical and give the reader the source and a text alternative.
+- **Do** lay chrome out in logical start/end geometry (`EdgeInsetsDirectional`, `AlignmentDirectional`, `TextAlign.start`) so every surface mirrors under the RTL locales and let directional glyphs (chevrons, forward/back arrows) mirror with text direction.
 
 ### Don't:
 
@@ -495,6 +501,7 @@ The living reference is **`apps/cc_gallery`** (Widgetbook): interactive use-case
 - **Don't** add a bold weight or a second display typeface.
 - **Don't** carry meaningful text in `{colors.placeholder}` or `{colors.idle}`. They clear the disabled bar, not the 4.5:1 body bar.
 - **Don't** round corners "to feel friendlier," or add radius to hero imagery; the squared geometry is the point.
-- **Don't** spend the accent on decoration. It is a signal, not a highlight; and never lead the block mosaic with yellow.
+- **Don't** spend the accent on decoration. It is a signal, not a highlight; and never lead the brand-mark gradient with yellow.
 - **Don't** nest a card inside a card and don't let color be the only carrier of meaning (status, validation, diffs). Inside a card, a second subject is a `SettingsGroup` (heading + rule), never another box.
 - **Don't** render every item of a settings list fully expanded, and don't split one subject across several cards to give it headings. Both read as a wall; the first is what a disclosure is for, the second is what a group is for.
+- **Don't** hardcode physical left/right layout in chrome, and don't mirror the LTR carve-outs: source code, diffs, terminals, file paths and diagram canvases stay LTR in every locale.

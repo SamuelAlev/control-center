@@ -126,6 +126,80 @@ void main() {
       expect(opus.releasedAt, DateTime.parse('2025-11-24'));
     });
 
+    test(
+      'a reasoning model with no documented efforts gets its provider\'s '
+      'wire vocabulary, not a flat low/medium/high',
+      () {
+        Map<String, dynamic> providerDoc(String id) => {
+          'id': id,
+          'name': id,
+          'models': {
+            'm': {'id': 'm', 'name': 'M', 'reasoning': true},
+          },
+        };
+        final providers = ModelsDevParser.parse({
+          'anthropic': providerDoc('anthropic'),
+          'openai': providerDoc('openai'),
+          'zhipuai': providerDoc('zhipuai'),
+        });
+
+        // Anthropic accepts xhigh on the wire (anthropicEffort); the old flat
+        // fallback let ThinkingConfig.resolve clamp a chosen xhigh to high.
+        expect(providers['anthropic']!.models['m']!.thinking!.efforts, [
+          ReasoningEffort.low,
+          ReasoningEffort.medium,
+          ReasoningEffort.high,
+          ReasoningEffort.xhigh,
+        ]);
+        // OpenAI's real scale starts at minimal and tops out at high.
+        expect(providers['openai']!.models['m']!.thinking!.efforts, [
+          ReasoningEffort.minimal,
+          ReasoningEffort.low,
+          ReasoningEffort.medium,
+          ReasoningEffort.high,
+        ]);
+        // Unmapped providers keep the conventional three-step knob.
+        expect(providers['zhipuai']!.models['m']!.thinking!.efforts, [
+          ReasoningEffort.low,
+          ReasoningEffort.medium,
+          ReasoningEffort.high,
+        ]);
+        for (final id in ['anthropic', 'openai', 'zhipuai']) {
+          expect(
+            providers[id]!.models['m']!.thinking!.defaultLevel,
+            ReasoningEffort.medium,
+            reason: '$id defaults to medium',
+          );
+        }
+      },
+    );
+
+    test('explicit reasoning_options always win over the provider fallback', () {
+      final providers = ModelsDevParser.parse({
+        'anthropic': {
+          'id': 'anthropic',
+          'name': 'Anthropic',
+          'models': {
+            'm': {
+              'id': 'm',
+              'name': 'M',
+              'reasoning': true,
+              'reasoning_options': [
+                {
+                  'type': 'effort',
+                  'values': ['high', 'xhigh'],
+                },
+              ],
+            },
+          },
+        },
+      });
+      expect(providers['anthropic']!.models['m']!.thinking!.efforts, [
+        ReasoningEffort.high,
+        ReasoningEffort.xhigh,
+      ]);
+    });
+
     test('skips malformed entries instead of throwing', () {
       final providers = ModelsDevParser.parse({
         'broken': 'not a map',

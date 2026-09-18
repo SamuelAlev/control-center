@@ -13,6 +13,16 @@ typedef CcCodeBuilder =
 typedef CcImageBuilder =
     Widget Function(String url, String? alt, String? title);
 
+/// Sequential index source for interactive task-list checkboxes. Nested list
+/// renders share one instance so indices match document order (and the
+/// source-level [toggleMarkdownTaskListItem] scan).
+final class CcTaskCheckboxCursor {
+  int _next = 0;
+
+  /// The next document-order task-list index.
+  int take() => _next++;
+}
+
 /// Rendering state threaded through the builder tree.
 @immutable
 class CcRenderContext {
@@ -23,6 +33,8 @@ class CcRenderContext {
     this.onTapImage,
     this.imageBuilder,
     this.codeBuilder,
+    this.onTaskCheckboxChanged,
+    this.taskCheckboxCursor,
     this.listLevel = 0,
     this.selectable = false,
     this.codeCache = true,
@@ -45,6 +57,14 @@ class CcRenderContext {
 
   /// Custom fenced-code renderer.
   final CcCodeBuilder? codeBuilder;
+
+  /// Invoked when a task-list checkbox is toggled. [index] is the
+  /// document-order task item (matching [toggleMarkdownTaskListItem]).
+  final void Function(int index, bool checked)? onTaskCheckboxChanged;
+
+  /// Shared counter for [onTaskCheckboxChanged] indices. Nested lists keep
+  /// the same instance via [copyWith].
+  final CcTaskCheckboxCursor? taskCheckboxCursor;
 
   /// Current list nesting depth.
   final int listLevel;
@@ -74,6 +94,8 @@ class CcRenderContext {
     void Function(String url, String? alt, String? title)? onTapImage,
     CcImageBuilder? imageBuilder,
     CcCodeBuilder? codeBuilder,
+    void Function(int index, bool checked)? onTaskCheckboxChanged,
+    CcTaskCheckboxCursor? taskCheckboxCursor,
     int? listLevel,
     bool? selectable,
     bool? codeCache,
@@ -87,6 +109,9 @@ class CcRenderContext {
       onTapImage: onTapImage ?? this.onTapImage,
       imageBuilder: imageBuilder ?? this.imageBuilder,
       codeBuilder: codeBuilder ?? this.codeBuilder,
+      onTaskCheckboxChanged:
+          onTaskCheckboxChanged ?? this.onTaskCheckboxChanged,
+      taskCheckboxCursor: taskCheckboxCursor ?? this.taskCheckboxCursor,
       listLevel: listLevel ?? this.listLevel,
       selectable: selectable ?? this.selectable,
       codeCache: codeCache ?? this.codeCache,

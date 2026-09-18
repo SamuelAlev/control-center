@@ -1,6 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -26,48 +27,12 @@ class AppearanceSection extends ConsumerWidget {
             title: l10n.settingsLanguage,
             subtitle: l10n.settingsLanguageDescription,
             trailing: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 180),
-              child: CcSelect<Locale>(
-                options: [
-                  CcSelectOption(
-                    value: const Locale('system'),
-                    label: l10n.languageSystem,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('en', 'US'),
-                    label: l10n.languageEnglish,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('fr', 'FR'),
-                    label: l10n.languageFrench,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('es', 'ES'),
-                    label: l10n.languageSpanish,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('it', 'IT'),
-                    label: l10n.languageItalian,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('de', 'DE'),
-                    label: l10n.languageGerman,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('pt', 'BR'),
-                    label: l10n.languagePortuguese,
-                  ),
-                  CcSelectOption(
-                    value: const Locale('nl', 'NL'),
-                    label: l10n.languageDutch,
-                  ),
-                ],
-                value: localeOverride ?? const Locale('system'),
-                onChanged: (v) {
-                  ref
-                      .read(localeProvider.notifier)
-                      .setLocale(v == const Locale('system') ? null : v);
-                },
+              constraints: const BoxConstraints(maxWidth: 260),
+              child: _LanguagePicker(
+                selected: localeOverride,
+                systemLabel: l10n.languageSystem,
+                searchHint: l10n.searchPlaceholder,
+                semanticLabel: l10n.settingsLanguage,
               ),
             ),
           ),
@@ -98,6 +63,139 @@ class AppearanceSection extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Closed-list language autocomplete. Typing filters native names, BCP 47
+/// tags and ISO codes; abandoning the query restores the current selection
+/// rather than committing free text.
+class _LanguagePicker extends ConsumerStatefulWidget {
+  const _LanguagePicker({
+    required this.selected,
+    required this.systemLabel,
+    required this.searchHint,
+    required this.semanticLabel,
+  });
+
+  /// Current locale override, or `null` to follow the system.
+  final Locale? selected;
+
+  /// Localized label for the follow-system option.
+  final String systemLabel;
+
+  /// Placeholder shown while the field is empty.
+  final String searchHint;
+
+  /// Accessibility name for the field.
+  final String semanticLabel;
+
+  @override
+  ConsumerState<_LanguagePicker> createState() => _LanguagePickerState();
+}
+
+class _LanguagePickerState extends ConsumerState<_LanguagePicker> {
+  static const _system = Locale('system');
+
+  final _controller = TextEditingController();
+  final _focus = FocusNode();
+  var _seeded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocusChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Seed before the first paint so the field never flashes empty. The
+    // autocomplete has not attached its listener yet, so this write cannot
+    // pop the overlay.
+    if (!_seeded) {
+      _seeded = true;
+      _controller.text = _labelFor(widget.selected);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _LanguagePicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected != widget.selected && !_focus.hasFocus) {
+      final label = _labelFor(widget.selected);
+      if (_controller.text != label) {
+        // Defer: writing during build notifies the autocomplete, which would
+        // try to show its overlay in the persistent-callbacks phase.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _focus.hasFocus) return;
+          if (_controller.text != label) {
+            _controller.text = label;
+          }
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _focus.removeListener(_onFocusChanged);
+    _focus.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChanged() {
+    if (_focus.hasFocus || !mounted) {
+      return;
+    }
+    final label = _labelFor(widget.selected);
+    if (_controller.text != label) {
+      _controller.text = label;
+    }
+  }
+
+  String _labelFor(Locale? selected) {
+    if (selected == null) {
+      return widget.systemLabel;
+    }
+    for (final variant in kAppLocaleVariants) {
+      if (variant.locale == selected) {
+        return variant.nativeLabel;
+      }
+    }
+    return widget.systemLabel;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CcAutocomplete<Locale>(
+      controller: _controller,
+      focusNode: _focus,
+      hintText: widget.searchHint,
+      semanticLabel: widget.semanticLabel,
+      options: [
+        CcSelectOption(value: _system, label: widget.systemLabel),
+        // Native, self-named labels (see AppLocaleVariant.nativeLabel):
+        // each language names itself and its country so the entry is
+        // findable regardless of the active locale.
+        for (final variant in kAppLocaleVariants)
+          CcSelectOption(value: variant.locale, label: variant.nativeLabel),
+      ],
+      filter: (options, query) => [
+        for (final option in options)
+          if (localePickerQueryMatches(
+            query: query,
+            label: option.label,
+            locale: option.value,
+          ))
+            option,
+      ],
+      onSelected: (value) {
+        ref
+            .read(localeProvider.notifier)
+            .setLocale(value == _system ? null : value);
+      },
     );
   }
 }

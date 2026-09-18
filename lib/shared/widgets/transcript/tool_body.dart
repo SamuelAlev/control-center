@@ -140,8 +140,8 @@ bool toolBodyOpensByDefault(ToolSegment seg) {
   // A screenshot IS the point, by the same rule as a diff or a match list:
   // "Browser: screenshot" tells you nothing, the picture is the information.
   // Checked before the tool-kind switch because the producer is a tool the
-  // switch does not know (`browser_use`, `computer_use`, `mobile_use`), which
-  // would otherwise fall to the default and stay collapsed.
+  // switch does not know (`browser_use`, `computer_use`, `mobile_use`,
+  // `ios_use`), which would otherwise fall to the default and stay collapsed.
   if (seg.images.isNotEmpty) {
     return true;
   }
@@ -356,7 +356,7 @@ class _ShowFullOutputButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final kb = (hiddenChars + 1023) ~/ 1024;
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: CcButton(
         onPressed: onPressed,
         variant: CcButtonVariant.ghost,

@@ -24,6 +24,16 @@ class EvalRepetitionResult {
     'passed': passed,
     'grades': grades.map((g) => g.toJson()).toList(),
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EvalRepetitionResult &&
+          outcome == other.outcome &&
+          jsonEncode(toJson()) == jsonEncode(other.toJson());
+
+  @override
+  int get hashCode => Object.hash(outcome, grades.length);
 }
 
 /// The aggregate result of an eval batch (PRD 21 §5): pass-rate, cost, latency,
@@ -174,4 +184,43 @@ class EvalScorecard {
         xs.map((x) => (x - m) * (x - m)).reduce((a, b) => a + b) / xs.length;
     return math.sqrt(variance);
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EvalScorecard &&
+          batchSize == other.batchSize &&
+          passRate == other.passRate &&
+          passRateStdDev == other.passRateStdDev &&
+          avgCostCents == other.avgCostCents &&
+          costStdDev == other.costStdDev &&
+          avgTurns == other.avgTurns &&
+          avgDurationMs == other.avgDurationMs &&
+          repsPassed == other.repsPassed &&
+          _mapEq(perGraderPassRate, other.perGraderPassRate);
+
+  @override
+  int get hashCode => Object.hash(
+    batchSize,
+    passRate,
+    passRateStdDev,
+    avgCostCents,
+    costStdDev,
+    avgTurns,
+    avgDurationMs,
+    repsPassed,
+    perGraderPassRate.length,
+  );
+}
+
+bool _mapEq(Map<String, double> a, Map<String, double> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (final e in a.entries) {
+    if (b[e.key] != e.value) {
+      return false;
+    }
+  }
+  return true;
 }

@@ -1,5 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
 /// Builder type for constructing a hover card widget for an agent.
@@ -110,7 +110,7 @@ class _AgentAvatarState extends State<AgentAvatar> {
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onTap: _popupCtrl.hide,
-            child: Container(color: Colors.transparent),
+            child: Container(color: const Color(0x00000000)),
           ),
         ),
         Positioned(

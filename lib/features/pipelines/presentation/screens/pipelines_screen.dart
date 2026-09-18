@@ -204,7 +204,7 @@ class _RunsPane extends StatelessWidget {
               key: const PageStorageKey('pipeline-runs-table'),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.only(right: AppSpacing.md),
+                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
                   sliver: PipelineRunsTable(
                     runs: visible,
                     queuePositions: queuePositions,

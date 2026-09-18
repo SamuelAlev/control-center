@@ -192,7 +192,7 @@ class _Header extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 16, 16, 14),
       child: Row(
         children: [
           Text(
@@ -498,7 +498,7 @@ class _TicketListRowState extends ConsumerState<_TicketListRow> {
                 bottom: BorderSide(color: t.borderSecondary, width: 0.5),
               ),
             ),
-            padding: const EdgeInsets.fromLTRB(14, 11, 20, 11),
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 11, 20, 11),
             child: Row(
               children: [
                 SizedBox(

@@ -7,7 +7,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 /// Day-grouped chronological list of events. Read-only; the only action is the
@@ -149,7 +149,7 @@ class _EventRow extends StatelessWidget {
         l10n.calendarAttendeesCount(event.attendees.length),
     ].join(' · ');
 
-    return InkWell(
+    return GestureDetector(
       onTap: onOpen,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -173,12 +173,11 @@ class _EventRow extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Container(
-              margin: const EdgeInsets.only(top: 4, right: 10),
+              margin: const EdgeInsetsDirectional.only(top: 4, end: 10),
               width: 8,
               height: 8,
               decoration: BoxDecoration(
                 color: color ?? t.fgBrandPrimary,
-                borderRadius: AppRadii.brXs,
               ),
             ),
             Expanded(
@@ -259,7 +258,6 @@ class _MeetLinkState extends State<_MeetLink> {
             // Alpha-0 rest (not transparent-black) so the hover lerp is
             // alpha-only — no dark-gray flash crossing states.
             color: _hovered ? t.hover : t.hover.withValues(alpha: 0),
-            borderRadius: AppRadii.brSm,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

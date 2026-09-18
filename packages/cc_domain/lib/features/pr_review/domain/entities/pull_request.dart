@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/reaction_group.dart';
 
@@ -157,6 +158,7 @@ class PullRequest {
     this.requestedReviewers = const <PrUser>[],
     this.requestedTeamSlugs = const <String>[],
     this.assignees = const <PrUser>[],
+    this.labels = const <PrLabel>[],
     this.mergedAt,
     this.reviewedByMe = false,
     this.reactions = const [],
@@ -243,6 +245,9 @@ class PullRequest {
   /// Users assigned to this PR.
   final List<PrUser> assignees;
 
+  /// Forge labels currently on the PR, in the order the forge returned.
+  final List<PrLabel> labels;
+
   /// Timestamp.
   final DateTime? mergedAt;
 
@@ -316,6 +321,7 @@ class PullRequest {
       requestedReviewers: requestedReviewers,
       requestedTeamSlugs: requestedTeamSlugs,
       assignees: assignees,
+      labels: labels,
       mergedAt: mergedAt,
       reviewedByMe: reviewedByMe ?? this.reviewedByMe,
       reactions: reactions ?? this.reactions,

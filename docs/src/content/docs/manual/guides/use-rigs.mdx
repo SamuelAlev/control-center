@@ -1,28 +1,29 @@
 ---
 title: Give an agent a machine to test on
-description: Rigs are disposable VMs an agent drives to test a browser, a desktop or a phone — watched live, and you can take the controls at any time.
+description: Give an agent a disposable browser, desktop, Android emulator or iOS Simulator — watched live, with controls you can take over.
 ---
 
 A **rig** is a throwaway machine an agent opens when it needs to actually try
 something: load a page, click through a desktop app, tap around a phone. You
 can watch it work in real time, and take the controls whenever you want.
 
-The machine is a VM. Nothing an agent does inside a rig touches your computer,
-the VM's disk is thrown away when it closes, and its network reaches only the
-hosts you allowed.
+Enclosed terminal, browser and desktop rigs are VMs with throwaway disks and
+gated networks. Android and iOS are host-managed emulators: their device state
+is disposable, but their networking follows the server host.
 
 ## Set it up once
 
 Rigs run on the machine hosting `cc_server` — the same machine, not the one
-you are looking at. There are four surfaces, and only the last two need any
-setup:
+you are looking at. There are five user-facing surfaces; desktop and mobile
+surfaces need host setup:
 
 | Surface | Runs on | Setup |
 |---|---|---|
 | **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
 | **Browser (VM)** | A microVM booting a pinned headless-Chromium image | None — same |
 | **Computer (VM)** | QEMU with a Linux desktop image | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Enclosures** |
-| **Phone (VM)** | Google's Android emulator | Install the Android SDK (below) |
+| **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
+| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Enclosures** |
 
 The terminal and browser machines boot from digest-pinned images: the exact
 bytes are named in advance, fetched once on first boot, and cached — after the
@@ -30,14 +31,17 @@ first boot of each kind, later machines skip the download entirely and come up
 in seconds. **Settings → Server → Enclosures** shows what your server can boot
 and every machine running right now.
 
-### The phone is set up differently
+An installed desktop image stays manageable from the same page: **Import**
+replaces it with a newer qcow2, and **Delete** removes it so you can install a
+fresh build.
 
-There is no image of ours for **Phone (VM)**, and that is not an omission. The
-other surfaces boot machines we can define; Android runs on Google's emulator,
-whose system images come from their SDK under their licence. Install Android
-Studio (or the command-line SDK tools), add a virtual device in its **Device
-Manager**, and start it — the Enclosures page then reports the mobile surface
-as available.
+### Mobile devices are set up differently
+
+There is no image of ours for Android or iOS, and that is not an omission.
+Android system images come from Google's SDK; iOS runtimes come from Xcode.
+For Android, install Android Studio (or the command-line SDK tools), add a
+virtual device in **Device Manager**, and start it. The Enclosures page then
+reports Android as available.
 
 It also tells you exactly which step you are missing — no SDK, no emulator, no
 virtual device, or a device that simply is not running — because those have
@@ -48,32 +52,66 @@ four different fixes and only one of them is a download. If you start
 export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
+For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
+runtime installed. Open **Settings → Server → Enclosures** and press
+**Install iOS automation bridge**. The server fetches the checksum-pinned
+WebDriverAgent artifact, verifies it, and installs it into the server-owned
+automation store. No simulator boots during setup.
+
 ## Open a machine
 
 Machines live as **tabs**, next to the chat and the diff — in a space or on a
 PR page, in the same `+` menu as Terminal and Browser:
 
 - **Computer (VM)** — a Linux desktop
-- **Browser (VM)** — a headless Chromium
-- **Phone (VM)** — an Android device
+- **Browser (VM)** — Chromium, Firefox or WebKit
+- **Android** — the running Android emulator
+- **iOS Simulator** — a disposable simulator created for this conversation
 
 Pick one and press **Start the machine**. The tab says which stage the boot is
 in ("Starting the microVM", "Waiting for the guest to come up") rather than
 just spinning.
 
-The tab is scoped to that conversation, and so is the agent. Open **Browser (VM)**
-in a conversation and an agent calling `browser_use` in the same conversation drives
-*that* machine — you are both looking at one screen rather than at two copies of it.
+The tab is scoped to the conversation, and so is the agent tool. A Browser
+tab and `browser_use`, Android and `mobile_use`, or iOS Simulator and
+`ios_use` address the same default machine. Additional UI slots are separate
+comparison machines; agent tools always use the default.
 
-The picture is sized to your panel: drag it wider and the guest changes resolution
-to match. It is a genuinely different stream from the one the agent sees — the
-agent gets small, cheap screenshots, you get a full-resolution live view, and
-neither is compromised for the other. Switch to another tab and the stream stops
-so a background machine costs you nothing.
+To build, install and start a Flutter app on Android:
 
-A rig tab does not start a machine by itself, including when the app restores your
-tabs at launch — three VMs booting because you opened the app would be an
-expensive surprise.
+```sh
+fvm flutter build apk --debug
+```
+
+Then call `mobile_use` with `install_apk` and
+`build/app/outputs/flutter-apk/app-debug.apk`, followed by `start_app` and the
+Android package name. `ui_dump`, screenshots and input drive the same device
+shown in the human tab. `stop_app`, `clear_app_data`, `uninstall_app`,
+`open_url`, and argv-shaped `shell` calls cover the rest of the development
+cycle without invoking a shell on the server host.
+
+To build, install and start a Flutter app on iOS Simulator:
+
+```sh
+fvm flutter build ios --simulator --debug
+/usr/bin/plutil -extract CFBundleIdentifier raw -o - \
+  build/ios/iphonesimulator/Runner.app/Info.plist
+```
+
+Then call `ios_use` with `install_app` and the `.app` directory, followed by
+`start_app` and the bundle identifier printed by `plutil`.
+The iOS tool also exposes `stop_app`, `uninstall_app`, `open_url`, and an
+argv-shaped `spawn` action for simulator-local diagnostics.
+
+Desktop and browser displays resize to the panel. iOS keeps the simulator's
+fixed point size and letterboxes it. Every surface still has two independent
+lanes: the agent gets small, cheap screenshots while you get the live view.
+Switching tabs stops the human stream so a background machine costs no display
+bandwidth.
+
+A rig tab does not start a machine by itself, including during layout restore.
+That rule prevents an app launch from unexpectedly booting VMs or creating
+simulator devices.
 
 ## Take the controls
 
@@ -126,8 +164,8 @@ the page's text selection would hijack ordinary clicks.
 
 :::note
 The Computer (VM) needs an image built after clipboard support landed. If you
-imported yours earlier, rebuild it with `scripts/rigs/build_image.sh` — the app
-says so explicitly rather than reporting a broken machine.
+imported yours earlier, rebuild it with `scripts/rigs/build_image.sh`, then use
+**Import** on the installed image to replace it.
 :::
 
 ## Terminals inside a rig
@@ -214,21 +252,21 @@ Rigs are meant to be temporary:
   least-recently-used one. A rig somebody is driving, watching, or has a terminal
   open in is never taken.
 
-When a rig closes, its disk is discarded. Carry anything you want to keep back
-first.
+When an enclosed rig closes, its disk is discarded. A mobile rig deletes the
+emulator device it owns. Carry anything you want to keep back first.
 
 ## What a rig can reach
 
-By default: nothing outbound. You grant hosts explicitly, and the guest's only
-route to the network is a gate that enforces that list. The credential broker
-uses the same list — the server will not hand a rig a token for a host it cannot
-reach.
+Enclosed terminal, browser and desktop rigs default to no outbound access. You
+grant hosts explicitly, and the guest's only route is a gate that enforces that
+list. The credential broker uses the same list.
 
 Two honest caveats:
 
-- **The mobile surface is less contained.** An Android emulator manages its own
-  networking, so its egress is not fully enforced the way the browser and desktop
-  surfaces are. Full enforcement needs a Linux worker.
+- **Mobile networking follows the host.** Android's emulator and Apple's
+  CoreSimulator are not behind the enclosure egress gate. Neither mobile tab
+  offers a network-bypass control because the host-managed network is already
+  unrestricted.
 - **Everything a rig reads is untrusted.** Page text, DOM, accessibility trees
   and view dumps come back to the agent wrapped in markers that say "this is data,
   not instructions". A page that tries to give your agent orders reads as a quoted

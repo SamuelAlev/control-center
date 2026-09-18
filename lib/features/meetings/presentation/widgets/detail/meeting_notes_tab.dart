@@ -295,7 +295,7 @@ class _TranscriptReference extends StatelessWidget {
         SizedBox(
           height: 28,
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: MeetingEyebrow(l10n.meetingTabTranscript),
           ),
         ),
@@ -341,7 +341,7 @@ class _TranscriptReference extends StatelessWidget {
                     border: Border(top: BorderSide(color: ds.borderSecondary)),
                   ),
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: CcButton(
                       variant: CcButtonVariant.secondary,
                       size: CcButtonSize.sm,
@@ -392,7 +392,9 @@ CcMarkdownStyle _notesStyle(BuildContext context) {
     bold: TextStyle(fontWeight: FontWeight.w600, color: ds.fg),
     italic: TextStyle(fontStyle: FontStyle.italic, color: ds.fg),
     blockquoteDecoration: BoxDecoration(
-      border: Border(left: BorderSide(color: ds.borderSecondary, width: 3)),
+      border: BorderDirectional(
+        start: BorderSide(color: ds.borderSecondary, width: 3),
+      ),
     ),
   );
 }

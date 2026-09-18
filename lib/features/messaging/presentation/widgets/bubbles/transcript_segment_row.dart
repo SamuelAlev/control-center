@@ -11,7 +11,7 @@ import 'package:control_center/shared/widgets/markdown/markdown_registries.dart'
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/transcript/tool_body.dart';
 import 'package:control_center/shared/widgets/transcript/tool_presentation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// One row in the transcript process timeline: a reasoning span, tool call,
@@ -65,7 +65,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
   @override
   Widget build(BuildContext context) {
     final tokens = resolveTokens(context);
-    final theme = Theme.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final seg = widget.segment;
     final canExpand = _hasExpandable(seg);
 
@@ -76,12 +76,12 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
         const SizedBox(width: 6),
         Expanded(
           child: Text.rich(
-            _summaryText(seg, tokens, theme),
+            _summaryText(seg, tokens, t),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        ..._trailing(seg, tokens, theme),
+        ..._trailing(seg, tokens, t),
         const SizedBox(width: 4),
         _StatusDot(segment: seg, pending: widget.pending, tokens: tokens),
       ],
@@ -102,11 +102,11 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
 
     return Container(
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: _categoryAccent(seg, tokens), width: 2),
+        border: BorderDirectional(
+          start: BorderSide(color: _categoryAccent(seg, tokens), width: 2),
         ),
       ),
-      padding: const EdgeInsets.only(left: 10),
+      padding: const EdgeInsetsDirectional.only(start: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -114,7 +114,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
           if (_open && canExpand)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: _detail(context, seg, tokens, theme),
+              child: _detail(context, seg, tokens, t),
             ),
         ],
       ),
@@ -124,7 +124,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
   List<Widget> _trailing(
     TranscriptSegment seg,
     DesignSystemTokens tokens,
-    ThemeData theme,
+    DesignSystemTokens t,
   ) {
     final out = <Widget>[];
     if (seg is ToolSegment) {
@@ -132,7 +132,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
       if (stats != null && (stats.adds > 0 || stats.dels > 0)) {
         out.add(
           Padding(
-            padding: const EdgeInsets.only(left: 6),
+            padding: const EdgeInsetsDirectional.only(start: 6),
             child: Text.rich(
               // A base style on the root span matters: an unstyled child
               // (e.g. a bare ' ' spacer) would inherit the ambient
@@ -166,7 +166,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     if (seg.durationMs != null) {
       out.add(
         Padding(
-          padding: const EdgeInsets.only(left: 6),
+          padding: const EdgeInsetsDirectional.only(start: 6),
           child: Text(
             _formatDuration(Duration(milliseconds: seg.durationMs!)),
             style: CcTypography.caption.copyWith(
@@ -183,7 +183,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
   TextSpan _summaryText(
     TranscriptSegment seg,
     DesignSystemTokens tokens,
-    ThemeData theme,
+    DesignSystemTokens t,
   ) {
     final l10n = AppLocalizations.of(context);
     final base = AppFonts.codeDynamic(
@@ -236,7 +236,7 @@ class _TranscriptSegmentRowState extends ConsumerState<TranscriptSegmentRow> {
     BuildContext context,
     TranscriptSegment seg,
     DesignSystemTokens tokens,
-    ThemeData theme,
+    DesignSystemTokens t,
   ) {
     if (seg is ToolSegment) {
       // The blob URL is signed per workspace, and `shared/` may not reach into

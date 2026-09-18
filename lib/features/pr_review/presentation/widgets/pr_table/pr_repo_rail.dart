@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/count_rail_item.dart';
 import 'package:flutter/widgets.dart';
 
@@ -29,17 +30,21 @@ class PrRepoRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final entry in entries)
-          CountRailItem(
-            label: entry.repo.fullName,
-            count: entry.count,
-            selected: entry.repo.id == selectedRepoId,
-            onPressed: () => onSelect(entry.repo.id),
-          ),
-      ],
+    return CcFluidHover(
+      itemCount: entries.length,
+      itemBuilder: (context, index) {
+        final entry = entries[index];
+        return CountRailItem(
+          label: entry.repo.fullName,
+          count: entry.count,
+          selected: entry.repo.id == selectedRepoId,
+          onPressed: () => onSelect(entry.repo.id),
+        );
+      },
+      layoutBuilder: (context, items) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: items,
+      ),
     );
   }
 }

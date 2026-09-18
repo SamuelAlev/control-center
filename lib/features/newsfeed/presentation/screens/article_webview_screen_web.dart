@@ -1,14 +1,16 @@
 // Web article reader: the browser IS the reader.
 //
-// The desktop reader embeds an ad-blocking webview (flutter_inappwebview + the
-// locally-cached filter lists) — inherently desktop-only. On web the browser
-// already renders pages, so this screen resolves the article over RPC and opens
-// it in a new tab, then offers to open it again. (The newsfeed list also opens
-// externally on web, so this route is mainly a deep-link fallback.)
+// The desktop reader embeds an ad-blocking webview (flutter_inappwebview +
+// filter lists the host caches under its data dir) — applying those rules in
+// a WebView is desktop-only. On web the browser already renders pages, so this
+// screen resolves the article over RPC and opens it in a new tab, then offers
+// to open it again. (The newsfeed list also opens externally on web, so this
+// route is mainly a deep-link fallback.)
 library;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +33,7 @@ class _ArticleWebviewScreenState extends ConsumerState<ArticleWebviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem;
     final article = ref.watch(articleByIdProvider(widget.articleId)).value;
     final url = article?.link ?? '';
@@ -48,7 +51,7 @@ class _ArticleWebviewScreenState extends ConsumerState<ArticleWebviewScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              article?.title ?? 'Article',
+              article?.title ?? l10n.articleNoun,
               style: TextStyle(
                 color: tokens?.textPrimary,
                 fontSize: 18,
@@ -58,14 +61,14 @@ class _ArticleWebviewScreenState extends ConsumerState<ArticleWebviewScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Opened in your browser.',
+              l10n.openedInYourBrowser,
               style: TextStyle(color: tokens?.textTertiary),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
             CcButton(
               onPressed: url.isEmpty ? null : () => openExternalUrl(url),
-              child: const Text('Open in browser'),
+              child: Text(l10n.openInBrowser),
             ),
           ],
         ),

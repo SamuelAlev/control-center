@@ -166,7 +166,7 @@ class _PillViewState extends ConsumerState<_PillView> {
                 fit: StackFit.expand,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 10, 0),
+                    padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 10, 0),
                     child: Row(
                       children: [
                         _PresenceDot(active: !_paused),
@@ -244,7 +244,7 @@ class _PillViewState extends ConsumerState<_PillView> {
                             child: ColoredBox(color: _t.hoverStrong),
                           ),
                           FractionallySizedBox(
-                            alignment: Alignment.centerLeft,
+                            alignment: AlignmentDirectional.centerStart,
                             widthFactor: progress,
                             child: ColoredBox(
                               color: _paused ? _t.muted : _t.accent,

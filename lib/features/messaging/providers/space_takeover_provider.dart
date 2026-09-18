@@ -136,9 +136,9 @@ Future<void> handBackSpaceTakeover(
 /// editor tab for a space — used right after a take-over begins so the
 /// human lands straight in the shared worktree editor (PRD 16 §8). The layout
 /// listens via `ref.listen` and calls its own `openEditor()`.
-class OpenCodeServerTabRequestNotifier extends Notifier<int> {
-  /// Creates an [OpenCodeServerTabRequestNotifier] scoped to [spaceId].
-  OpenCodeServerTabRequestNotifier(this.spaceId);
+class CodeServerTabRequestNotifier extends Notifier<int> {
+  /// Creates a [CodeServerTabRequestNotifier] scoped to [spaceId].
+  CodeServerTabRequestNotifier(this.spaceId);
 
   /// The space this request targets.
   final String spaceId;
@@ -151,9 +151,9 @@ class OpenCodeServerTabRequestNotifier extends Notifier<int> {
 }
 
 /// Per-space open-code-server-tab request counter.
-final openCodeServerTabRequestProvider =
-    NotifierProvider.family<OpenCodeServerTabRequestNotifier, int, String>(
-      OpenCodeServerTabRequestNotifier.new,
+final codeServerTabRequestProvider =
+    NotifierProvider.family<CodeServerTabRequestNotifier, int, String>(
+      CodeServerTabRequestNotifier.new,
     );
 
 /// Reactively keeps this client's `worktree` soft-claim (PRD 16 §14) in sync

@@ -38,9 +38,10 @@ SVgaUK2148/jd/aKIcXn3k4Hc17BYRgsoeMdfe3jrjOw4SknWBjC5g==
 ''';
 
 class _RecordingAdapter implements HttpClientAdapter {
-  _RecordingAdapter(this.responses);
+  _RecordingAdapter(this.responses, {this.statusByPath = const {}});
 
   final Map<String, Object> responses;
+  final Map<String, int> statusByPath;
   final List<String> paths = [];
   final List<String> authorizations = [];
 
@@ -53,12 +54,12 @@ class _RecordingAdapter implements HttpClientAdapter {
     paths.add(options.path);
     authorizations.add('${options.headers[HttpHeaders.authorizationHeader]}');
     final body = responses[options.path];
-    if (body == null) {
+    if (body == null && !statusByPath.containsKey(options.path)) {
       return ResponseBody.fromString('{}', 404);
     }
     return ResponseBody.fromString(
-      jsonEncode(body),
-      200,
+      jsonEncode(body ?? const {}),
+      statusByPath[options.path] ?? 200,
       headers: {
         HttpHeaders.contentTypeHeader: ['application/json'],
       },
@@ -103,9 +104,13 @@ void main() {
 
   ({GitHubAppClient client, _RecordingAdapter adapter}) build({
     Map<String, Object>? responses,
+    Map<String, int> statusByPath = const {},
     DateTime Function()? now,
   }) {
-    final adapter = _RecordingAdapter(responses ?? responsesWith());
+    final adapter = _RecordingAdapter(
+      responses ?? responsesWith(),
+      statusByPath: statusByPath,
+    );
     final dio = Dio(BaseOptions(baseUrl: 'https://api.github.com'))
       ..httpClientAdapter = adapter;
     return (
@@ -126,7 +131,9 @@ void main() {
       expect(parts, hasLength(3));
 
       Map<String, dynamic> decode(String segment) =>
-          jsonDecode(utf8.decode(base64Url.decode(base64Url.normalize(segment))))
+          jsonDecode(
+                utf8.decode(base64Url.decode(base64Url.normalize(segment))),
+              )
               as Map<String, dynamic>;
 
       expect(decode(parts[0])['alg'], 'RS256');
@@ -269,6 +276,86 @@ void main() {
         },
       );
       expect(await built.client.tokenForOwner('acme'), isNull);
+    });
+
+    test('a suspended installation is not minted', () async {
+      final built = build(
+        responses: {
+          '/app/installations': [
+            {
+              'id': 42,
+              'account': {'login': 'acme'},
+              'suspended_at': '2026-01-01T00:00:00Z',
+            },
+          ],
+          '/app/installations/42/access_tokens': {'token': 'ghs_token'},
+        },
+      );
+      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(await built.client.isOwnerSuspended('acme'), isTrue);
+      expect(await built.client.allInstallationsSuspended(), isTrue);
+      expect(
+        built.adapter.paths.where(
+          (p) => p == '/app/installations/42/access_tokens',
+        ),
+        isEmpty,
+        reason: 'minting a suspended installation only 403s',
+      );
+    });
+
+    test('a mint 403 for a suspended install is not retried', () async {
+      final built = build(
+        responses: {
+          '/app/installations': [
+            {
+              'id': 42,
+              'account': {'login': 'acme'},
+            },
+          ],
+          '/app/installations/42/access_tokens': {
+            'message': 'This installation has been suspended',
+            'status': 403,
+          },
+        },
+        statusByPath: const {'/app/installations/42/access_tokens': 403},
+      );
+      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(await built.client.tokenForOwner('acme'), isNull);
+      expect(
+        built.adapter.paths.where(
+          (p) => p == '/app/installations/42/access_tokens',
+        ),
+        hasLength(1),
+      );
+      expect(await built.client.isOwnerSuspended('acme'), isTrue);
+    });
+
+    test('a resumed installation is minted after the recheck window', () async {
+      var now = DateTime.utc(2026, 1, 1, 12);
+      final responses = <String, Object>{
+        '/app/installations': [
+          {
+            'id': 42,
+            'account': {'login': 'acme'},
+            'suspended_at': '2026-01-01T00:00:00Z',
+          },
+        ],
+        '/app/installations/42/access_tokens': {
+          'token': 'ghs_resumed',
+          'expires_at': now.add(const Duration(hours: 1)).toIso8601String(),
+        },
+      };
+      final built = build(responses: responses, now: () => now);
+      expect(await built.client.tokenForOwner('acme'), isNull);
+
+      responses['/app/installations'] = [
+        {
+          'id': 42,
+          'account': {'login': 'acme'},
+        },
+      ];
+      now = now.add(const Duration(minutes: 5));
+      expect(await built.client.tokenForOwner('acme'), 'ghs_resumed');
     });
   });
 }

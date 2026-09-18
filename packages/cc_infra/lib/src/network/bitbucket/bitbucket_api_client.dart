@@ -300,6 +300,26 @@ class BitbucketApiClient {
     return json == null ? null : BitbucketComment.fromJson(json);
   }
 
+  /// Replaces comment [commentId] on pull request [id]. [payload] is the
+  /// raw Bitbucket body (`content.raw`).
+  Future<BitbucketComment?> updatePullRequestComment(
+    String workspace,
+    String repo,
+    int id,
+    int commentId,
+    Map<String, dynamic> payload, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireCoordinate(workspace, repo);
+    final response = await _dio.put<Object?>(
+      '/repositories/$workspace/$repo/pullrequests/$id/comments/$commentId',
+      data: payload,
+      cancelToken: cancelToken,
+    );
+    final json = asJsonMap(response.data);
+    return json == null ? null : BitbucketComment.fromJson(json);
+  }
+
   /// Records the caller's approval of a pull request.
   Future<void> approvePullRequest(
     String workspace,

@@ -1,0 +1,456 @@
+{
+  "@@locale": "ms",
+
+  "appTitle": "Control Center",
+
+  "back": "Kembali",
+  "cancel": "Batal",
+  "retry": "Cuba semula",
+  "tryAgain": "Cuba lagi",
+  "settings": "Tetapan",
+  "refresh": "Muat semula",
+  "approve": "Luluskan",
+  "deny": "Tolak",
+  "continueLabel": "Teruskan",
+  "agentQuestionHeader": "Soalan untuk anda",
+  "agentQuestionAnsweredLabel": "Dijawab",
+  "agentQuestionSkip": "Langkau",
+  "agentQuestionSkippedLabel": "Dilangkau",
+  "agentQuestionFreeformHint": "Taip jawapan anda…",
+  "agentApprovalRequired": "Kelulusan diperlukan",
+  "approveAndRemember": "Luluskan selama 8 jam",
+  "decline": "Menolak",
+  "confirm": "Sahkan",
+  "send": "Hantar",
+  "close": "Tutup",
+  "expand": "Kembangkan",
+  "zoomIn": "Zum masuk",
+  "zoomOut": "Zum keluar",
+  "resetZoom": "Tetapkan semula zum",
+
+  "scanQrPrompt": "Imbas kod QR dari Mac anda untuk pasangkan telefon ini.",
+  "scanQrHelp": "Buka kamera dan halakannya ke QR yang dipaparkan dalam Control Center pada Mac anda. Telefon ini bersambung terus ke Mac anda melalui pautan peribadi.",
+  "connectingToMac": "Menyambung ke Mac anda…",
+  "connectingDetail": "Menjalin pautan langsung yang selamat.",
+  "identityChangedTitle": "Identiti pelayan berubah",
+  "identityChangedBody": "Pelayan ini tidak lagi sepadan dengan identiti yang disimpan semasa pemasangan. Itu boleh bermaksud pelayan dipasang semula — atau sesuatu memintas sambungan. Demi keselamatan, peranti ini tidak akan bersambung. Buang pasangan, kemudian imbas kod QR baharu dari Mac anda untuk pasangkan semula.",
+  "removePairing": "Buang pasangan",
+  "couldntConnect": "Tidak dapat disambungkan",
+  "pendingPairingTitle": "Sambung ke pelayan ini?",
+  "pendingPairingBody": "Satu pautan meminta Control Center untuk berpasangan dengan pelayan ini. Teruskan hanya jika anda sendiri yang memulakannya.",
+  "connect": "Sambung",
+
+  "failureNotPaired": "Belum berpasangan — imbas kod QR dari Mac anda",
+  "failureUnreachable": "Tidak dapat mencapai pelayan pada mana-mana laluan — pastikan ia berjalan, atau cuba rangkaian yang sama",
+  "failureIdentityChanged": "Identiti pelayan berubah — jika ia dipasang semula, pasangkan semula peranti ini",
+  "failureAuthRejected": "Pelayan menolak peranti ini — pasangkan semula dari Mac anda",
+  "failureUnknown": "Tidak dapat disambungkan — ketik untuk cuba semula",
+
+  "statusConnected": "Disambungkan",
+  "statusConnecting": "Menyambung",
+  "statusOffline": "Luar talian",
+  "statusIdentityMismatch": "Identiti tidak sepadan",
+  "statusNotPaired": "Belum berpasangan",
+  "statusConfirmPairing": "Sahkan pasangan",
+
+  "connectionFailed": "Sambungan gagal",
+  "identityMismatchBanner": "Identiti pelayan berubah — sambungan dihentikan. Pasangkan semula peranti ini untuk meneruskan.",
+  "tabInbox": "Peti masuk",
+  "tabTickets": "Tiket",
+  "tabChat": "Sembang",
+  "tabPrs": "PRs",
+  "tabCalendar": "Kalendar",
+  "tabNews": "Berita",
+  "tabWaitingCount": "{label}, {count} menunggu",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "updateAvailable": "Control Center baharu tersedia",
+
+  "appearance": "Penampilan",
+  "language": "Bahasa",
+  "device": "Peranti",
+  "themeSystem": "Sistem",
+  "themeLight": "Cerah",
+  "themeDark": "Gelap",
+  "languageSystem": "Sistem",
+  "disconnectTapAgain": "Ketik lagi untuk putuskan peranti ini dari Mac anda",
+  "disconnectDevice": "Putuskan peranti ini",
+  "disconnect": "Putuskan",
+
+  "chooseWorkspace": "Pilih ruang kerja",
+  "workspaces": "Ruang kerja",
+  "workspacesLoadFailed": "Tidak dapat memuatkan ruang kerja",
+  "noWorkspacesYet": "Belum ada ruang kerja",
+  "selectWorkspace": "Pilih {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "inboxLoadFailed": "Tidak dapat memuatkan peti masuk anda",
+  "allCaughtUp": "Anda sudah mengejar semuanya",
+  "inboxNoForgeAccount": "Tiada akaun forge disambungkan pada pelayan, jadi pull request belum dapat dikaitkan kepada anda.",
+  "inboxNothingWaiting": "Tiada yang disekat dan tiada pull request menunggu anda.",
+  "blocked": "Disekat",
+  "sectionNeedsYourReview": "Memerlukan semakan anda",
+  "sectionReturnedToYou": "Dipulangkan kepada anda",
+  "sectionApprovedAndReady": "Diluluskan dan sedia",
+  "sectionYourDrafts": "Draf anda",
+  "sectionWaitingForReviewers": "Menunggu penyemak",
+  "sectionMergingAndMerged": "Mencantum dan baru dicantum",
+  "sectionWaitingForAuthor": "Menunggu pengarang",
+  "waitingAgo": "menunggu {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": { "type": "String" }
+    }
+  },
+  "openConversation": "Buka perbualan",
+
+  "calendarLoadFailed": "Tidak dapat memuatkan kalendar anda",
+  "nothingScheduled": "Tiada jadual",
+  "calendarEmptyDescription": "Acara dari kalendar yang disambungkan muncul di sini.",
+  "agenda": "Agenda",
+  "syncCalendarsNow": "Segerak kalendar sekarang",
+  "event": "Acara",
+  "eventNotFound": "Acara tidak dijumpai",
+  "eventNotFoundDescription": "Ia mungkin di luar tetingkap agenda, atau telah dibuang di hulu.",
+  "joinMeeting": "Sertai mesyuarat",
+  "join": "Sertai",
+  "attendeesCount": "Hadirin ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "details": "Butiran",
+  "allDay": "Sepanjang hari",
+  "happeningNow": "Sedang berlangsung",
+  "inDuration": "Dalam {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "attendeeAccepted": "diterima",
+  "attendeeDeclined": "ditolak",
+  "attendeeMaybe": "mungkin",
+  "attendeeNoReply": "tiada balasan",
+  "organizer": "penganjur",
+  "calendarNoAccounts": "Tiada kalendar disambungkan untuk ruang kerja ini. Sambungkan satu dari apl desktop — log masuk menyimpan tokennya pada pelayan.",
+  "calendarReauthNeeded": "Akaun kalendar perlu disambungkan semula — apa yang anda lihat di bawah mungkin lapuk. Sambungkan semula dari apl desktop.",
+
+  "spacesLoadFailed": "Tidak dapat memuatkan ruang",
+  "noSpaces": "Tiada ruang",
+  "spacesEmptyDescription": "Ruang dalam ruang kerja ini muncul di sini.",
+  "thread": "Benang",
+  "agentWorking": "Ejen sedang bekerja",
+  "messagesLoadFailed": "Tidak dapat memuatkan mesej",
+  "noMessagesYet": "Belum ada mesej",
+  "noMessagesDescription": "Hantar mesej untuk memulakan perbualan.",
+  "agentResponding": "Ejen membalas",
+  "agentFinished": "Ejen selesai",
+  "attachmentsTooLarge": "{count, plural, =1{{names} terlalu besar untuk dihantar dari sini.} other{{names} terlalu besar untuk dihantar dari sini.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{{names} terlalu besar untuk dihantar melalui relay dari sini.} other{{names} terlalu besar untuk dihantar melalui relay dari sini.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentUploadFailed": "Tidak dapat memuat naik lampiran. Cuba lagi.",
+  "attachmentsLeftOut": "{count, plural, =1{1 lampiran tidak dapat dimuat naik dan dikecualikan.} other{{count} lampiran tidak dapat dimuat naik dan dikecualikan.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teammate": "Rakan sepasukan",
+  "agent": "Ejen",
+  "attachFile": "Lampirkan fail",
+  "messageHint": "Mesej",
+  "removeAttachment": "Buang {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "articlesLoadFailed": "Tidak dapat memuatkan artikel",
+  "noArticles": "Tiada artikel",
+  "articlesEmptyDescription": "Artikel baharu muncul di sini apabila suapan dikemas kini.",
+  "unread": "Belum dibaca",
+  "allFeeds": "Semua suapan",
+  "save": "Simpan",
+  "unsave": "Nyahsimpan",
+  "readFullArticle": "Baca artikel penuh",
+
+  "ticketsLoadFailed": "Tidak dapat memuatkan tiket",
+  "noTickets": "Tiada tiket",
+  "ticketsEmptyDescription": "Tiket dalam ruang kerja ini muncul di sini.",
+  "all": "Semua",
+  "ticket": "Tiket",
+  "ticketLoadFailed": "Tidak dapat memuatkan tiket",
+  "assignedTo": "Ditugaskan kepada {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openInBrowser": "Buka dalam penyemak imbas",
+  "status": "Status",
+  "assign": "Tugaskan",
+  "reassign": "Tugaskan semula",
+  "noAgents": "Tiada ejen",
+  "noAgentsDescription": "Tugaskan ejen dari ruang kerja ini.",
+  "statusOpen": "Terbuka",
+  "statusInProgress": "Sedang berjalan",
+  "statusBlocked": "Disekat",
+  "statusInReview": "Dalam semakan",
+  "statusDone": "Selesai",
+  "statusBacklog": "Backlog",
+
+  "lensNeedsMe": "Memerlukan saya",
+  "lensMine": "Milik saya",
+  "prsLoadFailed": "Tidak dapat memuatkan pull request",
+  "noOpenPullRequests": "Tiada pull request terbuka",
+  "nothingWaitingOnReview": "Tiada yang menunggu semakan anda",
+  "noOwnOpenPullRequests": "Anda tiada pull request terbuka",
+  "nothingBlocked": "Tiada yang disekat",
+  "prsEmptyDescription": "Pull request merentasi repo ruang kerja ini muncul di sini.",
+  "refreshPullRequests": "Muat semula pull request",
+  "noForgeConnected": "Tiada forge disambungkan pada pelayan, jadi pull request tidak dapat diambil. Sambungkan satu dari apl desktop.",
+  "reposUnreadable": "{count, plural, =1{1 repo tidak dapat dibaca.} other{{count} repo tidak dapat dibaca.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reposNotReadable": "Tidak dapat dibaca: {names}",
+  "installationSuspendedTitle": "Pemasangan GitHub App digantung",
+  "installationSuspendedBody": "Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub, atau sambungkan token yang mempunyai akses.",
+  "installationSuspendedNotice": "Pemasangan GitHub App digantung. Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub, atau sambungkan token yang mempunyai akses.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+
+  "draft": "Draf",
+  "merged": "Dicantum",
+  "closed": "Ditutup",
+  "open": "Terbuka",
+  "approved": "Diluluskan",
+  "changesRequested": "Perubahan diminta",
+  "reviewRequired": "Semakan diperlukan",
+  "checksPassing": "Semakan lulus",
+  "checksFailing": "Semakan gagal",
+  "checksRunning": "Semakan berjalan",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Tidak dapat memuatkan pull request ini",
+  "openOnForge": "Buka di forge",
+  "requestChangesNeedsComment": "Tambah komen yang menerangkan apa yang perlu diubah.",
+  "conversation": "Perbualan",
+  "files": "Fail",
+  "checks": "Semakan",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 fail} other{{count} fail}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 commit} other{{count} commit}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "conflicts": "Konflik",
+  "reviewers": "Penyemak",
+  "noDescriptionNoComments": "Belum ada perihalan mahupun komen.",
+  "noChangedFiles": "Tiada fail yang diubah.",
+  "noChecksReported": "Tiada semakan dilaporkan untuk commit head.",
+  "reviewCommentHint": "Tulis komen semakan…",
+  "comment": "Komen",
+  "commentPosted": "Komen disiarkan",
+  "request": "Minta",
+  "squashAndMerge": "Squash dan cantum",
+  "noActionsAvailable": "{status} — tiada tindakan tersedia.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "reviewApproved": "diluluskan",
+  "reviewRequestedChanges": "meminta perubahan",
+  "reviewCommented": "disemak",
+  "reviewPending": "tertunda",
+  "unknownAuthor": "tidak diketahui",
+  "hideDiffFor": "Sembunyikan diff untuk {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "showDiffFor": "Tunjukkan diff untuk {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "checkRunning": "berjalan",
+  "checkPassed": "lulus",
+  "checkFailed": "gagal",
+  "checkCancelled": "dibatalkan",
+  "checkSkipped": "dilangkau",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+
+  "noTextDiff": "Tiada diff teks untuk fail ini — ia binari, atau terlalu besar untuk forge mengembalikannya.",
+  "showRemainingLines": "{count, plural, =1{Tunjukkan baris yang tinggal} other{Tunjukkan {count} baris yang tinggal}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 baris tidak berubah} other{{count} baris tidak berubah}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "jumpToLatest": "Lompat ke terkini",
+  "streaming": "Menstrim",
+
+  "working": "Bekerja",
+  "input": "Input",
+  "output": "Output",
+
+  "now": "sekarang",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "today": "Hari ini",
+  "tomorrow": "Esok",
+  "yesterday": "Semalam",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  }
+}

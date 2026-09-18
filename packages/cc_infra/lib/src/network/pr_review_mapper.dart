@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_stack.dart';
@@ -35,6 +36,19 @@ PrUser _toPrUser(GitHubUser? u) {
 
   return PrUser(login: u.login, avatarUrl: u.avatarUrl, name: u.name);
 }
+
+/// Strips a leading `#` so GitHub (no hash) and GitLab (`#RRGGBB`) land on
+/// the same 6-digit hex [PrLabel.color] the chip parser accepts.
+String _labelColor(String raw) {
+  final trimmed = raw.trim();
+  return trimmed.startsWith('#') ? trimmed.substring(1) : trimmed;
+}
+
+PrLabel _toPrLabel({
+  required String name,
+  String color = '',
+  String description = '',
+}) => PrLabel(name: name, color: _labelColor(color), description: description);
 
 /// Converts a [GitHubReactionSummary] to a list of [ReactionGroup]s.
 List<ReactionGroup> reactionGroupsFromSummary(GitHubReactionSummary? s) {
@@ -157,6 +171,11 @@ PullRequest pullRequestFromGitHub(
         .map(_toPrUser)
         .toList(growable: false),
     assignees: gh.assignees.map(_toPrUser).toList(growable: false),
+    labels: [
+      for (final l in gh.labels)
+        if (l.name.isNotEmpty)
+          _toPrLabel(name: l.name, color: l.color, description: l.description),
+    ],
     mergedAt: gh.mergedAt,
     reviewedByMe: reviewedByMe,
     reactions: reactionGroupsFromSummary(gh.reactions),
@@ -268,6 +287,7 @@ PullRequest pullRequestFromGraphQlNode(
     headRef: node['headRefName'] as String? ?? '',
     requestedReviewers: requestedReviewers,
     requestedTeamSlugs: requestedTeamSlugs,
+    labels: _labelsFromGraphQl(node),
     mergedAt: DateTime.tryParse(node['mergedAt'] as String? ?? ''),
     reviewedByMe: _graphQlNodeReviewedByViewer(node, viewerLogin),
     changedFiles: (node['changedFiles'] as num?)?.toInt() ?? 0,
@@ -306,6 +326,23 @@ bool _graphQlNodeReviewedByViewer(
     }
   }
   return false;
+}
+
+List<PrLabel> _labelsFromGraphQl(Map<String, dynamic> node) {
+  final labels = node['labels'] as Map<String, dynamic>?;
+  final nodes = labels?['nodes'] as List?;
+  if (nodes == null) {
+    return const [];
+  }
+  return [
+    for (final n in nodes.whereType<Map<String, dynamic>>())
+      if ((n['name'] as String? ?? '').isNotEmpty)
+        _toPrLabel(
+          name: n['name'] as String,
+          color: n['color'] as String? ?? '',
+          description: n['description'] as String? ?? '',
+        ),
+  ];
 }
 
 /// Maps one node from the dashboard's review-requested GraphQL `search` into a
@@ -602,10 +639,29 @@ PrTimelineEvent? prTimelineEventFromGitHub(GitHubTimelineEvent e) {
   final kind = switch (e.event) {
     'review_requested' => PrTimelineEventKind.reviewRequested,
     'review_request_removed' => PrTimelineEventKind.reviewRequestRemoved,
+    'labeled' => PrTimelineEventKind.labeled,
+    'unlabeled' => PrTimelineEventKind.unlabeled,
     _ => null,
   };
   if (kind == null) {
     return null;
+  }
+  if (kind == PrTimelineEventKind.labeled ||
+      kind == PrTimelineEventKind.unlabeled) {
+    final label = e.label;
+    if (label == null || label.name.isEmpty) {
+      return null;
+    }
+    return PrTimelineEvent(
+      kind: kind,
+      actor: e.actor == null ? null : _toPrUser(e.actor),
+      label: _toPrLabel(
+        name: label.name,
+        color: label.color,
+        description: label.description,
+      ),
+      createdAt: e.createdAt,
+    );
   }
   final reviewer = e.requestedReviewer;
   return PrTimelineEvent(

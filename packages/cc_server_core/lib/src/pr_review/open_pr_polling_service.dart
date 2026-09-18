@@ -16,329 +16,10 @@ import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/database/daos/cache_dao.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
+import 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
 
-/// One repo's enriched open-PR group (checks already overlaid), matching the
-/// catalog's `OpenPrListFetcher` result shape.
-typedef OpenPrGroup = ({Repo repo, List<PullRequest> prs, bool hasMore});
-
-/// One fetch's result: the enriched groups plus the ids of the repos GitHub
-/// actually answered for.
-///
-/// The two are NOT the same set — a repo with no open pull requests resolves
-/// successfully and contributes no group — and the difference is load-bearing.
-/// The batch query tolerates partial failure (an errored repo alias comes back
-/// null and is skipped), so "no groups" is ambiguous on its own: it means
-/// either an empty queue or a GitHub that answered for nothing. Reporting the
-/// resolved ids lets the poller tell those apart instead of persisting an
-/// outage as an empty inbox.
-typedef OpenPrFetchResult = ({
-  List<OpenPrGroup> groups,
-  Set<String> resolvedRepoIds,
-});
-
-/// One PR's slice of the checks-pass enrichment: the raw check-rollup state
-/// string plus the raw `reviewDecision` string (both null when absent).
-typedef PrStatusOverlay = ({String? checksRollup, String? reviewDecision});
-
-/// The GitHub fetch surface the open-PR poller runs on. Kept as a thin port so
-/// tests drive the poller with an in-memory fake; the production adapter wraps
-/// the server's gh-authenticated `GitHubApiClient`.
-abstract interface class OpenPrFetchPort {
-  /// Conditional (ETag) probe of [repo]'s open-PR list. `changed: false` means
-  /// GitHub answered 304 — free against the rate limit — and the list is
-  /// byte-identical since [etag].
-  Future<({bool changed, String? etag})> probeRepo(Repo repo, String? etag);
-
-  /// The full enriched open-PR groups (first page per repo, checks overlaid),
-  /// with the ids of the repos GitHub actually answered for.
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos);
-
-  /// The check-rollup + review-decision overlay per repo id, per PR number,
-  /// for the first page of open PRs — the cheap status-only pass between full
-  /// fetches.
-  Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(List<Repo> repos);
-
-  /// Whether a PR that vanished from the open list was merged (true), closed
-  /// unmerged (false), or couldn't be resolved (null).
-  Future<bool?> wasMerged(Repo repo, int prNumber);
-
-  /// The forge's own mergeable verdict for ONE pull request.
-  ///
-  /// Deliberately not part of the list query: `mergeStateStatus` forces the
-  /// forge to compute mergeability per PR and caused HTTP 504s across a
-  /// 20-repo batch. This is the targeted escape hatch, called only on a
-  /// readiness transition and capped per pass, so "ready to merge" is
-  /// confirmed by the forge rather than guessed from a check rollup.
-  ///
-  /// [PrMergeableState.unknown] is a legitimate answer (the forge computes it
-  /// lazily too) and means "not confirmed" — never "not mergeable".
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber);
-
-  /// The login of the most recent approving review, or null when it cannot be
-  /// determined. Used only to put a name on an approval whose reviewer could
-  /// not be read off the requested-reviewer diff.
-  Future<String?> latestApprover(Repo repo, int prNumber);
-
-  /// The first failing check on a pull request, so a "checks failed"
-  /// notification can name it. Null when none can be read — the rollup already
-  /// said CI failed, so the name is an improvement on the message, never a
-  /// precondition for sending it.
-  Future<({String name, String? url})?> firstFailingCheck(
-    Repo repo,
-    int prNumber,
-  );
-}
-
-/// Production [OpenPrFetchPort] over the server's gh-authenticated
-/// [GitHubApiClient]. The group fetch mirrors what `pr.listOpenForWorkspace`
-/// serves: the batched GraphQL list query plus a best-effort checks overlay.
-///
-/// The client is resolved **per repo owner**, not held once. The server's
-/// no-caller GitHub credential is a token for whichever app installation
-/// answered first, and GitHub answers such a token with 404 for every repo
-/// under an owner the app is not installed on — so a workspace mixing owners
-/// must ask about each owner's repos with a credential that covers *that*
-/// owner. Batch calls are grouped by owner accordingly, and one owner's
-/// failure is isolated to its own repos (they resolve nothing and keep their
-/// previous snapshot entries) rather than emptying the sweep.
-class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
-  /// Creates a [GitHubOpenPrFetchAdapter] resolving a client per repo owner.
-  GitHubOpenPrFetchAdapter(this._clientForOwner);
-
-  final GitHubApiClient Function(String owner) _clientForOwner;
-
-  static List<({String owner, String name})> _specs(List<Repo> repos) => [
-    for (final r in repos) (owner: r.remoteOwner, name: r.remoteName),
-  ];
-
-  /// Groups [repos] by owner (case-insensitively — GitHub logins are), keeping
-  /// each group's original casing for the API calls.
-  static Map<String, List<Repo>> _byOwner(List<Repo> repos) {
-    final grouped = <String, List<Repo>>{};
-    for (final repo in repos) {
-      (grouped[repo.remoteOwner.toLowerCase()] ??= []).add(repo);
-    }
-    return grouped;
-  }
-
-  @override
-  Future<({bool changed, String? etag})> probeRepo(
-    Repo repo,
-    String? etag,
-  ) async {
-    final probe = await _clientForOwner(
-      repo.remoteOwner,
-    ).pr.probeOpenPullRequests(repo.remoteOwner, repo.remoteName, etag: etag);
-    return (changed: probe.changed, etag: probe.etag);
-  }
-
-  @override
-  Future<OpenPrFetchResult> fetchGroups(List<Repo> repos) async {
-    final groups = <OpenPrGroup>[];
-    final resolved = <String>{};
-
-    await Future.wait(
-      _byOwner(repos).values.map((ownerRepos) async {
-        final client = _clientForOwner(ownerRepos.first.remoteOwner);
-        final specs = _specs(ownerRepos);
-        final GitHubPrBatchResult batch;
-        try {
-          batch = await client.graphql.fetchOpenPullRequestsBatch(specs);
-        } on Object catch (e) {
-          // Contribute nothing for this owner: its repos stay unresolved, so
-          // the poller keeps their previous entries. Every other owner's
-          // results still land.
-          CcHostLog.warning(
-            'open_pr_poll: GitHub fetch failed for '
-            '${ownerRepos.first.remoteOwner} (${ownerRepos.length} repo(s)): '
-            '$e',
-          );
-          return;
-        }
-        var checks = <int, Map<int, GitHubPrStatusOverlay>>{};
-        try {
-          checks = await client.graphql.fetchOpenPullRequestsChecks(specs);
-        } on Object catch (e) {
-          // Checks are best-effort for RENDERING — the rows still list. They
-          // are not best-effort for NOTIFYING: an unread rollup decodes to the
-          // same `none` as "this PR has no checks", so the poller carries the
-          // previous value forward rather than persisting the gap (see
-          // `_carryEnrichmentForward`). Logged because this failure used to be
-          // completely silent while being the trigger for repeat
-          // notifications.
-          CcHostLog.warning(
-            'open_pr_poll: checks overlay failed for '
-            '${ownerRepos.first.remoteOwner} (${ownerRepos.length} repo(s)) — '
-            'keeping the previous checks/review state: $e',
-          );
-        }
-        for (var i = 0; i < ownerRepos.length; i++) {
-          final repo = ownerRepos[i];
-          final repoResult = batch.byIndex[i];
-          if (repoResult == null) {
-            continue;
-          }
-          // Present in the batch = GitHub answered for this repo. Recorded
-          // BEFORE the empty-group skip below, so a repo with a genuinely
-          // empty queue still counts as resolved.
-          resolved.add(repo.id);
-          final repoChecks = checks[i];
-          final prs = <PullRequest>[];
-          for (final node in repoResult.nodes) {
-            final number = (node['number'] as num?)?.toInt() ?? 0;
-            final title = node['title'] as String? ?? '';
-            if (number <= 0 || title.isEmpty) {
-              continue;
-            }
-            var pr = pullRequestFromGraphQlNode(
-              node,
-              repoFullName: repo.fullName,
-            );
-            final overlay = repoChecks?[pr.number];
-            if (overlay != null) {
-              pr = pr.copyWith(
-                checksStatus: prChecksStatusFromRollup(overlay.checksRollup),
-                reviewDecision: PrReviewDecision.fromString(
-                  overlay.reviewDecision,
-                ),
-              );
-            }
-            prs.add(pr);
-          }
-          if (prs.isEmpty) {
-            continue;
-          }
-          groups.add((repo: repo, prs: prs, hasMore: repoResult.hasMore));
-        }
-      }),
-    );
-
-    return (groups: groups, resolvedRepoIds: resolved);
-  }
-
-  @override
-  Future<Map<String, Map<int, PrStatusOverlay>>> fetchChecks(
-    List<Repo> repos,
-  ) async {
-    final merged = <String, Map<int, PrStatusOverlay>>{};
-
-    await Future.wait(
-      _byOwner(repos).values.map((ownerRepos) async {
-        final Map<int, Map<int, GitHubPrStatusOverlay>> byIndex;
-        try {
-          byIndex = await _clientForOwner(
-            ownerRepos.first.remoteOwner,
-          ).graphql.fetchOpenPullRequestsChecks(_specs(ownerRepos));
-        } on Object catch (e) {
-          CcHostLog.warning(
-            'open_pr_poll: GitHub checks pass failed for '
-            '${ownerRepos.first.remoteOwner}: $e',
-          );
-          return;
-        }
-        for (var i = 0; i < ownerRepos.length; i++) {
-          final overlays = byIndex[i];
-          if (overlays == null) {
-            continue;
-          }
-          merged[ownerRepos[i].id] = {
-            for (final e in overlays.entries)
-              e.key: (
-                checksRollup: e.value.checksRollup,
-                reviewDecision: e.value.reviewDecision,
-              ),
-          };
-        }
-      }),
-    );
-
-    return merged;
-  }
-
-  @override
-  Future<bool?> wasMerged(Repo repo, int prNumber) async {
-    try {
-      final gh = await _clientForOwner(
-        repo.remoteOwner,
-      ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
-      if (gh == null) {
-        return null;
-      }
-      return gh.mergedAt != null;
-    } on Object {
-      return null;
-    }
-  }
-
-  @override
-  Future<PrMergeableState> mergeState(Repo repo, int prNumber) async {
-    try {
-      final gh = await _clientForOwner(
-        repo.remoteOwner,
-      ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
-      if (gh == null || gh.mergeableState.isEmpty) {
-        return PrMergeableState.unknown;
-      }
-      return PrMergeableState.fromString(gh.mergeableState);
-    } on Object {
-      // Not confirmed. The caller leaves the snapshot alone, so the edge is
-      // re-attempted next sweep rather than announced on a failed read.
-      return PrMergeableState.unknown;
-    }
-  }
-
-  @override
-  Future<String?> latestApprover(Repo repo, int prNumber) async {
-    try {
-      final reviews = await _clientForOwner(
-        repo.remoteOwner,
-      ).pr.listPullRequestReviews(repo.remoteOwner, repo.remoteName, prNumber);
-      GitHubReview? newest;
-      for (final review in reviews) {
-        if (review.state != GitHubReviewState.approved) {
-          continue;
-        }
-        final at = review.submittedAt;
-        final best = newest?.submittedAt;
-        if (newest == null ||
-            (at != null && (best == null || at.isAfter(best)))) {
-          newest = review;
-        }
-      }
-      final login = newest?.user?.login;
-      return (login == null || login.isEmpty) ? null : login;
-    } on Object {
-      return null;
-    }
-  }
-
-  @override
-  Future<({String name, String? url})?> firstFailingCheck(
-    Repo repo,
-    int prNumber,
-  ) async {
-    try {
-      final gh = await _clientForOwner(
-        repo.remoteOwner,
-      ).pr.getPullRequest(repo.remoteOwner, repo.remoteName, prNumber);
-      final sha = gh?.headSha;
-      if (sha == null || sha.isEmpty) {
-        return null;
-      }
-      final runs = await _clientForOwner(
-        repo.remoteOwner,
-      ).pr.listCheckRuns(repo.remoteOwner, repo.remoteName, sha);
-      for (final run in runs) {
-        if (run.isFailing) {
-          return (name: run.name, url: run.htmlUrl);
-        }
-      }
-      return null;
-    } on Object {
-      return null;
-    }
-  }
-}
+export 'package:cc_server_core/src/pr_review/github_open_pr_fetch_adapter.dart';
+export 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
 
 /// One repo's access bookkeeping: consecutive access-denied probe failures
 /// and the parked ("inaccessible") state they escalate into.
@@ -356,7 +37,8 @@ class _RepoAccessState {
   /// installs the app there or fixes the token.
   bool parked = false;
 
-  /// The `NetworkException.code` that parked it (`not_found` / `auth_error`).
+  /// The `NetworkException.code` that parked it (`not_found` /
+  /// `auth_error` / `installation_suspended`).
   String reason = '';
 
   /// When the repo was parked.
@@ -974,7 +656,7 @@ class OpenPrPollingService {
       return null;
     }
     return switch (error.code) {
-      'not_found' || 'auth_error' => error.code,
+      'not_found' || 'auth_error' || 'installation_suspended' => error.code,
       _ => null,
     };
   }
@@ -1001,7 +683,10 @@ class OpenPrPollingService {
       ..repoFullName = repo.fullName
       ..consecutiveFailures += 1
       ..reason = reason;
-    if (access.parked || access.consecutiveFailures < accessFailureThreshold) {
+    final threshold = reason == 'installation_suspended'
+        ? 1
+        : accessFailureThreshold;
+    if (access.parked || access.consecutiveFailures < threshold) {
       return false;
     }
     access
@@ -1011,8 +696,9 @@ class OpenPrPollingService {
     CcHostLog.warning(
       'open_pr_poll: parking ${repo.fullName} — not accessible ($reason) '
       'after ${access.consecutiveFailures} consecutive probes; retrying every '
-      '${inaccessibleRetryInterval.inMinutes}m. If the repo lives in an org, '
-      "the server's GitHub App or token may not have access there.",
+      '${inaccessibleRetryInterval.inMinutes}m. If the GitHub App installation '
+      'is suspended, resume it or connect a token; otherwise install the app '
+      'on the org or use a token that can see the repo.',
     );
     return true;
   }

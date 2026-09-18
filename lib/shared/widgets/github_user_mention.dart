@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/github_mention_avatar_scope.dart';
 import 'package:control_center/shared/widgets/github_team_avatar.dart';
+import 'package:control_center/shared/widgets/github_team_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:flutter/widgets.dart';
@@ -35,7 +36,7 @@ class GitHubUserMention extends StatelessWidget {
   /// team glyph (teams) — no network.
   final String avatarUrl;
 
-  /// Team mentions use the team logo (or glyph) and are not profile links.
+  /// Team mentions use the team logo and link when [login] is `org/slug`.
   final bool isTeam;
 
   /// Name style; defaults to semibold caption on `textPrimary`.
@@ -62,8 +63,14 @@ class GitHubUserMention extends StatelessWidget {
           height: 1,
         );
 
+    final teamParts = isTeam ? login.split('/') : const <String>[];
+    final canOpenTeam =
+        isTeam &&
+        teamParts.length == 2 &&
+        teamParts.every((part) => part.trim().isNotEmpty);
     final canOpenProfile =
-        !isTeam && login.isNotEmpty && !isGitHubBotLogin(login);
+        (!isTeam && login.isNotEmpty && !isGitHubBotLogin(login)) ||
+        canOpenTeam;
 
     Widget chip() {
       return Row(
@@ -95,48 +102,55 @@ class GitHubUserMention extends StatelessWidget {
       return chip();
     }
 
-    return GitHubUserHoverTarget(
-      login: login,
-      // A mention is a link, so it reports state the way every other control
-      // does: a ghost-button wash on hover, the stronger wash on press, and a
-      // keyboard focus ring — [CcTappable] is the design system's one
-      // interaction primitive, and hand-rolling MouseRegion + GestureDetector
-      // here is what left the chip with a click cursor and no visual feedback.
-      child: CcTappable(
-        onPressed: () => _openProfile(context),
-        semanticLabel: displayLogin,
-        borderRadius: AppRadii.brSm,
-        builder: (context, states) {
-          final pressed = states.contains(WidgetState.pressed);
-          final hovered = states.contains(WidgetState.hovered);
-          return AnimatedContainer(
-            duration: CcMotion.resolve(context, CcMotion.fast),
-            curve: CcMotion.standard,
-            // Horizontal padding only. This chip rides in a `WidgetSpan`
-            // inside a paragraph and its height is pinned to the avatar's
-            // 16px so it cannot grow the line box — vertical padding here
-            // would re-space every line of a comment that mentions someone.
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            decoration: BoxDecoration(
-              // Alpha-0 at rest rather than transparent, so the animation
-              // lerps only alpha and never flashes through grey.
-              color: pressed
-                  ? t.hoverStrong
-                  : hovered
-                  ? t.hover
-                  : t.hover.withValues(alpha: 0),
-              borderRadius: AppRadii.brSm,
-            ),
-            child: chip(),
-          );
-        },
-      ),
+    // A mention is a link, so it reports state through the design system's
+    // shared hover, press and keyboard-focus treatment.
+    final tappable = CcTappable(
+      onPressed: () => _openProfile(context),
+      semanticLabel: displayLogin,
+      borderRadius: AppRadii.brSm,
+      builder: (context, states) {
+        final pressed = states.contains(WidgetState.pressed);
+        final hovered = states.contains(WidgetState.hovered);
+        return AnimatedContainer(
+          duration: CcMotion.resolve(context, CcMotion.fast),
+          curve: CcMotion.standard,
+          // This chip rides in a WidgetSpan. Horizontal padding keeps the
+          // paragraph's line height fixed to the 16px avatar.
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: pressed
+                ? t.hoverStrong
+                : hovered
+                ? t.hover
+                : t.hover.withValues(alpha: 0),
+            borderRadius: AppRadii.brSm,
+          ),
+          child: chip(),
+        );
+      },
     );
+    if (canOpenTeam) {
+      return GitHubTeamHoverTarget(
+        organization: teamParts.first,
+        slug: teamParts.last,
+        child: tappable,
+      );
+    }
+    return GitHubUserHoverTarget(login: login, child: tappable);
   }
 
   void _openProfile(BuildContext context) {
     final workspaceId = context.currentWorkspaceId;
     if (workspaceId == null) {
+      return;
+    }
+    if (isTeam) {
+      final parts = login.split('/');
+      if (parts.length == 2) {
+        GoRouter.of(
+          context,
+        ).go(teamProfileRoute(workspaceId, parts.first, parts.last));
+      }
       return;
     }
     GoRouter.of(context).go(userProfileRoute(workspaceId, login));

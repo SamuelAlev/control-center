@@ -85,7 +85,11 @@ class AgentQuestionRequest {
 /// The user's answer to an [AgentQuestionRequest].
 class AgentQuestionAnswer {
   /// Creates an [AgentQuestionAnswer].
-  const AgentQuestionAnswer({this.selectedLabels = const [], this.freeText});
+  const AgentQuestionAnswer({
+    this.selectedLabels = const [],
+    this.freeText,
+    this.skipped = false,
+  });
 
   /// Builds an [AgentQuestionAnswer] from persisted JSON.
   factory AgentQuestionAnswer.fromJson(Map<String, dynamic> json) {
@@ -95,6 +99,7 @@ class AgentQuestionAnswer {
           ? raw.map((e) => '$e').toList(growable: false)
           : const [],
       freeText: json['freeText'] as String?,
+      skipped: json['skipped'] == true,
     );
   }
 
@@ -104,18 +109,30 @@ class AgentQuestionAnswer {
   /// Optional free-text answer the user typed.
   final String? freeText;
 
+  /// Whether the user skipped the question rather than answering.
+  ///
+  /// Distinct from [isEmpty]: skip is a deliberate "you pick" and the agent
+  /// should proceed on a stated assumption, not treat it as a blank form.
+  final bool skipped;
+
   /// Whether the user supplied nothing.
   bool get isEmpty =>
-      selectedLabels.isEmpty && (freeText == null || freeText!.trim().isEmpty);
+      !skipped &&
+      selectedLabels.isEmpty &&
+      (freeText == null || freeText!.trim().isEmpty);
 
   /// Serializes to JSON for message metadata.
   Map<String, dynamic> toJson() => {
     'selected': selectedLabels,
     if (freeText != null && freeText!.isNotEmpty) 'freeText': freeText,
+    if (skipped) 'skipped': true,
   };
 
   /// A concise, agent-readable rendering of the answer.
   String toPromptString() {
+    if (skipped) {
+      return 'Skipped';
+    }
     final parts = <String>[];
     if (selectedLabels.isNotEmpty) {
       parts.add('Selected: ${selectedLabels.join(', ')}');

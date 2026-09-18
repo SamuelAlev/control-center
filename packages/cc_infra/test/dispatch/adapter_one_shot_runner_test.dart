@@ -1,17 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:test/test.dart';
 
-/// Exercises [AdapterOneShotRunner]'s four transports with a fake launcher, so
-/// no CLI has to exist on the host. Covers: the harness lane's credential
-/// resolution, the `claude -p` argv and piped prompt, the structured CLI's
-/// deliberate lack of `--mode json`, the ACP handshake, a non-zero exit, and
-/// the "not installed / unknown adapter" quiet skips.
+/// Exercises [AdapterOneShotRunner]'s shipped transports with a fake launcher,
+/// so no CLI has to exist on the host. Covers: the harness lane's credential
+/// resolution, the `claude -p` argv and piped prompt, a synthetic ACP
+/// handshake (the ACP protocol path), a non-zero exit, and the "not installed /
+/// unknown adapter" quiet skips.
 void main() {
   late _FakeCredStore creds;
   late _FakeFactory factory;
@@ -24,13 +25,15 @@ void main() {
   });
 
   AdapterOneShotRunner runner({
-    Set<String> installed = const {'claude', 'pi', 'opencode'},
+    Set<String> installed = const {'claude'},
+    List<Adapter> extra = const [],
   }) => AdapterOneShotRunner(
     credentials: creds,
     factory: factory,
     launcher: launcher.launch,
     resolveBinary: (cli) async =>
         installed.contains(cli) ? '/usr/local/bin/$cli' : null,
+    adapters: [...predefinedAdapters, ...extra],
   );
 
   Future<String?> complete(String adapterId, {String? modelId}) =>
@@ -126,31 +129,35 @@ void main() {
     });
   });
 
-  group('structuredCli transport', () {
-    test('pipes the prompt and does NOT ask for --mode json', () async {
-      launcher.stdoutLines = ['Installing Python packages'];
-
-      final out = await complete('pi-dev', modelId: 'openai/gpt-4o-mini');
-
-      expect(out?.trim(), 'Installing Python packages');
-      final spawn = launcher.spawns.single;
-      expect(spawn.executable, '/usr/local/bin/pi');
-      expect(spawn.arguments, ['--model', 'openai/gpt-4o-mini']);
-      expect(spawn.arguments, isNot(contains('--mode')));
-    });
-  });
-
   group('acp transport', () {
+    const acpAdapter = Adapter(
+      id: 'acp-test',
+      name: 'ACP test',
+      description: 'synthetic ACP runner to keep the handshake path covered',
+      cliName: 'acp-test',
+      transport: AdapterTransport.acp,
+      acpArgs: 'acp',
+    );
+
     test('runs initialize → session/new → session/prompt and collects text',
         () async {
       launcher.acpScript = true;
 
-      final out = await complete('opencode', modelId: 'grok');
+      final out = await runner(
+        installed: const {'acp-test'},
+        extra: const [acpAdapter],
+      ).complete(
+        adapterId: 'acp-test',
+        modelId: 'grok',
+        systemPrompt: 'Name it.',
+        prompt: 'How do I rebase?',
+        timeout: const Duration(seconds: 5),
+      );
 
       expect(out, 'Git rebase question');
       final spawn = launcher.spawns.single;
-      expect(spawn.executable, '/usr/local/bin/opencode');
-      expect(spawn.arguments, ['acp'], reason: "opencode's acpArgs");
+      expect(spawn.executable, '/usr/local/bin/acp-test');
+      expect(spawn.arguments, ['acp']);
 
       final methods = spawn.process.stdinWrites
           .map((l) => (jsonDecode(l) as Map<String, dynamic>)['method'])

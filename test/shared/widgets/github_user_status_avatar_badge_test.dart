@@ -1,4 +1,4 @@
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/github_user_profile_header.dart';
@@ -222,9 +222,11 @@ void main() {
         matching: find.byType(Opacity),
       );
 
-      for (var elapsed = Duration.zero;
-          elapsed <= kStatusPillMotion;
-          elapsed += kStatusPillMotion ~/ 6) {
+      for (
+        var elapsed = Duration.zero;
+        elapsed <= kStatusPillMotion;
+        elapsed += kStatusPillMotion ~/ 6
+      ) {
         expect(glyph, findsOneWidget);
         expect(find.ancestor(of: glyph, matching: fades), findsNothing);
         await tester.pump(kStatusPillMotion ~/ 6);

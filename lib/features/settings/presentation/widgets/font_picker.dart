@@ -117,7 +117,7 @@ class _FontPickerDialogState extends ConsumerState<_FontPickerDialog> {
               children: [
                 // Header
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 20, 16, 0),
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 20, 16, 0),
                   child: Row(
                     children: [
                       Expanded(

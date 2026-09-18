@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart'
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
@@ -48,6 +49,13 @@ void main() {
         requestedReviewers: const [PrUser(login: 'rev', avatarUrl: '')],
         requestedTeamSlugs: const ['team'],
         assignees: const [PrUser(login: 'asg', avatarUrl: '')],
+        labels: const [
+          PrLabel(
+            name: 'bug',
+            color: 'd73a4a',
+            description: 'Something is wrong',
+          ),
+        ],
         mergedAt: DateTime.utc(2025, 3),
         reviewedByMe: true,
         reactions: const [
@@ -208,6 +216,33 @@ void main() {
       );
     });
 
+    test('a labeled timeline event', () {
+      final e = PrTimelineEvent(
+        kind: PrTimelineEventKind.labeled,
+        actor: const PrUser(login: 'renovate[bot]', avatarUrl: ''),
+        label: const PrLabel(
+          name: 'dependencies',
+          color: '0366d6',
+          description: 'Pull requests that update a dependency file',
+        ),
+        createdAt: DateTime.utc(2025),
+      );
+      final once = PrCacheCodec.timelineEventToCache(e);
+      expect(
+        enc(
+          PrCacheCodec.timelineEventToCache(
+            PrCacheCodec.timelineEventFromCache(once),
+          ),
+        ),
+        enc(once),
+      );
+      expect(once['label'], {
+        'name': 'dependencies',
+        'color': '0366d6',
+        'description': 'Pull requests that update a dependency file',
+      });
+    });
+
     test('a check run', () {
       final c = CheckRun(
         name: 'build',
@@ -321,15 +356,18 @@ void main() {
       expect(f.viewerViewedState, PrFileViewedState.unviewed);
     });
 
-    test('a row missing its required fields throws, for the caller to catch', () {
-      // Deliberate: the entities assert their invariants, and the SWR pass
-      // wraps `decode` in a try/catch that treats a throwing row as a cache
-      // miss. Swallowing it here instead would hand the UI a PR with an empty
-      // title and no way to tell it apart from a real one.
-      expect(
-        () => PrCacheCodec.pullRequestFromCache({'number': 1}),
-        throwsA(isA<ArgumentError>()),
-      );
-    });
+    test(
+      'a row missing its required fields throws, for the caller to catch',
+      () {
+        // Deliberate: the entities assert their invariants, and the SWR pass
+        // wraps `decode` in a try/catch that treats a throwing row as a cache
+        // miss. Swallowing it here instead would hand the UI a PR with an empty
+        // title and no way to tell it apart from a real one.
+        expect(
+          () => PrCacheCodec.pullRequestFromCache({'number': 1}),
+          throwsA(isA<ArgumentError>()),
+        );
+      },
+    );
   });
 }

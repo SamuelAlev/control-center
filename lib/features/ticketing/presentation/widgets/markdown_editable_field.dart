@@ -122,7 +122,7 @@ class _MarkdownEditableFieldState extends State<MarkdownEditableField> {
   Widget _buildEmptyAffordance(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: CcTappable(
         onPressed: _startEdit,
         builder: (context, states) => Padding(
@@ -152,13 +152,13 @@ class _MarkdownEditableFieldState extends State<MarkdownEditableField> {
       child: Stack(
         children: [
           Padding(
-            padding: const EdgeInsets.only(right: 28),
+            padding: const EdgeInsetsDirectional.only(end: 28),
             child: StyledMarkdownBody(data: widget.text),
           ),
           if (_hovered)
-            Positioned(
+            PositionedDirectional(
               top: 0,
-              right: 0,
+              end: 0,
               child: CcTooltip(
                 message: AppLocalizations.of(context).editDescription,
                 child: CcTappable(

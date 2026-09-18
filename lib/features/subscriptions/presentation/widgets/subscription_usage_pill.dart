@@ -9,8 +9,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Title-bar pill showing live AI subscription usage (Claude Code, Codex,
-/// z.ai): a compact "{worst}% used" chip that expands to a per-provider
-/// breakdown with progress bars and reset countdowns.
+/// Cursor, z.ai, Kimi Code): a compact "{worst}% used" chip that expands to a
+/// per-provider breakdown with progress bars and reset countdowns.
 ///
 /// Mirrors Claude Code's usage indicator. The compact chip reports the most
 /// constrained provider at a glance; the popover carries the full detail and
@@ -110,8 +110,8 @@ class _SubscriptionUsagePillState extends ConsumerState<SubscriptionUsagePill> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      followerAnchor: Alignment.topRight,
-      targetAnchor: Alignment.bottomRight,
+      followerAnchor: AlignmentDirectional.topEnd,
+      targetAnchor: AlignmentDirectional.bottomEnd,
       semanticLabel: l10n.subscriptionUsage,
       overlayBuilder: (context, _) =>
           _UsageOverlay(providers: configured, isLoading: async.isLoading),

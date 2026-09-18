@@ -2,10 +2,8 @@ import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/conversation_title_providers.dart';
-import 'package:control_center/features/settings/presentation/widgets/model_select.dart';
-import 'package:control_center/features/settings/presentation/widgets/scope_badge.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
-import 'package:control_center/features/settings/settings_nav.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
@@ -45,7 +43,6 @@ class ConversationTitlesSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.conversationTitlesSectionTitle,
-      trailing: const ScopeBadge(SettingScope.workspace),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -83,11 +80,11 @@ class ConversationTitlesSection extends ConsumerWidget {
               Expanded(
                 child: _Labelled(
                   label: l10n.conversationTitlesModelLabel,
-                  // Reused rather than reimplemented: it already resolves the
-                  // right catalogue per transport (the harness's qualified
-                  // provider/model ids, a CLI's advertised names) and keeps
-                  // free-text entry for anything unadvertised.
-                  child: ModelSelect(
+                  // Reused rather than reimplemented: the browser dialog
+                  // already resolves the right catalogue per transport (the
+                  // harness's qualified provider/model ids, a CLI's advertised
+                  // names) and keeps a custom-id row for anything unadvertised.
+                  child: ModelPickerField(
                     adapterId: adapterId,
                     selectedModelId: modelId,
                     enabled: isAdmin,

@@ -20,7 +20,7 @@ library;
 
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
-import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_domain/features/messaging/domain/services/agent_question_service.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

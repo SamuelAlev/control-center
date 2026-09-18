@@ -69,6 +69,29 @@ class ChatCredentialField {
     if (expectedPrefix != null) 'expectedPrefix': expectedPrefix,
     if (prefixError != null) 'prefixError': prefixError,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatCredentialField &&
+          id == other.id &&
+          label == other.label &&
+          hint == other.hint &&
+          secret == other.secret &&
+          required == other.required &&
+          expectedPrefix == other.expectedPrefix &&
+          prefixError == other.prefixError;
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    label,
+    hint,
+    secret,
+    required,
+    expectedPrefix,
+    prefixError,
+  );
 }
 
 /// Everything a client needs to render and a server needs to validate, one
@@ -223,4 +246,45 @@ class ChatProviderDescriptor {
     'supportsBotCustomization': supportsBotCustomization,
     'supportsSetupLink': supportsSetupLink,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatProviderDescriptor &&
+          provider == other.provider &&
+          capabilities == other.capabilities &&
+          consoleUrl == other.consoleUrl &&
+          docsUrl == other.docsUrl &&
+          commandName == other.commandName &&
+          managementCredentialField == other.managementCredentialField &&
+          supportsGuidedSetup == other.supportsGuidedSetup &&
+          supportsBotCustomization == other.supportsBotCustomization &&
+          supportsSetupLink == other.supportsSetupLink &&
+          _fieldListEq(credentialFields, other.credentialFields);
+
+  @override
+  int get hashCode => Object.hash(
+    provider,
+    capabilities,
+    consoleUrl,
+    docsUrl,
+    commandName,
+    managementCredentialField,
+    supportsGuidedSetup,
+    supportsBotCustomization,
+    supportsSetupLink,
+    credentialFields.length,
+  );
+}
+
+bool _fieldListEq(List<ChatCredentialField> a, List<ChatCredentialField> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }

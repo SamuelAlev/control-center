@@ -312,8 +312,8 @@ void main() {
         for (final uri in [
           'react',
           'vitest',
-          '@frontify/foo',
-          '@frontify/foo/sub',
+          '@controlcenter/foo',
+          '@controlcenter/foo/sub',
           'lodash/merge',
           'node:fs',
         ]) {

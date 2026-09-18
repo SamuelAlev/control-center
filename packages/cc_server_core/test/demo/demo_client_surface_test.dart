@@ -148,6 +148,8 @@ void main() {
     'github.prTemplates',
     'github.repoBranches',
     'github.orgMembers',
+    'github.profileActivity',
+    'github.teamProfile',
     // GIF picker (Klipy) — third-party media search.
     'gif.search',
     'gif.trending',
@@ -192,14 +194,7 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tmp));
     await stageServerNatives(tmp.path);
     final server = await runCcServer(
-      args: [
-        '--data-dir',
-        tmp.path,
-        '--port',
-        '0',
-        '--code-index',
-        'off',
-      ],
+      args: ['--data-dir', tmp.path, '--port', '0', '--code-index', 'off'],
       demoBuilder: buildDemoWiring,
     );
     addTearDown(server.shutdown);
@@ -272,10 +267,11 @@ void main() {
     final called = <String, Set<String>>{};
     for (final tree in ['lib', 'packages/cc_data/lib']) {
       final readsOnly = tree != 'lib';
-      for (final file in Directory('${root.path}/$tree')
-          .listSync(recursive: true)
-          .whereType<File>()
-          .where((f) => f.path.endsWith('.dart'))) {
+      for (final file
+          in Directory('${root.path}/$tree')
+              .listSync(recursive: true)
+              .whereType<File>()
+              .where((f) => f.path.endsWith('.dart'))) {
         final source = file.readAsStringSync();
         for (final m in RegExp(
           r"""\.call\(\s*'([a-zA-Z_]+\.[a-zA-Z_]+)'""",
@@ -349,9 +345,7 @@ bool _swallowsOpUnknown(String source, int callEnd) {
   final nextMember = RegExp(
     r'\n  (?:@override\n  )?[A-Za-z_][\w<>,\[\]? ]*\s+[a-zA-Z_]+[(<]',
   ).firstMatch(source.substring(callEnd));
-  final end = nextMember == null
-      ? source.length
-      : callEnd + nextMember.start;
+  final end = nextMember == null ? source.length : callEnd + nextMember.start;
   return source.substring(callEnd, end).contains('opUnknown');
 }
 

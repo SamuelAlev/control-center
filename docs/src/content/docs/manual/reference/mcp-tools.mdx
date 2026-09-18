@@ -238,14 +238,14 @@ Registered only when the host supplies a code-graph repository. The index covers
 
 ## Enclosure (rig) tools
 
-Drive disposable VMs — a browser, a Linux desktop, an Android device — from
-inside a run. Registered post-boot, unconditionally: whether a machine can
-actually boot is a probe question the tools answer per call. Repeated calls
-in one conversation reuse one machine; screenshots come back as image
-content with a one-image budget per result; extracted page/UI content is
-fenced as untrusted data. All five declare the `enclosureControl`
-[action class](/manual/concepts/guardrails/) (the use tools also
-`networkEgress` and `processSpawn`), so read-only modes deny them outright.
+Drive disposable machines — an enclosed browser or Linux desktop, an Android
+emulator, or an iOS Simulator — from inside a run. Registered post-boot,
+unconditionally: whether a machine can actually boot is a probe question the
+tools answer per call. Repeated calls in one conversation reuse one machine;
+screenshots return as image content with a one-image budget per result, and
+extracted page/UI content is fenced as untrusted data. All six declare the
+`enclosureControl` [action class](/manual/concepts/guardrails/) (the use tools
+also declare `networkEgress` and `processSpawn`), so read-only modes deny them.
 The full verb vocabulary per surface is in the
 [rigs reference](/manual/reference/rigs/#action-verbs).
 
@@ -253,9 +253,10 @@ The full verb vocabulary per surface is in the
 | -------------- | ------------------------------------------------------------------------------------------------ |
 | `computer_use` | Drive a Linux desktop in an enclosed VM: move, click, drag, scroll, type, resize, clipboard, screenshot |
 | `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
-| `mobile_use`   | Drive an Android device over adb: tap, swipe, type, dump the view hierarchy, install, launch      |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller                         |
-| `rig_close`    | Destroy a rig and discard its disk                                                                |
+| `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
+| `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
+| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
+| `rig_close`    | Destroy a rig and discard its owned machine state |
 
 ## Not exposed over MCP
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_article.dart';
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/newsfeed/presentation/screens/newsfeed_screen.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/article_grid.dart';
@@ -194,6 +195,39 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Newsfeed'), findsOneWidget);
+    });
+
+    testWidgets('uses CcSegmentedToggle for view and layout', (tester) async {
+      tester.view.physicalSize = const Size(1024, 768);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      final articles = [_testArticle()];
+      final repo = _FakeNewsfeedRepository(
+        feeds: [_testFeed()],
+        articles: articles,
+      );
+      final overrides = [
+        await _sharedPrefsOverride(),
+        ..._newsfeedOverrides(
+          repo: repo,
+          filteredArticles: AsyncValue.data(articles),
+        ),
+        newsfeedViewProvider.overrideWith(NewsfeedViewController.new),
+      ];
+
+      await tester.pumpWidget(_wrap(const NewsfeedScreen(), overrides));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(CcSegmentedToggle<NewsfeedView>), findsOneWidget);
+      expect(find.byType(CcSegmentedToggle<NewsfeedLayout>), findsOneWidget);
+      expect(find.text('All'), findsOneWidget);
+      expect(find.text('Unread'), findsOneWidget);
+      expect(find.text('Saved'), findsOneWidget);
     });
   });
 

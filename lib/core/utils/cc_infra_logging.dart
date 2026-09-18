@@ -1,4 +1,4 @@
-import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_infra/cc_infra_log.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:flutter/foundation.dart';
 

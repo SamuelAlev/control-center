@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/components/cc_icon.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -173,16 +174,16 @@ class CcButton extends StatelessWidget {
 
         Widget content = _buildContent(context, fg);
         content = AnimatedContainer(
-          duration: CcMotion.resolve(context, CcMotion.fast),
+          duration: CcMotion.resolveFade(context, CcMotion.fast),
           curve: CcMotion.standard,
           height: height,
           padding: EdgeInsets.symmetric(horizontal: horizontal),
-          // A button wider than its content (full-width footers) left-aligns
+          // A button wider than its content (full-width footers) start-aligns
           // its label. In hugging mode the alignment must stay null: a
           // Container with a non-null alignment expands to fill bounded
           // constraints, which stretched the button instead of hugging its
           // content.
-          alignment: fullWidth ? Alignment.centerLeft : null,
+          alignment: fullWidth ? AlignmentDirectional.centerStart : null,
           decoration: BoxDecoration(
             color: bg,
             borderRadius: AppRadii.brSm,
@@ -214,7 +215,7 @@ class CcButton extends StatelessWidget {
       children.add(_CcButtonSpinner(color: fg));
       children.add(const SizedBox(width: AppSpacing.sm));
     } else if (icon != null) {
-      children.add(Icon(icon, size: 16, color: fg));
+      children.add(CcIcon(icon!, size: 16, color: fg));
       children.add(const SizedBox(width: AppSpacing.sm));
     }
 

@@ -142,6 +142,47 @@ void main() {
     });
   });
 
+  group('rig media URLs', () {
+    test('requests 60 fps by default and signs the rig target', () {
+      final uri = Uri.parse(
+        config().rigStreamUrl(
+          workspaceId: 'ws-1',
+          rigId: 'rig-1',
+          width: 1280,
+          height: 800,
+        ),
+      );
+
+      expect(uri.queryParameters['fps'], '60');
+      expect(
+        RemoteControlCrypto.verifyProxyTarget(
+          'rig:ws-1/rig-1',
+          psk,
+          uri.queryParameters['s']!,
+        ),
+        isTrue,
+      );
+    });
+
+    test('microphone chunks and session end share one signed target', () {
+      final c = config();
+      final chunk = Uri.parse(
+        c.rigMicrophoneUrl(workspaceId: 'ws-1', rigId: 'rig-1'),
+      );
+      final end = Uri.parse(
+        c.rigMicrophoneUrl(workspaceId: 'ws-1', rigId: 'rig-1', end: true),
+      );
+
+      expect(chunk.path, '/rig/stream/rig-1');
+      expect(chunk.queryParameters['lane'], 'microphone');
+      expect(chunk.queryParameters['rate'], '16000');
+      expect(chunk.queryParameters['channels'], '1');
+      expect(chunk.queryParameters.containsKey('end'), isFalse);
+      expect(end.queryParameters['end'], '1');
+      expect(end.queryParameters['s'], chunk.queryParameters['s']);
+    });
+  });
+
   group('MediaProxyScope.urlOf', () {
     testWidgets(
       'returns the raw URL when no scope is present (not connected)',

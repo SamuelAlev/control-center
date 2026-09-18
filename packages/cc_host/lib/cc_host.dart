@@ -22,6 +22,7 @@ export 'src/log/cc_host_log.dart';
 export 'src/policy/remote_tool_policy.dart';
 export 'src/policy/session_capability.dart';
 export 'src/presence/presence_hub.dart';
+export 'src/repo_rpc/audit_details.dart';
 export 'src/repo_rpc/repo_op.dart';
 export 'src/repo_rpc/repo_op_dispatcher.dart';
 export 'src/repo_rpc/subscription_manager.dart';

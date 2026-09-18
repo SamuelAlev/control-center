@@ -3,8 +3,9 @@ import 'package:control_center/features/calendar/providers/connect_account_provi
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/open_url.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Opens the Google Calendar connect dialog: the user either approves with
@@ -32,9 +33,7 @@ class _GoogleCalendarConnectDialogState
   final _clientId = TextEditingController();
   final _clientSecret = TextEditingController();
 
-  /// Whether to connect with Control Center's own Google app. The no-setup path
-  /// is the default whenever this build has one; a host without a built-in
-  /// client forces it off below.
+  /// Prefer Control Center's own Google app when this build has one.
   bool _preferBuiltin = true;
 
   @override

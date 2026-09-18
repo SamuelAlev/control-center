@@ -37,7 +37,6 @@ import 'package:cc_domain/features/dispatch/domain/usecases/dispatch_agent_use_c
 import 'package:cc_domain/features/evals/domain/services/starter_suites.dart';
 import 'package:cc_domain/features/evals/domain/value_objects/agent_config_hash.dart'
     show canonicalHash;
-import 'package:cc_domain/features/fleet/domain/value_objects/job_spec.dart';
 import 'package:cc_domain/features/fleet/domain/value_objects/worker_capabilities.dart';
 import 'package:cc_domain/features/governance/domain/services/agent_presence_service.dart';
 import 'package:cc_domain/features/governance/domain/services/approval_workflow_service.dart';
@@ -63,7 +62,6 @@ import 'package:cc_domain/features/messaging/domain/services/peer_delegation_gua
 import 'package:cc_domain/features/messaging/domain/services/space_factory.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
-import 'package:cc_domain/features/model_routing/domain/services/model_catalog.dart';
 import 'package:cc_domain/features/orchestration/domain/services/orchestration_proposal_validator.dart';
 import 'package:cc_domain/features/orchestration/domain/services/orchestration_run_listener.dart';
 import 'package:cc_domain/features/orchestration/domain/usecases/cancel_orchestration_use_case.dart';
@@ -123,7 +121,6 @@ import 'package:cc_natives/cc_natives.dart'
         Pty,
         RiftClient,
         SherpaOnnxTranscriber,
-        kLanguageByExtension,
         nativeLibDirEnvVar,
         nativeLibraryCandidates,
         inferenceLibraryBaseName,
@@ -148,7 +145,6 @@ import 'package:cc_server_core/src/backup_archive.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_provider_plugin.dart';
-import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
 import 'package:cc_server_core/src/chat/file_chat_connection_store.dart';
 import 'package:cc_server_core/src/chat/slack_chat_provider_plugin.dart';
 import 'package:cc_server_core/src/code_graph/pipeline_code_index_run_reporter.dart';
@@ -158,20 +154,16 @@ import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
 import 'package:cc_server_core/src/context/context_inspection_service.dart';
-import 'package:cc_server_core/src/context/context_rpc_ops.dart';
 import 'package:cc_server_core/src/dao_activity_log_reader.dart';
 import 'package:cc_server_core/src/dao_code_graph_repository.dart';
 import 'package:cc_server_core/src/dao_newsfeed_repository.dart';
 import 'package:cc_server_core/src/dao_pr_lifecycle_repository.dart';
 import 'package:cc_server_core/src/demo/demo_hooks.dart';
 import 'package:cc_server_core/src/demo/demo_limits.dart';
-import 'package:cc_server_core/src/demo/demo_world.dart' show kDemoPipelineTemplateIds;
+import 'package:cc_server_core/src/demo/demo_world.dart'
+    show kDemoPipelineTemplateIds;
 import 'package:cc_server_core/src/dotenv.dart';
-import 'package:cc_server_core/src/evals/evals_rpc_ops.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
-import 'package:cc_server_core/src/fleet/fleet_rpc_ops.dart';
-import 'package:cc_server_core/src/fleet/remote_execution_registry.dart';
-import 'package:cc_server_core/src/fonts/fonts_rpc.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/forge/forge_provider_factories.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
@@ -188,7 +180,6 @@ import 'package:cc_server_core/src/identity/provider_oauth_service.dart';
 import 'package:cc_server_core/src/identity/saml_service.dart';
 import 'package:cc_server_core/src/identity/scim_service.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
-import 'package:cc_server_core/src/identity/sso_ops.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
@@ -219,6 +210,9 @@ import 'package:cc_server_core/src/review_fix_dispatch.dart';
 import 'package:cc_server_core/src/rig_event_listener.dart';
 import 'package:cc_server_core/src/rpc_exception_mapper.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
+import 'package:cc_server_core/src/runtime/server_extra_ops.dart';
+import 'package:cc_server_core/src/runtime/server_fleet_wiring.dart';
+import 'package:cc_server_core/src/runtime/server_native_preflight.dart';
 import 'package:cc_server_core/src/server_mcp_client_control.dart';
 import 'package:cc_server_core/src/server_mcp_control.dart';
 import 'package:cc_server_core/src/server_mcp_registry.dart';
@@ -227,595 +221,18 @@ import 'package:cc_server_core/src/skill_analysis_run_reporter.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
 import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 import 'package:cc_server_core/src/skill_reverify_service.dart';
-import 'package:cc_server_core/src/soundscape/soundscape_rpc.dart';
 import 'package:cc_server_core/src/space_provisioning_service.dart';
 import 'package:cc_server_core/src/sync/sync_feed_service.dart';
 import 'package:cc_server_core/src/ticket_sync_webhook_handler.dart';
-import 'package:cc_server_core/src/weather/weather_rpc.dart';
 import 'package:cc_server_core/src/webhook_delivery_service.dart';
 import 'package:cc_server_core/src/write_ledger_adapter.dart';
 import 'package:dio/dio.dart' show InterceptorsWrapper;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-/// A running headless server instance — holds the database + WS server so a
-/// caller (the `cc_server` binary, or a test) can shut it down cleanly.
-class CcServer {
-  CcServer._(this._globalDb, this._workspaceDbs, this.rpc, this._mcpControl);
-
-  final GlobalDatabase _globalDb;
-  final WorkspaceDatabaseManager _workspaceDbs;
-  final ServerMcpControl _mcpControl;
-
-  /// Server-hosted code-server processes, torn down (every child killed) on
-  /// [shutdown] so a host exit never orphans code-server subprocesses.
-  CodeServerService? _codeServer;
-
-  /// Live enclosures (rigs), destroyed on [shutdown]. Leaking one costs
-  /// gigabytes of host RAM and a disk overlay that nothing will ever reclaim.
-  RigService? _rigs;
-
-  /// Periodic approval-escalation sweeper. Stopped on [shutdown] — it had a
-  /// `stop()` with no caller, so its timer outlived the "stopped" server (the
-  /// headless binary hides this behind `exit(0)`; the DESKTOP embeds
-  /// `CcServer` in-process, where it is a real leak across a server switch).
-  ApprovalEscalationSweeper? _approvalEscalation;
-
-  /// Optional SIEM stream for the authorization audit trail. Drained on
-  /// shutdown so a clean stop does not lose the last batch.
-  AuditStreamSink? _auditStream;
-
-  /// Native skills-dir watchers across every workspace. Disposed on [shutdown].
-  SkillWatchService? _skillWatch;
-
-  /// Per-minute cron evaluator for pipeline triggers. Disposed on [shutdown].
-  PipelineSchedulerService? _pipelineScheduler;
-
-  /// Daily audit/log retention prune. Stopped on [shutdown].
-  DatabaseRetentionService? _databaseRetention;
-
-  /// Daily harness-transcript prune. Cancelled on [shutdown].
-  Timer? _transcriptRetention;
-
-  /// Live debug adapters. Torn down on [shutdown] — an orphaned adapter holds
-  /// a stopped debuggee and answers to nobody.
-  DebugSessionSupervisor? _debugSupervisor;
-
-  /// The shared tree-sitter parser for structural search. Its native handles
-  /// are allocations the isolate's death does NOT reclaim, so it is disposed
-  /// explicitly on [shutdown].
-  AstParserProvider? _astParsers;
-
-  /// Every domain-event listener started at boot, in start order.
-  ///
-  /// Each holds a `StreamSubscription` on the process-wide `DomainEventBus`
-  /// and each had a `dispose()` with no caller — so on the desktop, which
-  /// embeds `CcServer`, a server switch left the OLD server's listeners
-  /// attached to the bus, still reacting to events and still holding their
-  /// repositories (and, for the dispatching ones, still able to start work).
-  final List<void Function()> _eventListenerStops = [];
-
-  /// The bound WebSocket RPC server.
-  final LocalRpcServer rpc;
-
-  /// Periodic newsfeed-refresh timer (cancelled on [shutdown]).
-  Timer? _newsfeedRefreshTimer;
-
-  /// The open-PR poller behind the live PR list (null when the server holds
-  /// no gh token). Disposed on [shutdown].
-  OpenPrPollingService? _openPrPoller;
-
-  /// The demo wiring, when this process is a public demo server. Its teardown
-  /// reaps every live visitor, so a restart never leaves an orphaned workspace
-  /// whose owner can no longer reach it.
-  DemoWiring? _demo;
-
-  /// GitHub viewer-activity poller (review requests / mentions / merges →
-  /// events + targeted refreshes). Disposed on [shutdown].
-  GitHubViewerActivityPollingService? _githubActivityPoller;
-
-  /// GitHub PR-conversation poller: discovers bot @mentions / review-label
-  /// requests on GitHub and bridges them into PR review spaces (the bot
-  /// identity's inbound lane — no webhook, no public URL). Disposed on
-  /// [shutdown].
-  PrConversationPollingService? _prConversationPoller;
-
-  /// Change-signal bus feeding live `pr_review.watch*` streams. Disposed on
-  /// [shutdown] so open streams complete.
-  PrChangeSignals? _prChangeSignals;
-
-  /// Periodic ticket-sync pull fallback (webhooks may be unreachable — this
-  /// server can run without a public URL). Cancelled on [shutdown].
-  Timer? _ticketSyncPullTimer;
-
-  /// Periodic runtime-state GC sweep (PRD 09): reaps agent runtime-state rows
-  /// stale past the 7-day threshold across all workspaces. Cancelled on
-  /// [shutdown].
-  Timer? _runtimeStateGcSweepTimer;
-
-  /// Picks up `paired_devices` rows written by another process (`cc_server
-  /// pair` against a live data dir), which drift's in-process update
-  /// notifications cannot see. Disposed on [shutdown].
-  PairedDeviceRegistryWatch? _pairedDeviceWatch;
-
-  /// The fleet scheduler (PRD 20): places job specs onto workers, holds leases,
-  /// reaps expired ones. Cancelled/disposed on [shutdown].
-  FleetSchedulerService? _fleetScheduler;
-
-  /// The implicit local worker's executor (PRD 20) — kind→runner registry that
-  /// feature services (evals, golden render, code index) register into.
-  LocalJobExecutor? _fleetLocalExecutor;
-
-  /// Periodic lease-reap sweep (PRD 20 §8): reclaims jobs whose worker went
-  /// silent. Cancelled on [shutdown].
-  Timer? _fleetReapTimer;
-
-  /// The fleet scheduler, for feature services that submit jobs (PRD 21 eval
-  /// batches, PRD 18 golden renders).
-  FleetSchedulerService? get fleetScheduler => _fleetScheduler;
-
-  /// The local worker's executor, so feature services can register their
-  /// in-process job runner (e.g. the eval runner registers `evalBatch`).
-  LocalJobExecutor? get fleetLocalExecutor => _fleetLocalExecutor;
-
-  /// Meeting-summary finalizer (started after boot; disposed on [shutdown]).
-  MeetingSummaryReconciler? _meetingReconciler;
-
-  /// Durable goal supervisor (`/goal`, `/loop`). Disposed on [shutdown] so no
-  /// re-dispatch backoff timer outlives the server.
-  GoalSupervisor? _goalSupervisor;
-
-  /// Live RPC meeting recorder, when an ASR model is installed (else null).
-  /// Open sessions are aborted on [shutdown]; the reconciler recovers them.
-  MeetingRecordingService? _meetingRecording;
-
-  /// Live RPC composer dictation, when an ASR model is installed (else null).
-  /// In-memory only (a dictation persists nothing), so [shutdown] just drains
-  /// any open session's transcriber windows and closes its streams.
-  DictationService? _dictationService;
-
-  /// Selectable ASR/voice model control (download + model switching over the
-  /// `models.voice*` ops). Cancels any in-flight download on [shutdown].
-  SelectableVoiceModelControl? _voiceModelControl;
-
-  /// Embedding + diarization model controls. Boot force-installs both (they
-  /// are the fixed, unique on-device models), so [shutdown] must cancel any
-  /// in-flight boot download.
-  ManagedModelControl? _embeddingModelControl;
-  ManagedModelControl? _diarizationModelControl;
-
-  /// Server-side Google Calendar sync sweep, started after boot when a Google
-  /// client id is configured (else null). Disposed on [shutdown].
-  ServerCalendarSync? _calendarSync;
-
-  /// Per-workspace live weather (Open-Meteo, keyless) feeding the soundscape
-  /// engine and the `weather.*` ops. Disposed on [shutdown].
-  ServerWeatherService? _weatherService;
-
-  /// Server-side generative soundscape engine: shared `(workspace, mood)`
-  /// sessions streamed as MP3 over `/soundscape/*`. Disposed on [shutdown].
-  SoundscapeHub? _soundscapeHub;
-
-  /// Relays phone connections through the signaling broker when the server is
-  /// not directly reachable (cc_server is the owning peer). Disposed on
-  /// [shutdown].
-  RemoteRelayHost? _relayHost;
-
-  /// The MCP client (connections to external MCP servers). Bridged tools are
-  /// pushed into the shared registry; all connections (and their stdio child
-  /// process trees) are torn down on [shutdown].
-  McpClientService? _mcpClientService;
-  /// The host's language-server pool; every server is shut down on [shutdown].
-  LspSupervisor? _lspSupervisor;
-  NetworkRuntime? _networkRuntime;
-  PresenceHub? _presenceHub;
-  CheckerDispatchListener? _checkerListener;
-  WorktreeGcListener? _worktreeGcListener;
-
-  /// Steers the agent driving a rig when the machine is taken over or
-  /// reclaimed. Disposed with the other long-lived listeners.
-  RigEventListener? _rigEventListener;
-  NotificationFeedRecorder? _notificationFeedRecorder;
-  SyncFeedService? _syncFeed;
-  AgentPresenceSynthesizer? _agentPresenceSynthesizer;
-
-  /// Keeps every checkout's code-graph partition current (initial index on
-  /// worktree provision, incremental reindex on any file save / PR sync).
-  /// Disposed in [shutdown] with the other data-sync listeners.
-  CodeGraphWatchService? _codeGraphWatch;
-
-  /// In-flight agent-action approvals. Disposed on [shutdown] so any request
-  /// still blocking an agent is denied and its future released.
-  PendingConfirmationRegistry? _pendingConfirmations;
-
-  /// Every connected workspace's chat-bridge transports. Closed on [shutdown] so
-  /// the provider sees a clean disconnect instead of a dead socket it keeps
-  /// delivering to for a while.
-  ChatConnector? _chatConnector;
-
-  /// Per-step cap for [shutdown]. Each teardown step is bounded to this so a
-  /// single stuck service (a stdio MCP child ignoring SIGTERM, a tunnel
-  /// subprocess, drift's background isolate blocked on an in-flight query)
-  /// can't hold the whole sequence past the caller's outer backstop.
-  static const _stepTimeout = Duration(seconds: 3);
-
-  /// Stops the server and closes the database.
-  ///
-  /// Streams per-service teardown progress to connected thin clients as
-  /// `server/shutdown_progress` JSON-RPC notifications *before* the RPC socket
-  /// closes, so a client can render a live "shutting down" overlay. The
-  /// teardown sequence and its order are unchanged.
-  ///
-  /// Every step is best-effort and independently bounded: a service that hangs
-  /// past [_stepTimeout] or throws is logged by name and skipped, so one stuck
-  /// teardown can NOT starve the steps after it — in particular the DB close.
-  /// (This is why shutdown no longer surfaces a bare `TimeoutException` to the
-  /// caller: the culprit service is named in the log instead.) The caller
-  /// (`_runServer`) still caps the whole sequence as a final backstop.
-  Future<void> shutdown() async {
-    const services = <String>[
-      'approvals',
-      'backgroundJobs',
-      'scheduler',
-      'calendar',
-      'weather',
-      'soundscape',
-      'meetings',
-      'voiceModels',
-      'networking',
-      'presence',
-      'dataSync',
-      'deviceRelay',
-      'chat',
-      'mcpConnections',
-      'codeEditors',
-      'rigs',
-      'demo',
-    ];
-    rpc.broadcast('server/shutdown_progress', <String, dynamic>{
-      'phase': 'begin',
-      'services': services,
-    });
-
-    // Run [action] under a per-step cap, isolating failures. A step that
-    // exceeds [_stepTimeout] or throws is logged and skipped rather than
-    // aborting the rest of teardown. `.timeout` does not cancel the underlying
-    // work, but we hard-exit moments later so the abandoned future is moot.
-    Future<void> guard(String id, Future<void> Function() action) async {
-      try {
-        await action().timeout(_stepTimeout);
-      } on TimeoutException {
-        CcHostLog.warning(
-          'shutdown: step "$id" did not finish within '
-          '${_stepTimeout.inSeconds}s — skipping',
-        );
-      } on Object catch (e) {
-        CcHostLog.warning('shutdown: step "$id" failed: $e — skipping');
-      }
-    }
-
-    // A guarded step that also reports progress to connected thin clients.
-    Future<void> step(String id, Future<void> Function() action) async {
-      await guard(id, action);
-      rpc.broadcast('server/shutdown_progress', <String, dynamic>{
-        'phase': 'step',
-        'service': id,
-      });
-    }
-
-    // First: a visitor's workspace must be reaped while its database is still
-    // open, and their session dropped before the socket layer goes away.
-    await step('demo', () async => _demo?.stop());
-    await step('approvals', () async {
-      _pendingConfirmations?.dispose();
-      _approvalEscalation?.stop();
-    });
-    // Flush whatever is buffered before the process goes away. The rows are
-    // durable locally either way; this just avoids a gap in the SIEM.
-    await step('auditStream', () async => _auditStream?.stop());
-    await step('backgroundJobs', () async {
-      _newsfeedRefreshTimer?.cancel();
-      _runtimeStateGcSweepTimer?.cancel();
-      _fleetReapTimer?.cancel();
-      _ticketSyncPullTimer?.cancel();
-      _openPrPoller?.dispose();
-      _githubActivityPoller?.dispose();
-      await _prConversationPoller?.dispose();
-      _prChangeSignals?.dispose();
-      _goalSupervisor?.dispose();
-      _pipelineScheduler?.dispose();
-      _databaseRetention?.stop();
-      _transcriptRetention?.cancel();
-      unawaited(_debugSupervisor?.dispose());
-      _astParsers?.dispose();
-      _pairedDeviceWatch?.dispose();
-    });
-    await step('scheduler', () async => _fleetScheduler?.dispose());
-    await step('calendar', () async => _calendarSync?.dispose());
-    await step('weather', () async => _weatherService?.dispose());
-    await step('soundscape', () async => _soundscapeHub?.dispose());
-    await step('meetings', () async {
-      _meetingReconciler?.dispose();
-      await _meetingRecording?.dispose();
-      // Shares the meeting transcriber, so tear it down in the same step
-      // (before `voiceModels`) rather than leaving windows mid-decode.
-      await _dictationService?.dispose();
-    });
-    await step('voiceModels', () async => _voiceModelControl?.dispose());
-    await step('models', () async {
-      await _embeddingModelControl?.dispose();
-      await _diarizationModelControl?.dispose();
-    });
-    await step('networking', () async => _networkRuntime?.stop());
-    await step('presence', () async {
-      await _agentPresenceSynthesizer?.stop();
-      _presenceHub?.dispose();
-    });
-    await step('dataSync', () async {
-      _syncFeed?.dispose();
-      await _checkerListener?.stop();
-      _worktreeGcListener?.dispose();
-      await _rigEventListener?.dispose();
-      await _notificationFeedRecorder?.dispose();
-      await _codeGraphWatch?.dispose();
-      // Native watchers over every workspace's skills dir: arming is O(1) but
-      // each one holds a kernel watch for the process lifetime.
-      await _skillWatch?.dispose();
-      for (final stop in _eventListenerStops) {
-        stop();
-      }
-      _eventListenerStops.clear();
-    });
-    await step('deviceRelay', () async => _relayHost?.stop());
-    await step('chat', () async => _chatConnector?.stop());
-    await step('mcpConnections', () async => _mcpClientService?.shutdown());
-    // Language servers are long-lived child processes that index a whole
-    // project; an orphaned analyzer outlives this process holding hundreds of
-    // megabytes and answering to nobody.
-    await step('languageServers', () async => _lspSupervisor?.dispose());
-    // Kill every live code-server subprocess so a host exit leaves no orphans.
-    await step('codeEditors', () async => _codeServer?.disposeAll());
-    // Destroy every live VM. An orphaned hypervisor process outlives this one,
-    // holds gigabytes of RAM and a disk overlay, and nothing left running
-    // knows it exists — so unlike a PTY, leaking one is expensive and silent.
-    await step('rigs', () async => _rigs?.disposeAll());
-
-    // Let the final progress frames flush over the wire before the socket
-    // closes — `rpc.stop()` force-closes the listener and can drop in-flight
-    // frames otherwise.
-    await Future<void>.delayed(const Duration(milliseconds: 80));
-    rpc.broadcast('server/shutdown_progress', const <String, dynamic>{
-      'phase': 'complete',
-    });
-
-    // Critical teardown, each guarded independently so a hang in one still lets
-    // the others run — the DB closes in particular flush each WAL and stop
-    // drift's background isolates. (A hard exit releases the file locks either
-    // way, but a clean close avoids a WAL-recovery pass on the next boot, once
-    // per open workspace.)
-    await guard('rpc', rpc.stop);
-    await guard('mcpControl', _mcpControl.dispose);
-    await guard('workspaceDbs', _workspaceDbs.closeAll);
-    await guard('globalDb', _globalDb.close);
-    // The rotating file sink is a module global with no handle to close (it
-    // appends+flushes per line), but it still POINTS at this server's data
-    // dir. Detach it: the desktop embeds `CcServer` and a server switch would
-    // otherwise keep writing the new server's log lines into the old
-    // instance's directory.
-    _fileSink = null;
-  }
-}
-
-/// Boots the pure-Dart headless server: opens `global.db` over
-/// [openGlobalDatabase] (per-workspace databases open lazily through
-/// [WorkspaceDatabaseManager]), wires the repository-backed RPC catalog
-/// (tickets / messaging / newsfeed) onto a [LocalRpcServer] and starts
-/// listening. No Flutter — this links into a `dart build cli` native binary.
-///
-/// Serializes every log write+flush through one chain. This matters twice:
-///  * An [IOSink] throws "StreamSink is bound to a stream" if you `writeln`
-///    while a previous `flush()` is still in flight, so overlapping the two
-///    (e.g. two log lines back-to-back) crashes the process — the chain
-///    guarantees the prior flush finishes before the next write starts.
-///  * Flushing each line makes logs stream immediately even over a pipe (the
-///    desktop spawns cc_server with piped, block-buffered stdio), instead of
-///    batching into one late burst that reads as "the server hung on start".
-Future<void> _logTail = Future<void>.value();
-
-/// The rotating on-disk log, installed by [runCcServer] under `<dataDir>/logs`.
-/// Null until the server boots (tests and the `pair`/`calendar` subcommands
-/// leave it unset, so they log to stdio only).
-/// How recently a conversation must have been touched for its worktree to keep
-/// a live file watcher. Dormant ones are indexed on demand when they wake.
-const Duration _watchActivityWindow = Duration(days: 7);
-
-RotatingFileLogSink? _fileSink;
-
-/// Runs a boot phase, announcing it before and timing it after.
-///
-/// Boot is a long sequence of awaits with logging only at a few landmarks, so a
-/// phase that got slow (the database open on a multi-GB file, a credential
-/// probe blocked on a keyring) presented as a server hung after its last line
-/// with no way to attribute the wait. Announcing BEFORE the await is the point:
-/// the phase in flight is the one to blame.
-///
-/// Completion is ALWAYS logged, not just when slow. With a slow-only rule a fast
-/// phase leaves its own start line as the last thing on screen, so the next
-/// (unannounced) phase's stall gets blamed on it. The rule now is simple: a
-/// `…` line with no matching `✓` is the phase still running.
-Future<T> _bootStep<T>(String label, Future<T> Function() action) async {
-  _bootMark(label);
-  final startedAt = DateTime.now();
-  final result = await action();
-  _bootDone(label, startedAt);
-  return result;
-}
-
-/// Announces a boot phase that is about to start. Use directly for a stretch of
-/// SYNCHRONOUS construction, which [_bootStep] cannot wrap but which can still
-/// take real time (dylib loads, catalog parsing, building the tool registry).
-void _bootMark(String label) => CcHostLog.info('cc_server: $label…');
-
-/// Ceiling for a boot phase that reaches the NETWORK.
-///
-/// Boot must not depend on a remote host answering: the relay's signaling
-/// broker and the mDNS/tunnel stack are both best-effort and both retry on
-/// their own, so a slow or unreachable one should cost that feature, never the
-/// server's startup. On timeout the phase is left running in the background and
-/// boot proceeds.
-Future<void> _bootStepBounded(
-  String label,
-  Future<void> Function() action, {
-  required String onTimeout,
-  Duration limit = const Duration(seconds: 10),
-}) async {
-  _bootMark(label);
-  final startedAt = DateTime.now();
-  try {
-    // Split the synchronous head from the awaited tail. `.timeout()` cannot arm
-    // its timer until `action()` returns a future, so work done synchronously
-    // inside it is invisible to the bound AND freezes the event loop — which is
-    // exactly how a "10s" timeout was observed firing 56s late. Timing the two
-    // halves separately says which one is at fault instead of leaving it to
-    // inference.
-    final future = action();
-    final syncMs = DateTime.now().difference(startedAt).inMilliseconds;
-    if (syncMs >= 1000) {
-      CcHostLog.warning(
-        'cc_server: $label blocked the isolate for ${syncMs}ms BEFORE yielding '
-        '— synchronous work on the boot path, not a slow peer',
-      );
-    }
-    await future.timeout(limit);
-    _bootDone(label, startedAt);
-  } on TimeoutException {
-    CcHostLog.warning(
-      'cc_server: $label did not finish within ${limit.inSeconds}s — '
-      'continuing boot ($onTimeout)',
-    );
-  } on Object catch (e) {
-    CcHostLog.warning('cc_server: $label failed: $e ($onTimeout)');
-  }
-}
-
-/// Closes a phase opened with [_bootMark]. Slow phases are called out at info
-/// with their duration; quick ones only surface at the debug log level, so a
-/// normal boot stays readable while still proving the phase finished.
-void _bootDone(String label, DateTime startedAt) {
-  final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
-  if (elapsedMs >= 1000) {
-    CcHostLog.info('cc_server: ✓ $label (${elapsedMs}ms)');
-  } else if (CcInfraLog.isEnabled(CcInfraLogLevel.debug)) {
-    CcHostLog.info('cc_server: ✓ $label (${elapsedMs}ms)');
-  }
-}
-
-/// Maps each logging façade's severity onto the server's canonical
-/// [CcServerLogLevel] so `--log-level` filters every seam uniformly. The
-/// switches are exhaustive on purpose: a new façade tier fails to compile
-/// here until it is classified.
-CcServerLogLevel _hostSeverity(CcHostLogLevel level) => switch (level) {
-  CcHostLogLevel.info => CcServerLogLevel.info,
-  CcHostLogLevel.warning => CcServerLogLevel.warning,
-  CcHostLogLevel.error => CcServerLogLevel.error,
-};
-
-CcServerLogLevel _persistenceSeverity(CcPersistenceLogLevel level) =>
-    switch (level) {
-      CcPersistenceLogLevel.info => CcServerLogLevel.info,
-      CcPersistenceLogLevel.warning => CcServerLogLevel.warning,
-      CcPersistenceLogLevel.error => CcServerLogLevel.error,
-    };
-
-CcServerLogLevel _domainSeverity(CcDomainLogLevel level) => switch (level) {
-  CcDomainLogLevel.info => CcServerLogLevel.info,
-  CcDomainLogLevel.warning => CcServerLogLevel.warning,
-  CcDomainLogLevel.error => CcServerLogLevel.error,
-};
-
-CcServerLogLevel _infraSeverity(CcInfraLogLevel level) => switch (level) {
-  CcInfraLogLevel.debug => CcServerLogLevel.debug,
-  CcInfraLogLevel.info => CcServerLogLevel.info,
-  CcInfraLogLevel.warning => CcServerLogLevel.warning,
-  CcInfraLogLevel.error => CcServerLogLevel.error,
-};
-
-void _emitLog(bool isError, String line, [Object? error]) {
-  // Wall-clock prefix on every line. Without it a boot log shows WHICH phase
-  // was last but not how long the gap after it was, so "it hangs here" and "it
-  // pauses here" are indistinguishable in a pasted log — which cost real time
-  // chasing the wrong phase.
-  final now = DateTime.now();
-  String two(int v) => v.toString().padLeft(2, '0');
-  final stamp =
-      '${two(now.hour)}:${two(now.minute)}:${two(now.second)}'
-      '.${now.millisecond.toString().padLeft(3, '0')}';
-  line = '$stamp $line';
-  // Persist to the rotating file first — synchronous + flushed — so a line
-  // (including a crash record) survives even if the process dies immediately
-  // after. Bounded on disk by the sink's size cap + retention (FINDINGS §132).
-  _fileSink?.write(error != null ? '$line\n  $error' : line);
-  _logTail = _logTail.then((_) async {
-    try {
-      if (isError) {
-        stderr.writeln(line);
-        if (error != null) {
-          stderr.writeln('  $error');
-        }
-        await stderr.flush();
-      } else {
-        stdout.writeln(line);
-        await stdout.flush();
-      }
-    } catch (_) {
-      // Broken pipe / closed stdio — drop the line rather than crash boot.
-    }
-  });
-}
-
-/// The resolved `--log-level`, mirrored at file scope so [_announce] can honour
-/// it without threading the config through every warm-up closure.
-CcServerLogLevel _logLevel = CcServerLogLevel.warning;
-
-/// Emits a headline lifecycle line that is visible at the DEFAULT log level.
-///
-/// `--log-level` defaults to `warning`, so every [CcHostLog.info] line — the
-/// whole `_bootMark`/`_bootDone` narration included — is dropped unless the
-/// operator opts into `info`. That is the right default for per-phase chatter,
-/// but it also silenced the one thing a FIRST boot most needs to explain: the
-/// several minutes it spends fetching multi-hundred-megabyte on-device models
-/// over the network. With nothing on the log for that stretch, a slow link and
-/// a hung server are indistinguishable.
-///
-/// So a handful of rare, high-value events use this lane instead. It is not a
-/// bypass: `--log-level error` still silences it, and callers must only use it
-/// for events that fire when real work happens (a model already on disk logs
-/// nothing), never per-request or per-phase.
-void _announce(String line) {
-  if (_logLevel.index > CcServerLogLevel.warning.index) {
-    return;
-  }
-  _emitLog(false, line);
-}
-
-/// Routes one on-device model's install lifecycle to the right log lane:
-/// [ModelLogLevel.notice] onto [_announce] (visible on a default-verbosity
-/// first boot, which is the whole point — see [_announce]), failures onto the
-/// normal warning seam. [what] names the model family, e.g. `'embedding model'`.
-void _modelLog(ModelLogLevel level, String what, String message) =>
-    switch (level) {
-      ModelLogLevel.notice => _announce('cc_server: $what: $message'),
-      ModelLogLevel.warning => CcHostLog.warning('$what: $message'),
-    };
-
-/// Records an uncaught top-level server error to stderr **and** the rotating
-/// on-disk log, so a crash in an async reconciler/timer that would otherwise
-/// vanish leaves a persistent trail (FINDINGS §130). Safe to call before the
-/// file sink is installed (it degrades to stderr only). Wire it as the handler
-/// of a `runZonedGuarded` around the server run.
-void recordUncaughtServerError(Object error, StackTrace stack) {
-  _emitLog(true, 'cc_server: uncaught error: $error', stack);
-}
+part 'runtime/cc_server_instance.dart';
+part 'runtime/server_boot_logging.dart';
+part 'runtime/server_helpers.dart';
 
 /// Diagnostics route through [CcHostLog] (installed to stdout/stderr here).
 /// Device PSKs, the provider app identity, per-user credentials and the SSO
@@ -1261,7 +678,11 @@ Future<CcServer> runCcServer({
     // the delegate's effective autonomy must not exceed the delegator's and
     // an exhausted delegator budget refuses new delegation.
     resolveEffectiveAutonomy:
-        ({required String workspaceId, required String agentId, String? spaceId}) async {
+        ({
+          required String workspaceId,
+          required String agentId,
+          String? spaceId,
+        }) async {
           if (spaceId == null || spaceId.isEmpty) {
             return AutonomyLevel.actWithApproval;
           }
@@ -1565,6 +986,15 @@ Future<CcServer> runCcServer({
   final fontCatalog = FontsourceCatalogService(
     cacheFilePath: p.join(config.dataDir, 'font_catalog.json'),
   );
+  // Community ABP filter lists for the newsfeed content blocker. Cached under
+  // the data dir — never fetched by a thin client. Boot does not await a
+  // network fill; autoUpdate runs after the ready banner. The demo does not
+  // dial EasyList (`allowNetwork: false`).
+  final filterLists = FilterListService(
+    cacheDir: p.join(config.dataDir, 'filter_lists'),
+    allowNetwork: demoBuilder == null,
+  );
+  unawaited(filterLists.autoUpdate());
   final soundscapeHub = SoundscapeHub(
     weather: weatherService,
     // Resolve the libmp3lame dylib from the same app-support root the other
@@ -1957,7 +1387,9 @@ Future<CcServer> runCcServer({
     pendingConfirmationRegistry,
     timeout: const Duration(seconds: 90),
   );
-  final sandboxExecGrantRepository = DaoSandboxExecGrantRepository(workspaceDbs);
+  final sandboxExecGrantRepository = DaoSandboxExecGrantRepository(
+    workspaceDbs,
+  );
   final execGrantService = SandboxExecGrantService(
     repository: sandboxExecGrantRepository,
     confirmationPort: execGrantConfirmationPort,
@@ -2044,8 +1476,7 @@ Future<CcServer> runCcServer({
         guardDecisionRepository
             .append(decision)
             .catchError(
-              (Object e) =>
-                  CcHostLog.warning('guard audit append failed: $e'),
+              (Object e) => CcHostLog.warning('guard audit append failed: $e'),
             ),
       );
       // A COPY to the operator's SIEM, when one is configured. Never gates
@@ -2224,15 +1655,9 @@ Future<CcServer> runCcServer({
   // repos that live on it, so an unconnected one with no repos costs nothing,
   // and one with repos fails in isolation rather than emptying the inbox.
   //
-  // The GitHub adapter resolves its client PER REPO OWNER, not from
-  // `serverGitHubClient`: the no-caller credential is a token for whichever
-  // app installation answered first, and GitHub answers such a token with 404
-  // for every repo under an owner the app is not installed on — so a
-  // workspace's repos in a second org polled as permanently missing. Each
-  // owner's client resolves the installation covering that owner (falling
-  // back to the server owner's credential, then the environment) per request,
-  // so an app installed after boot works without a restart. The cache is
-  // bounded by the number of distinct owners among registered repos.
+  // GitHub adapter is per repo owner: a no-caller token is whichever
+  // installation answered first, and GitHub 404s every other owner's repos.
+  // Each client's credential covers that owner (then owner PAT, then env).
   final ownerScopedGitHubClients = <String, GitHubApiClient>{};
   GitHubApiClient githubClientForOwner(String owner) =>
       ownerScopedGitHubClients.putIfAbsent(
@@ -2247,7 +1672,10 @@ Future<CcServer> runCcServer({
   final openPrFetchAdapter = MultiForgeOpenPrFetchAdapter({
     for (final forge in ForgeHost.supported)
       forge: forge == ForgeHost.github
-          ? GitHubOpenPrFetchAdapter(githubClientForOwner)
+          ? GitHubOpenPrFetchAdapter(
+              githubClientForOwner,
+              app: providerApps.githubApp,
+            )
           : ForgeClientOpenPrFetchAdapter(forgePrClientForRepo),
   });
   final openPrPoller = OpenPrPollingService(
@@ -2300,34 +1728,35 @@ Future<CcServer> runCcServer({
             // The product's own seeder, so a demo workspace starts as a
             // NORMAL workspace (CEO, specialists, the built-in pipeline
             // templates) that the demo then furnishes and prunes.
-            baseSeed: (workspaceId) async =>
-                demoBaseSeeder?.seed(workspaceId),
+            baseSeed: (workspaceId) async => demoBaseSeeder?.seed(workspaceId),
             // The inbox's "agent is waiting on you" lane reads the LIVE
             // confirmation registry; the demo seeder furnishes it with one
             // pending approval per workspace. No timeout: it stays pending
             // until a visitor resolves it through `confirmation.respond`.
-            registerConfirmation: (request) =>
-                pendingConfirmationRegistry.register(
-                  request,
-                  timeoutOverride: null,
-                ),
+            registerConfirmation: (request) => pendingConfirmationRegistry
+                .register(request, timeoutOverride: null),
             // Real newsfeed articles within seconds of a claim, not on the
             // next 30-minute sweep. Best-effort inside; failures are logged
             // there, never surfaced to the visitor.
             refreshNewsfeed: (userId) => newsfeedRepository
                 .refreshAll(userId)
                 .timeout(const Duration(seconds: 20))
-                .then((_) {}, onError: (Object e) {
-                  CcHostLog.warning(
-                    'demo: newsfeed refresh for $userId failed: $e',
-                  );
-                }),
+                .then(
+                  (_) {},
+                  onError: (Object e) {
+                    CcHostLog.warning(
+                      'demo: newsfeed refresh for $userId failed: $e',
+                    );
+                  },
+                ),
             log: (message) => _announce('cc_server: $message'),
           ),
         );
   if (demo != null) {
-    _announce('cc_server: DEMO MODE — ${demo.profile.runtimeType} lockdown, '
-        'no provider credentials, no execution surface');
+    _announce(
+      'cc_server: DEMO MODE — ${demo.profile.runtimeType} lockdown, '
+      'no provider credentials, no execution surface',
+    );
   }
 
   // The CALLER's merged history, asked of each forge under that caller's own
@@ -2345,11 +1774,11 @@ Future<CcServer> runCcServer({
   // forge has a credential; repos on an unconnected forge resolve to the empty
   // repository and their surface reads "connect <forge>" rather than failing.
   //
-  // The local-git diff source backs the >3000-file fallback and runs `git` on
-  // the server's own checkout. A null rift client means "no CoW seeding wired
-  // here, use a network clone" — distinct from a rift client whose dylib will
-  // not load, which is a broken install and throws (see
-  // `PrCloneManager._tryRiftCopy`).
+  // The local-git diff source backs the >3000-file fallback and the
+  // >20 000-line raw-diff fallback, and runs `git` on the server's own
+  // checkout. A null rift client means "no CoW seeding wired here, use a
+  // network clone" — distinct from a rift client whose dylib will not load,
+  // which is a broken install and throws (see `PrCloneManager._tryRiftCopy`).
   final localGitPrDiffSource = LocalGitPrDiffSource(
     git: const ProcessGitCommandAdapter(),
     filesystem: workspaceFilesystem,
@@ -2373,12 +1802,12 @@ Future<CcServer> runCcServer({
             // so there is nothing to author writes as and nothing to dial.
             demo?.forgeRegistryFor(userId) ??
             buildForgeProviderRegistry(
-          workspaceDbs: workspaceDbs,
-          dioFactory: forgeDioFactoryForActor(userId),
-          localGitSource: localGitPrDiffSource,
-          eventBus: eventBus,
-          changeSignals: prChangeSignals,
-        ),
+              workspaceDbs: workspaceDbs,
+              dioFactory: forgeDioFactoryForActor(userId),
+              localGitSource: localGitPrDiffSource,
+              eventBus: eventBus,
+              changeSignals: prChangeSignals,
+            ),
       );
 
   _bootMark('wiring agent executor + tool surface');
@@ -2408,11 +1837,10 @@ Future<CcServer> runCcServer({
   // macOS, two PATH lookups on Linux.
   //
   // Both seams have to be fed, because the transports do not share one:
-  //   * `sandbox` (the SandboxPort) wraps the structuredCli / claudeCli
-  //     transports via launch/exec — that is Pi and Claude Code only. Codex is
-  //     `AdapterTransport.acp`, so it rides the manager below.
-  //   * `sandboxManager` wraps the ACP transport and the built-in harness
-  //     `bash` tool via `wrap()`.
+  //   * `sandbox` (the SandboxPort) wraps the claudeCli transport via
+  //     launch/exec — that is Claude Code only.
+  //   * `sandboxManager` wraps the ACP transport (Cursor) and the built-in
+  //     harness `bash` tool via `wrap()`.
   // Passing only one leaves the other transport unsandboxed. Every wrapped
   // path populates `SandboxSpec.protectedPaths` for itself (the ACP config
   // builder and the harness command runner both call the resolver), so the
@@ -2483,20 +1911,26 @@ Future<CcServer> runCcServer({
     store: harnessCreds,
     dataDir: config.dataDir,
   );
-  // Bundled models.dev catalog for the built-in harness: supplies per-model
+  // models.dev catalog for the built-in harness: supplies per-model
   // reasoning support (effort clamping), USD pricing and context-window size.
-  ModelCatalog harnessModelCatalog;
+  // Cached under the data dir — never a bundled snapshot. Boot reads the
+  // disk cache only so a first-run fetch cannot hold the ready banner; the
+  // background refresh fills an empty cache after listen. The demo does not
+  // dial models.dev (`allowNetwork: false`).
+  final modelsDevSource = FileModelsDevSource(
+    cacheFilePath: p.join(config.dataDir, 'models_dev', 'api.json'),
+    allowNetwork: demo == null,
+  );
+  final modelCatalogService = ModelCatalogService(source: modelsDevSource);
   final catalogStartedAt = DateTime.now();
   _bootMark('loading harness model catalog');
   try {
-    harnessModelCatalog = ModelCatalog.fromModelsDev(
-      (await InMemoryModelsDevSource().load())!,
-    );
+    await modelCatalogService.ensureLoaded();
   } on Object catch (e) {
     CcHostLog.warning('cc_server: harness model catalog load failed: $e');
-    harnessModelCatalog = ModelCatalog.empty;
   }
   _bootDone('loading harness model catalog', catalogStartedAt);
+  modelCatalogService.startBackgroundRefresh();
   // Per-model overrides (Settings → Model providers → edit model): the sync
   // in-memory view the dispatch modelResolver consults, refreshed from the
   // credential store once here and kept current by the providers.* ops.
@@ -2508,11 +1942,11 @@ Future<CcServer> runCcServer({
   // that the provider deps exist. It picks the cheapest recent model, runs one
   // tool-less completion with a hard timeout and only tightens a passing
   // verdict. A provider outage throws → the adapter keeps the static verdict.
-  skillScanner.llmReview = SkillLlmReviewRunner(
+  skillScanner.llmReview = (bundle, staticResult) => SkillLlmReviewRunner(
     credentials: harnessCreds,
-    catalog: harnessModelCatalog,
+    catalog: modelCatalogService.catalogSync(),
     refresher: harnessOAuthBroker,
-  ).review;
+  ).review(bundle, staticResult);
   // fff (Rust) powers every fuzzy file search on this server — the Explorer's
   // search (RepoIdeDataService below) and the harness `read`/`file_search`
   // tools share this one instance, so its per-root scan caches are warm across
@@ -2558,7 +1992,7 @@ Future<CcServer> runCcServer({
     backendRegistry: demo?.backendRegistry,
     harnessProviderFactory:
         demo?.harnessProviderFactory ?? const HarnessProviderFactory(),
-    // See the sandbox probe above: `sandbox` covers structuredCli/claudeCli,
+    // See the sandbox probe above: `sandbox` covers claudeCli,
     // `sandboxManager` covers ACP + the harness `bash` tool. Both fall back to
     // the previous unsandboxed behaviour on a host that cannot sandbox.
     sandbox: useNativeSandbox ? nativeSandbox : NoSandboxAdapter(),
@@ -2676,8 +2110,10 @@ Future<CcServer> runCcServer({
     credentialGate: credentialGate,
     syncClaudeCredential: (accountId) =>
         claudeAccountStore.syncCredentialFromKeychain(accountId),
-    modelResolver: (qualified) =>
-        harnessModelOverrides.resolve(harnessModelCatalog.resolve, qualified),
+    modelResolver: (qualified) => harnessModelOverrides.resolve(
+      modelCatalogService.catalogSync().resolve,
+      qualified,
+    ),
     // Git authorship (PRD 14 §14): resolve the requesting human's git
     // identity for the commit co-author trailer. A null userId means no
     // acting human was threaded (programmatic dispatch) — attribute to the
@@ -3164,11 +2600,10 @@ Future<CcServer> runCcServer({
     // file's path. Without it a run is handed the names of files it was never
     // given — the sender's own paths mean nothing here, and no adapter can
     // resolve a `blob:sha256:` reference.
-    promptAttachments:
-        SpacePromptAttachments(
-          blobStore: blobStore,
-          spaceDir: workspaceFilesystem.spaceDir,
-        ).resolve,
+    promptAttachments: SpacePromptAttachments(
+      blobStore: blobStore,
+      spaceDir: workspaceFilesystem.spaceDir,
+    ).resolve,
     // Stopping a space's preparation (the pipeline step that owned it was
     // cancelled, or a human pressed stop in the space) kills the running clone
     // rather than only stopping whoever was waiting for it.
@@ -3268,9 +2703,10 @@ Future<CcServer> runCcServer({
     sessionsForConversation: agentDispatch.sessionsForConversation,
   );
   messagingService.steeringQueueService = steeringQueueService;
-  agentDispatch.onSessionHarnessStarted = steeringQueueService.handleHarnessStarted;
-  agentDispatchService.onRunEnded =
-      (workspaceId, conversationId, spaceId) => unawaited(
+  agentDispatch.onSessionHarnessStarted =
+      steeringQueueService.handleHarnessStarted;
+  agentDispatchService.onRunEnded = (workspaceId, conversationId, spaceId) =>
+      unawaited(
         steeringQueueService.handleRunEnded(
           workspaceId,
           conversationId,
@@ -3556,6 +2992,7 @@ Future<CcServer> runCcServer({
   // actually boot, and it runs lazily rather than on the path to the ready
   // banner the desktop parses with a 20s timeout.
   final rigImageStore = RigImageStore(dataDir: config.dataDir);
+  final iosAutomationStore = IosAutomationStore(dataDir: config.dataDir);
   final rigCredentials = GuestCredentialService(broker: credentialBroker);
   final qemuBackend = QemuEnclosureBackend(
     dataDir: config.dataDir,
@@ -3564,6 +3001,10 @@ Future<CcServer> runCcServer({
   // The microVM backend: exec (terminal) and browser rigs. Owns no state the
   // smolvm CLI does not own — the machines live in its store.
   final smolvmBackend = SmolvmEnclosureBackend(dataDir: config.dataDir);
+  final iosSimulatorBackend = IosSimulatorBackend(
+    dataDir: config.dataDir,
+    automationStore: iosAutomationStore,
+  );
   // Hoisted (rather than inlined into RigService) because RigEventListener
   // needs the same view: a rig event carries only workspace + rig id, so the
   // agent driving the machine is resolved from the stored row.
@@ -3573,11 +3014,12 @@ Future<CcServer> runCcServer({
     qemu: qemuBackend,
     smolvm: smolvmBackend,
     images: rigImageStore,
+    ios: iosSimulatorBackend,
     credentials: rigCredentials,
     eventBus: eventBus,
-    // The confinement root for `install_apk` on a mobile rig: every
-    // workspace's working directories live under it, and a path outside it is
-    // refused rather than pushed into a guest.
+    // Confinement root for Android APK and iOS simulator app installation:
+    // every workspace's working directories live under it, and paths outside
+    // it are refused rather than handed to a host-managed device.
     dataDir: config.dataDir,
     // A workspace may point its Terminal/Browser (VM) at its own image — an
     // admin-gated workspace setting, re-validated at boot before the value
@@ -3738,6 +3180,7 @@ Future<CcServer> runCcServer({
     ..register(ComputerUseTool(rigs: rigService))
     ..register(BrowserUseTool(rigs: rigService))
     ..register(MobileUseTool(rigs: rigService))
+    ..register(IosUseTool(rigs: rigService))
     ..register(RigListTool(rigs: rigService))
     ..register(RigCloseTool(rigs: rigService));
 
@@ -3867,76 +3310,14 @@ Future<CcServer> runCcServer({
   // Built here (rather than at its use site further down) so a missing grammar
   // is caught at boot instead of on the first index run.
   final grammarsRoot = (await paths.grammarsRoot()).path;
-  bool Function() dylibProbe(String baseName, {String? envVar}) =>
-      () =>
-          tryOpenFirst([
-            // `build_tree_sitter.sh` installs into a `grammars/` subdir at dev time;
-            // harmless for the others (a path that does not exist is skipped).
-            p.join(grammarsRoot, platformLibraryFileName(baseName)),
-            ...nativeLibraryCandidates(
-              baseName,
-              appSupportRoot: config.dataDir,
-              envVar: envVar,
-            ),
-          ]) !=
-          null;
-
-  final missingNatives = await missingRequiredNatives([
-    // ONE requirement for both ML workloads: the two dylibs (sherpa-onnx +
-    // its own onnxruntime) and the embedder's SECOND onnxruntime all collapsed
-    // into this single statically linked native.
-    nativeRequirement(
-      '${platformLibraryFileName(inferenceLibraryBaseName)} (semantic '
-      'embeddings, meeting transcription, diarization, VAD, dictation)',
-      () async => inferenceLibPath != null,
+  final missingNatives = await missingRequiredNatives(
+    buildNativeRequirements(
+      grammarsRoot: grammarsRoot,
+      dataDir: config.dataDir,
+      inferenceLibPath: inferenceLibPath,
+      grammarManager: grammarManager,
     ),
-    nativeRequirement(
-      '${platformLibraryFileName(ptyLibraryBaseName)} (sandboxed terminals)',
-      () async => Pty.isAvailable,
-    ),
-    nativeRequirement(
-      '${platformLibraryFileName(watcherLibraryBaseName)} (code-graph file '
-      'watching)',
-      () async => NativeDirectoryWatcher.isAvailable,
-    ),
-    nativeRequirement(
-      '${platformLibraryFileName(samlLibraryBaseName)} (SAML SSO response '
-      'verification)',
-      () async => CcSaml.isAvailable,
-    ),
-    nativeRequirement(
-      '${platformLibraryFileName('fff_c')} (fuzzy file search)',
-      () async => dylibProbe('fff_c')(),
-    ),
-    nativeRequirement(
-      '${platformLibraryFileName('lame_ffi')} (soundscape MP3 encoding)',
-      () async => dylibProbe('lame_ffi', envVar: 'LAME_FFI_DYLIB')(),
-    ),
-    // TODO(windows): rift has no MSVC copy-on-write backend, so
-    // `scripts/release/windows_natives.sh` deliberately does not build it and
-    // `git worktree` is the BACKEND there (not a degradation) — see
-    // `RiftRepoIsolationAdapter.missingRiftIsExpected`. Drop this exemption once
-    // a Windows CoW backend exists.
-    nativeRequirement(
-      '${platformLibraryFileName('rift_ffi')} (copy-on-write worktrees)',
-      () async => dylibProbe('rift_ffi', envVar: 'RIFT_FFI_DYLIB')(),
-      requiredOnWindows: false,
-    ),
-    nativeRequirement(
-      '${platformLibraryFileName('tree-sitter')} (code graph indexing)',
-      () async => dylibProbe('tree-sitter')(),
-    ),
-    // One entry per shipped grammar so the error names the exact missing dylib.
-    // `kLanguageByExtension` IS the shipped set (the build script produces the
-    // same list), which is why the indexer can treat an unresolvable language as
-    // a broken install rather than finite coverage.
-    for (final languageId in kLanguageByExtension.values.toSet())
-      nativeRequirement(
-        '${platformLibraryFileName('tree-sitter-$languageId')} '
-        '($languageId code graph grammar)',
-        () async => await grammarManager.resolve(languageId) != null,
-      ),
-  ]);
+  );
   if (missingNatives.isNotEmpty) {
     throw StateError(
       'cc_server: required native libraries are missing:\n'
@@ -5064,48 +4445,17 @@ Future<CcServer> runCcServer({
   // request time, by which point bootstrap has assigned it.
   TicketSyncEngine? ticketSyncEngineRef;
 
-  // ---- Fleet scaling & remote execution (PRD 20) ----
-  // The scheduler places typed JobSpecs onto eligible workers (pin → prefer →
-  // spill); the implicit local worker runs jobs in-process (byte-identical to
-  // the pre-fleet path); remote `cc_worker`s pull leases and stream events back
-  // via the RemoteExecutionRegistry. Built here (where the DB + services live)
-  // and its ops spliced into the RPC catalog below.
-  final fleetRepository = DaoFleetRepository(globalDb.fleetDao);
-  final remoteExecutionRegistry = RemoteExecutionRegistry();
-  final localJobExecutor = LocalJobExecutor(<JobKind, JobRunner>{});
-  final remoteJobExecutor = RemoteJobExecutor(remoteExecutionRegistry);
-  final fleetScheduler = FleetSchedulerService(
-    repository: fleetRepository,
-    executorResolver: (worker) =>
-        worker.id == kLocalWorkerId ? localJobExecutor : remoteJobExecutor,
+  // ---- Fleet scaling & remote execution (PRD 20) + Agent evals (PRD 21) ----
+  final fleet = buildFleetWiring(
+    globalDb: globalDb,
+    workspaceDbs: workspaceDbs,
   );
-  // Register the implicit local worker (the server host doubling as a
-  // zero-config worker), reflecting the host's detected capabilities.
+  final fleetScheduler = fleet.fleetScheduler;
+  final localJobExecutor = fleet.localJobExecutor;
+  final evalsRepository = fleet.evalsRepository;
+  final fleetOps = fleet.ops;
+  final fleetWatchQueries = fleet.watchQueries;
   unawaited(fleetScheduler.ensureLocalWorker(_detectLocalWorkerCapabilities()));
-  // ---- Agent evals, replay & regression (PRD 21) ----
-  // The evals repository backs suites/runs/recordings/goldens/config-versions;
-  // its ops join the fleet ops in the spliced `extraOps`. Eval-batch execution
-  // (the dispatch-backed task executor) is the remaining integration seam —
-  // `runnerFactory` is null here, so `evals.runSuite` returns a clear error
-  // rather than a fake pass until that executor is wired.
-  final evalsRepository = DaoEvalsRepository(workspaceDbs);
-
-  final fleetOps = <RepoOp>[
-    ...buildFleetOperatorOps(
-      scheduler: fleetScheduler,
-      fleetRepository: fleetRepository,
-    ),
-    ...buildFleetWorkerOps(
-      scheduler: fleetScheduler,
-      fleetRepository: fleetRepository,
-      remoteRegistry: remoteExecutionRegistry,
-    ),
-    ...buildEvalsOps(repository: evalsRepository),
-  ];
-  final fleetWatchQueries = <WatchQuery>[
-    ...buildFleetWatchQueries(fleetRepository: fleetRepository),
-    ...buildEvalsWatchQueries(repository: evalsRepository),
-  ];
 
   // PR workbench: idempotently ensure a PR has a backing space (mode review),
   // linked via the review-space association and kick off provisioning of its
@@ -5735,6 +5085,48 @@ Future<CcServer> runCcServer({
   // made them, on every path out — this directory is a workbench, not a store.
   final backupTransferStagingDir = '${config.dataDir}/backups/transfer';
 
+  final serverExtraOps = buildServerExtraOps(
+    fleetOps: fleetOps,
+    fleetWatchQueries: fleetWatchQueries,
+    agentRepository: agentRepository,
+    workspaceFilesystem: workspaceFilesystem,
+    workspaceRepository: workspaceRepository,
+    membershipRepository: membershipRepository,
+    eventBus: eventBus,
+    contextInspection: ContextInspectionService(
+      agentRepository: agentRepository,
+      messagingRepository: messagingRepository,
+      modeResolver: conversationModeResolver,
+      filesystem: workspaceFilesystem,
+      mcpRegistry: mcpRegistry,
+      fileSearch: CcNativesFileSearchPort(fileSearch: ideFileSearch),
+      memoryContextUseCase: memoryContextUseCase,
+      sandboxManager: useNativeSandbox ? sandboxManager : null,
+      confirmationPort: confirmationPort,
+      protectedPathsResolver: protectedPathsResolver,
+      toolDeferralEnabled: config.toolDeferralEnabled,
+    ),
+    weatherService: weatherService,
+    fontCatalog: fontCatalog,
+    filterLists: filterLists,
+    modelsDevSource: modelsDevSource,
+    modelCatalogService: modelCatalogService,
+    soundscapeHub: soundscapeHub,
+    chatConnector: chatConnector,
+    userRepository: userRepository,
+    ssoSettings: ssoSettings,
+    isServerOwner: isServerOwner,
+    codeGraphRepository: DaoCodeGraphRepository(
+      workspaceDbs,
+      embeddingService: embeddingService,
+    ),
+    codeGraphTree: CodeGraphTreeService(
+      repoRepository: repoRepository,
+      workspaceRepository: workspaceRepository,
+      isolatedRepoRepository: isolatedRepoRepository,
+    ),
+  );
+
   final catalog = buildRemoteRpcCatalog(
     manualPairingEnabled: ssoSettings.isPairingEnabled,
     // The demo's one outbound marketing read: the project's own star count,
@@ -5758,44 +5150,11 @@ Future<CcServer> runCcServer({
     },
     ensurePrSpace: ensurePrSpace,
     // demo: no worktrees to provision.
-    ensurePrWorktree: demo != null
-        ? null
-        : ensurePrWorktreePath,
+    ensurePrWorktree: demo != null ? null : ensurePrWorktreePath,
     // demo: no worktrees to sync.
-    syncPrWorktree: demo != null
-        ? null
-        : syncPrWorktree,
-    extraOps: [
-      ...fleetOps,
-      ...buildContextOps(
-        inspection: ContextInspectionService(
-          agentRepository: agentRepository,
-          messagingRepository: messagingRepository,
-          modeResolver: conversationModeResolver,
-          filesystem: workspaceFilesystem,
-          mcpRegistry: mcpRegistry,
-          fileSearch: CcNativesFileSearchPort(fileSearch: ideFileSearch),
-          memoryContextUseCase: memoryContextUseCase,
-          sandboxManager: useNativeSandbox ? sandboxManager : null,
-          confirmationPort: confirmationPort,
-          protectedPathsResolver: protectedPathsResolver,
-          // Must match dispatch's setting or the explorer reports a surface no
-          // run gets — the one failure this service exists to prevent.
-          toolDeferralEnabled: config.toolDeferralEnabled,
-        ),
-      ),
-      ...buildWeatherOps(weatherService),
-      ...buildFontsOps(fontCatalog),
-      ...buildSoundscapeOps(soundscapeHub),
-      ...buildChatOps(connector: chatConnector, users: userRepository),
-      ...buildSsoOps(settings: ssoSettings, isServerOwner: isServerOwner),
-    ],
-    extraWatchQueries: [
-      ...fleetWatchQueries,
-      ...buildWeatherWatchQueries(weatherService),
-      ...buildSoundscapeWatchQueries(soundscapeHub),
-      ...buildChatWatchQueries(connector: chatConnector, users: userRepository),
-    ],
+    syncPrWorktree: demo != null ? null : syncPrWorktree,
+    extraOps: serverExtraOps.ops,
+    extraWatchQueries: serverExtraOps.watches,
     // Identity & membership (multi-user access): the users/members/invites/
     // prefs/activity ops + the invite service, plus the bootstrap owner (the
     // admin of server-global surfaces like the device registry).
@@ -5813,9 +5172,7 @@ Future<CcServer> runCcServer({
     // store instance the dispatch adapter reads, so a token saved over RPC is
     // immediately used by the member's next run.
     // demo: no per-user credential storage.
-    userCredentials: demo != null
-        ? null
-        : userCredentials,
+    userCredentials: demo != null ? null : userCredentials,
     ticketRepository: ticketRepository,
     projectRepository: projectRepository,
     // Read-only sync-health surface (§188): the client watches these to show
@@ -5829,7 +5186,10 @@ Future<CcServer> runCcServer({
     ticketSyncNow: demo != null
         ? null
         : ({required String workspaceId, String? vendor}) =>
-        ticketSyncEngineRef!.pullNow(workspaceId: workspaceId, vendor: vendor),
+              ticketSyncEngineRef!.pullNow(
+                workspaceId: workspaceId,
+                vendor: vendor,
+              ),
     ticketWorkflow: ticketWorkflow,
     messagingRepository: messagingRepository,
     // The other half of `ask_user`: `messaging.updateMessage` hands the
@@ -5869,9 +5229,7 @@ Future<CcServer> runCcServer({
     repoRepository: repoRepository,
     repoScriptRepository: repoScriptRepository,
     // demo: no repo script execution.
-    repoScripts: demo != null
-        ? null
-        : repoScriptService,
+    repoScripts: demo != null ? null : repoScriptService,
     spaceReadRepository: spaceReadRepository,
     memoryDomainRepository: memoryDomainRepository,
     memoryAccessGrantRepository: memoryAccessGrantRepository,
@@ -5909,9 +5267,10 @@ Future<CcServer> runCcServer({
     isolatedRepoRepository: isolatedRepoRepository,
     voiceProfileRepository: voiceProfileRepository,
     // PR "open in editor" resolves the space worktree (`ide.ensureWorktree`)
-    // via `ensurePrWorktree` above; no editorLauncher is wired (the headless host
-    // can't launch a GUI editor — the client launches the returned path locally),
-    // so only the worktree-path op lights up, not `ide.openPrInEditor`.
+    // via `ensurePrWorktree` above and launches the chosen GUI editor on this
+    // host (`ide.openPrInEditor` / `ide.detectEditors`) through
+    // [NativeEditorLauncher]. A remote thin client never shells out itself.
+    editorLauncher: NativeEditorLauncher(),
     // Messaging IDE repo data ops: the Explorer file tree (`repos.searchFiles`),
     // the Source Control per-repo diff (`repos.changes`), the file viewer
     // (`repos.readFile`) and the aggregate conversation diff
@@ -5920,13 +5279,9 @@ Future<CcServer> runCcServer({
     repoChanges: repoIdeData.repoChanges,
     repoChangesGrouped: repoIdeData.repoChangesGrouped,
     // demo: no git index mutation.
-    repoStage: demo != null
-        ? null
-        : repoIdeData.stageFiles,
+    repoStage: demo != null ? null : repoIdeData.stageFiles,
     // demo: no git index mutation.
-    repoUnstage: demo != null
-        ? null
-        : repoIdeData.unstageFiles,
+    repoUnstage: demo != null ? null : repoIdeData.unstageFiles,
     repoFileContent: repoIdeData.readFile,
     repoFileSearch: repoIdeData.searchFiles,
     repoDirectoryListing: repoIdeData.listDirectory,
@@ -5934,9 +5289,7 @@ Future<CcServer> runCcServer({
     worktreeContentSearch: repoIdeData.searchWorktreeContentWithOptions,
     worktreeFileSearch: repoIdeData.searchFilesInWorktree,
     // demo: no git diffs without a checkout.
-    conversationChanges: demo != null
-        ? null
-        : repoIdeData.conversationChanges,
+    conversationChanges: demo != null ? null : repoIdeData.conversationChanges,
     // IDE worktree mutate ops: the "untitled" draft save (⌘S) writes into the
     // conversation's CoW worktree and the Source Control "Revert" action
     // restores working-tree files to HEAD. Both run SERVER-SIDE over the
@@ -5944,80 +5297,73 @@ Future<CcServer> runCcServer({
     // demo: no worktree writes; the demo has no repos at all.
     worktreeWriteFile: demo != null
         ? null
-        : 
-        ({
-          required workspaceId,
-          required spaceId,
-          required repoId,
-          required path,
-          required content,
-        }) async {
-          final r = await repoIdeData.writeFile(
-            workspaceId,
-            spaceId,
-            repoId,
-            path,
-            content,
-          );
-          if (r == null) {
-            return null;
-          }
-          return {'repoId': r.repoId, 'path': r.path};
-        },
+        : ({
+            required workspaceId,
+            required spaceId,
+            required repoId,
+            required path,
+            required content,
+          }) async {
+            final r = await repoIdeData.writeFile(
+              workspaceId,
+              spaceId,
+              repoId,
+              path,
+              content,
+            );
+            if (r == null) {
+              return null;
+            }
+            return {'repoId': r.repoId, 'path': r.path};
+          },
     // demo: no worktree writes.
     worktreeRevertFiles: demo != null
         ? null
-        : 
-        ({
-          required workspaceId,
-          required spaceId,
-          required repoId,
-          required paths,
-        }) async {
-          final r = await repoIdeData.revertFiles(
-            workspaceId,
-            spaceId,
-            repoId,
-            paths,
-          );
-          if (r == null) {
-            return null;
-          }
-          return {
-            'repoId': r.repoId,
-            'reverted': r.reverted,
-            'skipped': r.skipped,
-          };
-        },
+        : ({
+            required workspaceId,
+            required spaceId,
+            required repoId,
+            required paths,
+          }) async {
+            final r = await repoIdeData.revertFiles(
+              workspaceId,
+              spaceId,
+              repoId,
+              paths,
+            );
+            if (r == null) {
+              return null;
+            }
+            return {
+              'repoId': r.repoId,
+              'reverted': r.reverted,
+              'skipped': r.skipped,
+            };
+          },
     // demo: nothing to read: no repos row is ever created.
     worktreeReadFile: demo != null
         ? null
-        : 
-        ({
-          required workspaceId,
-          required spaceId,
-          required repoId,
-          required path,
-        }) async {
-          final r = await repoIdeData.readFileFromWorktree(
-            workspaceId,
-            spaceId,
-            repoId,
-            path,
-          );
-          if (r == null) {
-            return null;
-          }
-          return {'content': r.content, 'binary': r.binary};
-        },
+        : ({
+            required workspaceId,
+            required spaceId,
+            required repoId,
+            required path,
+          }) async {
+            final r = await repoIdeData.readFileFromWorktree(
+              workspaceId,
+              spaceId,
+              repoId,
+              path,
+            );
+            if (r == null) {
+              return null;
+            }
+            return {'content': r.content, 'binary': r.binary};
+          },
     // demo: never commit or push from a public endpoint.
-    worktreeCommitAndPush: demo != null
-        ? null
-        : repoIdeData.commitAndPush,
+    worktreeCommitAndPush: demo != null ? null : repoIdeData.commitAndPush,
     // demo: never publish a branch from a public endpoint.
-    worktreePublishBranch: demo != null
-        ? null
-        : repoIdeData.publishBranch,
+    worktreePublishBranch: demo != null ? null : repoIdeData.publishBranch,
     // Remote agent-action approvals: the same registry the dispatch/MCP paths
     // publish to, exposed to clients over `confirmation.watchPending` +
     // `confirmation.respond` so a desktop/web/phone user can approve or deny.
@@ -6027,15 +5373,11 @@ Future<CcServer> runCcServer({
     // Live meeting recording over RPC (null when no ASR model is installed →
     // the recording ops stay absent and the web recorder reports unavailable).
     // demo: no audio capture.
-    meetingRecording: demo != null
-        ? null
-        : meetingRecording,
+    meetingRecording: demo != null ? null : meetingRecording,
     // Composer voice dictation over RPC (same null-when-no-ASR-model contract →
     // the `dictation.*` ops + `dictation.watchPartials` stay absent).
     // demo: no dictation.
-    dictationService: demo != null
-        ? null
-        : dictationService,
+    dictationService: demo != null ? null : dictationService,
     // On-device model download, handled by the SERVER: a connected web/thin
     // client drives status/install/cancel/uninstall over `models.*` and watches
     // live progress over `models.watch*`; the server performs the download +
@@ -6068,9 +5410,7 @@ Future<CcServer> runCcServer({
     pairingServerUrl: config.publicUrl,
     descriptorService: descriptorService,
     // demo: no tunnels, no mDNS.
-    networkRuntime: demo != null
-        ? null
-        : () => networkRuntimeHolder.value,
+    networkRuntime: demo != null ? null : () => networkRuntimeHolder.value,
     presenceHub: presenceHub,
     syncFeed: syncFeed,
     workspaceDbs: workspaceDbs,
@@ -6101,9 +5441,7 @@ Future<CcServer> runCcServer({
     // demo: no host filesystem browsing.
     directoryBrowser: demo != null
         ? null
-        : FilesystemDirectoryBrowser(
-      allowedRoots: config.repoRoots,
-    ),
+        : FilesystemDirectoryBrowser(allowedRoots: config.repoRoots),
     // Server-host adapter / model / gh-CLI probing: the headless server links
     // cc_infra, so it probes the agent-runner CLIs installed on ITS machine for
     // a connected client's Settings → Adapters + auth status. `github_cli.probe`
@@ -6113,25 +5451,17 @@ Future<CcServer> runCcServer({
     ),
     acpModels: AcpModelRepositoryImpl(AcpModelsService()),
     // demo: no OAuth round trips.
-    providerOAuth: demo != null
-        ? null
-        : providerOAuth,
+    providerOAuth: demo != null ? null : providerOAuth,
     // demo: no app identity to configure.
-    providerApps: demo != null
-        ? null
-        : providerApps,
+    providerApps: demo != null ? null : providerApps,
     // demo: no forge credentials exist to read or write.
-    forgeCredentials: demo != null
-        ? null
-        : forgeCredentials,
+    forgeCredentials: demo != null ? null : forgeCredentials,
     buildForgePrClient: (repo, actingUserId) =>
         forgePrClientForRepo(repo, actingUserId: actingUserId),
     // Sandbox detection: report THIS host's OS-native sandbox capabilities so a
     // connected web/thin client's Settings → Sandboxing reflects the server.
     // demo: no sandbox probing; nothing is sandboxed because nothing runs.
-    sandboxDetector: demo != null
-        ? null
-        : sandboxDetector,
+    sandboxDetector: demo != null ? null : sandboxDetector,
     // Process detection: the server scans ITS OS process table for agent
     // processes (the dashboard's cross-workspace "active processes" matrix) and
     // can stop one by pid. Both ops are fullClient-only + cross-workspace.
@@ -6139,10 +5469,10 @@ Future<CcServer> runCcServer({
     processDetection: demo != null
         ? null
         : ProcessDetectionService(
-      runLogRepo: agentRunLogRepository,
-      agentRepo: agentRepository,
-      workspaceRepo: workspaceRepository,
-    ),
+            runLogRepo: agentRunLogRepository,
+            agentRepo: agentRepository,
+            workspaceRepo: workspaceRepository,
+          ),
     // Run-viewer reads: the NDJSON logs live under the server's data dir, which
     // also bounds what the op may open.
     runLogReader: RunLogReader(allowedRoot: config.dataDir),
@@ -6407,6 +5737,15 @@ Future<CcServer> runCcServer({
                 (await githubClientForActor(
                   actingUserId,
                 ).graphql.getUserProfile(login: login))?.toWire(),
+            teamProfile: (organization, slug, actingUserId) =>
+                githubClientForActor(actingUserId).graphql.getTeamProfile(
+                  organization: organization,
+                  slug: slug,
+                ),
+            profileActivity: (repos, logins, actingUserId) =>
+                GitHubProfileActivityAdapter(
+                  githubClientForActor(actingUserId),
+                ).fetch(repos: repos, logins: logins),
             openPrPage: (owner, repo, page) async {
               final result = await serverGitHubClient.pr
                   .listOpenPullRequestsPage(owner, repo, page: page);
@@ -6457,95 +5796,19 @@ Future<CcServer> runCcServer({
       createDio(),
       summaryUrl: kimiStatusSummaryUrl,
     ).fetchSummaryJson(),
-    // Live subscription-usage quotas (Claude/Codex/z.ai/Kimi Code). Reads the
-    // CLIs' own credentials server-side; the z.ai key and the Kimi Code OAuth
-    // token are resolved by the op from the harness provider credential store
-    // (Settings → Adapters).
-    fetchSubscriptionUsage:
-        ({
-          zaiApiKey,
-          zaiBaseUrl,
-          kimiAccessToken,
-          kimiBaseUrl,
-          kimiDeviceId,
-        }) async {
-          final all = await SubscriptionUsageService(dio: createDio()).fetchAll(
-            zaiApiKey: zaiApiKey,
-            zaiBaseUrl: zaiBaseUrl,
-            kimiAccessToken: kimiAccessToken,
-            kimiBaseUrl: kimiBaseUrl,
-            kimiDeviceId: kimiDeviceId,
-          );
-          // Claude's quota is per ACCOUNT, and with several attached the one
-          // aggregate reading answers the wrong question — the operator wants
-          // to know which login still has room, not what the default one has
-          // left. So the single Claude entry expands into one per managed
-          // account; every other provider is untouched.
-          final accounts = await claudeAccountStore.listWithStatus();
-          if (accounts.length < 2) {
-            return [for (final u in all) u.toJson()];
-          }
-          final perAccount = await Future.wait(
-            accounts.map((a) async {
-              // An account the host already knows cannot authenticate — signed
-              // out, or holding an access token past its own expiry — is
-              // answered from what we know instead of asked. The endpoint takes
-              // the bearer as-is and refreshes nothing, so it can only reply
-              // 401; this runs on a ten-minute timer, so probing anyway spends
-              // a request per account per cycle to re-learn a fact the
-              // credential states on disk. (An expired token whose refresh
-              // token is still good remains a perfectly usable RUN account —
-              // the CLI renews it on start. It just cannot answer this.)
-              //
-              // The two cases are reported SEPARATELY, because they ask
-              // different things of the operator. A signed-out account (or one
-              // a run already watched 401) needs a human; a merely-lapsed token
-              // with a refresh token beside it renews itself. Both used to
-              // arrive as `unconfigured`, which the flyout renders as "no usage
-              // reported for this account" — so an account that had silently
-              // fallen out of the rotation looked exactly like a quiet one.
-              SubscriptionUsage stateOnly(
-                SubscriptionStatus status,
-                String reason,
-              ) => SubscriptionUsage(
-                providerId: 'claude',
-                displayName: 'Claude',
-                status: status,
-                error: reason,
-                fetchedAt: DateTime.now().toUtc(),
-                accountId: a.id,
-                accountLabel: _claudeAccountLabel(a),
-              );
-
-              if (!a.loggedIn) {
-                return stateOnly(
-                  SubscriptionStatus.signInRequired,
-                  a.statusError ??
-                      'This account cannot authenticate. Sign in again.',
-                );
-              }
-              if (a.isCredentialExpired()) {
-                return stateOnly(
-                  SubscriptionStatus.signInExpired,
-                  'The sign-in expired. Usage is readable again after the '
-                  'next run renews it, or after signing in.',
-                );
-              }
-              final usage = await claudeUsageCache.get(
-                claudeAccountStore.configDirFor(a.id),
-              );
-              return usage.copyWith(
-                accountId: a.id,
-                accountLabel: _claudeAccountLabel(a),
-              );
-            }),
-          );
-          return [
-            for (final u in all)
-              if (u.providerId != 'claude') u.toJson(),
-            for (final u in perAccount) u.toJson(),
-          ];
-        },
+    // Live subscription-usage quotas. Every provider fans out through the
+    // same [SubscriptionUsageAccount] list so pinned / round-robin / serial
+    // rotation can show remaining quota per login. Claude Code accounts are
+    // merged here (they live in the CLI store, not the harness credential
+    // file); Codex / Cursor / z.ai / Kimi arrive already collected by the op.
+    fetchSubscriptionUsage: (accounts) async {
+      final claude = await _claudeUsageAccounts(store: claudeAccountStore);
+      final all = await SubscriptionUsageService(
+        dio: createDio(),
+        fetchClaudeCached: claudeUsageCache.get,
+      ).fetchAll(accounts: [...accounts, ...claude]);
+      return [for (final u in all) u.toJson()];
+    },
     // The Claude Code logins this host manages, and the per-account quota the
     // composer picker shows so "which account should this run use?" can be
     // answered on remaining headroom rather than from memory.
@@ -6599,21 +5862,15 @@ Future<CcServer> runCcServer({
     // The headless server hosts its own MCP HTTP server; the `mcp.*` ops drive
     // this control so a connected web/thin client can start/stop/reconfigure it.
     // demo: no MCP server control, so /mcp and /sse are never mounted.
-    mcpControl: demo != null
-        ? null
-        : mcpControl,
+    mcpControl: demo != null ? null : mcpControl,
     // The `mcp.client.*` ops drive the external-MCP client subsystem (list
     // discovered servers, steer the approval posture, reconnect).
     // demo: no external MCP clients.
-    mcpClientControl: demo != null
-        ? null
-        : mcpClientControl,
+    mcpClientControl: demo != null ? null : mcpClientControl,
     // The headless server owns its filesystem, so it serves the `fs.*` ops over
     // the workspace on-disk layout rooted at its data dir.
     // demo: removes every fs.* op, writeString included.
-    workspaceFilesystem: demo != null
-        ? null
-        : workspaceFilesystem,
+    workspaceFilesystem: demo != null ? null : workspaceFilesystem,
     // Agent dispatch + space lifecycle: the headless server now runs agents
     // itself (the dispatch engine is Flutter-free, on libccpty), so the
     // `dispatch.*` ops are LIVE. Streamed replies land on message rows the
@@ -6659,29 +5916,21 @@ Future<CcServer> runCcServer({
     // Interactive terminal over RPC (libccpty): the `terminal.*` ops run a REAL
     // shell on this host, scoped + ownership-checked per the bound workspace.
     // demo: no PTY on a public demo — the ops vanish from the registry.
-    terminalSessions: demo != null
-        ? null
-        : terminalSessions,
+    terminalSessions: demo != null ? null : terminalSessions,
     // Enclosures over RPC: the `rig.*` ops open, drive and destroy VMs, and
     // `rig.watchSessions` pushes status. Frames ride `/rig/stream/<id>`.
     // demo: no enclosures: booting VMs for anonymous visitors is not a demo.
-    rigs: demo != null
-        ? null
-        : rigService,
+    rigs: demo != null ? null : rigService,
     // Port visibility + forwarding for enclosed rigs: `rig.ports` /
     // `rig.watchPorts` and the add/remove/expose/domain mutations. The same
     // RigService owns both — the machines and their ports share one lifecycle.
     // demo: ditto — rig port forwarding.
-    rigPorts: demo != null
-        ? null
-        : rigService,
+    rigPorts: demo != null ? null : rigService,
     // code-server over RPC: the `codeServer.*` ops spawn/reuse a loopback-bound
     // code-server per conversation worktree, scoped + ownership-checked per the
     // bound workspace; reached through the `/proxy/vscode/<sid>/` reverse proxy.
     // demo: no editor proxy.
-    codeServer: demo != null
-        ? null
-        : codeServerSessions,
+    codeServer: demo != null ? null : codeServerSessions,
     // Pipelines + orchestration run headless: the engine drives the relocated
     // dispatch stack, so `pipeline.*` + `orchestration.approve/cancel` are LIVE.
     // (Pipelines using the deferred indexCode/cleanupRepos/meeting bodies still
@@ -7071,6 +6320,7 @@ Future<CcServer> runCcServer({
           String? targetType,
           String? targetId,
           String? ip,
+          Map<String, Object?>? details,
         }) => userActivityRepository.append(
           UserActivityEntry(
             id: const Uuid().v4(),
@@ -7084,6 +6334,7 @@ Future<CcServer> runCcServer({
             countryCode: ip == null
                 ? null
                 : (geoIpLookup ??= GeoIpLookup()).countryCodeFor(ip),
+            details: details,
             createdAt: DateTime.now(),
           ),
         ),
@@ -7336,36 +6587,28 @@ Future<CcServer> runCcServer({
     mediaCredential: demo != null
         ? null
         : (userId, target) async {
-      const authenticatedHosts = {
-        'api.github.com',
-        'raw.githubusercontent.com',
-        'private-user-images.githubusercontent.com',
-      };
-      if (!authenticatedHosts.contains(target.host.toLowerCase())) {
-        return null;
-      }
-      final token = await forgeCredentials.tokenFor(
-        ForgeHost.github,
-        userId: userId,
-      );
-      return (token == null || token.isEmpty) ? null : 'Bearer $token';
-    },
+            const authenticatedHosts = {
+              'api.github.com',
+              'raw.githubusercontent.com',
+              'private-user-images.githubusercontent.com',
+            };
+            if (!authenticatedHosts.contains(target.host.toLowerCase())) {
+              return null;
+            }
+            final token = await forgeCredentials.tokenFor(
+              ForgeHost.github,
+              userId: userId,
+            );
+            return (token == null || token.isEmpty) ? null : 'Bearer $token';
+          },
     // demo: no SSO on a public demo.
-    oidc: demo != null
-        ? null
-        : oidcService,
+    oidc: demo != null ? null : oidcService,
     // demo: no OAuth callback route.
-    providerOAuth: demo != null
-        ? null
-        : providerOAuth,
+    providerOAuth: demo != null ? null : providerOAuth,
     // demo: no SSO on a public demo.
-    saml: demo != null
-        ? null
-        : samlService,
+    saml: demo != null ? null : samlService,
     // demo: no directory provisioning.
-    scim: demo != null
-        ? null
-        : scimService,
+    scim: demo != null ? null : scimService,
     webClientUrl: config.webClientUrl,
     authProviders: ssoSettings.authProviders,
     manualPairingEnabled: ssoSettings.isPairingEnabled,
@@ -7378,43 +6621,39 @@ Future<CcServer> runCcServer({
     // files the UI is actively rendering with.
     fontCacheDir: p.join(config.dataDir, 'font_cache'),
     // demo: the client falls back to its bundled fonts.
-    fontFile: demo != null
-        ? null
-        : fontCatalog.resolveFileUrl,
+    fontFile: demo != null ? null : fontCatalog.resolveFileUrl,
     // demo: nothing inbound from a forge.
     webhookHandler: demo != null
         ? null
-        : 
-        ({
-          required String token,
-          required Map<String, String> headers,
-          required String body,
-        }) async {
-          final result = await webhookDeliveryService.handle(
-            token: token,
-            headers: headers,
-            body: body,
-          );
-          return (status: result.statusCode, body: result.body);
-        },
+        : ({
+            required String token,
+            required Map<String, String> headers,
+            required String body,
+          }) async {
+            final result = await webhookDeliveryService.handle(
+              token: token,
+              headers: headers,
+              body: body,
+            );
+            return (status: result.statusCode, body: result.body);
+          },
     // demo: nothing inbound from a ticket vendor.
     ticketWebhookHandler: demo != null
         ? null
-        : 
-        ({
-          required String vendor,
-          required String? workspaceId,
-          required Map<String, String> headers,
-          required String body,
-        }) async {
-          final result = await ticketSyncWebhookHandler.handle(
-            vendor: vendor,
-            workspaceId: workspaceId,
-            headers: headers,
-            body: body,
-          );
-          return (status: result.statusCode, body: result.body);
-        },
+        : ({
+            required String vendor,
+            required String? workspaceId,
+            required Map<String, String> headers,
+            required String body,
+          }) async {
+            final result = await ticketSyncWebhookHandler.handle(
+              vendor: vendor,
+              workspaceId: workspaceId,
+              headers: headers,
+              body: body,
+            );
+            return (status: result.statusCode, body: result.body);
+          },
     // Serves a recorded meeting's mixed audio over `/meeting/audio` for thin-
     // client playback. Resolves the file only for a meeting that belongs to the
     // signed workspace (getById is workspace-scoped) and assembles `mixed.wav`
@@ -7463,20 +6702,21 @@ Future<CcServer> runCcServer({
     // The write half of the same lane: a screenshot a human attached in the
     // composer. It arrives over HTTP because the RPC socket refuses a frame
     // this size — see [BlobWriter].
-    blobPut: ({required workspaceId, required bytes, required mediaType}) async {
-      final stored = await blobStore.put(
-        workspaceId,
-        Uint8List.fromList(bytes),
-        mediaType: mediaType,
-      );
-      return stored == null
-          ? null
-          : (
-              ref: stored.ref,
-              bytes: stored.bytes,
-              mediaType: stored.mediaType,
-            );
-    },
+    blobPut:
+        ({required workspaceId, required bytes, required mediaType}) async {
+          final stored = await blobStore.put(
+            workspaceId,
+            Uint8List.fromList(bytes),
+            mediaType: mediaType,
+          );
+          return stored == null
+              ? null
+              : (
+                  ref: stored.ref,
+                  bytes: stored.bytes,
+                  mediaType: stored.mediaType,
+                );
+        },
     // ---- Backup transfer (`/backup/*`) ----
     // The byte half of the backup surface. `workspace.export` returns a PATH
     // and `workspace.import` takes one, which is a complete answer only when
@@ -7536,54 +6776,50 @@ Future<CcServer> runCcServer({
     // demo: no enclosures.
     rigStream: demo != null
         ? null
-        : 
-        ({
-          required String workspaceId,
-          required String rigId,
-          required Map<String, dynamic> request,
-        }) async {
-          // `lane=audio` is the guest's sound as encoded bytes — same auth,
-          // same relay-never-decode rule as the frame lane.
-          if (request['lane'] == 'audio') {
-            final audio = await rigService.watchAudio(
+        : ({
+            required String workspaceId,
+            required String rigId,
+            required Map<String, dynamic> request,
+          }) async {
+            // `lane=audio` is the guest's sound as encoded bytes — same auth,
+            // same relay-never-decode rule as the frame lane.
+            if (request['lane'] == 'audio') {
+              final audio = await rigService.watchAudio(
+                workspaceId: workspaceId,
+                rigId: rigId,
+              );
+              if (audio == null) {
+                return null;
+              }
+              return (bytes: audio, contentType: 'audio/mpeg');
+            }
+            final stream = await rigService.watchStream(
               workspaceId: workspaceId,
               rigId: rigId,
+              request: RigWatchRequest.fromJson(request),
             );
-            if (audio == null) {
+            if (stream == null) {
               return null;
             }
-            return (bytes: audio, contentType: 'audio/mpeg');
-          }
-          final stream = await rigService.watchStream(
-            workspaceId: workspaceId,
-            rigId: rigId,
-            request: RigWatchRequest.fromJson(request),
-          );
-          if (stream == null) {
-            return null;
-          }
-          return (
-            bytes: stream.bytes,
-            contentType: stream.negotiated.codec.contentType,
-          );
-        },
+            return (
+              bytes: stream.bytes,
+              contentType: stream.negotiated.codec.contentType,
+            );
+          },
+    rigAudioInput: demo != null ? null : rigService.sendAudioInput,
     // The rig clipboard and file lanes (`/rig/clipboard/<id>`,
     // `/rig/files/<id>`). The service IS the port, and the routes verify the
     // signed target plus workspace membership before touching it; every
     // operation then passes the same take-over chokepoint `rig.act` does.
     // demo: no enclosures.
-    rigTransfer: demo != null
-        ? null
-        : rigService,
+    rigTransfer: demo != null ? null : rigService,
     soundscapeStream: soundscapeHub.streamFor,
     soundscapePlaylist: soundscapeHub.playlistFor,
     soundscapeSegment: soundscapeHub.segmentFor,
     // Authorizes each `/proxy/vscode/<sid>/` request against a live code-server
     // session (capability authz): unknown / expired / foreign-workspace → 403.
     // demo: no editor proxy.
-    codeServerLookup: demo != null
-        ? null
-        : codeServerSessions.lookup,
+    codeServerLookup: demo != null ? null : codeServerSessions.lookup,
     // /healthz's `codeGraph` block: whether background indexing is watching /
     // indexing / has runs pending. Pure in-memory snapshot, safe to expose —
     // counts only, no paths or workspace data.
@@ -7603,18 +6839,21 @@ Future<CcServer> runCcServer({
     codeServerReport: demo != null
         ? null
         : (sid, absPath, line) => codeServerSessions.reportOpen(
-      sessionId: sid,
-      absPath: absPath,
-      line: line,
-    ),
+            sessionId: sid,
+            absPath: absPath,
+            line: line,
+          ),
     // Receives the bridge extension's dirty-state reports (same endpoint,
     // `{type:'dirty'}`) and fans them out so the app can toggle the per-tab
     // unsaved-changes dot.
     // demo: no editor proxy.
     codeServerReportDirty: demo != null
         ? null
-        : (sid, absPath, dirty) => codeServerSessions
-        .reportDirty(sessionId: sid, absPath: absPath, dirty: dirty),
+        : (sid, absPath, dirty) => codeServerSessions.reportDirty(
+            sessionId: sid,
+            absPath: absPath,
+            dirty: dirty,
+          ),
     // Serves the reverse command SSE stream (`/__cc_commands__`) the bridge
     // extension subscribes to for Save-on-close and future editor commands.
     // demo: no editor proxy.
@@ -8338,9 +7577,7 @@ Future<CcServer> runCcServer({
     viewerLogin: () =>
         forgeCredentials.viewerLogin(ForgeHost.github, userId: ownerUserId),
     commentFetch: GitHubViewerCommentFetchAdapter(
-      prClient: GitHubApiClient(
-        ownerForgeDioFactory.of(ForgeHost.github),
-      ).pr,
+      prClient: GitHubApiClient(ownerForgeDioFactory.of(ForgeHost.github)).pr,
       graphqlClient: GitHubApiClient(
         ownerForgeDioFactory.of(ForgeHost.github),
       ).graphql,
@@ -8382,27 +7619,24 @@ Future<CcServer> runCcServer({
   // credentials, so the sweep would only make failing outbound calls.
   ccServer._ticketSyncPullTimer = demo != null
       ? null
-      : Timer.periodic(const Duration(minutes: 5), (
-    _,
-  ) async {
-    try {
-      final engine = ticketSyncEngineRef;
-      if (engine == null) {
-        return;
-      }
-      final workspaces = await workspaceRepository.watchAll().first;
-      for (final w in workspaces) {
-        final configs = await ticketSyncConfigRepository.enabledForWorkspace(
-          w.id,
-        );
-        if (configs.any((c) => c.direction.allowsPull)) {
-          await engine.pullNow(workspaceId: w.id);
-        }
-      }
-    } on Object catch (e) {
-      CcHostLog.warning('cc_server: ticket sync pull sweep failed: $e');
-    }
-  });
+      : Timer.periodic(const Duration(minutes: 5), (_) async {
+          try {
+            final engine = ticketSyncEngineRef;
+            if (engine == null) {
+              return;
+            }
+            final workspaces = await workspaceRepository.watchAll().first;
+            for (final w in workspaces) {
+              final configs = await ticketSyncConfigRepository
+                  .enabledForWorkspace(w.id);
+              if (configs.any((c) => c.direction.allowsPull)) {
+                await engine.pullNow(workspaceId: w.id);
+              }
+            }
+          } on Object catch (e) {
+            CcHostLog.warning('cc_server: ticket sync pull sweep failed: $e');
+          }
+        });
 
   // ── Server-side Google Calendar sync ──
   // The server syncs every workspace's connected calendar into its DB on a fixed
@@ -8574,317 +7808,4 @@ Future<CcServer> runCcServer({
     }());
   }
   return ccServer;
-}
-
-/// A late-bound holder for services constructed after the RPC catalog (the
-/// catalog's deferred closures read [value] per request).
-class _Late<T> {
-  /// The held value, once constructed.
-  T? value;
-}
-
-/// Detects the capabilities of the server host for the implicit local worker
-/// (PRD 20 §1). Deliberately lightweight (no subprocess probing) so startup
-/// stays fast; a Flutter/ML-capable machine that wants those axes joins the
-/// fleet as a dedicated `cc_worker` declaring them.
-WorkerCapabilities _detectLocalWorkerCapabilities() {
-  final String os;
-  if (Platform.isMacOS) {
-    os = 'macos';
-  } else if (Platform.isLinux) {
-    os = 'linux';
-  } else if (Platform.isWindows) {
-    os = 'windows';
-  } else {
-    os = 'unknown';
-  }
-  final version = Platform.version.toLowerCase();
-  final arch = version.contains('arm64') || version.contains('aarch64')
-      ? 'arm64'
-      : 'x64';
-  final sandboxBackends = <String>{
-    if (Platform.isMacOS) 'native-macos',
-    if (Platform.isLinux) 'native-linux',
-  };
-  return WorkerCapabilities(
-    os: os,
-    arch: arch,
-    cores: Platform.numberOfProcessors,
-    ramMb: 0,
-    sandboxBackends: sandboxBackends,
-    alwaysOn: true,
-    acceptsParallel: true,
-  );
-}
-
-/// Splits a stored per-adapter argv string into arguments.
-///
-/// Whitespace-separated, honouring single and double quotes so a flag carrying
-/// a spaced value survives. Deliberately NOT a shell parse: these arguments are
-/// appended to an argv list and executed directly, never through a shell, so
-/// interpreting metacharacters here would invent an injection surface that the
-/// exec path does not otherwise have.
-List<String> _splitAdapterArgs(String? raw) {
-  if (raw == null || raw.trim().isEmpty) {
-    return const [];
-  }
-  final out = <String>[];
-  final buffer = StringBuffer();
-  String? quote;
-  for (final rune in raw.trim().runes) {
-    final ch = String.fromCharCode(rune);
-    if (quote != null) {
-      if (ch == quote) {
-        quote = null;
-      } else {
-        buffer.write(ch);
-      }
-      continue;
-    }
-    if (ch == '"' || ch == "'") {
-      quote = ch;
-      continue;
-    }
-    if (ch.trim().isEmpty) {
-      if (buffer.isNotEmpty) {
-        out.add(buffer.toString());
-        buffer.clear();
-      }
-      continue;
-    }
-    buffer.write(ch);
-  }
-  if (buffer.isNotEmpty) {
-    out.add(buffer.toString());
-  }
-  return out;
-}
-
-/// Decodes a stored per-adapter env override map.
-///
-/// A malformed blob yields an EMPTY map rather th androwing: a corrupt
-/// settings row must not take agent dispatch down, and launching without an
-/// override is the safe direction.
-Map<String, String> _decodeAdapterEnv(String? raw) {
-  if (raw == null || raw.trim().isEmpty) {
-    return const {};
-  }
-  try {
-    final decoded = jsonDecode(raw);
-    if (decoded is Map) {
-      return {
-        for (final entry in decoded.entries)
-          if (entry.value is String) '${entry.key}': entry.value as String,
-      };
-    }
-  } on FormatException {
-    // Fall through to the empty map.
-  }
-  return const {};
-}
-
-/// Workspace-settings key holding a Claude Code account pool.
-///
-/// One key per scope: the workspace's own, and one per agent that overrides it.
-/// Namespaced so it cannot collide with a real setting, and absent until the
-/// operator attaches something — which is what keeps an install that never
-/// opens the screen on the pre-pool path.
-String claudeAccountPoolKey(String? agentId) =>
-    agentId == null || agentId.isEmpty
-    ? 'claude_accounts.pool'
-    : 'claude_accounts.pool.agent.$agentId';
-
-/// Workspace-settings key holding a pool's round-robin position.
-String claudeAccountCursorKey(String? agentId) =>
-    '${claudeAccountPoolKey(agentId)}.cursor';
-
-/// Reads the most specific pool that applies: the agent's, else the
-/// workspace's, else unconfigured.
-///
-/// An agent pool with no accounts in it is treated as "not set" rather than as
-/// "attach nothing" — an empty list is what an editor leaves behind when the
-/// operator removes the last row, and reading that as a deliberate opt-out
-/// would silently stop every run for that agent.
-Future<AccountPool> _readClaudeAccountPool(
-  WorkspaceSettingsRepository settings,
-  String workspaceId,
-  String? agentId,
-) async {
-  for (final key in [
-    if (agentId != null && agentId.isNotEmpty) claudeAccountPoolKey(agentId),
-    claudeAccountPoolKey(null),
-  ]) {
-    final raw = await settings.get(workspaceId, key);
-    if (raw == null || raw.isEmpty) {
-      continue;
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) {
-        final pool = AccountPool.fromJson(decoded);
-        if (!pool.isEmpty) {
-          return pool;
-        }
-      }
-    } on Object {
-      // A corrupt pool falls through to the next scope rather than stopping
-      // the dispatch.
-    }
-  }
-  return const AccountPool();
-}
-
-/// The lane an account pool belongs to.
-///
-/// One string so a single pair of RPC ops serves both, because the editing
-/// surface is identical: an ordered list plus a strategy. `claude-code` names
-/// the CLI adapter's account directories; `harness:<providerId>` names one
-/// harness provider's stored credentials.
-const String claudeAccountLane = 'claude-code';
-
-/// The `harness:<providerId>` lane string for [providerId].
-String harnessAccountLane(String providerId) => 'harness:$providerId';
-
-/// The workspace-settings key a [lane] + [agentId] pool is stored under, or
-/// null when the lane is not one we recognize.
-///
-/// Rejecting an unknown lane rather than deriving a key from it is what stops a
-/// client writing arbitrary settings keys through this op.
-String? accountPoolKeyForLane(String lane, String? agentId) {
-  if (lane == claudeAccountLane) {
-    return claudeAccountPoolKey(agentId);
-  }
-  const prefix = 'harness:';
-  if (lane.startsWith(prefix) && lane.length > prefix.length) {
-    return harnessPoolKey(lane.substring(prefix.length), agentId);
-  }
-  return null;
-}
-
-/// Workspace-settings key holding a harness provider's account pool.
-///
-/// Per provider, because "which keys may this workspace spend" is a different
-/// question for OpenAI than for Kimi — and per agent on top of that, so a
-/// research agent can be pinned to the cheap key while the rest of the
-/// workspace rotates.
-String harnessPoolKey(String providerId, String? agentId) =>
-    agentId == null || agentId.isEmpty
-    ? 'harness_accounts.pool.$providerId'
-    : 'harness_accounts.pool.$providerId.agent.$agentId';
-
-/// Workspace-settings key holding a harness pool's round-robin position.
-String harnessCursorKey(String providerId, String? agentId) =>
-    '${harnessPoolKey(providerId, agentId)}.cursor';
-
-/// Orders [credentialIds] for one dispatch, applying the workspace's (or the
-/// agent's) pool, its strategy, and any cooling-off keys.
-///
-/// Returns null when nothing is configured, so the caller keeps the store's own
-/// order — the behaviour every install had before pools existed. The
-/// round-robin cursor is advanced and persisted here, BEFORE the run, so two
-/// dispatches racing still lead with different credentials.
-Future<List<String>?> resolveHarnessRotationOrder({
-  required WorkspaceSettingsRepository settings,
-  required CredentialCooldownStore cooldowns,
-  required String? workspaceId,
-  required String? agentId,
-  required String providerId,
-  required List<String> credentialIds,
-}) async {
-  if (workspaceId == null || credentialIds.length < 2) {
-    return null;
-  }
-  AccountPool pool = const AccountPool();
-  String? usedKey;
-  for (final key in [
-    if (agentId != null && agentId.isNotEmpty)
-      harnessPoolKey(providerId, agentId),
-    harnessPoolKey(providerId, null),
-  ]) {
-    final raw = await settings.get(workspaceId, key);
-    if (raw == null || raw.isEmpty) {
-      continue;
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map<String, dynamic>) {
-        final candidate = AccountPool.fromJson(decoded);
-        if (!candidate.isEmpty) {
-          pool = candidate;
-          usedKey = key;
-          break;
-        }
-      }
-    } on Object {
-      // A corrupt pool falls through to the next scope rather than stopping
-      // the dispatch.
-    }
-  }
-  if (pool.isEmpty || usedKey == null) {
-    return null;
-  }
-
-  final cooling = await cooldowns.activeFor(providerId);
-  final availability = {
-    for (final id in credentialIds)
-      id: AccountAvailability(
-        id: id,
-        signedIn: true,
-        spent: cooling.containsKey(id),
-        availableAt: cooling[id],
-      ),
-  };
-  final cursorKey = harnessCursorKey(
-    providerId,
-    usedKey.contains('.agent.') ? agentId : null,
-  );
-  final cursor =
-      int.tryParse(await settings.get(workspaceId, cursorKey) ?? '') ?? 0;
-  final choice = AccountSelector.select(
-    pool: pool,
-    availability: availability,
-    cursor: cursor,
-  );
-
-  switch (choice) {
-    case AccountPoolUnset():
-      // Every id in the pool names a credential that no longer exists.
-      return null;
-    case AccountsAllSpent():
-      // Unlike the Claude lane there is no refusal here, and that asymmetry is
-      // deliberate: `FallbackProvider` retries a capacity error on the SAME
-      // target after backoff, so handing it the pool anyway lets a window that
-      // reopens mid-turn still serve the run. Refusing would be strictly worse.
-      return [
-        for (final id in pool.accountIds)
-          if (availability.containsKey(id)) id,
-      ];
-    case AccountChosen(:final accountId, cursor: final next):
-      if (next != cursor) {
-        await settings.set(workspaceId, cursorKey, '$next');
-      }
-      return [
-        accountId,
-        for (final id in pool.accountIds)
-          if (id != accountId && availability.containsKey(id)) id,
-      ];
-  }
-}
-
-/// `me@example.com · max · Acme` — one line naming a Claude Code account.
-///
-/// Not localized on purpose: every part is a value the CLI handed back
-/// verbatim, and translating around an unknown-shaped string reads worse than
-/// showing it plainly. Falls back to the operator's own label when the CLI has
-/// reported no identity yet.
-String _claudeAccountLabel(ClaudeAccount account) {
-  final parts = [
-    if (account.email != null && account.email!.isNotEmpty) account.email!,
-    if (account.subscriptionType != null &&
-        account.subscriptionType!.isNotEmpty)
-      account.subscriptionType!,
-    if (account.orgName != null && account.orgName!.isNotEmpty)
-      account.orgName!,
-  ];
-  return parts.isEmpty ? account.label : parts.join(' · ');
 }

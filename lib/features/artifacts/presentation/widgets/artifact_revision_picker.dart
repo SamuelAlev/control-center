@@ -21,7 +21,7 @@ class ArtifactRevisionPicker extends StatelessWidget {
     required this.isHead,
     required this.onSelect,
     required this.onRestore,
-    this.padding = const EdgeInsets.fromLTRB(12, 8, 8, 0),
+    this.padding = const EdgeInsetsDirectional.fromSTEB(12, 8, 8, 0),
   });
 
   /// The full history, oldest first (the last entry is the head).
@@ -40,7 +40,7 @@ class ArtifactRevisionPicker extends StatelessWidget {
   final VoidCallback onRestore;
 
   /// Outer padding, so a dense sidebar card and a full tab can share the widget.
-  final EdgeInsets padding;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class ArtifactRevisionPicker extends StatelessWidget {
                 children: [
                   for (final r in revisions)
                     Padding(
-                      padding: const EdgeInsets.only(right: 4),
+                      padding: const EdgeInsetsDirectional.only(end: 4),
                       child: CcButton(
                         variant: r.revisionNumber == selected
                             ? CcButtonVariant.secondary

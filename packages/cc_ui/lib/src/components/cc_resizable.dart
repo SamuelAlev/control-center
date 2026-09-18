@@ -304,6 +304,10 @@ class _CcResizableState extends State<CcResizable> {
   Widget build(BuildContext context) {
     final t = context.ds;
     final isHorizontal = widget.axis == Axis.horizontal;
+    // Horizontal splits follow reading order: the first region sits at the
+    // start edge, so RTL mirrors the layout and inverts the drag delta.
+    final isRtl =
+        isHorizontal && Directionality.of(context) == TextDirection.rtl;
     final controller = _controller;
 
     return LayoutBuilder(
@@ -332,8 +336,8 @@ class _CcResizableState extends State<CcResizable> {
               final extent = extents[i];
               children.add(
                 Positioned(
-                  left: isHorizontal ? offset : 0,
-                  right: isHorizontal ? null : 0,
+                  left: isHorizontal ? (isRtl ? null : offset) : 0,
+                  right: isHorizontal ? (isRtl ? offset : null) : 0,
                   top: isHorizontal ? 0 : offset,
                   bottom: isHorizontal ? 0 : null,
                   width: isHorizontal ? extent : null,
@@ -353,8 +357,8 @@ class _CcResizableState extends State<CcResizable> {
               final start = offset - widget.dividerHitSize / 2;
               children.add(
                 Positioned(
-                  left: isHorizontal ? start : 0,
-                  right: isHorizontal ? null : 0,
+                  left: isHorizontal ? (isRtl ? null : start) : 0,
+                  right: isHorizontal ? (isRtl ? start : null) : 0,
                   top: isHorizontal ? 0 : start,
                   bottom: isHorizontal ? 0 : null,
                   width: isHorizontal ? widget.dividerHitSize : null,
@@ -365,7 +369,10 @@ class _CcResizableState extends State<CcResizable> {
                     hitSize: widget.dividerHitSize,
                     color: widget.dividerColor ?? t.lineStrong,
                     activeColor: t.fgBrandPrimary,
-                    onDrag: (delta) => _onDrag(i, delta),
+                    // The pointer delta is physical; in a mirrored layout a
+                    // leftward drag grows the (start-side) region before the
+                    // divider, so the sign flips.
+                    onDrag: (delta) => _onDrag(i, isRtl ? -delta : delta),
                   ),
                 ),
               );

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/features/agents/domain/usecases/create_agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
@@ -108,6 +109,14 @@ List _crudOverrides(
 }) {
   return [
     agentRepositoryProvider.overrideWithValue(repo),
+    agentCreatePortProvider.overrideWithValue(
+      UseCaseAgentCreatePort(
+        CreateAgentUseCase(
+          repository: repo,
+          filesystemService: FakeFilesystemPort(),
+        ),
+      ),
+    ),
     workspaceFilesystemPortProvider.overrideWithValue(FakeFilesystemPort()),
     agentRunLogRepositoryProvider.overrideWithValue(
       FakeAgentRunLogRepository(),

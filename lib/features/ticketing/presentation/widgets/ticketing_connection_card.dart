@@ -4,20 +4,27 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dar
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/device_code_dialog.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_connection_providers.dart';
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Where tickets live, and who Control Center is when it talks to them.
+/// Where this workspace's tickets live, and who Control Center is when it
+/// talks to them.
 ///
 /// ONE card for what used to be two: choosing the vendor and authenticating to
 /// it are the same decision, and splitting them left "Ticketing API key" as a
 /// card that meant nothing until you scrolled up and changed a dropdown.
+///
+/// The vendor is workspace-scoped (admin-gated). The credential is the
+/// signed-in user's. They share a card because authenticating to Linear is
+/// meaningless until the workspace has chosen Linear.
 ///
 /// The credential row is absent for [TicketProvider.local] — local tickets
 /// live in this server's own database and have nothing to authenticate to.
@@ -30,6 +37,14 @@ class TicketingConnectionCard extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final provider = ref.watch(activeTicketProviderProvider);
     final connections = ref.watch(ticketingConnectionsProvider);
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    // No workspace yet (onboarding's connect step) is treated as editable:
+    // there is no admin to consult, and the write is a no-op until a
+    // workspace exists. Inside a workspace the server still refuses a
+    // non-admin write even if this flag is wrong.
+    final isAdmin =
+        workspaceId == null ||
+        (ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false);
 
     return SectionCard(
       label: l10n.ticketing,
@@ -43,6 +58,7 @@ class TicketingConnectionCard extends ConsumerWidget {
               width: 200,
               child: CcSelect<TicketProvider>(
                 value: provider,
+                enabled: isAdmin,
                 options: [
                   for (final p in TicketProvider.values)
                     CcSelectOption(
@@ -71,6 +87,18 @@ class TicketingConnectionCard extends ConsumerWidget {
               loading: connections.isLoading,
               canSignIn: (ref.watch(signInProvidersProvider).value ?? const {})
                   .containsKey(provider.toStorageString()),
+            ),
+          ],
+          if (workspaceId != null && !isAdmin) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                l10n.settingsWorkspaceAdminOnly,
+                style: CcTypography.caption.copyWith(
+                  color: context.designSystem?.textTertiary,
+                ),
+              ),
             ),
           ],
         ],

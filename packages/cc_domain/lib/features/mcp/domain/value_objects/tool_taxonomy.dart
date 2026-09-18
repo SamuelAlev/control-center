@@ -154,7 +154,9 @@ final List<(ToolCategory, bool Function(String))> _rules = [
         n.contains('rig') ||
         n.contains('computer_use') ||
         n.contains('browser') ||
-        n.contains('phone'),
+        n.contains('phone') ||
+        n == 'mobile_use' ||
+        n == 'ios_use',
   ),
   (
     ToolCategory.meetings,

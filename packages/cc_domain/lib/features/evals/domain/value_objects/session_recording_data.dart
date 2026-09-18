@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness/tools.dart';
@@ -25,6 +27,15 @@ class RecordedLlmTurn {
   Map<String, dynamic> toJson() => {
     'events': [for (final e in events) _llmEventToJson(e)],
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RecordedLlmTurn &&
+          jsonEncode(toJson()) == jsonEncode(other.toJson());
+
+  @override
+  int get hashCode => events.length;
 }
 
 /// A self-contained recording of one harness session: the inputs (config,
@@ -117,6 +128,22 @@ class SessionRecordingData {
     },
     'expectedEventSignatures': expectedEventSignatures,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SessionRecordingData &&
+          jsonEncode(toJson()) == jsonEncode(other.toJson());
+
+  @override
+  int get hashCode => Object.hash(
+    configHash,
+    userMessage,
+    history.length,
+    llmTurns.length,
+    toolResults.length,
+    expectedEventSignatures.length,
+  );
 }
 
 // ---------------------------------------------------------------------------

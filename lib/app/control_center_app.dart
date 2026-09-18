@@ -18,6 +18,7 @@ import 'package:control_center/features/workspaces/providers/rpc_client_workspac
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_switch_gc_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/app_router.dart';
 import 'package:control_center/router/routes.dart';
@@ -25,6 +26,7 @@ import 'package:control_center/shared/widgets/app_shortcuts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 /// Root application widget: the global shortcut layer wrapping
 /// `MaterialApp.router`, the design-system theme space and the app-wide toast
@@ -125,16 +127,8 @@ class ControlCenterApp extends ConsumerWidget {
         darkTheme: AppTheme.dark(appFontFamily: appFontFamily),
         themeMode: themeMode,
         locale: localeOverride,
-        supportedLocales: [
-          ...AppLocalizations.supportedLocales,
-          const Locale('en', 'US'),
-          const Locale('fr', 'FR'),
-          const Locale('es', 'ES'),
-          const Locale('it', 'IT'),
-          const Locale('de', 'DE'),
-          const Locale('pt', 'BR'),
-          const Locale('nl', 'NL'),
-        ],
+        supportedLocales: kSupportedAppLocales,
+        localeResolutionCallback: resolveAppLocale,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -142,6 +136,13 @@ class ControlCenterApp extends ConsumerWidget {
           GlobalCupertinoLocalizations.delegate,
         ],
         builder: (context, child) {
+          // The one chokepoint for intl: bare DateFormat/NumberFormat calls
+          // resolve Intl.defaultLocale, so pin it to the locale the app
+          // actually resolved (override or system) instead of threading a
+          // locale through every formatting call site. The builder sits below
+          // the app's Localizations, after the global delegates have loaded
+          // this locale's date symbols.
+          Intl.defaultLocale = Localizations.localeOf(context).toLanguageTag();
           final isDark = Theme.of(context).brightness == Brightness.dark;
           // CcTheme is the purist token-delivery space (replacing the Material
           // ThemeExtension). It wraps the whole navigator so every route and

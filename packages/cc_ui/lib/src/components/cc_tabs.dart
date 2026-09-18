@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -161,27 +162,30 @@ class _CcTabsState extends State<CcTabs> {
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                // A fixed-height strip hands the tabs a tight height to fill,
-                // so their underline lands on the strip's rule. Without one the
-                // cross-axis constraint is unbounded and stretch is illegal.
-                crossAxisAlignment: widget.height == null
-                    ? CrossAxisAlignment.center
-                    : CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < widget.tabs.length; i++)
-                    _CcTab(
-                      tab: widget.tabs[i],
-                      selected: i == widget.selectedIndex,
-                      // Roving tabindex: only the selected tab is a Tab stop.
-                      focusable: i == widget.selectedIndex,
-                      focusNode: i < _tabNodes.length ? _tabNodes[i] : null,
-                      tokens: t,
-                      fillHeight: widget.height != null,
-                      onPressed: () => _select(i),
-                    ),
-                ],
+              child: CcFluidHover(
+                axis: CcFluidHoverAxis.x,
+                itemCount: widget.tabs.length,
+                itemBuilder: (context, i) => _CcTab(
+                  tab: widget.tabs[i],
+                  selected: i == widget.selectedIndex,
+                  // Roving tabindex: only the selected tab is a Tab stop.
+                  focusable: i == widget.selectedIndex,
+                  focusNode: i < _tabNodes.length ? _tabNodes[i] : null,
+                  tokens: t,
+                  fillHeight: widget.height != null,
+                  onPressed: () => _select(i),
+                ),
+                layoutBuilder: (context, items) => Row(
+                  mainAxisSize: MainAxisSize.min,
+                  // A fixed-height strip hands the tabs a tight height to fill,
+                  // so their underline lands on the strip's rule. Without one
+                  // the cross-axis constraint is unbounded and stretch is
+                  // illegal.
+                  crossAxisAlignment: widget.height == null
+                      ? CrossAxisAlignment.center
+                      : CrossAxisAlignment.stretch,
+                  children: items,
+                ),
               ),
             ),
           ),
@@ -217,7 +221,7 @@ class _CcTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = tokens;
-    final duration = CcMotion.resolve(context, CcMotion.fast);
+    final duration = CcMotion.resolveFade(context, CcMotion.moderate);
     return Semantics(
       selected: selected,
       child: CcTappable(
@@ -229,10 +233,11 @@ class _CcTab extends StatelessWidget {
         builder: (context, states) {
           final hovered = states.contains(WidgetState.hovered);
           final pressed = states.contains(WidgetState.pressed);
+          final fluidActive = CcFluidHover.isItemActive(context);
           final Color background;
           if (pressed) {
             background = t.hoverStrong;
-          } else if (hovered && !selected) {
+          } else if (hovered && !selected && !fluidActive) {
             background = t.hover;
           } else {
             background = t.hover.withValues(alpha: 0);

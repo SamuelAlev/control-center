@@ -37,7 +37,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
@@ -479,13 +479,13 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
 
     final tokens = context.designSystem;
     final codeFont = ref.watch(codeFontFamilyProvider);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final isDark = (context.ccTheme?.isDark ?? false);
 
     final bg =
         widget.backgroundColor ??
         tokens?.bgPrimaryAlt ??
-        theme.colorScheme.surface;
+        t.surface;
     final termTheme = isDark ? _darkTerminalTheme : _lightTerminalTheme;
 
     return ListenableBuilder(
@@ -588,24 +588,31 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
               },
             ),
           },
-          child: TerminalView(
-            controller.terminal,
-            controller: _termCtl,
-            autofocus: true,
-            onKeyEvent: controller.onKeyEvent,
-            shortcuts: _shortcuts,
-            theme: termTheme,
-            backgroundOpacity: 0,
-            // Fira Code renders visually large for its point size (tall
-            // x-height, wide advance); 12/1.25 matches the density of native
-            // terminal emulators (ghostty, iTerm) where 13/1.35 read ~2pt
-            // oversized.
-            textStyle: CcTerminalStyle(
-              family: codeFont,
-              fontSize: 12,
-              height: 1.25,
+          // RTL carve-out: a terminal is a column-addressed LTR grid (shell
+          // output, prompts and cursor math are all left-to-right), so the
+          // view is pinned rather than letting an RTL app locale reach
+          // xterm's painter or its selection gestures.
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: TerminalView(
+              controller.terminal,
+              controller: _termCtl,
+              autofocus: true,
+              onKeyEvent: controller.onKeyEvent,
+              shortcuts: _shortcuts,
+              theme: termTheme,
+              backgroundOpacity: 0,
+              // Fira Code renders visually large for its point size (tall
+              // x-height, wide advance); 12/1.25 matches the density of native
+              // terminal emulators (ghostty, iTerm) where 13/1.35 read ~2pt
+              // oversized.
+              textStyle: CcTerminalStyle(
+                family: codeFont,
+                fontSize: 12,
+                height: 1.25,
+              ),
+              padding: const EdgeInsets.all(2),
             ),
-            padding: const EdgeInsets.all(2),
           ),
         ),
       ),

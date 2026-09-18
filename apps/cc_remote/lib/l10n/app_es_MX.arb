@@ -1,0 +1,5 @@
+{
+  "@@locale": "es_MX",
+  "scanQrPrompt": "Escanea el código QR de tu Mac para emparejar este celular.",
+  "scanQrHelp": "Abre la cámara y apunta al QR que aparece en Control Center en tu Mac. Este celular se conecta directamente a tu Mac por un enlace privado."
+}

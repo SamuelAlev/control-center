@@ -53,8 +53,8 @@ class ModeDropdown extends StatelessWidget {
 
     return CcMenu(
       semanticLabel: l10n.conversationMode,
-      targetAnchor: Alignment.topLeft,
-      followerAnchor: Alignment.bottomLeft,
+      targetAnchor: AlignmentDirectional.topStart,
+      followerAnchor: AlignmentDirectional.bottomStart,
       offset: const Offset(0, -4),
       minWidth: 160,
       items: [

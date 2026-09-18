@@ -2,7 +2,7 @@ import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:control_center/features/memory/presentation/widgets/confidence_meter.dart';
-import 'package:control_center/features/memory/presentation/widgets/knowledge_graph.dart'
+import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_data.dart'
     show NodeData, NodeType;
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_node_sheet.dart';
 import 'package:control_center/shared/icons/app_icons.dart';

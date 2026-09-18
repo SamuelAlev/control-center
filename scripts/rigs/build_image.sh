@@ -119,7 +119,7 @@ qemu-img resize "$OUT_IMG" 12G >/dev/null
 # Base: the SSH server worktree sync tars through, the git credential helper's
 # dependencies, and the tiny capture agent the host's guest-agent client talks
 # to on :7811.
-COMMON_PACKAGES="openssh-server ca-certificates curl git jq python3 python3-pil"
+COMMON_PACKAGES="openssh-server ca-certificates curl git jq python3 python3-pil iputils-ping"
 
 # A real desktop someone debugs apps on: XFCE (panel, Thunar, terminal) plus
 # Chromium. XFCE and not GNOME because gnome-shell HARD-REQUIRES working GL
@@ -127,15 +127,15 @@ COMMON_PACKAGES="openssh-server ca-certificates curl git jq python3 python3-pil"
 # screen) and QEMU-without-virgl has no GL to give it — GNOME becomes possible
 # with the roadmap's vendored-virgl GPU tier, not before. openbox + feh stay as
 # the fallback session. dbus-user-session + linger give snap apps (chromium) a
-# user manager to mint their scopes on. pulseaudio: apps play into a virtual
-# sink and the agent streams its monitor — no hypervisor audio device, no host
-# audio stack, bytes ride the same relay as frames.
+# user manager to mint their scopes on. PulseAudio provides the virtual devices;
+# pulseaudio-utils provides `pacat`, which feeds the viewer microphone into the
+# input device. No hypervisor audio hardware or host audio stack is involved.
 # xclip is load-bearing, not a convenience: it is the only thing in this list
 # that can OWN an X selection, which is what putting something on the guest's
 # clipboard requires (X has no clipboard daemon — the selection belongs to a
 # live client until another one claims it). It is also how the host reads a
 # drag in flight, by asking for XdndSelection while the source holds it.
-EXTRA_PACKAGES="xserver-xorg xinit x11-xserver-utils x11-utils xdotool xclip scrot ffmpeg feh openbox xfce4 xfce4-terminal chromium-browser dbus-user-session pulseaudio"
+EXTRA_PACKAGES="xserver-xorg xinit x11-xserver-utils x11-utils xdotool xclip scrot ffmpeg feh openbox xfce4 xfce4-terminal chromium-browser network-manager dbus-user-session pulseaudio pulseaudio-utils"
 SURFACE_UNITS="cc-x11.service"
 EXTRA_RUNCMD=$'  - loginctl enable-linger cc'
 # Optional wallpaper, baked into the image (base64 in the cloud-init seed).
@@ -158,6 +158,28 @@ users:
     lock_passwd: true
 
 write_files:
+  # Production rigs attach a CCRIG seed, not a cloud-init datasource. The
+  # verifier does attach cidata for diagnostics, so relying on cloud-init's
+  # fallback DHCP made verification pass while real desktop rigs had no
+  # connection at all. This profile is the one authoritative NIC setup.
+  - path: /etc/netplan/60-cc-rig.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        renderer: NetworkManager
+        ethernets:
+          rig:
+            match:
+              name: "en*"
+            dhcp4: true
+            dhcp6: false
+            optional: false
+  - path: /etc/cloud/cloud.cfg.d/99-cc-rig-network.cfg
+    permissions: '0644'
+    content: |
+      network:
+        config: disabled
   # The guest agent: capture, mode-set and the clipboard, and deliberately
   # UNPRIVILEGED. Input injection is the hypervisor's job (QMP), so nothing in
   # here can synthesize a keystroke even if the guest is compromised — and the
@@ -167,7 +189,7 @@ write_files:
     permissions: '0755'
     content: |
       #!/usr/bin/env python3
-      """Capture + display mode-set for a Control Center rig.
+      """Capture, audio, and display mode-set for a Control Center rig.
 
       Speaks the small HTTP protocol GuestAgentClient expects on :7811:
         GET  /health                    -> {"display": {"width", "height"}}
@@ -176,12 +198,13 @@ write_files:
         GET  /stream?w=&h=&fps=&q=      -> concatenated JPEGs, close-delimited
         GET  /audio?kbps=               -> MP3, close-delimited
         GET  /clipboard?sel=            -> {"text", "image", "files"}
+        POST /microphone?rate=&channels= -> PCM16 input for the guest
         POST /display  {"width","height"} -> {"display": {...}}
         POST /clipboard {"text"|"image"|"files"} -> {"ok": true}
       Every request must carry the per-VM bearer token from the seed image.
       """
-      import base64, hmac, http.server, json, os, socketserver
-      import subprocess, sys, time
+      import base64, hmac, http.server, json, os, queue, socketserver
+      import subprocess, sys, threading, time
 
       # Bumped whenever this agent's protocol changes. The host reads it from
       # /version and can then tell an OLD image from a BROKEN one, which are
@@ -189,8 +212,10 @@ write_files:
       #   1 -> capture, display mode-set, audio
       #   2 -> + /clipboard (text, image/png, text/uri-list; CLIPBOARD,
       #        PRIMARY and XdndSelection)
-      PROTOCOL = 2
-      AGENT_BUILD = "cc-guest-agent/2"
+      #   3 -> shared MJPEG capture and PCM16 microphone input
+      #   4 -> microphone capture sessions (stale chunks/end are ignored)
+      PROTOCOL = 4
+      AGENT_BUILD = "cc-guest-agent/4"
 
       # The X selections this agent will touch, by their real X names. A
       # closed map on purpose: 'sel' arrives from a request, and xclip happily
@@ -394,6 +419,182 @@ write_files:
                       break
           return out
 
+      _streams = {}
+      _streams_lock = threading.Lock()
+
+      class MjpegProducer:
+          """One ffmpeg capture shared by viewers with identical settings."""
+          def __init__(self, key, command):
+              self.key = key
+              self.subscribers = set()
+              self.lock = threading.Lock()
+              self.proc = subprocess.Popen(
+                  command, env={**os.environ, "DISPLAY": ":0"},
+                  stdout=subprocess.PIPE)
+              threading.Thread(target=self._run, daemon=True).start()
+          def subscribe(self):
+              inbox = queue.Queue(maxsize=1)
+              # Caller holds _streams_lock. Every attach/detach therefore takes
+              # locks in the same order: registry, then producer.
+              with self.lock:
+                  self.subscribers.add(inbox)
+              return inbox
+
+          def unsubscribe(self, inbox):
+              # The last-subscriber decision and registry removal are one
+              # critical section. Releasing self.lock before taking
+              # _streams_lock let a reconnect attach to this producer after it
+              # looked empty but before it was removed; this thread then killed
+              # the new viewer's encoder.
+              with _streams_lock:
+                  with self.lock:
+                      self.subscribers.discard(inbox)
+                      if self.subscribers:
+                          return
+                      if _streams.get(self.key) is not self:
+                          return
+                      del _streams[self.key]
+              try:
+                  self.proc.kill()
+              except Exception:
+                  pass
+
+          def _publish(self, frame):
+              with self.lock:
+                  subscribers = tuple(self.subscribers)
+              for inbox in subscribers:
+                  try:
+                      inbox.put_nowait(frame)
+                  except queue.Full:
+                      try:
+                          inbox.get_nowait()
+                      except queue.Empty:
+                          pass
+                      try:
+                          inbox.put_nowait(frame)
+                      except queue.Full:
+                          pass
+
+          def _run(self):
+              pending = bytearray()
+              try:
+                  while True:
+                      chunk = self.proc.stdout.read1(65536)
+                      if not chunk:
+                          break
+                      pending.extend(chunk)
+                      while True:
+                          start = pending.find(b"\xff\xd8")
+                          if start < 0:
+                              if len(pending) > 1:
+                                  del pending[:-1]
+                              break
+                          end = pending.find(b"\xff\xd9", start + 2)
+                          if end < 0:
+                              if start:
+                                  del pending[:start]
+                              if len(pending) > 32 * 1024 * 1024:
+                                  pending.clear()
+                              break
+                          self._publish(bytes(pending[start:end + 2]))
+                          del pending[:end + 2]
+              finally:
+                  try:
+                      self.proc.kill()
+                      self.proc.wait(timeout=5)
+                  except Exception:
+                      pass
+                  with _streams_lock:
+                      if _streams.get(self.key) is self:
+                          del _streams[self.key]
+                  with self.lock:
+                      subscribers = tuple(self.subscribers)
+                  for inbox in subscribers:
+                      try:
+                          inbox.put_nowait(None)
+                      except queue.Full:
+                          try:
+                              inbox.get_nowait()
+                              inbox.put_nowait(None)
+                          except (queue.Empty, queue.Full):
+                              pass
+
+      def subscribe_mjpeg(width, height, fps, qv, dw, dh):
+          key = (width, height, fps, qv, dw, dh)
+          with _streams_lock:
+              producer = _streams.get(key)
+              if producer is None:
+                  producer = MjpegProducer(key, [
+                      "ffmpeg", "-loglevel", "quiet",
+                      "-f", "x11grab", "-framerate", str(fps),
+                      "-video_size", f"{dw}x{dh}", "-i", ":0",
+                      "-vf", scale_filter(width, height),
+                      "-q:v", str(qv), "-f", "mjpeg",
+                      "-flush_packets", "1", "-",
+                  ])
+                  _streams[key] = producer
+              return producer, producer.subscribe()
+
+      _microphone_lock = threading.Lock()
+      _microphone_proc = None
+      _microphone_session = None
+      _microphone_last_write = 0.0
+
+      def close_microphone():
+          global _microphone_proc
+          proc, _microphone_proc = _microphone_proc, None
+          if proc is None:
+              return
+          try:
+              proc.stdin.close()
+          except Exception:
+              pass
+          try:
+              proc.kill()
+              proc.wait(timeout=5)
+          except Exception:
+              pass
+
+      def feed_microphone(raw, rate, channels, session, start=False, end=False):
+          global _microphone_proc, _microphone_last_write, _microphone_session
+          if not session:
+              raise ValueError("microphone session is required")
+          with _microphone_lock:
+              if start:
+                  close_microphone()
+                  _microphone_session = session
+                  _microphone_last_write = time.monotonic()
+                  return
+              # A replacement capture announces itself with start=1 before
+              # sending PCM. Delayed chunks and end markers from the replaced
+              # HTTP client are acknowledged but cannot touch the new process.
+              if session != _microphone_session:
+                  return
+              if end:
+                  close_microphone()
+                  _microphone_session = None
+                  return
+              if _microphone_proc is None or _microphone_proc.poll() is not None:
+                  close_microphone()
+                  _microphone_proc = subprocess.Popen([
+                      "pacat", "--playback", "--device=ccin",
+                      "--rate", str(rate), "--format=s16le",
+                      "--channels", str(channels), "--latency-msec=50",
+                  ], stdin=subprocess.PIPE)
+              _microphone_proc.stdin.write(raw)
+              _microphone_proc.stdin.flush()
+              _microphone_last_write = time.monotonic()
+
+      def microphone_watchdog():
+          while True:
+              time.sleep(1)
+              with _microphone_lock:
+                  if (_microphone_proc is not None
+                          and time.monotonic() - _microphone_last_write > 2):
+                      close_microphone()
+
+      threading.Thread(target=microphone_watchdog, daemon=True).start()
+
       class Handler(http.server.BaseHTTPRequestHandler):
           protocol_version = "HTTP/1.1"
 
@@ -505,28 +706,34 @@ write_files:
                   self.send_header("Content-Length", str(len(jpeg)))
                   self.end_headers(); self.wfile.write(jpeg); return
               if path == "/stream":
-                  # ONE long-lived ffmpeg per viewer, capturing continuously.
-                  # The first version spawned a fresh ffmpeg (X connect, init,
-                  # one frame, exit) per frame plus an xdpyinfo — 200-500 ms
-                  # of process churn each, so "15 fps" delivered 2-3. The
-                  # output is raw concatenated JPEGs; the relay never parses
-                  # it and the viewer resynchronises on JPEG markers.
+                  # Identical viewers share one encoder. Each subscriber keeps
+                  # only the newest COMPLETE JPEG, so a slow socket adds
+                  # neither a second x11grab nor unbounded latency.
                   fps = max(1, min(60, int(args.get("fps", 15))))
                   width = int(args.get("w", 1280))
                   height = int(args.get("h", 800))
                   qv = max(2, 31 - int(args.get("q", 70)) * 30 // 100)
                   dw, dh = display_size()
+                  try:
+                      producer, inbox = subscribe_mjpeg(
+                          width, height, fps, qv, dw, dh)
+                  except Exception as e:
+                      self._send_json(500, {"error": str(e)})
+                      return
                   self._open_stream("video/x-motion-jpeg")
-                  proc = subprocess.Popen([
-                      "ffmpeg", "-loglevel", "quiet",
-                      "-f", "x11grab", "-framerate", str(fps),
-                      "-video_size", f"{dw}x{dh}", "-i", ":0",
-                      "-vf", scale_filter(width, height),
-                      "-q:v", str(qv), "-f", "mjpeg",
-                      "-flush_packets", "1", "-",
-                  ], env={**os.environ, "DISPLAY": ":0"},
-                     stdout=subprocess.PIPE)
-                  self._relay(proc, 65536)
+                  try:
+                      while True:
+                          frame = inbox.get()
+                          if frame is None:
+                              return
+                          self.wfile.write(frame)
+                          self.wfile.flush()
+                  except (BrokenPipeError, ConnectionResetError):
+                      return
+                  except Exception:
+                      return
+                  finally:
+                      producer.unsubscribe(inbox)
                   return
               if path == "/audio":
                   # The audio lane: whatever the guest plays into the null
@@ -655,9 +862,35 @@ write_files:
           def do_POST(self):
               if not self._authed():
                   self._refuse(); return
-              if self.path == "/clipboard":
+              path, _, query = self.path.partition("?")
+              args = dict(p.split("=", 1) for p in query.split("&") if "=" in p)
+              if path == "/microphone":
+                  try:
+                      length = int(self.headers.get("Content-Length", 0))
+                  except ValueError:
+                      length = -1
+                  if length < 0:
+                      self._send_json(411, {
+                          "error": "Content-Length is required"}); return
+                  if length > 128 * 1024:
+                      self.close_connection = True
+                      self._send_json(413, {
+                          "error": "microphone chunk too large"}); return
+                  rate = max(8000, min(48000, int(args.get("rate", 16000))))
+                  channels = max(1, min(2, int(args.get("channels", 1))))
+                  try:
+                      feed_microphone(
+                          self.rfile.read(length), rate, channels,
+                          args.get("session", ""),
+                          start=args.get("start") == "1",
+                          end=args.get("end") == "1")
+                      self._send_json(200, {"ok": True})
+                  except Exception as e:
+                      self._send_json(500, {"error": str(e)})
+                  return
+              if path == "/clipboard":
                   self._post_clipboard(); return
-              if self.path != "/display":
+              if path != "/display":
                   self._send_json(404, {"error": "no such endpoint"}); return
               body = self._read_body()
               if body is None:
@@ -734,14 +967,25 @@ write_files:
       chown -R cc:cc /home/cc/.ssh
       chmod 700 /home/cc/.ssh
       chmod 600 /home/cc/.ssh/authorized_keys
-      # Egress goes through the host's proxy and nowhere else.
-      {
-        echo "export http_proxy=\$(jq -r '.http_proxy' /etc/cc-rig.json)"
-        echo "export https_proxy=\\\$http_proxy"
-        echo "export HTTP_PROXY=\\\$http_proxy"
-        echo "export HTTPS_PROXY=\\\$http_proxy"
-        echo "export ALL_PROXY=\$(jq -r '.socks_proxy' /etc/cc-rig.json)"
-      } > /etc/profile.d/cc-rig-proxy.sh
+      # Restricted rigs route desktop apps through the host proxies.
+      # Unrestricted rigs have direct slirp egress; leaving the baked proxy
+      # variables in place would force Chromium through a policy lane the user
+      # explicitly bypassed and can leave it waiting on a dead guestfwd.
+      if jq -e '.unrestricted_network == true' /etc/cc-rig.json >/dev/null; then
+        sed -i '/^\(http_proxy\|https_proxy\|HTTP_PROXY\|HTTPS_PROXY\|ALL_PROXY\|all_proxy\|no_proxy\|NO_PROXY\)=/d' /etc/environment
+        {
+          echo "unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY"
+          echo "unset ALL_PROXY all_proxy no_proxy NO_PROXY"
+        } > /etc/profile.d/cc-rig-proxy.sh
+      else
+        {
+          echo "export http_proxy=\$(jq -r '.http_proxy' /etc/cc-rig.json)"
+          echo "export https_proxy=\\\$http_proxy"
+          echo "export HTTP_PROXY=\\\$http_proxy"
+          echo "export HTTPS_PROXY=\\\$http_proxy"
+          echo "export ALL_PROXY=\$(jq -r '.socks_proxy' /etc/cc-rig.json)"
+        } > /etc/profile.d/cc-rig-proxy.sh
+      fi
 
   # git asks the HOST for a short-lived token per operation. Nothing durable
   # is ever stored in the guest.
@@ -792,6 +1036,7 @@ write_files:
       # The pulse socket lives in the cc user's runtime dir; without this the
       # audio lane's ffmpeg cannot find the sink monitor it records.
       Environment=XDG_RUNTIME_DIR=/run/user/1000
+      Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
       ExecStart=/usr/local/bin/cc-guest-agent
       Restart=always
       [Install]
@@ -839,6 +1084,11 @@ write_files:
       export XDG_SESSION_TYPE=x11
       # No blanking, no DPMS: a rig that turns its own screen off looks like
       # a broken stream.
+      # Start one persistent PulseAudio server before any desktop app. The
+      # browser and the guest agent are the same user and therefore share this
+      # socket; relying on whichever client happens to autospawn first left the
+      # browser connected to no usable output on some boots.
+      pulseaudio --start --exit-idle-time=-1 2>/dev/null || true
       xset s off -dpms 2>/dev/null || true
       # Hand DISPLAY to dbus activation and the user manager — snap apps
       # (chromium) launched inside the session mint their scopes there.
@@ -854,14 +1104,17 @@ write_files:
         feh --bg-fill /usr/share/backgrounds/cc-rig.jpg &
       exec openbox-session
 
-  # The guest's ONLY audio output: a null sink whose monitor the agent
-  # records. There is no virtio-sound device on purpose — audio leaves the
-  # guest as encoded bytes over the agent channel, exactly like frames do.
+  # Audio has two virtual devices and no virtio-sound hardware. ccout is the
+  # guest's output sink; the agent records its monitor for the viewer. ccin is
+  # fed by the viewer's microphone; its monitor is the guest's default
+  # source, so apps see it as an ordinary microphone.
   - path: /etc/pulse/default.pa.d/cc-rig.pa
     permissions: '0644'
     content: |
       load-module module-null-sink sink_name=ccout sink_properties=device.description=CC-rig-output
+      load-module module-null-sink sink_name=ccin sink_properties=device.description=CC-rig-input
       set-default-sink ccout
+      set-default-source ccin.monitor
 
   # The wallpaper as XFCE's system default (xfdesktop paints the root, so
   # feh alone would be invisible under it). Both monitor spellings, because
@@ -896,6 +1149,11 @@ write_files:
       Description=Control Center rig desktop
       After=cc-rig-seed.service
       [Service]
+      # This is a system service with User=cc, not a PAM login. systemd does
+      # not read /etc/environment for it automatically, so without this the
+      # desktop and every browser launched inside it bypass the only permitted
+      # egress path and have no network under QEMU's restrict=on.
+      EnvironmentFile=-/etc/environment
       User=cc
       # vt1 explicitly: without a VT argument X tries to take the current
       # console, which nothing in a headless boot owns.
@@ -924,13 +1182,19 @@ $([[ -n "${WALLPAPER:-}" ]] && {
 })
 
 runcmd:
-  # Egress proxy for EVERY session at RIG time (PAM reads /etc/environment;
-  # profile.d only covers login shells, which is why desktop apps "had no
-  # network"). Appended HERE, after the package phase — NOT in write_files:
-  # these per-rig proxy addresses do not exist during the BUILD boot (open
-  # NAT, no guestfwd), and baking them earlier pointed apt/snapd at a proxy
-  # that wasn't there — the snap store retried for 40 minutes and the build
-  # died on its watchdog.
+  # Egress proxy for every runtime desktop session. cc-x11.service reads this
+  # file explicitly through EnvironmentFile (it is a system service, not a PAM
+  # login); shells receive the same values through profile.d. Append it after
+  # package installation, not in write_files: these per-rig proxy addresses do
+  # not exist during the BUILD boot (open NAT, no guestfwd), and baking them
+  # earlier pointed apt/snapd at a proxy that was not there — the snap store
+  # retried for 40 minutes and the build died on its watchdog.
+  # Remove the builder boot's datasource-generated profile. Runtime networking
+  # must come only from 60-cc-rig.yaml so a diagnostic cidata cannot make a
+  # broken production image appear healthy.
+  - rm -f /etc/netplan/50-cloud-init.yaml
+  - netplan generate
+  - systemctl enable NetworkManager.service
   - sh -c 'printf "http_proxy=http://${QEMU_HTTP_PROXY_ADDR}\nhttps_proxy=http://${QEMU_HTTP_PROXY_ADDR}\nHTTP_PROXY=http://${QEMU_HTTP_PROXY_ADDR}\nHTTPS_PROXY=http://${QEMU_HTTP_PROXY_ADDR}\nALL_PROXY=socks5://${QEMU_SOCKS_PROXY_ADDR}\nno_proxy=localhost,127.0.0.1\nNO_PROXY=localhost,127.0.0.1\n" >> /etc/environment'
   - git config --system credential.helper /usr/local/bin/cc-git-credential
   - systemctl enable cc-rig-seed.service cc-guest-agent.service $SURFACE_UNITS

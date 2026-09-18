@@ -173,7 +173,6 @@ class SandboxViolationMonitor {
   /// Process names that are considered agent-related for filtering purposes.
   @visibleForTesting
   static const Set<String> agentProcesses = {
-    'pi',
     'sandbox-exec',
     'node',
     'python3',

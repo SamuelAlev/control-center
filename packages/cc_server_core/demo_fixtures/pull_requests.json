@@ -51,6 +51,9 @@
         "assignees": [
           { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }
         ],
+        "labels": [
+          { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }
+        ],
         "reviewed_by_me": false,
         "reactions": [
           { "content": "THUMBS_UP", "emoji": "👍", "count": 2, "user_reacted": false, "usernames": ["maya-ok", "priya-r"] }
@@ -148,6 +151,7 @@
         }
       ],
       "timeline": [
+        { "kind": "labeled", "actor": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "label": { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }, "created_at": "@-3d" },
         { "kind": "reviewRequested", "actor": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "reviewer_name": "maya-ok", "reviewer_is_team": false, "reviewer_avatar_url": "", "created_at": "@-3d" }
       ],
       "check_runs": [
@@ -183,6 +187,9 @@
         "requested_reviewers": [],
         "requested_team_slugs": ["closing-eng"],
         "assignees": [],
+        "labels": [
+          { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }
+        ],
         "reviewed_by_me": false,
         "reactions": [],
         "changed_files": 2,
@@ -216,6 +223,7 @@
       "review_comments": [],
       "issue_comments": [],
       "timeline": [
+        { "kind": "labeled", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "label": { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }, "created_at": "@-6d" },
         { "kind": "reviewRequested", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "reviewer_name": "closing-eng", "reviewer_is_team": true, "reviewer_avatar_url": "", "created_at": "@-6d" }
       ],
       "check_runs": [
@@ -304,6 +312,9 @@
         "requested_reviewers": [],
         "requested_team_slugs": [],
         "assignees": [],
+        "labels": [
+          { "name": "performance", "color": "0e8a16", "description": "Improves speed or resource use" }
+        ],
         "reviewed_by_me": true,
         "reactions": [
           { "content": "ROCKET", "emoji": "🚀", "count": 3, "user_reacted": false, "usernames": ["maya-ok", "priya-r", "tlindqvist"] }
@@ -329,7 +340,9 @@
       ],
       "review_comments": [],
       "issue_comments": [],
-      "timeline": [],
+      "timeline": [
+        { "kind": "labeled", "actor": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "label": { "name": "performance", "color": "0e8a16", "description": "Improves speed or resource use" }, "created_at": "@-12d" }
+      ],
       "check_runs": [
         { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-9d", "completed_at": "@-9d", "output": "612 passed", "workflow_name": "ci" }
       ],

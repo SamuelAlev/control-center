@@ -4,7 +4,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Settings → You → Newsfeed: how the user reads articles — in-app webview
@@ -76,18 +76,14 @@ class _PreferenceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final tokens = context.designSystem;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: 18,
-            color: tokens?.fgTertiary ?? theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 18, color: t.fgTertiary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -105,9 +101,7 @@ class _PreferenceTile extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: CcTypography.caption.copyWith(
-                      color:
-                          tokens?.textTertiary ??
-                          theme.colorScheme.onSurfaceVariant,
+                      color: t.textTertiary,
                       height: 1.4,
                     ),
                   ),

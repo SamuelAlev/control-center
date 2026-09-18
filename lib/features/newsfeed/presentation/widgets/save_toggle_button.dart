@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Bookmark toggle shared by the article card, the featured hero and the
 /// digest list row.
@@ -31,8 +31,7 @@ class SaveToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens = context.designSystem;
+    final tokens = context.ds;
     final l10n = AppLocalizations.of(context);
     final label = saved ? l10n.removeFromSaved : l10n.saveArticle;
 
@@ -45,21 +44,18 @@ class SaveToggleButton extends StatelessWidget {
         child: CcTappable(
           onPressed: onToggle,
           semanticButton: false,
-          builder:
-              (context, states) => Padding(
-                padding: const EdgeInsets.all(AppSpacing.xs),
-                child: Icon(
-                  saved ? AppIcons.bookmarkCheck : AppIcons.bookmark,
-                  size: size,
-                  color: saved
-                      ? (tokens?.fgBrandPrimary ?? theme.colorScheme.primary)
-                      : (states.contains(WidgetState.hovered)
-                            ? (tokens?.textSecondary
-                                  ?? theme.colorScheme.onSurface)
-                            : (tokens?.textTertiary
-                                  ?? theme.colorScheme.onSurfaceVariant)),
-                ),
-              ),
+          builder: (context, states) => Padding(
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Icon(
+              saved ? AppIcons.bookmarkCheck : AppIcons.bookmark,
+              size: size,
+              color: saved
+                  ? tokens.fgBrandPrimary
+                  : (states.contains(WidgetState.hovered)
+                        ? tokens.textSecondary
+                        : tokens.textTertiary),
+            ),
+          ),
         ),
       ),
     );

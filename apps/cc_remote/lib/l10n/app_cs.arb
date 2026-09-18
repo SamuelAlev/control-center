@@ -1,0 +1,519 @@
+{
+  "@@locale": "cs",
+  "appTitle": "Control Center",
+  "back": "Zpět",
+  "cancel": "Zrušit",
+  "retry": "Zopakovat",
+  "tryAgain": "Zkusit znovu",
+  "settings": "Nastavení",
+  "refresh": "Obnovit",
+  "approve": "Schválit",
+  "deny": "Zakázat",
+  "continueLabel": "Pokračovat",
+  "agentQuestionHeader": "Otázka pro vás",
+  "agentQuestionAnsweredLabel": "Zodpovězeno",
+  "agentQuestionSkip": "Přeskočit",
+  "agentQuestionSkippedLabel": "Přeskočeno",
+  "agentQuestionFreeformHint": "Napište odpověď…",
+  "agentApprovalRequired": "Je potřeba schválení",
+  "approveAndRemember": "Schválit na 8 hodin",
+  "decline": "Odmítnout",
+  "confirm": "Potvrdit",
+  "send": "Odeslat",
+  "close": "Zavřít",
+  "expand": "Rozbalit",
+  "zoomIn": "Přiblížit",
+  "zoomOut": "Oddálit",
+  "resetZoom": "Obnovit přiblížení",
+  "scanQrPrompt": "Naskenujte QR kód z Macu a spárujte tento telefon.",
+  "scanQrHelp": "Otevřete fotoaparát a namířte ho na QR kód zobrazený v Control Center na Macu. Tento telefon se k Macu připojí přímo přes soukromé spojení.",
+  "connectingToMac": "Připojování k Macu…",
+  "connectingDetail": "Navazuje se zabezpečené, přímé spojení.",
+  "identityChangedTitle": "Identita serveru se změnila",
+  "identityChangedBody": "Tento server už neodpovídá identitě uložené při párování. Může to znamenat, že byl server přeinstalován — nebo že něco odposlouchává připojení. Pro jistotu se toto zařízení nepřipojí. Odstraňte párování a pak naskenujte nový QR kód z Macu.",
+  "removePairing": "Odstranit párování",
+  "couldntConnect": "Nepodařilo se připojit",
+  "pendingPairingTitle": "Připojit k tomuto serveru?",
+  "pendingPairingBody": "Odkaz požádal Control Center o spárování s tímto serverem. Pokračujte, jen pokud jste to spustili vy.",
+  "connect": "Připojit",
+  "failureNotPaired": "Nespárováno — naskenujte QR kód z Macu",
+  "failureUnreachable": "K serveru se nepodařilo dostat žádnou cestou — zkontrolujte, že běží, nebo zkuste stejnou síť",
+  "failureIdentityChanged": "Identita serveru se změnila — pokud byl přeinstalován, spárujte toto zařízení znovu",
+  "failureAuthRejected": "Server toto zařízení odmítl — spárujte ho znovu z Macu",
+  "failureUnknown": "Nepodařilo se připojit — klepněte pro opakování",
+  "statusConnected": "Připojeno",
+  "statusConnecting": "Připojování",
+  "statusOffline": "Offline",
+  "statusIdentityMismatch": "Neshoda identity",
+  "statusNotPaired": "Nespárováno",
+  "statusConfirmPairing": "Potvrdit párování",
+  "connectionFailed": "Připojení selhalo",
+  "identityMismatchBanner": "Identita serveru se změnila — připojení bylo zastaveno. Spárujte toto zařízení znovu, abyste mohli pokračovat.",
+  "tabInbox": "Doručená pošta",
+  "tabTickets": "Tickety",
+  "tabChat": "Chat",
+  "tabPrs": "PRs",
+  "tabCalendar": "Kalendář",
+  "tabNews": "Novinky",
+  "tabWaitingCount": "{label}, {count} čeká",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateAvailable": "Je dostupný nový Control Center",
+  "appearance": "Vzhled",
+  "language": "Jazyk",
+  "device": "Zařízení",
+  "themeSystem": "Systém",
+  "themeLight": "Světlý",
+  "themeDark": "Tmavý",
+  "languageSystem": "Systém",
+  "disconnectTapAgain": "Klepněte znovu a odpojte toto zařízení od Macu",
+  "disconnectDevice": "Odpojit toto zařízení",
+  "disconnect": "Odpojit",
+  "chooseWorkspace": "Vybrat pracovní prostor",
+  "workspaces": "Pracovní prostory",
+  "workspacesLoadFailed": "Pracovní prostory se nepodařilo načíst",
+  "noWorkspacesYet": "Zatím žádné pracovní prostory",
+  "selectWorkspace": "Vybrat {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxLoadFailed": "Doručenou poštu se nepodařilo načíst",
+  "allCaughtUp": "Máte všechno přečtené",
+  "inboxNoForgeAccount": "Na serveru není připojený účet forge, takže pull requesty k vám zatím nelze přiřadit.",
+  "inboxNothingWaiting": "Nic není blokováno a žádný pull request na vás nečeká.",
+  "blocked": "Blokováno",
+  "sectionNeedsYourReview": "Potřebuje vaši kontrolu",
+  "sectionReturnedToYou": "Vráceno vám",
+  "sectionApprovedAndReady": "Schváleno a připraveno",
+  "sectionYourDrafts": "Vaše koncepty",
+  "sectionWaitingForReviewers": "Čeká na recenzenty",
+  "sectionMergingAndMerged": "Slučuje se a nedávno sloučené",
+  "sectionWaitingForAuthor": "Čeká na autora",
+  "waitingAgo": "čeká {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "openConversation": "Otevřít konverzaci",
+  "calendarLoadFailed": "Kalendář se nepodařilo načíst",
+  "nothingScheduled": "Nic naplánováno",
+  "calendarEmptyDescription": "Události z připojených kalendářů se zobrazí tady.",
+  "agenda": "Agenda",
+  "syncCalendarsNow": "Synchronizovat kalendáře teď",
+  "event": "Událost",
+  "eventNotFound": "Událost nenalezena",
+  "eventNotFoundDescription": "Může být mimo okno agendy, nebo byla odstraněna u zdroje.",
+  "joinMeeting": "Připojit se ke schůzce",
+  "join": "Připojit se",
+  "attendeesCount": "Účastníci ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "details": "Podrobnosti",
+  "allDay": "Celý den",
+  "happeningNow": "Právě probíhá",
+  "inDuration": "Za {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "attendeeAccepted": "přijato",
+  "attendeeDeclined": "odmítnuto",
+  "attendeeMaybe": "možná",
+  "attendeeNoReply": "bez odpovědi",
+  "organizer": "organizátor",
+  "calendarNoAccounts": "K tomuto pracovnímu prostoru není připojený žádný kalendář. Připojte ho v desktopové aplikaci — přihlášení uloží token na server.",
+  "calendarReauthNeeded": "Kalendářový účet je potřeba znovu připojit — údaje níže můžou být zastaralé. Připojte ho znovu v desktopové aplikaci.",
+  "spacesLoadFailed": "Prostory se nepodařilo načíst",
+  "noSpaces": "Žádné prostory",
+  "spacesEmptyDescription": "Prostory v tomto pracovním prostoru se zobrazí tady.",
+  "thread": "Vlákno",
+  "agentWorking": "Agent pracuje",
+  "messagesLoadFailed": "Zprávy se nepodařilo načíst",
+  "noMessagesYet": "Zatím žádné zprávy",
+  "noMessagesDescription": "Odešlete zprávu a začněte konverzaci.",
+  "agentResponding": "Agent odpovídá",
+  "agentFinished": "Agent dokončil",
+  "attachmentsTooLarge": "{count, plural, one{{names} je příliš velký na odeslání odtud.} few{{names} jsou příliš velké na odeslání odtud.} other{{names} jsou příliš velké na odeslání odtud.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, one{{names} je příliš velký na odeslání odtud přes relay.} few{{names} jsou příliš velké na odeslání odtud přes relay.} other{{names} jsou příliš velké na odeslání odtud přes relay.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentUploadFailed": "Přílohu se nepodařilo nahrát. Zkuste to znovu.",
+  "attachmentsLeftOut": "{count, plural, one{1 přílohu se nepodařilo nahrát a byla vynechána.} few{{count} přílohy se nepodařilo nahrát a byly vynechány.} other{{count} příloh se nepodařilo nahrát a byly vynechány.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teammate": "Spolupracovník",
+  "agent": "Agent",
+  "attachFile": "Přiložit soubor",
+  "messageHint": "Zpráva",
+  "removeAttachment": "Odebrat {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "articlesLoadFailed": "Články se nepodařilo načíst",
+  "noArticles": "Žádné články",
+  "articlesEmptyDescription": "Nové články se tu objeví, jak se kanály aktualizují.",
+  "unread": "Nepřečtené",
+  "allFeeds": "Všechny kanály",
+  "save": "Uložit",
+  "unsave": "Zrušit uložení",
+  "readFullArticle": "Číst celý článek",
+  "ticketsLoadFailed": "Tickety se nepodařilo načíst",
+  "noTickets": "Žádné tickety",
+  "ticketsEmptyDescription": "Tickety v tomto pracovním prostoru se zobrazí tady.",
+  "all": "Vše",
+  "ticket": "Ticket",
+  "ticketLoadFailed": "Ticket se nepodařilo načíst",
+  "assignedTo": "Přiřazeno: {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openInBrowser": "Otevřít v prohlížeči",
+  "status": "Stav",
+  "assign": "Přiřadit",
+  "reassign": "Přiřadit znovu",
+  "noAgents": "Žádní agenti",
+  "noAgentsDescription": "Přiřaďte agenta z tohoto pracovního prostoru.",
+  "statusOpen": "Otevřený",
+  "statusInProgress": "Probíhá",
+  "statusBlocked": "Blokováno",
+  "statusInReview": "V kontrole",
+  "statusDone": "Hotovo",
+  "statusBacklog": "Backlog",
+  "lensNeedsMe": "Potřebuje mě",
+  "lensMine": "Moje",
+  "prsLoadFailed": "Pull requesty se nepodařilo načíst",
+  "noOpenPullRequests": "Žádné otevřené pull requesty",
+  "nothingWaitingOnReview": "Nic nečeká na vaši kontrolu",
+  "noOwnOpenPullRequests": "Nemáte žádné otevřené pull requesty",
+  "nothingBlocked": "Nic není blokováno",
+  "prsEmptyDescription": "Pull requesty z repozitářů tohoto pracovního prostoru se zobrazí tady.",
+  "refreshPullRequests": "Obnovit pull requesty",
+  "noForgeConnected": "Na serveru není připojený žádný forge, takže pull requesty nelze načíst. Připojte ho v desktopové aplikaci.",
+  "reposUnreadable": "{count, plural, one{1 repo se nepodařilo přečíst.} few{{count} repa se nepodařilo přečíst.} other{{count} rep se nepodařilo přečíst.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reposNotReadable": "Nelze číst: {names}",
+  "installationSuspendedTitle": "Instalace GitHub App je pozastavena",
+  "installationSuspendedBody": "Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.",
+  "installationSuspendedNotice": "Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "draft": "Koncept",
+  "merged": "Sloučeno",
+  "closed": "Zavřeno",
+  "open": "Otevřený",
+  "approved": "Schváleno",
+  "changesRequested": "Vyžádány změny",
+  "reviewRequired": "Vyžadována kontrola",
+  "checksPassing": "Kontroly procházejí",
+  "checksFailing": "Kontroly selhávají",
+  "checksRunning": "Kontroly běží",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Tento pull request se nepodařilo načíst",
+  "openOnForge": "Otevřít na forge",
+  "requestChangesNeedsComment": "Přidejte komentář, který vysvětlí, co je potřeba změnit.",
+  "conversation": "Konverzace",
+  "files": "Soubory",
+  "checks": "Kontroly",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesCount": "{count, plural, one{1 soubor} few{{count} soubory} other{{count} souborů}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commitsCount": "{count, plural, one{1 commit} few{{count} commity} other{{count} commitů}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflicts": "Konflikty",
+  "reviewers": "Recenzenti",
+  "noDescriptionNoComments": "Zatím žádný popis ani komentáře.",
+  "noChangedFiles": "Žádné změněné soubory.",
+  "noChecksReported": "Pro head commit nebyly nahlášeny žádné kontroly.",
+  "reviewCommentHint": "Napište komentář k recenzi…",
+  "comment": "Komentář",
+  "commentPosted": "Komentář odeslán",
+  "request": "Vyžádat",
+  "squashAndMerge": "Squash a sloučení",
+  "noActionsAvailable": "{status} — žádné dostupné akce.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewApproved": "schválil",
+  "reviewRequestedChanges": "vyžádal změny",
+  "reviewCommented": "zkontroloval",
+  "reviewPending": "čeká",
+  "unknownAuthor": "neznámý",
+  "hideDiffFor": "Skrýt diff souboru {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "showDiffFor": "Zobrazit diff souboru {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "checkRunning": "běží",
+  "checkPassed": "prošlo",
+  "checkFailed": "selhalo",
+  "checkCancelled": "zrušeno",
+  "checkSkipped": "přeskočeno",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "noTextDiff": "Pro tento soubor není textový diff — je binární, nebo příliš velký, aby ho forge vrátil.",
+  "showRemainingLines": "{count, plural, one{Zobrazit zbývající řádek} few{Zobrazit zbývající {count} řádky} other{Zobrazit zbývajících {count} řádků}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unchangedLines": "{count, plural, one{1 nezměněný řádek} few{{count} nezměněné řádky} other{{count} nezměněných řádků}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToLatest": "Přejít na nejnovější",
+  "streaming": "Streamování",
+  "working": "Pracuje",
+  "input": "Vstup",
+  "output": "Výstup",
+  "now": "teď",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "Dnes",
+  "tomorrow": "Zítra",
+  "yesterday": "Včera",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
+}

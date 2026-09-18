@@ -140,11 +140,11 @@ abstract final class KeybindingRegistry {
   // active; `!textInputFocus` lets the same keys be typed into text fields.
   static const String _prList = "route == '/pull-requests' && !textInputFocus";
   static const String _notTyping = '!textInputFocus';
-  // Any `/users/<login>` profile page. Regex (not `==`) because the login is
-  // part of the location; `!textInputFocus` lets the same keys be typed into
-  // the profile's search field.
+  // Any `/users/<login>` or `/teams/<organization>/<slug>` profile page.
+  // Regex (not `==`) because the identity is part of the location;
+  // `!textInputFocus` lets the same keys be typed into the profile search.
   static const String _userProfile =
-      r'route =~ /^\/users\// && !textInputFocus';
+      r'route =~ /^\/(users|teams)\// && !textInputFocus';
 
   /// System-wide shortcuts (command palette, theme, settings, workspace
   /// switching).

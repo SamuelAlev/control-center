@@ -175,7 +175,7 @@ class _BrowserEgressSectionState extends ConsumerState<BrowserEgressSection> {
           ],
           const SizedBox(height: AppSpacing.sm),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: CcButton(
               size: CcButtonSize.sm,
               variant: CcButtonVariant.secondary,

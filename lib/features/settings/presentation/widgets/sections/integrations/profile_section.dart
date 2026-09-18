@@ -151,7 +151,7 @@ class _ProfileFormState extends ConsumerState<_ProfileForm> {
         ),
         const SizedBox(height: AppSpacing.md),
         Align(
-          alignment: Alignment.centerRight,
+          alignment: AlignmentDirectional.centerEnd,
           child: CcButton(
             loading: _busy,
             onPressed: _busy ? null : _save,

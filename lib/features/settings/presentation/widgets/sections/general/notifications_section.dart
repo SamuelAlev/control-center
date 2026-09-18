@@ -11,8 +11,8 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart' hide TimeOfDay;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final _globalEnabledFutureProvider = FutureProvider<bool>((ref) {
@@ -122,7 +122,7 @@ class _GroupHeader extends StatelessWidget {
       NotificationCategoryGroup.machines => l10n.notificationGroupMachines,
     };
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: Text(
         label,
         style: CcTypography.caption.copyWith(
@@ -209,7 +209,7 @@ class _MutedRepoToggle extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24),
+      padding: const EdgeInsetsDirectional.only(start: 24),
       child: SettingsRow(
         icon: AppIcons.gitBranch,
         title: repoFullName,

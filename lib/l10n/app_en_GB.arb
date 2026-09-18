@@ -1,0 +1,93 @@
+{
+  "@@locale": "en_GB",
+  "calendarConnectDenied": "Authorisation was denied. Please try again.",
+  "calendarOrganizer": "Organiser",
+  "commandPaletteOrgMembers": "Organisation members",
+  "commandPaletteBrowseTeamDesc": "View all organisation members",
+  "ownerOrganization": "Owner / Organisation",
+  "repoAccessNoticeBody": "The server's GitHub credential can't see {repos}. If a repository belongs to an organisation, install the GitHub App there or connect a token that has access.",
+  "@repoAccessNoticeBody": {
+    "description": "Body of the notice listing repos the server's forge credential cannot access",
+    "placeholders": {
+      "repos": {
+        "type": "String"
+      }
+    }
+  },
+  "skillSourceRemoveConfirmBody": "Installed skills stay installed. Only the repository catalogue is removed.",
+  "meetingTemplateInstructionsHint": "How should the AI structure and emphasise these notes?",
+  "focusModeFloat": "Minimise to bar",
+  "projectColorLabel": "Colour",
+  "meetingsSubtitle": "Captured and transcribed on this device, then summarised by an agent.",
+  "meetingsTranscribing": "transcribing & summarising…",
+  "meetingReRunStarted": "Re-running the summariser on the transcript…",
+  "meetingReRunNoTranscript": "There's no transcript to summarise yet.",
+  "meetingRecordStop": "Stop & summarise",
+  "orchestrationStatusSynthesizing": "Synthesising",
+  "meetingSaveVoiceProfileBody": "Recognise {name} automatically in future meetings by saving their voiceprint.",
+  "@meetingSaveVoiceProfileBody": {
+    "description": "Body of the save-voice-profile prompt after renaming a speaker",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "voiceProfilesDescription": "Saved voices are recognised automatically in future meetings.",
+  "deleteVoiceProfileBody": "Stop recognising {name}? Their saved voiceprint is removed. Names already applied in past meetings are kept.",
+  "@deleteVoiceProfileBody": {
+    "description": "Body of the delete-voice-profile confirmation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "mcpAuthorize": "Authorise",
+  "mcpExternalConnectionsNote": "External MCP servers run on the agent server (shared by desktop and web). Authorising OAuth servers is only available on the desktop.",
+  "mcpStatusNeedsAuth": "Needs authorisation",
+  "editorThemeDescription": "Import a VS Code colour theme so the embedded diff and editor match your IDE.",
+  "editorThemePasteHint": "Paste the contents of a VS Code colour-theme JSON file",
+  "systemBehavior": "System behaviour",
+  "providerWaitingForBrowser": "Waiting for you to authorise in the browser…",
+  "auditTrailLabel": "Authorisation audit trail",
+  "obsBehaviorMessagesAnalyzed": "Messages analysed",
+  "obsBehaviorMessagesCount": "{count} messages analysed",
+  "@obsBehaviorMessagesCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "chatCustomizeBot": "Customise bot",
+  "chatSetupLinkNotManageable": "{provider} does not report which app it created, so customising the bot from here needs an app configuration token later.",
+  "@chatSetupLinkNotManageable": {
+    "description": "Warns that an app created by link cannot be customized from Control Center",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "aboutRpcCatalog": "RPC catalogue",
+  "reviewHubIntroBody": "Agents analyse the diff, map the change areas and reach a consensus verdict.",
+  "profileDeliveryMetrics": "Delivery metrics",
+  "profileMetricsSample": "PRs analysed: {count}",
+  "profileMergeRate": "Merge rate",
+  "profileReviewCoverage": "Review coverage",
+  "profilePrSize": "PR size",
+  "profileTimeToMerge": "Time to merge",
+  "profileFirstReview": "Time to first review",
+  "profileMetricsTruncated": "Percentiles use a limited sample of the available pull requests.",
+  "profileLinesChanged": "{count} lines",
+  "profileDurationMinutes": "{count} min",
+  "profileDurationHours": "{count} hr",
+  "profileDurationDaysHours": "{days}d {hours}h",
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "profileTeamMembers": "Members: {count}",
+  "noPrsByTeamInWorkspace": "No pull requests by {team} in this workspace",
+  "profilePrStateFilterLabel": "Filter pull requests by state",
+  "noProfilePrsMatchSearchHint": "Try another title or pull request number"
+}

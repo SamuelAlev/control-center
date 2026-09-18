@@ -3,8 +3,8 @@ import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:record/record.dart';
 
-/// Persisted preference for the audio input device used by the mic button.
-///
+/// Persisted default for microphone capture. A rig tab snapshots this choice
+/// when created and can then choose its own input from the tab context menu.
 /// Holds the platform-specific [InputDevice.id] of the chosen device, or
 /// `null` to indicate "use the system default" (`record` interprets a null
 /// [RecordConfig.device] as the OS default mic).

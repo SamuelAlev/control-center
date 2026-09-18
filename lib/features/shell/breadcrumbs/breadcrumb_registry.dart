@@ -72,6 +72,8 @@ final Map<String, BreadcrumbBuilder> breadcrumbRegistry = {
   '${settingsPipelinesRoute(workspaceIdParam)}/:templateId':
       _pipelineTemplateEditorCrumbs,
   userProfileRoute(workspaceIdParam, ':login'): _userProfileCrumbs,
+  teamProfileRoute(workspaceIdParam, ':organization', ':slug'):
+      _teamProfileCrumbs,
   workspaceListRoute: _manageWorkspacesCrumbs,
 };
 
@@ -628,5 +630,19 @@ List<CcBreadcrumbItem> _userProfileCrumbs(
   return [
     CcBreadcrumbItem(child: Text(l10n.usersLabel)),
     CcBreadcrumbItem(current: true, child: Text(login)),
+  ];
+}
+
+List<CcBreadcrumbItem> _teamProfileCrumbs(
+  WidgetRef ref,
+  BuildContext context,
+  GoRouterState state,
+  AppLocalizations l10n,
+) {
+  final organization = state.pathParameters['organization'] ?? '';
+  final slug = state.pathParameters['slug'] ?? '';
+  return [
+    CcBreadcrumbItem(child: Text(l10n.teamsSectionLabel)),
+    CcBreadcrumbItem(current: true, child: Text('$organization/$slug')),
   ];
 }

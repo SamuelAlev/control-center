@@ -295,11 +295,15 @@ class _MentionAutocompleteFieldState
         ),
         CompositedTransformFollower(
           link: _link,
-          targetAnchor: Alignment.bottomLeft,
-          followerAnchor: Alignment.topLeft,
+          targetAnchor: AlignmentDirectional.bottomStart.resolve(
+            Directionality.of(context),
+          ),
+          followerAnchor: AlignmentDirectional.topStart.resolve(
+            Directionality.of(context),
+          ),
           offset: const Offset(0, 4),
           child: Align(
-            alignment: Alignment.topLeft,
+            alignment: AlignmentDirectional.topStart,
             child: Material(
               type: MaterialType.transparency,
               child: Container(

@@ -1,10 +1,12 @@
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
+import 'package:cc_harness/provider.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/adapters_settings.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/claude_accounts_section.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
+import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -348,6 +350,58 @@ void main() {
 
       expect(find.byType(ClaudeAccountsSection), findsNothing);
       expect(find.text('/usr/bin/aider'), findsOneWidget);
+    });
+    testWidgets('keeps the outer scroll extent stable across tall sections', (
+      tester,
+    ) async {
+      final models = List<HarnessModelInfo>.generate(
+        120,
+        (i) => HarnessModelInfo(
+          id: 'local/model-$i',
+          providerId: 'local',
+          displayName: 'Model $i',
+          contextWindow: 200000,
+        ),
+      );
+      await _pump(
+        tester,
+        const [_aider],
+        size: const Size(1200, 620),
+        extraOverrides: [
+          harnessProvidersProvider.overrideWith(
+            (ref) async => const [
+              HarnessProviderInfo(
+                id: 'local',
+                displayName: 'Local provider',
+                authMethods: [],
+                enabled: HarnessProviderEnabled.local,
+                hasCredential: true,
+                baseUrl: 'http://localhost:8080/v1',
+              ),
+            ],
+          ),
+          harnessModelsProvider.overrideWith((ref) async => models),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      final position = tester
+          .stateList<ScrollableState>(find.byType(Scrollable))
+          .map((state) => state.position)
+          .where((candidate) => candidate.axis == Axis.vertical)
+          .reduce((a, b) => a.maxScrollExtent >= b.maxScrollExtent ? a : b);
+      final before = position.maxScrollExtent;
+      expect(before, greaterThan(3000));
+
+      // A desktop scrollbar derives its thumb length from maxScrollExtent. The
+      // page has a few short cards and one very tall model section; if those
+      // are separate lazy sliver children, Flutter repeatedly re-estimates the
+      // total from whichever child is visible and the thumb changes size.
+      for (var step = 1; step <= 8; step++) {
+        position.jumpTo(before * step / 8);
+        await tester.pump();
+        expect(position.maxScrollExtent, closeTo(before, 0.01));
+      }
     });
   });
 }

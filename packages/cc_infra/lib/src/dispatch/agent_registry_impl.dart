@@ -7,10 +7,11 @@ import 'package:cc_domain/features/dispatch/domain/registry/registry_event.dart'
 
 /// Process-global, in-memory implementation of [AgentRegistry].
 ///
-/// A single instance is shared across the whole process via [global] so the
-/// dispatch service, MCP tools (which never receive a `Ref`) and the UI all
-/// observe the same roster. The UI watches it through a Riverpod provider that
-/// returns [global]; non-`Ref` call sites read [global] directly.
+/// A single instance is shared across the **server process** via [global] so
+/// dispatch, MCP tools (which never receive a `Ref`) and in-process reconcilers
+/// observe the same live roster. Thin clients must NOT watch this singleton —
+/// it is empty in the Flutter isolate. The desktop/web Live tab derives
+/// [AgentRef]s from durable `agents.watchForWorkspace` + run logs over RPC.
 ///
 /// Refs are stored as immutable snapshots and replaced wholesale on mutation,
 /// so [changes] always carries the post-change ref and consumers can compare
@@ -23,7 +24,7 @@ class AgentRegistryImpl implements AgentRegistry {
 
   static AgentRegistryImpl? _global;
 
-  /// The process-global registry instance.
+  /// The process-global registry instance. Server-process only.
   static AgentRegistryImpl global() => _global ??= AgentRegistryImpl();
 
   /// Replaces the global instance with a fresh one. Test-only.

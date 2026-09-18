@@ -2,65 +2,6 @@ import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('StructuredCliBackend', () {
-    test('declares the structuredCli transport and no acpArgs', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      expect(backend.cliName, 'pi');
-      expect(backend.transport.name, 'structuredCli');
-      expect(backend.acpArgs, isNull);
-    });
-
-    test('defaultEnv is empty', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      expect(backend.defaultEnv(), isEmpty);
-    });
-
-    test('buildArgs emits --mode json + system prompt constraint', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      final args = backend.buildArgs();
-      expect(args, contains('--mode'));
-      expect(args, contains('json'));
-      expect(args, contains('--append-system-prompt'));
-      final constraintIndex = args.indexOf('--append-system-prompt');
-      expect(args[constraintIndex + 1], contains('JSON'));
-    });
-
-    test('buildArgs appends --model when modelId provided', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      final args = backend.buildArgs(modelId: 'gpt-4');
-      final i = args.indexOf('--model');
-      expect(args[i + 1], 'gpt-4');
-    });
-
-    test('buildArgs omits --model when modelId empty', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      final args = backend.buildArgs(modelId: '');
-      expect(args.indexOf('--model'), -1);
-    });
-
-    test('buildArgs appends --thinking when effortLevel provided', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      final args = backend.buildArgs(effortLevel: 'high');
-      final i = args.indexOf('--thinking');
-      expect(args[i + 1], 'high');
-    });
-
-    test('buildArgs omits --thinking when effortLevel empty', () {
-      const backend = StructuredCliBackend(cliName: 'pi');
-      final args = backend.buildArgs(effortLevel: '');
-      expect(args.indexOf('--thinking'), -1);
-    });
-
-    test('buildArgs honors a custom jsonModeConstraint', () {
-      const backend = StructuredCliBackend(
-        cliName: 'pi',
-        jsonModeConstraint: 'Custom constraint',
-      );
-      final args = backend.buildArgs();
-      expect(args, contains('Custom constraint'));
-    });
-  });
-
   group('ClaudeCliBackend', () {
     test('defaults cliName to "claude"', () {
       const backend = ClaudeCliBackend();

@@ -198,7 +198,7 @@ class _LinkedPrRowState extends State<_LinkedPrRow> {
                 CcTappable(
                   onPressed: widget.onRemove,
                   builder: (context, states) => Padding(
-                    padding: const EdgeInsets.only(left: 6),
+                    padding: const EdgeInsetsDirectional.only(start: 6),
                     child: Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
                   ),
                 ),

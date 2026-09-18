@@ -176,7 +176,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rigsUnsupportedServer =>
-      'This server cannot host enclosed VMs. Rigs need a hypervisor on the machine running cc_server.';
+      'This server cannot host any rig surfaces. Check the host requirements for the machine you want to use.';
 
   @override
   String get rigSurfaceComputer => 'Computer';
@@ -185,7 +185,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rigSurfaceBrowser => 'Browser';
 
   @override
-  String get rigSurfaceMobile => 'Mobile';
+  String get rigSurfaceAndroid => 'Android';
+
+  @override
+  String get rigSurfaceIosSimulator => 'iOS Simulator';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -248,6 +251,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Starts a disposable VM you and your agents share for this conversation. It is destroyed when it closes, and nothing in it touches your computer.';
 
   @override
+  String get rigStartAndroidHint =>
+      'Connects to an Android emulator already running on the server. Network access is not enclosed.';
+
+  @override
+  String get rigStartIosHint =>
+      'Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.';
+
+  @override
   String get rigStopMachine => 'Stop the machine';
 
   @override
@@ -262,7 +273,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ideMenuSectionTools => 'Tools';
 
   @override
-  String get ideMenuSectionVirtualMachine => 'Virtual machine';
+  String get ideMenuSectionMachines => 'Machines';
 
   @override
   String get ideMenuSectionReopen => 'Reopen';
@@ -280,7 +291,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rigMenuBrowser => 'Browser';
 
   @override
-  String get rigMenuMobile => 'Phone';
+  String get rigMenuAndroid => 'Android';
+
+  @override
+  String get rigMenuIosSimulator => 'iOS Simulator';
 
   @override
   String rigLabelNumbered(String label, String suffix) {
@@ -322,6 +336,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rigsCapabilitiesTitle => 'This server';
+
+  @override
+  String get rigInstallIosAutomation => 'Install iOS automation bridge';
+
+  @override
+  String get rigInstallingIosAutomation => 'Installing iOS automation bridge…';
+
+  @override
+  String get rigIosAutomationInstalled => 'iOS automation bridge installed';
 
   @override
   String get rigsImagesTitle => 'Base images';
@@ -1537,15 +1560,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The speech and diarization models this server hosts.';
 
   @override
-  String get filterSettingsHint => 'Filter settings';
-
-  @override
   String get needsSetupLabel => 'Needs setup';
-
-  @override
-  String noSettingsMatch(String query) {
-    return 'No settings match \"$query\"';
-  }
 
   @override
   String get collapseSidebar => 'Collapse sidebar';
@@ -1601,11 +1616,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noRunsYet => 'No runs yet';
-
-  @override
-  String lastActiveAgo(String duration) {
-    return 'Active $duration ago';
-  }
 
   @override
   String get copyPath => 'Copy path';
@@ -2502,14 +2512,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
-  String agentCount(int count, int plural) {
+  String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      plural,
+      count,
       locale: localeName,
-      other: 's',
-      one: '',
+      other: '$count agents',
+      one: '1 agent',
     );
-    return '$count agent$_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -2650,6 +2660,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get approved => 'Approved';
+
+  @override
+  String get articleNoun => 'Article';
 
   @override
   String get articlesSubscribed => 'Articles across your subscribed feeds.';
@@ -3059,6 +3072,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deny => 'Deny';
+
+  @override
+  String get detailsLabel => 'Details';
 
   @override
   String get descriptionLabel => 'Description';
@@ -3752,27 +3768,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get killRunning => 'Kill running';
 
   @override
-  String get languageDutch => 'Nederlands';
-
-  @override
-  String get languageEnglish => 'English';
-
-  @override
-  String get languageFrench => 'Français';
-
-  @override
-  String get languageGerman => 'Deutsch';
-
-  @override
-  String get languageItalian => 'Italiano';
-
-  @override
-  String get languagePortuguese => 'Português';
-
-  @override
-  String get languageSpanish => 'Español';
-
-  @override
   String get languageSystem => 'System';
 
   @override
@@ -4339,6 +4334,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openInBrowser => 'Open in browser';
 
   @override
+  String get openedInYourBrowser => 'Opened in your browser.';
+
+  @override
   String get openLabel => 'Open';
 
   @override
@@ -4549,6 +4547,15 @@ class AppLocalizationsEn extends AppLocalizations {
       one: 'A repository can\'t be accessed',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get repoAccessNoticeSuspendedTitle =>
+      'GitHub App installation suspended';
+
+  @override
+  String repoAccessNoticeSuspendedBody(String repos) {
+    return 'Showing last known data for $repos. Resume the installation on GitHub, or connect a token that has access.';
   }
 
   @override
@@ -6865,6 +6872,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentQuestionAnswerLabel => 'Your answer';
 
   @override
+  String agentQuestionProgress(int index, int count) {
+    return 'Question $index of $count';
+  }
+
+  @override
+  String get agentQuestionSkip => 'Skip';
+
+  @override
+  String get agentQuestionSkippedLabel => 'Skipped';
+
+  @override
+  String get agentQuestionFreeformOptionHint => 'Describe in your own words…';
+
+  @override
   String get reviewRequested => 'Review requested';
 
   @override
@@ -6915,6 +6936,51 @@ class AppLocalizationsEn extends AppLocalizations {
     String removed,
   ) {
     return '$actor requested review from $requested and removed the review request for $removed';
+  }
+
+  @override
+  String prTimelineAddedLabels(String actor, String labels, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'labels',
+      one: 'label',
+    );
+    return '$actor added the $labels $_temp0';
+  }
+
+  @override
+  String prTimelineRemovedLabels(String actor, String labels, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'labels',
+      one: 'label',
+    );
+    return '$actor removed the $labels $_temp0';
+  }
+
+  @override
+  String prTimelineAddedAndRemovedLabels(
+    String actor,
+    String added,
+    int addedCount,
+    String removed,
+    int removedCount,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      addedCount,
+      locale: localeName,
+      other: 'labels',
+      one: 'label',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      removedCount,
+      locale: localeName,
+      other: 'labels',
+      one: 'label',
+    );
+    return '$actor added the $added $_temp0 and removed the $removed $_temp1';
   }
 
   @override
@@ -6996,6 +7062,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noChecksYet => 'No checks have run yet';
+
+  @override
+  String get noChangesToReview => 'No changes to review';
 
   @override
   String checksFailingCount(int count) {
@@ -7181,17 +7250,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clearAll => 'Clear all';
-
-  @override
-  String agentsRunningCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count agents running',
-      one: '1 agent running',
-    );
-    return '$_temp0';
-  }
 
   @override
   String reviewSummary(int prs, int repos) {
@@ -10333,6 +10391,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get openInEditor => 'Open in editor';
 
   @override
+  String get regexTesterTitle => 'Test regular expression';
+
+  @override
+  String get regexTesterHint => 'Type a sample';
+
+  @override
+  String get regexMatch => 'Match';
+
+  @override
+  String get regexNoMatch => 'No match';
+
+  @override
+  String get regexInvalidPattern => 'Invalid pattern';
+
+  @override
+  String get symbolLookupNone =>
+      'No definition in the index or this pull request';
+
+  @override
+  String get symbolLookupInDiff => 'Found in this pull request';
+
+  @override
+  String get symbolLookupFromBase =>
+      'From the base checkout — this PR\'s worktree isn\'t indexed yet';
+
+  @override
+  String get symbolImplementations => 'Implementations';
+
+  @override
+  String symbolCallersCount(int count) {
+    return '$count callers';
+  }
+
+  @override
   String get commitMessageHint => 'Commit message';
 
   @override
@@ -10407,6 +10499,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get searchInFilesHint => 'Search across the pull request\'s files';
+
+  @override
+  String get searchInWholeRepo => 'Search in the whole repo';
+
+  @override
+  String get searchInThisPullRequest => 'Search in this pull request';
 
   @override
   String get searchNoResults => 'No results found';
@@ -10843,37 +10941,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerGenerationOverridden => 'Overridden';
-
-  @override
-  String get spaceFlyoutNeedsInput => 'Needs input';
-
-  @override
-  String get spaceFlyoutPreparing => 'Preparing';
-
-  @override
-  String get spaceFlyoutSetupFailed => 'Setup failed';
-
-  @override
-  String get spaceFlyoutSetupStopped => 'Setup stopped';
-
-  @override
-  String get spaceFlyoutNeverRun => 'No agent has run here yet';
-
-  @override
-  String spaceFlyoutContextUsage(String used, String percent) {
-    return 'Context window $used used, $percent full';
-  }
-
-  @override
-  String subagentsRunningCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count subagents',
-      one: '1 subagent',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get branchNotPushed => 'not pushed';
@@ -13471,6 +13538,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get renameConversation => 'Rename conversation';
 
   @override
+  String get spaceActions => 'Space actions';
+
+  @override
+  String get conversationActions => 'Conversation actions';
+
+  @override
   String get editSpaceRepos => 'Edit repositories';
 
   @override
@@ -14142,4 +14215,380 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get credentialGateOpenSettings => 'Open settings';
+
+  @override
+  String get selectModel => 'Select model';
+
+  @override
+  String get allModels => 'All models';
+
+  @override
+  String get noModelsMatchSearch => 'No models match your search';
+
+  @override
+  String useCustomModelId(String id) {
+    return 'Use “$id”';
+  }
+
+  @override
+  String get modelFree => 'Free';
+
+  @override
+  String modelOutputTokens(String tokens) {
+    return '$tokens output';
+  }
+
+  @override
+  String modelPricePerMTokens(String input, String output) {
+    return '$input in / $output out per 1M tokens';
+  }
+
+  @override
+  String modelEffortLevels(String levels) {
+    return 'Reasoning effort: $levels';
+  }
+
+  @override
+  String get modelSupportsReasoning => 'Supports reasoning effort';
+
+  @override
+  String get profileDeliveryMetrics => 'Delivery metrics';
+
+  @override
+  String profileMetricsSample(int count) {
+    return 'PRs analyzed: $count';
+  }
+
+  @override
+  String get profileMergeRate => 'Merge rate';
+
+  @override
+  String get profileReviewCoverage => 'Review coverage';
+
+  @override
+  String get profilePrSize => 'PR size';
+
+  @override
+  String get profileTimeToMerge => 'Time to merge';
+
+  @override
+  String get profileMergeTimeTrend => 'Merge time trend';
+
+  @override
+  String get profileWeeklyMedian => 'Weekly median, log scale';
+
+  @override
+  String get profilePrOpeningPattern => 'Weekday × hour, local time';
+
+  @override
+  String get profileFirstReview => 'Time to first review';
+
+  @override
+  String get profileMetricsTruncated =>
+      'Percentiles use a limited sample of the available pull requests.';
+
+  @override
+  String profileLinesChanged(String count) {
+    return '$count lines';
+  }
+
+  @override
+  String profileDurationMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String profileDurationHours(int count) {
+    return '$count hr';
+  }
+
+  @override
+  String profileDurationDaysHours(int days, int hours) {
+    return '${days}d ${hours}h';
+  }
+
+  @override
+  String profilePercentiles(String median, String p90) {
+    return 'p50 $median · p90 $p90';
+  }
+
+  @override
+  String profileTeamMembers(int count) {
+    return 'Members: $count';
+  }
+
+  @override
+  String noPrsByTeamInWorkspace(String team) {
+    return 'No pull requests by $team in this workspace';
+  }
+
+  @override
+  String get profilePrStateFilterLabel => 'Filter pull requests by state';
+
+  @override
+  String get noProfilePrsMatchSearchHint =>
+      'Try another title or pull request number';
+
+  @override
+  String get rigNetworkUnrestricted => 'Network unrestricted';
+
+  @override
+  String get rigNetworkAllowAllHosts => 'Allow all hosts';
+
+  @override
+  String get rigNetworkBypassTitle => 'Allow every network host?';
+
+  @override
+  String get rigNetworkBypassBody =>
+      'This restarts the enclosure and discards uncommitted work inside it. The guest can then reach any network host until it is closed.';
+
+  @override
+  String get rigNetworkRestartUnrestricted => 'Restart unrestricted';
+
+  @override
+  String get rigNetworkUnrestrictedBody =>
+      'This enclosure can reach every network host. Close it and open a new one to restore the default restrictions.';
+
+  @override
+  String get rigNetworkAlreadyUnrestrictedBody =>
+      'This Android emulator already manages its own networking, so Control Center cannot enforce a per-host allowlist. No restart is needed.';
+
+  @override
+  String get rigClipboardPermissionHostToRigTitle =>
+      'Paste clipboard into this enclosure?';
+
+  @override
+  String get rigClipboardPermissionHostToRigBody =>
+      'Control Center will read your device clipboard and send its contents to the enclosure. Clipboard content may contain passwords or other secrets.';
+
+  @override
+  String get rigClipboardPermissionRigToHostTitle =>
+      'Copy clipboard out of this enclosure?';
+
+  @override
+  String get rigClipboardPermissionRigToHostBody =>
+      'Control Center will read the enclosure clipboard and replace your device clipboard with its contents. Treat content from the enclosure as untrusted.';
+
+  @override
+  String get rigClipboardAllowTenMinutes => 'Allow for 10 minutes';
+
+  @override
+  String get rigClipboardAlwaysAllow => 'Always allow';
+
+  @override
+  String get rigClipboardSettingsTitle => 'Clipboard access';
+
+  @override
+  String get rigClipboardSettingsHint =>
+      'Choose which clipboard transfers can run without asking. Temporary permissions expire after 10 minutes.';
+
+  @override
+  String get rigClipboardAlwaysPasteTitle =>
+      'Always allow paste into enclosures';
+
+  @override
+  String get rigClipboardAlwaysPasteDescription =>
+      'Send this device\'s clipboard to any enclosure without asking.';
+
+  @override
+  String get rigClipboardAlwaysCopyTitle => 'Always allow copy from enclosures';
+
+  @override
+  String get rigClipboardAlwaysCopyDescription =>
+      'Put clipboard content from any enclosure on this device without asking.';
+}
+
+/// The translations for English, as used in the United Kingdom (`en_GB`).
+class AppLocalizationsEnGb extends AppLocalizationsEn {
+  AppLocalizationsEnGb() : super('en_GB');
+
+  @override
+  String get calendarConnectDenied =>
+      'Authorisation was denied. Please try again.';
+
+  @override
+  String get calendarOrganizer => 'Organiser';
+
+  @override
+  String get commandPaletteOrgMembers => 'Organisation members';
+
+  @override
+  String get commandPaletteBrowseTeamDesc => 'View all organisation members';
+
+  @override
+  String get ownerOrganization => 'Owner / Organisation';
+
+  @override
+  String repoAccessNoticeBody(String repos) {
+    return 'The server\'s GitHub credential can\'t see $repos. If a repository belongs to an organisation, install the GitHub App there or connect a token that has access.';
+  }
+
+  @override
+  String get skillSourceRemoveConfirmBody =>
+      'Installed skills stay installed. Only the repository catalogue is removed.';
+
+  @override
+  String get meetingTemplateInstructionsHint =>
+      'How should the AI structure and emphasise these notes?';
+
+  @override
+  String get focusModeFloat => 'Minimise to bar';
+
+  @override
+  String get projectColorLabel => 'Colour';
+
+  @override
+  String get meetingsSubtitle =>
+      'Captured and transcribed on this device, then summarised by an agent.';
+
+  @override
+  String get meetingsTranscribing => 'transcribing & summarising…';
+
+  @override
+  String get meetingReRunStarted =>
+      'Re-running the summariser on the transcript…';
+
+  @override
+  String get meetingReRunNoTranscript =>
+      'There\'s no transcript to summarise yet.';
+
+  @override
+  String get meetingRecordStop => 'Stop & summarise';
+
+  @override
+  String get orchestrationStatusSynthesizing => 'Synthesising';
+
+  @override
+  String meetingSaveVoiceProfileBody(String name) {
+    return 'Recognise $name automatically in future meetings by saving their voiceprint.';
+  }
+
+  @override
+  String get voiceProfilesDescription =>
+      'Saved voices are recognised automatically in future meetings.';
+
+  @override
+  String deleteVoiceProfileBody(String name) {
+    return 'Stop recognising $name? Their saved voiceprint is removed. Names already applied in past meetings are kept.';
+  }
+
+  @override
+  String get mcpAuthorize => 'Authorise';
+
+  @override
+  String get mcpExternalConnectionsNote =>
+      'External MCP servers run on the agent server (shared by desktop and web). Authorising OAuth servers is only available on the desktop.';
+
+  @override
+  String get mcpStatusNeedsAuth => 'Needs authorisation';
+
+  @override
+  String get editorThemeDescription =>
+      'Import a VS Code colour theme so the embedded diff and editor match your IDE.';
+
+  @override
+  String get editorThemePasteHint =>
+      'Paste the contents of a VS Code colour-theme JSON file';
+
+  @override
+  String get systemBehavior => 'System behaviour';
+
+  @override
+  String get providerWaitingForBrowser =>
+      'Waiting for you to authorise in the browser…';
+
+  @override
+  String get auditTrailLabel => 'Authorisation audit trail';
+
+  @override
+  String get obsBehaviorMessagesAnalyzed => 'Messages analysed';
+
+  @override
+  String obsBehaviorMessagesCount(String count) {
+    return '$count messages analysed';
+  }
+
+  @override
+  String get chatCustomizeBot => 'Customise bot';
+
+  @override
+  String chatSetupLinkNotManageable(String provider) {
+    return '$provider does not report which app it created, so customising the bot from here needs an app configuration token later.';
+  }
+
+  @override
+  String get aboutRpcCatalog => 'RPC catalogue';
+
+  @override
+  String get reviewHubIntroBody =>
+      'Agents analyse the diff, map the change areas and reach a consensus verdict.';
+
+  @override
+  String get profileDeliveryMetrics => 'Delivery metrics';
+
+  @override
+  String profileMetricsSample(int count) {
+    return 'PRs analysed: $count';
+  }
+
+  @override
+  String get profileMergeRate => 'Merge rate';
+
+  @override
+  String get profileReviewCoverage => 'Review coverage';
+
+  @override
+  String get profilePrSize => 'PR size';
+
+  @override
+  String get profileTimeToMerge => 'Time to merge';
+
+  @override
+  String get profileFirstReview => 'Time to first review';
+
+  @override
+  String get profileMetricsTruncated =>
+      'Percentiles use a limited sample of the available pull requests.';
+
+  @override
+  String profileLinesChanged(String count) {
+    return '$count lines';
+  }
+
+  @override
+  String profileDurationMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String profileDurationHours(int count) {
+    return '$count hr';
+  }
+
+  @override
+  String profileDurationDaysHours(int days, int hours) {
+    return '${days}d ${hours}h';
+  }
+
+  @override
+  String profilePercentiles(String median, String p90) {
+    return 'p50 $median · p90 $p90';
+  }
+
+  @override
+  String profileTeamMembers(int count) {
+    return 'Members: $count';
+  }
+
+  @override
+  String noPrsByTeamInWorkspace(String team) {
+    return 'No pull requests by $team in this workspace';
+  }
+
+  @override
+  String get profilePrStateFilterLabel => 'Filter pull requests by state';
+
+  @override
+  String get noProfilePrsMatchSearchHint =>
+      'Try another title or pull request number';
 }

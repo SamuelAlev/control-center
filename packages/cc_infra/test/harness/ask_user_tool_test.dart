@@ -130,6 +130,15 @@ void main() {
       expect(result.content, contains('empty answer'));
     });
 
+    test('a skipped question tells the agent to proceed, not to re-ask', () async {
+      final port = _RecordingPort(const AgentQuestionAnswer(skipped: true));
+      final result = await _tool(port).execute({'question': 'Which?'}, _ctx);
+
+      expect(result.isError, isFalse);
+      expect(result.content, contains('skipped'));
+      expect(result.content, contains('Do not ask again'));
+    });
+
     test('options are capped so one call cannot flood the form', () async {
       final port = _RecordingPort(
         const AgentQuestionAnswer(selectedLabels: ['o0']),

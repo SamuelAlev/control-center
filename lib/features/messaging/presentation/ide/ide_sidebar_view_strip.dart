@@ -391,8 +391,8 @@ class _OverflowButton extends StatelessWidget {
       // The trigger paints its own hover/open states, so it drives the
       // controller itself rather than being wrapped in the popover's tappable.
       toggleOnTargetTap: false,
-      targetAnchor: Alignment.bottomRight,
-      followerAnchor: Alignment.topRight,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       overlayBuilder: (context, _) => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 260),
         child: Padding(
@@ -504,9 +504,9 @@ class _ViewMenuRowState extends State<_ViewMenuRow> {
         duration: CcMotion.resolve(context, CcMotion.fast),
         curve: CcMotion.standard,
         height: 32,
-        padding: const EdgeInsets.only(
-          left: AppSpacing.md,
-          right: AppSpacing.xs,
+        padding: const EdgeInsetsDirectional.only(
+          start: AppSpacing.md,
+          end: AppSpacing.xs,
         ),
         color: widget.active
             ? t.hoverStrong
@@ -583,7 +583,8 @@ class _PinToggle extends StatelessWidget {
 
     return CcTooltip(
       message: label,
-      placement: CcTooltipPlacement.left,
+      // The strip docks on the END side, so the tooltip opens toward start.
+      placement: CcTooltipPlacement.start,
       child: CcTappable(
         onPressed: onPressed,
         borderRadius: AppRadii.brSm,

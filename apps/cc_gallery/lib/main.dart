@@ -2,6 +2,7 @@ import 'package:accessibility_tools/accessibility_tools.dart'
     show AccessibilityTools;
 import 'package:cc_gallery/gallery_chrome.dart';
 import 'package:cc_gallery/main.directories.g.dart';
+import 'package:cc_gallery/text_direction_addon.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/cupertino.dart' show DefaultCupertinoLocalizations;
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -172,6 +173,8 @@ class CcGalleryApp extends StatelessWidget {
           MacosViewports.macbookPro,
         ]),
         AlignmentAddon(),
+        // Preview every component under RTL / LTR.
+        TextDirectionAddon(),
         TextScaleAddon(),
         InspectorAddon(),
         // Debug-only a11y overlay (deprecated AccessibilityAddon's replacement).

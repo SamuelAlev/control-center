@@ -12,7 +12,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' hide TextDirection;
 
 /// The AGENTS section of the messaging IDE's General panel: the conversation's
 /// live run tree, one row per agent with its spawned subagent runs nested
@@ -332,12 +332,13 @@ class _AgentRow extends StatelessWidget {
                 ? _TrunkHeadPainter(
                     color: _guideColor(t),
                     dotCenterX: dotCenterX,
+                    isRtl: Directionality.of(context) == TextDirection.rtl,
                   )
                 : null,
             child: Padding(
-              padding: const EdgeInsets.only(
-                left: leftPad,
-                right: AppSpacing.sm,
+              padding: const EdgeInsetsDirectional.only(
+                start: leftPad,
+                end: AppSpacing.sm,
                 top: _rowPadY,
                 bottom: _rowPadY,
               ),
@@ -461,20 +462,29 @@ Color _guideColor(DesignSystemTokens t) => t.fgDisabled.withValues(alpha: 0.7);
 /// child's [_TreeConnector] bleeds up to meet it. Painted over the row's full
 /// box (padding included) so "bottom edge" means exactly that.
 class _TrunkHeadPainter extends CustomPainter {
-  _TrunkHeadPainter({required this.color, required this.dotCenterX});
+  _TrunkHeadPainter({
+    required this.color,
+    required this.dotCenterX,
+    required this.isRtl,
+  });
 
   final Color color;
 
-  /// Horizontal center of this row's status dot, from the row's left edge.
+  /// Horizontal center of this row's status dot, from the row's START edge.
   final double dotCenterX;
+
+  /// The Row mirrors the dot to the physical right under RTL; the painter
+  /// works in physical canvas coordinates, so it mirrors to match.
+  final bool isRtl;
 
   @override
   void paint(Canvas canvas, Size size) {
+    final x = isRtl ? size.width - dotCenterX : dotCenterX;
     // The row's padding is symmetric, so its content — and therefore the
     // vertically-centered status dot — sits on the box's own center line.
     canvas.drawLine(
-      Offset(dotCenterX, size.height / 2 + _dotRadius),
-      Offset(dotCenterX, size.height),
+      Offset(x, size.height / 2 + _dotRadius),
+      Offset(x, size.height),
       Paint()
         ..color = color
         ..strokeWidth = 1,
@@ -483,7 +493,7 @@ class _TrunkHeadPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_TrunkHeadPainter old) =>
-      old.color != color || old.dotCenterX != dotCenterX;
+      old.color != color || old.dotCenterX != dotCenterX || old.isRtl != isRtl;
 }
 
 /// One ancestor level's slice of indent to the left of a nested row.
@@ -504,24 +514,34 @@ class _AncestorRail extends StatelessWidget {
       width: _treeIndent,
       height: 20,
       child: descending
-          ? CustomPaint(painter: _AncestorRailPainter(color: _guideColor(t)))
+          ? CustomPaint(
+              painter: _AncestorRailPainter(
+                color: _guideColor(t),
+                isRtl: Directionality.of(context) == TextDirection.rtl,
+              ),
+            )
           : null,
     );
   }
 }
 
 class _AncestorRailPainter extends CustomPainter {
-  _AncestorRailPainter({required this.color});
+  _AncestorRailPainter({required this.color, required this.isRtl});
 
   final Color color;
 
+  /// The stroke sits [_guideInset] from the box's START edge — mirrored here
+  /// because the painter works in physical canvas coordinates.
+  final bool isRtl;
+
   @override
   void paint(Canvas canvas, Size size) {
+    final x = isRtl ? size.width - _guideInset : _guideInset;
     // Full height plus the same bleed the connector uses, so the rail reads as
     // one continuous line rather than a dash per row.
     canvas.drawLine(
-      const Offset(_guideInset, -_guideBleed),
-      Offset(_guideInset, size.height + _guideBleed),
+      Offset(x, -_guideBleed),
+      Offset(x, size.height + _guideBleed),
       Paint()
         ..color = color
         ..strokeWidth = 1,
@@ -529,7 +549,8 @@ class _AncestorRailPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_AncestorRailPainter old) => old.color != color;
+  bool shouldRepaint(_AncestorRailPainter old) =>
+      old.color != color || old.isRtl != isRtl;
 }
 
 /// A `├`/`└` tree connector drawn to the left of a child row.
@@ -545,17 +566,29 @@ class _TreeConnector extends StatelessWidget {
       width: _treeIndent,
       height: 20,
       child: CustomPaint(
-        painter: _TreeConnectorPainter(color: _guideColor(t), isLast: isLast),
+        painter: _TreeConnectorPainter(
+          color: _guideColor(t),
+          isLast: isLast,
+          isRtl: Directionality.of(context) == TextDirection.rtl,
+        ),
       ),
     );
   }
 }
 
 class _TreeConnectorPainter extends CustomPainter {
-  _TreeConnectorPainter({required this.color, required this.isLast});
+  _TreeConnectorPainter({
+    required this.color,
+    required this.isLast,
+    required this.isRtl,
+  });
 
   final Color color;
   final bool isLast;
+
+  /// The `├`/`└` glyph is drawn from the box's START edge toward the row —
+  /// mirrored here because the painter works in physical canvas coordinates.
+  final bool isRtl;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -563,24 +596,22 @@ class _TreeConnectorPainter extends CustomPainter {
       ..color = color
       ..strokeWidth = 1;
     final midY = size.height / 2;
+    final railX = isRtl ? size.width - _guideInset : _guideInset;
+    final elbowEndX = isRtl ? AppSpacing.xxs : size.width - AppSpacing.xxs;
     // Vertical stroke: bleeds up into the row's padding to meet the row above,
     // and continues past the bottom unless this is the last sibling (`└`).
     canvas.drawLine(
-      const Offset(_guideInset, -_guideBleed),
-      Offset(_guideInset, isLast ? midY : size.height + _guideBleed),
+      Offset(railX, -_guideBleed),
+      Offset(railX, isLast ? midY : size.height + _guideBleed),
       paint,
     );
     // Horizontal elbow into the row, stopping short of the status dot.
-    canvas.drawLine(
-      Offset(_guideInset, midY),
-      Offset(size.width - AppSpacing.xxs, midY),
-      paint,
-    );
+    canvas.drawLine(Offset(railX, midY), Offset(elbowEndX, midY), paint);
   }
 
   @override
   bool shouldRepaint(_TreeConnectorPainter old) =>
-      old.color != color || old.isLast != isLast;
+      old.color != color || old.isLast != isLast || old.isRtl != isRtl;
 }
 
 /// A `+N` badge tinted with the accent, matching the reference's turn counts.

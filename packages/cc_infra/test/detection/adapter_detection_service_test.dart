@@ -34,7 +34,7 @@ void main() {
         name: 'Git',
         description: 'git CLI',
         cliName: 'git',
-        transport: AdapterTransport.structuredCli,
+        transport: AdapterTransport.claudeCli,
       );
       final res = await service.detectOne(adapter);
       expect(res.status, DetectionStatus.found);
@@ -48,7 +48,7 @@ void main() {
         name: 'Mystery',
         description: 'does not exist',
         cliName: 'definitely-not-installed-cli-xyz',
-        transport: AdapterTransport.structuredCli,
+        transport: AdapterTransport.claudeCli,
       );
       final res = await service.detectOne(adapter);
       expect(res.status, DetectionStatus.notFound);

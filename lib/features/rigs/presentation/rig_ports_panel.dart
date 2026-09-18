@@ -72,8 +72,8 @@ class _PortsTrigger extends ConsumerWidget {
     );
     return CcPopover(
       semanticLabel: l10n.rigPortsTooltip,
-      targetAnchor: Alignment.topRight,
-      followerAnchor: Alignment.bottomRight,
+      targetAnchor: AlignmentDirectional.topEnd,
+      followerAnchor: AlignmentDirectional.bottomEnd,
       offset: const Offset(0, -6),
       // Inert target (see the CcPopover gotcha): a button here would swallow
       // the toggle tap, so it is a plain icon the popover drives.
@@ -89,8 +89,8 @@ class _PortsTrigger extends ConsumerWidget {
             children: [
               Icon(AppIcons.plug, size: 16, color: t.fgSecondary),
               if (count > 0)
-                Positioned(
-                  right: -5,
+                PositionedDirectional(
+                  end: -5,
                   top: -5,
                   child: Container(
                     width: 8,

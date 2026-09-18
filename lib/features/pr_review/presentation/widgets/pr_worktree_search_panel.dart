@@ -17,9 +17,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// filter field. Sits behind ⌘F / the tree's search toggle; the trailing
 /// "show file list" button (and Esc) return to the tree.
 ///
-/// Results are scoped to the PR-head worktree — the same tree the user edits —
-/// so any match jumps to a code-server tab via [onOpenResult], even for files
-/// that aren't part of the diff.
+/// Default scope is the files the PR touches. A footer expands the same query
+/// to the whole PR-head branch tree (never the operator's original checkout).
+/// [onOpenResult] is how a hit is opened — the host jumps in-diff when the
+/// file is in the PR, otherwise a code-server tab.
 class PrWorktreeSearchPanel extends ConsumerStatefulWidget {
   /// Creates a [PrWorktreeSearchPanel].
   const PrWorktreeSearchPanel({
@@ -30,7 +31,7 @@ class PrWorktreeSearchPanel extends ConsumerStatefulWidget {
     required this.focusToken,
     required this.onShowFileTree,
     required this.onOpenResult,
-    this.prTouchedPaths = const {},
+    this.prTouchedPaths,
   });
 
   /// Workspace owning the space/worktree (isolation enforced server-side).
@@ -42,10 +43,10 @@ class PrWorktreeSearchPanel extends ConsumerStatefulWidget {
   /// The repo whose worktree is searched.
   final String repoId;
 
-  /// Repo-relative paths the PR touches. Matching files are listed FIRST in the
-  /// results (stable partition), so the diff's own files surface ahead of
-  /// incidental worktree matches. Empty when unknown (no reordering).
-  final Set<String> prTouchedPaths;
+  /// Repo-relative paths the PR touches (new filenames). `null` while the
+  /// file list is still loading — the panel waits rather than grepping the
+  /// whole tree. Empty is a PR with no files (no hits until whole-repo).
+  final Set<String>? prTouchedPaths;
 
   /// Bumped by the host (⌘F, the tree's search button) to (re)focus + select
   /// the query field when the panel is revealed.
@@ -54,8 +55,8 @@ class PrWorktreeSearchPanel extends ConsumerStatefulWidget {
   /// Returns to the file-tree mode (the trailing button + Esc).
   final VoidCallback onShowFileTree;
 
-  /// Opens a result in an editable tab — a content match jumps to its 1-based
-  /// `line`; a filename hit opens the file at the top (no line).
+  /// Opens a result. A content match carries its 1-based `line`; a file-header
+  /// hit omits the line (scroll to the file). The host decides diff vs editor.
   final void Function(String path, {int? line}) onOpenResult;
 
   @override
@@ -90,6 +91,9 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
   /// results don't flicker to a spinner on each keystroke.
   List<FileContentMatch> _lastContent = const [];
 
+  /// When true, grep the whole PR-head worktree rather than only PR files.
+  bool _wholeRepo = false;
+
   /// Retained across the per-keystroke result swap + collapse toggles so the
   /// list keeps a stable offset instead of the implicit controller re-anchoring
   /// (a source of the scroll "jumping"). `primary: false` keeps it off the
@@ -108,6 +112,7 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
     _query = saved.text.trim();
     _options = saved.options;
     _showFilters = saved.showFilters;
+    _wholeRepo = saved.wholeRepo;
     _includeController.text = saved.options.include;
     _excludeController.text = saved.options.exclude;
     // Autofocus on first reveal.
@@ -120,6 +125,7 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
       text: _controller.text,
       options: _options,
       showFilters: _showFilters,
+      wholeRepo: _wholeRepo,
     );
   }
 
@@ -201,6 +207,17 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
     _persist();
   }
 
+  /// Expands the same query to the whole PR-head tree, or returns it to
+  /// PR-touched files. Survives the tree ↔ search unmount via [_persist].
+  void _setWholeRepo(bool value) {
+    if (_wholeRepo == value) {
+      return;
+    }
+    setState(() => _wholeRepo = value);
+    _persist();
+    _resetScroll();
+  }
+
   /// Debounces the include/exclude glob fields into [_options].
   void _syncFilters(String _) {
     _filtersDebounce?.cancel();
@@ -223,7 +240,7 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
 
-    final (loading, body) = _contentView(l10n, tokens);
+    final (loading, body) = _contentView(l10n);
 
     // The disclosure reads "active" while expanded, or when a collapsed glob
     // filter is still applied.
@@ -270,11 +287,14 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
 
   /// Content mode: grouped `git grep` matches, with no-flicker retention.
   /// Returns `(loading, body)`.
-  (bool, Widget) _contentView(
-    AppLocalizations l10n,
-    DesignSystemTokens tokens,
-  ) {
-    final async = _query.isEmpty
+  (bool, Widget) _contentView(AppLocalizations l10n) {
+    final filesReady = widget.prTouchedPaths != null;
+    final paths = widget.prTouchedPaths;
+    final pathsKey = paths == null || paths.isEmpty
+        ? ''
+        : (paths.toList()..sort()).join('\n');
+    final waitingForFiles = _query.isNotEmpty && !_wholeRepo && !filesReady;
+    final async = _query.isEmpty || waitingForFiles
         ? const AsyncValue<List<FileContentMatch>>.data([])
         : ref.watch(
             prWorktreeSearchProvider((
@@ -283,6 +303,8 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
               repoId: widget.repoId,
               query: _query,
               options: _options,
+              wholeRepo: _wholeRepo,
+              pathsKey: pathsKey,
             )),
           );
     final raw = async.maybeWhen(
@@ -292,14 +314,25 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
       },
       orElse: () => _lastContent,
     );
-    final results = _touchedFirst(raw);
-    final loading = async.isLoading && _query.isNotEmpty;
+    final results = _wholeRepo ? _touchedFirst(raw) : raw;
+    final loading = waitingForFiles || (async.isLoading && _query.isNotEmpty);
 
     final Widget body;
     if (_query.isEmpty) {
       body = _Hint(message: l10n.searchInFilesHint);
+    } else if (waitingForFiles) {
+      body = const Center(child: CcSpinner());
     } else if (results.isEmpty && !loading) {
-      body = _Hint(message: l10n.searchNoResults);
+      body = Column(
+        children: [
+          Expanded(child: _Hint(message: l10n.searchNoResults)),
+          _ScopeFooter(
+            wholeRepo: _wholeRepo,
+            onSearchWholeRepo: () => _setWholeRepo(true),
+            onSearchPullRequest: () => _setWholeRepo(false),
+          ),
+        ],
+      );
     } else {
       // Flatten (file header + its visible match lines) into a single uniform
       // row stream. Nesting each file's matches inside one variable-height list
@@ -327,8 +360,15 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
               controller: _resultsController,
               primary: false,
               padding: EdgeInsets.zero,
-              itemCount: rows.length,
+              itemCount: rows.length + 1,
               itemBuilder: (context, i) {
+                if (i == rows.length) {
+                  return _ScopeFooter(
+                    wholeRepo: _wholeRepo,
+                    onSearchWholeRepo: () => _setWholeRepo(true),
+                    onSearchPullRequest: () => _setWholeRepo(false),
+                  );
+                }
                 final row = rows[i];
                 final group = row.group;
                 final match = row.match;
@@ -345,6 +385,7 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
                         _collapsed.add(group.relativePath);
                       }
                     }),
+                    onOpen: () => widget.onOpenResult(group.relativePath),
                   );
                 }
                 return _MatchRow(
@@ -364,11 +405,11 @@ class _PrWorktreeSearchPanelState extends ConsumerState<PrWorktreeSearchPanel> {
   }
 
   /// Stable partition: files the PR touches first (preserving server order
-  /// within each partition), then the rest. A no-op when
-  /// [PrWorktreeSearchPanel.prTouchedPaths] is empty.
+  /// within each partition), then the rest. Used in whole-repo mode so the
+  /// diff's own files still surface ahead of incidental tree matches.
   List<FileContentMatch> _touchedFirst(List<FileContentMatch> results) {
     final touched = widget.prTouchedPaths;
-    if (touched.isEmpty || results.isEmpty) {
+    if (touched == null || touched.isEmpty || results.isEmpty) {
       return results;
     }
     final inPr = <FileContentMatch>[];
@@ -542,6 +583,38 @@ class _FilterFields extends StatelessWidget {
   }
 }
 
+/// Footer that expands the query to the whole PR-head tree, or returns it to
+/// the pull request's files. Always the last row of the results list (and
+/// under the empty-results hint) so it is reachable after the last hit.
+class _ScopeFooter extends StatelessWidget {
+  const _ScopeFooter({
+    required this.wholeRepo,
+    required this.onSearchWholeRepo,
+    required this.onSearchPullRequest,
+  });
+
+  final bool wholeRepo;
+  final VoidCallback onSearchWholeRepo;
+  final VoidCallback onSearchPullRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+      child: CcButton(
+        variant: CcButtonVariant.ghost,
+        size: CcButtonSize.sm,
+        fullWidth: true,
+        onPressed: wholeRepo ? onSearchPullRequest : onSearchWholeRepo,
+        child: Text(
+          wholeRepo ? l10n.searchInThisPullRequest : l10n.searchInWholeRepo,
+        ),
+      ),
+    );
+  }
+}
+
 /// A centered, muted empty/hint message filling the results area.
 class _Hint extends StatelessWidget {
   const _Hint({required this.message});
@@ -597,11 +670,13 @@ class _ResultHeader extends StatelessWidget {
     required this.group,
     required this.collapsed,
     required this.onToggle,
+    required this.onOpen,
   });
 
   final FileContentMatch group;
   final bool collapsed;
   final VoidCallback onToggle;
+  final VoidCallback onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -611,65 +686,88 @@ class _ResultHeader extends StatelessWidget {
         ? group.relativePath.substring(slash + 1)
         : group.relativePath;
     final dir = slash >= 0 ? group.relativePath.substring(0, slash) : '';
-    return CcTappable(
-      onPressed: onToggle,
-      borderRadius: BorderRadius.zero,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: hovered ? tokens.hover : const Color(0x00000000),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(6, 4, 8, 4),
-            child: Row(
-              children: [
-                Icon(
+    return ColoredBox(
+      color: const Color(0x00000000),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(2, 4, 8, 4),
+        child: Row(
+          children: [
+            CcTappable(
+              onPressed: onToggle,
+              borderRadius: BorderRadius.circular(3),
+              builder: (context, states) => Padding(
+                padding: const EdgeInsets.all(4),
+                child: Icon(
                   collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
                   size: 12,
                   color: tokens.textTertiary,
                 ),
-                const SizedBox(width: 4),
-                Icon(AppIcons.fileCode, size: 13, color: tokens.textTertiary),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: tokens.textPrimary,
+              ),
+            ),
+            Expanded(
+              child: CcTappable(
+                onPressed: onOpen,
+                borderRadius: BorderRadius.circular(3),
+                builder: (context, states) {
+                  final hovered = states.contains(WidgetState.hovered);
+                  return DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: hovered ? tokens.hover : const Color(0x00000000),
                     ),
-                  ),
-                ),
-                if (dir.isNotEmpty) ...[
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      dir,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: tokens.textTertiary,
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(2, 0, 0, 0),
+                      child: Row(
+                        children: [
+                          Icon(
+                            AppIcons.fileCode,
+                            size: 13,
+                            color: tokens.textTertiary,
+                          ),
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              name,
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: tokens.textPrimary,
+                              ),
+                            ),
+                          ),
+                          if (dir.isNotEmpty) ...[
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                dir,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: tokens.textTertiary,
+                                ),
+                              ),
+                            ),
+                          ] else
+                            const Spacer(),
+                          const SizedBox(width: 6),
+                          _CountBadge(count: group.lines.length),
+                        ],
                       ),
                     ),
-                  ),
-                ] else
-                  const Spacer(),
-                const SizedBox(width: 6),
-                _CountBadge(count: group.lines.length),
-              ],
+                  );
+                },
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
 
+// RTL carve-out: a grep match renders code with a line-number gutter; stays LTR.
 class _MatchRow extends StatelessWidget {
   const _MatchRow({
     super.key,
@@ -790,28 +888,26 @@ class _OptionToggle extends StatelessWidget {
         onPressed: () => onChanged(!active),
         semanticLabel: tooltip,
         borderRadius: BorderRadius.circular(3),
-        builder:
-            (context, states) => Container(
-              width: 20,
-              height: 20,
-              margin: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                color:
-                    (active || states.contains(WidgetState.hovered))
-                        ? tokens.hover
-                        : const Color(0x00000000),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Icon(
-                icon,
-                size: 13,
-                color: active
-                    ? tokens.fg
-                    : (states.contains(WidgetState.hovered)
-                          ? tokens.textSecondary
-                          : tokens.textTertiary),
-              ),
-            ),
+        builder: (context, states) => Container(
+          width: 20,
+          height: 20,
+          margin: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: (active || states.contains(WidgetState.hovered))
+                ? tokens.hover
+                : const Color(0x00000000),
+            borderRadius: BorderRadius.circular(3),
+          ),
+          child: Icon(
+            icon,
+            size: 13,
+            color: active
+                ? tokens.fg
+                : (states.contains(WidgetState.hovered)
+                      ? tokens.textSecondary
+                      : tokens.textTertiary),
+          ),
+        ),
       ),
     );
   }

@@ -108,7 +108,7 @@ class _CcBannerState extends State<CcBanner>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: CcMotion.normal,
+      duration: CcMotion.moderate,
       value: 1, // Start settled; play the entrance in didChangeDependencies.
     );
   }
@@ -116,10 +116,12 @@ class _CcBannerState extends State<CcBanner>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Reduced motion: no slide/fade — render settled and static.
-    if (CcMotion.reduced(context)) {
-      _controller.value = 1;
-    } else if (_controller.value == 1 && !_controller.isAnimating) {
+    _controller.duration = CcMotion.reduced(context)
+        ? CcMotion.fade
+        : CcMotion.moderate;
+    // Replay the entrance once we can read the ambient reduced-motion flag.
+    // Reduced motion keeps the fade and drops the slide (see build).
+    if (_controller.value == 1 && !_controller.isAnimating) {
       _controller
         ..value = 0
         ..forward();
@@ -223,17 +225,17 @@ class _CcBannerState extends State<CcBanner>
       child: banner,
     );
 
-    // Entrance: slide down + fade. Under reduced motion the controller is
-    // pinned to 1, so both transitions are no-ops (static).
-    return FadeTransition(
-      opacity: _controller,
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, -0.08), end: Offset.zero)
-            .animate(
-              CurvedAnimation(parent: _controller, curve: CcMotion.emphasized),
-            ),
-        child: banner,
-      ),
+    // Entrance: fade, plus a short slide when travel is allowed.
+    final faded = FadeTransition(opacity: _controller, child: banner);
+    if (CcMotion.reduced(context)) {
+      return faded;
+    }
+    return SlideTransition(
+      position: Tween<Offset>(begin: const Offset(0, -0.08), end: Offset.zero)
+          .animate(
+            CurvedAnimation(parent: _controller, curve: CcMotion.emphasized),
+          ),
+      child: faded,
     );
   }
 

@@ -41,6 +41,16 @@ void main() {
     );
   });
 
+  test('403 installation suspended → installation_suspended', () {
+    final e = _map(
+      403,
+      data: {'message': 'This installation has been suspended', 'status': 403},
+    );
+    expect(e.code, 'installation_suspended');
+    expect(e.statusCode, 403);
+    expect(isGitHubInstallationSuspendedError(e), isTrue);
+  });
+
   group('403 primary/secondary rate limit', () {
     NetworkException mapWithHeaders(
       int status,
@@ -104,6 +114,23 @@ void main() {
 
   test('409 → conflict', () {
     expect(_map(409).code, 'conflict');
+  });
+
+  test('406 with GitHub too_large body → diff_too_large', () {
+    final e = _map(
+      406,
+      data:
+          '{"message":"Sorry, the diff exceeded the maximum number of lines '
+          '(20000)","errors":[{"resource":"PullRequest","field":"diff",'
+          '"code":"too_large"}]}',
+    );
+    expect(e.statusCode, 406);
+    expect(e.code, 'diff_too_large');
+    expect(e.message, contains('size limit'));
+  });
+
+  test('406 without a too-large body → not_acceptable', () {
+    expect(_map(406).code, 'not_acceptable');
   });
 
   test('422 → unprocessable_entity', () {

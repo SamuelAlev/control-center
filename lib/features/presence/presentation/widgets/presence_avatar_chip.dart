@@ -114,8 +114,8 @@ class PresenceAvatarChip extends ConsumerWidget {
               clipBehavior: Clip.none,
               children: [
                 avatar,
-                Positioned(
-                  right: -1,
+                PositionedDirectional(
+                  end: -1,
                   bottom: -1,
                   child: Container(
                     width: 8,

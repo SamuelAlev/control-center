@@ -47,7 +47,7 @@ class CcToastScope extends StatefulWidget {
     super.key,
     required this.child,
     this.duration = const Duration(seconds: 5),
-    this.alignment = Alignment.bottomRight,
+    this.alignment = AlignmentDirectional.bottomEnd,
   });
 
   /// The subtree that can surface toasts.
@@ -57,8 +57,9 @@ class CcToastScope extends StatefulWidget {
   /// via `show(duration: …)`). Hovering a toast pauses the countdown.
   final Duration duration;
 
-  /// Where the toast stack sits within the overlay.
-  final Alignment alignment;
+  /// Where the toast stack sits within the overlay. Directional by default
+  /// (bottom end), so the stack mirrors under RTL.
+  final AlignmentGeometry alignment;
 
   /// The nearest [CcToastHandle], or null when there is no [CcToastScope]
   /// ancestor.
@@ -164,8 +165,11 @@ class _CcToastScopeState extends State<CcToastScope> implements CcToastHandle {
     );
 
     // Newest toast enters at the anchored edge and pushes the others away
-    // from it; a top-anchored stack therefore lists newest-first.
-    final bottomAnchored = widget.alignment.y >= 0;
+    // from it; a top-anchored stack therefore lists newest-first. Only the
+    // vertical component matters, so resolving against the ambient direction
+    // is purely to reach `.y`.
+    final bottomAnchored =
+        widget.alignment.resolve(Directionality.of(context)).y >= 0;
     final ordered = bottomAnchored
         ? _entries
         : _entries.reversed.toList(growable: false);
@@ -348,7 +352,9 @@ class _CcToastState extends State<_CcToast>
     if (!mounted) {
       return;
     }
-    _animation.duration = CcMotion.resolve(context, CcMotion.normal);
+    _animation.duration = CcMotion.reduced(context)
+        ? CcMotion.fade
+        : CcMotion.moderate;
     _animation.forward();
   }
 
@@ -363,7 +369,9 @@ class _CcToastState extends State<_CcToast>
       widget.onDismissed();
       return;
     }
-    _animation.duration = CcMotion.resolve(context, CcMotion.fast);
+    _animation.duration = CcMotion.reduced(context)
+        ? CcMotion.fade
+        : CcMotion.moderateExit;
     await _animation.reverse();
     widget.onDismissed();
   }
@@ -389,15 +397,92 @@ class _CcToastState extends State<_CcToast>
         ? t.borderPrimary
         : Color.lerp(t.borderPrimary, accent, 0.35)!;
 
-    return Semantics(
-      container: true,
-      liveRegion: true,
-      label: title == null ? message : '$title. $message',
-      child: AnimatedBuilder(
+    final body = Padding(
+      padding: EdgeInsets.only(
+        top: widget.gapAbove ? AppSpacing.sm : 0,
+        bottom: widget.gapAbove ? 0 : AppSpacing.sm,
+      ),
+      child: MouseRegion(
+        onEnter: (_) => widget.onHoverChanged(true),
+        onExit: (_) => widget.onHoverChanged(false),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: t.panel,
+            borderRadius: AppRadii.brSm,
+            border: Border.all(color: borderColor),
+            boxShadow: CcElevation.floating,
+          ),
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Status glyph — meaning is color + shape + text,
+                // never color alone.
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(
+                    top: AppSpacing.xxs,
+                    end: AppSpacing.sm,
+                  ),
+                  child: Icon(statusIcon, size: 16, color: accent),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (title != null) ...[
+                        Text(
+                          title,
+                          style: CcTypography.bodySm.copyWith(
+                            color: t.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xxs),
+                      ],
+                      Text(
+                        message,
+                        style: CcTypography.bodySm.copyWith(
+                          color: title == null
+                              ? t.textPrimary
+                              : t.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                _ToastCloseButton(
+                  onClose: widget.onDismissRequested,
+                  color: t.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Widget toast = FadeTransition(opacity: _curve, child: body);
+    if (!CcMotion.reduced(context)) {
+      toast = SlideTransition(
+        position: Tween<Offset>(
+          begin: Offset(0, widget.slideFromBelow ? 0.12 : -0.12),
+          end: Offset.zero,
+        ).animate(_curve),
+        child: toast,
+      );
+      // `Align.heightFactor` grows the slot without clipping (a
+      // SizeTransition's ClipRect would shear off the golden-float shadow),
+      // so entering/leaving toasts smoothly push or release their neighbors.
+      toast = AnimatedBuilder(
         animation: _curve,
-        // `Align.heightFactor` grows the slot without clipping (a
-        // SizeTransition's ClipRect would shear off the golden-float shadow),
-        // so entering/leaving toasts smoothly push or release their neighbors.
         builder: (context, child) => Align(
           alignment: widget.slideFromBelow
               ? Alignment.bottomCenter
@@ -405,87 +490,15 @@ class _CcToastState extends State<_CcToast>
           heightFactor: _curve.value.clamp(0.0, 1.0),
           child: child,
         ),
-        child: FadeTransition(
-          opacity: _curve,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: Offset(0, widget.slideFromBelow ? 0.12 : -0.12),
-              end: Offset.zero,
-            ).animate(_curve),
-            child: Padding(
-              padding: EdgeInsets.only(
-                top: widget.gapAbove ? AppSpacing.sm : 0,
-                bottom: widget.gapAbove ? 0 : AppSpacing.sm,
-              ),
-              child: MouseRegion(
-                onEnter: (_) => widget.onHoverChanged(true),
-                onExit: (_) => widget.onHoverChanged(false),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: t.panel,
-                    borderRadius: AppRadii.brSm,
-                    border: Border.all(color: borderColor),
-                    boxShadow: CcElevation.floating,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      AppSpacing.sm,
-                      AppSpacing.sm,
-                      AppSpacing.sm,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Status glyph — meaning is color + shape + text,
-                        // never color alone.
-                        Padding(
-                          padding: const EdgeInsets.only(
-                            top: AppSpacing.xxs,
-                            right: AppSpacing.sm,
-                          ),
-                          child: Icon(statusIcon, size: 16, color: accent),
-                        ),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (title != null) ...[
-                                Text(
-                                  title,
-                                  style: CcTypography.bodySm.copyWith(
-                                    color: t.textPrimary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.xxs),
-                              ],
-                              Text(
-                                message,
-                                style: CcTypography.bodySm.copyWith(
-                                  color: title == null
-                                      ? t.textPrimary
-                                      : t.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        _ToastCloseButton(
-                          onClose: widget.onDismissRequested,
-                          color: t.textTertiary,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+        child: toast,
+      );
+    }
+
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      label: title == null ? message : '$title. $message',
+      child: toast,
     );
   }
 

@@ -1,6 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// The name + description a team was created or edited with.
 typedef TeamFormResult = ({String name, String? description});

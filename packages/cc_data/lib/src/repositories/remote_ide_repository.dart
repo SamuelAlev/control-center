@@ -59,9 +59,9 @@ class RemoteIdeRepository {
 
   /// Resolves PR #[prNumber]'s space worktree on the server (creating +
   /// provisioning it if needed) and returns its absolute path WITHOUT launching
-  /// an editor — so a GUI-attached client (the native desktop app) can open the
-  /// path in a LOCAL editor itself. This is the SAME worktree the workbench
-  /// edits; there is no separate `pr_worktrees/` checkout.
+  /// an editor. Prefer [openPrInEditor] from a thin client — process launch
+  /// belongs on the host. This is the SAME worktree the workbench edits; there
+  /// is no separate `pr_worktrees/` checkout.
   Future<String> ensureWorktree({
     required String repoFullName,
     required int prNumber,

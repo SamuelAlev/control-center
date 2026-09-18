@@ -1,20 +1,32 @@
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_select.dart';
+import 'package:cc_ui/src/components/cc_text_context_menu.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
+import 'package:cc_ui/src/foundation/cc_text_selection_gestures.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 const Color _transparent = Color(0x00000000);
+
+/// Natural height of an autocomplete option row (matches [CcSelectRow]).
+const double _kOptionRowHeight = 40;
+
+/// Lists this long scroll instead of growing: the panel caps at
+/// [_kScrollsFromOption] − 0.5 rows so the half-visible last row signals
+/// there is more below (scrollbars are not always shown).
+const int _kScrollsFromOption = 6;
 
 /// Filters [options] for a typed [query]. Return the matches in display order.
 typedef CcAutocompleteFilter<T> =
@@ -27,7 +39,8 @@ typedef CcAutocompleteFilter<T> =
 /// [CcSelectOption]s, shown in a floating panel anchored below the field.
 ///
 /// The field is an input-styled box wrapping an [EditableText] (no Material).
-/// Clicking anywhere in the field opens the menu; as the user types, [filter]
+/// Clicking anywhere in the field opens the menu, already filtered by the
+/// current text when the field is filled. As the user types, [filter]
 /// (or a default case-insensitive `contains` on the label) narrows [options]
 /// and the best-matching (first) option stays highlighted. The matches render
 /// in a width-matched floating panel of [CcTappable] rows. Selecting a row —
@@ -125,12 +138,6 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
   /// an option selection. Outside-tap close commits a pending custom value.
   bool _suppressCommitOnHide = false;
 
-  /// Whether the current text was typed by the user since the last selection
-  /// or programmatic seed. A committed selection reopens to the FULL option
-  /// list — filtering by the selected option's own label would open a one-row
-  /// menu.
-  bool _userEdited = false;
-
   /// Last seen controller text — selection-only notifications (a tap moving
   /// the caret) must not re-filter the list or mark the text as user-typed.
   String _lastText = '';
@@ -156,12 +163,7 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     if (oldWidget.options != widget.options) {
       // Options often arrive async (model lists, branch lists): refresh the
       // matches so a click can open the panel without a keystroke first.
-      final filter = widget.filter ?? _defaultFilter;
-      setState(() {
-        _matches = _userEdited
-            ? filter(widget.options, _text.text)
-            : widget.options;
-      });
+      setState(() => _matches = _matchesForQuery(_text.text));
     }
   }
 
@@ -195,10 +197,6 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
       _highlighted = query.trim().isNotEmpty && next.isNotEmpty ? 0 : null;
       // Editing the text after a commit makes it a new, uncommitted value.
       _committedCustom = null;
-      // Only a focused field's text changes are user typing; programmatic
-      // writes (parent syncs, selection fill-in) arrive unfocused or are
-      // reset by _select right after.
-      _userEdited = _focus.hasFocus;
     });
     // A narrowed list is a new list: show it from its best match, not from
     // wherever the previous list happened to be scrolled to.
@@ -269,28 +267,53 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     _commitCustom();
   }
 
-  /// Opens the panel over a freshly computed match list. A field whose text
-  /// is a committed selection (not user-typed this session) opens to the
-  /// full option list; mid-typing text keeps its filtered matches.
+  /// Opens the panel over a freshly computed match list. An empty field
+  /// shows every option; a filled field opens already filtered by its text.
   void _openPanel() {
     if (!widget.enabled) {
       return;
     }
     final query = _text.text;
-    final filter = widget.filter ?? _defaultFilter;
-    final next = _userEdited ? filter(widget.options, query) : widget.options;
+    final next = _matchesForQuery(query);
     final committableCustom =
         widget.onCustomValue != null && query.trim().isNotEmpty;
-    setState(() {
-      _matches = next;
-      _highlighted = _userEdited && query.trim().isNotEmpty && next.isNotEmpty
-          ? 0
-          : null;
-    });
+    final highlighted = query.trim().isNotEmpty && next.isNotEmpty ? 0 : null;
+    // Skip setState when nothing changed: a pointer-down on the field would
+    // otherwise rebuild EditableText mid-gesture and kill click-drag
+    // selection (and can make the overlay's dismiss barrier eat the up).
+    if (!_sameOptions(_matches, next) || _highlighted != highlighted) {
+      setState(() {
+        _matches = next;
+        _highlighted = highlighted;
+      });
+    }
     if (next.isNotEmpty || committableCustom) {
       _controller.show();
     }
     _rows.reveal(_highlighted ?? -1);
+  }
+
+  /// Empty query → the full list; any text → the filter's matches.
+  List<CcSelectOption<T>> _matchesForQuery(String query) {
+    if (query.trim().isEmpty) {
+      return widget.options;
+    }
+    return (widget.filter ?? _defaultFilter)(widget.options, query);
+  }
+
+  bool _sameOptions(List<CcSelectOption<T>> a, List<CcSelectOption<T>> b) {
+    if (identical(a, b)) {
+      return true;
+    }
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Closes the panel without committing — Escape and option selection.
@@ -321,9 +344,6 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     _text
       ..text = value
       ..selection = TextSelection.collapsed(offset: value.length);
-    // The write above looks like typing (the field is focused); it is a
-    // committed selection, so the next open shows the full list again.
-    _userEdited = false;
     _hideWithoutCommit();
     // Keep the field focused after selection.
     _focus.requestFocus();
@@ -465,25 +485,41 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
         ),
         child: ClipRRect(
           borderRadius: AppRadii.brLg,
-          // Scroll when the match list is taller than the viewport cap imposed by
-          // [CcOverlayAnchor]; short lists still shrink-wrap to their rows.
-          // Edge-to-edge rows: no panel padding, so the hover wash spans the
-          // full width of the list (matches CcSelect's Carbon-style panel).
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < _matches.length; i++)
-                  KeyedSubtree(
-                    key: _rows.keyAt(i),
-                    child: _CcAutocompleteRow<T>(
-                      option: _matches[i],
-                      highlighted: i == _highlighted,
-                      onPressed: () => _select(_matches[i]),
-                    ),
+          // Scroll when the match list is taller than the viewport cap imposed
+          // by [CcOverlayAnchor]; short lists still shrink-wrap to their rows.
+          // Longer lists are additionally capped at 5.5 rows so the half-cut
+          // sixth row advertises that the list continues.
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: _matches.length >= _kScrollsFromOption
+                  ? (_kScrollsFromOption - 0.5) * _kOptionRowHeight
+                  : double.infinity,
+            ),
+            child: SingleChildScrollView(
+              // Edge-to-edge rows: no panel padding, so the hover wash spans
+              // the full width of the list (matches CcSelect's Carbon-style
+              // panel).
+              child: CcFluidHover(
+                itemCount: _matches.length,
+                onActiveIndexChanged: (index) {
+                  if (index != null && _highlighted != index) {
+                    setState(() => _highlighted = index);
+                  }
+                },
+                itemBuilder: (context, i) => KeyedSubtree(
+                  key: _rows.keyAt(i),
+                  child: _CcAutocompleteRow<T>(
+                    option: _matches[i],
+                    highlighted: i == _highlighted,
+                    onPressed: () => _select(_matches[i]),
                   ),
-              ],
+                ),
+                layoutBuilder: (context, items) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: items,
+                ),
+              ),
             ),
           ),
         ),
@@ -493,7 +529,15 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
 }
 
 /// The input-styled field used by [CcAutocomplete].
-class _CcAutocompleteField extends StatelessWidget {
+///
+/// The whole box is one [TextFieldTapRegion] so a click on padding, hint, or
+/// empty space beside the glyphs is still "inside" the field: without that,
+/// pointer-up is an outside tap, the field unfocuses, and the open panel
+/// closes on the same click that opened it. An opaque [GestureDetector] on
+/// the chrome (same as [CcTextField]) focuses on tap-up — opening the panel
+/// on pointer-down would insert the dismiss barrier under the still-down
+/// pointer, so a padding click never reached the editable.
+class _CcAutocompleteField extends StatefulWidget {
   const _CcAutocompleteField({
     required this.controller,
     required this.focusNode,
@@ -523,134 +567,206 @@ class _CcAutocompleteField extends StatelessWidget {
   final VoidCallback? onClear;
 
   @override
+  State<_CcAutocompleteField> createState() => _CcAutocompleteFieldState();
+}
+
+class _CcAutocompleteFieldState extends State<_CcAutocompleteField>
+    implements TextSelectionGestureDetectorBuilderDelegate {
+  @override
+  final GlobalKey<EditableTextState> editableTextKey =
+      GlobalKey<EditableTextState>();
+
+  @override
+  bool get forcePressEnabled => false;
+
+  @override
+  bool get selectionEnabled => widget.enabled;
+
+  late final _AutocompleteSelectionGestures _selectionGestures =
+      _AutocompleteSelectionGestures(
+        delegate: this,
+        onTap: () => widget.onTap(),
+      );
+
+  @override
   Widget build(BuildContext context) {
     final t = context.ds;
     final input = CcInputTokens.resolve(t);
     final textStyle = CcTypography.bodySm.copyWith(
-      color: enabled ? input.text : t.textDisabled,
+      color: widget.enabled ? input.text : t.textDisabled,
     );
 
     return Semantics(
       textField: true,
-      label: semanticLabel,
-      child: ListenableBuilder(
-        listenable: focusNode,
-        builder: (context, child) {
-          // Field chrome: 1px bottom underline at rest; focus draws the 2px
-          // accent outline over the whole box (no layout shift). The outline
-          // color is transparent (not null) at rest so the foregroundDecoration
-          // is ALWAYS present — toggling it null↔non-null would restructure the
-          // Container and reparent the child EditableText, dropping its input
-          // connection mid-typing.
-          final focused = enabled && focusNode.hasFocus;
-          return Container(
-            decoration: BoxDecoration(
-              color: enabled ? input.bg : t.bgDisabled,
-              border: Border(
-                bottom: BorderSide(
-                  color: enabled ? input.border : t.borderDisabled,
-                ),
-              ),
-            ),
-            foregroundDecoration: BoxDecoration(
-              border: Border.all(
-                color: focused ? input.borderFocused : _transparent,
-                width: 2,
-              ),
-            ),
-            child: child,
-          );
-        },
-        // A Listener (not GestureDetector) so taps on the text itself still
-        // reach the field: EditableText wins the gesture arena for those, but
-        // pointer events are delivered to every Listener on the hit path —
-        // including when the field is already focused and no focus-gain fires.
-        child: Listener(
-          behavior: HitTestBehavior.opaque,
-          onPointerDown: (_) => onTap(),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      ValueListenableBuilder<TextEditingValue>(
-                        valueListenable: controller,
-                        builder: (context, value, _) {
-                          if (value.text.isNotEmpty) {
-                            return const SizedBox.shrink();
-                          }
-                          return Text(
-                            hintText ?? '',
-                            style: textStyle.copyWith(color: input.placeholder),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          );
-                        },
+      label: widget.semanticLabel,
+      child: TextFieldTapRegion(
+        groupId: widget.tapGroup,
+        child: MouseRegion(
+          cursor: widget.enabled
+              ? SystemMouseCursors.text
+              : SystemMouseCursors.basic,
+          child: ListenableBuilder(
+            listenable: widget.focusNode,
+            builder: (context, _) {
+              // Field chrome: 1px bottom underline at rest; focus draws the
+              // 2px accent outline over the whole box (no layout shift). The
+              // outline color is transparent (not null) at rest so the
+              // foregroundDecoration is ALWAYS present — toggling it
+              // null↔non-null would restructure the Container and reparent
+              // the child EditableText, dropping its input connection
+              // mid-typing.
+              final focused = widget.enabled && widget.focusNode.hasFocus;
+              Widget editable = EditableText(
+                key: editableTextKey,
+                controller: widget.controller,
+                focusNode: widget.focusNode,
+                readOnly: !widget.enabled,
+                groupId: widget.tapGroup,
+                style: textStyle,
+                cursorColor: input.cursor,
+                backgroundCursorColor: input.placeholder,
+                // Only the FOCUSED field paints its selection — EditableText
+                // draws the highlight whenever this is non-null, so a blurred
+                // field would keep looking selected after the caret moved
+                // elsewhere.
+                selectionColor: focused ? input.selection : null,
+                maxLines: 1,
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => widget.onSubmitted(),
+                cursorWidth: 1.5,
+                selectionControls: null,
+                contextMenuBuilder: ccTextContextMenuBuilder,
+                // Pointer handling lives on the selection gesture detector
+                // wrapping this — tap places the caret, click-drag selects,
+                // double-click a word.
+                rendererIgnoresPointer: true,
+                cursorOpacityAnimates: true,
+              );
+              if (widget.enabled) {
+                editable = _selectionGestures.buildGestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  child: editable,
+                );
+              }
+              // Tapping anywhere in the box (padding, hint, empty space)
+              // focuses and opens the panel — on tap-up, so the overlay
+              // barrier is not inserted under a still-down pointer. The
+              // selection detector still owns taps that land on the glyphs.
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: widget.enabled ? widget.onTap : null,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: widget.enabled ? input.bg : t.bgDisabled,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: widget.enabled ? input.border : t.borderDisabled,
                       ),
-                      ListenableBuilder(
-                        listenable: focusNode,
-                        builder: (context, _) => EditableText(
-                          controller: controller,
-                          focusNode: focusNode,
-                          readOnly: !enabled,
-                          groupId: tapGroup,
-                          style: textStyle,
-                          cursorColor: input.cursor,
-                          backgroundCursorColor: input.placeholder,
-                          // Only the FOCUSED field paints its selection —
-                          // EditableText draws the highlight whenever this is
-                          // non-null, so a blurred field would keep looking
-                          // selected after the caret moved elsewhere.
-                          selectionColor: focusNode.hasFocus
-                              ? input.selection
-                              : null,
-                          maxLines: 1,
-                          keyboardType: TextInputType.text,
-                          textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => onSubmitted(),
-                          cursorWidth: 1.5,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-                // The ✕ appears to the right of any typed text and clears
-                // the input. No vertical divider: it is the field's only
-                // interactive element besides the text itself.
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
-                  builder: (context, value, _) {
-                    if (value.text.isEmpty || onClear == null) {
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.only(left: AppSpacing.sm),
-                      child: CcTooltip(
-                        message: 'Clear',
-                        child: CcTappable(
-                          onPressed: onClear,
-                          borderRadius: AppRadii.brXs,
-                          semanticLabel: 'Clear input',
-                          builder: (context, states) => Icon(
-                            CcIcons.x,
-                            size: 14,
-                            color: states.contains(WidgetState.hovered)
-                                ? t.textPrimary
-                                : t.textTertiary,
+                  foregroundDecoration: BoxDecoration(
+                    border: Border.all(
+                      color: focused ? input.borderFocused : _transparent,
+                      width: 2,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 18,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              alignment: AlignmentDirectional.centerStart,
+                              children: [
+                                ValueListenableBuilder<TextEditingValue>(
+                                  valueListenable: widget.controller,
+                                  builder: (context, value, _) {
+                                    if (value.text.isNotEmpty) {
+                                      return const SizedBox.shrink();
+                                    }
+                                    return Text(
+                                      widget.hintText ?? '',
+                                      style: textStyle.copyWith(
+                                        color: input.placeholder,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    );
+                                  },
+                                ),
+                                editable,
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
+                        // The ✕ appears after any typed text and clears the
+                        // input.
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: widget.controller,
+                          builder: (context, value, _) {
+                            if (value.text.isEmpty || widget.onClear == null) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsetsDirectional.only(
+                                start: AppSpacing.sm,
+                              ),
+                              child: CcTooltip(
+                                message: 'Clear',
+                                child: CcTappable(
+                                  onPressed: widget.onClear,
+                                  borderRadius: AppRadii.brXs,
+                                  semanticLabel: 'Clear input',
+                                  builder: (context, states) => Icon(
+                                    CcIcons.x,
+                                    size: 14,
+                                    color: states.contains(WidgetState.hovered)
+                                        ? t.textPrimary
+                                        : t.textTertiary,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
     );
+  }
+}
+
+/// Selection gestures plus a tap-up that opens the panel.
+///
+/// Glyph taps are claimed by the selection detector, so the chrome's
+/// [GestureDetector.onTap] never runs for them. Without this, an
+/// already-focused field would not reopen the list on a click in the text.
+class _AutocompleteSelectionGestures
+    extends CcTextSelectionGestureDetectorBuilder {
+  _AutocompleteSelectionGestures({
+    required super.delegate,
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  void onSingleTapUp(TapDragUpDetails details) {
+    super.onSingleTapUp(details);
+    onTap();
   }
 }
 
@@ -678,13 +794,18 @@ class _CcAutocompleteRow<T> extends StatelessWidget {
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
         final wash = pressed
             ? t.hoverStrong
+            : fluidActive
+            ? _transparent
             : (hovered || highlighted)
             ? t.hover
             : _transparent;
 
-        return DecoratedBox(
+        return Container(
+          constraints: const BoxConstraints(minHeight: 40),
+          alignment: AlignmentDirectional.centerStart,
           decoration: BoxDecoration(color: wash),
           child: Padding(
             padding: const EdgeInsets.symmetric(

@@ -8,8 +8,9 @@ import 'package:control_center/features/calendar/presentation/providers/calendar
 import 'package:control_center/features/calendar/presentation/utils/calendar_event_layout.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_all_day_gutter.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_overflow_overlay.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show DateTimeRange, TimeOfDay;
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 // intl declares its own `TextDirection` (a bidi enum, unrelated to the layout
 // one), which would shadow Flutter's in this file.
 import 'package:intl/intl.dart' hide TextDirection;
@@ -40,11 +41,8 @@ const int _allDayLaneRows = 3;
 /// actually lays out.
 const double _allDayTileHeight = 24;
 
-/// The day-labels block (badge + weekday name) above the all-day strip in week
-/// view, pinned rather than measured. The strip's gutter cell has to line up
-/// with the strip's first row, and it can only do that by offsetting itself by
-/// a height it knows. The block's natural, font-metric height is ~47px, so the
-/// content centres inside this with room for a fallback font.
+/// The day-labels block above the all-day strip in week view. Pinned rather
+/// than measured so the strip's gutter can offset by a height it already knows.
 const double _dayLabelsHeight = 56;
 
 /// The most compact day view can be. Two floors meet here and the taller wins:
@@ -289,7 +287,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// only reports its height *after* a frame at the wrong one, which is how
   /// every late-arriving event used to shove the timed grid down.
   int _allDayRows(DateTimeRange<DateTime> range) {
-    final key = '${range.start.toIso8601String()}|${range.end.toIso8601String()}';
+    final key =
+        '${range.start.toIso8601String()}|${range.end.toIso8601String()}';
     final cached = _allDayRowCache[key];
     if (cached != null) {
       return cached;
@@ -671,7 +670,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
-          color: today ? t.accent : Colors.transparent,
+          color: today ? t.accent : const Color(0x00000000),
           borderRadius: AppRadii.brMd,
         ),
         child: Text(
@@ -849,17 +848,17 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       accentBar = t.borderSecondary;
       titleColor = t.textTertiary;
     } else if (unanswered) {
-      fill = Colors.transparent;
+      fill = const Color(0x00000000);
       // On hover a faint wash of the calendar color appears behind the dashed
       // outline, so a pending invitation still reacts to the pointer.
       hoverFill = calColor.withValues(alpha: 0.10);
       // The dashed outline (painted below) carries the calendar color, so the
       // solid accent bar is suppressed.
-      accentBar = Colors.transparent;
+      accentBar = const Color(0x00000000);
       titleColor = t.textSecondary;
       dashed = true;
     } else if (tentative) {
-      fill = Colors.transparent;
+      fill = const Color(0x00000000);
       hoverFill = calColor.withValues(alpha: 0.10);
       accentBar = calColor;
       titleColor = t.textSecondary;
@@ -962,7 +961,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             // RenderFlex overflow) while the parent Container clips the excess.
             child: ClipRect(
               child: OverflowBox(
-                alignment: Alignment.topLeft,
+                alignment: AlignmentDirectional.topStart,
                 minHeight: 0,
                 maxHeight: double.infinity,
                 child: Padding(

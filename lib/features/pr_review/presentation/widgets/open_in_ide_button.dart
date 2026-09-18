@@ -140,26 +140,23 @@ class _OpenInIdeButtonState extends ConsumerState<OpenInIdeButton> {
     }
     final l10n = AppLocalizations.of(context);
     final toaster = CcToastScope.of(context);
-    final worktrees = ref.read(prWorktreeRpcProvider);
-    final launcher = ref.read(editorLauncherProvider);
+    final ide = ref.read(prWorktreeRpcProvider);
 
     setState(() => _preparing = true);
     try {
       // Ask the host to resolve the PR's space worktree (the same tree the
-      // in-app workbench edits — no separate `pr_worktrees/` checkout), ensuring
-      // + provisioning it if needed, then open that directory in a LOCAL editor.
-      // The desktop is a thin client: the server owns the checkout, but the
-      // editor launch stays here (a GUI process the headless host can't be). In
-      // the default self-serve setup the host is this machine, so the path is
-      // local.
-      final path = await worktrees.ensureWorktree(
+      // in-app workbench edits) and open that directory in an editor on the
+      // host's display. The thin client never shells out: process launch
+      // belongs to `cc_server` (`NativeEditorLauncher` behind
+      // `ide.openPrInEditor`).
+      await ide.openPrInEditor(
         repoFullName: widget.pr.repoFullName,
         prNumber: widget.pr.number,
         prExternalId: widget.pr.externalId,
+        editorId: editor.id,
         repoId: widget.repo.id,
         title: widget.pr.title,
       );
-      await launcher.openDirectory(editorId: editor.id, directoryPath: path);
     } on AppException catch (e) {
       toaster.show(
         l10n.failedToOpenInIde(editor.displayName, e.message),

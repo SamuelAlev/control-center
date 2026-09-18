@@ -2,6 +2,7 @@ import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
@@ -344,29 +345,28 @@ class _CcSelectState<T> extends State<CcSelect<T>> {
             child: SingleChildScrollView(
               // Edge-to-edge rows: no panel padding, so the hover wash spans
               // the full width of the list.
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < widget.options.length; i++)
-                    KeyedSubtree(
-                      key: _rows.keyAt(i),
-                      child: CcSelectRow<T>(
-                        option: widget.options[i],
-                        selected: widget.options[i].value == widget.value,
-                        highlighted: i == _highlighted,
-                        checkIcon: widget.checkIcon,
-                        onPressed: () => _select(widget.options[i]),
-                        onHover: (hovered) {
-                          // Hover only syncs the index — it never scrolls, or
-                          // the list would slide out from under the cursor.
-                          if (hovered) {
-                            setState(() => _highlighted = i);
-                          }
-                        },
-                      ),
-                    ),
-                ],
+              child: CcFluidHover(
+                itemCount: widget.options.length,
+                onActiveIndexChanged: (index) {
+                  if (index != null && _highlighted != index) {
+                    setState(() => _highlighted = index);
+                  }
+                },
+                itemBuilder: (context, i) => KeyedSubtree(
+                  key: _rows.keyAt(i),
+                  child: CcSelectRow<T>(
+                    option: widget.options[i],
+                    selected: widget.options[i].value == widget.value,
+                    highlighted: i == _highlighted,
+                    checkIcon: widget.checkIcon,
+                    onPressed: () => _select(widget.options[i]),
+                  ),
+                ),
+                layoutBuilder: (context, items) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: items,
+                ),
               ),
             ),
           ),
@@ -508,22 +508,26 @@ class CcSelectRow<T> extends StatelessWidget {
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
         if (hovered && onHover != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) => onHover!(true));
         }
-        // Carbon-style: the selected row carries a persistent neutral gray
-        // wash (never the accent); hover/highlight share that same gray and
-        // pressed deepens it.
+        // The selected row carries a persistent neutral wash. Pointer hover is
+        // painted once by CcFluidHover; keyboard highlight remains row-local.
         final wash = pressed
             ? t.hoverStrong
-            : (hovered || highlighted || selected)
+            : selected
+            ? t.hover
+            : fluidActive
+            ? _transparent
+            : (hovered || highlighted)
             ? t.hover
             : _transparent;
         final color = selected ? t.textPrimary : t.textSecondary;
 
         return Container(
           constraints: const BoxConstraints(minHeight: 40),
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           decoration: BoxDecoration(color: wash),
           child: Padding(
             padding: const EdgeInsets.symmetric(

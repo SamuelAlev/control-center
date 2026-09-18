@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:control_center/core/theme/app_shadows.dart';
 import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 /// Browser-style middle-click auto-scroll for a single axis.
 ///
@@ -303,12 +303,13 @@ class _AutoScrollAnchor extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final brightness = Theme.of(context).brightness;
-    final isDark = brightness == Brightness.dark;
+    final isDark =
+        context.ccTheme?.isDark ??
+        MediaQuery.maybePlatformBrightnessOf(context) == Brightness.dark;
     final tokens = context.designSystem;
     final bg = isDark
         ? const Color(0xFF2A2A2A)
-        : (tokens?.panel ?? Colors.white);
+        : (tokens?.panel ?? const Color(0xFFFFFFFF));
     final border = isDark
         ? (tokens?.borderSecondary ?? const Color(0xFF555555))
         : (tokens?.borderSecondary ?? const Color(0xFFC4C4C4));

@@ -13,10 +13,14 @@ import 'package:cc_data/cc_data.dart' show RigView;
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
+import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/features/rigs/presentation/mjpeg_view.dart';
 import 'package:control_center/features/rigs/presentation/rig_browser_toolbar.dart';
 import 'package:control_center/features/rigs/presentation/rig_input_surface.dart';
+import 'package:control_center/features/rigs/presentation/rig_microphone_sender.dart';
 import 'package:control_center/features/rigs/presentation/rig_panel_chrome.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
@@ -32,6 +36,7 @@ class RigPanel extends ConsumerStatefulWidget {
     required this.rig,
     this.showHeader = true,
     this.paused = false,
+    this.audioTabKey,
     this.onStop,
   });
 
@@ -47,6 +52,9 @@ class RigPanel extends ConsumerStatefulWidget {
   /// When true the live stream is closed and the last frame is held. Set by a
   /// tab host while this panel sits behind another tab.
   final bool paused;
+
+  /// Identity key for per-editor-tab audio state. Null keeps panel-local state.
+  final Object? audioTabKey;
 
   /// Shown as a "stop" action in the header when non-null.
   final VoidCallback? onStop;
@@ -85,10 +93,16 @@ class _RigPanelState extends ConsumerState<RigPanel> {
   /// move together — a 2x request at 1x quality is bytes for nothing.
   double _appliedScale = 1;
 
-  /// Whether the guest's sound plays here. Off by default — a machine that
-  /// starts talking the moment its tab opens is a surprise, not a feature.
-  bool _audioOn = false;
+  /// Whether the guest's sound plays here. On by default: opening a machine
+  /// means monitoring it, and hidden tabs keep this lane alive while only
+  /// their unseen frame stream is paused.
+  bool _audioOn = true;
 
+  /// Whether the selected viewer microphone feeds the guest. Off by default:
+  /// capture is an active privacy-sensitive choice, unlike playback.
+  bool _microphoneOn = false;
+
+  bool _restartingUnrestricted = false;
   @override
   void dispose() {
     _resizeDebounce?.cancel();
@@ -138,7 +152,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
   /// CSS pixel" is not a thing that exists.
   void _scheduleGuestResize(Size logical, double ratio) {
     final rig = widget.rig;
-    if (rig.surfaceKind == RigSurface.mobile || !rig.isLive) {
+    if (rig.surfaceKind?.hasResizableDisplay != true || !rig.isLive) {
       return;
     }
     final w = logical.width.round().clamp(640, 2560);
@@ -206,11 +220,119 @@ class _RigPanelState extends ConsumerState<RigPanel> {
     });
   }
 
+  Future<void> _showNetworkSecurity() async {
+    final rig = widget.rig;
+    final l10n = AppLocalizations.of(context);
+
+    if (rig.networkIsUnrestricted) {
+      await showCcDialog<void>(
+        context: context,
+        builder: (dialogContext) => CcDialog(
+          title: l10n.rigNetworkUnrestricted,
+          content: Text(
+            rig.egressEnforced
+                ? l10n.rigNetworkUnrestrictedBody
+                : l10n.rigNetworkAlreadyUnrestrictedBody,
+          ),
+          actions: [
+            CcButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              variant: CcButtonVariant.secondary,
+              child: Text(l10n.close),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showCcDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CcDialog(
+        title: l10n.rigNetworkBypassTitle,
+        content: Text(l10n.rigNetworkBypassBody),
+        actions: [
+          CcButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            variant: CcButtonVariant.secondary,
+            child: Text(l10n.cancel),
+          ),
+          CcButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            variant: CcButtonVariant.destructive,
+            child: Text(l10n.rigNetworkRestartUnrestricted),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    setState(() => _restartingUnrestricted = true);
+    try {
+      await ref
+          .read(rigRepositoryProvider)
+          .restartUnrestricted(widget.workspaceId, rig.id);
+    } on Object catch (e) {
+      if (mounted) {
+        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _restartingUnrestricted = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final rig = widget.rig;
+    final audioTabKey = widget.audioTabKey;
+    final tabAudio = audioTabKey == null
+        ? null
+        : ref.watch(rigTabAudioProvider(audioTabKey));
+    final tabAudioNotifier = audioTabKey == null
+        ? null
+        : ref.read(rigTabAudioProvider(audioTabKey).notifier);
+    final outputDeviceName = tabAudio == null
+        ? ref.watch(audioOutputDeviceProvider)
+        : tabAudio.outputDeviceName;
+    final inputDeviceId = tabAudio == null
+        ? ref.watch(audioInputDeviceProvider)
+        : tabAudio.inputDeviceId;
+    final audioOn = tabAudio?.outputEnabled ?? _audioOn;
+    final microphoneOn = tabAudio?.microphoneEnabled ?? _microphoneOn;
+
+    void toggleAudio() {
+      if (tabAudioNotifier != null) {
+        tabAudioNotifier.setOutputEnabled(!audioOn);
+      } else {
+        setState(() => _audioOn = !_audioOn);
+      }
+    }
+
+    void toggleMicrophone() {
+      if (tabAudioNotifier != null) {
+        tabAudioNotifier.setMicrophoneEnabled(!microphoneOn);
+      } else {
+        setState(() => _microphoneOn = !_microphoneOn);
+      }
+    }
+
+    final microphoneUrl = MediaProxyScope.rigMicrophoneUrlOf(
+      context,
+      workspaceId: widget.workspaceId,
+      rigId: rig.id,
+    );
+    final microphoneEndUrl = MediaProxyScope.rigMicrophoneUrlOf(
+      context,
+      workspaceId: widget.workspaceId,
+      rigId: rig.id,
+      end: true,
+    );
 
     return Container(
       decoration: BoxDecoration(color: t.bgPrimaryAlt),
@@ -225,24 +347,81 @@ class _RigPanelState extends ConsumerState<RigPanel> {
             RigHeader(
               rig: rig,
               onStop: widget.onStop,
-              audioOn: _audioOn,
-              // Only the computer surface has an audio lane today.
-              onToggleAudio: rig.surfaceKind == RigSurface.mobile
-                  ? null
-                  : () => setState(() => _audioOn = !_audioOn),
+              audioOn: audioOn,
+              onToggleAudio: rig.surfaceKind == RigSurface.computer
+                  ? toggleAudio
+                  : null,
+              microphoneOn: microphoneOn,
+              onToggleMicrophone:
+                  rig.surfaceKind == RigSurface.computer &&
+                      (rig.controller == null || rig.isHumanControlled)
+                  ? toggleMicrophone
+                  : null,
+              onNetworkSecurity: rig.egressEnforced
+                  ? () => unawaited(_showNetworkSecurity())
+                  : null,
+              networkRestarting: _restartingUnrestricted,
             ),
           // The browser surface gets the same chrome as the in-app browser
           // tab: back / forward / reload and an address bar driving the
           // enclosed Chromium over rig.act.
           if (rig.surfaceKind == RigSurface.browser && rig.isLive)
-            RigBrowserToolbar(workspaceId: widget.workspaceId, rig: rig),
-          if (_audioOn && rig.isLive && !widget.paused)
+            RigBrowserToolbar(
+              workspaceId: widget.workspaceId,
+              rig: rig,
+              onNetworkSecurity: () => unawaited(_showNetworkSecurity()),
+              networkRestarting: _restartingUnrestricted,
+              audioOn: audioOn,
+              onToggleAudio: toggleAudio,
+              microphoneOn: microphoneOn,
+              onToggleMicrophone:
+                  (rig.controller == null || rig.isHumanControlled)
+                  ? toggleMicrophone
+                  : null,
+            ),
+          if (audioOn && rig.isLive)
             RigAudioPlayer(
               url: MediaProxyScope.rigAudioUrlOf(
                 context,
                 workspaceId: widget.workspaceId,
                 rigId: rig.id,
               ),
+              outputDeviceName: outputDeviceName,
+              onPlayingChanged: audioTabKey == null
+                  ? null
+                  : (playing) {
+                      if (!mounted || widget.audioTabKey != audioTabKey) {
+                        return;
+                      }
+                      ref
+                          .read(rigTabAudioProvider(audioTabKey).notifier)
+                          .setOutputPlaying(playing);
+                    },
+            ),
+          if (microphoneOn &&
+              rig.isLive &&
+              !widget.paused &&
+              (rig.surfaceKind == RigSurface.computer ||
+                  rig.surfaceKind == RigSurface.browser) &&
+              microphoneUrl != null &&
+              microphoneEndUrl != null)
+            RigMicrophoneSender(
+              key: ValueKey(
+                'rig-microphone-${rig.id}-${inputDeviceId ?? 'default'}',
+              ),
+              url: microphoneUrl,
+              endUrl: microphoneEndUrl,
+              inputDeviceId: inputDeviceId,
+              onStopped: () {
+                if (!mounted) {
+                  return;
+                }
+                if (tabAudioNotifier != null) {
+                  tabAudioNotifier.setMicrophoneEnabled(false);
+                } else if (_microphoneOn) {
+                  setState(() => _microphoneOn = false);
+                }
+              },
             ),
           Expanded(
             child: rig.isStarting

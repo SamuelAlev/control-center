@@ -14,11 +14,13 @@ import 'package:cc_natives/cc_natives.dart';
 
 /// [PrDiffSource] backed by a local blobless git clone.
 ///
-/// Used when a PR exceeds GitHub's 3 000-file API cap. After cloning/fetching:
+/// Used when the forge cannot serve the diff: GitHub's 3 000-file API cap,
+/// or its 20 000-line raw-diff cap (HTTP 406 `too_large`). After cloning
+/// / fetching:
 /// 1. Emits the file tree immediately (empty patches) from `git diff --numstat`.
 /// 2. Streams patches progressively from `git diff --no-color`.
 class LocalGitPrDiffSource implements PrDiffSource {
-  /// Creates a [LocalGitPrDiffSource] used when a PR exceeds GitHub's file cap,
+  /// Creates a [LocalGitPrDiffSource] used when a PR exceeds a forge cap,
   /// falling back to a local blobless clone for diffs.
   const LocalGitPrDiffSource({
     required GitCommandPort git,

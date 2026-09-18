@@ -86,10 +86,11 @@ class HarnessModelOverrideCache {
   /// models.dev catalog), then lets the stored override win field by field.
   ///
   /// When the catalog does not know the model at all — every custom-provider
-  /// model, or a built-in model newer than the bundled snapshot — an override
-  /// is the only metadata there is, so a minimal [ModelInfo] is synthesized
-  /// from it (no cost, no status: pricing stays unknown and the run is still
-  /// attributed). With no override the base answer passes through untouched.
+  /// model, or a built-in model newer than the last models.dev fetch — an
+  /// override is the only metadata there is, so a minimal [ModelInfo] is
+  /// synthesized from it (no cost, no status: pricing stays unknown and the
+  /// run is still attributed). With no override the base answer passes
+  /// through untouched.
   ModelInfo? resolve(
     ModelInfo? Function(String qualifiedId) base,
     String qualifiedId,

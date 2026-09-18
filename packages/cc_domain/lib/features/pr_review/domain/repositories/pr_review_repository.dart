@@ -231,6 +231,16 @@ abstract class PrReviewRepository {
     String? body,
   });
 
+  /// Replaces the body of a top-level conversation comment on [prNumber].
+  ///
+  /// Used to persist a GFM task-list checkbox toggle without opening the
+  /// comment editor. [commentId] is [IssueComment.id].
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  });
+
   /// Add the given user [logins] as assignees on the PR.
   Future<void> addAssignees({
     required int prNumber,
@@ -479,6 +489,13 @@ class EmptyPrReviewRepository implements PrReviewRepository {
     required int prNumber,
     String? title,
     String? body,
+  }) async {}
+
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
   }) async {}
 
   @override

@@ -3,6 +3,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart'
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
@@ -213,6 +214,16 @@ Widget _wrap(Widget child) {
             reviewerName: 'matias',
             createdAt: _t0.add(const Duration(minutes: 5, seconds: 30)),
           ),
+          PrTimelineEvent(
+            kind: PrTimelineEventKind.labeled,
+            actor: const PrUser(login: 'renovate[bot]', avatarUrl: ''),
+            label: const PrLabel(
+              name: 'dependencies',
+              color: '0366d6',
+              description: 'Pull requests that update a dependency file',
+            ),
+            createdAt: _t0.add(const Duration(minutes: 8)),
+          ),
         ]),
       ),
     ],
@@ -287,6 +298,9 @@ void main() {
           _richTextContaining('and removed the review request for'),
           findsOneWidget,
         );
+        expect(_richTextContaining('added the'), findsOneWidget);
+        expect(find.text('dependencies'), findsOneWidget);
+        expect(find.byType(CcColorTag), findsOneWidget);
         // Single commit stays a plain row: sha + message title.
         expect(find.text('red'), findsOneWidget);
         expect(_richTextContaining('committed 845facb'), findsOneWidget);

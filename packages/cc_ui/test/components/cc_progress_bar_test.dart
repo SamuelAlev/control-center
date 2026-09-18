@@ -34,6 +34,38 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
 
+    testWidgets(
+      'indeterminate reverses at the end instead of wrapping to the start',
+      (tester) async {
+        await tester.pumpWidget(
+          ccTestApp(
+            const Center(child: SizedBox(width: 200, child: CcProgressBar())),
+          ),
+        );
+
+        double segmentLeft() => tester
+            .widget<Positioned>(
+              find.descendant(
+                of: find.byType(CcProgressBar),
+                matching: find.byType(Positioned),
+              ),
+            )
+            .left!;
+
+        // One duration minus 100ms lands near the far edge (travel is 140).
+        await tester.pump(const Duration(milliseconds: 1000));
+        final nearEnd = segmentLeft();
+        expect(nearEnd, greaterThan(100));
+
+        // 300ms past the turnaround a wrap would be back near the start
+        // (~38px); a reverse loop is still on the far side, coming back.
+        await tester.pump(const Duration(milliseconds: 400));
+        final afterTurn = segmentLeft();
+        expect(afterTurn, greaterThan(80));
+        expect(afterTurn, lessThan(nearEnd));
+      },
+    );
+
     testWidgets('indeterminate is static when motion is reduced', (
       tester,
     ) async {

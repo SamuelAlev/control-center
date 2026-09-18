@@ -358,6 +358,13 @@ void main() {
   });
 
   group('harnessProviderMetas', () {
+    test('Cursor is OAuth with an optional pasted session token', () {
+      final meta = harnessProviderMetas['cursor']!;
+      expect(meta.supportsOAuth, isTrue);
+      expect(meta.supportsApiKey, isTrue);
+      expect(harnessSupportedProviderIds, contains('cursor'));
+    });
+
     test('Kimi Code is OAuth-only — there is no plan API key to paste', () {
       final meta = harnessProviderMetas['kimi-code']!;
       expect(meta.supportsOAuth, isTrue);

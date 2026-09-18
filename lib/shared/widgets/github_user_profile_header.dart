@@ -1,11 +1,11 @@
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/shared/utils/github_avatar_url.dart';
 import 'package:control_center/shared/widgets/charts/activity_heatmap.dart';
 import 'package:control_center/shared/widgets/github_user_status_badge.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Renders a GitHub user's avatar, name, @login, bio and optionally a
 /// contribution heatmap. Shared between the hover card and the profile page.
@@ -45,8 +45,7 @@ class GitHubUserProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem!;
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = context.ccTheme?.isDark ?? false;
     final initial = profile.login.isNotEmpty
         ? profile.login[0].toUpperCase()
         : '?';
@@ -114,7 +113,7 @@ class GitHubUserProfileHeader extends StatelessWidget {
     );
 
     final heatmap = showHeatmap && profile.contributionCalendar != null
-        ? _buildHeatmap(tokens, theme, isDark, profile.contributionCalendar!)
+        ? _buildHeatmap(tokens, isDark, profile.contributionCalendar!)
         : null;
 
     if (heatmapInline && heatmap != null) {
@@ -149,7 +148,6 @@ class GitHubUserProfileHeader extends StatelessWidget {
 
   Widget _buildHeatmap(
     DesignSystemTokens tokens,
-    ThemeData theme,
     bool isDark,
     GitHubContributionCalendar calendar,
   ) {

@@ -61,7 +61,7 @@ class SettingsCopyField extends StatelessWidget {
         borderRadius: AppRadii.brSm,
         border: Border.all(color: tokens.borderSecondary),
       ),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, 6, 6, 6),
+      padding: const EdgeInsetsDirectional.fromSTEB(AppSpacing.md, 6, 6, 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [

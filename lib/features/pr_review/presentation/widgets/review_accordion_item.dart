@@ -16,7 +16,7 @@ import 'package:control_center/features/workspaces/providers/workspace_scope.dar
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// An expandable accordion item displaying a single review finding.
@@ -405,10 +405,10 @@ class _ThreadReply extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(top: AppSpacing.sm),
       child: Container(
-        padding: const EdgeInsets.only(left: AppSpacing.md),
+        padding: const EdgeInsetsDirectional.only(start: AppSpacing.md),
         decoration: BoxDecoration(
-          border: Border(
-            left: BorderSide(color: tokens.borderSecondary, width: 2),
+          border: BorderDirectional(
+            start: BorderSide(color: tokens.borderSecondary, width: 2),
           ),
         ),
         child: Column(

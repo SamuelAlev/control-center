@@ -2,7 +2,8 @@ import 'package:control_center/core/theme/diff_colors.dart';
 import 'package:control_center/features/pr_review/presentation/utils/word_diff.dart'
     show kAdditionWordBgKey, kDeletionWordBgKey;
 import 'package:control_center/shared/utils/syntax_palette.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 /// Resolved color palette for the diff viewer — addition/deletion backgrounds,
 /// status accents, drag-selection highlight, search highlights, comment-thread
@@ -40,8 +41,7 @@ class DiffPalette {
 
   /// Looks up the diff palette for the current theme brightness.
   factory DiffPalette.of(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return isDark ? _dark : _light;
+    return DiffPalette.forBrightness(diffBrightnessOf(context));
   }
 
   /// Looks up the diff palette by an explicit brightness — used by the isolate
@@ -131,7 +131,7 @@ class DiffPalette {
     currentSearchMatchBg: const Color(0xFFFF8C00),
     dragSelectionBg: const Color(0xFF1F75FE).withValues(alpha: 0.12),
     actionPillBg: const Color(0xFF111111),
-    actionPillFg: Colors.white,
+    actionPillFg: const Color(0xFFFFFFFF),
     resolvedThreadAccent: const Color(0xFF2DA44E),
     syntax: {
       ...lightSyntaxPalette,
@@ -156,7 +156,7 @@ class DiffPalette {
     currentSearchMatchBg: const Color(0xFFFF8C00),
     dragSelectionBg: const Color(0xFF1F75FE).withValues(alpha: 0.16),
     actionPillBg: const Color(0xFF111111),
-    actionPillFg: Colors.white,
+    actionPillFg: const Color(0xFFFFFFFF),
     resolvedThreadAccent: const Color(0xFF2DA44E),
     syntax: {
       ...darkSyntaxPalette,

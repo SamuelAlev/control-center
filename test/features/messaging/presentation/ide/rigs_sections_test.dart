@@ -371,21 +371,35 @@ void main() {
     expect(focused.single.engine, isNull);
   });
 
-  testWidgets('tapping the phone row opens its tab', (tester) async {
-    // Closing a rig tab leaves the machine running, so this row is the way
-    // back to a phone kept in the background — the phone surface has no other.
+  testWidgets('tapping the Android row opens its one device', (tester) async {
+    // Closing a rig tab leaves the device running, so this row is the route
+    // back to an Android device kept in the background.
     final focused = await pump(
       tester,
       rigs: [_rig(id: 'r-phone', surface: 'mobile')],
       builder: phones,
     );
 
-    await tester.tap(find.text('Mobile'));
+    await tester.tap(find.text('Android'));
     expect(focused, hasLength(1));
     expect(focused.single.surface, RigTabSurfaces.mobile);
-    // Never numbered: the mobile surface drives the host's one attached
-    // device, so there is no second phone to tell it apart from.
     expect(focused.single.slotId, isNull);
+  });
+
+  testWidgets('iOS rows retain their exact simulator slots', (tester) async {
+    final focused = await pump(
+      tester,
+      rigs: [
+        _rig(id: 'ios-default', surface: 'ios'),
+        _rig(id: 'ios-second', surface: 'ios', slotId: 's2'),
+      ],
+      builder: phones,
+    );
+
+    expect(find.text('iOS Simulator'), findsOneWidget);
+    await tester.tap(find.text('iOS Simulator 2'));
+    expect(focused.single.surface, RigTabSurfaces.ios);
+    expect(focused.single.slotId, 's2');
   });
 
   testWidgets('phones ignore the other surfaces', (tester) async {

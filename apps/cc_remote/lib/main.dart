@@ -1,4 +1,7 @@
 import 'package:cc_remote/app_router.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/l10n/phone_widgets_localizations.dart';
+import 'package:cc_remote/l10n/remote_locales.dart';
 import 'package:cc_remote/pairing/pairing_store.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_remote/update/remote_update.dart';
@@ -7,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:web/web.dart' as web;
 
@@ -31,6 +35,10 @@ Future<void> main() async {
   // own context menu by default, which also makes the engine suppress Flutter's
   // selection toolbars (so selected text has no copy affordance).
   await BrowserContextMenu.disableContextMenu();
+  // DateFormat needs its per-locale symbols loaded before first use — on web
+  // they are not implicit for non-English locales. Loaded once here so every
+  // formatter in `format.dart` can construct a DateFormat synchronously.
+  await initializeDateFormatting();
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
@@ -85,10 +93,19 @@ class _CcRemoteAppState extends ConsumerState<CcRemoteApp>
   @override
   Widget build(BuildContext context) {
     final router = ref.watch(appRouterProvider);
+    final localeCode = ref.watch(appLocaleProvider);
     return WidgetsApp.router(
       routerConfig: router,
       debugShowCheckedModeBanner: false,
-      title: 'Control Center',
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
+      // A null locale follows the platform; a stored code pins it.
+      locale: localeCode == null ? null : localeFromBcp47(localeCode),
+      supportedLocales: kSupportedRemoteLocales,
+      localeResolutionCallback: resolveRemoteLocale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        PhoneWidgetsLocalizationsDelegate(),
+      ],
       color: const Color(0xFFFCFBF9),
       // Desktop-browser sessions get the design-system scrollbar (angular,
       // token-colored); on phones no scrollbar is injected, as before.

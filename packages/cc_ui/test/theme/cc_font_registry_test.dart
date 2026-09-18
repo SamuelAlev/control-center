@@ -54,6 +54,22 @@ void main() {
         'Apple Color Emoji',
       ]);
     });
+
+    test('extraFallbacks slot in ahead of the caller list', () {
+      final style = registry.apply(
+        'Inter',
+        const TextStyle(fontFamilyFallback: ['Apple Color Emoji']),
+        fallbackFamily: 'Manrope',
+        extraFallbacks: const ['PingFang SC', 'Noto Sans CJK SC'],
+      );
+      expect(style.fontFamilyFallback, [
+        'Inter',
+        'Manrope',
+        'PingFang SC',
+        'Noto Sans CJK SC',
+        'Apple Color Emoji',
+      ]);
+    });
   });
 
   group('loading', () {

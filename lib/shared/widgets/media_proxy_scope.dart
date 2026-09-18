@@ -364,7 +364,7 @@ class MediaProxyConfig {
     required String rigId,
     required int width,
     required int height,
-    int fps = 24,
+    int fps = 60,
     int quality = 70,
     String? guestKey,
   }) {
@@ -460,6 +460,32 @@ class MediaProxyConfig {
             'd': deviceId,
             's': RemoteControlCrypto.signProxyTarget(target, psk),
             'lane': 'audio',
+          },
+        )
+        .toString();
+  }
+
+  /// The signed microphone-input URL. PCM16 chunks are POSTed to this lane;
+  /// [end] closes the guest-side playback process.
+  String rigMicrophoneUrl({
+    required String workspaceId,
+    required String rigId,
+    int sampleRate = 16000,
+    int channels = 1,
+    bool end = false,
+  }) {
+    final target = 'rig:$workspaceId/$rigId';
+    return httpBase
+        .replace(
+          path: '/rig/stream/$rigId',
+          queryParameters: {
+            'w': workspaceId,
+            'd': deviceId,
+            's': RemoteControlCrypto.signProxyTarget(target, psk),
+            'lane': 'microphone',
+            'rate': '$sampleRate',
+            'channels': '$channels',
+            if (end) 'end': '1',
           },
         )
         .toString();
@@ -629,7 +655,7 @@ class MediaProxyScope extends InheritedWidget {
     required String rigId,
     required int width,
     required int height,
-    int fps = 24,
+    int fps = 60,
     int quality = 70,
     String? guestKey,
   }) {
@@ -653,6 +679,21 @@ class MediaProxyScope extends InheritedWidget {
   }) {
     final scope = context.getInheritedWidgetOfExactType<MediaProxyScope>();
     return scope?.config.rigAudioUrl(workspaceId: workspaceId, rigId: rigId);
+  }
+
+  /// The rig microphone-input URL, or null with no ambient proxy scope.
+  static String? rigMicrophoneUrlOf(
+    BuildContext context, {
+    required String workspaceId,
+    required String rigId,
+    bool end = false,
+  }) {
+    final scope = context.getInheritedWidgetOfExactType<MediaProxyScope>();
+    return scope?.config.rigMicrophoneUrl(
+      workspaceId: workspaceId,
+      rigId: rigId,
+      end: end,
+    );
   }
 
   /// The ambient proxy config, or null when there is no live connection.

@@ -70,6 +70,36 @@ void main() {
       expect(loaded.spec.egressAllowlist, ['github.com']);
     });
 
+    test('iOS surface and backend survive text-column persistence', () async {
+      final ios = Rig(
+        id: 'ios-rig',
+        workspaceId: 'ws1',
+        surface: RigSurface.ios,
+        backend: EnclosureBackend.iosSimulator,
+        status: const RigReady(),
+        spec: RigSpec(
+          surface: RigSurface.ios,
+          backend: EnclosureBackend.iosSimulator,
+          conversationId: 'c1',
+          slotId: 's2',
+        ),
+        display: RigDisplaySize.defaultMobile,
+        createdBy: const UserPrincipal('u1'),
+        conversationId: 'c1',
+        createdAt: DateTime.utc(2026, 8, 18, 10),
+        lastActivityAt: DateTime.utc(2026, 8, 18, 10),
+      );
+      await repository.save('ws1', ios);
+
+      final loaded = await repository.getById('ws1', 'ios-rig');
+      expect(loaded, isNotNull);
+      expect(loaded!.surface, RigSurface.ios);
+      expect(loaded.backend, EnclosureBackend.iosSimulator);
+      expect(loaded.spec.surface, RigSurface.ios);
+      expect(loaded.spec.backend, EnclosureBackend.iosSimulator);
+      expect(loaded.spec.slotId, 's2');
+    });
+
     test('the take-over lock round-trips', () async {
       await repository.save(
         'ws1',

@@ -90,7 +90,7 @@ class _AppMermaidFigureState extends ConsumerState<AppMermaidFigure> {
             codeLigatures: codeLigatures,
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 4, left: 2),
+            padding: const EdgeInsetsDirectional.only(top: 4, start: 2),
             child: Text(
               l10n.diagramPreviewUnavailable(reason),
               style: TextStyle(color: tokens.textQuaternary, fontSize: 11),
@@ -170,7 +170,7 @@ class _AppMermaidFigureState extends ConsumerState<AppMermaidFigure> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: CcButton(
                   variant: CcButtonVariant.ghost,
                   size: CcButtonSize.sm,

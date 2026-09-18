@@ -1,8 +1,13 @@
+import 'dart:async';
+
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
@@ -68,9 +73,10 @@ class TreeOverlay extends ConsumerWidget {
       return _SearchHost(
         pr: pr,
         prRef: prRef,
+        diffKey: diffKey,
         focusToken: searchFocusToken,
         onShowFileTree: onShowFileTree,
-        onOpenResult: onOpenFileInEditor,
+        onOpenFileInEditor: onOpenFileInEditor,
       );
     }
 
@@ -94,28 +100,35 @@ class TreeOverlay extends ConsumerWidget {
 /// on first open — acceptable here since the user explicitly opened search) and
 /// hosts the [PrWorktreeSearchPanel]. A missing workspace/repo/space shows a
 /// spinner rather than an error, mirroring the terminal/code-server tabs.
-class _SearchHost extends ConsumerWidget {
+class _SearchHost extends ConsumerStatefulWidget {
   const _SearchHost({
     required this.pr,
     required this.prRef,
+    required this.diffKey,
     required this.focusToken,
     required this.onShowFileTree,
-    required this.onOpenResult,
+    required this.onOpenFileInEditor,
   });
 
   final PullRequest pr;
 
   /// The PR\'s identity key (repo coords + number).
   final PrRef prRef;
+  final GlobalKey<PrDiffViewState> diffKey;
   final int focusToken;
   final VoidCallback onShowFileTree;
-  final void Function(String path, {int? line}) onOpenResult;
+  final void Function(String path, {int? line}) onOpenFileInEditor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SearchHost> createState() => _SearchHostState();
+}
+
+class _SearchHostState extends ConsumerState<_SearchHost> {
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final repoId = prRepoIdFor(ref, pr);
+    final repoId = prRepoIdFor(ref, widget.pr);
     if (workspaceId == null || repoId == null) {
       return ColoredBox(
         color: tokens.bgPrimary,
@@ -127,14 +140,11 @@ class _SearchHost extends ConsumerWidget {
         ),
       );
     }
-    // Files the PR touches — used to surface the diff's own files first in the
-    // content-search results (a stable partition inside the panel).
-    final prFiles = ref.watch(prFilesProvider(prRef)).value;
-    final prTouchedPaths = <String>{
-      if (prFiles != null)
-        for (final f in prFiles) f.filename,
-    };
-    final spaceAsync = ref.watch(prSpaceProvider(pr));
+    final prFilesAsync = ref.watch(prFilesProvider(widget.prRef));
+    final Set<String>? prTouchedPaths = prFilesAsync.hasValue
+        ? {for (final f in prFilesAsync.value!) f.filename}
+        : null;
+    final spaceAsync = ref.watch(prSpaceProvider(widget.pr));
     return spaceAsync.when(
       loading: () => ColoredBox(
         color: tokens.bgPrimary,
@@ -153,11 +163,59 @@ class _SearchHost extends ConsumerWidget {
         workspaceId: workspaceId,
         spaceId: spaceId,
         repoId: repoId,
-        focusToken: focusToken,
-        onShowFileTree: onShowFileTree,
-        onOpenResult: onOpenResult,
+        focusToken: widget.focusToken,
+        onShowFileTree: widget.onShowFileTree,
+        onOpenResult: _openSearchResult,
         prTouchedPaths: prTouchedPaths,
       ),
     );
   }
+
+  /// In-PR hits scroll the diff; everything else opens a code-server tab.
+  void _openSearchResult(String path, {int? line}) {
+    final files = ref.read(prFilesProvider(widget.prRef)).value;
+    if (_isPrTouchedPath(path, files)) {
+      _jumpInDiff(path, line: line);
+      return;
+    }
+    widget.onOpenFileInEditor(path, line: line);
+  }
+
+  /// Retries across frames so a commit-range scope can widen before the jump.
+  /// In-PR files never fall through to the editor.
+  void _jumpInDiff(String path, {int? line, int attempts = 30}) {
+    if (!mounted) {
+      return;
+    }
+    final state = widget.diffKey.currentState;
+    if (state != null && state.filesIndexOf(path) >= 0) {
+      unawaited(state.jumpToPath(path, line: line));
+      return;
+    }
+    if (ref.read(prDiffScopeProvider).isScoped) {
+      ref.read(prDiffScopeProvider.notifier).updateSelection(const {});
+    }
+    if (attempts <= 0) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _jumpInDiff(path, line: line, attempts: attempts - 1);
+    });
+  }
+}
+
+bool _isPrTouchedPath(String path, List<PrFile>? files) {
+  if (files == null) {
+    return false;
+  }
+  for (final file in files) {
+    if (diffFilePathsMatch(file.filename, path)) {
+      return true;
+    }
+    final previous = file.previousFilename;
+    if (previous != null && diffFilePathsMatch(previous, path)) {
+      return true;
+    }
+  }
+  return false;
 }

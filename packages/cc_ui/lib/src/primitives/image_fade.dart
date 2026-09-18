@@ -75,7 +75,9 @@ class ImageFade extends StatefulWidget {
   final BoxFit fit;
 
   /// How the image aligns within its bounds. See [Image.alignment].
-  final Alignment alignment;
+  /// [AlignmentGeometry], so directional alignments resolve against the
+  /// ambient [Directionality] (RawImage handles the resolution).
+  final AlignmentGeometry alignment;
 
   /// How to paint any area not covered by the image. See [Image.repeat].
   final ImageRepeat repeat;

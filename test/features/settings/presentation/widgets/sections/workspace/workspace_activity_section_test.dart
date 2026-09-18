@@ -1,12 +1,16 @@
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/workspace_activity_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 void main() {
   final now = DateTime.now();
@@ -96,33 +100,106 @@ void main() {
     'u-2': UserDto(id: 'u-2', handle: 'riley', displayName: 'Riley Chen'),
   };
 
+  UserActivityPageDto pageFor(
+    List<UserActivityDto> activity,
+    WorkspaceActivityPageQuery query,
+  ) {
+    var filtered = activity.where((entry) {
+      if (query.ip != null && entry.ip != query.ip) {
+        return false;
+      }
+      if (query.countryCode != null && entry.countryCode != query.countryCode) {
+        return false;
+      }
+      if (query.localNetwork &&
+          (entry.ip == null ||
+              entry.ip!.isEmpty ||
+              (entry.countryCode != null && entry.countryCode!.isNotEmpty))) {
+        return false;
+      }
+      final needle = query.search.trim().toLowerCase();
+      if (needle.isEmpty) {
+        return true;
+      }
+      if (query.userIds.contains(entry.userId)) {
+        return true;
+      }
+      final haystack = [
+        entry.action,
+        entry.targetId,
+        entry.ip,
+        entry.countryCode,
+        if (entry.details != null) ...entry.details!.values.map((v) => '$v'),
+      ];
+      return haystack.any((s) => s?.toLowerCase().contains(needle) ?? false);
+    }).toList();
+
+    final total = filtered.length;
+    final cursor = ActivityCursor.decode(query.cursor);
+    if (cursor != null) {
+      filtered = filtered.where((entry) {
+        final at = entry.createdAt?.toUtc().millisecondsSinceEpoch ?? 0;
+        return at < cursor.createdAtMs ||
+            (at == cursor.createdAtMs && entry.id.compareTo(cursor.id) < 0);
+      }).toList();
+    }
+    const pageSize = 10;
+    final hasMore = filtered.length > pageSize;
+    final page = hasMore ? filtered.sublist(0, pageSize) : filtered;
+    final start = total - filtered.length + 1;
+    String? nextCursor;
+    if (hasMore && page.isNotEmpty) {
+      final last = page.last;
+      nextCursor = ActivityCursor(
+        createdAtMs: last.createdAt!.toUtc().millisecondsSinceEpoch,
+        id: last.id,
+      ).encode();
+    }
+    String? prevCursor;
+    if (start > 1) {
+      final newerCount = start - 1;
+      if (newerCount > pageSize) {
+        final boundary = activity[pageSize];
+        prevCursor = ActivityCursor(
+          createdAtMs: boundary.createdAt!.toUtc().millisecondsSinceEpoch,
+          id: boundary.id,
+        ).encode();
+      }
+    }
+    return UserActivityPageDto(
+      entries: page,
+      total: total,
+      start: total == 0 ? 1 : start,
+      nextCursor: nextCursor,
+      prevCursor: prevCursor,
+    );
+  }
+
   Widget wrap(List<UserActivityDto> activity, {required CcThemeData theme}) {
-    return ProviderScope(
-      overrides: [
-        workspaceActivityProvider(
-          'ws-1',
-        ).overrideWith((ref) => Stream.value(activity)),
-        usersByIdProvider.overrideWith((ref) => Stream.value(users)),
-        // MemberAvatar consults the current user for the host-GitHub-avatar
-        // layer; pinning it to null keeps every row on the initials fallback.
-        currentUserIdProvider.overrideWithValue(null),
-      ],
-      child: CcTheme(
-        data: theme,
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: WorkspaceActivitySection(workspaceId: 'ws-1'),
-              ),
-            ),
-          ),
-        ),
+    final overrides = [
+      workspaceActivityPageProvider.overrideWith(
+        (ref, query) => Stream.value(pageFor(activity, query)),
+      ),
+      usersByIdProvider.overrideWith((ref) => Stream.value(users)),
+      // MemberAvatar consults the current user for the host-GitHub-avatar
+      // layer; pinning it to null keeps every row on the initials fallback.
+      currentUserIdProvider.overrideWithValue(null),
+    ];
+    const body = SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: WorkspaceActivitySection(workspaceId: 'ws-1'),
       ),
     );
+    final app = CcTheme(
+      data: theme,
+      child: const MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(body: body),
+      ),
+    );
+    return ProviderScope(overrides: overrides, child: app);
   }
 
   testWidgets('renders actor, action, description and timestamp per entry', (
@@ -198,7 +275,7 @@ void main() {
 
     await tester.ensureVisible(find.byIcon(AppIcons.chevronRight));
     await tester.tap(find.byIcon(AppIcons.chevronRight));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     // Page 2: rows 11–12 swap in, next now disabled.
     expect(find.text('11–12 of 12'), findsOneWidget);
@@ -209,7 +286,7 @@ void main() {
 
     await tester.ensureVisible(find.byIcon(AppIcons.chevronLeft));
     await tester.tap(find.byIcon(AppIcons.chevronLeft));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('1–10 of 12'), findsOneWidget);
   });
 
@@ -220,7 +297,7 @@ void main() {
     await tester.pump();
 
     await tester.enterText(find.byType(CcTextField), 'ceo');
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Updated agent · ceo'), findsOneWidget);
     expect(find.text('Saved the workspace logo'), findsNothing);
@@ -229,7 +306,7 @@ void main() {
 
     // A query matching nothing reports the no-matches state.
     await tester.enterText(find.byType(CcTextField), 'zzz-no-hit');
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('No activity matches your filters'), findsOneWidget);
     expect(find.byType(CcAvatar), findsNothing);
   });
@@ -246,7 +323,7 @@ void main() {
     expect(find.text('198.51.100.9'), findsOneWidget);
 
     await tester.tap(find.text('203.0.113.7'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     // Only the matching row remains; the active filter is dismissible.
     expect(find.text('Updated agent · ceo'), findsOneWidget);
@@ -256,7 +333,7 @@ void main() {
     expect(find.text('1–1 of 1'), findsOneWidget);
 
     await tester.tap(find.byIcon(AppIcons.x));
-    await tester.pump();
+    await tester.pumpAndSettle();
     expect(find.text('Created ticket · T-9'), findsOneWidget);
     expect(find.text('IP 203.0.113.7'), findsNothing);
     expect(find.text('1–3 of 3'), findsOneWidget);
@@ -270,10 +347,60 @@ void main() {
     expect(find.text('Localhost'), findsOneWidget);
 
     await tester.tap(find.text('Localhost'));
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Deleted skill · pdf'), findsOneWidget);
     expect(find.text('Updated agent · ceo'), findsNothing);
     expect(find.text('Country Localhost'), findsOneWidget);
+  });
+
+  testWidgets('next page writes ?cursor= onto the members URL', (tester) async {
+    final router = GoRouter(
+      initialLocation: '/workspaces/ws-1/settings/workspace/members',
+      routes: [
+        GoRoute(
+          path: '/workspaces/:workspaceId/settings/workspace/members',
+          builder: (context, state) => const Scaffold(
+            body: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: WorkspaceActivitySection(workspaceId: 'ws-1'),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          workspaceActivityPageProvider.overrideWith(
+            (ref, query) => Stream.value(pageFor(pagedEntries(12), query)),
+          ),
+          usersByIdProvider.overrideWith((ref) => Stream.value(users)),
+          currentUserIdProvider.overrideWithValue(null),
+        ],
+        child: CcTheme(
+          data: CcThemeData.light(),
+          child: MaterialApp.router(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: router,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(router.state.uri.queryParameters['cursor'], isNull);
+    await tester.ensureVisible(find.byIcon(AppIcons.chevronRight));
+    await tester.tap(find.byIcon(AppIcons.chevronRight));
+    await tester.pumpAndSettle();
+
+    final cursor = router.state.uri.queryParameters['cursor'];
+    expect(cursor, isNotNull);
+    expect(cursor, isNotEmpty);
+    expect(find.text('11–12 of 12'), findsOneWidget);
+    expect(uriWithCursor(router.state.uri, null), isNot(contains('cursor=')));
   });
 }

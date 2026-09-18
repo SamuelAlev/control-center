@@ -1,7 +1,8 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Autocomplete;
+import 'package:flutter/widgets.dart';
 
 /// Dialog for creating or editing a memory fact.
 class FactEditDialog extends StatefulWidget {
@@ -52,85 +53,81 @@ class _FactEditDialogState extends State<FactEditDialog> {
       title: isEditing ? l10n.editFact : l10n.newFact,
       content: SizedBox(
         width: 480,
-        child: Material(
-          type: MaterialType.transparency,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Autocomplete<String>(
-                  initialValue: TextEditingValue(
-                    text: widget.fact?.domain ?? '',
-                  ),
-                  optionsBuilder: (textEditingValue) {
-                    if (textEditingValue.text.isEmpty) {
-                      return widget.existingDomains;
-                    }
-                    return widget.existingDomains.where(
-                      (d) => d.toLowerCase().contains(
-                        textEditingValue.text.toLowerCase(),
-                      ),
-                    );
-                  },
-                  fieldViewBuilder:
-                      (context, controller, focusNode, onFieldSubmitted) {
-                        _domainController = controller;
-                        return CcTextField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          onSubmitted: (_) => onFieldSubmitted(),
-                          label: l10n.domainLabel,
-                          hintText: l10n.domainHint,
-                        );
-                      },
-                  onSelected: (selection) {
-                    _domainController.text = selection;
-                  },
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.topic),
-                    const SizedBox(height: 6),
-                    CcTextField(
-                      controller: _topicController,
-                      hintText: l10n.topicHint,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Autocomplete<String>(
+                initialValue: TextEditingValue(text: widget.fact?.domain ?? ''),
+                optionsBuilder: (textEditingValue) {
+                  if (textEditingValue.text.isEmpty) {
+                    return widget.existingDomains;
+                  }
+                  return widget.existingDomains.where(
+                    (d) => d.toLowerCase().contains(
+                      textEditingValue.text.toLowerCase(),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.contentLabel),
-                    const SizedBox(height: 6),
-                    CcTextArea(
-                      controller: _contentController,
-                      hintText: l10n.contentHint,
-                      maxLines: 6,
-                      minLines: 3,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.confidenceLabel((_confidence * 100).round()),
-                  style: CcTypography.caption.copyWith(
-                    color: context.ds.textTertiary,
+                  );
+                },
+                fieldViewBuilder:
+                    (context, controller, focusNode, onFieldSubmitted) {
+                      _domainController = controller;
+                      return CcTextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        onSubmitted: (_) => onFieldSubmitted(),
+                        label: l10n.domainLabel,
+                        hintText: l10n.domainHint,
+                      );
+                    },
+                onSelected: (selection) {
+                  _domainController.text = selection;
+                },
+              ),
+              const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.topic),
+                  const SizedBox(height: 6),
+                  CcTextField(
+                    controller: _topicController,
+                    hintText: l10n.topicHint,
                   ),
-                ),
-                CcSlider(
-                  value: _confidence,
-                  divisions: 20,
-                  semanticLabel: l10n.confidenceLabel(
-                    (_confidence * 100).round(),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(l10n.contentLabel),
+                  const SizedBox(height: 6),
+                  CcTextArea(
+                    controller: _contentController,
+                    hintText: l10n.contentHint,
+                    maxLines: 6,
+                    minLines: 3,
                   ),
-                  onChanged: (v) => setState(() => _confidence = v),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.confidenceLabel((_confidence * 100).round()),
+                style: CcTypography.caption.copyWith(
+                  color: context.ds.textTertiary,
                 ),
-              ],
-            ),
+              ),
+              CcSlider(
+                value: _confidence,
+                divisions: 20,
+                showValue: false,
+                semanticLabel: l10n.confidenceLabel(
+                  (_confidence * 100).round(),
+                ),
+                onChanged: (v) => setState(() => _confidence = v),
+              ),
+            ],
           ),
         ),
       ),

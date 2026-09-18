@@ -1,4 +1,4 @@
-import 'dart:ui' as ui;
+import 'dart:math' as math;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -6,11 +6,9 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/github_avatar_url.dart';
 import 'package:control_center/shared/widgets/command_fuzzy.dart';
 import 'package:control_center/shared/widgets/command_recency_provider.dart';
-import 'package:control_center/shared/widgets/empty_state.dart';
-import 'package:control_center/shared/widgets/kbd.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A source of command palette items contributed by a feature.
@@ -54,7 +52,8 @@ class CommandItem {
   /// Primary label.
   final String label;
 
-  /// Optional secondary line.
+  /// Optional secondary line — entity metadata (repo, status, a person's
+  /// name), never a restatement of [label].
   final String? description;
 
   /// Optional keyboard hint, e.g. `'⌘⇧T'`.
@@ -71,6 +70,18 @@ class CommandItem {
 
   /// Invoked when the item is activated.
   final VoidCallback onExecute;
+
+  /// Whether a second line of metadata should render.
+  bool get hasDetail {
+    final d = description;
+    return d != null && d.trim().isNotEmpty;
+  }
+
+  /// Whether a shortcut hint should render.
+  bool get hasShortcut {
+    final s = shortcut;
+    return s != null && s.isNotEmpty;
+  }
 }
 
 /// Shows the command palette dialog.
@@ -86,60 +97,38 @@ void showCommandPalette(
     context: context,
     builder: (dialogContext) {
       final ds = dialogContext.designSystem ?? DesignSystemTokens.light();
-      // Earned brand moment: the command palette is the one floating surface
-      // that gets a frosted-glass treatment (never the dense work canvas). When
-      // the user prefers reduced motion / increased contrast we fall back to a
-      // fully-opaque panel — same geometry, no blur, no alpha — so text
-      // contrast is identical to the rest of the app (WCAG: rows always sit on
-      // solid fills inside the panel either way).
-      final reduceTransparency =
-          CcMotion.reduced(dialogContext) ||
-          (MediaQuery.maybeOf(dialogContext)?.highContrast ?? false);
-      final surfaceColor = reduceTransparency
-          ? ds.panel
-          : ds.panel.withValues(alpha: 0.72);
-      return ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 560, maxWidth: 640),
-        child: ClipRRect(
-          borderRadius: AppRadii.brLg,
-          child: _GlassSurface(
-            blur: reduceTransparency ? 0 : 18,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: AppRadii.brLg,
-                border: Border.all(color: ds.borderPrimary),
-                boxShadow: AppShadows.golden,
+      final size = MediaQuery.sizeOf(dialogContext);
+      final maxWidth = math.min(520.0, size.width - AppSpacing.xl * 2);
+      // Spotlight/Raycast sit in the upper third — a dead-center panel reads
+      // as a settings dialog. Expanding the route child lets us pin the panel
+      // in layout (so hit-testing matches the pixels); Align only hit-tests
+      // its child, so taps outside still fall through to the dismiss barrier.
+      final topInset = (size.height * 0.12).clamp(72.0, 140.0);
+      return SizedBox.expand(
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: EdgeInsets.only(top: topInset),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: maxWidth,
+                maxWidth: maxWidth,
               ),
-              child: _CommandPaletteBody(commandBuilder: commandBuilder),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: ds.panel,
+                  borderRadius: AppRadii.brLg,
+                  border: Border.all(color: ds.borderPrimary),
+                  boxShadow: CcElevation.floating,
+                ),
+                child: _CommandPaletteBody(commandBuilder: commandBuilder),
+              ),
             ),
           ),
         ),
       );
     },
   );
-}
-
-/// Frosted-glass backing for a floating surface. When [blur] is 0 (reduced
-/// transparency / increased contrast) it renders [child] directly — no
-/// [BackdropFilter], no save-layer — so the opaque-fallback path is a plain
-/// solid surface. Purist: uses only `dart:ui` + `package:flutter/widgets.dart`.
-class _GlassSurface extends StatelessWidget {
-  const _GlassSurface({required this.blur, required this.child});
-
-  final double blur;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    if (blur <= 0) {
-      return child;
-    }
-    return BackdropFilter(
-      filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-      child: child,
-    );
-  }
 }
 
 // ─── Body ─────────────────────────────────────────────────────────────────────
@@ -162,10 +151,11 @@ class _CommandPaletteBody extends ConsumerStatefulWidget {
 }
 
 class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
-  static const double _rowHeight = 64;
-  static const double _headerHeight = 36;
-
-  static const double _listVPad = 8;
+  static const double _rowHeight = 40;
+  static const double _rowHeightDetailed = 52;
+  static const double _headerHeight = 28;
+  static const double _listVPad = AppSpacing.xs;
+  static const double _maxListHeight = 360;
 
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
@@ -303,17 +293,21 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
     cmd.onExecute();
   }
 
+  double _rowHeightFor(CommandItem cmd) =>
+      cmd.hasDetail ? _rowHeightDetailed : _rowHeight;
+
   void _scrollSelectedIntoView() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) {
+      if (!_scrollController.hasClients || _filteredCommands.isEmpty) {
         return;
       }
       final offset = _offsetForCmdIndex(_selectedIndex);
+      final cmd = _filteredCommands[_selectedIndex];
       final position = _scrollController.position;
       final viewport = position.viewportDimension;
       final current = position.pixels;
       final itemTop = offset;
-      final itemBottom = offset + _rowHeight;
+      final itemBottom = offset + _rowHeightFor(cmd);
       double? target;
       if (itemTop < current + 4) {
         target = (itemTop - _headerHeight).clamp(
@@ -329,8 +323,8 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
       if (target != null && target != current) {
         _scrollController.animateTo(
           target,
-          duration: const Duration(milliseconds: 100),
-          curve: Curves.easeOut,
+          duration: CcMotion.resolve(context, CcMotion.fast),
+          curve: CcMotion.standard,
         );
       }
     });
@@ -345,10 +339,18 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
         if (e.cmdIndex == cmdIdx) {
           return offset;
         }
-        offset += _rowHeight;
+        offset += _rowHeightFor(e.command!);
       }
     }
     return offset;
+  }
+
+  double _listExtent() {
+    var height = _listVPad * 2;
+    for (final e in _entries) {
+      height += e.isHeader ? _headerHeight : _rowHeightFor(e.command!);
+    }
+    return height;
   }
 
   @override
@@ -388,45 +390,47 @@ class _CommandPaletteBodyState extends ConsumerState<_CommandPaletteBody> {
             },
           ),
         },
-        child: SizedBox(
-          height: 520,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _SearchHeader(
-                controller: _controller,
-                onSubmit: _executeSelected,
-              ),
-              const CcDivider(),
-              Expanded(
-                child: ValueListenableBuilder<_PaletteView>(
-                  valueListenable: _view,
-                  builder: (context, view, _) {
-                    // Ranking happens HERE, against the commands captured by
-                    // the last real build — so a keystroke re-ranks without
-                    // rebuilding the eight command sources.
-                    _rebuildEntries(_commands, view.query);
-                    if (_filteredCommands.isEmpty) {
-                      return EmptyState(
-                        message: 'No commands match',
-                        icon: AppIcons.searchX,
-                        iconSize: 28,
-                        query: view.query,
-                      );
-                    }
-                    return ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(vertical: _listVPad),
-                      itemCount: _entries.length,
-                      itemBuilder: _buildRow,
-                    );
-                  },
-                ),
-              ),
-              const CcDivider(),
-              const _FooterHints(),
-            ],
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _SearchHeader(
+              controller: _controller,
+              onSubmit: _executeSelected,
+            ),
+            const CcDivider(),
+            ValueListenableBuilder<_PaletteView>(
+              valueListenable: _view,
+              builder: (context, view, _) {
+                // Ranking happens HERE, against the commands captured by
+                // the last real build — so a keystroke re-ranks without
+                // rebuilding the eight command sources.
+                _rebuildEntries(_commands, view.query);
+                if (_filteredCommands.isEmpty) {
+                  return const _EmptyResults();
+                }
+                final extent = _listExtent();
+                final fits = extent <= _maxListHeight;
+                return SizedBox(
+                  height: fits ? extent : _maxListHeight,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: _listVPad),
+                    physics: fits ? const NeverScrollableScrollPhysics() : null,
+                    itemCount: _entries.length,
+                    itemExtentBuilder: (index, _) {
+                      final e = _entries[index];
+                      if (e.isHeader) {
+                        return _headerHeight;
+                      }
+                      return _rowHeightFor(e.command!);
+                    },
+                    itemBuilder: _buildRow,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -504,23 +508,23 @@ class _SearchHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm + AppSpacing.xxs,
+      ),
       child: Row(
         children: [
-          Icon(AppIcons.search, size: 18, color: ds.textTertiary),
-          const SizedBox(width: 10),
+          Icon(AppIcons.search, size: 16, color: ds.textTertiary),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             // Chromeless: a palette's query field carries no box of its own
             // (the Linear/Raycast ⌘K idiom) — the dialog itself is already
-            // the focused surface, and a filled well with the 2px accent
-            // focus outline reads harsh on the frosted glass, light mode
-            // especially. No trailing `esc` chip either: the footer hints
-            // already document it.
+            // the focused surface.
             child: CcTextField(
               controller: controller,
               autofocus: true,
               chromeless: true,
-              textStyle: CcTypography.body.copyWith(fontSize: 15),
+              textStyle: CcTypography.body,
               hintText: AppLocalizations.of(context).typeCommandOrSearch,
               onSubmitted: (_) => onSubmit(),
             ),
@@ -544,16 +548,22 @@ class _CategoryHeader extends StatelessWidget {
     return SizedBox(
       height: _CommandPaletteBodyState._headerHeight,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 6),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          AppSpacing.xxs,
+        ),
         child: Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: Text(
             label.toUpperCase(),
-            style: CcTypography.caption.copyWith(
-              color: ds.textTertiary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.7,
-            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: CcFonts.code(
+              textStyle: CcTypography.label,
+              family: context.ccTheme?.monoFontFamily,
+            ).copyWith(color: ds.textTertiary),
           ),
         ),
       ),
@@ -581,110 +591,141 @@ class _CommandRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    // Selection is an fg-alpha wash, not an opaque surface token: the panel
-    // is frosted glass, so an opaque fill (bgSecondary) renders as a bright
-    // slab floating over the translucent panel on light mode, while the
-    // wash darkens (light) / lightens (dark) whatever the glass shows.
-    final bg = selected ? ds.hoverStrong : Colors.transparent;
+    final iconColor = selected ? ds.textPrimary : ds.textTertiary;
+    final wash = selected ? ds.hoverStrong : const Color(0x00000000);
     return SizedBox(
-      height: _CommandPaletteBodyState._rowHeight,
+      height: cmd.hasDetail
+          ? _CommandPaletteBodyState._rowHeightDetailed
+          : _CommandPaletteBodyState._rowHeight,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         onEnter: (_) => onHover(),
         child: GestureDetector(
           onTap: onTap,
           child: AnimatedContainer(
-            duration: Duration.zero,
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            duration: CcMotion.resolveFade(context, CcMotion.fast),
+            curve: CcMotion.standard,
+            // Inset square wash — the Linear highlight, squared to the system
+            // identity. A full-bleed bar on a 64px row was the gray slab.
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             decoration: BoxDecoration(
-              color: bg,
-              // Square geometry is the system identity (AppRadii) and the
-              // dialog itself is square; rounded rows inside it read as a
-              // foreign kit.
-              borderRadius: AppRadii.brMd,
+              color: wash,
+              borderRadius: AppRadii.brSm,
             ),
             child: Row(
               children: [
-                // A flat 32px slot, no filled tile: opaque near-white tiles
-                // shout on the glass panel — one bright blob per row.
                 SizedBox(
-                  width: 32,
-                  height: 32,
-                  child: Center(
-                    child: cmd.avatarUrl != null && cmd.avatarUrl!.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: Image.network(
-                              MediaProxyScope.urlOf(
-                                context,
-                                sizedGitHubAvatarUrl(
-                                  cmd.avatarUrl!,
-                                  32,
-                                  MediaQuery.devicePixelRatioOf(context),
-                                ),
-                              ),
-                              width: 32,
-                              height: 32,
-                              cacheWidth:
-                                  (32 * MediaQuery.devicePixelRatioOf(context))
-                                      .round(),
-                              cacheHeight:
-                                  (32 * MediaQuery.devicePixelRatioOf(context))
-                                      .round(),
-                              gaplessPlayback: true,
-                              errorBuilder: (_, _, _) => Icon(
-                                cmd.icon,
-                                size: 16,
+                  width: 20,
+                  height: 20,
+                  child: Center(child: _Leading(cmd: cmd, color: iconColor)),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: cmd.hasDetail
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _HighlightedText(
+                              text: cmd.label,
+                              query: query,
+                              baseStyle: CcTypography.bodySm.copyWith(
                                 color: ds.textPrimary,
                               ),
+                              maxLines: 1,
                             ),
-                          )
-                        : Icon(cmd.icon, size: 16, color: ds.textPrimary),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _HighlightedText(
-                        text: cmd.label,
-                        query: query,
-                        baseStyle: CcTypography.body.copyWith(
-                          color: ds.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                      ),
-                      if (cmd.description != null) ...[
-                        const SizedBox(height: 2),
-                        _HighlightedText(
-                          text: cmd.description!,
+                            _HighlightedText(
+                              text: cmd.description!.trim(),
+                              query: query,
+                              baseStyle: CcTypography.caption.copyWith(
+                                color: ds.textTertiary,
+                              ),
+                              maxLines: 1,
+                            ),
+                          ],
+                        )
+                      : _HighlightedText(
+                          text: cmd.label,
                           query: query,
-                          baseStyle: CcTypography.caption.copyWith(
-                            color: ds.textTertiary,
+                          baseStyle: CcTypography.bodySm.copyWith(
+                            color: ds.textPrimary,
                           ),
                           maxLines: 1,
                         ),
-                      ],
-                    ],
-                  ),
                 ),
-                if (cmd.shortcut != null) ...[
-                  const SizedBox(width: 12),
-                  Kbd.symbol(label: cmd.shortcut!),
+                if (cmd.hasShortcut) ...[
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    cmd.shortcut!,
+                    style: CcFonts.code(
+                      textStyle: CcTypography.caption,
+                      family: context.ccTheme?.monoFontFamily,
+                    ).copyWith(color: ds.textTertiary),
+                  ),
                 ],
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.xs),
                 Icon(
                   AppIcons.cornerDownLeft,
                   size: 14,
-                  color: selected ? ds.textPrimary : Colors.transparent,
+                  color: selected ? ds.textTertiary : const Color(0x00000000),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Leading extends StatelessWidget {
+  const _Leading({required this.cmd, required this.color});
+
+  final CommandItem cmd;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final url = cmd.avatarUrl;
+    if (url == null || url.isEmpty) {
+      return Icon(cmd.icon, size: 16, color: color);
+    }
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    return ClipOval(
+      child: Image.network(
+        MediaProxyScope.urlOf(
+          context,
+          sizedGitHubAvatarUrl(url, 20, dpr),
+        ),
+        width: 20,
+        height: 20,
+        cacheWidth: (20 * dpr).round(),
+        cacheHeight: (20 * dpr).round(),
+        gaplessPlayback: true,
+        errorBuilder: (_, _, _) => Icon(cmd.icon, size: 16, color: color),
+      ),
+    );
+  }
+}
+
+// ─── Empty ────────────────────────────────────────────────────────────────────
+
+class _EmptyResults extends StatelessWidget {
+  const _EmptyResults();
+
+  @override
+  Widget build(BuildContext context) {
+    final ds = context.designSystem ?? DesignSystemTokens.light();
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.xl,
+      ),
+      child: Center(
+        child: Text(
+          'No commands match',
+          style: CcTypography.bodySm.copyWith(color: ds.textTertiary),
         ),
       ),
     );
@@ -735,7 +776,7 @@ class _HighlightedText extends StatelessWidget {
           style: baseStyle.copyWith(
             color: (context.designSystem ?? DesignSystemTokens.light())
                 .textPrimary,
-            fontWeight: FontWeight.w700,
+            fontWeight: CcTypography.semiboldWeight,
           ),
         ),
       );
@@ -748,44 +789,6 @@ class _HighlightedText extends StatelessWidget {
       TextSpan(style: baseStyle, children: spans),
       maxLines: maxLines,
       overflow: maxLines == null ? TextOverflow.clip : TextOverflow.ellipsis,
-    );
-  }
-}
-
-// ─── Footer hints ─────────────────────────────────────────────────────────────
-
-class _FooterHints extends StatelessWidget {
-  const _FooterHints();
-
-  @override
-  Widget build(BuildContext context) {
-    final ds = context.designSystem ?? DesignSystemTokens.light();
-    final labelStyle = CcTypography.caption.copyWith(color: ds.textTertiary);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            const Kbd.symbol(label: '↑'),
-            const SizedBox(width: 4),
-            const Kbd.symbol(label: '↓'),
-            const SizedBox(width: 6),
-            Text(AppLocalizations.of(context).navigateLabel, style: labelStyle),
-            const SizedBox(width: 16),
-            const Kbd.symbol(label: '↵'),
-            const SizedBox(width: 6),
-            Text(AppLocalizations.of(context).selectLabel, style: labelStyle),
-            const SizedBox(width: 16),
-            const Kbd.symbol(label: 'esc'),
-            const SizedBox(width: 6),
-            Text(
-              AppLocalizations.of(context).closeKeyboardHint,
-              style: labelStyle,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

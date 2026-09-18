@@ -4,7 +4,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/mention_a
 import 'package:control_center/features/pr_review/providers/compose_pr_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The always-editable PR description for the compose screen: the same shared
@@ -245,7 +245,7 @@ class _TemplateChipState extends State<_TemplateChip> {
       border = t.borderSecondary;
       foreground = t.textSecondary;
     } else {
-      background = Colors.transparent;
+      background = const Color(0x00000000);
       border = t.borderSecondary;
       foreground = t.textTertiary;
     }

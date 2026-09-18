@@ -283,11 +283,22 @@ class _FakeCdpSocket implements CdpSocket {
 
 /// A driver whose watch lane stays open until the test closes it.
 class _FakeDriver implements RigDriver {
-  _FakeDriver({this.codec = RigStreamCodec.mjpeg, this.watchFailure});
+  _FakeDriver({
+    this.codec = RigStreamCodec.mjpeg,
+    this.watchFailure,
+    this.audioBytes,
+  });
 
   final StreamController<List<int>> frames = StreamController<List<int>>();
   int watchOpens = 0;
   bool disposed = false;
+  final List<Uint8List> microphoneChunks = [];
+  final List<String> microphoneSessions = [];
+  final List<bool> microphoneStarts = [];
+  final List<bool> microphoneEnds = [];
+  String? blockedMicrophoneEndSession;
+  Completer<void>? microphoneEndEntered;
+  Completer<void>? microphoneEndRelease;
 
   /// What this surface claims to emit.
   final RigStreamCodec codec;
@@ -295,6 +306,8 @@ class _FakeDriver implements RigDriver {
   /// Thrown by [openWatchStream] instead of opening a lane, so the "the rig is
   /// fine, the host is not" path is reachable without a real driver.
   final Object? watchFailure;
+
+  final List<int>? audioBytes;
 
   @override
   RigStreamCodec get watchCodec => codec;
@@ -320,7 +333,28 @@ class _FakeDriver implements RigDriver {
   }
 
   @override
-  Future<Stream<List<int>>?> openAudioStream() async => null;
+  Future<Stream<List<int>>?> openAudioStream() async =>
+      audioBytes == null ? null : Stream.value(audioBytes!);
+
+  @override
+  Future<bool> sendAudioInput(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async {
+    microphoneSessions.add(sessionId);
+    microphoneStarts.add(start);
+    microphoneChunks.add(Uint8List.fromList(bytes));
+    microphoneEnds.add(end);
+    if (end && sessionId == blockedMicrophoneEndSession) {
+      microphoneEndEntered?.complete();
+      await microphoneEndRelease?.future;
+    }
+    return true;
+  }
 
   @override
   Future<void> dispose() async {
@@ -612,6 +646,274 @@ void main() {
       );
       expect(released.controller, isNull);
       expect(released.agentMayAct, isTrue);
+    });
+
+    test(
+      'microphone input reaches the driver with its session boundary',
+      () async {
+        final driver = _FakeDriver();
+        seed(driver: driver);
+
+        final started = await service.sendAudioInput(
+          workspaceId: 'ws1',
+          rigId: 'r1',
+          actor: const UserPrincipal('u1'),
+          sessionId: 'capture-a',
+          bytes: Uint8List(0),
+          sampleRate: 16000,
+          channels: 1,
+          start: true,
+        );
+        final sent = await service.sendAudioInput(
+          workspaceId: 'ws1',
+          rigId: 'r1',
+          actor: const UserPrincipal('u1'),
+          sessionId: 'capture-a',
+          bytes: Uint8List.fromList([1, 2, 3, 4]),
+          sampleRate: 16000,
+          channels: 1,
+        );
+        final ended = await service.sendAudioInput(
+          workspaceId: 'ws1',
+          rigId: 'r1',
+          actor: const UserPrincipal('u1'),
+          sessionId: 'capture-a',
+          bytes: Uint8List(0),
+          sampleRate: 16000,
+          channels: 1,
+          end: true,
+        );
+
+        expect(started, isTrue);
+        expect(sent, isTrue);
+        expect(ended, isTrue);
+        expect(driver.microphoneChunks, [
+          isEmpty,
+          [1, 2, 3, 4],
+          isEmpty,
+        ]);
+        expect(driver.microphoneSessions, [
+          'capture-a',
+          'capture-a',
+          'capture-a',
+        ]);
+        expect(driver.microphoneStarts, [true, false, false]);
+        expect(driver.microphoneEnds, [false, false, true]);
+      },
+    );
+
+    test(
+      'a replaced microphone session drops delayed chunks and end',
+      () async {
+        final driver = _FakeDriver();
+        seed(driver: driver);
+
+        Future<bool> send(
+          String session, {
+          bool start = false,
+          bool end = false,
+          List<int> bytes = const [],
+        }) => service.sendAudioInput(
+          workspaceId: 'ws1',
+          rigId: 'r1',
+          actor: const UserPrincipal('u1'),
+          sessionId: session,
+          bytes: Uint8List.fromList(bytes),
+          sampleRate: 16000,
+          channels: 1,
+          start: start,
+          end: end,
+        );
+
+        await send('old', start: true);
+        await send('old', bytes: [1]);
+        await send('new', start: true);
+        await send('new', bytes: [2]);
+        expect(await send('old', bytes: [3]), isTrue);
+        expect(await send('old', end: true), isTrue);
+        await send('new', bytes: [4]);
+        await send('new', end: true);
+        expect(await send('new', bytes: [5]), isTrue);
+
+        expect(driver.microphoneSessions, [
+          'old',
+          'old',
+          'new',
+          'new',
+          'new',
+          'new',
+        ]);
+        expect(driver.microphoneChunks, [
+          isEmpty,
+          [1],
+          isEmpty,
+          [2],
+          [4],
+          isEmpty,
+        ]);
+        expect(driver.microphoneEnds, [
+          false,
+          false,
+          false,
+          false,
+          false,
+          true,
+        ]);
+      },
+    );
+
+    test(
+      'replacement waits for an in-flight old end before reaching the guest',
+      () async {
+        final driver = _FakeDriver()
+          ..blockedMicrophoneEndSession = 'old'
+          ..microphoneEndEntered = Completer<void>()
+          ..microphoneEndRelease = Completer<void>();
+        seed(driver: driver);
+
+        Future<bool> send(
+          String session, {
+          bool start = false,
+          bool end = false,
+          List<int> bytes = const [],
+        }) => service.sendAudioInput(
+          workspaceId: 'ws1',
+          rigId: 'r1',
+          actor: const UserPrincipal('u1'),
+          sessionId: session,
+          bytes: Uint8List.fromList(bytes),
+          sampleRate: 16000,
+          channels: 1,
+          start: start,
+          end: end,
+        );
+
+        await send('old', start: true);
+        final oldEnd = send('old', end: true);
+        await driver.microphoneEndEntered!.future;
+
+        final staleChunk = send('old', bytes: [7]);
+        final newStart = send('new', start: true);
+        final newPcm = send('new', bytes: [9]);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(driver.microphoneSessions, ['old', 'old']);
+        driver.microphoneEndRelease!.complete();
+        await Future.wait([oldEnd, staleChunk, newStart, newPcm]);
+
+        expect(driver.microphoneSessions, ['old', 'old', 'new', 'new']);
+        expect(driver.microphoneStarts, [true, false, true, false]);
+        expect(driver.microphoneEnds, [false, true, false, false]);
+        expect(driver.microphoneChunks.last, [9]);
+      },
+    );
+
+    test('queued agent microphone input is denied after takeover', () async {
+      final driver = _FakeDriver()
+        ..blockedMicrophoneEndSession = 'capture'
+        ..microphoneEndEntered = Completer<void>()
+        ..microphoneEndRelease = Completer<void>();
+      seed(driver: driver);
+
+      Future<bool> send({bool start = false, bool end = false}) =>
+          service.sendAudioInput(
+            workspaceId: 'ws1',
+            rigId: 'r1',
+            actor: const AgentPrincipal('a1'),
+            sessionId: 'capture',
+            bytes: start || end ? Uint8List(0) : Uint8List.fromList([6]),
+            sampleRate: 16000,
+            channels: 1,
+            start: start,
+            end: end,
+          );
+
+      await send(start: true);
+      final oldEnd = send(end: true);
+      await driver.microphoneEndEntered!.future;
+      final queuedPcm = send();
+
+      await service.takeControl(
+        workspaceId: 'ws1',
+        rigId: 'r1',
+        actor: const UserPrincipal('u1'),
+      );
+      driver.microphoneEndRelease!.complete();
+
+      expect(await oldEnd, isTrue);
+      expect(await queuedPcm, isFalse);
+      expect(driver.microphoneSessions, ['capture', 'capture']);
+    });
+
+    test('queued microphone input is denied after the rig closes', () async {
+      final driver = _FakeDriver()
+        ..blockedMicrophoneEndSession = 'capture'
+        ..microphoneEndEntered = Completer<void>()
+        ..microphoneEndRelease = Completer<void>();
+      seed(driver: driver);
+
+      Future<bool> send({bool start = false, bool end = false}) =>
+          service.sendAudioInput(
+            workspaceId: 'ws1',
+            rigId: 'r1',
+            actor: const UserPrincipal('u1'),
+            sessionId: 'capture',
+            bytes: start || end ? Uint8List(0) : Uint8List.fromList([6]),
+            sampleRate: 16000,
+            channels: 1,
+            start: start,
+            end: end,
+          );
+
+      await send(start: true);
+      final oldEnd = send(end: true);
+      await driver.microphoneEndEntered!.future;
+      final queuedPcm = send();
+
+      await service.close(workspaceId: 'ws1', rigId: 'r1');
+      driver.microphoneEndRelease!.complete();
+
+      expect(await oldEnd, isTrue);
+      expect(await queuedPcm, isFalse);
+      expect(driver.microphoneSessions, ['capture', 'capture']);
+      expect(driver.disposed, isTrue);
+    });
+
+    test('a human hold blocks agent microphone input', () async {
+      final driver = _FakeDriver();
+      seed(driver: driver);
+      await service.takeControl(
+        workspaceId: 'ws1',
+        rigId: 'r1',
+        actor: const UserPrincipal('u1'),
+      );
+
+      final sent = await service.sendAudioInput(
+        workspaceId: 'ws1',
+        rigId: 'r1',
+        actor: const AgentPrincipal('a1'),
+        sessionId: 'capture-a',
+        bytes: Uint8List.fromList([1, 2]),
+        sampleRate: 16000,
+        channels: 1,
+      );
+
+      expect(sent, isFalse);
+      expect(driver.microphoneChunks, isEmpty);
+    });
+
+    test('guest audio output remains a byte stream', () async {
+      final driver = _FakeDriver(audioBytes: [0x49, 0x44, 0x33]);
+      seed(driver: driver);
+
+      final stream = await service.watchAudio(workspaceId: 'ws1', rigId: 'r1');
+
+      expect(stream, isNotNull);
+      expect(await stream!.expand((chunk) => chunk).toList(), [
+        0x49,
+        0x44,
+        0x33,
+      ]);
     });
 
     // The clipboard and file lanes sit OUTSIDE `act` — they carry bytes, and

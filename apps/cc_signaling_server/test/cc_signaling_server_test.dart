@@ -742,5 +742,54 @@ void main() {
       expect(broker.roomExists('alpha'), isTrue);
       await server.close();
     });
+
+    test('outbound queue state does not outlive its connection', () async {
+      // The outbox is keyed by the WebSocket, so a stale entry pins that
+      // socket's whole object graph for the process lifetime. Measured before
+      // this was fixed: ~400 KB of RSS retained per connection the broker had
+      // ever answered, unbounded — a relay whose clients reconnect leaks
+      // itself to death. Only `_closeQuietly` dropped the entry, so a plain
+      // remote disconnect (the common case) left one behind.
+      final broker = SignalingBroker()..start();
+      handle = await serveSignaling(host: 'localhost', port: 0, broker: broker);
+      final server = await _joinOwner(handle.port);
+
+      for (var i = 0; i < 5; i++) {
+        // A client that joins, relays a frame and disconnects WITHOUT a `bye`.
+        final client = await _joinClient(
+          handle.port,
+          from: 'A$i',
+          token: _tokenA,
+        );
+        client.send({
+          'type': 'signal',
+          'room': 'alpha',
+          'from': 'A$i',
+          'kind': 'rpc',
+          'payload': {'sealed': 'blob'},
+        });
+        await server.next((m) => m['type'] == 'signal');
+        await client.close();
+        await _until(() => broker.peerCount('alpha') == 1);
+      }
+
+      // A refused joiner never becomes a peer but is still written to.
+      final refused = await _Client.connect(handle.port);
+      refused.send({
+        'type': 'join',
+        'room': 'alpha',
+        'from': 'X',
+        'token': 'not-admitted',
+      });
+      await refused.closed;
+
+      await _until(() => broker.connectionCount == 1);
+      expect(
+        broker.outboxCount,
+        broker.connectionCount,
+        reason: 'every closed connection must release its outbound queue',
+      );
+      await server.close();
+    });
   });
 }

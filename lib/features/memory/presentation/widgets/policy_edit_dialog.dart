@@ -2,7 +2,8 @@ import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show Autocomplete;
+import 'package:flutter/widgets.dart';
 
 /// Dialog for creating or editing a memory policy.
 class PolicyEditDialog extends StatefulWidget {

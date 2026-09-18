@@ -7,7 +7,7 @@ import 'package:flutter/widgets.dart';
 /// Settings → You → Profile & identity.
 ///
 /// Who you are and what you are connected as: your display name and email, the
-/// git identity stamped on commits made on your behalf, your GitHub/ticketing
+/// git identity stamped on commits made on your behalf, your GitHub
 /// credentials, your calendar accounts and the link between your chat account
 /// and your user.
 ///
@@ -33,9 +33,10 @@ class ProfileSettingsScreen extends StatelessWidget {
       title: l10n.settingsProfile,
       subtitle: l10n.settingsProfileDescription,
       slot: SettingsSlot.userProfile,
-      // The forge and ticketing cards are CONTRIBUTED by their own features
-      // (`forge.connections`, `ticketing.connection`) rather than named here —
-      // settings owns the page, not the integrations on it.
+      // The forge card is CONTRIBUTED by `forge` (`forge.connections`) rather
+      // than named here — settings owns the page, not the integrations on it.
+      // Ticketing's vendor lives on Workspace → General: where tickets live is
+      // a property of the workspace, not of the signed-in user.
       sections: const [ProfileSection()],
     );
   }

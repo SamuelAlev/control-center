@@ -194,14 +194,12 @@ class ComputersSection extends ConsumerWidget {
   }
 }
 
-/// The PHONES section of the messaging IDE's General panel: the Android device
-/// this conversation is driving, when it has one.
+/// The PHONES section of the messaging IDE's General panel: the Android and
+/// iOS devices this conversation is driving.
 ///
-/// At most one row, and never numbered: the mobile surface drives the HOST's
-/// attached device, so a conversation has exactly one phone (`RigSpec` refuses
-/// a slot there). It exists for the same reason as the others — closing a rig
-/// tab leaves its machine running, so without a row here a phone kept in the
-/// background would have no way back to it.
+/// Android has one unnumbered host-managed device. iOS Simulator rigs support
+/// slots, so every simulator keeps its exact target here. Closing a rig tab
+/// leaves its machine running; these rows are the route back to each machine.
 class PhonesSection extends ConsumerWidget {
   /// Creates a [PhonesSection].
   const PhonesSection({
@@ -228,10 +226,16 @@ class PhonesSection extends ConsumerWidget {
     final rigs = [
       for (final r in watched ?? const <RigView>[])
         if (r.conversationId == spaceId &&
-            r.surface == RigTabSurfaces.mobile &&
+            (r.surface == RigTabSurfaces.mobile ||
+                r.surface == RigTabSurfaces.ios) &&
             r.phaseKind != RigPhase.closed)
           r,
-    ];
+    ]..sort((a, b) {
+      if (a.surface != b.surface) {
+        return a.surface == RigTabSurfaces.mobile ? -1 : 1;
+      }
+      return (a.slotId ?? '').compareTo(b.slotId ?? '');
+    });
     return CollapsibleSidebarSection(
       icon: AppIcons.smartphone,
       label: l10n.generalSectionPhones,
@@ -245,14 +249,19 @@ class PhonesSection extends ConsumerWidget {
                   _RigRow(
                     workspaceId: workspaceId,
                     rig: rig,
-                    name: rigMachineLabel(l10n, rig.surfaceKind),
+                    name: rigMachineLabel(
+                      l10n,
+                      rig.surfaceKind,
+                      slotId: rig.slotId,
+                    ),
                     logo: Icon(
                       AppIcons.smartphone,
                       size: 14,
                       color: t.textSecondary,
                     ),
-                    onTap: () =>
-                        onFocusRig(const RigTabTarget(RigTabSurfaces.mobile)),
+                    onTap: () => onFocusRig(
+                      RigTabTarget(rig.surface, slotId: rig.slotId),
+                    ),
                   ),
               ],
             ),

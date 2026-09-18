@@ -34,48 +34,16 @@ const String kSmolvmExecImage =
 
 /// The OCI image every browser rig boots, pinned by digest.
 ///
-/// `chromedp/headless-shell` — the Chromium build made exactly for CDP-driven
-/// use: the browser is baked in (nothing is installed at boot, so there is no
-/// first-start package race) and socat is baked in beside it, because current
-/// Chromium ignores `--remote-debugging-address` and binds DevTools to
-/// loopback unconditionally (chromedp/docker-headless-shell#31: "the Chrome
-/// developers really don't like debugging servers on anything
-/// non-localhost"). The workload mirrors the image's own entrypoint
-/// (`/headless-shell/run.sh`): socat fronts the loopback-bound DevTools on
-/// the guest NIC, which is the only place a host `-p` forward can land. The
-/// digest is the Docker Hub index digest; one pin serves both arm64 and x64
-/// hosts.
-const String kSmolvmBrowserImage =
-    'chromedp/headless-shell:stable'
-    '@sha256:2d349b544a1ea6b5b5fd7c0fe99215ff662339c57407ee2e8c0a11af93516b04';
-
-/// The OCI image the Firefox and WebKit browser rigs boot, pinned by digest.
-///
-/// Debian 13 (trixie), the SLIM base — 28 MB against the 924 MB of the only
-/// maintained Firefox automation image on Docker Hub, and there is no
-/// maintained WebKit one at all. Neither engine can use a baked image the way
-/// Chromium does, for reasons that are properties of the engines rather than
-/// of packaging:
-///
-///  * Firefox's remote agent binds guest LOOPBACK unconditionally, so a
-///    browser rig needs a relay in the guest whatever image it boots — and
-///    `socat` is what the ports feature (`rig_ports.dart`) already runs inside
-///    every browser guest for its reverse tunnels. An image with Firefox and
-///    no socat does not remove the install step; it just makes it a bigger
-///    download.
-///  * WebKitGTK ships its driver and MiniBrowser as distribution packages and
-///    needs an X server to render into. That is `apt`, on any base.
-///
-/// So both engines take the same small base and the same one-time
-/// `apt-get install`, warmed into a pack after the first boot exactly like
-/// the exec image. Trixie also matters for a reason that is not size: its
-/// `firefox-esr` is the 140 ESR line, and `browsingContext.traverseHistory`
-/// — which is the entire back/forward button — landed in Firefox 129.
+/// Debian 13 (trixie), the slim multi-arch base. All engines are distribution
+/// builds installed into per-engine warm packs. Chromium deliberately does
+/// not use `chromedp/headless-shell`: upstream headless.gn compiles both ALSA
+/// and PulseAudio out, so no runtime package or environment variable can make
+/// that binary emit sound.
 const String kSmolvmDebianBrowserImage =
     'debian:trixie-slim'
     '@sha256:3a39a0592364683e6bab97937b72cad5a8fa6dcbbee90edb3bb48c7f8e94f258';
 
-/// The Debian mirrors a Firefox or WebKit guest reaches while it warms.
+/// The Debian mirrors each browser guest reaches while its pack warms.
 ///
 /// Image maintenance, the same class as the registry hosts: it buys the
 /// packages the engine IS, and nothing the workload later does goes through
@@ -86,18 +54,36 @@ const List<String> kBrowserRigAptMirrors = [
   'cloudfront.debian.net',
 ];
 
-/// The packages each browser engine needs on top of the Debian base.
+/// The packages each browser engine needs on top of its base image.
 ///
-/// `socat` is in every set: it is the guest half of the ports feature's
-/// reverse tunnels, and on Firefox it is also the relay that makes the
-/// loopback-bound remote agent reachable from a host forward.
+/// Every browser carries the same audio lane: PulseAudio receives browser
+/// output into a null sink and ffmpeg encodes that sink's monitor for the
+/// host. `socat` remains the guest half of browser automation/port relays.
 const Map<RigBrowserEngine, List<String>> kBrowserEnginePackages = {
-  RigBrowserEngine.firefox: ['firefox-esr', 'socat', 'ca-certificates'],
+  RigBrowserEngine.chromium: [
+    'chromium',
+    'socat',
+    'ca-certificates',
+    'pulseaudio',
+    'pulseaudio-utils',
+    'ffmpeg',
+  ],
+  RigBrowserEngine.firefox: [
+    'firefox-esr',
+    'socat',
+    'ca-certificates',
+    'pulseaudio',
+    'pulseaudio-utils',
+    'ffmpeg',
+  ],
   RigBrowserEngine.webkit: [
     'webkit2gtk-driver',
     'xvfb',
     'socat',
     'ca-certificates',
+    'pulseaudio',
+    'pulseaudio-utils',
+    'ffmpeg',
   ],
 };
 
@@ -123,33 +109,25 @@ int browserRigEndpointPort(RigBrowserEngine engine) =>
 
 /// The image a browser rig boots for [engine].
 String smolvmBrowserImageFor(RigBrowserEngine engine) =>
-    engine == RigBrowserEngine.chromium
-    ? kSmolvmBrowserImage
-    : kSmolvmDebianBrowserImage;
+    kSmolvmDebianBrowserImage;
 
-/// The first-start package install for [engine], or null when its image is
-/// fully baked.
+/// The first-start package install for [engine].
 ///
-/// Idempotent by construction: the `command -v` gate makes a warm start a
-/// no-op and the machine's overlay keeps the packages across restarts, so
-/// this runs once per machine and — via the warm pack — effectively once per
-/// host.
-String? smolvmBrowserInitFor(RigBrowserEngine engine) {
-  final packages = kBrowserEnginePackages[engine];
-  if (packages == null) {
-    return null;
-  }
-  // The probe is the ENGINE's binary, not the package name: `apt-get install`
-  // succeeding is not the same claim as "the browser is here", and a
-  // half-warmed template that passed on the package name is exactly what a
-  // pack would then cache for every later rig.
-  final probe = switch (engine) {
+/// Idempotent by construction. The warm pack makes this effectively a
+/// once-per-host cost, including Chromium's audio packages layered onto its
+/// otherwise fully baked image.
+String smolvmBrowserInitFor(RigBrowserEngine engine) {
+  final packages = kBrowserEnginePackages[engine]!;
+  final engineProbe = switch (engine) {
     RigBrowserEngine.firefox => 'firefox-esr',
     RigBrowserEngine.webkit => 'WebKitWebDriver',
-    RigBrowserEngine.chromium => 'true',
+    RigBrowserEngine.chromium => 'chromium',
   };
-  return '(command -v $probe >/dev/null 2>&1 && '
-      'command -v socat >/dev/null 2>&1 || '
+  final probes = [engineProbe, 'socat', 'pulseaudio', 'pactl', 'ffmpeg'];
+  final ready = probes
+      .map((binary) => 'command -v $binary >/dev/null 2>&1')
+      .join(' && ');
+  return '(($ready) || '
       '(apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install '
       '-y -qq --no-install-recommends ${packages.join(' ')}))';
 }
@@ -287,20 +265,16 @@ String smolvmPackFileName(String image, {String variant = ''}) =>
     '${sha256.convert(utf8.encode('$image$variant')).toString().substring(0, 16)}'
     '.smolmachine';
 
-/// The pack VARIANT a spec's machine warms into.
+/// The pack VARIANT a browser machine warms into.
 ///
-/// Firefox and WebKit boot the same Debian base and differ only in what their
-/// first start installs, so the image reference alone does not identify the
-/// pack: warming Firefox and then booting WebKit from that pack gives a
-/// machine with no WebKit in it, and the failure appears as a driver that
-/// never answers. The variant is what keeps the two caches apart.
+/// The engine differentiates packages sharing the Debian base. The audio
+/// revision invalidates packs created before PulseAudio and ffmpeg were part
+/// of every browser surface.
 String smolvmPackVariantFor(RigSpec spec) {
   if (spec.isExec || spec.surface != RigSurface.browser) {
     return '';
   }
-  return spec.browserEngine == RigBrowserEngine.chromium
-      ? ''
-      : spec.browserEngine.wire;
+  return 'audio-v1-${spec.browserEngine.wire}';
 }
 
 /// The VM data directory a failed `machine delete` could not remove, or null
@@ -321,20 +295,47 @@ String? smolvmBlockedDeletePath(String stderr) {
   return path;
 }
 
-/// The persistent workload command a browser machine runs on every start.
+/// Starts the browser guest's audio server and exports its output and input
+/// devices.
 ///
-/// Two processes, mirroring the image's own entrypoint: socat listens on the
-/// guest NIC at 9222 — the only address a host `-p` forward can reach — and
-/// relays each connection to headless-shell's DevTools on guest loopback
-/// 9223. Chromium ignores `--remote-debugging-address` (DevTools binds
-/// loopback, full stop), so without the relay the forward black-holes and
-/// the rig never reports ready. socat accepts before Chromium listens; in
-/// `fork` mode each such connection fails on its own, which the readiness
-/// poll reads as "not up yet" and retries — no start-order race.
+/// Browser rigs have no virtual sound card. `ccout` receives browser output;
+/// its monitor feeds the viewer audio lane. `ccmic` receives PCM forwarded
+/// from the viewer. `ccinput` remaps that monitor as a real virtual source:
+/// Chromium deliberately excludes Pulse monitor sources from microphone
+/// enumeration, so selecting `ccmic.monitor` directly never exposes a mic.
+/// `auth-anonymous` is confined to this guest-local Unix socket.
+const String kSmolvmBrowserAudioSetup =
+    'install -d -o pulse -g pulse -m 0755 /tmp/cc-pulse; '
+    'pulseaudio --system --daemonize=yes --disallow-exit=yes '
+    '--exit-idle-time=-1 '
+    '--load="module-native-protocol-unix '
+    'socket=/tmp/cc-pulse/native auth-anonymous=1" '
+    '--load="module-null-sink sink_name=ccout" '
+    '--load="module-null-sink sink_name=ccmic" '
+    '--load="module-remap-source master=ccmic.monitor source_name=ccinput" '
+    '>/tmp/cc-pulse/server.log 2>&1; '
+    'export PULSE_SERVER=unix:/tmp/cc-pulse/native; '
+    'export PULSE_SINK=ccout; '
+    'export PULSE_SOURCE=ccinput; '
+    'for i in \$(seq 1 40); do '
+    'pactl list short sinks 2>/dev/null | grep -q "[[:space:]]ccout[[:space:]]" '
+    '&& pactl list short sinks 2>/dev/null | '
+    'grep -q "[[:space:]]ccmic[[:space:]]" '
+    '&& pactl list short sources 2>/dev/null | '
+    'grep -q "[[:space:]]ccinput[[:space:]]" && break; sleep 0.25; done; '
+    'pactl list short sinks 2>/dev/null | '
+    'grep -q "[[:space:]]ccout[[:space:]]" && '
+    'pactl list short sinks 2>/dev/null | '
+    'grep -q "[[:space:]]ccmic[[:space:]]" && '
+    'pactl list short sources 2>/dev/null | '
+    'grep -q "[[:space:]]ccinput[[:space:]]" || '
+    '{ cat /tmp/cc-pulse/server.log >&2; exit 1; }; '
+    'pactl set-default-source ccinput';
+
+/// Builds the persistent Chromium workload and its automation relay.
 ///
-/// `exec` keeps headless-shell the workload's main process: if the browser
-/// ever exits the machine stops and the rig is reported dead, instead of
-/// wedging behind a still-live relay.
+/// `exec` keeps the browser as the machine's main process so browser exit is
+/// machine exit rather than a permanently wedged relay.
 List<String> buildSmolvmBrowserWorkload(
   RigDisplaySize display, {
   String? tlsSpkiFingerprint,
@@ -343,9 +344,10 @@ List<String> buildSmolvmBrowserWorkload(
   // One string, built outside the argv list: adjacent string literals inside
   // a list literal are a lint here.
   final script =
+      '$kSmolvmBrowserAudioSetup; '
       '${_writeHomePageCommand(RigBrowserEngine.chromium, homeTheme)}; '
       'socat TCP4-LISTEN:9222,fork TCP4:127.0.0.1:9223 & '
-      'exec /headless-shell/headless-shell '
+      'exec chromium --headless=new '
       '--remote-debugging-port=9223 '
       // NO `--remote-allow-origins=*`. That flag exists for BROWSER-context
       // clients, which send an `Origin` header; the host's Dart `WebSocket`
@@ -357,6 +359,10 @@ List<String> buildSmolvmBrowserWorkload(
       '--no-sandbox '
       '--disable-dev-shm-usage '
       '--no-first-run '
+      // Headless Chromium cannot present a permission bubble. This grants
+      // pages access to the virtual `ccinput` source only; host microphone
+      // bytes still flow solely while the operator enables the app control.
+      '--use-fake-ui-for-media-stream '
       // Dev domains resolve to guest loopback WITHOUT DNS: the egress
       // filter's DNS gate cannot answer for `myapp.test`, and `.test` is
       // reserved for exactly this (RFC 2606). `*.localhost` is already
@@ -432,8 +438,11 @@ List<String> buildSmolvmFirefoxWorkload(
 }) {
   final endpoint = browserRigEndpointPort(RigBrowserEngine.firefox);
   final script =
+      '$kSmolvmBrowserAudioSetup; '
       '${_writeHomePageCommand(RigBrowserEngine.firefox, homeTheme)}; '
       'mkdir -p /tmp/cc-profile; '
+      'echo \'user_pref("media.navigator.permission.disabled", true);\' '
+      '> /tmp/cc-profile/user.js; '
       'socat TCP4-LISTEN:$kBrowserRigGuestPort,fork '
       'TCP4:127.0.0.1:$endpoint & '
       'exec firefox-esr '
@@ -464,6 +473,7 @@ List<String> buildSmolvmWebkitWorkload(
   RigBrowserHomeTheme? homeTheme,
 }) {
   final script =
+      '$kSmolvmBrowserAudioSetup; '
       '${_writeHomePageCommand(RigBrowserEngine.webkit, homeTheme)}; '
       'Xvfb :99 -screen 0 ${display.width}x${display.height}x24 '
       '-nolisten tcp & '
@@ -599,38 +609,42 @@ class SmolvmLaunchPlan {
 /// The security load-bearing invariants, pinned by
 /// `smolvm_enclosure_backend_test.dart`:
 ///
-///  * `--outbound-localhost-only` is ALWAYS present and bare `--net` never
-///    is: the guest's only unconditional route out is host loopback (the
+///  * Restricted rigs carry `--outbound-localhost-only` and never bare
+///    `--net`: the guest's only unconditional route out is host loopback (the
 ///    credential broker), everything else goes through the allowlist.
-///  * Every allowlist entry becomes its own `--allow-host`, and the Docker
-///    Hub pull path is unioned in: the guest agent pulls the machine's image
-///    through this same gate, so a machine without it can never boot an
+///  * An explicitly unrestricted rig carries bare `--net` and no host
+///    allowlist flags. That exception is only reachable through the confirmed
+///    restart flow and is visible in the persisted [RigSpec].
+///  * Every restricted allowlist entry becomes its own `--allow-host`, and the
+///    Docker Hub pull path is unioned in: the guest agent pulls the machine's
+///    image through this same gate, so a machine without it can never boot an
 ///    image that is not already cached.
 ///  * The broker secret travels by `--secret-file` reference, never as an
 ///    env value smolvm would persist in its machine record.
 List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
   final isExec = plan.isExec;
   final dropped = <String>[];
-  final allowlist = <String>{
-    for (final entry in plan.spec.egressAllowlist)
-      if (mapSmolvmAllowlistEntry(entry) case final mapped?)
-        mapped
-      else
-        ...() {
-          dropped.add(entry);
-          return const <String>[];
-        }(),
-    // Image maintenance, not workload policy: the guest agent pulls the
-    // machine's image through this same gate, so without the registry hosts
-    // a machine can never boot an image that is not already cached. Derived
-    // from the image REFERENCE — a workspace's custom image may live on a
-    // different registry than the pinned defaults.
-    ...registryHostsForImageRef(plan.image),
-    // Same class, one step further along: an engine whose image is a bare
-    // Debian needs the archives to become that engine at all. Only for the
-    // engines that install — a Chromium rig never gets these.
-    if (plan.warmsPackages) ...kBrowserRigAptMirrors,
-  };
+  final allowlist = plan.spec.unrestrictedNetwork
+      ? const <String>{}
+      : <String>{
+          for (final entry in plan.spec.egressAllowlist)
+            if (mapSmolvmAllowlistEntry(entry) case final mapped?)
+              mapped
+            else
+              ...() {
+                dropped.add(entry);
+                return const <String>[];
+              }(),
+          // Image maintenance, not workload policy: the guest agent pulls the
+          // machine's image through this same gate, so without the registry
+          // hosts a machine can never boot an image that is not already
+          // cached. Derived from the image REFERENCE — a workspace's custom
+          // image may live on a different registry than the pinned defaults.
+          ...registryHostsForImageRef(plan.image),
+          // Same class, one step further along: every browser pack installs
+          // its engine plus the shared audio capture dependencies.
+          if (plan.warmsPackages) ...kBrowserRigAptMirrors,
+        };
   if (dropped.isNotEmpty) {
     // Said out loud, because a silently missing host reads to whoever hits it
     // as a mysterious guest network failure.
@@ -679,8 +693,12 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
     '--label', '$kSmolvmRigLabel=${plan.rigId}',
     '--label', 'cc-surface=${isExec ? 'exec' : 'browser'}',
     if (!isExec) ...['--label', 'cc-engine=${plan.engine.wire}'],
-    '--outbound-localhost-only',
-    for (final host in allowlist) ...['--allow-host', host],
+    if (plan.spec.unrestrictedNetwork)
+      '--net'
+    else ...[
+      '--outbound-localhost-only',
+      for (final host in allowlist) ...['--allow-host', host],
+    ],
     if (plan.devtoolsHostPort != null) ...[
       '-p',
       '${plan.devtoolsHostPort}:$kBrowserRigGuestPort',
@@ -699,18 +717,15 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
       '-e',
       'CC_RIG_ID=${plan.rigId}',
     ],
-    // Exec guests bootstrap git/curl on first start. A CHROMIUM browser guest
-    // boots a fully baked image and installs nothing — the pinned image
-    // exists to remove that race. Firefox and WebKit have no equivalent
-    // baked image (see [kSmolvmDebianBrowserImage]), so they take the same
-    // gated one-time install, which the warm pack then makes a one-time cost
-    // per HOST rather than per rig.
+    // Browser guests warm their engine-specific pack once per host. Chromium's
+    // browser and relay remain baked; its warm step adds only the shared audio
+    // lane. Firefox and WebKit install their engine and audio packages.
     if (isExec) ...[
       '--init',
       kSmolvmExecInit,
-    ] else if (smolvmBrowserInitFor(plan.engine) case final init?) ...[
+    ] else ...[
       '--init',
-      init,
+      smolvmBrowserInitFor(plan.engine),
     ],
     if (!isExec) ...[
       '--',
@@ -1027,12 +1042,11 @@ class SmolvmEnclosureBackend {
     if (imageOverride == null) {
       image = defaultImage;
     } else if (!isExec && engine != RigBrowserEngine.chromium) {
-      // A workspace's custom BROWSER image is a Chromium image: the setting
-      // predates engines and the workload command it would boot is
-      // headless-shell's. Handing it to Firefox or WebKit would launch a
-      // binary that is not there. The override is skipped rather than
-      // half-applied, and said out loud so it does not read as ignored
-      // silently.
+      // A workspace's custom BROWSER image is a Chromium-oriented image: the
+      // setting predates engines, and the workload installs/launches Chromium.
+      // Handing it to Firefox or WebKit would install and launch a different
+      // engine than the selected one. The override is skipped rather than
+      // half-applied, and said out loud so it does not read as ignored.
       image = defaultImage;
       CcInfraLog.info(
         'rig/$rigId: the workspace browser image override applies to Chromium '
@@ -1537,13 +1551,17 @@ class SmolvmEnclosureBackend {
     }
     final wanted = {
       smolvmPackFileName(kSmolvmExecImage),
-      smolvmPackFileName(kSmolvmBrowserImage),
       for (final engine in RigBrowserEngine.values)
-        if (engine != RigBrowserEngine.chromium)
-          smolvmPackFileName(
-            smolvmBrowserImageFor(engine),
-            variant: engine.wire,
+        smolvmPackFileName(
+          smolvmBrowserImageFor(engine),
+          variant: smolvmPackVariantFor(
+            RigSpec(
+              surface: RigSurface.browser,
+              conversationId: '_pack',
+              browserEngine: engine,
+            ),
           ),
+        ),
     };
     await for (final entity in dir.list(followLinks: false)) {
       if (entity is File && !wanted.contains(p.basename(entity.path))) {

@@ -74,12 +74,11 @@ class RepoSkillProjection {
 /// The agent's cwd is its overlay (`<spaceRoot>/agents/<slug>/`) and the repos
 /// are checked out two levels away behind a `repos → ../../repos` symlink, so
 /// no adapter finds what a repo ships for agents: Claude Code looks in
-/// `.claude/skills` at the cwd and its parents, OpenCode in `.opencode/skills`,
-/// the built-in harness scans a fixed list of bases, and Codex reads only the
-/// `AGENTS.md` chain from the git root down. Writing the active repo's skills
-/// into the overlay puts them on all four paths at once, with no per-adapter
-/// flags — and Claude Code watches its project skills directory, so a swap
-/// lands mid-session without restarting the CLI.
+/// `.claude/skills` at the cwd and its parents, and the built-in harness
+/// scans a fixed list of bases. Writing the active repo's skills into the
+/// overlay puts them on those paths at once, with no per-adapter flags —
+/// and Claude Code watches its project skills directory, so a swap lands
+/// mid-session without restarting the CLI.
 ///
 /// Only the ACTIVE repo is ever projected. Listing every repo's skills at once
 /// is both wrong (a `testing` skill from one service does not describe another)
@@ -139,8 +138,8 @@ class RepoSkillProjector {
   /// real file and refuse to touch its own output.
   bool _ownsAgentsMd = false;
 
-  /// Cap on the repo section. Codex concatenates its whole `AGENTS.md` chain
-  /// under a 32 KiB budget, so one repo's instructions must not consume it.
+  /// Cap on the repo section so one repo's instructions cannot consume the
+  /// whole overlay `AGENTS.md`.
   static const int _maxRepoInstructionBytes = 24000;
 
   /// The directories the projection is written into, in the order the adapters
@@ -152,7 +151,6 @@ class RepoSkillProjector {
   /// all the others and collide with `syncAgentSkillLinks`.
   static const List<String> projectedDirs = [
     '.claude/skills',
-    '.opencode/skills',
   ];
 
   /// Projects [activeRepo]'s skills, replacing whatever was projected before.
@@ -230,17 +228,10 @@ class RepoSkillProjector {
   /// Rewrites the overlay's `AGENTS.md` as a REAL file carrying the agent's
   /// profile plus the active repo's instructions and skill index.
   ///
-  /// This is the Codex lane, and it cannot be served by the projected skills
-  /// dirs: Codex has no notion of a skill at all. It builds its instructions by
-  /// concatenating the `AGENTS.md` chain from the git root down to the cwd, and
-  /// the overlay is not inside a git repo — so the ONE file it will ever read
-  /// here is this one. The other adapters are unaffected: the harness reads it
-  /// too (a superset of what it had), and Claude Code and OpenCode take the
-  /// skills from their own directories.
-  ///
-  /// Replacing the provisioner's symlink is safe and self-healing:
-  /// `_ensureSymlink` deletes a plain file and re-links on the next dispatch,
-  /// which runs before this does.
+  /// The built-in harness and Claude Code both read this file. Replacing the
+  /// provisioner's symlink is safe and self-healing: `_ensureSymlink` deletes
+  /// a plain file and re-links on the next dispatch, which runs before this
+  /// does.
   void _writeAgentsMd(String? repo, List<HarnessSkillInfo> skills) {
     final file = File(p.join(overlayDir, 'AGENTS.md'));
     // Only ever replace the provisioner's SYMLINK, an absent file, or a file

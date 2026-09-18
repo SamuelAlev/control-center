@@ -6,12 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 
-/// Persisted preference for the output device **every** app sound plays
-/// through — notification chimes, the soundscape, meeting playback and a rig's
-/// audio lane alike. It is one machine-level choice ("where does this computer
-/// make noise"), not a per-surface one: a person who moved audio to their
-/// headphones meant all of it, and a notification that stayed on the built-in
-/// speakers is indistinguishable from a broken setting.
+/// Persisted default for where app sound plays. Notification chimes,
+/// soundscape and meeting playback use it directly; a rig tab snapshots it
+/// when the tab is created and can then choose its own output device from the
+/// tab context menu.
 ///
 /// Holds the media_kit [AudioDevice.name] (libmpv's stable device id, e.g.
 /// `coreaudio/12345`), or `null` for "system default" — which maps to mpv's

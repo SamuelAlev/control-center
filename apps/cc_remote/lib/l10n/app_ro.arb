@@ -1,0 +1,519 @@
+{
+  "@@locale": "ro",
+  "appTitle": "Control Center",
+  "back": "Înapoi",
+  "cancel": "Anulează",
+  "retry": "Reîncearcă",
+  "tryAgain": "Încearcă din nou",
+  "settings": "Setări",
+  "refresh": "Reîmprospătează",
+  "approve": "Aprobă",
+  "deny": "Refuză",
+  "continueLabel": "Continuă",
+  "agentQuestionHeader": "Întrebare pentru tine",
+  "agentQuestionAnsweredLabel": "Răspuns",
+  "agentQuestionSkip": "Omite",
+  "agentQuestionSkippedLabel": "Omisă",
+  "agentQuestionFreeformHint": "Tastează răspunsul…",
+  "agentApprovalRequired": "Este necesară aprobarea",
+  "approveAndRemember": "Aprobă pentru 8 ore",
+  "decline": "Respinge",
+  "confirm": "Confirmă",
+  "send": "Trimite",
+  "close": "Închide",
+  "expand": "Extinde",
+  "zoomIn": "Mărește",
+  "zoomOut": "Micșorează",
+  "resetZoom": "Resetează zoomul",
+  "scanQrPrompt": "Scanează codul QR de pe Mac ca să asociezi telefonul acesta.",
+  "scanQrHelp": "Deschide camera și îndreapt-o spre QR-ul afișat în Control Center pe Mac. Telefonul acesta se conectează direct la Mac printr-o legătură privată.",
+  "connectingToMac": "Se conectează la Mac…",
+  "connectingDetail": "Se stabilește o legătură sigură și directă.",
+  "identityChangedTitle": "Identitatea serverului s-a schimbat",
+  "identityChangedBody": "Serverul acesta nu mai corespunde identității salvate la asociere. Poate însemna că serverul a fost reinstalat — sau că ceva interceptează conexiunea. Ca să rămâi în siguranță, dispozitivul acesta nu se va conecta. Elimină asocierea, apoi scanează un QR nou de pe Mac ca să asociezi din nou.",
+  "removePairing": "Elimină asocierea",
+  "couldntConnect": "Nu s-a putut conecta",
+  "pendingPairingTitle": "Te conectezi la acest server?",
+  "pendingPairingBody": "Un link a cerut Control Center să se asocieze cu acest server. Continuă doar dacă tu ai pornit asta.",
+  "connect": "Conectează",
+  "failureNotPaired": "Neasociat — scanează codul QR de pe Mac",
+  "failureUnreachable": "Nu s-a putut ajunge la server pe nicio cale — verifică dacă rulează sau încearcă aceeași rețea",
+  "failureIdentityChanged": "Identitatea serverului s-a schimbat — dacă a fost reinstalat, asociază din nou dispozitivul",
+  "failureAuthRejected": "Serverul a respins dispozitivul acesta — asociază-l din nou de pe Mac",
+  "failureUnknown": "Nu s-a putut conecta — atinge ca să reîncerci",
+  "statusConnected": "Conectat",
+  "statusConnecting": "Se conectează",
+  "statusOffline": "Offline",
+  "statusIdentityMismatch": "Neconcordanță de identitate",
+  "statusNotPaired": "Neasociat",
+  "statusConfirmPairing": "Confirmă asocierea",
+  "connectionFailed": "Conexiunea a eșuat",
+  "identityMismatchBanner": "Identitatea serverului s-a schimbat — conexiunea s-a oprit. Asociază din nou dispozitivul ca să continui.",
+  "tabInbox": "Inbox",
+  "tabTickets": "Tichete",
+  "tabChat": "Chat",
+  "tabPrs": "PRs",
+  "tabCalendar": "Calendar",
+  "tabNews": "Știri",
+  "tabWaitingCount": "{label}, {count} în așteptare",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateAvailable": "Un Control Center nou este disponibil",
+  "appearance": "Aspect",
+  "language": "Limbă",
+  "device": "Dispozitiv",
+  "themeSystem": "Sistem",
+  "themeLight": "Luminos",
+  "themeDark": "Întunecat",
+  "languageSystem": "Sistem",
+  "disconnectTapAgain": "Atinge din nou ca să deconectezi dispozitivul acesta de la Mac",
+  "disconnectDevice": "Deconectează dispozitivul acesta",
+  "disconnect": "Deconectează",
+  "chooseWorkspace": "Alege spațiul de lucru",
+  "workspaces": "Spații de lucru",
+  "workspacesLoadFailed": "Nu s-au putut încărca spațiile de lucru",
+  "noWorkspacesYet": "Niciun spațiu de lucru încă",
+  "selectWorkspace": "Selectează {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxLoadFailed": "Nu s-a putut încărca inboxul",
+  "allCaughtUp": "Ești la zi",
+  "inboxNoForgeAccount": "Niciun cont forge nu este conectat pe server, deci pull request-urile nu îți pot fi atribuite încă.",
+  "inboxNothingWaiting": "Nimic nu este blocat și niciun pull request nu te așteaptă.",
+  "blocked": "Blocat",
+  "sectionNeedsYourReview": "Necesită revizuirea ta",
+  "sectionReturnedToYou": "Returnate ție",
+  "sectionApprovedAndReady": "Aprobate și gata",
+  "sectionYourDrafts": "Ciornele tale",
+  "sectionWaitingForReviewers": "Așteaptă recenzenți",
+  "sectionMergingAndMerged": "În fuziune și fuzionate recent",
+  "sectionWaitingForAuthor": "Așteaptă autorul",
+  "waitingAgo": "așteaptă {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "openConversation": "Deschide conversația",
+  "calendarLoadFailed": "Nu s-a putut încărca calendarul",
+  "nothingScheduled": "Nimic programat",
+  "calendarEmptyDescription": "Evenimentele din calendarele conectate apar aici.",
+  "agenda": "Agendă",
+  "syncCalendarsNow": "Sincronizează calendarele acum",
+  "event": "Eveniment",
+  "eventNotFound": "Evenimentul nu a fost găsit",
+  "eventNotFoundDescription": "Poate fi în afara ferestrei agendei sau a fost eliminat la sursă.",
+  "joinMeeting": "Intră în întâlnire",
+  "join": "Intră",
+  "attendeesCount": "Participanți ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "details": "Detalii",
+  "allDay": "Toată ziua",
+  "happeningNow": "Are loc acum",
+  "inDuration": "Peste {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "attendeeAccepted": "acceptat",
+  "attendeeDeclined": "refuzat",
+  "attendeeMaybe": "poate",
+  "attendeeNoReply": "fără răspuns",
+  "organizer": "organizator",
+  "calendarNoAccounts": "Niciun calendar nu este conectat pentru acest spațiu de lucru. Conectează unul din aplicația desktop — autentificarea stochează tokenul pe server.",
+  "calendarReauthNeeded": "Un cont de calendar trebuie reconectat — ce vezi mai jos poate fi depășit. Reconectează-l din aplicația desktop.",
+  "spacesLoadFailed": "Nu s-au putut încărca spațiile",
+  "noSpaces": "Niciun spațiu",
+  "spacesEmptyDescription": "Spațiile din acest spațiu de lucru apar aici.",
+  "thread": "Fir",
+  "agentWorking": "Agentul lucrează",
+  "messagesLoadFailed": "Nu s-au putut încărca mesajele",
+  "noMessagesYet": "Niciun mesaj încă",
+  "noMessagesDescription": "Trimite un mesaj ca să începi conversația.",
+  "agentResponding": "Agentul răspunde",
+  "agentFinished": "Agentul a terminat",
+  "attachmentsTooLarge": "{count, plural, one{{names} este prea mare pentru a fi trimis de aici.} few{{names} sunt prea mari pentru a fi trimise de aici.} other{{names} sunt prea mari pentru a fi trimise de aici.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, one{{names} este prea mare pentru a fi trimis prin relay de aici.} few{{names} sunt prea mari pentru a fi trimise prin relay de aici.} other{{names} sunt prea mari pentru a fi trimise prin relay de aici.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentUploadFailed": "Nu s-a putut încărca atașamentul. Încearcă din nou.",
+  "attachmentsLeftOut": "{count, plural, one{1 atașament nu a putut fi încărcat și a fost omis.} few{{count} atașamente nu au putut fi încărcate și au fost omise.} other{{count} de atașamente nu au putut fi încărcate și au fost omise.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teammate": "Coleg",
+  "agent": "Agent",
+  "attachFile": "Atașează un fișier",
+  "messageHint": "Mesaj",
+  "removeAttachment": "Elimină {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "articlesLoadFailed": "Nu s-au putut încărca articolele",
+  "noArticles": "Niciun articol",
+  "articlesEmptyDescription": "Articolele noi apar aici pe măsură ce fluxurile se actualizează.",
+  "unread": "Necitite",
+  "allFeeds": "Toate fluxurile",
+  "save": "Salvează",
+  "unsave": "Anulează salvarea",
+  "readFullArticle": "Citește articolul complet",
+  "ticketsLoadFailed": "Nu s-au putut încărca tichetele",
+  "noTickets": "Niciun tichet",
+  "ticketsEmptyDescription": "Tichetele din acest spațiu de lucru apar aici.",
+  "all": "Toate",
+  "ticket": "Tichet",
+  "ticketLoadFailed": "Nu s-a putut încărca tichetul",
+  "assignedTo": "Asignat lui {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openInBrowser": "Deschide în browser",
+  "status": "Stare",
+  "assign": "Asignează",
+  "reassign": "Reasignează",
+  "noAgents": "Niciun agent",
+  "noAgentsDescription": "Asignează un agent din acest spațiu de lucru.",
+  "statusOpen": "Deschis",
+  "statusInProgress": "În curs",
+  "statusBlocked": "Blocat",
+  "statusInReview": "În revizuire",
+  "statusDone": "Gata",
+  "statusBacklog": "Backlog",
+  "lensNeedsMe": "Mă așteaptă",
+  "lensMine": "Ale mele",
+  "prsLoadFailed": "Nu s-au putut încărca pull request-urile",
+  "noOpenPullRequests": "Niciun pull request deschis",
+  "nothingWaitingOnReview": "Nimic nu așteaptă revizuirea ta",
+  "noOwnOpenPullRequests": "Nu ai pull request-uri deschise",
+  "nothingBlocked": "Nimic nu este blocat",
+  "prsEmptyDescription": "Pull request-urile din repo-urile acestui spațiu de lucru apar aici.",
+  "refreshPullRequests": "Reîmprospătează pull request-urile",
+  "noForgeConnected": "Niciun forge nu este conectat pe server, deci nu se pot prelua pull request-uri. Conectează unul din aplicația desktop.",
+  "reposUnreadable": "{count, plural, one{1 repo nu a putut fi citit.} few{{count} repo-uri nu au putut fi citite.} other{{count} de repo-uri nu au putut fi citite.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reposNotReadable": "Ilizibile: {names}",
+  "installationSuspendedTitle": "Instalarea GitHub App este suspendată",
+  "installationSuspendedBody": "Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub sau conectează un token cu acces.",
+  "installationSuspendedNotice": "Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub sau conectează un token cu acces.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "draft": "Ciornă",
+  "merged": "Fuzionat",
+  "closed": "Închis",
+  "open": "Deschis",
+  "approved": "Aprobat",
+  "changesRequested": "Modificări cerute",
+  "reviewRequired": "Este necesară o revizuire",
+  "checksPassing": "Verificări reușite",
+  "checksFailing": "Verificări eșuate",
+  "checksRunning": "Verificări în rulare",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Nu s-a putut încărca acest pull request",
+  "openOnForge": "Deschide pe forge",
+  "requestChangesNeedsComment": "Adaugă un comentariu care explică ce trebuie schimbat.",
+  "conversation": "Conversație",
+  "files": "Fișiere",
+  "checks": "Verificări",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesCount": "{count, plural, one{1 fișier} few{{count} fișiere} other{{count} de fișiere}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commitsCount": "{count, plural, one{1 commit} few{{count} commit-uri} other{{count} de commit-uri}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflicts": "Conflicte",
+  "reviewers": "Recenzenți",
+  "noDescriptionNoComments": "Nicio descriere și niciun comentariu încă.",
+  "noChangedFiles": "Niciun fișier modificat.",
+  "noChecksReported": "Nicio verificare raportată pentru commit-ul head.",
+  "reviewCommentHint": "Lasă un comentariu de revizuire…",
+  "comment": "Comentează",
+  "commentPosted": "Comentariu publicat",
+  "request": "Cere",
+  "squashAndMerge": "Squash and merge",
+  "noActionsAvailable": "{status} — nicio acțiune disponibilă.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewApproved": "a aprobat",
+  "reviewRequestedChanges": "a cerut modificări",
+  "reviewCommented": "a revizuit",
+  "reviewPending": "în așteptare",
+  "unknownAuthor": "necunoscut",
+  "hideDiffFor": "Ascunde diff-ul pentru {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "showDiffFor": "Arată diff-ul pentru {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "checkRunning": "în rulare",
+  "checkPassed": "reușit",
+  "checkFailed": "eșuat",
+  "checkCancelled": "anulat",
+  "checkSkipped": "omis",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "noTextDiff": "Nu există diff text pentru acest fișier — este binar sau prea mare ca forge-ul să returneze unul.",
+  "showRemainingLines": "{count, plural, one{Arată linia rămasă} few{Arată cele {count} linii rămase} other{Arată cele {count} de linii rămase}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unchangedLines": "{count, plural, one{1 linie neschimbată} few{{count} linii neschimbate} other{{count} de linii neschimbate}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToLatest": "Sari la cele mai recente",
+  "streaming": "Streaming",
+  "working": "Lucrează",
+  "input": "Intrare",
+  "output": "Ieșire",
+  "now": "acum",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "Azi",
+  "tomorrow": "Mâine",
+  "yesterday": "Ieri",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
+}

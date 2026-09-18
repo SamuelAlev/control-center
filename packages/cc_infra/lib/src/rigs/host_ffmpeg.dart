@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 /// A running child process, narrowed to what a rig lane needs of it.
@@ -150,4 +151,61 @@ String ffmpegFitFilter(int width, int height) {
   const esc = r'\,';
   return 'scale=min(iw$esc$width):min(ih$esc$height)'
       ':force_original_aspect_ratio=decrease:force_divisible_by=2';
+}
+
+/// Downscales one PNG still to [width] × [height] and re-encodes it as JPEG.
+///
+/// Returns null when ffmpeg cannot produce a frame. The caller can then retain
+/// the original PNG and report the degraded encoding honestly.
+Future<List<int>?> transcodePngStillToJpeg(
+  HostFfmpeg ffmpeg,
+  List<int> png,
+  int width,
+  int height, {
+  int quality = 80,
+  String logContext = 'rig',
+}) async {
+  HostProcess? process;
+  try {
+    process = await ffmpeg.start([
+      '-loglevel',
+      'error',
+      '-f',
+      'png_pipe',
+      '-i',
+      'pipe:0',
+      '-vf',
+      ffmpegFitFilter(width, height),
+      '-frames:v',
+      '1',
+      '-q:v',
+      '${mjpegQualityFlag(quality)}',
+      '-f',
+      'mjpeg',
+      'pipe:1',
+    ]);
+    final output = <int>[];
+    final collected = process.stdout.forEach(output.addAll);
+    final diagnostics = process.stderr
+        .transform(utf8.decoder)
+        .join()
+        .catchError((Object _) => '');
+    process.stdin.add(png);
+    await process.stdin.close();
+    await collected.timeout(const Duration(seconds: 20));
+    final code = await process.exitCode.timeout(const Duration(seconds: 5));
+    if (code != 0 || output.isEmpty) {
+      final detail = (await diagnostics).trim();
+      stderr.writeln(
+        '$logContext: ffmpeg could not transcode the still (exit $code)'
+        '${detail.isEmpty ? '' : ': $detail'}',
+      );
+      return null;
+    }
+    return output;
+  } on Object catch (error) {
+    stderr.writeln('$logContext: still transcode failed: $error');
+    process?.kill();
+    return null;
+  }
 }

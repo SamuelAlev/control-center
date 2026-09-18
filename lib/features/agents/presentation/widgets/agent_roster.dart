@@ -169,20 +169,20 @@ class AgentRosterRow extends ConsumerWidget {
               : states.contains(WidgetState.hovered)
               ? tokens.hover
               : null,
-          border: Border(
-            left: BorderSide(
+          border: BorderDirectional(
+            start: BorderSide(
               color: selected ? tokens.fgBrandPrimary : const Color(0x00000000),
               width: 2,
             ),
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 12, 8),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 4, right: 10),
+                padding: const EdgeInsetsDirectional.only(top: 4, end: 10),
                 child: AgentStatusDot(
                   visual: AgentStatusVisual.resolve(
                     state,

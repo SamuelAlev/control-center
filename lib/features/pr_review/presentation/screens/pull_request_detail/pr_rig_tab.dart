@@ -23,6 +23,7 @@ class PrRigTab extends ConsumerWidget {
   const PrRigTab({
     super.key,
     required this.pr,
+    required this.audioTabKey,
     required this.surface,
     this.engine,
     this.isVisible = true,
@@ -30,6 +31,9 @@ class PrRigTab extends ConsumerWidget {
 
   /// The pull request this machine belongs to.
   final PullRequest pr;
+
+  /// Identity of the editor tab that owns media choices and mute state.
+  final Object audioTabKey;
 
   /// Which machine to show (`computer` / `browser` / `mobile`).
   final String surface;
@@ -71,6 +75,7 @@ class PrRigTab extends ConsumerWidget {
           surface: surface,
           engine: engine,
           conversationId: spaceId,
+          audioTabKey: audioTabKey,
           isVisible: isVisible,
         );
       },

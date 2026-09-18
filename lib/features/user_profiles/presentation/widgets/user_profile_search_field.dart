@@ -7,21 +7,19 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A profile's PR search field. Mirrors the queue's search field — search-icon
-/// prefix, a quiet `/` affordance, clearable — but the profile is already
-/// scoped to one author, so this drives a local title/number filter
-/// ([userProfileSearchProvider]) rather than a server search and carries no
-/// author autocomplete.
-class UserProfileSearchField extends ConsumerStatefulWidget {
-  /// Creates a [UserProfileSearchField] for [login].
-  const UserProfileSearchField({
+/// prefix, a quiet `/` affordance, clearable — and drives a local title/number
+/// filter ([userProfileSearchProvider]) over the loaded profile history.
+class ProfilePrSearchField extends ConsumerStatefulWidget {
+  /// Creates a [ProfilePrSearchField] for [profileKey].
+  const ProfilePrSearchField({
     super.key,
-    required this.login,
+    required this.profileKey,
     this.width = 300,
     this.focusNode,
   });
 
   /// The profile this search belongs to.
-  final String login;
+  final String profileKey;
 
   /// The field width.
   final double width;
@@ -32,12 +30,11 @@ class UserProfileSearchField extends ConsumerStatefulWidget {
   final FocusNode? focusNode;
 
   @override
-  ConsumerState<UserProfileSearchField> createState() =>
-      _UserProfileSearchFieldState();
+  ConsumerState<ProfilePrSearchField> createState() =>
+      _ProfilePrSearchFieldState();
 }
 
-class _UserProfileSearchFieldState
-    extends ConsumerState<UserProfileSearchField> {
+class _ProfilePrSearchFieldState extends ConsumerState<ProfilePrSearchField> {
   final TextEditingController _controller = TextEditingController();
   late final FocusNode _focusNode = widget.focusNode ?? FocusNode();
   late final bool _ownsFocusNode = widget.focusNode == null;
@@ -45,7 +42,7 @@ class _UserProfileSearchFieldState
   @override
   void initState() {
     super.initState();
-    _controller.text = ref.read(userProfileSearchProvider(widget.login));
+    _controller.text = ref.read(userProfileSearchProvider(widget.profileKey));
     _controller.addListener(_onChanged);
     _focusNode.addListener(_onFocusChanged);
   }
@@ -66,7 +63,7 @@ class _UserProfileSearchFieldState
     // Local filter over an already-loaded set — cheap enough to apply on every
     // keystroke without debouncing.
     ref
-        .read(userProfileSearchProvider(widget.login).notifier)
+        .read(userProfileSearchProvider(widget.profileKey).notifier)
         .set(_controller.text);
   }
 
@@ -110,7 +107,7 @@ class _UserProfileSearchFieldState
     }
     if (!_focusNode.hasFocus) {
       return const Padding(
-        padding: EdgeInsets.only(right: 8),
+        padding: EdgeInsetsDirectional.only(end: 8),
         child: IgnorePointer(child: Kbd.symbol(label: '/')),
       );
     }

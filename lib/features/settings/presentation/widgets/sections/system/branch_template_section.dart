@@ -122,7 +122,7 @@ class _BranchTemplateSectionState extends ConsumerState<BranchTemplateSection> {
           if (isAdmin && _dirty) ...[
             const SizedBox(height: 12),
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: CcButton(onPressed: _save, child: Text(l10n.saveChanges)),
             ),
           ],

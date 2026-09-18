@@ -20,7 +20,7 @@ import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Actions tab — groups CI check runs by parent workflow, expandable to
@@ -177,7 +177,6 @@ class _WorkflowCard extends StatelessWidget {
         color: isFailing
             ? const Color(0xFFCF222E).withValues(alpha: 0.04)
             : tokens.bgPrimary,
-        borderRadius: BorderRadius.circular(4),
         border: Border.all(
           color: isFailing
               ? const Color(0xFFCF222E).withValues(alpha: 0.25)
@@ -187,13 +186,13 @@ class _WorkflowCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: onToggle,
+          CcTappable(
+            onPressed: onToggle,
             borderRadius: BorderRadius.vertical(
               top: const Radius.circular(4),
               bottom: expanded ? Radius.zero : const Radius.circular(4),
             ),
-            child: Padding(
+            builder: (context, states) => Padding(
               padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
               child: Row(
                 children: [
@@ -602,7 +601,6 @@ class _WorkflowRunBodyState extends ConsumerState<_WorkflowRunBody> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
           color: selected ? tokens.bgSecondary : null,
-          borderRadius: AppRadii.brSm,
           border: Border.all(color: tokens.borderSecondary),
         ),
         child: Row(
@@ -727,7 +725,7 @@ class _JobTileState extends ConsumerState<_JobTile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            InkWell(
+            GestureDetector(
               onTap: expandable
                   ? () => setState(() => _expanded = !_expanded)
                   : null,
@@ -797,7 +795,6 @@ class _JobTileState extends ConsumerState<_JobTile> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: tokens.bgPrimary,
-                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: tokens.borderSecondary),
                   ),
                   child: GitHubMarkdownBody(
@@ -871,10 +868,7 @@ class _GraphResizeGrip extends StatelessWidget {
               child: Container(
                 width: 36,
                 height: 4,
-                decoration: BoxDecoration(
-                  color: tokens.borderSecondary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                decoration: BoxDecoration(color: tokens.borderSecondary),
               ),
             ),
           ),

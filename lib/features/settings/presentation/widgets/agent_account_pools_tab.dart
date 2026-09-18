@@ -2,12 +2,15 @@ import 'package:cc_data/cc_data.dart' show RpcAccountPoolsRepository;
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
-import 'package:cc_harness/provider.dart';
+import 'package:cc_domain/features/subscriptions/subscriptions.dart';
+import 'package:cc_harness/provider.dart' show HarnessProviderInfo;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/account_pool_editor.dart';
+import 'package:control_center/features/settings/presentation/widgets/harness_rotation_editor.dart';
 import 'package:control_center/features/settings/providers/account_pool_providers.dart';
 import 'package:control_center/features/settings/providers/claude_account_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
+import 'package:control_center/features/subscriptions/providers/subscription_usage_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -38,7 +41,7 @@ AccountLane accountLaneForAdapter(String? adapterId) {
   return switch (adapter.transport) {
     AdapterTransport.claudeCli => AccountLane.claudeCode,
     AdapterTransport.harness => AccountLane.harness,
-    AdapterTransport.acp || AdapterTransport.structuredCli => AccountLane.none,
+    AdapterTransport.acp => AccountLane.none,
   };
 }
 
@@ -89,6 +92,10 @@ class AgentAccountPoolsTab extends ConsumerWidget {
     final rotatable = lane == AccountLane.harness
         ? ref.watch(rotatableHarnessProvidersProvider)
         : const <HarnessProviderInfo>[];
+    final usage = lane == AccountLane.harness
+        ? ref.watch(subscriptionUsageProvider).value ??
+              const <SubscriptionUsage>[]
+        : const <SubscriptionUsage>[];
 
     if (claude.length < 2 && rotatable.isEmpty) {
       return Padding(
@@ -137,18 +144,11 @@ class AgentAccountPoolsTab extends ConsumerWidget {
               lane: RpcAccountPoolsRepository.harnessLane(p.id),
               agentId: agentId,
             ),
-            candidates: [
-              for (final cred in p.credentials)
-                AccountPoolCandidate(
-                  id: cred.credentialId,
-                  label: cred.label?.isNotEmpty ?? false
-                      ? cred.label!
-                      : cred.hint ?? cred.credentialId,
-                  detail: cred.method == HarnessAuthMethod.oauth
-                      ? l10n.providerSignedInAccount
-                      : cred.hint,
-                ),
-            ],
+            candidates: harnessRotationCandidates(
+              info: p,
+              l10n: l10n,
+              usage: usage,
+            ),
           ),
           const SizedBox(height: AppSpacing.xl),
         ],

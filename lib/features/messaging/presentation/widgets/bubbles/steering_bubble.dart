@@ -44,7 +44,7 @@ class SteeringBubble extends StatelessWidget {
           collapseHeader: collapseHeader,
         ),
         Padding(
-          padding: const EdgeInsets.only(right: 8, top: 1),
+          padding: const EdgeInsetsDirectional.only(end: 8, top: 1),
           child: Text(
             l10n.steeringBadge,
             style: TextStyle(

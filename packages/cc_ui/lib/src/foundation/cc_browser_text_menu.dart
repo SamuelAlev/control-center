@@ -10,8 +10,8 @@ import 'package:flutter/services.dart';
 ///
 /// Flutter web ships with the browser context menu enabled, and this app turns
 /// it off at boot (`bootstrap_web.dart`) for a good reason: with it on, the
-/// browser's page menu covers every `showCcMenuAt` menu in the app — space
-/// rows, editor tabs, tickets, the explorer — and the engine suppresses
+/// browser's page menu covers every `showCcMenuAt` menu in the app — editor
+/// tabs, tickets, the explorer — and the engine suppresses
 /// Flutter's selection toolbars entirely. So it cannot simply be left on.
 ///
 /// The narrow re-enable is what this is: a claim is held only while the

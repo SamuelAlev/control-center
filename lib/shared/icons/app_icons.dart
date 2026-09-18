@@ -71,11 +71,13 @@ abstract final class AppIcons {
     0xe058,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData arrowRight = IconData(
     0xe06c,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData arrowUp = IconData(
     0xe08e,
@@ -266,11 +268,13 @@ abstract final class AppIcons {
     0xe138,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData chevronRight = IconData(
     0xe13a,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData chevronUp = IconData(
     0xe13c,
@@ -416,6 +420,7 @@ abstract final class AppIcons {
     0xe044,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData cornerLeftDown = IconData(
     0xe04a,
@@ -766,6 +771,7 @@ abstract final class AppIcons {
     0xe42a,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData mapPin = IconData(
     0xe316,
@@ -864,6 +870,11 @@ abstract final class AppIcons {
   );
   static const IconData moreHorizontal = IconData(
     0xe1fe,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData moreVertical = IconData(
+    0xe208,
     fontFamily: _family,
     fontPackage: _package,
   );
@@ -1016,6 +1027,7 @@ abstract final class AppIcons {
     0xe024,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData rocket = IconData(
     0xe3fc,
@@ -1076,6 +1088,7 @@ abstract final class AppIcons {
     0xe396,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData settings = IconData(
     0xe270,

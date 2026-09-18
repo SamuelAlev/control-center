@@ -1,5 +1,6 @@
 import 'package:cc_remote/app_connection.dart';
 import 'package:cc_remote/app_icons.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -20,28 +21,43 @@ class ConnectionChip extends ConsumerWidget {
     final session = ref.read(remoteSessionProvider);
     final state = async.value ?? session.currentUiState;
 
-    final (label, variant, icon) = _resolve(state);
+    final (label, variant, icon) = _resolve(AppLocalizations.of(context), state);
     return CcBadge(label: label, variant: variant, icon: icon);
   }
 
-  (String, CcBadgeVariant, IconData?) _resolve(RemoteUiState state) {
+  (String, CcBadgeVariant, IconData?) _resolve(
+    AppLocalizations l10n,
+    RemoteUiState state,
+  ) {
     switch (state.status) {
       case RemoteStatus.connected:
-        return ('Connected', CcBadgeVariant.success, AppIcons.circleCheck);
+        return (
+          l10n.statusConnected,
+          CcBadgeVariant.success,
+          AppIcons.circleCheck,
+        );
       case RemoteStatus.connecting:
-        return ('Connecting', CcBadgeVariant.info, null);
+        return (l10n.statusConnecting, CcBadgeVariant.info, null);
       case RemoteStatus.connectionFailed:
-        return ('Offline', CcBadgeVariant.warning, AppIcons.wifiOff);
+        return (l10n.statusOffline, CcBadgeVariant.warning, AppIcons.wifiOff);
       case RemoteStatus.identityMismatch:
         return (
-          'Identity mismatch',
+          l10n.statusIdentityMismatch,
           CcBadgeVariant.danger,
           AppIcons.triangleAlert,
         );
       case RemoteStatus.notPaired:
-        return ('Not paired', CcBadgeVariant.neutral, AppIcons.scanLine);
+        return (
+          l10n.statusNotPaired,
+          CcBadgeVariant.neutral,
+          AppIcons.scanLine,
+        );
       case RemoteStatus.pendingPairing:
-        return ('Confirm pairing', CcBadgeVariant.info, AppIcons.scanLine);
+        return (
+          l10n.statusConfirmPairing,
+          CcBadgeVariant.info,
+          AppIcons.scanLine,
+        );
     }
   }
 }

@@ -162,7 +162,7 @@ class _CategoryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 4),
+      padding: const EdgeInsetsDirectional.only(start: 4, bottom: 4),
       child: Text(
         label.toUpperCase(),
         style: CcTypography.body.copyWith(

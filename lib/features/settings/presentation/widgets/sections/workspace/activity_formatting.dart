@@ -17,9 +17,11 @@ import 'package:control_center/l10n/app_localizations.dart';
 ///    (`workerHeartbeat` → "Worker heartbeat") — never an empty line, never
 ///    the dotted machine op (that stays on the chip).
 ///
-/// A present `targetId` (which the server extracts from conventional arg
-/// names — ids, paths, names) is appended after a middle dot, so "Added
-/// repository" becomes "Added repository · /Users/sam/control-center".
+/// A present `targetId` or `details` snapshot (setting key/value, the
+/// command that was sent, the space a rig lived in) is appended after a
+/// middle dot, so "Added repository" becomes "Added repository ·
+/// /Users/sam/control-center" and "Changed workspace settings" becomes
+/// "Changed workspace settings · theme=dark".
 String describeActivity(AppLocalizations l10n, UserActivityDto entry) {
   final action = entry.action;
   final dot = action.indexOf('.');
@@ -30,9 +32,8 @@ String describeActivity(AppLocalizations l10n, UserActivityDto entry) {
   final verbPart = action.substring(dot + 1);
 
   final special = _special(l10n, action);
-  final targetId = entry.targetId;
   if (special != null) {
-    return _withTarget(special, targetId);
+    return _withDetails(special, entry);
   }
 
   final lemma = _verbLemma(verbPart);
@@ -46,18 +47,85 @@ String describeActivity(AppLocalizations l10n, UserActivityDto entry) {
     }
   }
   if (template == null) {
-    return _withTarget(_humanize(verbPart), targetId);
+    return _withDetails(_humanize(verbPart), entry);
   }
   final target = _targetNoun(l10n, domain);
-  return _withTarget(template(target), targetId);
+  return _withDetails(template(target), entry);
 }
 
-/// Appends ` · targetId` when the audit record carries one.
-String _withTarget(String description, String? targetId) {
-  if (targetId == null || targetId.isEmpty) {
+/// Compact suffix for an audit row: the command that was sent, the
+/// setting that changed, the space a rig lived in — whatever the record
+/// actually carried. Empty when there is nothing beyond the sentence.
+String activityDetailSuffix(UserActivityDto entry) {
+  final details = entry.details;
+  final seen = <String>{};
+  final parts = <String>[];
+
+  void add(String? value) {
+    if (value == null || value.isEmpty || seen.contains(value)) {
+      return;
+    }
+    seen.add(value);
+    parts.add(value);
+  }
+
+  final command = details?['command']?.toString();
+  if (command != null && command.isNotEmpty) {
+    add(command);
+  }
+
+  final key = details?['key']?.toString();
+  if (key != null && key.isNotEmpty) {
+    seen.add(key);
+    final value = details!['value'];
+    add(value == null ? key : '$key=$value');
+  }
+
+  add(entry.targetId);
+
+  for (final spaceKey in const ['conversation_id', 'space_id']) {
+    final space = details?[spaceKey]?.toString();
+    if (space != null && space.isNotEmpty) {
+      seen.add(space);
+      parts.add('space=$space');
+    }
+  }
+
+  if (details != null) {
+    const skip = {
+      'command',
+      'key',
+      'value',
+      'data',
+      'sent',
+      'workspace_id',
+      'conversation_id',
+      'space_id',
+    };
+    final rest = details.keys.where((k) => !skip.contains(k)).toList()..sort();
+    for (final k in rest) {
+      final value = details[k];
+      if (value == null) {
+        continue;
+      }
+      final text = '$value';
+      if (text.isEmpty || (entry.targetId != null && text == entry.targetId)) {
+        continue;
+      }
+      add('$k=$text');
+    }
+  }
+
+  return parts.join(' · ');
+}
+
+/// Appends ` · details` when the audit record carries a target or snapshot.
+String _withDetails(String description, UserActivityDto entry) {
+  final suffix = activityDetailSuffix(entry);
+  if (suffix.isEmpty) {
     return description;
   }
-  return '$description · $targetId';
+  return '$description · $suffix';
 }
 
 /// The first camelCase or snake_case segment of [verbPart], lowercased:
@@ -214,6 +282,7 @@ String Function(String target)? _verbTemplate(
   'uninstall' => l10n.activityVerbUninstalled,
   'unstage' => l10n.activityVerbUnstaged,
   'write' => l10n.activityVerbWrote,
+  'destroy' => l10n.activityVerbDeleted,
   _ => null,
 };
 
@@ -295,6 +364,8 @@ String _targetNoun(AppLocalizations l10n, String domain) => switch (domain) {
   'weather' => l10n.activityTargetWeather,
   'workProduct' => l10n.activityTargetWorkProduct,
   'workspace' || 'workspaces' => l10n.activityTargetWorkspace,
+  'workspace_settings' => l10n.activityTargetWorkspace,
+  'server_settings' => l10n.activityTargetServerData,
   _ => domain,
 };
 

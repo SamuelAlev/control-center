@@ -209,9 +209,7 @@ class _FakeHost {
         });
       case 'messaging.getMessages':
         _replyData(id, op, {
-          'messages': [
-            _messageJson('m1', args['space_id'] as String? ?? 'c1'),
-          ],
+          'messages': [_messageJson('m1', args['space_id'] as String? ?? 'c1')],
         });
       case 'messaging.sendMessage':
         sentMessages.add(args);
@@ -755,6 +753,7 @@ class _FakeHost {
       case 'pr_review.submitReview':
       case 'pr_review.closePullRequest':
       case 'pr_review.updatePullRequest':
+      case 'pr_review.updateIssueComment':
       case 'pr_review.addAssignees':
       case 'pr_review.removeAssignees':
       case 'pr_review.requestReviewers':
@@ -1407,6 +1406,9 @@ class _FakeHost {
       {'login': 'octocat', 'avatar_url': 'https://a/o.png'},
     ],
     'assignees': <Map<String, dynamic>>[],
+    'labels': [
+      {'name': 'bug', 'color': 'd73a4a', 'description': 'Something is wrong'},
+    ],
     'reviewed_by_me': false,
     'reactions': [
       {
@@ -3006,6 +3008,8 @@ void main() {
     expect(pr.state, PrState.open);
     expect(pr.author?.login, 'octocat');
     expect(pr.requestedReviewers.single.login, 'octocat');
+    expect(pr.labels.single.name, 'bug');
+    expect(pr.labels.single.color, 'd73a4a');
     expect(pr.changedFiles, 3);
     expect(pr.mergeableState, PrMergeableState.clean);
     expect(pr.checksStatus, PrChecksStatus.passing);

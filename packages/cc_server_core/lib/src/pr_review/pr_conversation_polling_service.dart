@@ -9,6 +9,7 @@ import 'package:cc_infra/cc_infra.dart'
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_bridge.dart';
 import 'package:cc_server_core/src/pr_review/github_pr_conversation_gateway.dart';
 import 'package:meta/meta.dart';
+
 /// A PR that has a review-space association in a workspace — the set whose
 /// threads the poller follows for interactive replies.
 class AssociatedPullRequest {
@@ -98,8 +99,7 @@ class PrConversationPollingService {
   final GitHubPrConversationGateway _gateway;
   final GitHubPrConversationSink _bridge;
   final Future<List<String>> Function(String repoFullName) _workspacesForRepo;
-  final Future<List<AssociatedPullRequest>> Function()
-  _associatedPullRequests;
+  final Future<List<AssociatedPullRequest>> Function() _associatedPullRequests;
 
   /// Floor for the polling cadence.
   final Duration minInterval;
@@ -150,6 +150,9 @@ class PrConversationPollingService {
   /// Log-once latch for the idle condition (no app identity).
   bool _loggedIdle = false;
 
+  /// Log-once latch for a fully-suspended GitHub App.
+  bool _loggedSuspended = false;
+
   /// Starts the poll loop (immediate first poll). Idempotent.
   void start() {
     if (_running || _disposed) {
@@ -199,7 +202,24 @@ class PrConversationPollingService {
       _schedule(idleInterval);
       return;
     }
+    if (await _gateway.allInstallationsSuspended()) {
+      // Every installation is paused: minting 403s and comment fetches 404.
+      // A PAT that can still see the repos is a different path (open-PR
+      // polling keeps going when the probe succeeds). The conversation
+      // lane is the bot, which cannot talk until the install is resumed.
+      if (!_loggedSuspended) {
+        _loggedSuspended = true;
+        CcHostLog.info(
+          'pr_conversation: idle — GitHub App installation(s) suspended. '
+          'Resume the installation on GitHub or connect a token. '
+          'Re-checking every ${idleInterval.inMinutes}m.',
+        );
+      }
+      _schedule(idleInterval);
+      return;
+    }
     _loggedIdle = false;
+    _loggedSuspended = false;
     try {
       await _ensureDedupeLoaded();
       final sweepStart = _now().toUtc();
@@ -233,10 +253,14 @@ class PrConversationPollingService {
       List<GitHubViewerPr> mentioned,
       List<GitHubViewerPr> shortMentioned,
       List<GitHubViewerPr> labeled,
-    }) results,
+    })
+    results,
     DateTime sweepStart,
   ) async {
     final silent = _baseline && _firstRunEver;
+    final suspended = {
+      for (final owner in await _gateway.suspendedOwners()) owner.toLowerCase(),
+    };
 
     // Route every search hit to the workspace that links its repo. The
     // association set wins over search routing for the same PR: a
@@ -245,6 +269,9 @@ class PrConversationPollingService {
     final targets = <String, _SweepTarget>{};
     for (final associated in await _associatedPullRequests()) {
       if (associated.owner.isEmpty || associated.name.isEmpty) {
+        continue;
+      }
+      if (suspended.contains(associated.owner.toLowerCase())) {
         continue;
       }
       targets[associated.repoFullName.toLowerCase()] = _SweepTarget(
@@ -260,6 +287,9 @@ class PrConversationPollingService {
       for (final pr in prs) {
         final key = pr.repoFullName.toLowerCase();
         if (targets.containsKey(key)) {
+          continue;
+        }
+        if (suspended.contains(pr.owner.toLowerCase())) {
           continue;
         }
         var workspaceIds = const <String>[];
@@ -363,10 +393,7 @@ class PrConversationPollingService {
     }
     final cursor = _sweepCursor % targets.length;
     _sweepCursor = (_sweepCursor + maxCommentSweeps) % targets.length;
-    return [
-      ...targets.sublist(cursor),
-      ...targets.sublist(0, cursor),
-    ];
+    return [...targets.sublist(cursor), ...targets.sublist(0, cursor)];
   }
 
   Future<void> _sweepPullRequestComments(

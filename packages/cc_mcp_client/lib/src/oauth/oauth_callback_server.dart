@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_mcp_client/src/oauth/browser_handoff_page.dart';
+
 /// The authorization code (and echoed state) captured from an OAuth redirect.
 class OAuthCallbackResult {
   /// Creates an [OAuthCallbackResult].
@@ -99,14 +101,14 @@ class OAuthCallbackServer {
   }
 
   static String _page({required bool ok, String? error}) {
-    final title = ok ? 'Authorization complete' : 'Authorization failed';
-    final body = ok
-        ? 'You can close this tab and return to Control Center.'
-        : 'Authorization failed${error != null ? ': $error' : ''}. '
-              'You can close this tab and try again.';
-    return '<!doctype html><html><head><meta charset="utf-8">'
-        '<title>$title</title></head>'
-        '<body style="font-family:system-ui;padding:3rem;text-align:center">'
-        '<h2>$title</h2><p>$body</p></body></html>';
+    return browserHandoffPage(
+      title: ok ? 'Signed in' : 'Sign-in failed',
+      body: ok
+          ? 'You can close this tab and return to Control Center.'
+          : error == null || error.isEmpty
+          ? 'Return to Control Center and try again.'
+          : error,
+      ok: ok,
+    );
   }
 }

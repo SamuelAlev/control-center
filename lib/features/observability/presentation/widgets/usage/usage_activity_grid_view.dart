@@ -77,7 +77,7 @@ class _UsageActivityGridViewState extends State<UsageActivityGridView> {
           child: hovered == null
               ? null
               : Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: Text(
                     l10n.obsUsageCellReadout(
                       DateFormat.MMMd(locale).format(hovered.day),
@@ -93,29 +93,37 @@ class _UsageActivityGridViewState extends State<UsageActivityGridView> {
         Semantics(
           label: _semanticSummary(l10n, locale, grid),
           excludeSemantics: true,
-          child: CcScrollbar(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              // Anchored to the end so the most recent weeks are the ones on
-              // screen when the year overflows the panel.
-              reverse: true,
-              child: MouseRegion(
-                onHover: (event) => _updateHover(event.localPosition),
-                onExit: (_) => _clearHover(),
-                child: SizedBox(
-                  width: width,
-                  height: gridHeight + UsageActivityGridView.monthLabelHeight,
-                  child: CustomPaint(
-                    painter: _ActivityGridPainter(
-                      grid: grid,
-                      emptyColor: t.bgQuaternary,
-                      peakColor: t.bgBrandSolid,
-                      labelStyle: CcTypography.caption.copyWith(
-                        color: t.textTertiary,
-                        fontSize: 10,
+          // RTL carve-out: the heat map is a time axis painted oldest→newest
+          // left-to-right (chart policy pins time axes LTR), and the painter,
+          // the hover math and this scrollable must agree on a direction — an
+          // RTL-flipped `reverse:` scroll would anchor the viewport on the
+          // OLDEST weeks while the painter keeps the newest on the right.
+          child: Directionality(
+            textDirection: TextDirection.ltr,
+            child: CcScrollbar(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                // Anchored to the end so the most recent weeks are the ones on
+                // screen when the year overflows the panel.
+                reverse: true,
+                child: MouseRegion(
+                  onHover: (event) => _updateHover(event.localPosition),
+                  onExit: (_) => _clearHover(),
+                  child: SizedBox(
+                    width: width,
+                    height: gridHeight + UsageActivityGridView.monthLabelHeight,
+                    child: CustomPaint(
+                      painter: _ActivityGridPainter(
+                        grid: grid,
+                        emptyColor: t.bgQuaternary,
+                        peakColor: t.bgBrandSolid,
+                        labelStyle: CcTypography.caption.copyWith(
+                          color: t.textTertiary,
+                          fontSize: 10,
+                        ),
+                        monthLabel: (month) =>
+                            DateFormat.MMM(locale).format(month),
                       ),
-                      monthLabel: (month) =>
-                          DateFormat.MMM(locale).format(month),
                     ),
                   ),
                 ),

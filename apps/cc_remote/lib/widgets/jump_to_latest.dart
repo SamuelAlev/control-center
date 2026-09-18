@@ -1,4 +1,5 @@
 import 'package:cc_remote/app_icons.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
@@ -27,11 +28,12 @@ class JumpToLatest extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     return IgnorePointer(
       ignoring: false,
       child: CcTappable(
         onPressed: onTap,
-        semanticLabel: 'Jump to latest',
+        semanticLabel: l10n.jumpToLatest,
         borderRadius: const BorderRadius.all(Radius.circular(999)),
         builder: (context, _) => Container(
           // ≥44px hit box (touch-ergonomic), pill shape, token-driven colors.
@@ -47,7 +49,7 @@ class JumpToLatest extends StatelessWidget {
               Icon(AppIcons.chevronsDown, size: 16, color: t.accentOn),
               const SizedBox(width: 8),
               Text(
-                isStreaming ? 'Streaming' : 'Jump to latest',
+                isStreaming ? l10n.streaming : l10n.jumpToLatest,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,

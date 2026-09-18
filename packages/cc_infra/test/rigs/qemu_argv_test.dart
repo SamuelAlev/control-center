@@ -15,6 +15,7 @@ void main() {
     int? httpProxyPort = 4001,
     int? socksProxyPort = 4002,
     int? credentialPort = 4003,
+    bool unrestrictedNetwork = false,
     String? firmwarePath,
   }) => QemuLaunchPlan(
     rigId: 'abc',
@@ -30,6 +31,7 @@ void main() {
     httpProxyHostPort: httpProxyPort,
     socksProxyHostPort: socksProxyPort,
     credentialHostPort: credentialPort,
+    unrestrictedNetwork: unrestrictedNetwork,
     firmwarePath: firmwarePath,
   );
 
@@ -49,6 +51,16 @@ void main() {
             'Without restrict=on the guest reaches the host LAN and the '
             'internet directly, and every egress control in this system is '
             'decoration.',
+      );
+    });
+
+    test('a confirmed unrestricted rig gets direct guest egress', () {
+      final netdev = netdevOf(buildQemuArgv(plan(unrestrictedNetwork: true)));
+      expect(netdev, isNot(contains('restrict=on')));
+      expect(
+        netdev,
+        startsWith('user,id=net0'),
+        reason: 'The bypass widens egress without publishing host forwards.',
       );
     });
 
@@ -248,7 +260,8 @@ void main() {
     test('a deep data directory can no longer produce a too-long path', () {
       final path = buildRigSocketPath(
         candidateRoots: defaultRigSocketRoots({
-          'TMPDIR': '/Users/somebody/Library/Containers/com.example.app/Data/tmp',
+          'TMPDIR':
+              '/Users/somebody/Library/Containers/com.example.app/Data/tmp',
         }),
         rigId: rigId,
       );
@@ -268,15 +281,17 @@ void main() {
       expect(fixed.length, lessThan(kMaxUnixSocketPathBytes));
     });
 
-    test('every root is rejected until one fits, /tmp being the last resort',
-        () {
-      final path = buildRigSocketPath(
-        candidateRoots: ['/${'x' * 200}', '/tmp'],
-        rigId: rigId,
-      );
-      expect(path, startsWith('/tmp/ccrig/'));
-      expect(path.length, lessThan(kMaxUnixSocketPathBytes));
-    });
+    test(
+      'every root is rejected until one fits, /tmp being the last resort',
+      () {
+        final path = buildRigSocketPath(
+          candidateRoots: ['/${'x' * 200}', '/tmp'],
+          rigId: rigId,
+        );
+        expect(path, startsWith('/tmp/ccrig/'));
+        expect(path.length, lessThan(kMaxUnixSocketPathBytes));
+      },
+    );
 
     test('the rig id is never truncated', () {
       // Two rigs sharing a shortened prefix would share a control socket, and
@@ -290,7 +305,9 @@ void main() {
 
     test('a private per-user root is preferred over shared /tmp', () {
       final path = buildRigSocketPath(
-        candidateRoots: defaultRigSocketRoots({'XDG_RUNTIME_DIR': '/run/user/1000'}),
+        candidateRoots: defaultRigSocketRoots({
+          'XDG_RUNTIME_DIR': '/run/user/1000',
+        }),
         rigId: rigId,
       );
       expect(path, startsWith('/run/user/1000/ccrig/'));

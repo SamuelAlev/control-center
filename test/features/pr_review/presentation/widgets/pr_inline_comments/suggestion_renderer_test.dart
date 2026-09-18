@@ -66,6 +66,31 @@ void main() {
       expect(find.text('Suggested change'), findsOneWidget);
     });
 
+    testWidgets('renders every suggestion fence with interleaved markdown', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SuggestionAwareMarkdown(
+            prRef: _prRef,
+            body:
+                'First option\n\n'
+                '```suggestion\nfirst replacement\n```\n\n'
+                'Or use this\n\n'
+                '```suggestion\nsecond replacement\n```',
+            originalCode: 'old code',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      expect(find.text('Suggested change'), findsNWidgets(2));
+      expect(find.text('First option'), findsOneWidget);
+      expect(find.text('Or use this'), findsOneWidget);
+      expect(find.textContaining('first replacement'), findsOneWidget);
+      expect(find.textContaining('second replacement'), findsOneWidget);
+    });
+
     testWidgets('renders suggestion with before text', (tester) async {
       await tester.pumpWidget(
         _wrap(

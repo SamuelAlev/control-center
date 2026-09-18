@@ -1,0 +1,519 @@
+{
+  "@@locale": "el",
+  "appTitle": "Control Center",
+  "back": "Πίσω",
+  "cancel": "Ακύρωση",
+  "retry": "Επανάληψη",
+  "tryAgain": "Δοκιμάστε ξανά",
+  "settings": "Ρυθμίσεις",
+  "refresh": "Ανανέωση",
+  "approve": "Έγκριση",
+  "deny": "Απόρριψη",
+  "continueLabel": "Συνέχεια",
+  "agentQuestionHeader": "Ερώτηση για εσάς",
+  "agentQuestionAnsweredLabel": "Απαντήθηκε",
+  "agentQuestionSkip": "Παράλειψη",
+  "agentQuestionSkippedLabel": "Παραλείφθηκε",
+  "agentQuestionFreeformHint": "Πληκτρολογήστε την απάντησή σας…",
+  "agentApprovalRequired": "Απαιτείται έγκριση",
+  "approveAndRemember": "Έγκριση για 8 ώρες",
+  "decline": "Άρνηση",
+  "confirm": "Επιβεβαίωση",
+  "send": "Αποστολή",
+  "close": "Κλείσιμο",
+  "expand": "Ανάπτυξη",
+  "zoomIn": "Μεγέθυνση",
+  "zoomOut": "Σμίκρυνση",
+  "resetZoom": "Επαναφορά μεγέθυνσης",
+  "scanQrPrompt": "Σαρώστε τον κωδικό QR από το Mac σας για να συζεύξετε αυτό το τηλέφωνο.",
+  "scanQrHelp": "Ανοίξτε την κάμερα και στρέψτε την στον QR που εμφανίζεται στο Control Center στο Mac. Αυτό το τηλέφωνο συνδέεται απευθείας με το Mac μέσω ιδιωτικής σύνδεσης.",
+  "connectingToMac": "Σύνδεση με το Mac σας…",
+  "connectingDetail": "Δημιουργία ασφαλούς, άμεσης σύνδεσης.",
+  "identityChangedTitle": "Η ταυτότητα του διακομιστή άλλαξε",
+  "identityChangedBody": "Αυτός ο διακομιστής δεν ταιριάζει πλέον με την ταυτότητα που αποθηκεύτηκε κατά τη σύζευξη. Μπορεί να σημαίνει ότι ο διακομιστής επανεγκαταστάθηκε — ή ότι κάτι παρεμβαίνει στη σύνδεση. Για ασφάλεια, αυτή η συσκευή δεν θα συνδεθεί. Αφαιρέστε τη σύζευξη και σαρώστε έναν νέο κωδικό QR από το Mac για να συζεύξετε ξανά.",
+  "removePairing": "Αφαίρεση σύζευξης",
+  "couldntConnect": "Δεν ήταν δυνατή η σύνδεση",
+  "pendingPairingTitle": "Σύνδεση σε αυτόν τον διακομιστή;",
+  "pendingPairingBody": "Ένας σύνδεσμος ζήτησε από το Control Center να συζευχθεί με αυτόν τον διακομιστή. Συνεχίστε μόνο αν το ξεκινήσατε εσείς.",
+  "connect": "Σύνδεση",
+  "failureNotPaired": "Χωρίς σύζευξη — σαρώστε τον κωδικό QR από το Mac",
+  "failureUnreachable": "Δεν ήταν δυνατή η πρόσβαση στον διακομιστή από καμία διαδρομή — ελέγξτε ότι εκτελείται ή δοκιμάστε το ίδιο δίκτυο",
+  "failureIdentityChanged": "Η ταυτότητα του διακομιστή άλλαξε — αν επανεγκαταστάθηκε, συζεύξτε ξανά αυτή τη συσκευή",
+  "failureAuthRejected": "Ο διακομιστής απέρριψε αυτή τη συσκευή — συζεύξτε την ξανά από το Mac",
+  "failureUnknown": "Δεν ήταν δυνατή η σύνδεση — πατήστε για επανάληψη",
+  "statusConnected": "Συνδεδεμένο",
+  "statusConnecting": "Σύνδεση",
+  "statusOffline": "Εκτός σύνδεσης",
+  "statusIdentityMismatch": "Ασυμφωνία ταυτότητας",
+  "statusNotPaired": "Χωρίς σύζευξη",
+  "statusConfirmPairing": "Επιβεβαίωση σύζευξης",
+  "connectionFailed": "Η σύνδεση απέτυχε",
+  "identityMismatchBanner": "Η ταυτότητα του διακομιστή άλλαξε — η σύνδεση σταμάτησε. Συζεύξτε ξανά αυτή τη συσκευή για να συνεχίσετε.",
+  "tabInbox": "Εισερχόμενα",
+  "tabTickets": "Εισιτήρια",
+  "tabChat": "Συνομιλία",
+  "tabPrs": "PRs",
+  "tabCalendar": "Ημερολόγιο",
+  "tabNews": "Ειδήσεις",
+  "tabWaitingCount": "{label}, {count} σε αναμονή",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateAvailable": "Ένα νέο Control Center είναι διαθέσιμο",
+  "appearance": "Εμφάνιση",
+  "language": "Γλώσσα",
+  "device": "Συσκευή",
+  "themeSystem": "Σύστημα",
+  "themeLight": "Φωτεινό",
+  "themeDark": "Σκοτεινό",
+  "languageSystem": "Σύστημα",
+  "disconnectTapAgain": "Πατήστε ξανά για να αποσυνδέσετε αυτή τη συσκευή από το Mac",
+  "disconnectDevice": "Αποσύνδεση αυτής της συσκευής",
+  "disconnect": "Αποσύνδεση",
+  "chooseWorkspace": "Επιλογή χώρου εργασίας",
+  "workspaces": "Χώροι εργασίας",
+  "workspacesLoadFailed": "Αποτυχία φόρτωσης χώρων εργασίας",
+  "noWorkspacesYet": "Δεν υπάρχουν ακόμη χώροι εργασίας",
+  "selectWorkspace": "Επιλογή {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxLoadFailed": "Δεν ήταν δυνατή η φόρτωση των εισερχομένων",
+  "allCaughtUp": "Είστε ενήμεροι",
+  "inboxNoForgeAccount": "Δεν είναι συνδεδεμένος λογαριασμός forge στον διακομιστή, επομένως τα pull requests δεν μπορούν ακόμη να αποδοθούν σε εσάς.",
+  "inboxNothingWaiting": "Τίποτα δεν είναι αποκλεισμένο και κανένα pull request δεν σας περιμένει.",
+  "blocked": "Αποκλεισμένος",
+  "sectionNeedsYourReview": "Χρειάζεται την ανασκόπησή σας",
+  "sectionReturnedToYou": "Επιστράφηκε σε εσάς",
+  "sectionApprovedAndReady": "Εγκεκριμένα και έτοιμα",
+  "sectionYourDrafts": "Τα πρόχειρά σας",
+  "sectionWaitingForReviewers": "Αναμονή κριτών",
+  "sectionMergingAndMerged": "Συγχώνευση και πρόσφατα συγχωνευμένα",
+  "sectionWaitingForAuthor": "Αναμονή συντάκτη",
+  "waitingAgo": "αναμονή {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "openConversation": "Άνοιγμα της συνομιλίας",
+  "calendarLoadFailed": "Δεν ήταν δυνατή η φόρτωση του ημερολογίου",
+  "nothingScheduled": "Τίποτα προγραμματισμένο",
+  "calendarEmptyDescription": "Τα γεγονότα από τα συνδεδεμένα ημερολόγιά σας εμφανίζονται εδώ.",
+  "agenda": "Ατζέντα",
+  "syncCalendarsNow": "Συγχρονισμός ημερολογίων τώρα",
+  "event": "Γεγονός",
+  "eventNotFound": "Το γεγονός δεν βρέθηκε",
+  "eventNotFoundDescription": "Μπορεί να είναι εκτός του παραθύρου ατζέντας ή να αφαιρέθηκε στην πηγή.",
+  "joinMeeting": "Συμμετοχή στη σύσκεψη",
+  "join": "Συμμετοχή",
+  "attendeesCount": "Παρευρισκόμενοι ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "details": "Λεπτομέρειες",
+  "allDay": "Ολοήμερο",
+  "happeningNow": "Συμβαίνει τώρα",
+  "inDuration": "Σε {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "attendeeAccepted": "αποδεκτό",
+  "attendeeDeclined": "απορρίφθηκε",
+  "attendeeMaybe": "ίσως",
+  "attendeeNoReply": "χωρίς απάντηση",
+  "organizer": "διοργανωτής",
+  "calendarNoAccounts": "Δεν είναι συνδεδεμένο ημερολόγιο για αυτόν τον χώρο εργασίας. Συνδέστε ένα από την εφαρμογή υπολογιστή — η είσοδος αποθηκεύει το token στον διακομιστή.",
+  "calendarReauthNeeded": "Ένας λογαριασμός ημερολογίου χρειάζεται επανασύνδεση — ό,τι βλέπετε παρακάτω μπορεί να είναι παλιό. Επανασυνδέστε τον από την εφαρμογή υπολογιστή.",
+  "spacesLoadFailed": "Δεν ήταν δυνατή η φόρτωση των χώρων",
+  "noSpaces": "Κανένας χώρος",
+  "spacesEmptyDescription": "Οι χώροι σε αυτόν τον χώρο εργασίας εμφανίζονται εδώ.",
+  "thread": "Νήμα",
+  "agentWorking": "Ο πράκτορας εργάζεται",
+  "messagesLoadFailed": "Δεν ήταν δυνατή η φόρτωση των μηνυμάτων",
+  "noMessagesYet": "Δεν υπάρχουν ακόμη μηνύματα",
+  "noMessagesDescription": "Στείλτε ένα μήνυμα για να ξεκινήσει η συνομιλία.",
+  "agentResponding": "Ο πράκτορας απαντά",
+  "agentFinished": "Ο πράκτορας ολοκλήρωσε",
+  "attachmentsTooLarge": "{count, plural, =1{{names} είναι πολύ μεγάλο για αποστολή από εδώ.} other{{names} είναι πολύ μεγάλα για αποστολή από εδώ.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{{names} είναι πολύ μεγάλο για αποστολή μέσω του relay από εδώ.} other{{names} είναι πολύ μεγάλα για αποστολή μέσω του relay από εδώ.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentUploadFailed": "Δεν ήταν δυνατή η μεταφόρτωση του συνημμένου. Δοκιμάστε ξανά.",
+  "attachmentsLeftOut": "{count, plural, =1{1 συνημμένο δεν μεταφορτώθηκε και παραλείφθηκε.} other{{count} συνημμένα δεν μεταφορτώθηκαν και παραλείφθηκαν.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teammate": "Συνάδελφος",
+  "agent": "Πράκτορας",
+  "attachFile": "Επισύναψη αρχείου",
+  "messageHint": "Μήνυμα",
+  "removeAttachment": "Αφαίρεση {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "articlesLoadFailed": "Δεν ήταν δυνατή η φόρτωση των άρθρων",
+  "noArticles": "Κανένα άρθρο",
+  "articlesEmptyDescription": "Νέα άρθρα εμφανίζονται εδώ καθώς ενημερώνονται οι ροές.",
+  "unread": "Μη αναγνωσμένα",
+  "allFeeds": "Όλες οι ροές",
+  "save": "Αποθήκευση",
+  "unsave": "Αναίρεση αποθήκευσης",
+  "readFullArticle": "Ανάγνωση πλήρους άρθρου",
+  "ticketsLoadFailed": "Δεν ήταν δυνατή η φόρτωση των εισιτηρίων",
+  "noTickets": "Κανένα εισιτήριο",
+  "ticketsEmptyDescription": "Τα εισιτήρια σε αυτόν τον χώρο εργασίας εμφανίζονται εδώ.",
+  "all": "Όλα",
+  "ticket": "Εισιτήριο",
+  "ticketLoadFailed": "Δεν ήταν δυνατή η φόρτωση του εισιτηρίου",
+  "assignedTo": "Ανατέθηκε στον/στην {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openInBrowser": "Άνοιγμα στο πρόγραμμα περιήγησης",
+  "status": "Κατάσταση",
+  "assign": "Ανάθεση",
+  "reassign": "Επανάθεση",
+  "noAgents": "Κανένας πράκτορας",
+  "noAgentsDescription": "Αναθέστε έναν πράκτορα από αυτόν τον χώρο εργασίας.",
+  "statusOpen": "Ανοιχτό",
+  "statusInProgress": "Σε εξέλιξη",
+  "statusBlocked": "Αποκλεισμένος",
+  "statusInReview": "Σε ανασκόπηση",
+  "statusDone": "Ολοκληρώθηκε",
+  "statusBacklog": "Ανεκτέλεστα",
+  "lensNeedsMe": "Με χρειάζεται",
+  "lensMine": "Δικά μου",
+  "prsLoadFailed": "Δεν ήταν δυνατή η φόρτωση των pull requests",
+  "noOpenPullRequests": "Δεν υπάρχουν ανοιχτά pull requests",
+  "nothingWaitingOnReview": "Τίποτα δεν περιμένει την ανασκόπησή σας",
+  "noOwnOpenPullRequests": "Δεν έχετε ανοιχτά pull requests",
+  "nothingBlocked": "Τίποτα δεν είναι αποκλεισμένο",
+  "prsEmptyDescription": "Τα pull requests από τα repo αυτού του χώρου εργασίας εμφανίζονται εδώ.",
+  "refreshPullRequests": "Ανανέωση pull requests",
+  "noForgeConnected": "Δεν είναι συνδεδεμένο forge στον διακομιστή, επομένως δεν μπορούν να ανακτηθούν pull requests. Συνδέστε ένα από την εφαρμογή υπολογιστή.",
+  "reposUnreadable": "{count, plural, =1{1 repo δεν ήταν αναγνώσιμο.} other{{count} repo δεν ήταν αναγνώσιμα.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reposNotReadable": "Μη αναγνώσιμα: {names}",
+  "installationSuspendedTitle": "Η εγκατάσταση του GitHub App έχει ανασταλεί",
+  "installationSuspendedBody": "Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.",
+  "installationSuspendedNotice": "Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "draft": "Πρόχειρο",
+  "merged": "Συγχωνεύθηκε",
+  "closed": "Κλειστό",
+  "open": "Ανοιχτό",
+  "approved": "Εγκρίθηκε",
+  "changesRequested": "Ζητήθηκαν αλλαγές",
+  "reviewRequired": "Απαιτείται ανασκόπηση",
+  "checksPassing": "Οι έλεγχοι περνούν",
+  "checksFailing": "Οι έλεγχοι αποτυγχάνουν",
+  "checksRunning": "Οι έλεγχοι εκτελούνται",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Δεν ήταν δυνατή η φόρτωση αυτού του pull request",
+  "openOnForge": "Άνοιγμα στο forge",
+  "requestChangesNeedsComment": "Προσθέστε ένα σχόλιο που εξηγεί τι πρέπει να αλλάξει.",
+  "conversation": "Συνομιλία",
+  "files": "Αρχεία",
+  "checks": "Έλεγχοι",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 αρχείο} other{{count} αρχεία}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 commit} other{{count} commits}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflicts": "Συγκρούσεις",
+  "reviewers": "Κριτές",
+  "noDescriptionNoComments": "Δεν υπάρχει ακόμη περιγραφή ούτε σχόλια.",
+  "noChangedFiles": "Κανένα αλλαγμένο αρχείο.",
+  "noChecksReported": "Δεν αναφέρθηκαν έλεγχοι για το head commit.",
+  "reviewCommentHint": "Αφήστε ένα σχόλιο ανασκόπησης…",
+  "comment": "Σχόλιο",
+  "commentPosted": "Το σχόλιο δημοσιεύτηκε",
+  "request": "Αίτημα",
+  "squashAndMerge": "Squash και συγχώνευση",
+  "noActionsAvailable": "{status} — δεν υπάρχουν διαθέσιμες ενέργειες.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewApproved": "ενέκρινε",
+  "reviewRequestedChanges": "ζήτησε αλλαγές",
+  "reviewCommented": "ανασκόπησε",
+  "reviewPending": "εκκρεμεί",
+  "unknownAuthor": "άγνωστος",
+  "hideDiffFor": "Απόκρυψη του diff για το {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "showDiffFor": "Εμφάνιση του diff για το {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "checkRunning": "σε εκτέλεση",
+  "checkPassed": "πέρασε",
+  "checkFailed": "απέτυχε",
+  "checkCancelled": "ακυρώθηκε",
+  "checkSkipped": "παραλείφθηκε",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "noTextDiff": "Δεν υπάρχει κειμενικό diff για αυτό το αρχείο — είναι δυαδικό ή πολύ μεγάλο για να επιστρέψει ένα το forge.",
+  "showRemainingLines": "{count, plural, =1{Εμφάνιση της υπόλοιπης γραμμής} other{Εμφάνιση των υπόλοιπων {count} γραμμών}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 αμετάβλητη γραμμή} other{{count} αμετάβλητες γραμμές}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToLatest": "Μετάβαση στα πιο πρόσφατα",
+  "streaming": "Ροή",
+  "working": "Εργάζεται",
+  "input": "Είσοδος",
+  "output": "Έξοδος",
+  "now": "τώρα",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "Σήμερα",
+  "tomorrow": "Αύριο",
+  "yesterday": "Χθες",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
+}

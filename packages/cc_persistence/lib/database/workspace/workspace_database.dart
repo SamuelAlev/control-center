@@ -446,7 +446,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 7;
+  static const int currentSchemaVersion = 8;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -603,6 +603,20 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         await m.database.customStatement(
           'DELETE FROM code_edges '
           'WHERE target_symbol_id IS NULL AND target_name IS NOT NULL',
+        );
+      },
+    ),
+    // v7 → v8: richer user-activity rows. A single conventional target id
+    // could not say which setting changed or which space a rig lived in;
+    // `details` is the sanitized argument snapshot that can.
+    MigrationStep(
+      7,
+      8,
+      (m) async {
+        await _addColumnIfMissing(
+          m,
+          userActivityTable,
+          userActivityTable.details,
         );
       },
     ),

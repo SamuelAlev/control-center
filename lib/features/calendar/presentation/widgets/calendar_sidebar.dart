@@ -10,7 +10,7 @@ import 'package:control_center/features/calendar/providers/google_auth_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -31,7 +31,7 @@ class CalendarSidebar extends ConsumerWidget {
       width: 248,
       decoration: BoxDecoration(
         color: t.sidebar,
-        border: Border(right: BorderSide(color: t.borderSecondary)),
+        border: BorderDirectional(end: BorderSide(color: t.borderSecondary)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,8 +146,7 @@ class _MiniMonthState extends ConsumerState<_MiniMonth> {
             decoration: BoxDecoration(
               color: weekView && dayKey(days[week * 7]) == activeWeekStart
                   ? t.bgQuaternary
-                  : Colors.transparent,
-              borderRadius: AppRadii.brLg,
+                  : const Color(0x00000000),
             ),
             child: Row(
               children: [
@@ -213,8 +212,7 @@ class _MiniDayCell extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.all(1),
-      child: InkWell(
-        borderRadius: AppRadii.brSm,
+      child: GestureDetector(
         onTap: onTap,
         child: Container(
           height: 28,
@@ -222,8 +220,7 @@ class _MiniDayCell extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected
                 ? t.accent
-                : (isToday ? t.bgBrandPrimary : Colors.transparent),
-            borderRadius: AppRadii.brSm,
+                : (isToday ? t.bgBrandPrimary : const Color(0x00000000)),
           ),
           child: Text(
             '${day.day}',
@@ -371,7 +368,7 @@ class _AccountHeader extends StatelessWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 6, 6, 4),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 6, 6, 4),
       child: Row(
         children: [
           Expanded(
@@ -469,9 +466,8 @@ class _CalendarRowState extends State<_CalendarRow> {
           // Alpha-0 at idle (not transparent-black) so the fade lerps only
           // alpha, matching CcSidebarItem's hover wash.
           color: _hovered ? t.hover : t.hover.withValues(alpha: 0),
-          borderRadius: AppRadii.brSm,
         ),
-        padding: const EdgeInsets.fromLTRB(24, 1, 6, 1),
+        padding: const EdgeInsetsDirectional.fromSTEB(24, 1, 6, 1),
         child: Row(
           children: [
             Container(
@@ -479,7 +475,6 @@ class _CalendarRowState extends State<_CalendarRow> {
               height: 12,
               decoration: BoxDecoration(
                 color: widget.hidden ? null : dotColor,
-                borderRadius: AppRadii.brXs,
                 border: Border.all(color: dotColor, width: 1.5),
               ),
             ),

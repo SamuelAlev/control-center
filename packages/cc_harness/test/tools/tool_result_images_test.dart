@@ -60,7 +60,12 @@ void main() {
     test('the rig tools get a tightened text cap', () {
       // The image is the payload for these; a DOM or UI dump has no business
       // filling the window alongside it.
-      for (final tool in ['computer_use', 'browser_use', 'mobile_use']) {
+      for (final tool in [
+        'computer_use',
+        'browser_use',
+        'mobile_use',
+        'ios_use',
+      ]) {
         final limits = ToolOutputLimitTable.defaults.forTool(tool);
         expect(limits.characterLimit, lessThan(ToolOutputLimits.standard.characterLimit));
         expect(limits.maxImages, 1);

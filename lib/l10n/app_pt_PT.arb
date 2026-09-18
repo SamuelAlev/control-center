@@ -1,0 +1,1035 @@
+{
+  "@@locale": "pt_PT",
+  "agentActivityNotRecorded": "Nenhuma atividade foi registada para esta execução",
+  "agentActivityWaiting": "A aguardar atividade…",
+  "searchInFiles": "Pesquisar em ficheiros",
+  "showFileList": "Mostrar lista de ficheiros",
+  "searchInFilesHintField": "Pesquisar em ficheiros…",
+  "searchInFilesHint": "Pesquisar nos ficheiros do pull request",
+  "searchResultsCount": "{count, plural, =1{1 resultado} other{{count} resultados}} em {files, plural, =1{1 ficheiro} other{{files} ficheiros}}",
+  "@searchResultsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "discardChangesMessage": "Redefinir {count, plural, =1{1 ficheiro} other{{count} ficheiros}} para HEAD? Isso não pode ser desfeito.",
+  "@discardChangesMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discardedFiles": "{count, plural, =1{1 ficheiro descartado} other{{count} ficheiros descartados}}",
+  "@discardedFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "discardedWithSkipped": "{reverted, plural, =1{1 ficheiro descartado} other{{reverted} ficheiros descartados}}; {skipped} ignorado(s) (não rastreado(s))",
+  "@discardedWithSkipped": {
+    "placeholders": {
+      "reverted": {
+        "type": "int"
+      },
+      "skipped": {
+        "type": "int"
+      }
+    }
+  },
+  "prWorktreeUnavailableHint": "Falha ao preparar os ficheiros do pull request. Reabra o pull request para tentar novamente.",
+  "rigsCustomImagesHint": "Aponte o Terminal (VM) ou o Navegador (VM) para a sua própria imagem — estenda as padrão com as ferramentas do seu projeto, ou use uma compatível de um registo. Máquinas novas passam a usá-la; as em execução mantêm a delas. Veja o guia de rigs para o que uma imagem deve fornecer.",
+  "rigsCustomImageInvalid": "Introduza uma referência de registo como repo/nome:tag. Caminhos locais e arquivos não são permitidos.",
+  "rigsCustomImageSaved": "Guardado. Máquinas novas inicializam esta imagem; as em execução mantêm a delas.",
+  "rigImageNotPublishedHint": "Nenhuma imagem foi publicada para isto ainda, então não há nada para descarregar. Importe uma imagem de disco compatível para o ativar.",
+  "rigPortsEmpty": "Nada está a escutar ainda. Inicie um servidor no terminal — um servidor de desenvolvimento na porta 3000 aparece aqui.",
+  "rigPortsExposeLan": "Partilhar na rede local",
+  "rigPortsInactive": "não está a escutar",
+  "serverConnection": "Ligação com o servidor",
+  "serverModeLocal": "Executar nesta aplicação",
+  "serverModeRemote": "Ligar a uma instância remota",
+  "serverModeRemoteDescription": "Ligue-se a um servidor do Control Center em execução em outro lugar. Seus dados ficam nesse servidor.",
+  "shutdownServiceMcpConnections": "Ligações MCP",
+  "serverSharingTitle": "Partilhar este servidor",
+  "serverSharingDescription": "Torne este servidor acessível a partir dos seus outros dispositivos. Nada é exposto publicamente a menos que você ative um túnel abaixo. Os convites de pareamento incluem automaticamente os endereços atuais do servidor; crie-os nas definições do espaço de trabalho.",
+  "serverSharingUnavailable": "Os controlos de partilha não estão disponíveis neste servidor.",
+  "serverSharingMdnsOff": "Este servidor não está a ser anunciado na sua rede local (mDNS)",
+  "serverSharingTunnelStarting": "A iniciar o túnel…",
+  "serverSharingUpdateFailedTitle": "Não foi possível atualizar a partilha",
+  "pairClientTypeDesktop": "Aplicação para computador",
+  "pairCredentialsIntro": "Ligue o novo cliente com estes dados, ou abra o link nele.",
+  "pairServerUnreachable": "Outros dispositivos não conseguem aceder a este servidor diretamente, então um novo cliente não pode ligar. Defina a URL pública do servidor para emparelhar mais clientes.",
+  "serverSetupSubtitle": "O Control Center precisa de um servidor que seja o dono dos seus dados. Execute um nesta aplicação ou ligue-se a uma instância em execução em outro lugar.",
+  "serverSetupRunLocal": "Executar nesta aplicação",
+  "serverSetupConnect": "Ligar",
+  "serverSetupInvalidUrl": "Introduza uma URL de servidor ws:// ou wss:// válida.",
+  "serverSetupCouldNotConnect": "Não foi possível ligar",
+  "serverSetupErrorIdentityMismatch": "A identidade do servidor não corresponde à guardada neste dispositivo. Se o servidor foi reinstalado ou redefinido, remova o servidor guardado e emparelhe novamente.",
+  "serverSetupErrorGeneric": "Ocorreu um erro ao ligar. Expanda os detalhes técnicos abaixo para mais informações.",
+  "calendarConnectGoogle": "Ligar o Google Calendar",
+  "calendarDisconnect": "Desligar",
+  "calendarReconnect": "Voltar a ligar",
+  "calendarSyncing": "A sincronizar…",
+  "calendarSettingsDescription": "Ligue uma conta Google para sincronizar eventos neste espaço de trabalho.",
+  "calendarConnecting": "A ligar…",
+  "calendarConnectError": "Não foi possível ligar o Google Calendar",
+  "calendarConnectCredsHint": "Introduza o ID do cliente e o segredo OAuth (device-code) do seu projeto Google. O servidor faz a ligação e a sincronização — o seu navegador nunca guarda os tokens.",
+  "calendarConnectApproveInstruction": "Abra a página de verificação em qualquer dispositivo, inicie sessão e introduza este código:",
+  "calendarConnectWaiting": "A aguardar aprovação…",
+  "notificationCalendarAuthExpiredTitle": "Calendário desligado",
+  "notificationCalendarAuthExpiredBody": "Volte a ligar {email} para retomar a sincronização",
+  "@notificationCalendarAuthExpiredBody": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationCalendarAuthExpiredBodyNoEmail": "Volte a ligar seu calendário para retomar a sincronização",
+  "notifyCalendarAuthExpired": "Quando uma conta de calendário precisa ser ligada novamente",
+  "calendarConnectedAs": "Ligado como {email}",
+  "@calendarConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "prFilterCurrentUser": "Utilizador atual",
+  "kbTabs": "separadores",
+  "kbSearch": "pesquisar",
+  "diffSharingOffSubtitle": "Os agentes usam apenas metadados estruturados (caminhos de ficheiros, números de linha, descrição da PR); nenhum código bruto sai da aplicação.",
+  "errorReportingTitle": "Partilhar relatórios de falhas",
+  "onboardingDiagnosticsSubtitle": "Envie diagnósticos de falhas, erros e desempenho para nos ajudar a corrigir problemas mais rápido (apenas em versões de produção). Você pode alterar isso a qualquer momento em Definições → Privacidade.",
+  "deletePipelineRun": "Eliminar execução do pipeline",
+  "deletePipelineRunConfirm": "Eliminar esta execução de \"{template}\"? Esta ação não pode ser desfeita.",
+  "@deletePipelineRunConfirm": {
+    "description": "Confirmation body when deleting a pipeline run",
+    "placeholders": {
+      "template": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingPipelineRun": "Erro ao eliminar a execução do pipeline: {error}",
+  "@errorDeletingPipelineRun": {
+    "description": "Error shown when deleting a pipeline run fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTicket": "Eliminar ticket",
+  "deleteTicketConfirm": "Eliminar \"{title}\"? Esta ação não pode ser desfeita.",
+  "@deleteTicketConfirm": {
+    "description": "Confirmation body when deleting a ticket",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingTicket": "Erro ao eliminar o ticket: {error}",
+  "@errorDeletingTicket": {
+    "description": "Error shown when deleting a ticket fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteWorkspaceConfirm": "Eliminar \"{name}\"? Os repositórios vinculados no disco não são afetados.",
+  "@deleteWorkspaceConfirm": {
+    "description": "Confirmation body when deleting a workspace",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "errorDeletingWorkspace": "Erro ao eliminar o espaço de trabalho: {error}",
+  "@errorDeletingWorkspace": {
+    "description": "Error shown when deleting a workspace fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "nodeConfigReducerHelp": "Como fundir quando esta chave de saída já tem um valor",
+  "nodeConfigTeamId": "ID da equipa",
+  "activityTargetFile": "um ficheiro",
+  "activityTargetProvider": "um fornecedor",
+  "activityTargetTeam": "uma equipa",
+  "activityVerbConnected": "Ligou {target}",
+  "@activityVerbConnected": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "activityVerbDisconnected": "Desligou {target}",
+  "@activityVerbDisconnected": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "activityTargetMemoryFact": "um facto de memória",
+  "activityTargetProviderPolicy": "uma política de fornecedor",
+  "activityUpdatedSavedArticle": "Atualizou um artigo guardado",
+  "activityStartedCalendarConnect": "Iniciou a ligação do calendário",
+  "activityDisconnectedCalendar": "Desligou o calendário",
+  "activityMarkedFileViewed": "Marcou um ficheiro como visto",
+  "activityRespondedToApproval": "Respondeu a um pedido de aprovação",
+  "activityRemovedProviderCredential": "Removeu uma credencial de fornecedor",
+  "adaptersAutoDetected": "Executores de agentes detectados automaticamente nesta máquina. Instale as ferramentas CLI ausentes para ativar executores adicionais.",
+  "addFromFile": "Adicionar de ficheiro",
+  "addRepoBrowseIntro": "Navegue pelas pastas na máquina que executa o servidor e selecione os checkouts git para registar.",
+  "appFont": "Fonte da aplicação",
+  "articlesSubscribed": "Artigos dos seus feeds subscritos.",
+  "attachFiles": "Anexar ficheiros",
+  "awaitingYourReview": "A aguardar a sua revisão",
+  "checking": "A verificar",
+  "checkingEllipsis": "A verificar…",
+  "chooseAppFont": "Escolher fonte da aplicação",
+  "commentOnThisFile": "Comentar este ficheiro",
+  "prCloneProgressCloningTitle": "A clonar repositório",
+  "prCloneProgressCloningSubtitle": "Este PR modifica {fileCount} ficheiros, excedendo o limite da API do GitHub. A clonar o repositório localmente…",
+  "@prCloneProgressCloningSubtitle": {
+    "description": "Subtitle shown while cloning a large PR repository",
+    "placeholders": {
+      "fileCount": {
+        "type": "int"
+      }
+    }
+  },
+  "prCloneProgressCloningSubtitleNoCount": "Este PR excede o limite de ficheiros da API do GitHub. A clonar o repositório localmente…",
+  "prCloneProgressFetchingTitle": "A obter refs",
+  "prCloneProgressFetchingSubtitle": "A obter o branch base e a ref do PR…",
+  "prCloneProgressComputingSubtitle": "A executar git diff localmente…",
+  "delete": "Eliminar",
+  "deleteAgent": "Eliminar agente",
+  "deleteAgentConfirm": "Eliminar \"{name}\"? Esta ação não pode ser desfeita.",
+  "@deleteAgentConfirm": {
+    "description": "Delete agent confirmation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteSpace": "Eliminar espaço",
+  "deleteConfirmName": "Eliminar \"{name}\"?",
+  "@deleteConfirmName": {
+    "description": "Delete confirmation dialog title",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFact": "Eliminar facto",
+  "deleteFeedConfirm": "Eliminar \"{name}\"?",
+  "@deleteFeedConfirm": {
+    "description": "Delete feed confirmation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletePolicy": "Eliminar política",
+  "deletePolicyConfirm": "Eliminar esta política? Esta ação não pode ser desfeita.",
+  "deleteWorkspace": "Eliminar espaço de trabalho",
+  "download": "Descarregar",
+  "downloadingLabel": "A descarregar",
+  "downloadingModel": "A descarregar modelo… {pct}%",
+  "@downloadingModel": {
+    "description": "Downloading progress for embedding model",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteMessage": "Eliminar mensagem",
+  "deleteMessageConfirm": "Eliminar esta mensagem? Isso não pode ser desfeito.",
+  "messageDeleted": "Mensagem eliminada",
+  "embeddingInstalled": "Modelo de embedding local instalado. Pesquisa híbrida ativada.",
+  "embeddingNotInstalled": "Não instalado. A pesquisa volta a ser apenas por palavras-chave até ser ativado.",
+  "embeddingRedownloadBody": "Os ficheiros do modelo existente serão eliminados e descarregados novamente. A pesquisa semântica ficará indisponível até o descarregamento ser concluído.",
+  "embeddingRemoveBody": "A pesquisa semântica será desativada até você reinstalá-la. Você pode instalá-la novamente a qualquer momento.",
+  "redownloadDiarizationModel": "Descarregar novamente o modelo de diarização",
+  "errorDeletingAgent": "Erro ao eliminar agente: {error}",
+  "@errorDeletingAgent": {
+    "description": "Error deleting an agent",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "extractingModel": "A extrair modelo… {pct}%",
+  "@extractingModel": {
+    "description": "Extraction progress for voice model",
+    "placeholders": {
+      "pct": {
+        "type": "int"
+      }
+    }
+  },
+  "fact": "Facto",
+  "facts": "Factos",
+  "failedToLoadLogs": "Falha ao carregar registos: {error}",
+  "@failedToLoadLogs": {
+    "description": "Error loading agent logs",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "filesChanged": "Ficheiros alterados",
+  "filesMentionSection": "Ficheiros",
+  "keybindingFocusSearch": "Focar na pesquisa",
+  "keybindingFocusThePullRequestSearchFieldDescription": "Focar no campo de pesquisa de pull requests",
+  "letsPluginTools": "Vamos ligar as suas ferramentas.",
+  "loadingAgents": "A carregar agentes…",
+  "loadingModels": "A carregar modelos…",
+  "loadingProviders": "A carregar fornecedores…",
+  "logs": "Registos",
+  "manageParticipants": "Gerir participantes",
+  "manageWorkspaces": "Gerir espaços de trabalho",
+  "mcpNotAvailableOnServer": "O controle do servidor MCP não está disponível no servidor ligado.",
+  "modelManagedOnServer": "Este modelo é executado no host do servidor e é gerido lá.",
+  "navSettings": "Definições",
+  "newsfeedSettingsDescription": "Gerir os seus feeds subscritos e as preferências do leitor.",
+  "newsfeedSettingsTitle": "Definições de notícias",
+  "noFileAnchor": "Nenhuma âncora de ficheiro — não é possível postar comentário inline.",
+  "notificationPrMerged": "PR fundida",
+  "notifyPrMerged": "Notificar quando uma pull request for fundida.",
+  "notificationPrMergeReadiness": "Pronto para fundir",
+  "notifyPrMergeReadiness": "Notificar quando uma pull request sua ficar pronta para fundir, ou deixar de estar.",
+  "notificationPrReadyToMerge": "Pronto para fundir",
+  "notificationPrMergeBlocked": "Já não é possível fundir",
+  "notificationPrMergeBlockedBodyOther": "{prTitle} já não pode ser fundida.",
+  "@notificationPrMergeBlockedBodyOther": {
+    "placeholders": {
+      "prTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "openApplicationSettings": "Abrir definições da aplicação",
+  "openArticlesInApp": "Abrir artigos na aplicação",
+  "prMergedBody": "Uma pull request foi fundida",
+  "prsMerged": "PRs fundidas",
+  "redownload": "Descarregar novamente",
+  "redownloadEmbeddingModel": "Descarregar novamente o modelo de embedding?",
+  "redownloadVoiceModel": "Descarregar novamente o modelo de voz?",
+  "repoRemovedFromWorkspace": "{name} será removido deste espaço de trabalho. Os ficheiros locais no disco não são afetados.",
+  "@repoRemovedFromWorkspace": {
+    "description": "Confirmation body for removing a repo",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "repoAccessNoticeBody": "As credenciais do GitHub do servidor não conseguem ver {repos}. Se um repositório pertencer a uma organização, instale lá a GitHub App ou associe um token com acesso.",
+  "@repoAccessNoticeBody": {
+    "description": "Body of the notice listing repos the server's forge credential cannot access",
+    "placeholders": {
+      "repos": {
+        "type": "String"
+      }
+    }
+  },
+  "repositoriesSettings": "Definições de repositórios",
+  "enclosedTerminalStartHint": "Este shell é executado na VM descartável desta conversa. Ela inicia quando você o abre, não quando a aplicação abre.",
+  "terminalStreamReconnecting": "transmissão interrompida — a voltar a ligar…",
+  "save": "Guardar",
+  "savingEllipsis": "A guardar…",
+  "searchOrTypeModel": "Pesquisar ou introduzir o nome de um modelo…",
+  "semanticSearch": "Pesquisa semântica",
+  "settingsLabel": "Definições",
+  "settingsLanguageDescription": "Escolher o idioma da aplicação.",
+  "signedIn": "Ligado.",
+  "signedInAs": "Ligado como {username}.",
+  "@signedInAs": {
+    "description": "Signed in to a provider as user",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "skillSaved": "Habilidade \"{name}\" guardada.",
+  "@skillSaved": {
+    "description": "Confirmation snackbar after saving a skill",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "skillSourceInvalidUrl": "Introduza uma URL de repositório GitHub (https://github.com/dono/repositorio).",
+  "skillSourceFilesCount": "{count} ficheiros",
+  "@skillSourceFilesCount": {
+    "description": "Number of files in the skill bundle; {count} is a number",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "skillOriginRegistry": "Registo",
+  "skillSaveAnywayOverride": "Entendo o risco — guardar mesmo assim",
+  "skillStateUnmanaged": "Não gerido",
+  "skipAcceptRisk": "Saltar — Eu aceito o risco",
+  "skipForNow": "Saltar por enquanto",
+  "skipSandboxing": "Saltar sandboxing",
+  "startOnAppLaunch": "Iniciar ao abrir a aplicação",
+  "onboardingStepConnect": "Ligar",
+  "typeCommandOrSearch": "Introduza um comando ou pesquise…",
+  "userAgentDescription": "Deixe vazio para usar o User-Agent padrão da aplicação. Alguns sites bloqueiam User-Agents que não são de navegador.",
+  "viewLogs": "Ver registos",
+  "voiceRedownloadBody": "Os ficheiros do modelo existente serão eliminados e o arquivo de ~200 MB descarregado novamente. A transcrição de voz ficará indisponível até o descarregamento ser concluído.",
+  "workspaceScopedSkills": "Ficheiros de habilidades com escopo do espaço de trabalho anexados aos agentes.",
+  "convertToDraftConfirm": "Este pull request voltará a ser um rascunho. As pedidos de revisão pendentes serão descartadas e ele não poderá ser fundido até que o marques como pronto novamente.",
+  "invalidDomain": "Introduza um domínio válido (ex. exemplo.com)",
+  "pipelineWaterfallIdleTooltip": "Tempo excluído do total ativo: a execução estava parada ou a aguardar entre etapas.",
+  "teamsLoadError": "Não foi possível carregar as equipas",
+  "teamsEmptyTitle": "Nenhuma equipa ainda",
+  "teamsEmptyDescription": "Agrupe agentes em equipas para que o trabalho atribuído a uma equipa seja encaminhado por um líder que delega.",
+  "teamCreateTitle": "Nova equipa",
+  "teamEditTitle": "Editar equipa",
+  "teamNameLabel": "Nome da equipa",
+  "teamDescriptionHint": "Pelo que esta equipa é responsável",
+  "teamLeaderHelp": "O coordenador que recebe o trabalho atribuído à equipa e delega ao membro mais adequado.",
+  "teamInstructionsHelp": "Anexadas ao briefing do líder — convenções da equipa, regras de escalonamento, tom.",
+  "teamSaved": "Equipa guardada",
+  "teamNoAgentsToAdd": "Todos os agentes já estão nesta equipa.",
+  "teamRemoveMember": "Remover da equipa",
+  "teamSelectPrompt": "Selecione uma equipa",
+  "teamSelectPromptDescription": "Escolha uma equipa da lista ou crie uma nova.",
+  "teamDeleteTitle": "Eliminar equipa?",
+  "teamDeleteBody": "{name} será eliminada. Seus agentes não são afetados.",
+  "@teamDeleteBody": {
+    "description": "Body of the delete-team confirmation dialog",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineTemplateDeleteConfirmTitle": "Eliminar modelo?",
+  "pipelineTemplateDeleteConfirmBody": "Eliminar o modelo de pipeline {name}? Não é possível desfazer.",
+  "@pipelineTemplateDeleteConfirmBody": {
+    "description": "Confirmation dialog body for deleting a template",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pipelineTemplateEditorSubtitle": "Arraste tipos de nós da barra lateral até o canvas e ligue-os.",
+  "unsavedChanges": "Alterações não guardadas",
+  "nodeConfigNoUpstream": "Não há outros nós para ligar.",
+  "conditionModeFilesAny": "Ficheiro(s) existe(m) — algum",
+  "conditionModeFilesAll": "Ficheiros existem — todos",
+  "conditionFilePaths": "Caminhos de ficheiro",
+  "syncHealthNoConfigs": "Ainda sem ligações de sincronização",
+  "triggerEventPrMerged": "PR fundida",
+  "ticketingApiKeySubtitle": "Injeta a chave de API do fornecedor de tickets no sandbox.",
+  "ticketingProvider": "Fornecedor de tickets",
+  "connectGitHubAndTicketing": "Ligue um alojamento de código para que o Control Center possa ler os teus pull requests, issues e revisões. Opcionalmente conecta um fornecedor de tickets. As credenciais ficam no teu servidor, nunca nesta máquina.",
+  "bulkDeleteTitle": "Eliminar tickets",
+  "bulkDeleteMessage": "Eliminar {count} tickets selecionados? Isso não pode ser desfeito.",
+  "@bulkDeleteMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "saveArticle": "Guardar artigo",
+  "removeFromSaved": "Remover dos guardados",
+  "agentQuestionFreeformHint": "Introduza sua resposta…",
+  "connectGitHubHint": "Entre no GitHub ou adicione um token em Definições → Você → Perfil e identidade → Hospedagem de código",
+  "connectGitHubToLoadPrs": "Ligue o GitHub para carregar os pull requests",
+  "prTimelineRemovedReviewRequest": "{actor} removeu o pedido de revisão para {reviewers}",
+  "@prTimelineRemovedReviewRequest": {
+    "description": "Activity feed: review request withdrawn event",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "reviewers": {
+        "type": "String"
+      }
+    }
+  },
+  "prTimelineRequestedAndRemovedReview": "{actor} solicitou revisão de {requested} e removeu o pedido de revisão para {removed}",
+  "@prTimelineRequestedAndRemovedReview": {
+    "description": "Activity feed: grouped review requested and withdrawn events by the same actor",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "requested": {
+        "type": "String"
+      },
+      "removed": {
+        "type": "String"
+      }
+    }
+  },
+  "loadingEllipsis": "A carregar…",
+  "loadingChecks": "A carregar verificações…",
+  "pullRequestNotFoundBody": "Ela pode ter sido fundida, fechada ou movida.",
+  "factsHint": "Os factos aparecerão aqui à medida que seus agentes aprendem.",
+  "noFactsMatch": "Nenhum facto corresponde à sua pesquisa",
+  "confidenceTooltip": "O quanto os agentes têm certeza de que este facto é verdadeiro, de 0 a 100%.",
+  "supersededTooltip": "Um facto mais recente substituiu este.",
+  "deleteProject": "Eliminar projeto",
+  "deleteProjectConfirm": "Eliminar \"{name}\"? Os tickets são mantidos e removidos do projeto.",
+  "@deleteProjectConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewSummary": "{prs, plural, =1{1 PR a aguardar} other{{prs} PRs a aguardar}} a sua revisão em {repos, plural, =1{1 repositório} other{{repos} repositórios}}",
+  "@reviewSummary": {
+    "placeholders": {
+      "prs": {
+        "type": "int"
+      },
+      "repos": {
+        "type": "int"
+      }
+    }
+  },
+  "failedToSaveLogo": "Falha ao guardar o logo. Verifique se a aplicação pode ler o ficheiro selecionado.",
+  "workspaceNameFieldHelp": "Exibido no seletor, na trilha de navegação e em todas as ecrãs.",
+  "deleteThisWorkspace": "Eliminar este espaço",
+  "deleteWorkspaceLongDescription": "Remove permanentemente {name}, as suas ligações de repositório, agentes e memória. Esta ação não pode ser desfeita.",
+  "@deleteWorkspaceLongDescription": {
+    "description": "Description in the delete-workspace danger row",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "discardChangesQuestion": "Descartar alterações não guardadas em {name}?",
+  "@discardChangesQuestion": {
+    "description": "Confirmation when switching away from an edited workspace",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noFilesChanged": "Nenhum ficheiro alterado",
+  "searchReviewers": "Pesquisar pessoas e equipas…",
+  "teamsSectionLabel": "Equipas",
+  "team": "Equipa",
+  "meetingStatusRecording": "A gravar",
+  "meetingStatusProcessing": "A processar",
+  "meetingsSearchHint": "Filtrar por título, pessoa, aplicação…",
+  "meetingsTranscribing": "a transcrever e resumindo…",
+  "meetingsStillTranscribing": "Ainda a transcrever — o resumo aparecerá quando terminar.",
+  "meetingsNoMatchHint": "Tente outro filtro ou termo de pesquisa.",
+  "meetingNotesSavedLocally": "Guardado localmente",
+  "meetingNotesSaving": "A guardar…",
+  "meetingDecisionsEmpty": "Nenhuma decisão registada.",
+  "meetingDeleteActionItem": "Eliminar ação",
+  "meetingDeleteDecision": "Eliminar decisão",
+  "meetingAutoDetectDescription": "Vigia o calendário e as aplicações de videoconferência e oferece-se para gravar quando uma reunião começa.",
+  "meetingsRecordingCrumb": "A gravar…",
+  "meetingHudRecording": "a gravar",
+  "transcriptStatusReadingFiles": "A ler ficheiros…",
+  "transcriptStatusRunningCommands": "A executar comandos…",
+  "transcriptStatusRunningTool": "A executar {tool}…",
+  "@transcriptStatusRunningTool": {
+    "placeholders": {
+      "tool": {
+        "type": "String"
+      }
+    }
+  },
+  "transcriptGrepStats": "{matches, plural, =1{1 correspondência} other{{matches} correspondências}} · {files, plural, =1{1 ficheiro} other{{files} ficheiros}}",
+  "@transcriptGrepStats": {
+    "placeholders": {
+      "matches": {
+        "type": "int"
+      },
+      "files": {
+        "type": "int"
+      }
+    }
+  },
+  "meetingSaveVoiceProfileTitle": "Guardar perfil de voz?",
+  "meetingSaveVoiceProfileBody": "Reconhecer {name} automaticamente em reuniões futuras ao guardar a sua impressão de voz.",
+  "@meetingSaveVoiceProfileBody": {
+    "description": "Body of the save-voice-profile prompt after renaming a speaker",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "meetingVoiceProfileSaved": "Perfil de voz guardado para {name}",
+  "@meetingVoiceProfileSaved": {
+    "description": "Toast shown after a voice profile is saved",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "meetingVoiceProfileSaveFailed": "Não foi possível guardar o perfil de voz",
+  "voiceProfilesDescription": "Vozes guardadas são reconhecidas automaticamente em reuniões futuras.",
+  "voiceProfilesEmpty": "Ainda não há vozes guardadas. Dê um nome a um participante na transcrição de uma reunião e escolha «Guardar perfil de voz».",
+  "deleteVoiceProfileTitle": "Eliminar perfil de voz?",
+  "deleteVoiceProfileBody": "Parar de reconhecer {name}? A impressão de voz guardada será removida. Os nomes já aplicados em reuniões anteriores são mantidos.",
+  "@deleteVoiceProfileBody": {
+    "description": "Body of the delete-voice-profile confirmation",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "connectedLabel": "Ligado",
+  "ideCloseTab": "Fechar separador",
+  "ideCloseSaved": "Fechar guardadas",
+  "ideNewTabMenu": "Novo separador",
+  "ideRevertConfirmMessage": "Reverter {count, plural, =1{1 ficheiro} other{{count} ficheiros}} para HEAD? Isso descarta as alterações da árvore de trabalho.",
+  "@ideRevertConfirmMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ideRevertUntracked": "Ficheiros não rastreados não podem ser revertidos",
+  "ideRevertFailed": "Não foi possível reverter os ficheiros. A árvore de trabalho da conversa pode estar indisponível.",
+  "ideRevertSomeSkipped": "{count, plural, =1{1 ficheiro} other{{count} ficheiros}} não pôde(puderam) ser revertido(s) (não rastreado).",
+  "@ideRevertSomeSkipped": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "ideSearchFilters": "Filtros de pesquisa",
+  "ideSearchFilesToInclude": "Ficheiros a incluir",
+  "ideSearchFilesToExclude": "Ficheiros a excluir",
+  "ideNoOpenTabs": "Sem separadores abertos — use + para abrir",
+  "ideBrowserAddressHint": "Introduza um endereço ou pesquise",
+  "ideBrowserEnterUrl": "Introduza um URL na barra de endereço para começar a navegar",
+  "ideUnsavedChangesTitle": "Guardar alterações em {fileName}?",
+  "@ideUnsavedChangesTitle": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "ideUnsavedChangesBody": "Suas alterações serão perdidas se você não guardá-las.",
+  "ideDontSave": "Não guardar",
+  "editorAutoSaveDescription": "Guardar automaticamente as alterações no editor incorporado.",
+  "ideCodeServerInstalling": "A preparar o editor…",
+  "ideFileSearchFailed": "Não foi possível pesquisar ficheiros",
+  "ideSearchInFiles": "Pesquisar nos ficheiros",
+  "ideFileLoading": "A carregar…",
+  "ideFileBinary": "Ficheiro binário",
+  "mcpExternalServersDescription": "Ligue-se a servidores MCP externos (GitHub, Sentry, Postgres, automação de navegador). Os servidores configurados para Claude, Cursor, VS Code e outras ferramentas são detectados automaticamente.",
+  "mcpExternalConnectionsNote": "Os servidores MCP externos são executados no servidor de agentes (partilhado por desktop e web). Autorizar servidores OAuth só está disponível no desktop.",
+  "mcpReconnect": "Voltar a ligar",
+  "mcpStatusConnected": "Ligado",
+  "mcpStatusConnecting": "A ligar…",
+  "providersAndModels": "Fornecedores e modelos",
+  "providersAndModelsDescription": "Liste todos os fornecedores que o agente integrado pode usar — defina uma chave de API ou entre pelo navegador, veja os modelos e preços de cada fornecedor ligado e controle quais fornecedores este espaço de trabalho pode usar.",
+  "noUsageYet": "Nenhum uso registado ainda.",
+  "harnessConnectProviderForModels": "Ligue um fornecedor para ver os modelos.",
+  "providerWaitingForBrowser": "A aguardar a sua autorização no navegador…",
+  "providerConnectedApiKey": "Ligado via chave de API",
+  "providerConnectedOauth": "Ligado",
+  "providerConnectedAccount": "Ligado · {account}",
+  "@providerConnectedAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "providerNotConnected": "Não ligado",
+  "preparingWorkspace": "A preparar espaço de trabalho…",
+  "provisioningRunningSetupScript": "A executar o script de configuração de {repo}…",
+  "@provisioningRunningSetupScript": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "repoScriptsSetupHelp": "É executado no worktree do espaço logo após sua criação — instalar dependências, gerar ficheiros. Uma falha marca o espaço como falho; tentar novamente o executa de novo.",
+  "repoScriptsArchiveHelp": "É executado pouco antes da eliminação do worktree de um espaço — limpa recursos fora do worktree. Uma falha nunca bloqueia a eliminação.",
+  "repoScriptsSaved": "Scripts guardados",
+  "provisioningCloningRepo": "A clonar {repo}…",
+  "@provisioningCloningRepo": {
+    "placeholders": {
+      "repo": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownUserLabel": "Utilizador desconhecido",
+  "inviteRepoAccessExplainer": "Apenas os repositórios marcados são partilhados com o convidado, no nível escolhido. Todo o resto permanece oculto.",
+  "inviteRedeemHint": "Partilhe o código com o convidado; ele o resgatará com a URL do seu servidor.",
+  "inviteLoopbackWarningBody": "Colaboradores em outras máquinas não poderão aceder a este servidor. Inicie um túnel (Definições → Integrações → Partilhar este servidor) ou ligue-se à sua rede para que utilizadores externos possam ligar-se.",
+  "revokeDeviceConfirm": "Revogar {label}? Ele é desligado imediatamente e já não pode aceder a este servidor.",
+  "@revokeDeviceConfirm": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceNeverSeen": "Nunca ligado",
+  "profileSectionDescription": "Como você aparece para a equipa e na autoria dos commits do git.",
+  "profileSaved": "Perfil guardado",
+  "notesSaveFailed": "Não foi possível guardar a nota",
+  "planEstimateBlastRadius": "Raio de impacto: {files} ficheiros, {symbols} símbolos",
+  "@planEstimateBlastRadius": {
+    "description": "Plan Studio: planEstimateBlastRadius",
+    "placeholders": {
+      "files": {
+        "type": "int"
+      },
+      "symbols": {
+        "type": "int"
+      }
+    }
+  },
+  "planPlaybookDelete": "Eliminar playbook",
+  "cheatSheetThisScreen": "Esta ecrã",
+  "keybindingShowKeyboardShortcutsDescription": "Mostrar a folha de referência de atalhos de teclado da ecrã atual",
+  "inboxSeverityWaiting": "A aguardar",
+  "inboxSectionNeedsYourReview": "A aguardar a sua revisão",
+  "inboxSectionWaitingForReviewers": "A aguardar revisores",
+  "inboxSectionMergingAndMerged": "Em merge e fundidas recentemente",
+  "inboxSectionWaitingForAuthor": "A aguardar o autor",
+  "optimisticChangeReverted": "Essa alteração não foi guardada e foi revertida",
+  "offlineSyncingLabel": "a sincronizar",
+  "fleetNoWorkers": "Ainda não há trabalhadores — uma segunda máquina a executar `cc_worker --server <url>` entra na frota.",
+  "bannerCalendarReconnect": "Voltar a ligar",
+  "saving": "A guardar…",
+  "saved": "Guardado",
+  "saveFailed": "Falha ao guardar",
+  "toggleFileTree": "Mostrar ou ocultar a árvore de ficheiros",
+  "diffViewSettings": "Definições de visualização do diff",
+  "diffFilesCount": "{count, plural, =1{1 ficheiro} other{{count} ficheiros}}",
+  "@diffFilesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "artifactOpenInTab": "Abrir num separador",
+  "chatConnectProvider": "Ligar {provider}",
+  "@chatConnectProvider": {
+    "description": "Button that opens the connect dialog for a chat provider",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatDisconnectProvider": "Desligar",
+  "chatStateConnecting": "A ligar…",
+  "chatStateError": "Erro de ligação",
+  "chatNotConnected": "Não ligado",
+  "chatStreamingUnavailable": "O streaming ao vivo está desligado para esta aplicação do {provider} — as respostas chegam numa única mensagem.",
+  "@chatStreamingUnavailable": {
+    "description": "Caveat shown when the provider refused native response streaming",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatAdminOnly": "Só um administrador pode ligar o {provider} neste espaço de trabalho.",
+  "@chatAdminOnly": {
+    "description": "Explains why the connect button is disabled for non-admins",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatConnectHint": "Crie uma aplicação do {provider} e cole aqui as credenciais. O Control Center conecta-se para fora até o {provider}, então este servidor não precisa de endereço público.",
+  "@chatConnectHint": {
+    "description": "Instruction at the top of the chat connect dialog",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatFieldConfigRefreshToken": "Token de configuração da aplicação",
+  "chatCustomizeBotUnavailable": "O Control Center precisa de um token de configuração da aplicação para editar o bot. Volte a ligar incluindo um.",
+  "chatCreateAppTitle": "Criar a aplicação do {provider}",
+  "@chatCreateAppTitle": {
+    "description": "Title of the guided app creation dialog",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatCreateAppHint": "O Control Center pode criar a aplicação do {provider} para você, com as permissões e os eventos certos já definidos. Você termina no {provider} e depois cola as credenciais aqui.",
+  "@chatCreateAppHint": {
+    "description": "Explains what the guided app creation does",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatCreateApp": "Criar aplicação",
+  "chatCreateAppCta": "Criar a aplicação para mim",
+  "chatAppNameLabel": "Nome da aplicação",
+  "chatAppCreated": "O {provider} criou a aplicação {appId}.",
+  "@chatAppCreated": {
+    "description": "Confirms the provider-side app was created",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      },
+      "appId": {
+        "type": "String",
+        "example": "A012ABCDEF"
+      }
+    }
+  },
+  "chatStepInstall": "Instalar a aplicação",
+  "chatOpenAppSettings": "Abrir as definições da aplicação",
+  "chatScopesChangedReinstall": "O {provider} alterou as permissões da aplicação. Reinstale-a para que passem a valer.",
+  "@chatScopesChangedReinstall": {
+    "description": "Warns that changed permissions need a reinstall to take effect",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatReinstallApp": "Reinstalar a aplicação",
+  "chatIconNotEditable": "O ícone do bot só pode ser alterado nas definições da aplicação do {provider}.",
+  "@chatIconNotEditable": {
+    "description": "Explains that the bot icon can only be changed on the provider's side",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatCreateAppLinkHint": "Também pode criá-la no {provider}, sem token. As definições acima seguem com o link.",
+  "@chatCreateAppLinkHint": {
+    "description": "Points at the credential-free app-creation link",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatSetupLinkBody": "O {provider} abriu no seu navegador com esta configuração pré-preenchida. Crie a aplicação lá, conclua estes passos e volte com os tokens.",
+  "@chatSetupLinkBody": {
+    "description": "Explains what happens after the pre-filled creation link was opened",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "chatSetupLinkNotManageable": "O {provider} não informa qual aplicação criou, por isso personalizar o bot a partir daqui exigirá mais tarde um token de configuração da aplicação.",
+  "@chatSetupLinkNotManageable": {
+    "description": "Warns that an app created by link cannot be customized from Control Center",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "calendarUseBuiltinApp": "Usar a aplicação Google do Control Center",
+  "aboutAppVersion": "Versão da aplicação",
+  "aboutServerVersion": "Servidor ligado",
+  "serverStaleTitle": "O servidor integrado é anterior a esta aplicação",
+  "serverStaleBody": "O cc_server em execução é {serverVersion} enquanto esta aplicação é {appVersion}. Reinicie a aplicação para que ela use a versão mais recente do servidor integrado; em desenvolvimento, recompile-o com `dart build cli` em apps/cc_server.",
+  "@serverStaleBody": {
+    "description": "Shown when the spawned local cc_server build is older than the app build",
+    "placeholders": {
+      "serverVersion": {
+        "type": "String"
+      },
+      "appVersion": {
+        "type": "String"
+      }
+    }
+  },
+  "updateChecking": "A verificar atualizações…",
+  "updateDeferredBusy": "Uma atualização está pronta, mas uma reunião está a ser gravada — ela será oferecida após o término.",
+  "settingsServerConnection": "Ligação e status",
+  "settingsModelProviders": "Fornecedores de modelos",
+  "settingsDiagnosticsDescription": "Isolamento, indexação, sincronização, registo e relatórios de erro desta instalação.",
+  "settingsWorkspaceGeneralDescription": "Identidade, políticas e convenções partilhadas por todos neste espaço de trabalho.",
+  "connect": "Ligar",
+  "disconnect": "Desligar",
+  "notConnected": "Não ligado",
+  "checkingConnection": "A verificar a ligação…",
+  "deleteSpaceConfirm": "Eliminar este espaço? Todas as mensagens serão perdidas.",
+  "viaServerApp": "pela aplicação deste servidor",
+  "providerApps": "Aplicações do fornecedor",
+  "providerAppsDescription": "Como este servidor se autentica a si próprio e com o quê uma pessoa entra. O trabalho em segundo plano — webhooks, sondagens, sincronização — usa a aplicação, nunca o token de uma pessoa.",
+  "providerAppId": "Id da aplicação",
+  "ssoConnectionCardDescription": "Escolha como as pessoas entram neste servidor e depois ative essa ligação.",
+  "ssoSaveConnection": "Guardar ligação",
+  "ssoNoMethodLiveNote": "Nenhum método de entrada está ativo. Os dispositivos novos entram com um convite ou uma chave de emparelhamento até você configurar uma ligação e ativá-la.",
+  "ssoMethodSamlBlurb": "Para fornecedores de identidade que falam SAML 2.0, como Okta, Entra ID ou Google Workspace.",
+  "ssoMethodOidcBlurb": "Para fornecedores de identidade que falam OpenID Connect. Normalmente o mais simples de configurar dos dois.",
+  "ssoGroupIdentityProvider": "Fornecedor de identidade",
+  "ssoIssuerDescription": "A URL base que serve o documento de descoberta do fornecedor.",
+  "ssoGroupHandoff": "O que o seu fornecedor de identidade precisa",
+  "ssoGroupHandoffDescription": "Cole estes valores na aplicação que você criou no seu fornecedor.",
+  "ssoOriginUnknownBody": "As URLs de entrada e de retorno são criadas a partir dela, por isso o seu fornecedor não consegue alcançar este servidor até definir uma. Adicione uma URL pública ou ative um túnel em Servidor → Ligação.",
+  "ssoAcsUrlDescription": "Para onde o seu fornecedor envia a asserção assinada.",
+  "ssoSpEntityIdResolvedLabel": "ID de entidade do fornecedor de serviço",
+  "ssoMetadataUrlDescription": "Fornecedores que importam metadados podem obtê-los aqui.",
+  "ssoRedirectUriDescription": "Adicione-a às URIs de redirecionamento permitidas da aplicação do seu fornecedor.",
+  "ssoGroupAttributeMappingDescription": "Qual claim carrega cada campo. Mantenha os padrões, a não ser que o seu fornecedor os renomeie.",
+  "ssoRoleMapGroupHint": "Nome do grupo no seu fornecedor",
+  "ssoClockSkewDescription": "Segundos de tolerância nos carimbos de data e hora das asserções. 90 serve para a maioria dos fornecedores.",
+  "ssoScimTokenOnceBody": "Copiado para a área de transferência. Ele aparece uma única vez e não pode ser recuperado, então cole no seu fornecedor agora.",
+  "providersNoneConnectedNote": "Nenhum fornecedor está ligado, então o runtime de agentes integrado não tem onde ser executado. Adicione uma chave de API ou entre em um deles abaixo.",
+  "providersFilterHint": "Filtrar fornecedores",
+  "providerDeniedHereBody": "Os agentes daqui não podem usar este fornecedor, mesmo estando ligado. Outros espaços de trabalho não são afetados.",
+  "providerNeedsSignIn": "Entre para usar este fornecedor",
+  "providerNeedsApiKey": "Adicione uma chave de API para usar este fornecedor",
+  "providerGenerationDefaults": "Padrões do fornecedor",
+  "providerNoModelsYet": "Nenhum modelo informado ainda. Ligue o fornecedor e depois sincronize.",
+  "providerAppBotLoginEmpty": "Teste a ligação para resolver o login do bot.",
+  "providerAppsGroupSignInDescription": "Permite que cada membro ligue a própria conta e obtenha credenciais próprias.",
+  "guardrailFamilyFiles": "Ficheiros",
+  "sandboxGroupIsolationDescription": "Onde os processos e as gravações de ficheiros de um agente acontecem de facto.",
+  "rigsStarting": "A iniciar",
+  "ssoOtherKindUnsaved": "{method} tem alterações não guardadas",
+  "@ssoOtherKindUnsaved": {
+    "description": "Badge on the SSO method picker when the other connection kind has uncommitted edits",
+    "placeholders": {
+      "method": {
+        "type": "String"
+      }
+    }
+  },
+  "agentClaudeAccountsNoticeBody": "Este executor entra com uma das {count} contas do Claude Code neste host. Escolha qual, ou alterne entre elas, no separador Contas.",
+  "@agentClaudeAccountsNoticeBody": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteSpacePermanently": "Eliminar permanentemente",
+  "deleteSteeringCard": "Eliminar mensagem na fila",
+  "demoFilePickerTitle": "Ficheiros da demo",
+  "settingsBackupRestoreDescription": "Instantâneos de todos os bases de dados deste servidor, além de exportar, importar e eliminar um espaço de trabalho.",
+  "backupSnapshotsExplainer": "Um instantâneo copia cada base de dados para uma pasta com data e hora no host do servidor. Restaurar a instalação inteira é copiar essa pasta de volta com o servidor parado; um único espaço de trabalho pode ser restaurado aqui.",
+  "backupSnapshotIncompleteNote": "O manifesto está ausente ou aponta para ficheiros que não existem, então este instantâneo não restaura a instalação inteira. Os ficheiros de espaço de trabalho que ele tem ainda podem ser adotados um a um.",
+  "backupWorkspaceDataExplainer": "Um espaço de trabalho é um único ficheiro de base de dados, então exportá-lo copia esse ficheiro em vez de despejar tabela por tabela. Importar substitui tudo no espaço de trabalho de destino pelo ficheiro indicado.",
+  "backupExportedFileLabel": "Ficheiro exportado no servidor",
+  "backupImportBody": "Isto substitui tudo em {name} pelo conteúdo do ficheiro. O que esse espaço de trabalho tem agora é perdido, e não dá para desfazer.",
+  "@backupImportBody": {
+    "description": "Consequences of importing a database file into a workspace",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupImportSourceLabel": "Ficheiro de base de dados do espaço de trabalho",
+  "backupImportSourceDescription": "Um ficheiro .db que o servidor consiga ler. Os caminhos são resolvidos no host do servidor, não neste dispositivo.",
+  "backupImportChooseFile": "Escolher ficheiro",
+  "backupDeleteBody": "{name} desaparece de todas as listas e pesquisas. Seu ficheiro de base de dados continua no disco, os backups continuam incluindo ele, e nada recupera esse espaço automaticamente.",
+  "@backupDeleteBody": {
+    "description": "What deleting a workspace does and what it leaves on disk",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "backupExportOnServerAction": "Guardar no servidor",
+  "backupDownloadAction": "Descarregar",
+  "backupDownloadSaved": "Guardado em {path}",
+  "@backupDownloadSaved": {
+    "description": "Toast naming where a download was saved on this device",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "backupRestoreFromDeviceDescription": "Escolha aqui um ficheiro de base de dados de espaço de trabalho e o Control Center o envia ao servidor. É o caminho que funciona quando o servidor não é esta máquina.",
+  "backupUploadAction": "Escolher um ficheiro e enviar",
+  "backupTransferUnavailable": "Esta ligação chega ao servidor por um relay, que não transporta ficheiros. Ligue-se diretamente ao servidor para descarregar ou enviar um backup.",
+  "backupTransferForbidden": "O servidor recusou. Descarregar um espaço de trabalho exige o papel admin, restaurá-lo exige owner, e um instantâneo inteiro exige o operador da instalação.",
+  "backupTransferTooLarge": "O ficheiro é maior do que o servidor aceita.",
+  "credentialGateClaudeSignInHint": "Inicia sessão em Definições → Adaptadores → Claude Code, ou executa o comando de início de sessão num terminal. A execução deteta-o sozinha.",
+  "credentialGateOpenSettings": "Abrir as definições",
+  "profileDeliveryMetrics": "Métricas de entrega",
+  "profileMetricsSample": "PR analisados: {count}",
+  "profileMergeRate": "Taxa de integração",
+  "profileReviewCoverage": "Cobertura de revisão",
+  "profilePrSize": "Tamanho do PR",
+  "profileTimeToMerge": "Tempo até à integração",
+  "profileFirstReview": "Tempo até à primeira revisão",
+  "profileMetricsTruncated": "Os percentis são calculados com base numa amostra limitada dos pedidos de integração disponíveis.",
+  "profileLinesChanged": "{count} linhas",
+  "profileDurationMinutes": "{count} min",
+  "profileDurationHours": "{count} h",
+  "profileDurationDaysHours": "{days} d {hours} h",
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "profileTeamMembers": "Membros: {count}",
+  "noPrsByTeamInWorkspace": "Não existem pull requests de {team} neste espaço de trabalho",
+  "profilePrStateFilterLabel": "Filtrar pull requests por estado",
+  "noProfilePrsMatchSearchHint": "Experimente outro título ou número de pull request"
+}

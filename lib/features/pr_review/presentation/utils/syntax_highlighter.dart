@@ -35,6 +35,7 @@ List<List<DiffToken>> highlightDiffLines(
     text,
     langId: languageId,
     dark: dark,
+    includeExplanation: true,
   );
   if (tokenLines == null || tokenLines.length != sourceLines.length) {
     return plain();
@@ -55,13 +56,94 @@ List<DiffToken> _rowTokens(List<ThemedToken> line, String content) {
     if (text.isEmpty) {
       continue;
     }
-    tokens.add(DiffToken(text, ccArgbForTokenColor(t.color)));
+    tokens.add(
+      DiffToken(
+        text,
+        ccArgbForTokenColor(t.color),
+        kind: diffTokenKindFromScopes(t.scopes),
+      ),
+    );
     chars += text.length;
   }
   if (tokens.isEmpty || chars != content.length) {
     return [DiffToken(content, null)];
   }
   return tokens;
+}
+
+/// Builds a syntax-colored span for editable or read-only diff text.
+TextSpan highlightedDiffTextSpan({
+  required String text,
+  required String? languageId,
+  required bool dark,
+  required TextStyle baseStyle,
+}) {
+  final lines = highlightDiffLines(text, languageId, dark: dark);
+  final children = <InlineSpan>[];
+  for (var i = 0; i < lines.length; i++) {
+    for (final token in lines[i]) {
+      children.add(
+        TextSpan(
+          text: token.text,
+          style: baseStyle.copyWith(
+            color: token.colorValue == null ? null : Color(token.colorValue!),
+          ),
+        ),
+      );
+    }
+    if (i < lines.length - 1) {
+      children.add(const TextSpan(text: '\n'));
+    }
+  }
+  return TextSpan(style: baseStyle, children: children);
+}
+
+/// Text controller that keeps editable replacement code syntax highlighted.
+class DiffSyntaxTextEditingController extends TextEditingController {
+  /// Creates a syntax-highlighting controller.
+  DiffSyntaxTextEditingController({
+    super.text,
+    this.languageId,
+    this.dark = false,
+  });
+
+  /// Grammar used to tokenize the current text.
+  String? languageId;
+
+  /// Whether token colors come from the dark syntax theme.
+  bool dark;
+
+  /// Updates the grammar and theme used on the next editable-text build.
+  void configure({required String? languageId, required bool dark}) {
+    this.languageId = languageId;
+    this.dark = dark;
+  }
+
+  /// Rebuilds the text spans after a deferred grammar becomes available.
+  void refreshHighlighting() => notifyListeners();
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    if (withComposing &&
+        value.composing.isValid &&
+        !value.composing.isCollapsed) {
+      return super.buildTextSpan(
+        context: context,
+        style: style,
+        withComposing: withComposing,
+      );
+    }
+    return highlightedDiffTextSpan(
+      text: text,
+      languageId: languageId,
+      dark: dark,
+      baseStyle: style ?? const TextStyle(),
+    );
+  }
 }
 
 /// ARGB-int palette feeding the inline word-diff (background washes plus the

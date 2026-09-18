@@ -233,8 +233,8 @@ class _RangePicker extends ConsumerWidget {
 
     return CcPopover(
       controller: controller,
-      targetAnchor: Alignment.bottomRight,
-      followerAnchor: Alignment.topRight,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       semanticLabel: _label(l10n, range),
       target: _ChipChrome(
         icon: AppIcons.chevronDown,

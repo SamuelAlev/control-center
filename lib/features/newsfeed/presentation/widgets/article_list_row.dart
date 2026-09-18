@@ -101,7 +101,10 @@ class ArticleListRow extends StatelessWidget {
                       children: [
                         if (!read) ...[
                           Padding(
-                            padding: const EdgeInsets.only(top: 5, right: 7),
+                            padding: const EdgeInsetsDirectional.only(
+                              top: 5,
+                              end: 7,
+                            ),
                             child: Container(
                               width: 7,
                               height: 7,

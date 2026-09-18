@@ -84,7 +84,7 @@ class _MeetingLevelMeterState extends State<MeetingLevelMeter>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: List.generate(widget.barCount, (i) {
           return Padding(
-            padding: EdgeInsets.only(left: i == 0 ? 0 : 2),
+            padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 2),
             child: AnimatedBuilder(
               animation: _controller,
               builder: (context, _) {

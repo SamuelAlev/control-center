@@ -3,12 +3,15 @@ import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart'
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/utils/pr_activity_entries.dart';
@@ -29,14 +32,15 @@ import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_mention.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// The Overview tab's conversation feed, rendered under the PR description:
-/// a chronological timeline of the opened event, review requests, submitted
-/// reviews (verdict rows, or comment cards when the reviewer wrote a summary),
-/// top-level conversation comments (bots included) and pushed commits.
+/// a chronological timeline of the opened event, review requests, label
+/// changes, submitted reviews (verdict rows, or comment cards when the
+/// reviewer wrote a summary), top-level conversation comments (bots included)
+/// and pushed commits.
 ///
 /// Inline code comments deliberately do NOT appear here — they stay anchored
 /// to their diff lines in the Diff tab.
@@ -219,8 +223,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
         const <IssueComment>[];
     final commits =
         ref.watch(prCommitsProvider(prRef)).value ?? const <PrCommit>[];
-    final events =
-        ref.watch(prTimelineEventsProvider(prRef)).value ?? const [];
+    final events = ref.watch(prTimelineEventsProvider(prRef)).value ?? const [];
     final codeComments =
         ref.watch(prReviewCommentsProvider(prRef)).value ??
         const <PrCodeReviewComment>[];
@@ -276,6 +279,7 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
             child: switch (entry) {
               PrOpenedEntry() => _OpenedRow(entry: entry),
               PrReviewRequestEntry() => _ReviewRequestRow(entry: entry),
+              PrLabelChangeEntry() => _LabelChangeRow(entry: entry),
               PrCommitEntry() => _CommitRow(entry: entry),
               PrCommitGroupEntry() => _CommitGroupRow(entry: entry),
               PrReviewEntry() when entry.review.body.trim().isEmpty =>
@@ -323,6 +327,8 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
         );
       case PrReviewRequestEntry():
         return const _GutterIcon(icon: AppIcons.eye);
+      case PrLabelChangeEntry():
+        return const _GutterIcon(icon: AppIcons.tag);
       case PrCommitEntry():
       case PrCommitGroupEntry():
         return const _GutterIcon(icon: AppIcons.gitCommitHorizontal);
@@ -394,8 +400,8 @@ class _TimelineTile extends StatelessWidget {
         // Connector line, centered under the 24px bubble, spanning from the
         // bubble's bottom to the tile's bottom (where the next bubble starts).
         if (!isLast)
-          Positioned(
-            left: 24 / 2 - 0.75,
+          PositionedDirectional(
+            start: 24 / 2 - 0.75,
             top: 24,
             bottom: 0,
             child: Container(width: 1.5, color: t.borderSecondary),
@@ -627,6 +633,62 @@ List<InlineSpan> _eventSpans(
   return spans;
 }
 
+/// Like [_eventSpans], but label names become [CcColorTag] chips rather than
+/// user mentions — GitHub's "added the dependencies label" shape.
+List<InlineSpan> _labelEventSpans(
+  BuildContext context,
+  String sentence, {
+  required _NamedMention actorMention,
+  required List<PrLabel> labels,
+}) {
+  var spans = _eventSpans(context, sentence, [actorMention]);
+  final byName = <String, PrLabel>{};
+  for (final label in labels) {
+    if (label.name.isNotEmpty) {
+      byName.putIfAbsent(label.name, () => label);
+    }
+  }
+  final names = byName.keys.toList()
+    ..sort((a, b) => b.length.compareTo(a.length));
+  for (final name in names) {
+    final label = byName[name]!;
+    final next = <InlineSpan>[];
+    for (final span in spans) {
+      if (span is! TextSpan ||
+          span.style != null ||
+          span.text == null ||
+          !span.text!.contains(name)) {
+        next.add(span);
+        continue;
+      }
+      final parts = span.text!.split(name);
+      for (var i = 0; i < parts.length; i++) {
+        if (parts[i].isNotEmpty) {
+          next.add(TextSpan(text: parts[i]));
+        }
+        if (i < parts.length - 1) {
+          next.add(
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: CcColorTag(
+                  label: label.name,
+                  color: label.color,
+                  tooltip: label.description.isEmpty ? null : label.description,
+                  compact: true,
+                ),
+              ),
+            ),
+          );
+        }
+      }
+    }
+    spans = next;
+  }
+  return spans;
+}
+
 class _OpenedRow extends StatelessWidget {
   const _OpenedRow({required this.entry});
 
@@ -676,6 +738,48 @@ class _ReviewRequestRow extends StatelessWidget {
         for (final m in entry.requested) _NamedMention.reviewer(m),
         for (final m in entry.removed) _NamedMention.reviewer(m),
       ]),
+      timestamp: entry.timestamp,
+    );
+  }
+}
+
+class _LabelChangeRow extends StatelessWidget {
+  const _LabelChangeRow({required this.entry});
+
+  final PrLabelChangeEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final actor = _displayLogin(entry.actor, l10n);
+    final addedNames = [for (final l in entry.added) l.name].join(', ');
+    final removedNames = [for (final l in entry.removed) l.name].join(', ');
+    final sentence = switch ((
+      entry.added.isNotEmpty,
+      entry.removed.isNotEmpty,
+    )) {
+      (true, true) => l10n.prTimelineAddedAndRemovedLabels(
+        actor,
+        addedNames,
+        entry.added.length,
+        removedNames,
+        entry.removed.length,
+      ),
+      (false, true) => l10n.prTimelineRemovedLabels(
+        actor,
+        removedNames,
+        entry.removed.length,
+      ),
+      _ => l10n.prTimelineAddedLabels(actor, addedNames, entry.added.length),
+    };
+    final labels = [...entry.added, ...entry.removed];
+    return _EventSentence(
+      spans: _labelEventSpans(
+        context,
+        sentence,
+        actorMention: _NamedMention.maybeUser(entry.actor, actor),
+        labels: labels,
+      ),
       timestamp: entry.timestamp,
     );
   }
@@ -769,7 +873,7 @@ class _CommitGroupRowState extends ConsumerState<_CommitGroupRow> {
         ),
         if (_expanded)
           Padding(
-            padding: const EdgeInsets.only(left: 24, top: 10),
+            padding: const EdgeInsetsDirectional.only(start: 24, top: 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -911,7 +1015,7 @@ class _ReviewCodeThreads extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 6, left: 2),
+            padding: const EdgeInsetsDirectional.only(bottom: 6, start: 2),
             child: Text(
               l10n.prTimelineCodeComments(threads.length),
               style: CcTypography.caption.copyWith(
@@ -1124,7 +1228,7 @@ class _ThreadFileHeader extends StatelessWidget {
     final start = thread.startLine;
     final end = thread.endLine;
     return Container(
-      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 6, 8),
       decoration: BoxDecoration(
         color: t.bgSecondary,
         border: Border(bottom: BorderSide(color: t.borderSecondary)),
@@ -1261,11 +1365,43 @@ class _CommentCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final comment = entry.comment;
+    final edit = ref.watch(prEditProvider(prRef));
+    final displayBody = edit.optimisticComments[comment.id] ?? comment.body;
+    final login = ref
+        .watch(githubUserProvider)
+        .maybeWhen(
+          data: (user) => user?.login.toLowerCase() ?? '',
+          orElse: () => '',
+        );
+    final isAuthor =
+        login.isNotEmpty && comment.user?.login.toLowerCase() == login;
+    final canEdit = isAuthor || ref.watch(prRepoWriteAccessProvider(prRef));
     return _ActivityCard(
       author: comment.user,
       createdAt: comment.createdAt,
-      body: comment.body,
+      body: displayBody,
       repoFullName: pr.repoFullName,
+      onTaskCheckboxChanged: canEdit
+          ? (index, _) {
+              final l10n = AppLocalizations.of(context);
+              final toaster = CcToastScope.of(context);
+              ref
+                  .read(prEditProvider(prRef).notifier)
+                  .toggleCommentTaskListItem(
+                    commentId: comment.id,
+                    currentBody: displayBody,
+                    index: index,
+                  )
+                  .then((error) {
+                    if (error != null && context.mounted) {
+                      toaster.show(
+                        l10n.saveFailed,
+                        variant: CcToastVariant.danger,
+                      );
+                    }
+                  });
+            }
+          : null,
       footer: ReactionBar(
         reactions: comment.reactions,
         onToggle: (content, {required add}) => toggleReaction(
@@ -1291,6 +1427,7 @@ class _ActivityCard extends ConsumerWidget {
     required this.repoFullName,
     this.chip,
     this.footer,
+    this.onTaskCheckboxChanged,
   });
 
   final PrUser? author;
@@ -1299,6 +1436,7 @@ class _ActivityCard extends ConsumerWidget {
   final String repoFullName;
   final Widget? chip;
   final Widget? footer;
+  final void Function(int index, bool checked)? onTaskCheckboxChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1381,12 +1519,19 @@ class _ActivityCard extends ConsumerWidget {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
-            child: PrBodyMarkdown(body: body, repoFullName: repoFullName),
+            child: PrBodyMarkdown(
+              body: body,
+              repoFullName: repoFullName,
+              onTaskCheckboxChanged: onTaskCheckboxChanged,
+            ),
           ),
           if (footer != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              child: Align(alignment: Alignment.centerLeft, child: footer),
+              child: Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: footer,
+              ),
             ),
         ],
       ),

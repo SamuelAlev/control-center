@@ -67,10 +67,10 @@ void main() {
 
   group('file paths', () {
     test(
-      'databaseFile points at control_center.db and ensures the root',
+      'databaseFile points at global.db and ensures the root',
       () async {
         final f = await paths.databaseFile();
-        expect(f.path, p.join(sandbox.path, 'control_center.db'));
+        expect(f.path, p.join(sandbox.path, 'global.db'));
       },
     );
 

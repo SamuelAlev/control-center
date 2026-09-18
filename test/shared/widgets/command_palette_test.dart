@@ -5,6 +5,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -348,7 +349,7 @@ void main() {
       expect(find.text('Ctrl+2'), findsOneWidget);
     });
 
-    testWidgets('dialog shows footer hints', (tester) async {
+    testWidgets('dialog has no footer chrome', (tester) async {
       final commands = _testCommands(1);
       await tester.pumpWidget(
         wrap(
@@ -364,9 +365,9 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('Navigate'), findsOneWidget);
-      expect(find.text('Select'), findsOneWidget);
-      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Navigate'), findsNothing);
+      expect(find.text('Select'), findsNothing);
+      expect(find.text('Close'), findsNothing);
     });
 
     testWidgets('search filters commands by label', (tester) async {
@@ -483,7 +484,7 @@ void main() {
       expect(find.byIcon(AppIcons.search), findsOneWidget);
     });
 
-    testWidgets('esc button closes dialog', (tester) async {
+    testWidgets('escape closes the dialog', (tester) async {
       final commands = _testCommands(1);
       await tester.pumpWidget(
         wrap(
@@ -501,11 +502,10 @@ void main() {
 
       expect(find.text('Type a command or search…'), findsOneWidget);
 
-      final escTap = find.text('esc');
-      if (escTap.evaluate().isNotEmpty) {
-        await tester.tap(escTap.last);
-        await tester.pumpAndSettle(const Duration(seconds: 5));
-      }
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+
+      expect(find.text('Type a command or search…'), findsNothing);
     });
 
     testWidgets('items with no category grouped as Other', (tester) async {
@@ -654,6 +654,28 @@ void main() {
       expect(executed, 'done');
     });
 
+    testWidgets('tapping outside the panel dismisses', (tester) async {
+      final commands = _testCommands(1);
+      await tester.pumpWidget(
+        wrap(
+          Builder(
+            builder: (context) => CcButton(
+              onPressed: () => showCommandPalette(context, _builder(commands)),
+              child: const Text('Open'),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.text('Type a command or search…'), findsOneWidget);
+
+      await tester.tapAt(const Offset(8, 8));
+      await tester.pumpAndSettle(const Duration(seconds: 5));
+      expect(find.text('Type a command or search…'), findsNothing);
+    });
+
     testWidgets('enter executes the selected command and closes the dialog', (
       tester,
     ) async {
@@ -690,7 +712,7 @@ void main() {
       expect(find.text('Type a command or search…'), findsNothing);
     });
 
-    testWidgets('keyboard Kbd chips render with code font', (tester) async {
+    testWidgets('shortcuts render as quiet trailing text', (tester) async {
       final commands = _testCommands(1);
       await tester.pumpWidget(
         wrap(
@@ -706,7 +728,7 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle(const Duration(seconds: 5));
 
-      expect(find.text('esc'), findsWidgets);
+      expect(find.text('Ctrl+0'), findsOneWidget);
     });
 
     testWidgets('search clears and returns all results', (tester) async {

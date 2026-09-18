@@ -90,12 +90,14 @@ class RigStart extends ConsumerWidget {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  // A browser rig says which browser, and why a second one is
-                  // worth opening: the reason to have three is to compare
-                  // them, and nothing else on this screen says so.
-                  engine == null
-                      ? l10n.rigStartHint
-                      : l10n.rigBrowserEngineHint(engine!.label),
+                  engine != null
+                      ? l10n.rigBrowserEngineHint(engine!.label)
+                      : switch (surface) {
+                          RigTabSurfaces.mobile =>
+                            l10n.rigStartAndroidHint,
+                          RigTabSurfaces.ios => l10n.rigStartIosHint,
+                          _ => l10n.rigStartHint,
+                        },
                   textAlign: TextAlign.center,
                   style: CcTypography.caption.copyWith(color: t.textTertiary),
                 ),
@@ -162,11 +164,15 @@ class RigUnavailable extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    // The most useful thing to show is the backend that came closest: one that
-    // needs installing beats "unavailable" with no next step.
     RigBackendView? best;
     for (final backend in backends) {
-      if (backend.installHint != null || backend.missingImages.isNotEmpty) {
+      if (!backend.surfaces.contains(surface)) {
+        continue;
+      }
+      best ??= backend;
+      if (backend.installHint != null ||
+          backend.missingImages.isNotEmpty ||
+          backend.setupAction != null) {
         best = backend;
         break;
       }

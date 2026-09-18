@@ -1,5 +1,5 @@
 import 'package:cc_domain/core/domain/entities/github_user.dart';
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 
 import 'package:control_center/di/demo_providers.dart';
@@ -11,7 +11,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Resolved SERVER-SIDE over RPC (the thin client holds no GitHub token); a
 /// public profile is global data keyed only by login, so the op is not
 /// workspace-scoped. Auto-disposed when no widgets are listening.
-/// GitHub App bots are skipped: GraphQL cannot resolve `login[bot]` as a User.
+/// GitHub App bots (`login[bot]`) are skipped: they are `Bot` nodes, not
+/// `User`. App *slugs* (no `[bot]`) still go to the server, which resolves
+/// them via `GET /apps/{slug}` after GraphQL `repositoryOwner` misses.
 ///
 /// Every resolution seeds [cachedGitHubUserProfile], which is what lets a
 /// surface render the display name on its FIRST frame instead of swapping it in

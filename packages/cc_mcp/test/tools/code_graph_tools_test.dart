@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
+import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_domain/core/domain/value_objects/code_symbol_kind.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_edge.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_file_ingest.dart';
@@ -192,6 +193,7 @@ class _FakeCodeGraphRepository implements CodeGraphRepository {
     String symbolId, {
     int? limit,
     String? checkoutId,
+    Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
   }) async {
     if (_throwOnNext) {
       _throwOnNext = false;

@@ -104,6 +104,7 @@ class _RecordingStore implements ProviderCredentialStore {
 /// `poll` walks a scripted script of results one call at a time.
 class _FakeDeviceProvider implements HarnessDeviceOAuthProvider {
   _FakeDeviceProvider({
+    this.providerId = 'kimi-code',
     List<Object?>? pollScript,
     this.expiresIn = const Duration(seconds: 30),
     this.refreshGate,
@@ -117,7 +118,7 @@ class _FakeDeviceProvider implements HarnessDeviceOAuthProvider {
   int refreshes = 0;
 
   @override
-  final String providerId = 'kimi-code';
+  final String providerId;
   final Duration expiresIn;
 
   /// Per-call results: null keeps polling, a credential completes, a thrown
@@ -202,6 +203,40 @@ void main() {
       expect(broker.supports('openai'), isTrue);
       expect(() => broker.start('anthropic'), throwsA(isA<StateError>()));
     });
+
+    test('the default registry offers Cursor, Kimi and Codex logins', () {
+      final broker = HarnessOAuthBroker(store: _RecordingStore());
+      expect(broker.supports('cursor'), isTrue);
+      expect(broker.supports('kimi-code'), isTrue);
+      expect(broker.supports('codex'), isTrue);
+    });
+
+    test(
+      'falls back to device when the redirect loopback cannot bind',
+      () async {
+        final occupied = await HttpServer.bind(
+          InternetAddress.loopbackIPv4,
+          0,
+        );
+        addTearDown(occupied.close);
+        final store = _RecordingStore();
+        final device = _FakeDeviceProvider(providerId: 'codex');
+        final broker = _broker(
+          store: store,
+          providers: [
+            _FakeProvider(
+              providerId: 'codex',
+              callbackPort: occupied.port,
+            ),
+          ],
+          deviceProviders: [device],
+        );
+        final start = await broker.start('codex');
+        expect(start.isDeviceCode, isTrue);
+        expect(start.userCode, 'AB12-CD34');
+        await broker.cancel(start.flowId);
+      },
+    );
 
     group('start', () {
       test('throws for an unsupported provider', () async {

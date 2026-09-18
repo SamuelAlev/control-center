@@ -183,7 +183,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get rigsUnsupportedServer =>
-      'Ce serveur ne peut pas héberger de VM cloisonnées. Les rigs nécessitent un hyperviseur sur la machine qui exécute cc_server.';
+      'Ce serveur ne peut héberger aucune surface rig. Vérifiez la configuration requise pour l’hôte sur la machine que vous souhaitez utiliser.';
 
   @override
   String get rigSurfaceComputer => 'Ordinateur';
@@ -192,7 +192,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rigSurfaceBrowser => 'Navigateur';
 
   @override
-  String get rigSurfaceMobile => 'Mobile';
+  String get rigSurfaceAndroid => 'Android';
+
+  @override
+  String get rigSurfaceIosSimulator => 'Simulateur iOS';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -255,6 +258,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Démarre une VM jetable partagée avec vos agents pour cette conversation. Elle est détruite à sa fermeture et rien de ce qui s\'y passe ne touche votre ordinateur.';
 
   @override
+  String get rigStartAndroidHint =>
+      'Se connecte à un émulateur Android déjà en cours d’exécution sur le serveur. L’accès au réseau n’est pas isolé.';
+
+  @override
+  String get rigStartIosHint =>
+      'Crée un simulateur iOS temporaire sur le Mac du serveur. Il est supprimé à la fermeture de l’environnement de test ; l’accès au réseau n’est pas isolé.';
+
+  @override
   String get rigStopMachine => 'Arrêter la machine';
 
   @override
@@ -269,7 +280,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get ideMenuSectionTools => 'Outils';
 
   @override
-  String get ideMenuSectionVirtualMachine => 'Machine virtuelle';
+  String get ideMenuSectionMachines => 'Machines';
 
   @override
   String get ideMenuSectionReopen => 'Rouvrir';
@@ -287,7 +298,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get rigMenuBrowser => 'Navigateur';
 
   @override
-  String get rigMenuMobile => 'Téléphone';
+  String get rigMenuAndroid => 'Android';
+
+  @override
+  String get rigMenuIosSimulator => 'Simulateur iOS';
 
   @override
   String rigLabelNumbered(String label, String suffix) {
@@ -329,6 +343,18 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get rigsCapabilitiesTitle => 'Ce serveur';
+
+  @override
+  String get rigInstallIosAutomation =>
+      'Installer la passerelle d’automatisation iOS';
+
+  @override
+  String get rigInstallingIosAutomation =>
+      'Installation de la passerelle d’automatisation iOS…';
+
+  @override
+  String get rigIosAutomationInstalled =>
+      'Passerelle d’automatisation iOS installée';
 
   @override
   String get rigsImagesTitle => 'Images de base';
@@ -1551,15 +1577,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Les modèles de reconnaissance vocale et de diarisation hébergés par ce serveur.';
 
   @override
-  String get filterSettingsHint => 'Filtrer les paramètres';
-
-  @override
   String get needsSetupLabel => 'Configuration requise';
-
-  @override
-  String noSettingsMatch(String query) {
-    return 'Aucun paramètre ne correspond à « $query »';
-  }
 
   @override
   String get collapseSidebar => 'Réduire la barre latérale';
@@ -1616,11 +1634,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noRunsYet => 'Aucune exécution';
-
-  @override
-  String lastActiveAgo(String duration) {
-    return 'Actif il y a $duration';
-  }
 
   @override
   String get copyPath => 'Copier le chemin';
@@ -2522,14 +2535,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agent => 'Agent';
 
   @override
-  String agentCount(int count, int plural) {
+  String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      plural,
+      count,
       locale: localeName,
-      other: 's',
-      one: '',
+      other: '$count agents',
+      one: '1 agent',
     );
-    return '$count agent$_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -2671,6 +2684,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get approved => 'Approuvé';
+
+  @override
+  String get articleNoun => 'Article';
 
   @override
   String get articlesSubscribed => 'Articles de vos flux abonnés.';
@@ -3086,6 +3102,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get deny => 'Refuser';
+
+  @override
+  String get detailsLabel => 'Détails';
 
   @override
   String get descriptionLabel => 'Description';
@@ -3789,27 +3808,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get killRunning => 'Arrêter l\'exécution';
 
   @override
-  String get languageDutch => 'Nederlands';
-
-  @override
-  String get languageEnglish => 'English';
-
-  @override
-  String get languageFrench => 'Français';
-
-  @override
-  String get languageGerman => 'Deutsch';
-
-  @override
-  String get languageItalian => 'Italiano';
-
-  @override
-  String get languagePortuguese => 'Português';
-
-  @override
-  String get languageSpanish => 'Español';
-
-  @override
   String get languageSystem => 'Système';
 
   @override
@@ -4388,6 +4386,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get openInBrowser => 'Ouvrir dans le navigateur';
 
   @override
+  String get openedInYourBrowser => 'Ouvert dans votre navigateur.';
+
+  @override
   String get openLabel => 'Ouvert';
 
   @override
@@ -4601,6 +4602,15 @@ class AppLocalizationsFr extends AppLocalizations {
       one: 'Un dépôt n\'est pas accessible',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get repoAccessNoticeSuspendedTitle =>
+      'Installation GitHub App suspendue';
+
+  @override
+  String repoAccessNoticeSuspendedBody(String repos) {
+    return 'Affichage des dernières données connues pour $repos. Reprenez l\'installation sur GitHub, ou connectez un jeton qui y a accès.';
   }
 
   @override
@@ -6942,6 +6952,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentQuestionAnswerLabel => 'Votre réponse';
 
   @override
+  String agentQuestionProgress(int index, int count) {
+    return 'Question $index sur $count';
+  }
+
+  @override
+  String get agentQuestionSkip => 'Ignorer';
+
+  @override
+  String get agentQuestionSkippedLabel => 'Ignorée';
+
+  @override
+  String get agentQuestionFreeformOptionHint => 'Décrivez-le avec vos mots…';
+
+  @override
   String get reviewRequested => 'Révision demandée';
 
   @override
@@ -6993,6 +7017,51 @@ class AppLocalizationsFr extends AppLocalizations {
     String removed,
   ) {
     return '$actor a demandé une revue à $requested et a retiré la demande de revue pour $removed';
+  }
+
+  @override
+  String prTimelineAddedLabels(String actor, String labels, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'libellés',
+      one: 'libellé',
+    );
+    return '$actor a ajouté le $_temp0 $labels';
+  }
+
+  @override
+  String prTimelineRemovedLabels(String actor, String labels, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'libellés',
+      one: 'libellé',
+    );
+    return '$actor a retiré le $_temp0 $labels';
+  }
+
+  @override
+  String prTimelineAddedAndRemovedLabels(
+    String actor,
+    String added,
+    int addedCount,
+    String removed,
+    int removedCount,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      addedCount,
+      locale: localeName,
+      other: 'libellés',
+      one: 'libellé',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      removedCount,
+      locale: localeName,
+      other: 'libellés',
+      one: 'libellé',
+    );
+    return '$actor a ajouté le $_temp0 $added et retiré le $_temp1 $removed';
   }
 
   @override
@@ -7074,6 +7143,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noChecksYet => 'Aucune vérification exécutée';
+
+  @override
+  String get noChangesToReview => 'Aucune modification à relire';
 
   @override
   String checksFailingCount(int count) {
@@ -7262,17 +7334,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get clearAll => 'Tout effacer';
-
-  @override
-  String agentsRunningCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count agents en cours',
-      one: '1 agent en cours',
-    );
-    return '$_temp0';
-  }
 
   @override
   String reviewSummary(int prs, int repos) {
@@ -10443,6 +10504,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get openInEditor => 'Ouvrir dans l\'éditeur';
 
   @override
+  String get regexTesterTitle => 'Tester l\'expression régulière';
+
+  @override
+  String get regexTesterHint => 'Saisir un exemple';
+
+  @override
+  String get regexMatch => 'Correspondance';
+
+  @override
+  String get regexNoMatch => 'Aucune correspondance';
+
+  @override
+  String get regexInvalidPattern => 'Motif invalide';
+
+  @override
+  String get symbolLookupNone =>
+      'Aucune définition dans l’index ou dans cette pull request';
+
+  @override
+  String get symbolLookupInDiff => 'Trouvé dans cette pull request';
+
+  @override
+  String get symbolLookupFromBase =>
+      'Depuis le checkout de base — le worktree de cette PR n\'est pas encore indexé';
+
+  @override
+  String get symbolImplementations => 'Implémentations';
+
+  @override
+  String symbolCallersCount(int count) {
+    return '$count appelants';
+  }
+
+  @override
   String get commitMessageHint => 'Message de validation';
 
   @override
@@ -10519,6 +10614,12 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get searchInFilesHint =>
       'Rechercher dans les fichiers de la pull request';
+
+  @override
+  String get searchInWholeRepo => 'Rechercher dans tout le dépôt';
+
+  @override
+  String get searchInThisPullRequest => 'Rechercher dans cette pull request';
 
   @override
   String get searchNoResults => 'Aucun résultat';
@@ -10957,37 +11058,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get providerGenerationOverridden => 'Personnalisé';
-
-  @override
-  String get spaceFlyoutNeedsInput => 'Réponse attendue';
-
-  @override
-  String get spaceFlyoutPreparing => 'Préparation';
-
-  @override
-  String get spaceFlyoutSetupFailed => 'Échec de la configuration';
-
-  @override
-  String get spaceFlyoutSetupStopped => 'Configuration arrêtée';
-
-  @override
-  String get spaceFlyoutNeverRun => 'Aucun agent n\'a encore travaillé ici';
-
-  @override
-  String spaceFlyoutContextUsage(String used, String percent) {
-    return 'Fenêtre de contexte : $used utilisés, remplie à $percent';
-  }
-
-  @override
-  String subagentsRunningCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count sous-agents',
-      one: '1 sous-agent',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get branchNotPushed => 'non poussée';
@@ -13613,6 +13683,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get renameConversation => 'Renommer la conversation';
 
   @override
+  String get spaceActions => 'Actions de l\'espace';
+
+  @override
+  String get conversationActions => 'Actions de la conversation';
+
+  @override
   String get editSpaceRepos => 'Modifier les dépôts';
 
   @override
@@ -14292,4 +14368,317 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get credentialGateOpenSettings => 'Ouvrir les paramètres';
+
+  @override
+  String get selectModel => 'Sélectionner un modèle';
+
+  @override
+  String get allModels => 'Tous les modèles';
+
+  @override
+  String get noModelsMatchSearch =>
+      'Aucun modèle ne correspond à votre recherche';
+
+  @override
+  String useCustomModelId(String id) {
+    return 'Utiliser « $id »';
+  }
+
+  @override
+  String get modelFree => 'Gratuit';
+
+  @override
+  String modelOutputTokens(String tokens) {
+    return '$tokens en sortie';
+  }
+
+  @override
+  String modelPricePerMTokens(String input, String output) {
+    return '$input en entrée / $output en sortie par 1M de tokens';
+  }
+
+  @override
+  String modelEffortLevels(String levels) {
+    return 'Effort de raisonnement : $levels';
+  }
+
+  @override
+  String get modelSupportsReasoning =>
+      'Prend en charge l\'effort de raisonnement';
+
+  @override
+  String get profileDeliveryMetrics => 'Indicateurs de livraison';
+
+  @override
+  String profileMetricsSample(int count) {
+    return 'PR analysées : $count';
+  }
+
+  @override
+  String get profileMergeRate => 'Taux de fusion';
+
+  @override
+  String get profileReviewCoverage => 'Couverture des revues';
+
+  @override
+  String get profilePrSize => 'Taille des PR';
+
+  @override
+  String get profileTimeToMerge => 'Délai de fusion';
+
+  @override
+  String get profileMergeTimeTrend => 'Évolution du délai de fusion';
+
+  @override
+  String get profileWeeklyMedian =>
+      'Médiane hebdomadaire, échelle logarithmique';
+
+  @override
+  String get profilePrOpeningPattern =>
+      'Jour de la semaine × heure, heure locale';
+
+  @override
+  String get profileFirstReview => 'Délai avant la première revue';
+
+  @override
+  String get profileMetricsTruncated =>
+      'Les percentiles sont calculés à partir d’un échantillon limité des demandes de tirage disponibles.';
+
+  @override
+  String profileLinesChanged(String count) {
+    return '$count lignes';
+  }
+
+  @override
+  String profileDurationMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String profileDurationHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String profileDurationDaysHours(int days, int hours) {
+    return '$days j $hours h';
+  }
+
+  @override
+  String profilePercentiles(String median, String p90) {
+    return 'p50 $median · p90 $p90';
+  }
+
+  @override
+  String profileTeamMembers(int count) {
+    return 'Membres : $count';
+  }
+
+  @override
+  String noPrsByTeamInWorkspace(String team) {
+    return 'Aucune pull request de $team dans cet espace de travail';
+  }
+
+  @override
+  String get profilePrStateFilterLabel => 'Filtrer les pull requests par état';
+
+  @override
+  String get noProfilePrsMatchSearchHint =>
+      'Essayez un autre titre ou numéro de pull request';
+
+  @override
+  String get rigNetworkUnrestricted => 'Réseau sans restriction';
+
+  @override
+  String get rigNetworkAllowAllHosts => 'Autoriser tous les hôtes';
+
+  @override
+  String get rigNetworkBypassTitle => 'Autoriser tous les hôtes du réseau ?';
+
+  @override
+  String get rigNetworkBypassBody =>
+      'Cette action redémarre l’environnement isolé et supprime les modifications non validées qu’il contient. Le système invité pourra ensuite atteindre n’importe quel hôte du réseau jusqu’à sa fermeture.';
+
+  @override
+  String get rigNetworkRestartUnrestricted => 'Redémarrer sans restriction';
+
+  @override
+  String get rigNetworkUnrestrictedBody =>
+      'Cet environnement isolé peut atteindre tous les hôtes du réseau. Fermez-le et ouvrez-en un nouveau pour rétablir les restrictions par défaut.';
+
+  @override
+  String get rigNetworkAlreadyUnrestrictedBody =>
+      'Cet émulateur Android gère déjà son propre réseau. Control Center ne peut donc pas imposer de liste d’hôtes autorisés. Aucun redémarrage n’est nécessaire.';
+
+  @override
+  String get rigClipboardPermissionHostToRigTitle =>
+      'Coller le presse-papiers dans cet environnement ?';
+
+  @override
+  String get rigClipboardPermissionHostToRigBody =>
+      'Control Center lira le presse-papiers de votre appareil et enverra son contenu à l’environnement. Le contenu du presse-papiers peut contenir des mots de passe ou d’autres secrets.';
+
+  @override
+  String get rigClipboardPermissionRigToHostTitle =>
+      'Copier le presse-papiers depuis cet environnement ?';
+
+  @override
+  String get rigClipboardPermissionRigToHostBody =>
+      'Control Center lira le presse-papiers de l’environnement et remplacera le presse-papiers de votre appareil par son contenu. Traitez le contenu provenant de l’environnement comme non fiable.';
+
+  @override
+  String get rigClipboardAllowTenMinutes => 'Autoriser pendant 10 minutes';
+
+  @override
+  String get rigClipboardAlwaysAllow => 'Toujours autoriser';
+
+  @override
+  String get rigClipboardSettingsTitle => 'Accès au presse-papiers';
+
+  @override
+  String get rigClipboardSettingsHint =>
+      'Choisissez les transferts de presse-papiers qui peuvent s’exécuter sans demande. Les autorisations temporaires expirent après 10 minutes.';
+
+  @override
+  String get rigClipboardAlwaysPasteTitle =>
+      'Toujours autoriser le collage dans les environnements';
+
+  @override
+  String get rigClipboardAlwaysPasteDescription =>
+      'Envoyer le presse-papiers de cet appareil vers n’importe quel environnement sans demande.';
+
+  @override
+  String get rigClipboardAlwaysCopyTitle =>
+      'Toujours autoriser la copie depuis les environnements';
+
+  @override
+  String get rigClipboardAlwaysCopyDescription =>
+      'Placer le contenu du presse-papiers de n’importe quel environnement sur cet appareil sans demande.';
+}
+
+/// The translations for French, as used in Canada (`fr_CA`).
+class AppLocalizationsFrCa extends AppLocalizationsFr {
+  AppLocalizationsFrCa() : super('fr_CA');
+
+  @override
+  String get pairClientNameHint => 'Nommez ce client (ex. ordinateur portatif)';
+
+  @override
+  String get pairScanQr =>
+      'Scannez ce code QR avec l\'appareil photo de votre téléphone pour l\'associer.';
+
+  @override
+  String get notificationCalendarAuthExpiredTitle => 'Calendrier déconnecté';
+
+  @override
+  String get notificationCalendarAuthExpiredBodyNoEmail =>
+      'Reconnectez votre calendrier pour reprendre la synchronisation';
+
+  @override
+  String get notifyCalendarAuthExpired =>
+      'Lorsqu\'un compte de calendrier doit être reconnecté';
+
+  @override
+  String get newsfeed => 'Fil de nouvelles';
+
+  @override
+  String get newsfeedLabel => 'Fil de nouvelles';
+
+  @override
+  String get newsfeedSettingsTitle => 'Paramètres du fil de nouvelles';
+
+  @override
+  String get notificationGroupCalendar => 'Calendrier';
+
+  @override
+  String get meetingAutoDetectDescription =>
+      'Surveille le calendrier et les applis de visioconférence, et propose d\'enregistrer au début d\'une réunion.';
+
+  @override
+  String get emailLabel => 'Courriel';
+
+  @override
+  String get gitAuthorEmailLabel => 'Courriel d\'auteur git';
+
+  @override
+  String chatLinkMethodEmail(String externalUserId) {
+    return '$externalUserId · associé par courriel';
+  }
+
+  @override
+  String get settingsProfileDescription =>
+      'Votre nom, votre courriel et l\'identité git apposée sur les commits faits en votre nom.';
+
+  @override
+  String get ssoEmailAttributeLabel => 'Attribut courriel';
+
+  @override
+  String get profileDeliveryMetrics => 'Indicateurs de livraison';
+
+  @override
+  String profileMetricsSample(int count) {
+    return 'PR analysées : $count';
+  }
+
+  @override
+  String get profileMergeRate => 'Taux de fusion';
+
+  @override
+  String get profileReviewCoverage => 'Couverture des révisions';
+
+  @override
+  String get profilePrSize => 'Taille des PR';
+
+  @override
+  String get profileTimeToMerge => 'Délai de fusion';
+
+  @override
+  String get profileFirstReview => 'Délai avant la première révision';
+
+  @override
+  String get profileMetricsTruncated =>
+      'Les percentiles sont calculés à partir d’un échantillon limité des demandes de tirage disponibles.';
+
+  @override
+  String profileLinesChanged(String count) {
+    return '$count lignes';
+  }
+
+  @override
+  String profileDurationMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String profileDurationHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String profileDurationDaysHours(int days, int hours) {
+    return '$days j $hours h';
+  }
+
+  @override
+  String profilePercentiles(String median, String p90) {
+    return 'p50 $median · p90 $p90';
+  }
+
+  @override
+  String profileTeamMembers(int count) {
+    return 'Membres : $count';
+  }
+
+  @override
+  String noPrsByTeamInWorkspace(String team) {
+    return 'Aucune demande de tirage de $team dans cet espace de travail';
+  }
+
+  @override
+  String get profilePrStateFilterLabel =>
+      'Filtrer les demandes de tirage par état';
+
+  @override
+  String get noProfilePrsMatchSearchHint =>
+      'Essayez un autre titre ou numéro de demande de tirage';
 }

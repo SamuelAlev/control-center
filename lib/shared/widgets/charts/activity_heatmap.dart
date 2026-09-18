@@ -241,9 +241,9 @@ class ActivityHeatmap extends StatelessWidget {
               SizedBox(
                 width: _labelColumnWidth,
                 child: Padding(
-                  padding: EdgeInsets.only(
+                  padding: EdgeInsetsDirectional.only(
                     top: _monthLabelHeight + cellGap,
-                    right: _labelGap,
+                    end: _labelGap,
                   ),
                   child: _WeekdayLabels(
                     cellSize: cellSize,
@@ -388,7 +388,7 @@ class _WeekdayLabels extends StatelessWidget {
             child: labels.containsKey(i)
                 ? FittedBox(
                     fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
+                    alignment: AlignmentDirectional.centerEnd,
                     child: Text(
                       labels[i]!,
                       style: TextStyle(
@@ -436,8 +436,8 @@ class _MonthLabels extends StatelessWidget {
         continue;
       }
       positioned.add(
-        Positioned(
-          left: w * extent,
+        PositionedDirectional(
+          start: w * extent,
           top: 0,
           child: Text(
             months[colDate.month - 1],

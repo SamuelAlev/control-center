@@ -180,7 +180,7 @@ In the conversation's enclosure when it has one, on the host otherwise. It does 
 
 ## `ask_user` — ask the human a question
 
-`read` tier. Renders a structured question in the conversation and blocks the run until someone answers.
+`read` tier. The **only** way a run asks the operator anything. It renders a numbered card in the conversation and blocks until someone answers, skips, or the question times out. Never write the question as a chat message — that ends the turn.
 
 | Argument       | Meaning                                    |
 | -------------- | ------------------------------------------ |
@@ -188,6 +188,8 @@ In the conversation's enclosure when it has one, on the host otherwise. It does 
 | `options[]`    | Choices, each `{label, description?}`      |
 | `allow_free_text` | Whether a typed answer is accepted       |
 | `multi_select` | Whether several options may be chosen      |
+
+A skip is success: proceed on a stated assumption and do not ask again. A timeout is an error with the same instruction. Permission prompts ("may I do this?") are a separate gate and render as the same card in the conversation.
 
 Registered only when both a question port and a target space exist. Without a human attached the call **fails** rather than blocking forever — the same fail-closed posture a guardrail `prompt` takes with no approver connected.
 

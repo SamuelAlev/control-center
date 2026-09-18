@@ -1,7 +1,8 @@
 import 'package:control_center/features/shell/breadcrumbs/current_route_match_provider.dart';
 import 'package:control_center/features/shell/route_titles/route_title_registry.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -32,7 +33,7 @@ class RouteTitle extends ConsumerWidget {
       // Router not ready yet (e.g. the very first frame) — keep the app name.
       return _TitleBox(
         title: kAppTitle,
-        color: Theme.of(context).colorScheme.surface,
+        color: (context.designSystem ?? DesignSystemTokens.light()).surface,
         child: child,
       );
     }
@@ -40,7 +41,7 @@ class RouteTitle extends ConsumerWidget {
     final title = routeTitleFor(ref, routeState, l10n);
     return _TitleBox(
       title: title,
-      color: Theme.of(context).colorScheme.surface,
+      color: (context.designSystem ?? DesignSystemTokens.light()).surface,
       child: child,
     );
   }

@@ -42,9 +42,8 @@ void main() {
 
   // Strip line comments so prose naming `workspaceScoped: false` (or a field)
   // between two declarations is never attributed to the preceding one.
-  String stripped(File f) => f
-      .readAsStringSync()
-      .replaceAll(RegExp(r'^\s*//.*', multiLine: true), '');
+  String stripped(File f) =>
+      f.readAsStringSync().replaceAll(RegExp(r'^\s*//.*', multiLine: true), '');
 
   final nameRe = RegExp(r"name:\s*'([^'$]+)'");
 
@@ -102,10 +101,12 @@ void main() {
       'providers.saveApiKey', 'providers.saveGenerationDefaults',
       'providers.saveModelOverride', 'providers.startOAuth',
       'forge.capabilities', 'forge.listConnections', 'forge.testConnection',
-      'ticketing.listConnections', 'github.currentUser', 'github.userProfile',
+      'ticketing.listConnections', 'github.currentUser', 'github.teamProfile',
+      'github.userProfile',
       // In-handler gates (owner/admin/membership checks inside the handler,
       // documented at each site).
-      'workspace.upsert', 'workspace.delete', 'workspace.reorder',
+      'workspace.upsert', 'workspace.create', 'workspace.delete',
+      'workspace.reorder',
       'confirmation.respond', 'connectivity.setTunnel',
       'pairing.list', 'pairing.rename', 'pairing.revoke',
       // Non-secret, read-only host/service probes and utility reads.
@@ -116,6 +117,9 @@ void main() {
       'ide.detectEditors', 'process.detect', 'fonts.list',
       'gif.search', 'gif.trending', 'demo.repoStars',
       'models.voiceCatalog',
+      'models.catalog', 'models.refreshCatalog',
+      'newsfeed.filterLists.state', 'newsfeed.filterLists.blocklist',
+      'newsfeed.filterLists.removeParams', 'newsfeed.filterLists.refresh',
       // Cross-workspace reads filtered per subscriber / membership inside.
       'isolated_repo.forSpaceAcrossWorkspaces',
       'isolated_repo.forTicketAcrossWorkspaces',
@@ -261,11 +265,19 @@ void main() {
     // calling user, or filtered per-subscriber via visibleRows) — reasons at
     // the declaration sites.
     const unscopedSelfScoped = <String>{
-      'agent_run_log.watchAll', 'agent_run_log.watchRecent', 'agents.watchAll',
-      'confirmation.watchPending', 'credential_gate.watchBlocked',
-      'fleet.watchWorkers', 'newsfeed.watchArticles', 'newsfeed.watchFeeds',
-      'pairing.watchOwn', 'pipeline_run.watchAll', 'prefs.watchOwn',
-      'users.watchAll', 'workspace.watchAll',
+      'agent_run_log.watchAll',
+      'agent_run_log.watchRecent',
+      'agents.watchAll',
+      'confirmation.watchPending',
+      'credential_gate.watchBlocked',
+      'fleet.watchWorkers',
+      'newsfeed.watchArticles',
+      'newsfeed.watchFeeds',
+      'pairing.watchOwn',
+      'pipeline_run.watchAll',
+      'prefs.watchOwn',
+      'users.watchAll',
+      'workspace.watchAll',
     };
 
     final offenders = <String>[];

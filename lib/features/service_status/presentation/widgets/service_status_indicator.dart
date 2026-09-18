@@ -34,9 +34,17 @@ const String _kimiStatusPageUrl = 'https://status.moonshot.cn/';
 /// dot is always present (green when healthy, muted before the first snapshot
 /// lands, so a healthy boot never flashes "Unknown"). The word lives on the
 /// dot as a semantic label so screen readers still hear the state.
-class ServiceStatusSidebarEntry extends ConsumerStatefulWidget {
+///
+/// Implements [CcFluidHoverTarget] so the footer [CcSidebarGroup] treats this
+/// as a peer of Newsfeed / Observability / Settings rather than a nested
+/// surface: hovering the row washes it, and neighbouring rows stay idle.
+class ServiceStatusSidebarEntry extends ConsumerStatefulWidget
+    implements CcFluidHoverTarget {
   /// Creates a [ServiceStatusSidebarEntry].
   const ServiceStatusSidebarEntry({super.key});
+
+  @override
+  bool get fluidHoverEnabled => true;
 
   @override
   ConsumerState<ServiceStatusSidebarEntry> createState() =>
@@ -88,12 +96,14 @@ class _ServiceStatusSidebarEntryState
       // toggles), so the popover must not wrap the target in a second tap
       // layer or one press would toggle twice.
       toggleOnTargetTap: false,
-      targetAnchor: Alignment.centerRight,
-      followerAnchor: Alignment.centerLeft,
-      // The row's right edge sits 8px inside the sidebar's outer edge (7px
+      targetAnchor: AlignmentDirectional.centerEnd,
+      followerAnchor: AlignmentDirectional.centerStart,
+      // The row's trailing edge sits 8px inside the sidebar's outer edge (7px
       // content inset + the 1px trailing border): 8 clears the sidebar and
       // the extra 4 (AppSpacing.xs) leaves a visible gap between the border
-      // hairline and the flyout instead of the flyout overlapping it.
+      // hairline and the flyout instead of the flyout overlapping it. With
+      // directional anchors the dx is logical (toward the end) and the
+      // overlay anchor mirrors it under RTL itself.
       offset: const Offset(12, 0),
       semanticLabel: l10n.serviceStatusTitle,
       overlayBuilder: (context, _) => _StatusFlyout(
@@ -247,8 +257,8 @@ class _StatusFlyout extends StatelessWidget {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final statuses = [github, claude, openai, kimi];
-    // The header refresh refetches the shared snapshot, so the freshness card
-    // reports the most recent fetch across the slices.
+    // The header refresh refetches the shared snapshot, so the title's
+    // "Updated …" reports the most recent fetch across the slices.
     DateTime? lastChecked;
     for (final s in statuses) {
       final fetchedAt = s.value?.fetchedAt;
@@ -276,17 +286,39 @@ class _StatusFlyout extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 4),
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        l10n.serviceStatusTitle,
-                        style: TextStyle(
-                          color: tokens.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Row(
+                        children: [
+                          Text(
+                            l10n.serviceStatusTitle,
+                            style: TextStyle(
+                              color: tokens.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (lastChecked != null) ...[
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: AppTimestamp(
+                                dateTime: lastChecked,
+                                child: Text(
+                                  l10n.githubStatusUpdated(
+                                    _relativeTime(context, lastChecked),
+                                  ),
+                                  style: CcTypography.caption.copyWith(
+                                    color: tokens.textTertiary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     RefreshControl(
@@ -337,12 +369,12 @@ class _StatusFlyout extends StatelessWidget {
   }
 }
 
-/// One provider's slice of the flyout: status word + updated time, active
-/// incidents and degraded components (only when present — the flyout stays
-/// small by never listing healthy components). Each incident tile is itself
-/// the link to that incident's page, so the block carries no separate
-/// status-page button; only the fetch-failed state, which renders no tiles,
-/// falls back to one.
+/// One provider's slice of the flyout: status word, active incidents and
+/// degraded components (only when present — the flyout stays small by never
+/// listing healthy components). Freshness lives once in the header, not on
+/// every row. Each incident tile is itself the link to that incident's page,
+/// so the block carries no separate status-page button; only the fetch-failed
+/// state, which renders no tiles, falls back to one.
 class _ProviderBlock extends StatelessWidget {
   const _ProviderBlock({
     required this.name,
@@ -434,18 +466,6 @@ class _ProviderBlock extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 2),
-              AppTimestamp(
-                dateTime: s.fetchedAt,
-                child: Text(
-                  l10n.githubStatusUpdated(_relativeTime(context, s.fetchedAt)),
-                  style: TextStyle(
-                    color: tokens.textTertiary,
-                    fontSize: 11,
-                    height: 1.2,
-                  ),
-                ),
-              ),
               if (s.incidents.isNotEmpty) ...[
                 const SizedBox(height: 8),
                 for (var i = 0; i < s.incidents.length; i++) ...[
@@ -498,7 +518,7 @@ class _ProviderBlock extends StatelessWidget {
   /// the page is most useful exactly when we could not read it ourselves.
   Widget _pageLinkButton() {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: CcButton(
         onPressed: () => _open(pageUrl),
         // `line`, not `ghost`: ghost is transparent until hovered, which read

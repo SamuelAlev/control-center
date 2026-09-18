@@ -97,6 +97,12 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
     return null;
   }
 
+  /// Creates a workspace on the host (`workspace.create`).
+  Future<Workspace> create({required String name}) async {
+    final dto = await _remote.create(name: name);
+    return _workspaceFromDto(dto);
+  }
+
   @override
   Future<String> upsert(Workspace workspace) =>
       _remote.upsert(_toDto(workspace));

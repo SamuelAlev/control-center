@@ -421,4 +421,25 @@ void main() {
       expect(doc.heightOfFile(0), headerHeight + 300 + fileSeparator);
     });
   });
+
+  group('PrDiffDocument.indexOfFile', () {
+    test('matches by filename, previous name, and path suffix', () {
+      final doc = _doc()
+        ..setFiles([
+          _file('lib/foo.dart', _realPatch),
+          PrFile(
+            filename: 'lib/renamed.dart',
+            previousFilename: 'lib/old.dart',
+            status: PrFileStatus.renamed,
+            additions: 1,
+            deletions: 1,
+            patch: _realPatch,
+          ),
+        ]);
+      expect(doc.indexOfFile('lib/foo.dart'), 0);
+      expect(doc.indexOfFile(r'lib\foo.dart'), 0);
+      expect(doc.indexOfFile('lib/old.dart'), 1);
+      expect(doc.indexOfFile('missing.dart'), -1);
+    });
+  });
 }

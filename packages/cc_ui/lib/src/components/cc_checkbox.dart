@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -61,6 +62,7 @@ class CcCheckbox extends StatelessWidget {
     final t = context.ds;
     final enabled = onChanged != null;
     final active = value || indeterminate;
+    final fade = CcMotion.resolveFade(context, CcMotion.fast);
 
     return CcTappable(
       onPressed: enabled
@@ -80,11 +82,18 @@ class CcCheckbox extends StatelessWidget {
           fillColor = enabled ? t.accent : t.bgDisabled;
           borderColor = fillColor;
         } else {
-          fillColor = pressed
+          // Pre-blend translucent washes onto the opaque fill so
+          // AnimatedContainer lerps only RGB — Color.lerp of `hover`
+          // (fg @ 5%) against `surface` peaks at a dark gray at t≈0.5,
+          // which is the unhover flash on markdown task-list boxes.
+          final wash = pressed
               ? t.hoverStrong
               : hovered
               ? t.hover
-              : t.surface;
+              : null;
+          fillColor = wash == null
+              ? t.surface
+              : Color.alphaBlend(wash, t.surface);
           borderColor = enabled ? t.borderPrimary : t.borderDisabled;
         }
 
@@ -92,7 +101,9 @@ class CcCheckbox extends StatelessWidget {
 
         final Widget box = Opacity(
           opacity: enabled ? 1 : 0.6,
-          child: Container(
+          child: AnimatedContainer(
+            duration: fade,
+            curve: CcMotion.standard,
             width: _size,
             height: _size,
             decoration: BoxDecoration(
@@ -100,14 +111,17 @@ class CcCheckbox extends StatelessWidget {
               borderRadius: AppRadii.brSm,
               border: Border.all(color: borderColor),
             ),
-            child: active
-                ? CustomPaint(
-                    painter: indeterminate
-                        ? _DashPainter(color: glyphColor)
-                        : _CheckPainter(color: glyphColor),
-                    size: const Size(_size, _size),
-                  )
-                : null,
+            child: AnimatedOpacity(
+              opacity: active ? 1 : 0,
+              duration: fade,
+              curve: CcMotion.standard,
+              child: CustomPaint(
+                painter: indeterminate
+                    ? _DashPainter(color: glyphColor)
+                    : _CheckPainter(color: glyphColor),
+                size: const Size(_size, _size),
+              ),
+            ),
           ),
         );
 

@@ -32,6 +32,17 @@ class RemoteWorkspaceRepository {
   Stream<List<WorkspaceDto>> watchAll() =>
       _client.subscribe('workspace.watchAll', const {}).map(_workspaces);
 
+  /// Creates a workspace on the host. Id minting, owner membership and
+  /// [WorkspaceCreated] seeding run server-side (`workspace.create`).
+  Future<WorkspaceDto> create({required String name}) async {
+    final data = await _client.call('workspace.create', {'name': name});
+    final workspace = data['workspace'];
+    if (workspace is! Map) {
+      throw StateError('workspace.create returned no workspace');
+    }
+    return WorkspaceDto.fromJson(workspace.cast<String, dynamic>());
+  }
+
   /// Upserts a workspace row; returns its id.
   Future<String> upsert(WorkspaceDto workspace) async {
     final data = await _client.call('workspace.upsert', {

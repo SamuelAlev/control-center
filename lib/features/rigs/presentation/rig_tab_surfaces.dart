@@ -79,8 +79,19 @@ abstract final class RigTabSurfaces {
   /// An Android device.
   static const String mobile = 'mobile';
 
+  /// A disposable iOS Simulator on the server Mac.
+  static const String ios = 'ios';
+
   /// Every surface a tab can show, in menu order.
-  static const List<String> all = [browser, mobile, computer];
+  static const List<String> all = [browser, mobile, ios, computer];
+
+  /// Whether this surface exposes a machine-audio output lane.
+  static bool supportsAudioOutput(String surface) =>
+      surface == computer || surface == browser;
+
+  /// Whether this surface accepts host microphone input.
+  static bool supportsMicrophone(String surface) =>
+      surface == computer || surface == browser;
 
   /// The machines to offer, given the browsers the connected server can boot.
   ///
@@ -92,7 +103,10 @@ abstract final class RigTabSurfaces {
   /// An engine the server did not report is not offered. A server that names
   /// none at all still gets Chromium — that is an older server, which had
   /// exactly one browser and no way to say so.
-  static List<RigTabTarget> targets(Set<RigBrowserEngine> engines) {
+  static List<RigTabTarget> targets(
+    Set<RigBrowserEngine> engines, {
+    Set<String> advertisedSurfaces = const {},
+  }) {
     final available = engines.isEmpty
         ? const {RigBrowserEngine.chromium}
         : engines;
@@ -100,9 +114,9 @@ abstract final class RigTabSurfaces {
       for (final engine in RigBrowserEngine.values)
         if (available.contains(engine)) RigTabTarget(browser, engine: engine),
       const RigTabTarget(mobile),
+      if (advertisedSurfaces.contains(ios)) const RigTabTarget(ios),
       // The desktop is last: it is the heavyweight machine a conversation
-      // needs least often, so it sits below the phone rather than above the
-      // browsers.
+      // needs least often.
       const RigTabTarget(computer),
     ];
   }
@@ -242,11 +256,10 @@ abstract final class RigTabSurfaces {
   /// BROWSERS list.
   static String menuLabelFor(AppLocalizations l10n, RigTabTarget target) =>
       switch (target.surface) {
-        // Named by ENGINE when there is one — "Browser" three times over would
-        // be three rows a person cannot tell apart.
         browser =>
           target.engine == null ? l10n.rigMenuBrowser : target.engine!.label,
-        mobile => l10n.rigMenuMobile,
+        mobile => l10n.rigMenuAndroid,
+        ios => l10n.rigMenuIosSimulator,
         _ => l10n.rigMenuComputer,
       };
 
@@ -256,5 +269,5 @@ abstract final class RigTabSurfaces {
   /// the labels shed; "vm" rides along untranslated, as the abbreviation every
   /// locale's developers actually type.
   static String menuSearchKeywords(AppLocalizations l10n) =>
-      '${l10n.ideMenuSectionVirtualMachine} vm';
+      '${l10n.ideMenuSectionMachines} vm';
 }

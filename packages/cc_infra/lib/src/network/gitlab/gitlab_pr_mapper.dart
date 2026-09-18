@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
@@ -246,6 +247,14 @@ PullRequest pullRequestFromGitLab(
         .map(prUserFromGitLab)
         .toList(growable: false),
     assignees: mr.assignees.map(prUserFromGitLab).toList(growable: false),
+    labels: [
+      for (final l in mr.labels)
+        PrLabel(
+          name: l.name,
+          color: _labelColor(l.color),
+          description: l.description,
+        ),
+    ],
     mergedAt: mr.mergedAt,
     reviewedByMe: reviewedByMe,
     changedFiles: gitLabChangedFileCount(mr.changesCount),
@@ -254,6 +263,12 @@ PullRequest pullRequestFromGitLab(
     mergeableState: prMergeableStateFromGitLab(mr),
     reviewDecision: prReviewDecisionFromGitLab(mr),
   );
+}
+
+/// Strips a leading `#` so GitLab's `#RRGGBB` matches GitHub's 6-digit hex.
+String _labelColor(String raw) {
+  final trimmed = raw.trim();
+  return trimmed.startsWith('#') ? trimmed.substring(1) : trimmed;
 }
 
 /// Parses GitLab's `changes_count`, which is a string and may carry a `+`

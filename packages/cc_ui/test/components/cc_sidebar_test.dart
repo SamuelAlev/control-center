@@ -44,12 +44,14 @@ void main() {
       ),
     );
     final decoration = container.decoration! as BoxDecoration;
-    final border = decoration.border! as Border;
-    expect(border.right.color, CcThemeData.light().tokens.borderPrimary);
-    expect(border.right.width, 1);
+    // Directional: the hairline sits on the END side so it faces the content
+    // in both text directions.
+    final border = decoration.border! as BorderDirectional;
+    expect(border.end.color, CcThemeData.light().tokens.borderPrimary);
+    expect(border.end.width, 1);
     expect(border.top.style, BorderStyle.none);
     expect(border.bottom.style, BorderStyle.none);
-    expect(border.left.style, BorderStyle.none);
+    expect(border.start.style, BorderStyle.none);
   });
 
   testWidgets('selected item is a solid brand fill with bold accentOn ink', (

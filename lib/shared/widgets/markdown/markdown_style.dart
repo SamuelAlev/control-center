@@ -5,7 +5,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
 /// Canonical code-block visual constants.
@@ -213,9 +213,11 @@ CcMarkdownStyle appMarkdownStyle(
     link: body.copyWith(color: tokens.textBrandPrimary).withLinkUnderline(),
     blockquote: body.copyWith(color: muted),
     blockquoteDecoration: BoxDecoration(
-      border: Border(left: BorderSide(color: divider, width: 3)),
+      border: BorderDirectional(start: BorderSide(color: divider, width: 3)),
     ),
-    blockquotePadding: const EdgeInsets.only(left: 12, top: 2, bottom: 2),
+    // blockquotePadding is deliberately unset: the field is typed EdgeInsets,
+    // and the renderer's default (EdgeInsetsDirectional.only(start: 12, top: 2,
+    // bottom: 2)) carries the same values while mirroring under RTL.
     bold: TextStyle(fontWeight: FontWeight.w700, color: fg),
     italic: TextStyle(fontStyle: FontStyle.italic, color: fg),
     listBullet: body,
@@ -375,15 +377,27 @@ CcMermaidStyle appMermaidStyle(
   );
 }
 
-/// Read-only task-list checkbox for markdown list items, wrapped in a
-/// [FittedBox] so it fits the constrained bullet slot.
-Widget _appMarkdownCheckbox(bool checked) => SizedBox(
-  height: 22,
-  child: FittedBox(
-    fit: BoxFit.contain,
-    child: CcCheckbox(value: checked, onChanged: null),
-  ),
-);
+/// Task-list checkbox for markdown list items.
+///
+/// Layout is 18×22 so the painted 18px box sits on the first line of body
+/// text (14px at height 1.6). [CcCheckbox] still builds a 32px tap target;
+/// that extra is overflow-painted, not laid out — putting 32px in the row
+/// is what pulled the box off the line. Clicks on the visible box still
+/// hit; [onChanged] is null for read-only surfaces.
+Widget _appMarkdownCheckbox(bool checked, {ValueChanged<bool>? onChanged}) {
+  return SizedBox(
+    width: 18,
+    height: 22,
+    child: OverflowBox(
+      minWidth: 32,
+      minHeight: 32,
+      maxWidth: 32,
+      maxHeight: 32,
+      alignment: Alignment.center,
+      child: CcCheckbox(value: checked, onChanged: onChanged),
+    ),
+  );
+}
 
 /// Renders an inline `code` chip using a [Container] background instead of
 /// [TextStyle.backgroundColor].
@@ -412,7 +426,10 @@ class _InlineCodeChip extends StatelessWidget {
         color: inlineCodeChipColor(context),
         borderRadius: BorderRadius.circular(kInlineCodeChipRadius),
       ),
-      child: Text(code, style: codeStyle),
+      // One line, intrinsically sized. A wrapping Text takes the paragraph's
+      // full maxWidth, so a chip beside a badge in a table cell was always
+      // "the column plus the badge" wide and overflowed by ~30px.
+      child: Text(code, style: codeStyle, softWrap: false, maxLines: 1),
     );
   }
 }
@@ -633,7 +650,7 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
         : _spansFor(
             displayCode,
             shikiLangForFence(language),
-            dark: Theme.of(context).brightness == Brightness.dark,
+            dark: (context.ccTheme?.isDark ?? false),
           );
 
     final l10n = AppLocalizations.of(context);
@@ -643,15 +660,24 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
       language: language,
       overlay: !labeled,
     );
-    final body = SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: labeled
-          ? kCodeBlockContentPadding
-          : kCodeBlockContentPadding.copyWith(
-              right:
-                  kCodeBlockContentPadding.right + kCodeBlockOverlayCopyReserve,
-            ),
-      child: Text.rich(TextSpan(style: codeStyle, children: spans)),
+    // RTL carve-out: source code is left-to-right whatever the app locale
+    // (policy: code, diffs and terminals never mirror), so the code CONTENT —
+    // the scrollable and its physical overlay-copy reserve — is pinned LTR
+    // while the surrounding chrome (header, notices) follows the ambient
+    // direction.
+    final body = Directionality(
+      textDirection: TextDirection.ltr,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: labeled
+            ? kCodeBlockContentPadding
+            : kCodeBlockContentPadding.copyWith(
+                right:
+                    kCodeBlockContentPadding.right +
+                    kCodeBlockOverlayCopyReserve,
+              ),
+        child: Text.rich(TextSpan(style: codeStyle, children: spans)),
+      ),
     );
 
     return Container(
@@ -700,7 +726,11 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
             ),
           if (truncatedLines > 0)
             Padding(
-              padding: const EdgeInsets.only(left: 14, right: 14, bottom: 10),
+              padding: const EdgeInsetsDirectional.only(
+                start: 14,
+                end: 14,
+                bottom: 10,
+              ),
               child: Text(
                 l10n.transcriptShowingFirstLines(truncatedLines),
                 style: TextStyle(color: tokens.textQuaternary, fontSize: 11),
@@ -713,7 +743,7 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
               ),
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: CcButton(
                   variant: CcButtonVariant.ghost,
                   size: CcButtonSize.sm,

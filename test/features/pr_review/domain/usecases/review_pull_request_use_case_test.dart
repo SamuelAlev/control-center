@@ -259,6 +259,13 @@ class FakePrReviewRepository implements PrReviewRepository {
   }) => throw UnimplementedError('updatePullRequest');
 
   @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) => throw UnimplementedError('updateIssueComment');
+
+  @override
   Future<void> addAssignees({
     required int prNumber,
     required List<String> logins,

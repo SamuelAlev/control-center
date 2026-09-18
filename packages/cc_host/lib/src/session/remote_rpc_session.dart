@@ -53,17 +53,41 @@ class RemoteRpcSession {
        requestLimiter =
            requestLimiter ??
            RemoteRateLimiter(
-             maxCallsPerWindow: 900,
-             maxMutationsPerWindow: 900,
+             maxCallsPerWindow: requestBudgetPerMinute(capability),
+             maxMutationsPerWindow: requestBudgetPerMinute(capability),
            );
 
-  /// Flood guard for EVERY inbound method, not just `tools/call`.
+  /// Phone (`cc_remote`) request-budget ceiling, per minute.
+  ///
+  /// A companion is a curated subset of the desktop; 900/min is still well
+  /// above a person tapping around and still bounds a hijacked PWA.
+  static const int phoneRequestBudgetPerMinute = 900;
+
+  /// First-party web/desktop request-budget ceiling, per minute.
+  ///
+  /// A space view mounts a pile of autoDispose watches plus the `repo/call`s
+  /// that hydrate the IDE chrome. Switching spaces tears those down and
+  /// opens a new set — a few fast clicks is hundreds of frames, not dozens.
+  /// The phone ceiling (900) rate-limits a real desktop session; this one
+  /// still bounds a runaway client (the in-flight cap is the other brake).
+  static const int fullClientRequestBudgetPerMinute = 3600;
+
+  /// Per-minute request budget for a session of [capability].
+  static int requestBudgetPerMinute(SessionCapability capability) =>
+      switch (capability) {
+        SessionCapability.fullClient => fullClientRequestBudgetPerMinute,
+        SessionCapability.phone => phoneRequestBudgetPerMinute,
+      };
+
+  /// Flood guard for inbound methods, not just `tools/call`.
   ///
   /// `repo/call`, `initialize`, `tools/list`, `op/list` and
   /// `session/list_workspaces` were previously unthrottled, so an
   /// authenticated client could drive the dispatcher (and the database, via
-  /// `session/list_workspaces`) at line rate. Deliberately generous — a real
-  /// desktop session bursts dozens of ops when a view opens — but bounded.
+  /// `session/list_workspaces`) at line rate. Sized per [capability] — a
+  /// real desktop session bursts hundreds of ops when switching spaces —
+  /// but bounded. [RpcMethods.unsubscribe] does not consume it: refusing
+  /// teardown leaks the server-side subscription.
   final RemoteRateLimiter requestLimiter;
 
   /// Cap on requests being handled CONCURRENTLY on this session.
@@ -219,7 +243,8 @@ class RemoteRpcSession {
       }
       return;
     }
-    if (!requestLimiter.tryAcquire(mutating: false)) {
+    if (_consumesRequestBudget(request.method) &&
+        !requestLimiter.tryAcquire(mutating: false)) {
       CcHostLog.warning(
         'Rate-limiting ${request.method} for $deviceId (request budget)',
       );
@@ -300,6 +325,16 @@ class RemoteRpcSession {
         return await dispatcher.handleRequest(request);
     }
   }
+
+  /// Whether [method] draws from [requestLimiter].
+  ///
+  /// `sub/unsubscribe` is teardown. Refusing it leaves the watch attached
+  /// (the client swallows the error) until the socket dies or
+  /// [SubscriptionManager.maxPerSession] trips — the exact leak a fast
+  /// space-switch then collides with. Cleanup is not work; it is not
+  /// budgeted.
+  static bool _consumesRequestBudget(String method) =>
+      method != RpcMethods.unsubscribe;
 
   /// A human-readable name for what a request is, for the in-flight/refusal
   /// logs: the op for `repo/call`, the tool for `tools/call`, the query for

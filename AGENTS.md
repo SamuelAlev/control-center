@@ -10,7 +10,7 @@ You are working on the Control Center, a Flutter desktop application for orchest
 
 ## Project structure
 
-The repository is a **native Dart pub workspace** (single resolved `pubspec.lock`) of a root Flutter app plus **5 apps and 15 packages**. The server half is pure-Dart (no Flutter engine) so it compiles to a self-contained native binary; the client half is Flutter. See `ARCH.md` for the exhaustive map.
+The repository is a **native Dart pub workspace** (single resolved `pubspec.lock`) of a root Flutter app plus **6 apps and 15 packages**. The server half is pure-Dart (no Flutter engine) so it compiles to a self-contained native binary; the client half is Flutter. See `ARCH.md` for the exhaustive map.
 
 ```
 apps/
@@ -64,7 +64,7 @@ lib/                    # The root Flutter THIN CLIENT (desktop + web). Renders 
 │   ├── observability/ orchestration/ pipelines/ plan_studio/ presence/ pr_review/
 │   ├── remote_control/ repos/ rigs/ sandboxing/ service_status/ session_review/ settings/ shell/
 │   ├── soundscape/ subscriptions/ teams/ ticketing/ todos/ user_profiles/ vscode_theme/ workspaces/
-├── l10n/               # ARB source files (7 languages) + generated localizations
+├── l10n/               # ARB source files (locale variants in kAppLocaleVariants) + generated localizations
 ├── router/             # GoRouter config, workspace-prefixed route constants, guards, splash (thin, no business logic)
 ├── shared/             # Shared widgets, extensions, utilities
 └── main.dart           # Entry point: selects bootstrap_io (VM) vs bootstrap_web (web)
@@ -159,7 +159,7 @@ feature_name/
 - **Agent peer messaging & delegation** (`send_to_agent`, `ask_agent`, `delegate_task`, `todo_read` + the re-implemented `consult_agent`). Agents talk to each other over **spaces** (durable, roster-visible), not a separate bus — the old in-memory IRC bus was deleted. `ask_agent` is request/reply with a **mandatory timeout** (no configuration removes it; default 10 min, capped by a workspace ceiling) and pair-wise cycle detection; `delegate_task` creates a child ticket/plan node guarded by depth cap (default 3), cycle detection, budget-envelope inheritance and an autonomy ceiling, all enforced server-side at a chokepoint (never by prompt instructions). Recipient resolution is exact (by id or unique name; no fuzzy, no cross-workspace). Agent-to-agent spaces are muted by default and never bump the human unread badge or fire an OS notification.
 - **Unified action guardrails** generalize the former bash-only `CommandPolicy` into a closed **`ActionClass`** taxonomy (13 effect classes: `fileDelete`, `fileWriteOutsideWorktree`, `gitCommit`, `gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`, `secretAccess`, `packageInstall`, `processSpawn`, `workspaceMutation`, `enclosureControl`). Resolution order is `space > agent > workspace > mode preset > built-in default` (most-specific scope wins; within a scope, longest-prefix then most-restrictive). The flat `allow > deny > prompt` precedence was replaced by specificity-then-restrictiveness. Every mutating tool declares its ActionClass(es); undeclared new tools fail the ratchet test. `prompt` with no approver connected is **denied** (fail-closed). The per-space autonomy dial (`propose-only`/`act-with-approval`/`act-freely`) is a named profile over this same store.
 - **Skills supply-chain scanning** is a **fail-closed gate** invoked between fetch and write in `SkillBundleService`: no skill content reaches disk or an agent prompt without a verdict (`pass`/`warn`/`quarantine`). The scanner is inert by construction (executes nothing from the skill); Layer 1 static rules + Layer 2 capability manifest are the mandatory gate, Layer 3 LLM review is additive. Trust tiers (`firstParty`/`workspace`/`verified`/`community`) are provenance metadata, never a scan substitute. TOCTOU invariant: bytes scanned = bytes written = bytes hash-locked.
-- **Repo-scoped skills** carry the skills a checked-out repo ships (`.agents/skills`, `.claude/skills`, `.opencode/skills`) — scoped to the ONE repo an agent is working in, and swapped when it moves. `ActiveRepoTracker` infers the active repo from tool-call paths observed at `DispatchSession.addEvent`, the single point all four transports funnel through: a WRITE under `repos/<name>/` switches, a read only seeds when nothing is active (agents read across repos constantly, and letting that switch thrashes the set mid-task). `RepoSkillProjector` materializes that repo's skills into the agent overlay's `.claude/skills` + `.opencode/skills`, which is the path Claude Code and OpenCode already scan — Claude Code watches it, so a swap lands mid-session without restarting the CLI. Codex has NO skill concept, so the same index is composed into a real `<overlay>/AGENTS.md` (replacing the provisioner's symlink; `_ensureSymlink` restores it next dispatch, so it self-heals). Never project into `<overlay>/.agents/skills` — that path is a symlink to the agent's GLOBAL dir, shared by every space. Only the active repo is loaded: the index is prompt-resident on every turn while bodies are not, and a sibling service's `testing` skill is actively wrong for the repo in hand. Repo skills pass the SAME fail-closed scan gate (cloned content whose frontmatter reaches a prompt).
+- **Repo-scoped skills** carry the skills a checked-out repo ships (`.agents/skills`, `.claude/skills`, `.opencode/skills`) — scoped to the ONE repo an agent is working in, and swapped when it moves. `ActiveRepoTracker` infers the active repo from tool-call paths observed at `DispatchSession.addEvent`, the single point both shipped transports funnel through: a WRITE under `repos/<name>/` switches, a read only seeds when nothing is active (agents read across repos constantly, and letting that switch thrashes the set mid-task). `RepoSkillProjector` materializes that repo's skills into the agent overlay's `.claude/skills` — Claude Code watches it, so a swap lands mid-session without restarting the CLI — and composes the same index into a real `<overlay>/AGENTS.md` (replacing the provisioner's symlink; `_ensureSymlink` restores it next dispatch, so it self-heals) so the built-in harness sees it too. Never project into `<overlay>/.agents/skills` — that path is a symlink to the agent's GLOBAL dir, shared by every space. Only the active repo is loaded: the index is prompt-resident on every turn while bodies are not, and a sibling service's `testing` skill is actively wrong for the repo in hand. Repo skills pass the SAME fail-closed scan gate (cloned content whose frontmatter reaches a prompt).
   - The system prompt is frozen for a run (`AgentLoopConfig.systemPrompt` is final and the Anthropic provider keeps it byte-identical for prompt caching), so a swap is announced on the **`steering`** lane, never `aside` — `serializeHarnessHistory` drops system-role messages on a compaction fold.
   - `RepoSkillCatalog` is the one scan-gated discovery shared by the projection and the `skills.repoSkills` op, so the composer's palette can never offer a name the server then refuses to load. The composer is deliberately NOT repo-scoped (a human naming a skill pays no per-turn context cost): `<repo>:<skill>` reaches any repo, a bare name resolves only when unambiguous.
   - **Skills invoke under their own namespace**: `/skill:<name>` or `/skill:<repo>:<name>` (`skillNameFor`). Resolving a bare name against skills let a builtin permanently shadow a skill of the same name — `plan`, `goal`, `loop`, `compact` were unreachable as skill names. A bare non-builtin still resolves, for messages predating the namespace.
@@ -167,19 +167,21 @@ feature_name/
 
 ## Enclosures (rigs)
 
-A **rig** is a disposable VM an agent drives in real time — a desktop, a headless
-browser or an Android device — watched live by a human who can take over. The
-same enclosure platform hosts the interactive terminals, so shell work stops
-running on the host. `packages/cc_domain/lib/features/rigs/` is the domain,
+A **rig** is a disposable machine an agent drives in real time — a desktop,
+headless browser, Android emulator or iOS Simulator — watched live by a human
+who can take over. VM-backed rigs are enclosures; Android and iOS are explicit
+host-managed exceptions with disposable device state but host networking. The
+same platform hosts interactive terminals, so shell work stops running on the
+host. `packages/cc_domain/lib/features/rigs/` is the domain,
 `packages/cc_infra/lib/src/rigs/` the mechanism, `lib/features/rigs/` the viewer.
 
-There are two local backends, split by surface: the **desktop** boots on QEMU
-(HVF/KVM) from qcow2 base images, and **exec (terminal) and browser rigs** boot
-on the **smolvm** microVM (libkrun over the host hypervisor) from digest-pinned
-OCI images. The routing is by spec, not by availability: an exec or browser
-spec always lands on smolvm and a desktop spec always lands on QEMU — naming a
-backend the surface does not run on (`RigSpec.backend`) is an error, never a
-silent downgrade. The Android emulator remains its own host-managed backend.
+There are four local backends, split by surface: the **desktop** boots on QEMU
+(HVF/KVM) from qcow2 base images; **exec (terminal) and browser rigs** boot on
+the **smolvm** microVM (libkrun over the host hypervisor) from digest-pinned OCI
+images; Android uses Google's host-managed emulator; and iOS uses CoreSimulator
+on macOS. Routing is by spec, not availability. Asking for a backend the
+surface does not run on (`RigSpec.backend`) is an error, never a silent
+downgrade.
 
 - **A browser rig is one of THREE engines, and the driver knows none of
   them.** `RigBrowserEngine` (chromium/firefox/webkit) picks the image, the
@@ -206,31 +208,50 @@ silent downgrade. The Android emulator remains its own host-managed backend.
   DOM-derived approximation and says so), and no real file drop on either.
 - **Enclosure-only execution, enforced by the command line.** Each backend's
   argv is built by a pure function precisely so its security flags can be
-  pinned by a test. For QEMU (`buildQemuArgv`, `qemu_argv_test.dart`):
-  `restrict=on` on the user-mode netdev, every `hostfwd` bound to `127.0.0.1`
-  explicitly, the base image opened read-only behind a per-session qcow2
-  overlay, and no `-virtfs`/`-fsdev` at all. For smolvm
-  (`buildSmolvmCreateArgs`, `smolvm_enclosure_backend_test.dart`):
-  `--outbound-localhost-only` is always present and bare `--net` never is,
-  every allowlist entry becomes its own `--allow-host`, and the broker secret
-  travels by `--secret-file` reference, never as an env value smolvm would
-  persist in its machine record. A missing flag fails no behavioural test —
-  the rig boots, the agent drives it, and the enclosure is simply not one.
-- **Egress is deny-by-default.** On QEMU the guest's ONLY routes out are
-  `guestfwd` holes to the existing `SandboxHttpProxy`/`SandboxSocksProxy` on
-  host loopback. On smolvm the gate is the VMM's own: loopback-only outbound
-  (which is what reaches the credential broker) plus exactly the allowlisted
-  hosts — the Docker Hub pull path is unioned in as image maintenance, because
-  smolvm's guest agent pulls the machine's image through the same gate. The
-  mobile surface is the honest exception: an Android emulator owns its
-  networking, so its egress is NOT fully enforced and the capability note says
-  so rather than implying parity.
+  pinned by a test. Restricted QEMU rigs (`buildQemuArgv`,
+  `qemu_argv_test.dart`) carry `restrict=on` on the user-mode netdev; every
+  `hostfwd` still binds to `127.0.0.1`, the base image stays read-only behind a
+  per-session qcow2 overlay and no `-virtfs`/`-fsdev` is allowed. Restricted
+  smolvm rigs (`buildSmolvmCreateArgs`,
+  `smolvm_enclosure_backend_test.dart`) carry
+  `--outbound-localhost-only`, one `--allow-host` per admitted host and the
+  broker secret by `--secret-file`, never as an env value smolvm would persist
+  in its machine record. A server-owner-only, confirmed control in a live rig
+  tab can restart that one enclosure with unrestricted networking. The
+  exception is explicit in `RigSpec.unrestrictedNetwork`: QEMU omits
+  `restrict=on`, smolvm uses bare `--net`, and the tab keeps a visible warning
+  for the session's lifetime. A missing or misplaced flag can leave the rig
+  working while silently changing its boundary, so both paths are pinned by
+  argv tests.
+- **Egress is deny-by-default.** On restricted QEMU rigs the guest's only
+  routes out are `guestfwd` holes to the existing
+  `SandboxHttpProxy`/`SandboxSocksProxy` on host loopback. On restricted
+  smolvm rigs the VMM admits loopback plus exactly the allowlisted hosts; the
+  Docker Hub pull path is unioned in as image maintenance because the guest
+  agent pulls through the same gate. The explicit unrestricted restart is the
+  only exception on those backends and widens both the direct NIC and proxy
+  lanes so policy-aware and raw-socket applications agree. The mobile surface
+  remains the honest exception: an Android emulator owns its networking, so
+  the tab states that it is already unrestricted rather than offering a
+  security switch that cannot be enforced.
 - **Input goes through the hypervisor, capture goes through the guest.** QMP
   (`input-send-event`/`send-key`) injects keyboard and pointer events, so the
   guest never runs a privileged daemon that can synthesize input; the small
   unprivileged guest agent only captures and mode-sets, scaling in the guest so
   a full framebuffer never crosses the wire. A `virtio-tablet` is always present
   — a relative mouse cannot implement "click at (412, 180)".
+- **Clipboard crossing follows a per-user, per-direction policy.** Host-to-rig
+  paste is allowed by default; rig-to-host copy is off and prompts before the
+  guest clipboard is read. The two choices stay independent in Settings →
+  Server → Enclosures. A ten-minute grant is process-local and scoped to one
+  rig plus one direction; "always allow" is a synced per-user preference. It is
+  never a workspace setting, because one member cannot consent to another
+  member's clipboard. The signed `/rig/clipboard` HTTP lane stays the carrier,
+  but `RigInputSurface` does not cross a disabled direction until
+  `ensureRigClipboardPermission` approves it. On Windows and Linux a denied
+  transfer still forwards the shared Ctrl+C/Ctrl+X/Ctrl+V chord to the guest,
+  so refusing host clipboard access does not break a guest-local copy, paste or
+  terminal interrupt.
 - **Two display lanes, decoupled on purpose.** The HUMAN lane is full-resolution
   at the viewer's panel size (adaptive fps/quality under a bitrate ceiling),
   relayed as bytes — the server never decodes a frame, because a video decoder
@@ -273,28 +294,33 @@ silent downgrade. The Android emulator remains its own host-managed backend.
   `<dataDir>/rigs/images/`, removable with the store;
   `scripts/rigs/build_image.sh` builds the desktop image (the guest agent must
   be baked in) and Settings imports it. The microVM surfaces boot digest-pinned
-  OCI images (`kSmolvmExecImage`, `kSmolvmBrowserImage`,
-  `kSmolvmDebianBrowserImage`) that smolvm pulls on
-  first use through the machine's own gated egress — the Chromium image bakes in
-  both headless-shell and the socat relay its loopback-bound DevTools needs
-  (current Chromium ignores `--remote-debugging-address`, full stop), so
-  nothing is installed at boot and there is no first-start package race.
-  Firefox and WebKit are the exception and cannot not be: no maintained
-  multi-arch image bakes either one WITH the socat every browser guest needs
-  for the ports feature, so both take a small Debian base plus a gated
-  one-time `apt-get`, warmed into a per-engine pack. The pack is keyed on
-  image AND engine — they share a base, and a pack warmed for one has none of
-  the other in it.
-- **Mobile has no base image and never will.** The desktop surface boots a
-  qcow2 we control; Android runs on Google's emulator, whose system images ship
-  under their licence through their SDK. So `setup_android.sh` installs that
-  SDK (reusing an existing Android Studio one rather than downloading a second
-  copy) and the probe reports WHICH of the four states the host is in — no SDK
-  / no emulator / no AVD / no running device — because they have four different
-  fixes and only one is a download. The android backend is reported in EVERY
-  state, including "nothing installed": a backend that vanishes when it is
-  missing is indistinguishable from one we do not support, which leaves a
-  greyed-out Phone tab with nowhere to find out what it needs.
+  OCI images (`kSmolvmExecImage`, `kSmolvmDebianBrowserImage`) that smolvm pulls
+  on first use through the machine's own gated egress. Every browser engine
+  takes the small Debian base plus a gated one-time `apt-get`, warmed into a
+  per-engine pack. Chromium MUST be the distribution build: upstream
+  `headless.gn` compiles both PulseAudio and ALSA out of `headless-shell`, so
+  installing a sound server beside that binary can never produce audio. Each
+  browser workload starts a system PulseAudio daemon with a guest-local
+  `ccout` null sink; the listen lane encodes `ccout.monitor` with ffmpeg. The
+  socket directory is owned by the daemon's `pulse` user and startup fails
+  unless `pactl` observes the sink — never hide daemon failure behind
+  `|| true`. The pack is keyed on image, engine and audio revision so a pack
+  warmed for one engine, or before audio support, cannot serve another.
+- **Mobile has no base image and never will.** Android runs on Google's
+  emulator, whose system images ship through their SDK. `setup_android.sh`
+  installs that SDK (reusing Android Studio) and the probe distinguishes no SDK
+  / no emulator / no AVD / no running device. iOS runtimes similarly come from
+  Xcode rather than Control Center; the iOS backend is advertised on every host
+  but available only on macOS with Xcode, a Simulator runtime and the pinned
+  automation bridge installed. Settings invokes the owner-only
+  `rig.installBackendSetup` action to fetch and checksum-verify WebDriverAgent.
+  Each iOS rig creates a uniquely named CoreSimulator device, boots it, starts
+  one WebDriverAgent session, and records ownership in an atomic registry.
+  Close and orphan recovery stop WDA, shut down and delete only owned devices,
+  then remove their registry entries. The live lane streams fixed-size MJPEG;
+  input and `ios_use` share typed point/key/app actions. Android and iOS both
+  expose argv-shaped developer commands inside the device/simulator, never a
+  host shell. iOS has no file drop, audio, microphone or enclosed egress.
 - **Control sockets live OUTSIDE the data directory.** A unix socket path is
   hard-capped at 104 bytes (`sockaddr_un.sun_path` on macOS/BSD; 108 on Linux)
   and the rig runtime dir sits under an operator-chosen `dataDir` whose length
@@ -349,14 +375,15 @@ silent downgrade. The Android emulator remains its own host-managed backend.
   asking `qemu -L help` rather than guessing distro paths (a Homebrew/Nix
   binary on PATH is a symlink into a versioned store, so `dirname $(command -v
   qemu)/..` finds the profile, not the firmware).
-- **Where it lives in the UI.** Rigs are NOT a global destination: the live view
-  of a machine belongs beside the work it is doing, so it is a TAB in a space
-  and on a PR page (`Computer/Browser/Phone (VM)`, scoped to the conversation so
-  the human's tab and the agent's `*_use` calls address one machine). Whether a
-  rig can boot at all is a host property, so capabilities, images and the
-  running-machine list are Settings → Server → Enclosures. A rig tab never
-  auto-starts, including on layout restore — three VMs booting at launch is an
-  expensive surprise. **That rule reaches the adjacent TERMINAL path too**: a
+- **Where it lives in the UI.** Rigs are NOT a global destination: the live
+  view belongs beside its work as a tab in a space or PR page
+  (`Computer` / browser engine / `Android` / `iOS Simulator`). The tab and the
+  matching `computer_use` / `browser_use` / `mobile_use` / `ios_use` tool share
+  the conversation's default machine. Capabilities, images, mobile automation
+  setup and running sessions live under Settings → Server → Enclosures. A rig
+  tab never auto-starts during layout restore — surprise VMs and simulator
+  devices are both prohibited. **That rule reaches the adjacent TERMINAL path
+  too**: a
   terminal tab persists its `backend`, and a `microvm` one restored from a
   layout snapshot boots the conversation's exec rig the moment it attaches. The
   layout codec stamps `EditorLayoutCodec.deferStartArg` on those tabs at decode
@@ -481,6 +508,7 @@ Persistence is **split by workspace** and this is the single most important thin
 - **Overlays do not inherit a Material text theme. Supply your own.** `MaterialApp` only installs a usable `DefaultTextStyle` _inside_ each route's `Material`. Anything presented into the root overlay (dialogs via `showCcDialog` → `showGeneralDialog`, toasts, popovers, sub-windows) sits above that, where the only ambient `DefaultTextStyle` is `WidgetsApp`'s error fallback, 48px text with a double yellow underline. `showCcDialog` wraps its content in a complete design-system `DefaultTextStyle` (concrete size + token color + `decoration: TextDecoration.none`) so this never leaks through; any new off-Material overlay surface MUST do the same.
 - **Material 3** remains the _root_ app theme (`MaterialApp`, light/dark) with `ThemeMode` persistence via `shared_preferences` (non-sensitive only); cc_ui renders on top of it without depending on it.
 - **Phosphor for iconography, vendored not depended on.** `packages/cc_ui/fonts/Phosphor-Regular.ttf` is the only icon font; glyphs go through the generated `AppIcons`/`CcIcons` codepoint seams owned by `tool/gen_icon_seams.py` (`fontPackage: 'cc_ui'`). Do NOT re-add `phosphoricons_flutter`: its ~1530-member classes stack-overflow the web DDC linker and its pubspec declares all six styles — a dependency's `fonts:` block cannot be opted out of, the icon tree-shaker skips a font with no const `IconData` referencing it and Flutter web downloads every `FontManifest.json` entry at engine boot, so the five unused styles cost 2.46 MB per cold load. `test/tooling/icon_font_bundle_test.dart` pins this.
+- **Script companions load with the locale, never at boot.** Manrope covers Latin (incl. Vietnamese), Cyrillic, and limited Greek. Thai uses **Sarabun**, Hebrew **Rubik**, Arabic/Persian/Urdu **IBM Plex Sans Arabic**, CJK the OS UI face. Those files live under `packages/cc_ui/fonts/scripts/` as `assets:`, not `fonts:` — a `fonts:` entry would land in `FontManifest.json` and Flutter web would download every companion on an English cold start. `CcTheme` FontLoads only the active locale's file. Do not add Noto CJK to the bundle (tens of MB).
 - **cc_markdown** (`packages/cc_markdown/`) is the in-repo markdown engine — a custom typed-AST parser + widget renderer that replaced `flutter_smooth_markdown` and `flutter_markdown_plus` (both removed). ` ```mermaid ` fences are drawn natively by the package's own diagram engine (`CcMermaidView`) — pure-Dart dialect parsers (flowchart/`graph`, `stateDiagram`, `classDiagram`, `erDiagram`, `sequenceDiagram`, `pie`, `timeline`) → layout (layered Sugiyama-style for the graph family) → `CustomPainter`; no WebView, no JS, no new dependency. Author theming (`%%{init}%%`, `classDef`, `style`) is parsed but NOT applied: diagrams are themed from app tokens via `appMermaidStyle` so light/dark and the contrast floor hold. An unsupported dialect or malformed body degrades to the normal code block (the engine never throws) and an unclosed streaming fence stays code until it closes. Render with `CcMarkdown` (one-shot) or `CcStreamingMarkdown` (first-class LLM streaming: sealed-block memoization, per-delta tail parse, no cache pollution). App-side wiring lives in `lib/shared/widgets/markdown/`: `appMarkdownStyle` (the ONE unified `CcMarkdownStyle` for every surface), `markdown_registries.dart` (chat vs GitHub plugin/builder registers), `markdown_builders.dart` and `buildSharedCodeBlock` (syntax highlighting stays app-side, injected via `codeBuilder`). GitHub surfaces use `GitHubMarkdownBody`; tickets/meetings use `StyledMarkdownBody`. The package is widgets-only except the selection island (`selection_region.dart` + `context_menu.dart`), enforced by the cc_markdown purity group in `architecture_constraints_test.dart`.
 - Custom diff viewer with syntax highlighting in `pr_review/presentation/`.
 - **Syntax highlighting is shiki_flutter** (TextMate grammars, pure Dart) everywhere: markdown fences, transcript tool bodies and the PR diff. The app-side seam is `lib/shared/syntax/` — the custom `cc-light`/`cc-dark` themes (authored from `syntax_palette.dart`; a drift test pins them together, bump `kCcThemeRevision` on any theme edit), ONE unified language table (`syntax_languages.dart`: fence hints + file paths + well-known filenames → shiki ids, with measured per-grammar weight classes gating sync vs async tokenization) and the grammar registries (native indexes all ~250 grammars; web ships a curated ~50 eagerly + 5 deferred packs regenerated by `tool/gen_grammar_packs.py`). The PR-diff worker compiles `package:shiki_flutter/engine.dart` (the package's Flutter-free entrypoint) straight into `web/diffWorker.js` and tokenizes per hunk. Unmatched tokens carry the `#010203` sentinel foreground which maps to `null` (inherit the surface's base style) — never hardcode that hex elsewhere.
@@ -636,7 +664,7 @@ asserts every annotated worker has a committed asset; `tool/check_workers.sh`
 - **All user-facing strings MUST be internationalized** using Flutter's l10n system. NEVER hardcode English text in widgets, screens, or dialogs.
 - Access translations via `final l10n = AppLocalizations.of(context)!;` then `l10n.keyName`.
 - L10n keys are defined in ARB files under `lib/l10n/`. Source of truth: `app_en.arb`.
-- When adding a new key, add it to ALL 7 ARB files: `app_en.arb`, `app_fr.arb`, `app_es.arb`, `app_it.arb`, `app_de.arb`, `app_pt.arb`, `app_nl.arb`. Translate the values you are adding to the other languages.
+- When adding a new key, add it to every **language-base** ARB (`app_en.arb`, `app_ar.arb`, `app_cs.arb`, `app_de.arb`, `app_el.arb`, `app_es.arb`, `app_fa.arb`, `app_fr.arb`, `app_he.arb`, `app_hu.arb`, `app_id.arb`, `app_it.arb`, `app_ja.arb`, `app_ko.arb`, `app_ms.arb`, `app_nb.arb`, `app_nl.arb`, `app_pl.arb`, `app_pt.arb`, `app_ro.arb`, `app_ru.arb`, `app_sv.arb`, `app_th.arb`, `app_tr.arb`, `app_uk.arb`, `app_ur.arb`, `app_vi.arb`, `app_zh.arb`, `app_zh_TW.arb`). Sparse country variants (`app_en_GB.arb`, `app_es_MX.arb`, `app_fr_CA.arb`, `app_pt_PT.arb`, `app_zh_HK.arb`) only get the key when the wording actually diverges; missing keys fall back to the language base. Translate the values you are adding to the other languages.
 - Key naming: camelCase, descriptive (e.g. `agentName`, `failedWithError`, `saveChanges`).
 - After adding keys, run `flutter gen-l10n` to regenerate the Dart l10n files.
 - For strings with parameters: `"keyName": "{param} some text"` with `"@keyName": { "placeholders": { "param": { "type": "String" } } }`.
@@ -644,6 +672,19 @@ asserts every annotated worker has a committed asset; `tool/check_workers.sh`
 - Data-layer strings without BuildContext (e.g. default agent names, notification event titles) may remain hardcoded if no context is available. Prefer passing locale through the call chain when practical.
 - Example placeholders like `hint: 'e.g. architect'` are acceptable to leave as-is.
 - Run `flutter gen-l10n` after any ARB file changes.
+
+### RTL & directionality
+
+The app ships RTL locales. `MaterialApp` derives the ambient `Directionality` from the resolved locale via `GlobalWidgetsLocalizations` — never wrap app chrome in a hardcoded `Directionality`.
+
+- **Logical geometry, never physical, in anything that mirrors.** Use `EdgeInsetsDirectional`, `AlignmentDirectional`, `PositionedDirectional`, `BorderDirectional`, `BorderRadiusDirectional` and `TextAlign.start`/`end`. Physical `left`/`right` APIs are legal only inside an LTR carve-out or for true screen-coordinate math (overlay collision clamps against the viewport, painter internals that already resolved direction). `test/core/rtl_directionality_ratchet_test.dart` polices this with a shrinking allowlist — new physical-edge geometry outside a carve-out fails the ratchet, and fixing a file means removing it from `test/core/migration_allowlists/rtl_physical_geometry.txt`, never adding to it.
+- **LTR carve-outs — always LTR in every locale, by convention:** source code, diffs (the `unified_row_painter.dart` family), terminals, file paths, branch names, URLs, log output, the mermaid diagram engine, `CcDiagram` sequence lanes, and the plan/pipeline DAG canvases. These keep a hardcoded `TextDirection.ltr` with an `// RTL carve-out:` comment naming the reason. Do NOT "fix" them to be directional.
+- **Everything else mirrors with the locale:** navigation, sidebars, menus, flyouts, tooltips, settings, composer, cards, toasts, breadcrumbs, tabs — and the calendar grid (day columns run start→end, matching platform RTL calendars).
+- **Directional glyphs mirror; semantic glyphs do not.** Chevrons/arrows/carets that mean "forward/back/expand toward the reading direction" carry `matchTextDirection: true` through the icon seam (`AppIcons`/`CcIcons`). Glyphs that depict a physical thing (media transport, undo/redo arrows per platform convention, text-formatting marks) stay unmirrored.
+- **Gestures and keys resolve direction at the edge.** A drag that moves a start/end edge (splitters, resizable panels, swipe actions) maps `delta.dx` through the ambient `Directionality`; ArrowLeft/ArrowRight mean prev/next only after direction resolution — EXCEPT surfaces that forward raw keys to a guest (rig key translation stays physical).
+- **Dates and numbers follow the active locale.** Thread the ambient locale into `DateFormat`/`NumberFormat` (`AppLocalizations.of(context)` surfaces or `Localizations.localeOf`); never hardcode an English-shaped pattern in a widget.
+- **BiDi hygiene:** LTR tokens interpolated into ARB strings (paths, branch names, URLs, identifiers) rely on Flutter's paragraph-level BiDi; if a specific string renders scrambled under RTL, isolate the placeholder with FSI/PDI (`\u2068`…`\u2069`) in the ARB value rather than reordering words.
+- Widget tests exercise RTL through `testWrap(textDirection: TextDirection.rtl)` (app) and `ccTestApp(textDirection: …)` (cc_ui); the gallery previews every component under a text-direction addon.
 
 ### Copy/text conventions
 

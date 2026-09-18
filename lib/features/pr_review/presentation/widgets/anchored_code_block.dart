@@ -2,7 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/highlighted_code_lines.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Displays a code block anchored to a specific file and line range,
 /// fetched asynchronously from a file content provider.
@@ -142,6 +142,7 @@ class _AnchoredCodeBlockState extends State<AnchoredCodeBlock> {
 }
 
 /// A single row in the anchored code block, showing a line number and code text.
+// RTL carve-out: code snippet with a line-number gutter; source stays LTR.
 class CodeLineRow extends StatelessWidget {
   /// Creates a [CodeLineRow].
   const CodeLineRow({

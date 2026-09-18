@@ -41,6 +41,30 @@ class ChatSetupStep {
     'url': url,
     if (hint != null) 'hint': hint,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatSetupStep &&
+          id == other.id &&
+          title == other.title &&
+          url == other.url &&
+          hint == other.hint;
+
+  @override
+  int get hashCode => Object.hash(id, title, url, hint);
+}
+
+bool _setupStepListEq(List<ChatSetupStep> a, List<ChatSetupStep> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }
 
 /// A provider-side app Control Center just created and what is left to do.
@@ -97,4 +121,15 @@ class ChatAppCreation {
     'settingsUrl': settingsUrl,
     'remainingSteps': [for (final step in remainingSteps) step.toJson()],
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ChatAppCreation &&
+          appId == other.appId &&
+          settingsUrl == other.settingsUrl &&
+          _setupStepListEq(remainingSteps, other.remainingSteps);
+
+  @override
+  int get hashCode => Object.hash(appId, settingsUrl, remainingSteps.length);
 }

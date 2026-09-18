@@ -5,6 +5,7 @@ import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_panel_search_field.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
@@ -377,11 +378,20 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
       }
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.arrowRight && !flyoutOpen) {
+    // Horizontal arrows follow reading direction: the key pointing toward the
+    // flyout's side (end) opens, the other steps back to the category list.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final intoFlyoutKey = isRtl
+        ? LogicalKeyboardKey.arrowLeft
+        : LogicalKeyboardKey.arrowRight;
+    final outOfFlyoutKey = isRtl
+        ? LogicalKeyboardKey.arrowRight
+        : LogicalKeyboardKey.arrowLeft;
+    if (key == intoFlyoutKey && !flyoutOpen) {
       _activateHighlightedCategory();
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.arrowLeft && flyoutOpen) {
+    if (key == outOfFlyoutKey && flyoutOpen) {
       _closeFlyout(refocusRoot: true);
       return KeyEventResult.handled;
     }
@@ -487,7 +497,10 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
               if (openCategory != null && _flyoutAnchor != null)
                 Positioned.fill(
                   child: CustomSingleChildLayout(
-                    delegate: _FlyoutLayout(_flyoutAnchor!),
+                    delegate: _FlyoutLayout(
+                      _flyoutAnchor!,
+                      Directionality.of(context),
+                    ),
                     child: PointerInterceptor(
                       child: MouseRegion(
                         onEnter: (_) => _cancelPendingSwitch(),
@@ -530,31 +543,33 @@ class _CcFilterMenuState extends State<CcFilterMenu> {
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (var i = 0; i < categories.length; i++)
-                    // Two keys, two jobs: the outer one tracks the row's
-                    // position for the keyboard scroll, the inner (id-keyed)
-                    // one is the geometry the flyout anchors to.
-                    KeyedSubtree(
-                      key: _rows.keyAt(i),
-                      child: KeyedSubtree(
-                        key: _categoryRowKeys.putIfAbsent(
-                          categories[i].id,
-                          GlobalKey.new,
-                        ),
-                        child: _CategoryRow(
-                          category: categories[i],
-                          highlighted: i == _rootHighlight,
-                          open: categories[i].id == _openCategoryId,
-                          onHover: () => _hoverCategory(i, categories[i].id),
-                          onActivate: () =>
-                              _openFlyout(categories[i].id, focusSearch: true),
-                        ),
-                      ),
+              child: CcFluidHover(
+                itemCount: categories.length,
+                onActiveIndexChanged: (index) {
+                  if (index != null) {
+                    _hoverCategory(index, categories[index].id);
+                  }
+                },
+                itemBuilder: (context, i) => KeyedSubtree(
+                  key: _rows.keyAt(i),
+                  child: KeyedSubtree(
+                    key: _categoryRowKeys.putIfAbsent(
+                      categories[i].id,
+                      GlobalKey.new,
                     ),
-                ],
+                    child: _CategoryRow(
+                      category: categories[i],
+                      highlighted: i == _rootHighlight,
+                      open: categories[i].id == _openCategoryId,
+                      onActivate: () =>
+                          _openFlyout(categories[i].id, focusSearch: true),
+                    ),
+                  ),
+                ),
+                layoutBuilder: (context, items) => Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: items,
+                ),
               ),
             ),
           ),
@@ -573,14 +588,12 @@ class _CategoryRow extends StatelessWidget {
     required this.category,
     required this.highlighted,
     required this.open,
-    required this.onHover,
     required this.onActivate,
   });
 
   final CcFilterCategory category;
   final bool highlighted;
   final bool open;
-  final VoidCallback onHover;
   final VoidCallback onActivate;
 
   @override
@@ -588,63 +601,66 @@ class _CategoryRow extends StatelessWidget {
     final t = context.ds;
     final selectedCount = category.selected.length;
 
-    return MouseRegion(
-      onEnter: (_) => onHover(),
-      child: CcTappable(
-        onPressed: onActivate,
-        showFocusRing: false,
-        canRequestFocus: false,
-        semanticLabel: category.label,
-        builder: (context, states) {
-          final hovered = states.contains(WidgetState.hovered);
-          final pressed = states.contains(WidgetState.pressed);
-          final active = hovered || highlighted || open;
-          final wash = pressed
-              ? t.hoverStrong
-              : (active ? t.hover : _transparent);
-          return Container(
-            constraints: const BoxConstraints(minHeight: 40),
-            alignment: Alignment.centerLeft,
-            decoration: BoxDecoration(color: wash),
-            // A 2px inset accent bar marks the keyboard-highlighted row
-            // (edge-to-edge rows have no radius, so focus rides the edge).
-            foregroundDecoration: highlighted
-                ? BoxDecoration(
-                    border: Border(left: BorderSide(color: t.accent, width: 2)),
-                  )
-                : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  if (category.icon != null) ...[
-                    Icon(category.icon, size: 16, color: t.textSecondary),
-                    AppSpacing.hGapSm,
-                  ],
-                  Expanded(
-                    child: CcTruncatedText(
-                      category.label,
-                      style: CcTypography.bodySm.copyWith(color: t.textPrimary),
-                    ),
+    return CcTappable(
+      onPressed: onActivate,
+      showFocusRing: false,
+      canRequestFocus: false,
+      semanticLabel: category.label,
+      builder: (context, states) {
+        final hovered = states.contains(WidgetState.hovered);
+        final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
+        final active = hovered || highlighted || open;
+        final wash = pressed
+            ? t.hoverStrong
+            : open
+            ? t.hover
+            : fluidActive
+            ? _transparent
+            : (active ? t.hover : _transparent);
+        return Container(
+          constraints: const BoxConstraints(minHeight: 40),
+          alignment: AlignmentDirectional.centerStart,
+          decoration: BoxDecoration(color: wash),
+          // A 2px inset accent bar marks the keyboard-highlighted row.
+          foregroundDecoration: highlighted
+              ? BoxDecoration(
+                  border: BorderDirectional(
+                    start: BorderSide(color: t.accent, width: 2),
                   ),
-                  if (selectedCount > 0) ...[
-                    AppSpacing.hGapSm,
-                    Text(
-                      '$selectedCount',
-                      style: CcTypography.caption.copyWith(color: t.accent),
-                    ),
-                  ],
-                  AppSpacing.hGapSm,
-                  Icon(CcIcons.chevronRight, size: 14, color: t.textTertiary),
-                ],
-              ),
+                )
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
             ),
-          );
-        },
-      ),
+            child: Row(
+              children: [
+                if (category.icon != null) ...[
+                  Icon(category.icon, size: 16, color: t.textSecondary),
+                  AppSpacing.hGapSm,
+                ],
+                Expanded(
+                  child: CcTruncatedText(
+                    category.label,
+                    style: CcTypography.bodySm.copyWith(color: t.textPrimary),
+                  ),
+                ),
+                if (selectedCount > 0) ...[
+                  AppSpacing.hGapSm,
+                  Text(
+                    '$selectedCount',
+                    style: CcTypography.caption.copyWith(color: t.accent),
+                  ),
+                ],
+                AppSpacing.hGapSm,
+                Icon(CcIcons.chevronRight, size: 14, color: t.textTertiary),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -785,20 +801,22 @@ class _FlyoutPanelState extends State<_FlyoutPanel> {
           Flexible(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (options.isEmpty)
-                    Padding(
+              child: options.isEmpty
+                  ? Padding(
                       padding: const EdgeInsets.all(AppSpacing.md),
                       child: Text(
                         widget.emptySearchLabel ?? 'No matches',
                         style: CcTypography.bodySm.copyWith(color: t.muted),
                       ),
                     )
-                  else
-                    for (var i = 0; i < options.length; i++)
-                      KeyedSubtree(
+                  : CcFluidHover(
+                      itemCount: options.length,
+                      onActiveIndexChanged: (index) {
+                        if (index != null && _highlight != index) {
+                          setState(() => _highlight = index);
+                        }
+                      },
+                      itemBuilder: (context, i) => KeyedSubtree(
                         key: _rows.keyAt(i),
                         child: _OptionRow(
                           option: options[i],
@@ -809,8 +827,11 @@ class _FlyoutPanelState extends State<_FlyoutPanel> {
                           onToggle: () => _toggle(options[i]),
                         ),
                       ),
-                ],
-              ),
+                      layoutBuilder: (context, items) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: items,
+                      ),
+                    ),
             ),
           ),
           if (footer != null && hidden > 0) ...[
@@ -867,16 +888,21 @@ class _OptionRow extends StatelessWidget {
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         final pressed = states.contains(WidgetState.pressed);
+        final fluidActive = CcFluidHover.isItemActive(context);
         final wash = pressed
             ? t.hoverStrong
+            : fluidActive
+            ? _transparent
             : (hovered || highlighted ? t.hover : _transparent);
         return Container(
           constraints: const BoxConstraints(minHeight: 40),
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           decoration: BoxDecoration(color: wash),
           foregroundDecoration: highlighted
               ? BoxDecoration(
-                  border: Border(left: BorderSide(color: t.accent, width: 2)),
+                  border: BorderDirectional(
+                    start: BorderSide(color: t.accent, width: 2),
+                  ),
                 )
               : null,
           child: Padding(
@@ -1007,13 +1033,14 @@ class _RootPanelLayout extends SingleChildLayoutDelegate {
       oldDelegate.targetRect != targetRect;
 }
 
-/// Places a flyout to the right of its category row's [anchor] rect, flipping
-/// to the left when it would overflow and clamped on screen — the same
-/// geometry as a cascading menu's submenu.
+/// Places a flyout on the END side of its category row's [anchor] rect (right
+/// in LTR, left in RTL), flipping to the start side when it would overflow and
+/// clamped on screen — the same geometry as a cascading menu's submenu.
 class _FlyoutLayout extends SingleChildLayoutDelegate {
-  const _FlyoutLayout(this.anchor);
+  const _FlyoutLayout(this.anchor, this.textDirection);
 
   final Rect anchor;
+  final TextDirection textDirection;
 
   static const double _inset = 8;
   static const double _overlap = 4;
@@ -1024,10 +1051,16 @@ class _FlyoutLayout extends SingleChildLayoutDelegate {
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
-    // Prefer opening rightward, slightly overlapping the panel's edge.
-    var dx = anchor.right - _overlap;
-    if (dx + childSize.width > size.width - _inset) {
-      dx = anchor.left - childSize.width + _overlap; // flip to the left
+    // Prefer opening toward the end side, slightly overlapping the panel's
+    // edge; flip to the start side on overflow.
+    double towardEnd() => anchor.right - _overlap;
+    double towardStart() => anchor.left - childSize.width + _overlap;
+    var dx = textDirection == TextDirection.rtl ? towardStart() : towardEnd();
+    final overflows = textDirection == TextDirection.rtl
+        ? dx < _inset
+        : dx + childSize.width > size.width - _inset;
+    if (overflows) {
+      dx = textDirection == TextDirection.rtl ? towardEnd() : towardStart();
     }
     dx = dx.clamp(
       _inset,
@@ -1043,5 +1076,6 @@ class _FlyoutLayout extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_FlyoutLayout oldDelegate) =>
-      oldDelegate.anchor != anchor;
+      oldDelegate.anchor != anchor ||
+      oldDelegate.textDirection != textDirection;
 }

@@ -219,6 +219,7 @@ void main() {
         final after = await tool.execute({
           'code': 'print("marker" in dir())',
           'reset': true,
+          'description': 'Check the marker is gone',
         }, const HarnessToolContext(workingDirectory: '/repo'));
         expect(after.content, contains('False'));
       });
@@ -227,6 +228,7 @@ void main() {
         final tool = EvalTool(kernelFor: (_) => build());
         final result = await tool.execute({
           'code': 'x = 1',
+          'description': 'Assign a variable',
         }, const HarnessToolContext(workingDirectory: '/repo'));
         expect(result.isError, isFalse);
         expect(result.content, contains('no output'));
@@ -248,6 +250,30 @@ void main() {
     skip: python == null ? 'python3 is not on PATH' : null,
     timeout: const Timeout(Duration(minutes: 2)),
   );
+
+  // Schema and argument gating need no live interpreter, so these run even
+  // where python3 is missing.
+  group('EvalTool call description', () {
+    test('requires a per-call description in the schema', () {
+      final tool = EvalTool(
+        kernelFor: (_) => fail('the kernel must not be resolved'),
+      );
+      final schema = tool.inputSchema;
+      expect(schema['required'], contains('description'));
+      expect((schema['properties'] as Map).containsKey('description'), isTrue);
+    });
+
+    test('rejects a call without a description before touching a kernel', () async {
+      final tool = EvalTool(
+        kernelFor: (_) => fail('the kernel must not be resolved'),
+      );
+      final result = await tool.execute({
+        'code': 'x = 1',
+      }, const HarnessToolContext(workingDirectory: '/repo'));
+      expect(result.isError, isTrue);
+      expect(result.content, contains('description'));
+    });
+  });
 }
 
 String? _resolve(String command) {

@@ -51,7 +51,7 @@ class CcRadio<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ds;
     final enabled = onChanged != null;
-    final duration = CcMotion.resolve(context, CcMotion.fast);
+    final duration = CcMotion.resolveFade(context, CcMotion.fast);
 
     return CcTappable(
       // Keep the control focusable while selected (a selected radio is the
@@ -78,18 +78,23 @@ class CcRadio<T> extends StatelessWidget {
           fillColor = t.surface;
         } else {
           borderColor = enabled ? t.borderPrimary : t.borderDisabled;
-          fillColor = pressed
+          final wash = pressed
               ? t.hoverStrong
               : hovered
               ? t.hover
-              : t.surface;
+              : null;
+          fillColor = wash == null
+              ? t.surface
+              : Color.alphaBlend(wash, t.surface);
         }
 
         final dotColor = enabled ? t.accent : t.fgDisabled;
 
         return Opacity(
           opacity: enabled ? 1 : 0.6,
-          child: Container(
+          child: AnimatedContainer(
+            duration: duration,
+            curve: CcMotion.standard,
             width: _size,
             height: _size,
             decoration: BoxDecoration(

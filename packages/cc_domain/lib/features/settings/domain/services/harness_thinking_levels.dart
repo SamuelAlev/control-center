@@ -23,12 +23,12 @@ final List<ThinkingLevel> harnessEffortLevels = [
 ///
 /// - **Catalog miss** — the run keeps thinking on and passes the requested
 ///   effort through unclamped, so the picker MUST appear. This is the common
-///   case for a model newer than the bundled snapshot (`zai/glm-5.3`) or served
-///   by a custom provider, and it is why the built-in adapter looked like it
-///   had no effort knob at all: the picker renders only when the model carries
-///   levels, and the harness branch never attached any.
+///   case for a model newer than the last models.dev fetch (`zai/glm-5.3`) or
+///   served by a custom provider, and it is why the built-in adapter looked
+///   like it had no effort knob at all: the picker renders only when the model
+///   carries levels, and the harness branch never attached any.
 /// - **Known reasoning model** — offer exactly the efforts it accepts, so the
-///   dropdown cannot propose a level that `ThinkingConfig.resolve` will
+///   slider cannot propose a level that `ThinkingConfig.resolve` will
 ///   silently clamp away.
 /// - **Known non-reasoning model** — no levels, because the run sends no
 ///   reasoning at all and a knob that changes nothing is worse than no knob.
@@ -49,9 +49,7 @@ final List<ThinkingLevel> harnessEffortLevels = [
   }
   final efforts = thinking.efforts;
   return (
-    levels: [
-      for (final e in efforts) ThinkingLevel(id: e.id, label: e.label),
-    ],
+    levels: [for (final e in efforts) ThinkingLevel(id: e.id, label: e.label)],
     // `resolve(null)` falls back to `efforts.first` the same way, so the
     // pre-filled level matches what a never-touched agent actually runs at.
     defaultLevel: (thinking.defaultLevel ?? efforts.first).id,

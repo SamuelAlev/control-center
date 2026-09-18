@@ -102,6 +102,17 @@ class ToolApproval {
 
   /// Optional human-readable reason shown in the confirmation prompt.
   final String? reason;
+
+  // `@override` cannot be used in this class: the field is named `override`,
+  // so the annotation would bind to the instance field (not dart:core).
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ToolApproval &&
+          tier == other.tier &&
+          override == other.override &&
+          reason == other.reason;
+
+  int get hashCode => Object.hash(tier, override, reason);
 }
 
 /// The resolved approval decision the gate acts on.

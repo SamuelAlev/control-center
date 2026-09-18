@@ -1,5 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Default avatar diameter for bubble rows.
 const double avatarSize = 28;
@@ -27,6 +27,6 @@ DesignSystemTokens resolveTokens(BuildContext context) {
   if (tokens != null) {
     return tokens;
   }
-  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final isDark = (context.ccTheme?.isDark ?? false);
   return isDark ? DesignSystemTokens.dark() : DesignSystemTokens.light();
 }

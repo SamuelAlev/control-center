@@ -12,7 +12,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// Which side of the trigger a [CcTooltip] opens on. The caret always points
-/// back at the trigger from the opposite edge of the panel.
+/// back at the trigger from the opposite edge of the panel. Horizontal
+/// placements are LOGICAL — they resolve against the ambient [Directionality],
+/// so a tooltip beside a start-docked sidebar mirrors with the layout.
 enum CcTooltipPlacement {
   /// Above the trigger (caret on the panel's bottom edge, pointing down).
   top,
@@ -20,11 +22,11 @@ enum CcTooltipPlacement {
   /// Below the trigger (caret on the panel's top edge, pointing up) — default.
   bottom,
 
-  /// Left of the trigger (caret on the panel's right edge, pointing right).
-  left,
+  /// Before the trigger (left in LTR, right in RTL).
+  start,
 
-  /// Right of the trigger (caret on the panel's left edge, pointing left).
-  right,
+  /// After the trigger (right in LTR, left in RTL).
+  end,
 }
 
 /// The direction a tooltip caret points (resolved from the follower anchor).
@@ -87,12 +89,13 @@ class CcTooltip extends StatefulWidget {
 
   /// Explicit anchor on the target the panel aligns to. When null it is derived
   /// from [placement]. Supplying it (with [followerAnchor]) overrides
-  /// [placement] and still drives the caret direction/alignment.
-  final Alignment? targetAnchor;
+  /// [placement] and still drives the caret direction/alignment. Directional
+  /// values resolve against the ambient [Directionality].
+  final AlignmentGeometry? targetAnchor;
 
   /// Explicit anchor on the panel aligned to [targetAnchor]. When null it is
   /// derived from [placement].
-  final Alignment? followerAnchor;
+  final AlignmentGeometry? followerAnchor;
 
   /// Extra offset applied to the panel. When null a small placement-appropriate
   /// gap is used so the caret tip sits just off the trigger.
@@ -159,18 +162,23 @@ class _CcTooltipState extends State<CcTooltip> {
   }
 
   // Resolves the (targetAnchor, followerAnchor, offset) for the chosen
-  // placement, unless the caller supplied explicit anchors.
-  ({Alignment target, Alignment follower, Offset offset}) get _anchors {
+  // placement, unless the caller supplied explicit anchors. The horizontal
+  // placements are logical, so the pixel gap flips sign with [direction] (the
+  // anchors resolve downstream, but an [Offset] is physical).
+  ({Alignment target, Alignment follower, Offset offset}) _anchors(
+    TextDirection direction,
+  ) {
     final target = widget.targetAnchor;
     final follower = widget.followerAnchor;
     if (target != null && follower != null) {
       return (
-        target: target,
-        follower: follower,
+        target: target.resolve(direction),
+        follower: follower.resolve(direction),
         offset: widget.offset ?? Offset.zero,
       );
     }
     const gap = AppSpacing.xs;
+    final endSign = direction == TextDirection.rtl ? -1.0 : 1.0;
     return switch (widget.placement) {
       CcTooltipPlacement.bottom => (
         target: Alignment.bottomCenter,
@@ -182,22 +190,22 @@ class _CcTooltipState extends State<CcTooltip> {
         follower: Alignment.bottomCenter,
         offset: widget.offset ?? const Offset(0, -gap),
       ),
-      CcTooltipPlacement.right => (
-        target: Alignment.centerRight,
-        follower: Alignment.centerLeft,
-        offset: widget.offset ?? const Offset(gap, 0),
+      CcTooltipPlacement.end => (
+        target: AlignmentDirectional.centerEnd.resolve(direction),
+        follower: AlignmentDirectional.centerStart.resolve(direction),
+        offset: widget.offset ?? Offset(gap * endSign, 0),
       ),
-      CcTooltipPlacement.left => (
-        target: Alignment.centerLeft,
-        follower: Alignment.centerRight,
-        offset: widget.offset ?? const Offset(-gap, 0),
+      CcTooltipPlacement.start => (
+        target: AlignmentDirectional.centerStart.resolve(direction),
+        follower: AlignmentDirectional.centerEnd.resolve(direction),
+        offset: widget.offset ?? Offset(-gap * endSign, 0),
       ),
     };
   }
 
   @override
   Widget build(BuildContext context) {
-    final anchors = _anchors;
+    final anchors = _anchors(Directionality.of(context));
     // Show on hover (mouse) AND on keyboard focus: a Tab-reachable child must
     // reveal its tooltip without a mouse (a tooltip shows on hover *or* focus).
     // `canRequestFocus: false` keeps this wrapper out of the tab order while
@@ -272,6 +280,10 @@ CrossAxisAlignment _caretCrossFor(Alignment follower) {
   return CrossAxisAlignment.center;
 }
 
+// RTL carve-out: the caret machinery below runs in physical screen space
+// DOWNSTREAM of the direction-resolved anchors (`_anchors` resolves placement
+// against Directionality), so its physical left/right already mirror — mapping
+// them to start/end again would double-flip.
 /// The dark tooltip panel + caret — fades itself in on mount so it animates each
 /// time the overlay reopens (the [CcOverlayAnchor] rebuilds it fresh on show).
 class _CcTooltipPanel extends StatefulWidget {
@@ -334,7 +346,7 @@ class _CcTooltipPanelState extends State<_CcTooltipPanel> {
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
-    final duration = CcMotion.resolve(context, CcMotion.normal);
+    final duration = CcMotion.resolveFade(context, CcMotion.fast);
 
     final body = ConstrainedBox(
       constraints: BoxConstraints(maxWidth: widget.maxWidth),

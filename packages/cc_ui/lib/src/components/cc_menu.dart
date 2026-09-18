@@ -6,6 +6,7 @@ import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_truncated_text.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_panel_search_field.dart';
 import 'package:cc_ui/src/foundation/cc_row_reveal.dart';
@@ -284,8 +285,8 @@ class CcMenu extends StatefulWidget {
     required this.target,
     required this.items,
     this.controller,
-    this.targetAnchor = Alignment.bottomLeft,
-    this.followerAnchor = Alignment.topLeft,
+    this.targetAnchor = AlignmentDirectional.bottomStart,
+    this.followerAnchor = AlignmentDirectional.topStart,
     this.offset = const Offset(0, 6),
     this.minWidth = 180,
     this.maxWidth = 320,
@@ -309,13 +310,14 @@ class CcMenu extends StatefulWidget {
   /// trigger fades out from under its own menu.
   final CcOverlayController? controller;
 
-  /// Point on the target the panel aligns to.
-  final Alignment targetAnchor;
+  /// Point on the target the panel aligns to (directional — mirrors in RTL).
+  final AlignmentGeometry targetAnchor;
 
   /// Point on the panel aligned to [targetAnchor].
-  final Alignment followerAnchor;
+  final AlignmentGeometry followerAnchor;
 
-  /// Extra offset applied to the panel.
+  /// Extra offset applied to the panel. With directional anchors the `dx` is
+  /// logical (toward the reading direction's end) and mirrors under RTL.
   final Offset offset;
 
   /// Minimum width of the menu panel. The open panel is additionally floored
@@ -516,6 +518,71 @@ class _CcMenuState extends State<CcMenu> {
     );
   }
 
+  List<Widget> _buildItemRuns(
+    List<CcMenuItem> items, {
+    required bool showCheckGutter,
+  }) {
+    final result = <Widget>[];
+    var run = <int>[];
+
+    void flush() {
+      if (run.isEmpty) {
+        return;
+      }
+      final indices = run;
+      result.add(
+        CcFluidHover(
+          itemCount: indices.length,
+          isItemDisabled: (localIndex) => !items[indices[localIndex]].enabled,
+          onActiveIndexChanged: (localIndex) {
+            if (localIndex == null) {
+              return;
+            }
+            final index = indices[localIndex];
+            if (_highlight != index) {
+              setState(() => _highlight = index);
+            }
+          },
+          itemBuilder: (context, localIndex) {
+            final index = indices[localIndex];
+            return KeyedSubtree(
+              key: _rows.keyAt(index),
+              child: _CcMenuRow(
+                item: items[index],
+                showCheckGutter: showCheckGutter,
+                highlighted: index == _highlight,
+                focusable: false,
+                onActivate: () => _select(items[index]),
+              ),
+            );
+          },
+          layoutBuilder: (context, registered) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: registered,
+          ),
+        ),
+      );
+      run = <int>[];
+    }
+
+    for (var index = 0; index < items.length; index++) {
+      final item = items[index];
+      if (item.isDivider || item.isSection) {
+        flush();
+        result.add(
+          item.isDivider
+              ? const _CcMenuDivider()
+              : _CcMenuSection(label: item.label),
+        );
+      } else {
+        run.add(index);
+      }
+    }
+    flush();
+    return result;
+  }
+
   Widget _buildPanel(BuildContext context, Size? targetSize) {
     // Never render the panel narrower than its trigger; when the trigger is
     // wider than the cap, matching the trigger wins.
@@ -562,30 +629,7 @@ class _CcMenuState extends State<CcMenu> {
             children: [
               if (items.isEmpty && widget.emptySearchLabel != null)
                 _CcMenuEmpty(label: widget.emptySearchLabel!),
-              for (var i = 0; i < items.length; i++)
-                if (items[i].isDivider)
-                  const _CcMenuDivider()
-                else if (items[i].isSection)
-                  _CcMenuSection(label: items[i].label)
-                else
-                  KeyedSubtree(
-                    key: _rows.keyAt(i),
-                    child: _CcMenuRow(
-                      item: items[i],
-                      showCheckGutter: showCheckGutter,
-                      highlighted: i == _highlight,
-                      // Rows never take focus: the highlight index is the
-                      // single source of truth, so it cannot disagree with
-                      // where the caret is.
-                      focusable: false,
-                      onHover: () {
-                        if (_highlight != i) {
-                          setState(() => _highlight = i);
-                        }
-                      },
-                      onActivate: () => _select(items[i]),
-                    ),
-                  ),
+              ..._buildItemRuns(items, showCheckGutter: showCheckGutter),
             ],
           ),
         ),
@@ -789,7 +833,16 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
       _moveColumnHighlight(column, -1);
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.arrowRight) {
+    // Horizontal arrows follow reading direction: the key pointing toward the
+    // submenu's fly-out side (end) opens, the other steps back out.
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final intoSubmenuKey = isRtl
+        ? LogicalKeyboardKey.arrowLeft
+        : LogicalKeyboardKey.arrowRight;
+    final outOfSubmenuKey = isRtl
+        ? LogicalKeyboardKey.arrowRight
+        : LogicalKeyboardKey.arrowLeft;
+    if (key == intoSubmenuKey) {
       final row = data.highlight;
       if (row >= 0 && data.items[row].hasChildren) {
         final rect = _rectOf(column, row);
@@ -800,7 +853,7 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
       }
       return KeyEventResult.handled;
     }
-    if (key == LogicalKeyboardKey.arrowLeft) {
+    if (key == outOfSubmenuKey) {
       if (column > 0) {
         _truncateTo(column - 1);
       }
@@ -859,7 +912,10 @@ class _CcCascadeMenuOverlayState extends State<_CcCascadeMenuOverlay> {
               child: CustomSingleChildLayout(
                 delegate: c == 0
                     ? _CcMenuAtLayoutDelegate(widget.position)
-                    : _SubmenuLayoutDelegate(_columns[c].anchor!),
+                    : _SubmenuLayoutDelegate(
+                        _columns[c].anchor!,
+                        Directionality.of(context),
+                      ),
                 child: PointerInterceptor(
                   child: DefaultTextStyle(
                     style: menuTextStyle,
@@ -927,6 +983,71 @@ class _CcMenuColumnState extends State<_CcMenuColumn> {
     return box.localToGlobal(Offset.zero) & box.size;
   }
 
+  List<Widget> _buildItemRuns(bool showCheckGutter) {
+    final result = <Widget>[];
+    var run = <int>[];
+
+    void flush() {
+      if (run.isEmpty) {
+        return;
+      }
+      final indices = run;
+      result.add(
+        CcFluidHover(
+          itemCount: indices.length,
+          isItemDisabled: (localIndex) =>
+              !widget.items[indices[localIndex]].enabled,
+          onActiveIndexChanged: (localIndex) {
+            if (localIndex == null) {
+              return;
+            }
+            final row = indices[localIndex];
+            final rect = rectOf(row);
+            if (rect != null) {
+              widget.onRowHover(row, rect);
+            }
+          },
+          itemBuilder: (context, localIndex) {
+            final row = indices[localIndex];
+            return KeyedSubtree(
+              key: _keys[row],
+              child: _CcMenuRow(
+                item: widget.items[row],
+                showCheckGutter: showCheckGutter,
+                highlighted: row == widget.highlight,
+                focusable: false,
+                onActivate: () =>
+                    widget.onRowActivate(row, rectOf(row) ?? Rect.zero),
+              ),
+            );
+          },
+          layoutBuilder: (context, registered) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: registered,
+          ),
+        ),
+      );
+      run = <int>[];
+    }
+
+    for (var row = 0; row < widget.items.length; row++) {
+      final item = widget.items[row];
+      if (item.isDivider || item.isSection) {
+        flush();
+        result.add(
+          item.isDivider
+              ? const _CcMenuDivider()
+              : _CcMenuSection(label: item.label),
+        );
+      } else {
+        run.add(row);
+      }
+    }
+    flush();
+    return result;
+  }
+
   @override
   Widget build(BuildContext context) {
     _ensureKeys(widget.items.length);
@@ -937,31 +1058,7 @@ class _CcMenuColumnState extends State<_CcMenuColumn> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < widget.items.length; i++)
-            if (widget.items[i].isDivider)
-              const _CcMenuDivider()
-            else if (widget.items[i].isSection)
-              _CcMenuSection(label: widget.items[i].label)
-            else
-              KeyedSubtree(
-                key: _keys[i],
-                child: _CcMenuRow(
-                  item: widget.items[i],
-                  showCheckGutter: showCheckGutter,
-                  highlighted: i == widget.highlight,
-                  focusable: false,
-                  onHover: () {
-                    final rect = rectOf(i);
-                    if (rect != null) {
-                      widget.onRowHover(i, rect);
-                    }
-                  },
-                  onActivate: () =>
-                      widget.onRowActivate(i, rectOf(i) ?? Rect.zero),
-                ),
-              ),
-        ],
+        children: _buildItemRuns(showCheckGutter),
       ),
     );
   }
@@ -1066,12 +1163,14 @@ class _CcMenuAtLayoutDelegate extends SingleChildLayoutDelegate {
       oldDelegate.position != position;
 }
 
-/// Places a flyout submenu to the right of its parent row's [anchor] rect,
-/// flipping to the left when it would overflow and clamped on screen.
+/// Places a flyout submenu on the END side of its parent row's [anchor] rect
+/// (right in LTR, left in RTL), flipping to the start side when it would
+/// overflow and clamped on screen.
 class _SubmenuLayoutDelegate extends SingleChildLayoutDelegate {
-  const _SubmenuLayoutDelegate(this.anchor);
+  const _SubmenuLayoutDelegate(this.anchor, this.textDirection);
 
   final Rect anchor;
+  final TextDirection textDirection;
 
   static const double _inset = 8;
   static const double _overlap = 4;
@@ -1082,10 +1181,16 @@ class _SubmenuLayoutDelegate extends SingleChildLayoutDelegate {
 
   @override
   Offset getPositionForChild(Size size, Size childSize) {
-    // Prefer opening rightward, slightly overlapping the parent's edge.
-    var dx = anchor.right - _overlap;
-    if (dx + childSize.width > size.width - _inset) {
-      dx = anchor.left - childSize.width + _overlap; // flip to the left
+    // Prefer opening toward the end side, slightly overlapping the parent's
+    // edge; flip to the start side on overflow.
+    double towardEnd() => anchor.right - _overlap;
+    double towardStart() => anchor.left - childSize.width + _overlap;
+    var dx = textDirection == TextDirection.rtl ? towardStart() : towardEnd();
+    final overflows = textDirection == TextDirection.rtl
+        ? dx < _inset
+        : dx + childSize.width > size.width - _inset;
+    if (overflows) {
+      dx = textDirection == TextDirection.rtl ? towardEnd() : towardStart();
     }
     dx = dx.clamp(
       _inset,
@@ -1101,7 +1206,8 @@ class _SubmenuLayoutDelegate extends SingleChildLayoutDelegate {
 
   @override
   bool shouldRelayout(_SubmenuLayoutDelegate oldDelegate) =>
-      oldDelegate.anchor != anchor;
+      oldDelegate.anchor != anchor ||
+      oldDelegate.textDirection != textDirection;
 }
 
 /// The hairline separator rendered for a [CcMenuItem.divider].
@@ -1140,11 +1246,12 @@ class _CcMenuSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.ds;
     return Padding(
-      padding: const EdgeInsets.only(
-        left: AppSpacing.md,
-        right: AppSpacing.md,
-        top: AppSpacing.sm,
-        bottom: AppSpacing.xxs,
+      // Symmetric horizontals, so direction-neutral by construction.
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        AppSpacing.sm,
+        AppSpacing.md,
+        AppSpacing.xxs,
       ),
       child: Text(
         label.toUpperCase(),
@@ -1185,7 +1292,6 @@ class _CcMenuRow extends StatelessWidget {
   const _CcMenuRow({
     required this.item,
     required this.onActivate,
-    this.onHover,
     this.showCheckGutter = false,
     this.highlighted = false,
     this.focusable = true,
@@ -1193,9 +1299,6 @@ class _CcMenuRow extends StatelessWidget {
 
   final CcMenuItem item;
   final VoidCallback onActivate;
-
-  /// Fired when the pointer enters the row (drives submenu open + highlight).
-  final VoidCallback? onHover;
 
   /// Whether to reserve the leading check-mark gutter (any selectable sibling).
   final bool showCheckGutter;
@@ -1212,7 +1315,7 @@ class _CcMenuRow extends StatelessWidget {
     final t = context.ds;
     final fg = item.destructive ? t.danger : t.textPrimary;
 
-    final row = CcTappable(
+    return CcTappable(
       onPressed: item.enabled ? onActivate : null,
       borderRadius: AppRadii.brSm,
       showFocusRing: false,
@@ -1223,22 +1326,27 @@ class _CcMenuRow extends StatelessWidget {
         final pressed = states.contains(WidgetState.pressed);
         final focused = states.contains(WidgetState.focused);
         final disabled = states.contains(WidgetState.disabled);
+        final fluidActive = CcFluidHover.isItemActive(context);
         final active = hovered || focused || highlighted;
         final wash = pressed
             ? t.hoverStrong
+            : fluidActive
+            ? const Color(0x00000000)
             : (active ? t.hover : const Color(0x00000000));
         final color = disabled ? t.textDisabled : fg;
         final checkColor = disabled ? t.textDisabled : t.accent;
 
         return Container(
           constraints: const BoxConstraints(minHeight: 40),
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           decoration: BoxDecoration(color: wash),
           // A 2px inset accent bar marks the keyboard-focused/highlighted row
           // (edge-to-edge menu items have no radius, so focus rides the edge).
           foregroundDecoration: (focused || highlighted) && !disabled
               ? BoxDecoration(
-                  border: Border(left: BorderSide(color: t.accent, width: 2)),
+                  border: BorderDirectional(
+                    start: BorderSide(color: t.accent, width: 2),
+                  ),
                 )
               : null,
           child: Padding(
@@ -1293,10 +1401,5 @@ class _CcMenuRow extends StatelessWidget {
         );
       },
     );
-
-    if (onHover == null) {
-      return row;
-    }
-    return MouseRegion(onEnter: (_) => onHover!(), child: row);
   }
 }

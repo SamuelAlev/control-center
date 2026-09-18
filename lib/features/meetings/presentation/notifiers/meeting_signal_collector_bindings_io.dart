@@ -1,5 +1,6 @@
+import 'package:cc_domain/features/meetings/domain/services/calendar_meeting_signal_collector.dart';
 import 'package:cc_domain/features/meetings/domain/services/meeting_signal_collector.dart';
-import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_infra/cc_infra.dart' show ProcessMeetingSignalCollector;
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

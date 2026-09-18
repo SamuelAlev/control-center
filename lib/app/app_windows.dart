@@ -11,7 +11,6 @@ import 'package:control_center/app/control_center_app.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/observability/sentry_bootstrap.dart';
-import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/features/focus_mode/presentation/screens/focus_pill_window.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_toolbar_controller.dart';
@@ -114,23 +113,6 @@ class _PrimaryWindowState extends State<PrimaryWindow> {
     // rather than leaving a headless engine running with no windows.
     delegate: _QuitOnCloseDelegate(),
   );
-
-  @override
-  void initState() {
-    super.initState();
-    // The controller's field initializer above has already created AND shown
-    // the native window (synchronously, during this State's construction), so
-    // by initState the window exists with a black content layer and is waiting
-    // for its first present. The post-frame log below then tells us whether
-    // the frame that should carry that present completed — a window that is
-    // still black after it logs is losing presents engine-side (see
-    // `WindowVisibilityGuard`, which nudges a freshly shown main window for
-    // exactly this reason).
-    AppLog.i('window', 'primary window: controller created, awaiting frames');
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => AppLog.i('window', 'primary window: first frame completed'),
-    );
-  }
 
   @override
   void dispose() {

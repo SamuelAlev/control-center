@@ -149,6 +149,7 @@ List<DiffToken> _applyDiffToTokens(
           DiffToken(
             token.text.substring(cursor - tokenStart, range.start - tokenStart),
             token.colorValue,
+            kind: token.kind,
           ),
         );
       }
@@ -161,6 +162,7 @@ List<DiffToken> _applyDiffToTokens(
             ),
             token.colorValue,
             backgroundColorValue: changedBgColor,
+            kind: token.kind,
           ),
         );
       }
@@ -168,7 +170,11 @@ List<DiffToken> _applyDiffToTokens(
     }
     if (cursor < tokenEnd) {
       out.add(
-        DiffToken(token.text.substring(cursor - tokenStart), token.colorValue),
+        DiffToken(
+          token.text.substring(cursor - tokenStart),
+          token.colorValue,
+          kind: token.kind,
+        ),
       );
     }
   }

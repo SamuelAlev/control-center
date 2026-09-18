@@ -1,9 +1,10 @@
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
-import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
+import 'package:control_center/features/user_profiles/presentation/widgets/profile_delivery_scaffold.dart';
 import 'package:control_center/features/user_profiles/presentation/widgets/user_profile_pr_queue.dart';
 import 'package:control_center/features/user_profiles/presentation/widgets/user_profile_search_field.dart';
+import 'package:control_center/features/user_profiles/providers/user_profile_pr_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/providers/github_user_profile_provider.dart';
@@ -14,14 +15,13 @@ import 'package:control_center/shared/widgets/github_user_profile_header.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A GitHub user's profile: their header (avatar, metadata, contribution
-/// heatmap) over a browse-only PR queue that mirrors the main PR list — dense
-/// rows, peek, per-repo accordions and keyboard navigation. A state rail
-/// (Open / Merged / Closed) filters the queue, with merged/closed history
-/// fetched on demand and a search field narrows by title.
+/// A GitHub user's identity, contributions and workspace-scoped delivery data.
+///
+/// The all-state PR browser mirrors the main queue's dense rows, peek,
+/// per-repository grouping and keyboard navigation without mutating its state.
 class UserProfileScreen extends ConsumerStatefulWidget {
   /// Creates a [UserProfileScreen] for [login].
   const UserProfileScreen({super.key, required this.login});
@@ -38,8 +38,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   // the `/` + ⌘F shortcuts can focus the field, which lives in the header.
   final FocusNode _searchFocusNode = FocusNode(debugLabel: 'profile-pr-search');
 
-  /// Whether a manual refresh is in flight, so the refresh icon spins until
-  /// BOTH the forced server-side PR sweep and the profile re-fetch settle.
+  /// Whether a manual profile and activity refresh is in flight.
   bool _refreshing = false;
 
   @override
@@ -48,10 +47,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     super.dispose();
   }
 
-  /// Forces an immediate server-side GitHub sweep of the workspace's PRs (the
-  /// live open-list subscription never re-enters a loading state on its own)
-  /// and re-fetches the GitHub profile, spinning the refresh icon until every
-  /// fetch settles.
+  /// Re-fetches GitHub identity and workspace-scoped activity, keeping the
+  /// refresh affordance active until both server reads settle.
   Future<void> _refresh() async {
     if (_refreshing) {
       return;
@@ -59,8 +56,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     setState(() => _refreshing = true);
     try {
       await Future.wait([
-        ref.read(prsByRepoProvider.notifier).forceRefresh(),
         ref.refresh(githubUserProfileProvider(widget.login).future),
+        ref.refresh(userProfileActivityProvider(widget.login).future),
       ]);
     } catch (_) {
       // Each surface keeps its last data / shows its own error; the spin
@@ -77,13 +74,14 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final login = widget.login;
     final l10n = AppLocalizations.of(context);
     final profileAsync = ref.watch(githubUserProfileProvider(login));
+    final activityAsync = ref.watch(userProfileActivityProvider(login));
     final displayName = profileAsync.value?.name.isNotEmpty == true
         ? profileAsync.value!.name
         : '@$login';
 
-    // Stamp freshness whenever the workspace PR data (the profile's primary
-    // source) lands — covers both first load and post-refresh.
-    ref.listen(prsByRepoProvider, (_, next) {
+    // Profile activity is fetched directly from GitHub by the server, so its
+    // completion is the freshness signal for the workspace-scoped queue.
+    ref.listen(userProfileActivityProvider(login), (_, next) {
       if (next is AsyncData && !next.isLoading) {
         ref.read(lastCheckedProvider.notifier).stamp('user-profile:$login');
       }
@@ -92,9 +90,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       lastCheckedProvider.select((m) => m['user-profile:$login']),
     );
     final isRefreshing =
-        _refreshing ||
-        ref.watch(prsByRepoProvider).isLoading ||
-        profileAsync.isLoading;
+        _refreshing || activityAsync.isLoading || profileAsync.isLoading;
 
     return PageWrapper(
       title: displayName,
@@ -105,22 +101,17 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           tooltip: l10n.refresh,
           onRefresh: _refresh,
         ),
-        UserProfileSearchField(login: login, focusNode: _searchFocusNode),
+        ProfilePrSearchField(
+          profileKey: 'user:${login.toLowerCase()}',
+          focusNode: _searchFocusNode,
+        ),
       ],
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _ProfileHeaderCard(login: login, profileAsync: profileAsync),
-            const SizedBox(height: 20),
-            Expanded(
-              child: UserProfilePrQueue(
-                login: login,
-                searchFocusNode: _searchFocusNode,
-              ),
-            ),
-          ],
+      child: ProfileDeliveryScaffold(
+        header: _ProfileHeaderCard(login: login, profileAsync: profileAsync),
+        activity: activityAsync,
+        queue: UserProfilePrQueue(
+          login: login,
+          searchFocusNode: _searchFocusNode,
         ),
       ),
     );

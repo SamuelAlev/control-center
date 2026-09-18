@@ -273,15 +273,24 @@ class PromptBuilder {
       '6. **Never ask a human to do what an agent could do.** Execute '
       'directly rather than delegating to the user.',
     );
+    _buf.writeln(
+      '7. **Ask the operator through `ask_user`, never in prose.** If a '
+      'preference, missing requirement, or genuine fork would change what '
+      'you build, call `ask_user` with concrete options. A chat-message '
+      'question ends the turn and they have to re-prompt. Do not use it to '
+      'ask permission (the approval gate handles that) or to report '
+      'progress. If a sensible default exists, take it, state the '
+      'assumption, and continue.',
+    );
     if (mode == Mode.chat) {
       _buf.writeln(
-        '7. **Lean on shared memory.** Consult `search_memory` and the code '
+        '8. **Lean on shared memory.** Consult `search_memory` and the code '
         'index before exploring by hand and save durable facts and '
         'observations the moment you learn them — do not wait to be asked.',
       );
     } else {
       _buf.writeln(
-        '7. **Consult shared memory first.** Search `search_memory` and the '
+        '8. **Consult shared memory first.** Search `search_memory` and the '
         'code index for prior decisions and relevant code before exploring '
         'files by hand.',
       );
@@ -376,6 +385,10 @@ class PromptBuilder {
         'than guessing or stalling.',
       );
     }
+    steps.add(
+      '**If you need a human decision**, call `ask_user` with concrete '
+      'options — never write the question as a chat message.',
+    );
     steps.add('**Never ask a human to do what an agent could do.**');
     for (var i = 0; i < steps.length; i++) {
       _buf.writeln('${i + 1}. ${steps[i]}');

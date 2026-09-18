@@ -143,8 +143,8 @@ class _FilterChipState extends ConsumerState<_FilterChip> {
 
     return CcOverlayAnchor(
       controller: _flyout,
-      targetAnchor: Alignment.bottomLeft,
-      followerAnchor: Alignment.topLeft,
+      targetAnchor: AlignmentDirectional.bottomStart,
+      followerAnchor: AlignmentDirectional.topStart,
       offset: const Offset(0, 6),
       interceptPointer: true,
       target: _ChipSurface(

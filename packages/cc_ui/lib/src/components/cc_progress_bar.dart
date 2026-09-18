@@ -75,7 +75,9 @@ class _CcProgressBarState extends State<CcProgressBar>
     final shouldAnimate = _isIndeterminate && !CcMotion.reduced(context);
     if (shouldAnimate) {
       if (!_controller.isAnimating) {
-        _controller.repeat();
+        // Reverse at the end so the segment loops instead of jumping
+        // back to the start — a wrap reads as a hitch, not a cycle.
+        _controller.repeat(reverse: true);
       }
     } else if (_controller.isAnimating) {
       _controller.stop();
@@ -108,12 +110,14 @@ class _CcProgressBarState extends State<CcProgressBar>
       );
     }
 
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
     final Widget content;
     if (!_isIndeterminate) {
       final fraction = widget.value!.clamp(0.0, 1.0);
       content = bar(
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: FractionallySizedBox(
             widthFactor: fraction,
             child: Container(
@@ -126,7 +130,7 @@ class _CcProgressBarState extends State<CcProgressBar>
       // Static fallback: a fixed 30% segment, no animation.
       content = bar(
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: FractionallySizedBox(
             widthFactor: _indeterminateExtent,
             child: Container(
@@ -151,10 +155,14 @@ class _CcProgressBarState extends State<CcProgressBar>
               child: AnimatedBuilder(
                 animation: _controller,
                 builder: (context, _) {
+                  // The segment departs from the start edge, so it reads as
+                  // "in progress" in the same direction the locale reads.
+                  final along = travel * _controller.value;
                   return Stack(
                     children: [
                       Positioned(
-                        left: travel * _controller.value,
+                        left: isRtl ? null : along,
+                        right: isRtl ? along : null,
                         top: 0,
                         bottom: 0,
                         width: segment,

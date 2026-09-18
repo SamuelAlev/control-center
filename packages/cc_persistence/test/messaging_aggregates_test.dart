@@ -166,6 +166,15 @@ void main() {
         a.lastAgentMessageAt!.millisecondsSinceEpoch,
         DateTime.utc(2026, 1, 1, 0, 0, 5).millisecondsSinceEpoch,
       );
+      expect(
+        a.lastAgentMessageAtByConversation.map(
+          (id, at) => MapEntry(id, at.millisecondsSinceEpoch),
+        ),
+        {
+          'a': DateTime.utc(2026, 1, 1, 0, 0, 3).millisecondsSinceEpoch,
+          'a-paren': DateTime.utc(2026, 1, 1, 0, 0, 5).millisecondsSinceEpoch,
+        },
+      );
 
       final b = activity.singleWhere((x) => x.spaceId == 'b');
       expect(b.openQuestionCount, 0);

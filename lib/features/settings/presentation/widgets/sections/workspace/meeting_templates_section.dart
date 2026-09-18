@@ -111,7 +111,7 @@ class _MeetingTemplatesSectionState
           if (isAdmin) ...[
             const SizedBox(height: 12),
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: CcButton(
                 variant: CcButtonVariant.secondary,
                 size: CcButtonSize.sm,

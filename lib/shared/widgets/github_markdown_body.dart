@@ -12,7 +12,7 @@ import 'package:control_center/shared/widgets/markdown/markdown_registries.dart'
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:control_center/shared/widgets/video_embed_view.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 
@@ -35,6 +35,7 @@ class GitHubMarkdownBody extends ConsumerWidget {
     this.attachmentsPending = false,
     this.onAttachmentLoadFailed,
     this.onSwitchToRepo,
+    this.onTaskCheckboxChanged,
     this.embedVideos = false,
   });
 
@@ -97,6 +98,11 @@ class GitHubMarkdownBody extends ConsumerWidget {
   /// PR description opts in.
   final bool embedVideos;
 
+  /// Task-list checkbox toggle. The index is document-order against the raw
+  /// markdown (HTML comments and fences skipped) so a host can PATCH the
+  /// original body. Null keeps the boxes read-only.
+  final void Function(int index, bool checked)? onTaskCheckboxChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final owner = repoOwner ?? '';
@@ -142,6 +148,7 @@ class GitHubMarkdownBody extends ConsumerWidget {
       plugins: githubMarkdownPlugins,
       options: githubMarkdownOptions,
       builders: builders,
+      onTaskCheckboxChanged: onTaskCheckboxChanged,
       codeBuilder: (code, language, {required bool cache}) =>
           buildSharedCodeBlock(
             context,

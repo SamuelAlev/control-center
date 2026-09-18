@@ -4,8 +4,14 @@ import 'package:control_center/features/observability/presentation/obs_format.da
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/features/observability/providers/insights_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/charts/chart_hover.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/widgets.dart';
+
+/// Must match [_titles] reserved sizes (left 40, bottom 28).
+///
+/// RTL carve-out: fl_chart lays axes on the physical left/bottom.
+const _plotPadding = EdgeInsets.only(left: 40, bottom: 28);
 
 /// The Insights activity chart: one stacked rod per bucket — successful runs
 /// in [ObsTone.neutral] with errors stacked on top in [ObsTone.danger] — so
@@ -36,6 +42,13 @@ class ObsActivityChart extends StatelessWidget {
     final runsColor = obsToneColor(t, ObsTone.neutral);
     final errorsColor = obsToneColor(t, ObsTone.danger);
     final labels = _bucketLabels(buckets, kind);
+    var peak = 0;
+    for (final bucket in buckets) {
+      if (bucket.runs > peak) {
+        peak = bucket.runs;
+      }
+    }
+    final maxY = peak <= 0 ? 1.0 : peak.toDouble();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,54 +57,59 @@ class ObsActivityChart extends StatelessWidget {
           label: _activitySummary(l10n, labels),
           child: SizedBox(
             height: height,
-            child: BarChart(
-              duration: Duration.zero,
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                gridData: _grid(t),
-                borderData: FlBorderData(show: false),
-                titlesData: _titles(labels, t),
-                barTouchData: BarTouchData(
-                  touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) => t.bgPrimary,
-                    tooltipBorder: BorderSide(color: t.borderPrimary),
-                    tooltipBorderRadius: AppRadii.brMd,
-                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final bucket = buckets[groupIndex];
-                      return BarTooltipItem(
-                        '${labels[groupIndex]}\n'
-                        '${fmtCount(bucket.runs)} ${l10n.obsLegendRuns} · '
-                        '${fmtCount(bucket.errors)} ${l10n.obsLegendErrors}',
-                        CcTypography.caption.copyWith(color: t.textPrimary),
-                      );
-                    },
-                  ),
+            child: ChartHoverHost(
+              plotPadding: _plotPadding,
+              pointCount: buckets.length,
+              maxY: maxY,
+              axis: ChartHoverAxis.barSpaceAround,
+              seriesColors: [runsColor],
+              seriesValuesAt: (index) => [buckets[index].runs.toDouble()],
+              flyoutBuilder: (index) {
+                final bucket = buckets[index];
+                return Text(
+                  '${labels[index]}\n'
+                  '${fmtCount(bucket.runs)} ${l10n.obsLegendRuns} · '
+                  '${fmtCount(bucket.errors)} ${l10n.obsLegendErrors}',
+                );
+              },
+              child: BarChart(
+                duration: Duration.zero,
+                BarChartData(
+                  minY: 0,
+                  maxY: maxY,
+                  alignment: BarChartAlignment.spaceAround,
+                  gridData: _grid(t),
+                  borderData: FlBorderData(show: false),
+                  titlesData: _titles(labels, t),
+                  barTouchData: const BarTouchData(enabled: false),
+                  barGroups: [
+                    for (var i = 0; i < buckets.length; i++)
+                      BarChartGroupData(
+                        x: i,
+                        barRods: [
+                          BarChartRodData(
+                            toY: buckets[i].runs.toDouble(),
+                            width: _rodWidth(buckets.length),
+                            borderRadius: BorderRadius.zero,
+                            rodStackItems: [
+                              BarChartRodStackItem(
+                                0,
+                                (buckets[i].runs - buckets[i].errors)
+                                    .toDouble(),
+                                runsColor,
+                              ),
+                              BarChartRodStackItem(
+                                (buckets[i].runs - buckets[i].errors)
+                                    .toDouble(),
+                                buckets[i].runs.toDouble(),
+                                errorsColor,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
                 ),
-                barGroups: [
-                  for (var i = 0; i < buckets.length; i++)
-                    BarChartGroupData(
-                      x: i,
-                      barRods: [
-                        BarChartRodData(
-                          toY: buckets[i].runs.toDouble(),
-                          width: _rodWidth(buckets.length),
-                          borderRadius: BorderRadius.zero,
-                          rodStackItems: [
-                            BarChartRodStackItem(
-                              0,
-                              (buckets[i].runs - buckets[i].errors).toDouble(),
-                              runsColor,
-                            ),
-                            BarChartRodStackItem(
-                              (buckets[i].runs - buckets[i].errors).toDouble(),
-                              buckets[i].runs.toDouble(),
-                              errorsColor,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                ],
               ),
             ),
           ),
@@ -146,6 +164,14 @@ class ObsCostChart extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final lineColor = obsToneColor(t, ObsTone.brand);
     final labels = _bucketLabels(buckets, kind);
+    var peak = 0.0;
+    for (final bucket in buckets) {
+      final dollars = bucket.costCents / 100.0;
+      if (dollars > peak) {
+        peak = dollars;
+      }
+    }
+    final maxY = peak <= 0 ? 1.0 : peak;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,40 +180,42 @@ class ObsCostChart extends StatelessWidget {
           label: _costSummary(l10n, labels),
           child: SizedBox(
             height: height,
-            child: LineChart(
-              duration: Duration.zero,
-              LineChartData(
-                gridData: _grid(t),
-                borderData: FlBorderData(show: false),
-                titlesData: _titles(labels, t),
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    getTooltipColor: (_) => t.bgPrimary,
-                    tooltipBorder: BorderSide(color: t.borderPrimary),
-                    tooltipBorderRadius: AppRadii.brMd,
-                    getTooltipItems: (spots) => [
-                      for (final spot in spots)
-                        LineTooltipItem(
-                          '${labels[spot.x.toInt()]}\n'
-                          '${fmtCents((spot.y * 100).round())}',
-                          CcTypography.caption.copyWith(color: t.textPrimary),
-                        ),
-                    ],
-                  ),
+            child: ChartHoverHost(
+              plotPadding: _plotPadding,
+              pointCount: buckets.length,
+              maxY: maxY,
+              seriesColors: [lineColor],
+              seriesValuesAt: (index) => [buckets[index].costCents / 100.0],
+              flyoutBuilder: (index) => Text(
+                '${labels[index]}\n'
+                '${fmtCents(buckets[index].costCents)}',
+              ),
+              child: LineChart(
+                duration: Duration.zero,
+                LineChartData(
+                  minY: 0,
+                  maxY: maxY,
+                  gridData: _grid(t),
+                  borderData: FlBorderData(show: false),
+                  titlesData: _titles(labels, t),
+                  lineTouchData: const LineTouchData(enabled: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      isCurved: false,
+                      color: lineColor,
+                      barWidth: 2,
+                      dotData: const FlDotData(show: false),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        color: t.accentSoft,
+                      ),
+                      spots: [
+                        for (var i = 0; i < buckets.length; i++)
+                          FlSpot(i.toDouble(), buckets[i].costCents / 100.0),
+                      ],
+                    ),
+                  ],
                 ),
-                lineBarsData: [
-                  LineChartBarData(
-                    isCurved: false,
-                    color: lineColor,
-                    barWidth: 2,
-                    dotData: const FlDotData(show: false),
-                    belowBarData: BarAreaData(show: true, color: t.accentSoft),
-                    spots: [
-                      for (var i = 0; i < buckets.length; i++)
-                        FlSpot(i.toDouble(), buckets[i].costCents / 100.0),
-                    ],
-                  ),
-                ],
               ),
             ),
           ),
@@ -252,6 +280,10 @@ FlTitlesData _titles(List<String> categories, DesignSystemTokens t) {
         getTitlesWidget: (value, _) => Text(
           fmtCount(value.round()),
           style: style,
+          // RTL carve-out: fl_chart draws in physical coordinates — the
+          // y-axis gutter is fixed to the plot's left edge, so its labels
+          // align against the axis line; the time x-axis stays LTR per the
+          // chart-canvas policy.
           textAlign: TextAlign.right,
         ),
       ),

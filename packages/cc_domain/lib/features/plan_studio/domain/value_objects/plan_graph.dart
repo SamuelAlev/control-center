@@ -1,6 +1,8 @@
 // Named JSON factories read best next to the fields they map.
 // ignore_for_file: sort_constructors_first
 
+import 'dart:convert';
+
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/value_objects/plan_annotations.dart';
 
@@ -386,4 +388,12 @@ class PlanGraph {
                 .toSubTicket(),
         ],
       );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is PlanGraph && jsonEncode(toJson()) == jsonEncode(other.toJson());
+
+  @override
+  int get hashCode => nodes.length;
 }

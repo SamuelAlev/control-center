@@ -30,10 +30,9 @@ void main() {
     r'''(?<![A-Za-z_$.])(?:Cc|Selectable)?Text\((['"])[A-Za-z][^'"$]{2,}\1''',
   );
 
-  // The count after the observability redesign internationalized every
-  // observability literal; the remainder is web/markdown surfaces. Anti-growth
-  // only.
-  const baseline = 4;
+  // Known Text()/CcText() prose literals in lib/ and apps/cc_remote/lib are
+  // gone. Anti-growth only — never raise this.
+  const baseline = 0;
 
   // Resolve the lib/ dir whether run from the repo root or elsewhere.
   Directory libDir() {
@@ -57,18 +56,30 @@ void main() {
     }
   }
 
-  test('no NEW hardcoded user-facing Text() literals in lib/', () {
+  Iterable<Directory> scanRoots() {
+    final lib = libDir();
+    final roots = <Directory>[lib];
+    final remote = Directory('${lib.parent.path}/apps/cc_remote/lib');
+    if (remote.existsSync()) {
+      roots.add(remote);
+    }
+    return roots;
+  }
+
+  test('no NEW hardcoded user-facing Text() literals in lib/ or cc_remote', () {
     final offenders = <String>[];
-    for (final entity in libDir().listSync(recursive: true)) {
-      if (entity is! File ||
-          !entity.path.endsWith('.dart') ||
-          entity.path.endsWith('.g.dart')) {
-        continue;
-      }
-      final lines = entity.readAsLinesSync();
-      for (var i = 0; i < lines.length; i++) {
-        if (re.hasMatch(lines[i])) {
-          offenders.add('${entity.path}:${i + 1}  ${lines[i].trim()}');
+    for (final root in scanRoots()) {
+      for (final entity in root.listSync(recursive: true)) {
+        if (entity is! File ||
+            !entity.path.endsWith('.dart') ||
+            entity.path.endsWith('.g.dart')) {
+          continue;
+        }
+        final lines = entity.readAsLinesSync();
+        for (var i = 0; i < lines.length; i++) {
+          if (re.hasMatch(lines[i])) {
+            offenders.add('${entity.path}:${i + 1}  ${lines[i].trim()}');
+          }
         }
       }
     }

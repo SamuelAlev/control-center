@@ -51,6 +51,7 @@ cat > "$WORK_DIR/seed/cc-rig.json" <<EOF
   "agent_token": "$TOKEN",
   "credential_secret": "verify-secret",
   "egress_allowlist": [],
+  "unrestricted_network": true,
   "http_proxy": "http://10.0.2.2:18080",
   "socks_proxy": "socks5://10.0.2.2:11080",
   "credential_endpoint": "http://10.0.2.2:18081/credential"
@@ -181,6 +182,98 @@ while (( SECONDS < deadline )); do
               echo "==> FAILED: no window session process found ($session)." >&2
               break ;;
           esac
+          # The diagnostic cidata must not be the network provider. Production
+          # rigs attach only CCRIG, so prove the baked netplan profile owns the
+          # active NIC before testing packets.
+          echo "==> checking the baked production DHCP profile"
+          if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+               cc@127.0.0.1 \
+               'test -f /etc/netplan/60-cc-rig.yaml; \
+                test ! -e /etc/netplan/50-cloud-init.yaml; \
+                nmcli -t -f NAME,DEVICE connection show --active | \
+                  grep -Eq "^netplan-rig:en"; \
+                ip -4 route show default | grep -q "^default "'; then
+            echo "==> production DHCP profile is active"
+          else
+            echo "==> FAILED: the baked production DHCP profile is not active." >&2
+            break
+          fi
+          # This verification boot uses ordinary QEMU user networking (unlike
+          # a production restricted rig, whose outbound path is proxy-only).
+          # Check the guest's basic IP stack independently of DNS and HTTP.
+          echo "==> checking guest network reaches 1.1.1.1"
+          if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+               cc@127.0.0.1 \
+               'ping -c 1 -W 5 1.1.1.1 >/dev/null 2>&1'; then
+            echo "==> guest network works"
+          else
+            echo "==> FAILED: the guest cannot ping 1.1.1.1." >&2
+            break
+          fi
+          echo "==> checking unrestricted desktop has no proxy environment"
+          proxy_env=$(ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+            cc@127.0.0.1 \
+            'pid=$(systemctl show -p MainPID --value cc-x11.service); \
+             tr "\\0" "\\n" < "/proc/$pid/environ" | \
+             grep -Ei "^(http_proxy|https_proxy|all_proxy)=" || true' \
+            2>/dev/null) || proxy_env="probe-failed"
+          if [[ -n "$proxy_env" ]]; then
+            echo "==> FAILED: unrestricted desktop still has proxy variables:" >&2
+            echo "$proxy_env" >&2
+            break
+          fi
+          echo "==> checking Chromium reaches the public internet directly"
+          if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+               cc@127.0.0.1 \
+               'browser=$(command -v chromium || command -v chromium-browser); \
+                test -n "$browser"; \
+                timeout 30 "$browser" --headless --no-sandbox \
+                  --disable-gpu --user-data-dir=/tmp/cc-net-verify \
+                  --dump-dom https://example.com 2>/dev/null | \
+                  grep -q "Example Domain"'; then
+            echo "==> Chromium internet access works"
+          else
+            echo "==> FAILED: Chromium cannot reach https://example.com." >&2
+            break
+          fi
+          # The audio lane can return HTTP 200 and still be silent if ffmpeg
+          # cannot reach the cc user's PulseAudio socket. Prove both virtual
+          # devices exist, then keep the live endpoint open briefly and require
+          # actual encoded bytes.
+          echo "==> checking the audio lane"
+          pulse=$(ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+            -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+            cc@127.0.0.1 \
+            'export XDG_RUNTIME_DIR=/run/user/1000; \
+             export PULSE_SERVER=unix:/run/user/1000/pulse/native; \
+             pulseaudio --start --exit-idle-time=-1 >/dev/null 2>&1 || true; \
+             pactl list short sinks' 2>/dev/null) || pulse=""
+          if ! grep -q $'\tccout\t' <<<"$pulse" ||
+             ! grep -q $'\tccin\t' <<<"$pulse"; then
+            echo "==> FAILED: the virtual audio devices are unavailable." >&2
+            break
+          fi
+          audio_file="$WORK_DIR/audio-probe.mp3"
+          audio_status=0
+          curl -fsS -m 5 -H "Authorization: Bearer $TOKEN" \
+            "http://127.0.0.1:$AGENT_PORT/audio?kbps=64" \
+            > "$audio_file" 2>/dev/null || audio_status=$?
+          audio_bytes=$(wc -c < "$audio_file" | tr -d ' ')
+          if (( audio_bytes <= 1000 )) ||
+             (( audio_status != 0 && audio_status != 28 )); then
+            echo "==> FAILED: the audio lane emitted no usable stream." >&2
+            break
+          fi
+          echo "==> audio works ($audio_bytes bytes)"
           # The clipboard, round-tripped. It is checked HERE rather than
           # assumed from the package list because every way it breaks is
           # invisible from outside: xclip missing, xclip unable to reach :0,

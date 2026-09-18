@@ -47,21 +47,9 @@ class ControlCenterLayout extends ConsumerStatefulWidget {
 }
 
 class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
-  /// Free-text filter for the settings sub-sidebar. Lets the operator jump to
-  /// a category by name instead of scanning a 14-item list.
-  final TextEditingController _settingsFilterController =
-      TextEditingController();
-  String _settingsFilter = '';
-
   @override
   void initState() {
     super.initState();
-    _settingsFilterController.addListener(() {
-      final next = _settingsFilterController.text;
-      if (next != _settingsFilter) {
-        setState(() => _settingsFilter = next);
-      }
-    });
     // Presence idle detection (PRD 16 §1): any hardware key registers as
     // activity. Never marks the event handled — this must never steal a key
     // from the app's real shortcut/input handling.
@@ -85,7 +73,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
   @override
   void dispose() {
     HardwareKeyboard.instance.removeHandler(_onKeyEventTouch);
-    _settingsFilterController.dispose();
     super.dispose();
   }
 
@@ -160,9 +147,7 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
                         if (inSettings)
                           CcSidebar(
                             width: 240,
-                            header: _SettingsSidebarHeader(
-                              controller: _settingsFilterController,
-                            ),
+                            header: const _SettingsSidebarHeader(),
                             children: _buildSettingsGroups(
                               context,
                               location,
@@ -218,7 +203,7 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
   // information architecture. Groups are SCOPES — You / Workspace / Server —
   // each carrying a one-line statement of what a change there affects, because
   // "who does this affect?" is the question the old topic-based grouping could
-  // not answer. The header filter narrows the visible items by name.
+  // not answer.
 
   /// True when this user has connected no forge at all, so nothing can reach
   /// a code host — surfaced as an attention dot on the profile item.
@@ -235,7 +220,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
     required bool needsIntegrationSetup,
   }) {
     final l10n = AppLocalizations.of(context);
-    final filter = _settingsFilter.trim().toLowerCase();
     // Install-wide destinations are the operator's; the server refuses every
     // other caller, so offering them is a form that ends in an error.
     final isServerOwner = ref.watch(isServerOwnerProvider);
@@ -245,9 +229,6 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
         return null;
       }
       final label = entry.label(l10n);
-      if (filter.isNotEmpty && !label.toLowerCase().contains(filter)) {
-        return null;
-      }
       final route = entry.route(workspaceId);
       final selected = entry.matchesSubroutes
           ? (location == route || location.startsWith('$route/'))
@@ -277,60 +258,33 @@ class _ControlCenterLayoutState extends ConsumerState<ControlCenterLayout> {
       }
       groups.add(CcSidebarGroup(label: group.label(l10n), children: visible));
     }
-
-    if (groups.isEmpty) {
-      return [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-          child: Text(
-            l10n.noSettingsMatch(_settingsFilter.trim()),
-            style: CcTypography.caption.copyWith(
-              color: context.designSystem?.textTertiary,
-            ),
-          ),
-        ),
-      ];
-    }
     return groups;
   }
 }
 
-/// Header for the settings sub-sidebar: a title row plus a name filter that
-/// narrows the category list below.
+/// Header for the settings sub-sidebar: a title row above the category list.
 class _SettingsSidebarHeader extends StatelessWidget {
-  const _SettingsSidebarHeader({required this.controller});
-
-  final TextEditingController controller;
+  const _SettingsSidebarHeader();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Icon(
-                AppIcons.settings,
-                size: 16,
-                color: context.designSystem?.textTertiary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.navSettings,
-                style: CcTypography.body.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: context.ds.textPrimary,
-                ),
-              ),
-            ],
+          Icon(
+            AppIcons.settings,
+            size: 16,
+            color: context.designSystem?.textTertiary,
           ),
-          const SizedBox(height: 12),
-          CcTextField(
-            controller: controller,
-            hintText: l10n.filterSettingsHint,
+          const SizedBox(width: 8),
+          Text(
+            l10n.navSettings,
+            style: CcTypography.body.copyWith(
+              fontWeight: FontWeight.w600,
+              color: context.ds.textPrimary,
+            ),
           ),
         ],
       ),

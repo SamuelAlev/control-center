@@ -1,13 +1,17 @@
 import 'package:cc_remote/app_connection.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/screens/article_reader_screen.dart';
 import 'package:cc_remote/screens/calendar_screen.dart';
 import 'package:cc_remote/screens/connect_screen.dart';
+import 'package:cc_remote/screens/event_detail_screen.dart';
 import 'package:cc_remote/screens/inbox_screen.dart';
 import 'package:cc_remote/screens/messaging_screen.dart';
 import 'package:cc_remote/screens/newsfeed_screen.dart';
 import 'package:cc_remote/screens/pr_detail_screen.dart';
 import 'package:cc_remote/screens/pr_screen.dart';
 import 'package:cc_remote/screens/settings_screen.dart';
+import 'package:cc_remote/screens/space_screen.dart';
+import 'package:cc_remote/screens/ticket_detail_screen.dart';
 import 'package:cc_remote/screens/tickets_screen.dart';
 import 'package:cc_remote/screens/workspace_switcher.dart';
 import 'package:cc_remote/widgets/app_shell.dart';

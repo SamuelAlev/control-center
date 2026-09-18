@@ -55,7 +55,7 @@ class ConfidenceMeter extends StatelessWidget {
             width: trackWidth,
             height: trackHeight,
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: FractionallySizedBox(
                 widthFactor: clamped == 0 ? 0.04 : clamped,
                 child: DecoratedBox(

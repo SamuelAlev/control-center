@@ -29,7 +29,7 @@ import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -274,10 +274,10 @@ class _MeetingDetailScreenState extends ConsumerState<MeetingDetailScreen> {
         AppSpacing.xxxl,
       ),
       children: [
-        // Left-aligned so the capped column starts at the same inset as the
+        // Start-aligned so the capped column starts at the same inset as the
         // page title above it (see the meetings list for the same note).
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1140),
             child: Column(
@@ -412,7 +412,6 @@ class _TabCount extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: ds.hoverStrong,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Text(
         '$count',
@@ -467,7 +466,7 @@ class _BackLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       child: CcButton(
         variant: CcButtonVariant.ghost,
         size: CcButtonSize.sm,
@@ -497,9 +496,8 @@ class _DetailTitle extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Flexible(
-          child: InkWell(
+          child: GestureDetector(
             onTap: onEditTitle,
-            borderRadius: AppRadii.brSm,
             child: PageHeaderText(title: meeting.title),
           ),
         ),
@@ -604,7 +602,6 @@ class _SourceChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: ds.surface,
-        borderRadius: AppRadii.brSm,
         border: Border.all(color: ds.borderSecondary),
       ),
       child: Text(
@@ -633,7 +630,6 @@ class _FromCalendarChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
         decoration: BoxDecoration(
           color: ds.surface,
-          borderRadius: AppRadii.brSm,
           border: Border.all(color: ds.borderSecondary),
         ),
         child: Row(
@@ -704,7 +700,6 @@ class _StatusBanner extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: context.mAccentSoft,
-        borderRadius: AppRadii.brMd,
         border: Border.all(color: ds.borderSecondary),
       ),
       child: Row(

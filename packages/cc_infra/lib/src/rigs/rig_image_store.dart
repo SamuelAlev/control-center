@@ -163,7 +163,7 @@ class RigImageDownloadProgress {
 ///
 /// Terminal (exec) and browser rigs need no entry at all: they are smolvm
 /// microVMs whose images are digest-pinned OCI references
-/// (`kSmolvmExecImage` / `kSmolvmBrowserImage`) pulled by the runtime itself.
+/// (`kSmolvmExecImage` / `kSmolvmDebianBrowserImage`) pulled by the runtime.
 const List<RigImageSpec> kRigImageCatalog = [
   RigImageSpec(
     id: 'cc-desktop-linux',

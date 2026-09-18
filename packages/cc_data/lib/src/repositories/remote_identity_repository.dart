@@ -230,6 +230,29 @@ class RemoteIdentityRepository {
       .subscribe('activity.watchForWorkspace', {'workspace_id': workspaceId})
       .map(_activity);
 
+  /// Cursor page of [workspaceId]'s audit trail, with the real total.
+  Stream<UserActivityPageDto> watchActivityPage(
+    String workspaceId, {
+    String? cursor,
+    int limit = 10,
+    String? query,
+    String? ip,
+    String? countryCode,
+    bool localNetwork = false,
+    List<String> userIds = const [],
+  }) => _client
+      .subscribe('activity.watchForWorkspace', {
+        'workspace_id': workspaceId,
+        'cursor': ?cursor,
+        'limit': limit,
+        'query': ?query,
+        'ip': ?ip,
+        'country_code': ?countryCode,
+        if (localNetwork) 'local_network': true,
+        if (userIds.isNotEmpty) 'user_ids': userIds,
+      })
+      .map(UserActivityPageDto.fromJson);
+
   static List<UserDto> _users(Map<String, dynamic> data) =>
       ((data['users'] as List?) ?? const [])
           .whereType<Map>()
@@ -253,4 +276,47 @@ class RemoteIdentityRepository {
           .whereType<Map>()
           .map((e) => UserActivityDto.fromJson(e.cast<String, dynamic>()))
           .toList();
+}
+
+/// One newest-first page of the workspace audit trail.
+class UserActivityPageDto {
+  /// Creates a [UserActivityPageDto].
+  const UserActivityPageDto({
+    required this.entries,
+    required this.total,
+    required this.start,
+    this.nextCursor,
+    this.prevCursor,
+  });
+
+  /// Decodes the `activity.watchForWorkspace` page snapshot.
+  factory UserActivityPageDto.fromJson(Map<String, dynamic> json) =>
+      UserActivityPageDto(
+        entries: RemoteIdentityRepository._activity(json),
+        total: (json['total'] as num?)?.toInt() ?? 0,
+        start: (json['start'] as num?)?.toInt() ?? 1,
+        nextCursor: json['next_cursor'] as String?,
+        prevCursor: json['prev_cursor'] as String?,
+      );
+
+  /// The page's entries, newest first.
+  final List<UserActivityDto> entries;
+
+  /// How many rows match the filter across the whole trail.
+  final int total;
+
+  /// 1-based index of the first row on this page.
+  final int start;
+
+  /// Opaque cursor for the next older page.
+  final String? nextCursor;
+
+  /// Opaque cursor for the previous newer page; null on the first page.
+  final String? prevCursor;
+
+  /// Whether an older page exists.
+  bool get hasMore => nextCursor != null;
+
+  /// 1-based index of the last row on this page.
+  int get end => entries.isEmpty ? start - 1 : start + entries.length - 1;
 }

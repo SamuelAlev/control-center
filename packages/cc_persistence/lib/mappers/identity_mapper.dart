@@ -77,8 +77,31 @@ class IdentityMapper {
         deviceId: row.deviceId,
         ip: row.ip,
         countryCode: row.countryCode,
+        details: _detailsFromJson(row.details),
         createdAt: row.createdAt,
       );
+
+  static Map<String, Object?>? _detailsFromJson(String? raw) {
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry('$k', v));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Encodes [details] for the JSON column, or null when there is nothing
+  /// to persist.
+  static String? detailsToJson(Map<String, Object?>? details) {
+    if (details == null || details.isEmpty) {
+      return null;
+    }
+    return jsonEncode(details);
+  }
 
   /// Decodes a `{repoId: level}` JSON object; unknown levels are dropped
   /// (fail closed — an unparseable grant grants nothing).

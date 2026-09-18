@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:control_center/app/window_chrome.dart' show isMainWindowTitle;
-import 'package:control_center/core/utils/app_log.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -121,7 +120,6 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
   /// the repair passes. Called from the window manager's will-show hook.
   void onMainWindowShown() {
     _armed = true;
-    AppLog.i('window', 'main window shown — visibility guard armed');
     // One nudge on every show, BEFORE any lifecycle reasoning: a freshly
     // created window's content view carries a black layer until its first
     // present, and if that first frame is lost (a warm-up frame that ran
@@ -134,7 +132,7 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
     // made key: this first pass can rarely prove the state wrong (the window
     // is not on screen yet inside the hook), but it does force the one frame
     // that costs nothing and may be all that is missing.
-    _repair('window shown');
+    _repair();
     // EVERY show gets the staged batch, not just the first. The app puts two
     // main windows on screen in succession whenever it has no server yet: the
     // pre-app setup window (choose local, or paste a pairing key), then — once
@@ -150,7 +148,7 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
     // activation from piling timers up.
     _cancelRechecks();
     for (final delay in _recheckDelays) {
-      _rechecks.add(Timer(delay, () => _repair('window shown')));
+      _rechecks.add(Timer(delay, _repair));
     }
   }
 
@@ -174,7 +172,6 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    AppLog.i('window', 'lifecycle → ${state.name}');
     switch (state) {
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
@@ -189,7 +186,7 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
         // being delivered, and `AppLifecycleListener` asserts on the
         // resumed → hidden jump that leaves behind. A microtask lets the
         // in-flight notification finish first.
-        scheduleMicrotask(() => _repair('lifecycle → ${state.name}'));
+        scheduleMicrotask(_repair);
       case AppLifecycleState.resumed:
       case AppLifecycleState.inactive:
       case AppLifecycleState.detached:
@@ -197,7 +194,7 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
     }
   }
 
-  void _repair(String reason) {
+  void _repair() {
     if (!_armed) {
       return;
     }
@@ -221,13 +218,7 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
     // the synthetic `resumed` below (which fixes the framework but cannot
     // touch the engine's own occlusion latch), and without it, it is the only
     // repair there is.
-    final nudged = _nudgeMainWindow();
-    AppLog.w(
-      'window',
-      'repair pass: state=${state.name} '
-          'framesEnabled=${binding.framesEnabled} focused=$focused '
-          'nudged=$nudged ($reason)',
-    );
+    _nudgeMainWindow();
 
     if (!focused) {
       // No focused main window: push nothing through the lifecycle channel.

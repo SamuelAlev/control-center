@@ -1,9 +1,8 @@
 /// Minimal typed key-value persistence port for non-sensitive app preferences.
 ///
-/// Flutter-free services (e.g. the newsfeed `FilterListService`) depend on this
-/// instead of a concrete preferences class so they stay linkable into the
-/// headless server. The desktop binds it to its `nativeapi`-backed
-/// `AppPreferences`; the server binds its own store. Only the accessors actual
+/// Flutter-free services depend on this instead of a concrete preferences
+/// class so they stay linkable into the headless server. The desktop binds it
+/// to its `nativeapi`-backed `AppPreferences`. Only the accessors actual
 /// consumers need are declared — widen deliberately, not by reflex.
 abstract class KeyValueStore {
   /// Reads the string at [key], or `null` when absent.

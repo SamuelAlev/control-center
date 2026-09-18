@@ -1,19 +1,19 @@
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
-import 'package:flutter/widgets.dart' show VoidCallback;
+import 'package:flutter/services.dart';
 
 /// Two-way sync helpers between an [EditorLayoutController]'s focused tab and
 /// the `?tab=` query param of a tabbed detail surface (space conversation,
 /// PR detail).
 ///
-/// The URL is the source of truth for *which tab is focused*, the same way the
-/// path already is for which space / PR is open: a tab switch navigates
-/// (pushing a back/forward entry) and a refresh or deep-link restores the
-/// named tab. Layout persistence (the cached split tree + selection) still
-/// owns everything the URL does not name — the URL only carries the focus.
+/// The URL can identify the focused tab for deep links, refresh and browser
+/// back/forward without making an in-app tab press a GoRouter navigation. A
+/// router navigation rebuilds the whole route tree, including every visited
+/// editor body, which turns a local selection change into visible jank.
 ///
-/// A `null` key means "no opinion": the surface keeps whatever the seeded /
-/// restored layout selected. It never commands a focus change on load.
+/// Layout persistence (the cached split tree + selection) still owns everything
+/// the URL does not name. A `null` key means "no opinion": the surface keeps
+/// whatever the seeded / restored layout selected.
 const String editorTabQueryParam = 'tab';
 
 /// A tab's URL identity: its [EditorTab.dedupKey] when it has one, else its
@@ -57,23 +57,34 @@ String locationWithEditorTab(Uri current, String? key) {
   return current.replace(queryParameters: params).toString();
 }
 
+/// Publishes a focused-tab URL directly to the platform route-information
+/// channel.
+///
+/// On web this pushes a browser-history entry, so refresh and back/forward keep
+/// working. Flutter ignores the call on native platforms, where the persisted
+/// editor layout already restores focus. Crucially, this does not ask GoRouter
+/// to rebuild the active page just because its local tab selection changed.
+Future<void> updateEditorTabRoute(Uri current, String? key) =>
+    SystemNavigator.routeInformationUpdated(
+      uri: Uri.parse(locationWithEditorTab(current, key)),
+    );
+
 /// The two-way sync state machine between an [EditorLayoutController]'s
 /// focused tab and a `?tab=` query param, shared by the tabbed detail
 /// surfaces (space conversation, PR detail).
 ///
 /// Direction 1 — layout → URL: the host calls [writeFromLayout] from its
 /// layout-change listener; when the focused key diverges from the last key
-/// this tracker wrote or applied, the USER changed the focus and the write
-/// callback fires (the host navigates, pushing a back/forward entry).
+/// this tracker wrote or applied, the write callback publishes lightweight
+/// platform route information.
 ///
 /// Direction 2 — URL → layout: the host calls [apply] when the route's
 /// `?tab=` changes (back/forward, deep-link) and with `force: true` after a
 /// layout restore (the URL outranks the restored selection).
 ///
 /// The per-surface differences are injected as callbacks: the focus action
-/// (the PR page opens a closed fixed tab, messaging focuses only), the
-/// default tab (Overview vs the first tab) and the write action (the host
-/// owns the BuildContext / GoRouter).
+/// (the PR page opens a closed fixed tab), the default tab (Overview vs the
+/// first tab) and the route-information write action.
 ///
 /// Reentrancy: focus mutations notify SYNCHRONOUSLY, so an [apply] would
 /// otherwise re-enter [writeFromLayout] mid-apply — before the tracker

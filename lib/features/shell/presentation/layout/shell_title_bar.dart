@@ -14,7 +14,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The slim 40px top bar: back/forward navigation, the route breadcrumb, the
@@ -70,9 +70,14 @@ class ShellTitleBar extends ConsumerWidget {
         child: SizedBox(
           height: 40,
           child: Padding(
-            padding: EdgeInsets.only(
-              left: hasMacTrafficLights ? 80 : AppSpacing.md,
-              right: AppSpacing.md,
+            // RTL carve-out: macOS pins the traffic-light cluster to the
+            // PHYSICAL top-left whatever the app's text direction (the app
+            // cannot observe the system locale), so the clearance is a
+            // physical-left add-on over the direction-neutral symmetric inset.
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md).add(
+              EdgeInsets.only(
+                left: hasMacTrafficLights ? 80 - AppSpacing.md : 0,
+              ),
             ),
             child: Row(
               children: [
@@ -85,7 +90,7 @@ class ShellTitleBar extends ConsumerWidget {
                 // double-click-to-zoom.
                 const Expanded(
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: TitleBarBreadcrumb(),
                   ),
                 ),

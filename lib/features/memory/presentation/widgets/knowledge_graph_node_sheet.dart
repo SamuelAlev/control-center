@@ -2,13 +2,13 @@ import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/memory/presentation/widgets/confidence_meter.dart';
-import 'package:control_center/features/memory/presentation/widgets/knowledge_graph.dart'
+import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_data.dart'
     show NodeData, NodeType;
 import 'package:control_center/features/memory/presentation/widgets/memory_chip.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Bottom sheet that shows details for a selected knowledge graph node.
 class KnowledgeGraphNodeSheet extends StatelessWidget {

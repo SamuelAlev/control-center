@@ -895,6 +895,22 @@ class GitHubForgePrClient implements ForgePrClient {
     );
   }
 
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    Object? cancelToken,
+  }) async {
+    await _client.pr.updateIssueComment(
+      owner,
+      repo,
+      commentId: _numericId(commentId, 'commentId'),
+      body: body,
+      cancelToken: _token(cancelToken),
+    );
+  }
+
   /// GitHub comment/issue ids are integers; the port passes them as opaque
   /// strings because other forges use non-numeric ids. A value that is not a
   /// GitHub id is a caller bug, so it fails loudly instead of silently

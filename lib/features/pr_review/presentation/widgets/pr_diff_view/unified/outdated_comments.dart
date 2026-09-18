@@ -89,8 +89,8 @@ class OutdatedCommentsGroup extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return CcPopover(
-      targetAnchor: Alignment.bottomRight,
-      followerAnchor: Alignment.topRight,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       semanticLabel: l10n.outdatedComments,
       overlayBuilder: (context, _) => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 460, maxHeight: 420),
@@ -400,6 +400,7 @@ class ReviewDiffHunkSnippet extends ConsumerWidget {
 }
 
 /// One rendered snippet row: the old and new line numbers, then the code.
+// RTL carve-out: diff snippet row (code + line-number gutter) stays LTR.
 class _SnippetRow extends StatelessWidget {
   const _SnippetRow({
     required this.spec,

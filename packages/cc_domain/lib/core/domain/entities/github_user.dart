@@ -1,6 +1,8 @@
 /// GitHub App bot accounts use the `login[bot]` convention (e.g.
 /// `renovate[bot]`, `dependabot[bot]`, `github-actions[bot]`). GraphQL
-/// `user(login:)` cannot resolve them — they are `Bot` nodes, not `User`.
+/// `repositoryOwner(login:)` cannot resolve them — they are `Bot` nodes, not
+/// `User` or `Organization`. The app *slug* (no `[bot]`) is a different
+/// identity and is resolved by `github.userProfile` via `GET /apps/{slug}`.
 bool isGitHubBotLogin(String login) => login.toLowerCase().endsWith('[bot]');
 
 /// Login, plus GitHub display name in parentheses when it differs from [login].

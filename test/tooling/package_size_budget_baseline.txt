@@ -1,0 +1,25 @@
+# path  linecount — shrinking allowlist for packages/**/lib over 1500 lines
+# Exclude *.g.dart, geoip_country_data.dart, emoji_shortcodes.dart.
+packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2233
+packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2849
+packages/cc_domain/lib/src/dtos/dtos.dart  4078
+packages/cc_harness/lib/src/loop/agent_loop_runner.dart  1521
+packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1904
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2532
+packages/cc_infra/lib/src/ide/code_server_service.dart  1751
+packages/cc_infra/lib/src/messaging/messaging_service.dart  1697
+packages/cc_infra/lib/src/network/github_graphql_client.dart  2361
+packages/cc_infra/lib/src/network/github_pr_client.dart  2049
+packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1645
+packages/cc_infra/lib/src/rigs/cdp_client.dart  2530
+packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1827
+packages/cc_infra/lib/src/rigs/rig_drivers.dart  1667
+packages/cc_infra/lib/src/rigs/rig_service.dart  2537
+packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2019
+packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2564
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3373
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7792
+packages/cc_server_core/lib/src/demo/demo_seeder.dart  2103
+packages/cc_server_core/lib/src/local_rpc_server.dart  2548
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15991
+packages/cc_server_core/lib/src/repo_ide_data_service.dart  1569

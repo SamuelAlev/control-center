@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
+import 'package:cc_markdown/cc_markdown.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,6 +14,9 @@ class PrEditState {
   const PrEditState({
     this.savingTitle = false,
     this.savingBody = false,
+    this.optimisticBody,
+    this.optimisticComments = const {},
+    this.savingCommentIds = const {},
     this.pendingAssignees = const {},
     this.pendingReviewers = const {},
   });
@@ -22,6 +26,16 @@ class PrEditState {
 
   /// Whether a body save is in flight.
   final bool savingBody;
+
+  /// Markdown body shown while a checkbox toggle (or other body save) is in
+  /// flight, so the box does not snap back until the detail stream catches up.
+  final String? optimisticBody;
+
+  /// Per-comment markdown shown while a checkbox toggle is in flight.
+  final Map<int, String> optimisticComments;
+
+  /// Comment ids whose body save is in flight.
+  final Set<int> savingCommentIds;
 
   /// User logins (lowercased) whose assignee add/remove is in flight.
   final Set<String> pendingAssignees;
@@ -34,12 +48,21 @@ class PrEditState {
   PrEditState copyWith({
     bool? savingTitle,
     bool? savingBody,
+    String? optimisticBody,
+    bool clearOptimisticBody = false,
+    Map<int, String>? optimisticComments,
+    Set<int>? savingCommentIds,
     Set<String>? pendingAssignees,
     Set<String>? pendingReviewers,
   }) {
     return PrEditState(
       savingTitle: savingTitle ?? this.savingTitle,
       savingBody: savingBody ?? this.savingBody,
+      optimisticBody: clearOptimisticBody
+          ? null
+          : (optimisticBody ?? this.optimisticBody),
+      optimisticComments: optimisticComments ?? this.optimisticComments,
+      savingCommentIds: savingCommentIds ?? this.savingCommentIds,
       pendingAssignees: pendingAssignees ?? this.pendingAssignees,
       pendingReviewers: pendingReviewers ?? this.pendingReviewers,
     );
@@ -59,7 +82,32 @@ class PrEditNotifier extends Notifier<PrEditState> {
   final PrRef pr;
 
   @override
-  PrEditState build() => const PrEditState();
+  PrEditState build() {
+    ref.listen(prDetailProvider(pr), (previous, next) {
+      final body = next.asData?.value?.body;
+      if (body != null && state.optimisticBody == body) {
+        state = state.copyWith(clearOptimisticBody: true);
+      }
+    });
+    ref.listen(prIssueCommentsProvider(pr), (previous, next) {
+      final comments = next.asData?.value;
+      if (comments == null || state.optimisticComments.isEmpty) {
+        return;
+      }
+      final remaining = Map<int, String>.of(state.optimisticComments);
+      var changed = false;
+      for (final comment in comments) {
+        if (remaining[comment.id] == comment.body) {
+          remaining.remove(comment.id);
+          changed = true;
+        }
+      }
+      if (changed) {
+        state = state.copyWith(optimisticComments: remaining);
+      }
+    });
+    return const PrEditState();
+  }
 
   /// The PR number this notifier edits, sourced from [pr].
   int get prNumber => pr.number;
@@ -99,15 +147,85 @@ class PrEditNotifier extends Notifier<PrEditState> {
     if (repo == null) {
       return null;
     }
-    state = state.copyWith(savingBody: true);
+    state = state.copyWith(savingBody: true, optimisticBody: body);
     try {
       await repo.updatePullRequest(prNumber: prNumber, body: body);
       _refreshDetail();
       return null;
     } catch (e) {
+      state = state.copyWith(clearOptimisticBody: true);
       return _msg(e);
     } finally {
       state = state.copyWith(savingBody: false);
+    }
+  }
+
+  /// Ticks or unticks the [index]-th GFM task-list checkbox in [currentBody]
+  /// and PATCHes the PR. Returns null on success, else an error message.
+  Future<String?> toggleTaskListItem({
+    required String currentBody,
+    required int index,
+  }) async {
+    if (state.savingBody) {
+      return null;
+    }
+    final source = state.optimisticBody ?? currentBody;
+    final next = toggleMarkdownTaskListItem(source, index);
+    if (next == null || next == source) {
+      return null;
+    }
+    return saveBody(next);
+  }
+
+  /// Ticks or unticks the [index]-th GFM task-list checkbox in a conversation
+  /// comment and PATCHes it. Returns null on success, else an error message.
+  Future<String?> toggleCommentTaskListItem({
+    required int commentId,
+    required String currentBody,
+    required int index,
+  }) async {
+    if (state.savingCommentIds.contains(commentId)) {
+      return null;
+    }
+    final source = state.optimisticComments[commentId] ?? currentBody;
+    final next = toggleMarkdownTaskListItem(source, index);
+    if (next == null || next == source) {
+      return null;
+    }
+    return saveIssueComment(commentId: commentId, body: next);
+  }
+
+  /// Saves a conversation comment's [body]. Returns null on success, else an
+  /// error message.
+  Future<String?> saveIssueComment({
+    required int commentId,
+    required String body,
+  }) async {
+    final repo = _repo;
+    if (repo == null) {
+      return null;
+    }
+    state = state.copyWith(
+      savingCommentIds: {...state.savingCommentIds, commentId},
+      optimisticComments: {...state.optimisticComments, commentId: body},
+    );
+    try {
+      await repo.updateIssueComment(
+        prNumber: prNumber,
+        commentId: commentId,
+        body: body,
+      );
+      ref.invalidate(prIssueCommentsProvider(pr));
+      return null;
+    } catch (e) {
+      final remaining = Map<int, String>.of(state.optimisticComments)
+        ..remove(commentId);
+      state = state.copyWith(optimisticComments: remaining);
+      return _msg(e);
+    } finally {
+      state = state.copyWith(
+        savingCommentIds: state.savingCommentIds.difference({commentId}),
+      );
     }
   }
 

@@ -506,6 +506,71 @@ class AdbClient {
     }
   }
 
+  /// Stops a running package without removing its data.
+  Future<void> stopApp(String package) async {
+    await _expectShellOk(['am', 'force-stop', package]);
+  }
+
+  /// Clears a package's app data.
+  Future<void> clearAppData(String package) async {
+    final result = await _runShellArgv(['pm', 'clear', package]);
+    if (result.exitCode != 0 || result.stdout.trim() != 'Success') {
+      throw AdbException(
+        'Could not clear app data for $package on $serial: '
+        '${_firstLine(result.stderr.isEmpty ? result.stdout : result.stderr)}',
+      );
+    }
+  }
+
+  /// Removes a package from the device.
+  Future<void> uninstallApp(String package) async {
+    final result = await _run(['uninstall', package], timeout: installTimeout);
+    if (result.exitCode != 0 || result.stdout.trim() != 'Success') {
+      throw AdbException(
+        'Could not uninstall $package from $serial: '
+        '${_firstLine(result.stderr.isEmpty ? result.stdout : result.stderr)}',
+      );
+    }
+  }
+
+  /// Opens an absolute URL or app deep link.
+  Future<void> openUrl(String url) async {
+    final result = await _runShellArgv([
+      'am',
+      'start',
+      '-a',
+      'android.intent.action.VIEW',
+      '-d',
+      url,
+    ]);
+    final output = '${result.stdout}\n${result.stderr}';
+    if (result.exitCode != 0 ||
+        RegExp(r'^\s*Error:', multiLine: true).hasMatch(output)) {
+      throw AdbException(
+        'Could not open $url on $serial: ${_firstLine(output)}',
+      );
+    }
+  }
+
+  /// Runs one argv-shaped command inside the Android device.
+  Future<String> shell(List<String> argv) async {
+    if (argv.isEmpty) {
+      throw const AdbException('An Android shell command cannot be empty.');
+    }
+    final result = await _runShellArgv(argv);
+    final output = [
+      result.stdout.trim(),
+      result.stderr.trim(),
+    ].where((part) => part.isNotEmpty).join('\n');
+    if (result.exitCode != 0) {
+      throw AdbException(
+        'Android command ${argv.first} failed on $serial '
+        '(exit ${result.exitCode}): ${_firstLine(output)}',
+      );
+    }
+    return output;
+  }
+
   /// Starts ONE `screenrecord` segment of raw H.264.
   ///
   /// Deliberately not an endless stream: the device ends a recording at
@@ -586,6 +651,32 @@ class AdbClient {
       );
     }
   }
+
+  Future<({int exitCode, String stdout, String stderr})> _runShellArgv(
+    List<String> argv,
+  ) {
+    if (argv.isEmpty ||
+        argv.any((value) => value.isEmpty || value.contains('\u0000'))) {
+      throw const AdbException(
+        'Android shell argv must contain non-empty strings without NUL bytes.',
+      );
+    }
+    final command = argv.map(_quoteRemoteShellArg).join(' ');
+    return _run(['shell', command]);
+  }
+
+  Future<void> _expectShellOk(List<String> argv) async {
+    final result = await _runShellArgv(argv);
+    if (result.exitCode != 0) {
+      throw AdbException(
+        'Android command ${argv.first} failed: '
+        '${_firstLine(result.stderr.isEmpty ? result.stdout : result.stderr)}',
+      );
+    }
+  }
+
+  static String _quoteRemoteShellArg(String value) =>
+      "'${value.replaceAll("'", "'\\''")}'";
 
   /// Resolves [hostPath] and refuses it unless it sits inside [apkRoots].
   String _resolveConfinedApk(String hostPath) {

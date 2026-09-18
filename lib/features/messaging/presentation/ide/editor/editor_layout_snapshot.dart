@@ -50,7 +50,7 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
   // `microvm` terminal tabs booted three VMs before the user touched anything
   // — the "a rig tab never auto-starts, including on layout restore"
   // invariant, defeated through the adjacent terminal path.
-  rewriteArgsOnDecode: _deferEnclosedTerminalStart,
+  rewriteArgsOnDecode: _deferResourceStart,
   transientArgs: {EditorLayoutCodec.deferStartArg},
   requiredStringArgs: {
     MessagingTabKinds.chat: ['spaceId'],
@@ -66,14 +66,17 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
   iconFor: MessagingTabKinds.iconFor,
 );
 
-/// Stamps a restored `microvm` terminal tab as "start on demand".
+/// Stamps a restored machine-bearing tab as "start on demand".
 ///
-/// A host-shell terminal costs a PTY, so it still attaches on mount; an
-/// enclosed one costs a virtual machine.
-Map<String, Object?> _deferEnclosedTerminalStart(
+/// Every rig surface is deferred, including host-managed simulators. An
+/// enclosed terminal is deferred only when it names the microVM backend; a
+/// host-shell terminal costs a PTY and still attaches on mount.
+Map<String, Object?> _deferResourceStart(
   String kind,
   Map<String, Object?> args,
-) => (kind == MessagingTabKinds.terminal && args['backend'] == 'microvm')
+) =>
+    (kind == MessagingTabKinds.rig ||
+        (kind == MessagingTabKinds.terminal && args['backend'] == 'microvm'))
     ? {...args, EditorLayoutCodec.deferStartArg: true}
     : args;
 

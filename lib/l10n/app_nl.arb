@@ -39,6 +39,8 @@
   "showFileList": "Bestandenlijst tonen",
   "searchInFilesHintField": "Zoeken in bestanden…",
   "searchInFilesHint": "Zoeken in de bestanden van de pull request",
+  "searchInWholeRepo": "Zoeken in de hele repository",
+  "searchInThisPullRequest": "Zoeken in deze pull request",
   "searchNoResults": "Geen resultaten",
   "searchResultsCount": "{count, plural, =1{1 resultaat} other{{count} resultaten}} in {files, plural, =1{1 bestand} other{{files} bestanden}}",
   "discardChangesTitle": "Wijzigingen verwerpen?",
@@ -83,10 +85,11 @@
   "guardrailClassWorkspaceMutation": "Werkruimtestructuur wijzigen",
   "guardrailClassEnclosureControl": "Een omhulling (rig) aansturen",
   "navRigs": "Rigs",
-  "rigsUnsupportedServer": "Deze server kan geen afgeschermde VM's draaien. Rigs hebben een hypervisor nodig op de machine waarop cc_server draait.",
+  "rigsUnsupportedServer": "Deze server kan geen rig-oppervlakken hosten. Controleer de hostvereisten voor de machine die je wilt gebruiken.",
   "rigSurfaceComputer": "Computer",
   "rigSurfaceBrowser": "Browser",
-  "rigSurfaceMobile": "Mobiel",
+  "rigSurfaceAndroid": "Android",
+  "rigSurfaceIosSimulator": "iOS-simulator",
   "rigSurfaceBrowserEngine": "{engine}",
   "rigBrowserEngineHint": "Een wegwerp-{engine}, geïsoleerd van je machine. Open een andere engine om dezelfde pagina naast elkaar te vergelijken.",
   "rigPhaseReady": "Klaar",
@@ -105,17 +108,20 @@
   "rigEgressNotEnforced": "Het netwerk is niet afgeschermd op deze backend — die regelt zijn eigen verbinding.",
   "rigStartMachine": "Machine starten",
   "rigStartHint": "Start een wegwerp-VM die je met je agents deelt voor dit gesprek. Hij wordt bij het sluiten vernietigd en niets erin raakt jouw computer.",
+  "rigStartAndroidHint": "Maakt verbinding met een Android-emulator die al op de server wordt uitgevoerd. De netwerktoegang is niet geïsoleerd.",
+  "rigStartIosHint": "Maakt een tijdelijke iOS-simulator op de Mac van de server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.",
   "rigStopMachine": "Machine stoppen",
   "rigSurfaceUnavailable": "Deze server kan dit soort machine niet draaien.",
   "rigTabNeedsConversation": "Open eerst een gesprek — een machine hoort bij één gesprek, zodat jij en je agents naar hetzelfde scherm kijken.",
   "ideMenuSectionTools": "Gereedschap",
-  "ideMenuSectionVirtualMachine": "Virtuele machine",
+  "ideMenuSectionMachines": "Machines",
   "ideMenuSectionReopen": "Opnieuw openen",
   "ideMenuSearchHint": "Zoeken",
   "ideMenuNoMatches": "Geen resultaten",
   "rigMenuComputer": "Computer",
   "rigMenuBrowser": "Browser",
-  "rigMenuMobile": "Telefoon",
+  "rigMenuAndroid": "Android",
+  "rigMenuIosSimulator": "iOS-simulator",
   "rigLabelNumbered": "{label} {suffix}",
   "ideCloseKeepTitle": "{name} sluiten?",
   "ideCloseKeepBodyMachine": "De machine blijft op de achtergrond draaien — open hem wanneer je wilt weer via de zijbalk. Zet hem uit om zijn geheugen nu vrij te maken.",
@@ -138,6 +144,9 @@
   },
   "rigsSettingsSubtitle": "Wat deze server kan starten, welke basis-images hij nodig heeft en welke machines nu draaien",
   "rigsCapabilitiesTitle": "Deze server",
+  "rigInstallIosAutomation": "iOS-automatiseringsbridge installeren",
+  "rigInstallingIosAutomation": "iOS-automatiseringsbridge installeren…",
+  "rigIosAutomationInstalled": "iOS-automatiseringsbridge geïnstalleerd",
   "rigsImagesTitle": "Basis-images",
   "rigsImagesHint": "Elke rig start vanaf een van deze alleen-lezen images. Elke sessie schrijft naar een wegwerplaag, zodat een rig nooit kan veranderen waarmee de volgende start.",
   "rigsRunningTitle": "Draait nu",
@@ -536,9 +545,7 @@
   "remoteControlAndDevices": "Afstandsbediening en apparaten",
   "remoteControlAndDevicesSettingsDescription": "Koppel telefoons en configureer de afstandsbedieningsserver.",
   "voiceAndMeetingsSettingsDescription": "De spraak- en diarisatiemodellen die deze server host.",
-  "filterSettingsHint": "Instellingen filteren",
   "needsSetupLabel": "Configuratie vereist",
-  "noSettingsMatch": "Geen instelling komt overeen met \"{query}\"",
   "collapseSidebar": "Zijbalk samenvouwen",
   "expandSidebar": "Zijbalk uitvouwen",
   "filterSpacesHint": "Ruimtes filteren",
@@ -555,7 +562,6 @@
   "blocked": "Geblokkeerd",
   "idle": "Inactief",
   "noRunsYet": "Nog geen uitvoeringen",
-  "lastActiveAgo": "{duration} geleden actief",
   "copyPath": "Pad kopiëren",
   "copyRelativePath": "Relatief pad kopiëren",
   "nameRequired": "Naam is verplicht",
@@ -942,14 +948,11 @@
   "@agent": {
     "description": "Agent"
   },
-  "agentCount": "{count} agent{plural, plural, =1{} other{s}}",
+  "agentCount": "{count, plural, =1{1 agent} other{{count} agents}}",
   "@agentCount": {
     "description": "Agent count label",
     "placeholders": {
       "count": {
-        "type": "int"
-      },
-      "plural": {
         "type": "int"
       }
     }
@@ -1046,6 +1049,7 @@
   "agentApprovalRequired": "Goedkeuring vereist",
   "agentApprovalsMoreWaiting": "{count, plural, =1{Nog 1 in de wachtrij} other{Nog {count} in de wachtrij}}",
   "approved": "Goedgekeurd",
+  "articleNoun": "Artikel",
   "articlesSubscribed": "Artikelen uit je geabonneerde feeds.",
   "askAi": "Ask AI",
   "askAiReviewDescription": "Vraag de AI om deze PR te reviewen",
@@ -1271,6 +1275,7 @@
   },
   "deleteWorkspace": "Werkruimte verwijderen",
   "deny": "Weigeren",
+  "detailsLabel": "Details",
   "descriptionLabel": "Beschrijving",
   "detectedBackend": "Gedetecteerd: {label}",
   "detectedRunners": "Gedetecteerde runners",
@@ -1816,13 +1821,6 @@
   "keybindings": "Sneltoetsen",
   "keybindingsDescription": "Alle sneltoetsen. Sneltoetsen zijn vast en kunnen niet opnieuw worden toegewezen.",
   "killRunning": "Actieve stoppen",
-  "languageDutch": "Nederlands",
-  "languageEnglish": "English",
-  "languageFrench": "Français",
-  "languageGerman": "Deutsch",
-  "languageItalian": "Italiano",
-  "languagePortuguese": "Português",
-  "languageSpanish": "Español",
   "languageSystem": "Systeem",
   "leaveACommentEllipsis": "Reactie achterlaten…",
   "@leaveACommentEllipsis": {
@@ -2322,6 +2320,7 @@
   "openApplicationSettings": "Toepassingsinstellingen openen",
   "openArticlesInApp": "Artikelen in app openen",
   "openInBrowser": "Openen in browser",
+  "openedInYourBrowser": "Geopend in je browser.",
   "openLabel": "Open",
   "openOnGithub": "Openen op GitHub",
   "openStatus": "Open",
@@ -2413,6 +2412,8 @@
   "repoRemovedFromWorkspace": "{name} wordt verwijderd uit deze werkruimte. De lokale bestanden op schijf worden niet aangeraakt.",
   "repoAccessNoticeBody": "De GitHub-inloggegevens van de server kunnen {repos} niet zien. Als een repository bij een organisatie hoort, installeer daar de GitHub App of koppel een token met toegang.",
   "repoAccessNoticeTitle": "{count, plural, =1 {Eén repository is niet toegankelijk} other {{count} repositories zijn niet toegankelijk}}",
+  "repoAccessNoticeSuspendedTitle": "GitHub App-installatie is opgeschort",
+  "repoAccessNoticeSuspendedBody": "Laatst bekende gegevens voor {repos} worden getoond. Hervat de installatie op GitHub, of koppel een token met toegang.",
   "repoNoAccessBadge": "Geen toegang",
   "reportsTo": "Rapporteert aan",
   "reposCount": "Repository's ({count})",
@@ -3827,6 +3828,10 @@
   "agentQuestionSubmit": "Antwoord versturen",
   "agentQuestionFreeformHint": "Typ je antwoord…",
   "agentQuestionAnswerLabel": "Jouw antwoord",
+  "agentQuestionProgress": "Vraag {index} van {count}",
+  "agentQuestionSkip": "Overslaan",
+  "agentQuestionSkippedLabel": "Overgeslagen",
+  "agentQuestionFreeformOptionHint": "Beschrijf het in je eigen woorden…",
   "reviewRequested": "Review aangevraagd",
   "connectGitHubHint": "Log in bij GitHub of voeg een token toe in Instellingen → Jij → Profiel en identiteit → Codehosting",
   "connectGitHubToLoadPrs": "Verbind GitHub om pull requests te laden",
@@ -3837,6 +3842,9 @@
   "prTimelineRequestedReview": "{actor} heeft review aangevraagd van {reviewers}",
   "prTimelineRemovedReviewRequest": "{actor} heeft het reviewverzoek voor {reviewers} verwijderd",
   "prTimelineRequestedAndRemovedReview": "{actor} heeft review aangevraagd van {requested} en het reviewverzoek voor {removed} verwijderd",
+  "prTimelineAddedLabels": "{actor} heeft het {labels} {count, plural, =1{label} other{labels}} toegevoegd",
+  "prTimelineRemovedLabels": "{actor} heeft het {labels} {count, plural, =1{label} other{labels}} verwijderd",
+  "prTimelineAddedAndRemovedLabels": "{actor} heeft het {added} {addedCount, plural, =1{label} other{labels}} toegevoegd en het {removed} {removedCount, plural, =1{label} other{labels}} verwijderd",
   "prTimelineCommitted": "{author} heeft gecommit",
   "prTimelinePushedCommits": "{author} heeft {count, plural, =1{1 commit} other{{count} commits}} gepusht",
   "prTimelineApproved": "{author} heeft deze wijzigingen goedgekeurd",
@@ -3863,6 +3871,7 @@
   "loadingEllipsis": "Laden…",
   "loadingChecks": "Controles laden…",
   "noChecksYet": "Nog geen controles uitgevoerd",
+  "noChangesToReview": "Geen wijzigingen om te beoordelen",
   "checksFailingCount": "{count} mislukt",
   "showMore": "Meer tonen",
   "showLess": "Minder tonen",
@@ -3922,7 +3931,6 @@
   "searchTicketsHint": "Tickets zoeken…",
   "noMatchingTickets": "Geen overeenkomende tickets",
   "clearAll": "Alles wissen",
-  "agentsRunningCount": "{count, plural, =1{1 agent actief} other{{count} agents actief}}",
   "reviewSummary": "{prs, plural, =1{1 PR wacht} other{{prs} PRs wachten}} op je review in {repos, plural, =1{1 repo} other{{repos} repo's}}",
   "manageWorkspacesSubtitle": "Hernoem een werkruimte en wijzig het merkteken — kies er links een om te bewerken.",
   "workspaceCount": "{count, plural, =0{Geen werkruimtes} =1{1 werkruimte} other{{count} werkruimtes}}",
@@ -5434,6 +5442,16 @@
   "sourceControl": "Broncodebeheer",
   "fixFindingTitle": "Herstellen: {location}",
   "openInEditor": "Openen in editor",
+  "regexTesterTitle": "Reguliere expressie testen",
+  "regexTesterHint": "Typ een voorbeeld",
+  "regexMatch": "Overeenkomst",
+  "regexNoMatch": "Geen overeenkomst",
+  "regexInvalidPattern": "Ongeldig patroon",
+  "symbolLookupNone": "Geen definitie in de index of deze pull request",
+  "symbolLookupInDiff": "Gevonden in deze pull request",
+  "symbolLookupFromBase": "Van de basischeckout — de worktree van deze PR is nog niet geïndexeerd",
+  "symbolImplementations": "Implementaties",
+  "symbolCallersCount": "{count} aanroepers",
   "commitMessageHint": "Commitbericht",
   "pushedToPr": "Naar de PR gepusht",
   "pushFailed": "Pushen mislukt",
@@ -5766,13 +5784,6 @@
   "providerGenerationSaved": "Standaardwaarden voor generatie opgeslagen",
   "providerGenerationInvalid": "Controleer de waarden: max. uitvoertokens en top-k moeten positief zijn, temperatuur 0–2, top-p 0–1.",
   "providerGenerationOverridden": "Aangepast",
-  "spaceFlyoutNeedsInput": "Invoer nodig",
-  "spaceFlyoutPreparing": "Voorbereiden",
-  "spaceFlyoutSetupFailed": "Instellen mislukt",
-  "spaceFlyoutSetupStopped": "Instellen gestopt",
-  "spaceFlyoutNeverRun": "Hier heeft nog geen agent gewerkt",
-  "spaceFlyoutContextUsage": "Contextvenster: {used} gebruikt, {percent} vol",
-  "subagentsRunningCount": "{count, plural, =1{1 subagent} other{{count} subagents}}",
   "branchNotPushed": "niet gepusht",
   "branchNotOnRemote": "“{branch}” bestaat alleen in dit gesprek",
   "branchNotOnRemoteHint": "GitHub heeft deze branch nooit gezien, dus een pull request kan hem nog niet gebruiken. Publiceren pusht de commits die al in de worktree staan — niet-gecommitte wijzigingen blijven ongemoeid.",
@@ -7424,6 +7435,14 @@
   "@renameConversation": {
     "description": "Rename a conversation — sidebar row menu item and dialog title"
   },
+  "spaceActions": "Ruimteacties",
+  "@spaceActions": {
+    "description": "Accessible name for the space row overflow menu trigger"
+  },
+  "conversationActions": "Conversatieacties",
+  "@conversationActions": {
+    "description": "Accessible name for the conversation row overflow menu trigger"
+  },
   "editSpaceRepos": "Repositories bewerken",
   "@editSpaceRepos": {
     "description": "Edit a space's repository selection — sidebar row menu item"
@@ -7669,5 +7688,84 @@
   "credentialGateCancelRun": "Run annuleren",
   "credentialGateAccountsTried": "Geprobeerde accounts",
   "credentialGateClaudeSignInHint": "Meld je aan via Instellingen → Adapters → Claude Code, of voer de aanmeldopdracht uit in een terminal. De run pikt het vanzelf op.",
-  "credentialGateOpenSettings": "Instellingen openen"
+  "credentialGateOpenSettings": "Instellingen openen",
+  "selectModel": "Model selecteren",
+  "allModels": "Alle modellen",
+  "noModelsMatchSearch": "Geen modellen komen overeen met je zoekopdracht",
+  "useCustomModelId": "“{id}” gebruiken",
+  "@useCustomModelId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "modelFree": "Gratis",
+  "modelOutputTokens": "{tokens} uitvoer",
+  "@modelOutputTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPricePerMTokens": "{input} invoer / {output} uitvoer per 1M tokens",
+  "@modelPricePerMTokens": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "modelEffortLevels": "Reasoning-inspanning: {levels}",
+  "@modelEffortLevels": {
+    "placeholders": {
+      "levels": {
+        "type": "String"
+      }
+    }
+  },
+  "modelSupportsReasoning": "Ondersteunt reasoning-inspanning",
+  "profileDeliveryMetrics": "Leveringsstatistieken",
+  "profileMetricsSample": "Geanalyseerde PR's: {count}",
+  "profileMergeRate": "Samenvoegpercentage",
+  "profileReviewCoverage": "Reviewdekking",
+  "profilePrSize": "PR-grootte",
+  "profileTimeToMerge": "Tijd tot samenvoegen",
+  "profileMergeTimeTrend": "Trend in samenvoegtijd",
+  "profileWeeklyMedian": "Wekelijkse mediaan, logaritmische schaal",
+  "profilePrOpeningPattern": "Weekdag × uur, lokale tijd",
+  "profileFirstReview": "Tijd tot eerste review",
+  "profileMetricsTruncated": "Percentielen zijn gebaseerd op een beperkte steekproef van de beschikbare pull requests.",
+  "profileLinesChanged": "{count} regels",
+  "profileDurationMinutes": "{count} min",
+  "profileDurationHours": "{count} uur",
+  "profileDurationDaysHours": "{days} d {hours} u",
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "profileTeamMembers": "Leden: {count}",
+  "noPrsByTeamInWorkspace": "Geen pull requests van {team} in deze werkruimte",
+  "profilePrStateFilterLabel": "Pull requests filteren op status",
+  "noProfilePrsMatchSearchHint": "Probeer een andere titel of een ander pull-requestnummer",
+  "rigNetworkUnrestricted": "Netwerk zonder beperkingen",
+  "rigNetworkAllowAllHosts": "Alle hosts toestaan",
+  "rigNetworkBypassTitle": "Alle netwerkhosts toestaan?",
+  "rigNetworkBypassBody": "Hiermee wordt de geïsoleerde omgeving opnieuw gestart en wordt niet-vastgelegd werk erin verwijderd. Daarna kan de gast elke netwerkhost bereiken totdat de omgeving wordt gesloten.",
+  "rigNetworkRestartUnrestricted": "Opnieuw starten zonder beperkingen",
+  "rigNetworkUnrestrictedBody": "Deze geïsoleerde omgeving kan elke netwerkhost bereiken. Sluit deze en open een nieuwe om de standaardbeperkingen te herstellen.",
+  "rigNetworkAlreadyUnrestrictedBody": "Deze Android-emulator beheert het eigen netwerk al. Control Center kan daarom geen lijst met toegestane hosts afdwingen. Opnieuw starten is niet nodig.",
+  "rigClipboardPermissionHostToRigTitle": "Klembord in deze omgeving plakken?",
+  "rigClipboardPermissionHostToRigBody": "Control Center leest het klembord van je apparaat en stuurt de inhoud naar de omgeving. Klembordinhoud kan wachtwoorden of andere geheimen bevatten.",
+  "rigClipboardPermissionRigToHostTitle": "Klembord uit deze omgeving kopiëren?",
+  "rigClipboardPermissionRigToHostBody": "Control Center leest het klembord van de omgeving en vervangt het klembord van je apparaat door de inhoud ervan. Behandel inhoud uit de omgeving als niet-vertrouwd.",
+  "rigClipboardAllowTenMinutes": "10 minuten toestaan",
+  "rigClipboardAlwaysAllow": "Altijd toestaan",
+  "rigClipboardSettingsTitle": "Klembordtoegang",
+  "rigClipboardSettingsHint": "Kies welke klembordoverdrachten zonder vragen mogen worden uitgevoerd. Tijdelijke machtigingen verlopen na 10 minuten.",
+  "rigClipboardAlwaysPasteTitle": "Plakken in omgevingen altijd toestaan",
+  "rigClipboardAlwaysPasteDescription": "Stuur het klembord van dit apparaat zonder vragen naar elke omgeving.",
+  "rigClipboardAlwaysCopyTitle": "Kopiëren uit omgevingen altijd toestaan",
+  "rigClipboardAlwaysCopyDescription": "Plaats klembordinhoud uit elke omgeving zonder vragen op dit apparaat."
 }

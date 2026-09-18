@@ -146,7 +146,11 @@ Widget ccSidebarCollapsibleGroupsUseCase(BuildContext context) {
 /// A state-reporting dot badge beside its label — the badge hugs the text
 /// with a small gap instead of pinning to the trailing gutter, which is how
 /// a status signal (not a count on the row) reads.
-@widgetbook.UseCase(name: 'Badge beside label', type: CcSidebarItem, path: _path)
+@widgetbook.UseCase(
+  name: 'Badge beside label',
+  type: CcSidebarItem,
+  path: _path,
+)
 Widget ccSidebarBadgeBesideLabelUseCase(BuildContext context) {
   final t = context.designSystem;
   return Padding(
@@ -172,6 +176,82 @@ Widget ccSidebarBadgeBesideLabelUseCase(BuildContext context) {
                 badgeBesideLabel: true,
               ),
               const CcSidebarItem(icon: CcIcons.house, label: 'Newsfeed'),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+/// A nested accordion — children sit flush under the parent against a
+/// vertical rail aligned to the parent icon, while selection and hover keep
+/// the solid brand pill / travelling wash of a flat [CcSidebarItem].
+@widgetbook.UseCase(name: 'Nested branch', type: CcSidebar, path: _path)
+Widget ccSidebarNestedBranchUseCase(BuildContext context) {
+  final t = context.ds;
+  Widget chevron({required bool expanded}) => Icon(
+    expanded ? CcIcons.chevronDown : CcIcons.chevronRight,
+    size: 14,
+    color: t.textTertiary,
+  );
+
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: SizedBox(
+      height: 460,
+      child: CcSidebar(
+        children: [
+          CcSidebarGroup(
+            label: 'Workspace',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.messageSquare,
+                label: 'Chat',
+                selected: true,
+                onPressed: () {},
+              ),
+              CcSidebarItem(
+                icon: CcIcons.bot,
+                label: 'Agents',
+                onPressed: () {},
+              ),
+              CcSidebarItem(
+                icon: CcIcons.folder,
+                label: 'Knowledge',
+                onPressed: () {},
+              ),
+            ],
+          ),
+          CcSidebarGroup(
+            label: 'Shared',
+            children: [
+              CcSidebarItem(
+                icon: CcIcons.boxes,
+                label: 'Engineering',
+                badge: chevron(expanded: true),
+                onPressed: () {},
+              ),
+              CcSidebarBranch(
+                children: [
+                  CcSidebarItem(
+                    icon: CcIcons.fileCode,
+                    label: 'API guidelines',
+                    onPressed: () {},
+                  ),
+                  CcSidebarItem(
+                    icon: CcIcons.play,
+                    label: 'Release process',
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+              CcSidebarItem(
+                icon: CcIcons.layers,
+                label: 'Product hub',
+                badge: chevron(expanded: false),
+                onPressed: () {},
+              ),
             ],
           ),
         ],

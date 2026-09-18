@@ -427,6 +427,61 @@ void main() {
       await tester.pump(const Duration(milliseconds: 200));
     });
 
+    testWidgets('editing preserves and can add multiple suggestion fences', (
+      tester,
+    ) async {
+      final controller = _makeController();
+      final thread = controller.create(
+        filePath: 'lib/a.dart',
+        line: 1,
+        side: 'RIGHT',
+        kind: PrInlineThreadKind.suggestion,
+        originalCode: 'old code',
+        suggestedCode: 'first',
+        authorBody:
+            'Choose one:\n\n'
+            '```suggestion\nfirst\n```\n\n'
+            'Or:\n\n'
+            '```suggestion\nsecond\n```',
+      );
+
+      await tester.pumpWidget(
+        _wrap(PrInlineThreadBlock(thread: thread, controller: controller)),
+      );
+      await tester.pump();
+      await tester.tap(find.byIcon(AppIcons.pencil));
+      await tester.pump();
+
+      final fields = find.byType(CcTextField);
+      expect(fields, findsNWidgets(2));
+      expect(
+        tester.widget<CcTextField>(fields.at(0)).controller?.text,
+        'first',
+      );
+      expect(
+        tester.widget<CcTextField>(fields.at(1)).controller?.text,
+        'second',
+      );
+
+      await tester.tap(find.text('Add a suggestion'));
+      await tester.pump();
+      expect(fields, findsNWidgets(3));
+      await tester.enterText(fields.at(0), 'firstEdited');
+      await tester.enterText(fields.at(1), 'secondEdited');
+      await tester.enterText(fields.at(2), 'third');
+      await tester.tap(find.byIcon(AppIcons.arrowUp));
+      await tester.pump();
+
+      expect(
+        controller.threads.single.entries.single.body,
+        'Choose one:\n\n'
+        '```suggestion\nfirstEdited\n```\n\n'
+        'Or:\n\n'
+        '```suggestion\nsecondEdited\n```\n\n'
+        '```suggestion\nthird\n```',
+      );
+    });
+
     testWidgets('suggestion editor has Send button', (tester) async {
       final controller = _makeController();
       final thread = _thread(
@@ -1037,7 +1092,11 @@ void main() {
     testWidgets('selecting an emoji toggles the reaction on the server '
         'comment', (tester) async {
       final repository = _RecordingPrReviewRepository();
-      final controller = _createController((workspaceId: 'ws', repoFullName: 'owner/repo', number: 7));
+      final controller = _createController((
+        workspaceId: 'ws',
+        repoFullName: 'owner/repo',
+        number: 7,
+      ));
 
       await tester.pumpWidget(
         _wrap(

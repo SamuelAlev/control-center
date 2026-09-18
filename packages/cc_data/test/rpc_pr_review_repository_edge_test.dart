@@ -329,6 +329,15 @@ void main() {
       final args = host.lastCall('pr_review.updatePullRequest')!.args;
       expect(args['title'], 'T');
       expect(args['body'], 'B');
+
+      await r.updateIssueComment(
+        prNumber: 42,
+        commentId: 9,
+        body: '- [x] done',
+      );
+      final commentArgs = host.lastCall('pr_review.updateIssueComment')!.args;
+      expect(commentArgs['comment_id'], 9);
+      expect(commentArgs['body'], '- [x] done');
     });
 
     group('stacks', () {

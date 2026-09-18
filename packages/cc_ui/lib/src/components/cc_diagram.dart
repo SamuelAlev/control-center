@@ -1,3 +1,6 @@
+// RTL carve-out: sequence-diagram lanes are a diagram convention, not chrome —
+// participants and arrows read left→right in every locale (same rule as the
+// mermaid engine). See "RTL & directionality" in AGENTS.md.
 import 'dart:math' as math;
 
 import 'package:cc_ui/src/theme/cc_theme.dart';

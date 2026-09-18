@@ -81,10 +81,11 @@
   "guardrailClassWorkspaceMutation": "Change workspace structure",
   "guardrailClassEnclosureControl": "Drive an enclosure (rig)",
   "navRigs": "Rigs",
-  "rigsUnsupportedServer": "This server cannot host enclosed VMs. Rigs need a hypervisor on the machine running cc_server.",
+  "rigsUnsupportedServer": "This server cannot host any rig surfaces. Check the host requirements for the machine you want to use.",
   "rigSurfaceComputer": "Computer",
   "rigSurfaceBrowser": "Browser",
-  "rigSurfaceMobile": "Mobile",
+  "rigSurfaceAndroid": "Android",
+  "rigSurfaceIosSimulator": "iOS Simulator",
   "@rigTabBrowserEngine": {
     "description": "Rig tab label naming the browser engine.",
     "placeholders": {
@@ -127,6 +128,8 @@
   "rigEgressNotEnforced": "Network is not enclosed on this backend — it manages its own connectivity.",
   "rigStartMachine": "Start the machine",
   "rigStartHint": "Starts a disposable VM you and your agents share for this conversation. It is destroyed when it closes, and nothing in it touches your computer.",
+  "rigStartAndroidHint": "Connects to an Android emulator already running on the server. Network access is not enclosed.",
+  "rigStartIosHint": "Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.",
   "rigStopMachine": "Stop the machine",
   "rigSurfaceUnavailable": "This server cannot host this kind of machine.",
   "rigTabNeedsConversation": "Open a conversation first — a machine belongs to one, so you and your agents are looking at the same screen.",
@@ -134,9 +137,9 @@
   "@ideMenuSectionTools": {
     "description": "Heading over the tool rows of the editor's [+] menu."
   },
-  "ideMenuSectionVirtualMachine": "Virtual machine",
-  "@ideMenuSectionVirtualMachine": {
-    "description": "Heading over the enclosed-machine rows of the editor's [+] menu. It is what lets those rows drop their '(VM)' suffix."
+  "ideMenuSectionMachines": "Machines",
+  "@ideMenuSectionMachines": {
+    "description": "Heading over the machine rows of the editor's [+] menu. It is what lets those rows drop their '(VM)' suffix."
   },
   "ideMenuSectionReopen": "Reopen",
   "@ideMenuSectionReopen": {
@@ -152,15 +155,16 @@
   },
   "rigMenuComputer": "Computer",
   "@rigMenuComputer": {
-    "description": "Desktop rig, named inside the [+] menu's VIRTUAL MACHINE group — no '(VM)' suffix because the heading already says it. The TAB keeps rigTabComputer."
+    "description": "Desktop rig, named inside the [+] menu's MACHINES group — no '(VM)' suffix because the heading already says it. The TAB keeps rigTabComputer."
   },
   "rigMenuBrowser": "Browser",
   "@rigMenuBrowser": {
-    "description": "Browser rig with no named engine, inside the [+] menu's VIRTUAL MACHINE group. The TAB keeps rigTabBrowser."
+    "description": "Browser rig with no named engine, inside the [+] menu's MACHINES group. The TAB keeps rigTabBrowser."
   },
-  "rigMenuMobile": "Phone",
-  "@rigMenuMobile": {
-    "description": "Android rig, inside the [+] menu's VIRTUAL MACHINE group. The TAB keeps rigTabMobile."
+  "rigMenuAndroid": "Android",
+  "rigMenuIosSimulator": "iOS Simulator",
+  "@rigMenuAndroid": {
+    "description": "Android rig, inside the [+] menu's MACHINES group. The TAB keeps rigTabMobile."
   },
   "rigLabelNumbered": "{label} {suffix}",
   "ideCloseKeepTitle": "Close {name}?",
@@ -213,6 +217,9 @@
   },
   "rigsSettingsSubtitle": "What this server can boot, the base images it needs, and the machines running now",
   "rigsCapabilitiesTitle": "This server",
+  "rigInstallIosAutomation": "Install iOS automation bridge",
+  "rigInstallingIosAutomation": "Installing iOS automation bridge…",
+  "rigIosAutomationInstalled": "iOS automation bridge installed",
   "rigsImagesTitle": "Base images",
   "rigsImagesHint": "Every rig boots one of these read-only images. Each session writes to a throwaway overlay, so one rig can never change what the next one starts from.",
   "rigsRunningTitle": "Running now",
@@ -807,16 +814,7 @@
   "remoteControlAndDevices": "Remote control & devices",
   "remoteControlAndDevicesSettingsDescription": "Pair phones and configure the remote-control server.",
   "voiceAndMeetingsSettingsDescription": "The speech and diarization models this server hosts.",
-  "filterSettingsHint": "Filter settings",
   "needsSetupLabel": "Needs setup",
-  "noSettingsMatch": "No settings match \"{query}\"",
-  "@noSettingsMatch": {
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
   "collapseSidebar": "Collapse sidebar",
   "expandSidebar": "Expand sidebar",
   "filterSpacesHint": "Filter spaces",
@@ -840,7 +838,6 @@
   "blocked": "Blocked",
   "idle": "Idle",
   "noRunsYet": "No runs yet",
-  "lastActiveAgo": "Active {duration} ago",
   "copyPath": "Copy path",
   "copyRelativePath": "Copy relative path",
   "nameRequired": "Name is required",
@@ -852,14 +849,6 @@
     "description": "Total agent runs in the last six months",
     "placeholders": {
       "count": {
-        "type": "String"
-      }
-    }
-  },
-  "@lastActiveAgo": {
-    "description": "Relative time since an agent was last active",
-    "placeholders": {
-      "duration": {
         "type": "String"
       }
     }
@@ -1748,14 +1737,11 @@
   "@agent": {
     "description": "Agent"
   },
-  "agentCount": "{count} agent{plural, plural, =1{} other{s}}",
+  "agentCount": "{count, plural, =1{1 agent} other{{count} agents}}",
   "@agentCount": {
     "description": "Agent count label",
     "placeholders": {
       "count": {
-        "type": "int"
-      },
-      "plural": {
         "type": "int"
       }
     }
@@ -1911,6 +1897,7 @@
     "description": "Approve"
   },
   "approved": "Approved",
+  "articleNoun": "Article",
   "articlesSubscribed": "Articles across your subscribed feeds.",
   "askAi": "Ask AI",
   "@askAi": {
@@ -2370,6 +2357,7 @@
   "@deny": {
     "description": "Deny"
   },
+  "detailsLabel": "Details",
   "descriptionLabel": "Description",
   "@descriptionLabel": {
     "description": "Description"
@@ -3173,34 +3161,6 @@
     "description": "All keyboard shortcuts. Shortcuts are fixed and cannot be reassigned."
   },
   "killRunning": "Kill running",
-  "languageDutch": "Nederlands",
-  "@languageDutch": {
-    "description": "Dutch language option"
-  },
-  "languageEnglish": "English",
-  "@languageEnglish": {
-    "description": "English language option"
-  },
-  "languageFrench": "Français",
-  "@languageFrench": {
-    "description": "French language option"
-  },
-  "languageGerman": "Deutsch",
-  "@languageGerman": {
-    "description": "German language option"
-  },
-  "languageItalian": "Italiano",
-  "@languageItalian": {
-    "description": "Italian language option"
-  },
-  "languagePortuguese": "Português",
-  "@languagePortuguese": {
-    "description": "Portuguese language option"
-  },
-  "languageSpanish": "Español",
-  "@languageSpanish": {
-    "description": "Spanish language option"
-  },
   "languageSystem": "System",
   "@languageSystem": {
     "description": "Option to use the system locale"
@@ -3690,6 +3650,7 @@
   "openApplicationSettings": "Open application settings",
   "openArticlesInApp": "Open articles in app",
   "openInBrowser": "Open in browser",
+  "openedInYourBrowser": "Opened in your browser.",
   "openLabel": "Open",
   "openOnGithub": "Open on GitHub",
   "openStatus": "Open",
@@ -3889,6 +3850,19 @@
     "placeholders": {
       "count": {
         "type": "int"
+      }
+    }
+  },
+  "repoAccessNoticeSuspendedTitle": "GitHub App installation suspended",
+  "@repoAccessNoticeSuspendedTitle": {
+    "description": "Title of the notice when the GitHub App installation covering linked repos is suspended"
+  },
+  "repoAccessNoticeSuspendedBody": "Showing last known data for {repos}. Resume the installation on GitHub, or connect a token that has access.",
+  "@repoAccessNoticeSuspendedBody": {
+    "description": "Body telling the operator the lists are cached because the GitHub App installation is suspended",
+    "placeholders": {
+      "repos": {
+        "type": "String"
       }
     }
   },
@@ -6326,6 +6300,21 @@
   "agentQuestionSubmit": "Submit answer",
   "agentQuestionFreeformHint": "Type your answer…",
   "agentQuestionAnswerLabel": "Your answer",
+  "agentQuestionProgress": "Question {index} of {count}",
+  "@agentQuestionProgress": {
+    "description": "Caption on an ask-user card locating this question in a batch",
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agentQuestionSkip": "Skip",
+  "agentQuestionSkippedLabel": "Skipped",
+  "agentQuestionFreeformOptionHint": "Describe in your own words…",
   "reviewRequested": "Review requested",
   "connectGitHubHint": "Sign in to GitHub or add a token in Settings → You → Profile & identity → Code hosting",
   "connectGitHubToLoadPrs": "Connect GitHub to load pull requests",
@@ -6396,6 +6385,57 @@
       },
       "removed": {
         "type": "String"
+      }
+    }
+  },
+  "prTimelineAddedLabels": "{actor} added the {labels} {count, plural, =1{label} other{labels}}",
+  "@prTimelineAddedLabels": {
+    "description": "Activity feed: one or more labels added to the pull request",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "labels": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineRemovedLabels": "{actor} removed the {labels} {count, plural, =1{label} other{labels}}",
+  "@prTimelineRemovedLabels": {
+    "description": "Activity feed: one or more labels removed from the pull request",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "labels": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "prTimelineAddedAndRemovedLabels": "{actor} added the {added} {addedCount, plural, =1{label} other{labels}} and removed the {removed} {removedCount, plural, =1{label} other{labels}}",
+  "@prTimelineAddedAndRemovedLabels": {
+    "description": "Activity feed: grouped label add and remove events by the same actor",
+    "placeholders": {
+      "actor": {
+        "type": "String"
+      },
+      "added": {
+        "type": "String"
+      },
+      "addedCount": {
+        "type": "int"
+      },
+      "removed": {
+        "type": "String"
+      },
+      "removedCount": {
+        "type": "int"
       }
     }
   },
@@ -6493,6 +6533,7 @@
   "loadingEllipsis": "Loading…",
   "loadingChecks": "Loading checks…",
   "noChecksYet": "No checks have run yet",
+  "noChangesToReview": "No changes to review",
   "checksFailingCount": "{count} failing",
   "@checksFailingCount": {
     "description": "Sidebar checks summary: number of failing checks",
@@ -6585,14 +6626,6 @@
   "searchTicketsHint": "Search tickets…",
   "noMatchingTickets": "No tickets match",
   "clearAll": "Clear all",
-  "agentsRunningCount": "{count, plural, =1{1 agent running} other{{count} agents running}}",
-  "@agentsRunningCount": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "@blockedCountLabel": {
     "placeholders": {
       "count": {
@@ -9121,6 +9154,23 @@
     }
   },
   "openInEditor": "Open in editor",
+  "regexTesterTitle": "Test regular expression",
+  "regexTesterHint": "Type a sample",
+  "regexMatch": "Match",
+  "regexNoMatch": "No match",
+  "regexInvalidPattern": "Invalid pattern",
+  "symbolLookupNone": "No definition in the index or this pull request",
+  "symbolLookupInDiff": "Found in this pull request",
+  "symbolLookupFromBase": "From the base checkout — this PR's worktree isn't indexed yet",
+  "symbolImplementations": "Implementations",
+  "symbolCallersCount": "{count} callers",
+  "@symbolCallersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "@uncommittedChanges": {
     "placeholders": {
       "count": {
@@ -9193,6 +9243,8 @@
   "showFileList": "Show file list",
   "searchInFilesHintField": "Search in files…",
   "searchInFilesHint": "Search across the pull request's files",
+  "searchInWholeRepo": "Search in the whole repo",
+  "searchInThisPullRequest": "Search in this pull request",
   "searchNoResults": "No results found",
   "searchResultsCount": "{count, plural, =1{1 result} other{{count} results}} in {files, plural, =1{1 file} other{{files} files}}",
   "@searchResultsCount": {
@@ -9631,32 +9683,6 @@
   "providerGenerationSaved": "Generation defaults saved",
   "providerGenerationInvalid": "Check the values: max output tokens and top-k must be positive, temperature 0–2, top-p 0–1.",
   "providerGenerationOverridden": "Overridden",
-  "spaceFlyoutNeedsInput": "Needs input",
-  "spaceFlyoutPreparing": "Preparing",
-  "spaceFlyoutSetupFailed": "Setup failed",
-  "spaceFlyoutSetupStopped": "Setup stopped",
-  "spaceFlyoutNeverRun": "No agent has run here yet",
-  "spaceFlyoutContextUsage": "Context window {used} used, {percent} full",
-  "subagentsRunningCount": "{count, plural, =1{1 subagent} other{{count} subagents}}",
-  "@spaceFlyoutContextUsage": {
-    "description": "Accessible description of an agent's context-window meter in the space hover flyout.",
-    "placeholders": {
-      "used": {
-        "type": "String"
-      },
-      "percent": {
-        "type": "String"
-      }
-    }
-  },
-  "@subagentsRunningCount": {
-    "description": "Count of subagent runs in flight, shown beside the agent count in the space hover flyout.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "branchNotPushed": "not pushed",
   "branchNotOnRemote": "“{branch}” only exists in this conversation",
   "@branchNotOnRemote": {
@@ -12162,6 +12188,14 @@
   "@renameConversation": {
     "description": "Rename a conversation — sidebar row menu item and dialog title"
   },
+  "spaceActions": "Space actions",
+  "@spaceActions": {
+    "description": "Accessible name for the space row overflow menu trigger"
+  },
+  "conversationActions": "Conversation actions",
+  "@conversationActions": {
+    "description": "Accessible name for the conversation row overflow menu trigger"
+  },
   "editSpaceRepos": "Edit repositories",
   "@editSpaceRepos": {
     "description": "Edit a space's repository selection — sidebar row menu item"
@@ -12991,5 +13025,130 @@
   "credentialGateOpenSettings": "Open settings",
   "@credentialGateOpenSettings": {
     "description": "Button that opens the settings screen"
-  }
+  },
+  "selectModel": "Select model",
+  "@selectModel": {
+    "description": "Title of the model browser dialog and hint of the model picker field"
+  },
+  "allModels": "All models",
+  "@allModels": {
+    "description": "Model browser rail item that clears the provider filter"
+  },
+  "noModelsMatchSearch": "No models match your search",
+  "@noModelsMatchSearch": {
+    "description": "Model browser footer when the search matches nothing"
+  },
+  "useCustomModelId": "Use “{id}”",
+  "@useCustomModelId": {
+    "description": "Model browser row offering the raw search text as a custom model id",
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "modelFree": "Free",
+  "@modelFree": {
+    "description": "Price shown for a model with zero cost on both lanes"
+  },
+  "modelOutputTokens": "{tokens} output",
+  "@modelOutputTokens": {
+    "description": "Compact output-token ceiling, e.g. '131k output'",
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPricePerMTokens": "{input} in / {output} out per 1M tokens",
+  "@modelPricePerMTokens": {
+    "description": "Model price breakdown, e.g. '$1.40 in / $4.40 out per 1M tokens'",
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "modelEffortLevels": "Reasoning effort: {levels}",
+  "@modelEffortLevels": {
+    "description": "The reasoning effort levels a model accepts, e.g. 'Reasoning effort: Low · Medium'",
+    "placeholders": {
+      "levels": {
+        "type": "String"
+      }
+    }
+  },
+  "modelSupportsReasoning": "Supports reasoning effort",
+  "@modelSupportsReasoning": {
+    "description": "Tooltip on the icon marking a model with a reasoning-effort control"
+  },
+  "profileDeliveryMetrics": "Delivery metrics",
+  "profileMetricsSample": "PRs analyzed: {count}",
+  "@profileMetricsSample": {"description": "Number of pull requests sampled for profile metrics", "placeholders": {"count": {"type": "int"}}},
+  "profileMergeRate": "Merge rate",
+  "profileReviewCoverage": "Review coverage",
+  "profilePrSize": "PR size",
+  "profileTimeToMerge": "Time to merge",
+  "profileMergeTimeTrend": "Merge time trend",
+  "profileWeeklyMedian": "Weekly median, log scale",
+  "profilePrOpeningPattern": "Weekday × hour, local time",
+  "profileFirstReview": "Time to first review",
+  "profileMetricsTruncated": "Percentiles use a limited sample of the available pull requests.",
+  "profileLinesChanged": "{count} lines",
+  "@profileLinesChanged": {"description": "Compact count of lines changed", "placeholders": {"count": {"type": "String"}}},
+  "profileDurationMinutes": "{count} min",
+  "@profileDurationMinutes": {"description": "Compact duration in minutes", "placeholders": {"count": {"type": "int"}}},
+  "profileDurationHours": "{count} hr",
+  "@profileDurationHours": {"description": "Compact duration in hours", "placeholders": {"count": {"type": "int"}}},
+  "profileDurationDaysHours": "{days}d {hours}h",
+  "@profileDurationDaysHours": {"description": "Compact duration in days and hours", "placeholders": {"days": {"type": "int"}, "hours": {"type": "int"}}},
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "@profilePercentiles": {"description": "Median and 90th percentile values", "placeholders": {"median": {"type": "String"}, "p90": {"type": "String"}}},
+  "profileTeamMembers": "Members: {count}",
+  "@profileTeamMembers": {"description": "Team member count", "placeholders": {"count": {"type": "int"}}},
+  "noPrsByTeamInWorkspace": "No pull requests by {team} in this workspace",
+  "@noPrsByTeamInWorkspace": {"description": "Empty state for a team with no workspace pull requests", "placeholders": {"team": {"type": "String"}}},
+  "profilePrStateFilterLabel": "Filter pull requests by state",
+  "noProfilePrsMatchSearchHint": "Try another title or pull request number",
+  "rigNetworkUnrestricted": "Network unrestricted",
+  "@rigNetworkUnrestricted": {"description": "Enclosure network security control"},
+  "rigNetworkAllowAllHosts": "Allow all hosts",
+  "@rigNetworkAllowAllHosts": {"description": "Enclosure network security control"},
+  "rigNetworkBypassTitle": "Allow every network host?",
+  "@rigNetworkBypassTitle": {"description": "Enclosure network security control"},
+  "rigNetworkBypassBody": "This restarts the enclosure and discards uncommitted work inside it. The guest can then reach any network host until it is closed.",
+  "@rigNetworkBypassBody": {"description": "Enclosure network security control"},
+  "rigNetworkRestartUnrestricted": "Restart unrestricted",
+  "@rigNetworkRestartUnrestricted": {"description": "Enclosure network security control"},
+  "rigNetworkUnrestrictedBody": "This enclosure can reach every network host. Close it and open a new one to restore the default restrictions.",
+  "@rigNetworkUnrestrictedBody": {"description": "Enclosure network security control"},
+  "rigNetworkAlreadyUnrestrictedBody": "This Android emulator already manages its own networking, so Control Center cannot enforce a per-host allowlist. No restart is needed.",
+  "@rigNetworkAlreadyUnrestrictedBody": {"description": "Enclosure network security control"},
+  "rigClipboardPermissionHostToRigTitle": "Paste clipboard into this enclosure?",
+  "@rigClipboardPermissionHostToRigTitle": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardPermissionHostToRigBody": "Control Center will read your device clipboard and send its contents to the enclosure. Clipboard content may contain passwords or other secrets.",
+  "@rigClipboardPermissionHostToRigBody": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardPermissionRigToHostTitle": "Copy clipboard out of this enclosure?",
+  "@rigClipboardPermissionRigToHostTitle": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardPermissionRigToHostBody": "Control Center will read the enclosure clipboard and replace your device clipboard with its contents. Treat content from the enclosure as untrusted.",
+  "@rigClipboardPermissionRigToHostBody": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardAllowTenMinutes": "Allow for 10 minutes",
+  "@rigClipboardAllowTenMinutes": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardAlwaysAllow": "Always allow",
+  "@rigClipboardAlwaysAllow": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardSettingsTitle": "Clipboard access",
+  "@rigClipboardSettingsTitle": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardSettingsHint": "Choose which clipboard transfers can run without asking. Temporary permissions expire after 10 minutes.",
+  "@rigClipboardSettingsHint": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardAlwaysPasteTitle": "Always allow paste into enclosures",
+  "@rigClipboardAlwaysPasteTitle": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardAlwaysPasteDescription": "Send this device's clipboard to any enclosure without asking.",
+  "@rigClipboardAlwaysPasteDescription": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardAlwaysCopyTitle": "Always allow copy from enclosures",
+  "@rigClipboardAlwaysCopyTitle": {"description": "Rig clipboard permission and settings"},
+  "rigClipboardAlwaysCopyDescription": "Put clipboard content from any enclosure on this device without asking.",
+  "@rigClipboardAlwaysCopyDescription": {"description": "Rig clipboard permission and settings"}
 }

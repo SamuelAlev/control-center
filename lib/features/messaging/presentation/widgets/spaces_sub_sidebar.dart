@@ -11,15 +11,15 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// The spaces directory's contextual sub-sidebar: a settings-like panel
-/// (title row + name filter on top) listing every space of the active
-/// workspace, shown next to the content area on `/spaces` routes while the
-/// global sidebar is collapsed to its icon-only rail. (In the expanded sidebar
-/// the inline [ConversationsSidebarSection] already carries the space list,
-/// so mounting both would duplicate it.)
+/// The spaces directory's contextual sub-sidebar: a title row plus a name
+/// filter on top, listing every space of the active workspace, shown next to
+/// the content area on `/spaces` routes while the global sidebar is collapsed
+/// to its icon-only rail. (In the expanded sidebar the inline
+/// [ConversationsSidebarSection] already carries the space list, so mounting
+/// both would duplicate it.)
 ///
 /// Rows reuse [SpaceSidebarItem], so live status, unread dots, PR badges,
-/// and the delete affordances behave exactly like the global sidebar's list;
+/// and the overflow menu behave exactly like the global sidebar's list;
 /// tapping a row navigates to that space ([spaceRoute]).
 class SpacesSubSidebar extends ConsumerStatefulWidget {
   /// Creates a [SpacesSubSidebar].
@@ -30,8 +30,7 @@ class SpacesSubSidebar extends ConsumerStatefulWidget {
 }
 
 class _SpacesSubSidebarState extends ConsumerState<SpacesSubSidebar> {
-  /// Free-text filter narrowing the space list by name (mirrors the
-  /// settings sub-sidebar's category filter).
+  /// Free-text filter narrowing the space list by name.
   final TextEditingController _filterController = TextEditingController();
   String _filter = '';
 

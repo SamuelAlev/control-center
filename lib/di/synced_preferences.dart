@@ -7,6 +7,7 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/meetings/providers/meeting_auto_detect_provider.dart';
+import 'package:control_center/features/rigs/providers/rig_clipboard_permissions.dart';
 import 'package:control_center/features/settings/providers/editor_preferences_provider.dart';
 import 'package:control_center/features/vscode_theme/providers/vscode_theme_providers.dart';
 
@@ -89,6 +90,17 @@ List<SyncedPreference> buildSyncedPreferences() => [
   SyncedPreference(
     meetingAutoDetectKey,
     onPulled: (ref) => ref.invalidate(meetingAutoDetectEnabledProvider),
+  ),
+
+  // Clipboard boundary decisions are personal security preferences. The
+  // temporary ten-minute grants remain process-local and never enter sync.
+  SyncedPreference(
+    rigClipboardHostToRigAlwaysKey,
+    onPulled: (ref) => ref.invalidate(rigClipboardPreferencesProvider),
+  ),
+  SyncedPreference(
+    rigClipboardRigToHostAlwaysKey,
+    onPulled: (ref) => ref.invalidate(rigClipboardPreferencesProvider),
   ),
   // An imported VS Code colour theme is the largest legitimate payload here
   // (50-200 KB), so it carries a raised ceiling rather than the default.

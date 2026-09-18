@@ -30,10 +30,6 @@ const List<String> kBaselineAllowedDomains = [
   'bedrock.*.amazonaws.com',
   'bedrock-runtime.*.amazonaws.com',
 
-  // OpenCode
-  'opencode.ai',
-  'api.opencode.ai',
-
   // Amp
   'ampcode.com',
   '*.ampcode.com',

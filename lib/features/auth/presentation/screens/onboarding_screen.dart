@@ -10,8 +10,9 @@ import 'package:control_center/features/auth/presentation/widgets/onboarding_ste
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/sandboxing/presentation/onboarding_step_sandbox.dart';
+import 'package:control_center/features/settings/presentation/widgets/field_placeholder.dart';
 import 'package:control_center/features/settings/presentation/widgets/harness_provider_login.dart';
-import 'package:control_center/features/settings/presentation/widgets/model_select.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/features/settings/providers/adapter_preferences_providers.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
@@ -20,7 +21,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -254,7 +255,7 @@ class _StepOne extends StatelessWidget {
     return OnboardingStepLayout(
       content: const ApiKeysPanel(),
       footer: Align(
-        alignment: Alignment.centerRight,
+        alignment: AlignmentDirectional.centerEnd,
         child: CcButton(
           onPressed: isAuthed ? onContinue : null,
           child: Text(l10n.continueLabel),
@@ -303,40 +304,43 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
   String? _selectedAdapterId;
   String? _selectedModelId;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final persisted = ref.read(defaultChatAdapterProvider);
-      final detected = ref.read(detectedAdaptersProvider);
-      final found = detected.where((d) => d.isFound).toList();
-
-      if (_selectedAdapterId != null) {
-        return;
-      }
-
-      setState(() {
-        _selectedAdapterId =
-            persisted ?? (found.isNotEmpty ? found.first.adapter.id : null);
-      });
-      final persistedModel = ref.read(defaultChatModelProvider);
-      if (persistedModel != null && _selectedModelId == null) {
-        setState(() => _selectedModelId = persistedModel);
-      }
-    });
+  /// The runner to show: an explicit pick, else a persisted one that is still
+  /// installed, else the built-in loop. The built-in loop is always found
+  /// (no binary), so waiting on Claude Code's `--version` must not hide it.
+  String? _resolvedAdapterId(List<DetectedAdapter> found) {
+    if (_selectedAdapterId != null) {
+      return _selectedAdapterId;
+    }
+    if (found.isEmpty) {
+      return null;
+    }
+    final ids = {for (final d in found) d.adapter.id};
+    final persisted = ref.read(defaultChatAdapterProvider);
+    if (persisted != null && ids.contains(persisted)) {
+      return persisted;
+    }
+    if (ids.contains(builtInAdapter.id)) {
+      return builtInAdapter.id;
+    }
+    return found.first.adapter.id;
   }
 
   @override
   Widget build(BuildContext context) {
     final detected = ref.watch(detectedAdaptersProvider);
     final found = detected.where((d) => d.isFound).toList();
-    final anyChecking = detected.any(
+    final stillChecking = detected.any(
       (d) => d.status == DetectionStatus.checking,
     );
-    final theme = Theme.of(context);
+    final adapterId = _resolvedAdapterId(found);
+    final persistedAdapter = ref.read(defaultChatAdapterProvider);
+    final persistedModel = ref.read(defaultChatModelProvider);
+    final modelId =
+        _selectedModelId ??
+        (adapterId != null && adapterId == persistedAdapter
+            ? persistedModel
+            : null);
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final tokens = context.designSystem;
     final l10n = AppLocalizations.of(context);
     final adapterItems = <String, String>{
@@ -344,9 +348,7 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
     };
 
     final canContinue =
-        _selectedAdapterId != null &&
-        _selectedModelId != null &&
-        _selectedModelId!.isNotEmpty;
+        adapterId != null && modelId != null && modelId.isNotEmpty;
 
     return OnboardingStepLayout(
       content: Column(
@@ -361,12 +363,12 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
             ),
           ),
           const SizedBox(height: 8),
-          if (anyChecking) ...[
+          if (found.isEmpty && stillChecking) ...[
             const Center(child: CcSpinner()),
             const SizedBox(height: 8),
             Center(
               child: Text(
-                'Checking for installed runners...',
+                l10n.detectingAdapters,
                 style: CcTypography.caption.copyWith(
                   color: tokens?.textTertiary,
                 ),
@@ -378,13 +380,12 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
                 Icon(
                   AppIcons.alertTriangle,
                   size: 16,
-                  color: theme.colorScheme.error,
+                  color: t.textErrorPrimary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'No adapter detected. Install Pi to continue:\n'
-                    'npm install -g @anthropic/pi',
+                    l10n.noRunnersDetected,
                     style: CcTypography.caption.copyWith(
                       color: tokens?.textTertiary,
                     ),
@@ -406,7 +407,7 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
                 for (final entry in adapterItems.entries)
                   CcSelectOption(value: entry.value, label: entry.key),
               ],
-              value: _selectedAdapterId,
+              value: adapterId,
               hintText: l10n.selectRunner,
               onChanged: (id) {
                 setState(() {
@@ -421,7 +422,7 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
           // The built-in runner serves its model list live from the providers
           // the user is logged into — until one is connected the model dropdown
           // is empty, so the login flow happens right here.
-          if (_selectedAdapterId == 'cc-harness') ...[
+          if (adapterId == builtInAdapter.id) ...[
             Text(
               l10n.providerLabel,
               style: CcTypography.caption.copyWith(
@@ -434,8 +435,8 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
             const SizedBox(height: 16),
           ],
 
-          // Model autocomplete.
-          if (_selectedAdapterId != null) ...[
+          // Model picker (opens the model browser dialog).
+          if (adapterId != null) ...[
             Text(
               l10n.modelLabel,
               style: CcTypography.caption.copyWith(
@@ -444,9 +445,9 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
               ),
             ),
             const SizedBox(height: 8),
-            ModelSelect(
-              adapterId: _selectedAdapterId,
-              selectedModelId: _selectedModelId,
+            ModelPickerField(
+              adapterId: adapterId,
+              selectedModelId: modelId,
               onChange: (id) => setState(() => _selectedModelId = id),
             ),
           ],
@@ -465,16 +466,16 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
                 ? () async {
                     await ref
                         .read(defaultChatAdapterProvider.notifier)
-                        .set(_selectedAdapterId);
+                        .set(adapterId);
                     await ref
                         .read(defaultChatModelProvider.notifier)
-                        .set(_selectedModelId);
+                        .set(modelId);
                     await ref
                         .read(shortTaskAdapterProvider.notifier)
-                        .set(_selectedAdapterId);
+                        .set(adapterId);
                     await ref
                         .read(shortTaskModelProvider.notifier)
-                        .set(_selectedModelId);
+                        .set(modelId);
                     // Back-patch every agent seeded before the adapter prefs
                     // existed (onboarding step 2 creates the workspace, which
                     // seeds the CEO *and* the four specialists; the adapter is
@@ -493,10 +494,7 @@ class _StepAdapterState extends ConsumerState<_StepAdapter> {
                       for (final a in agents) {
                         if (a.adapterId == null || a.modelId == null) {
                           await repo.upsert(
-                            a.copyWith(
-                              adapterId: _selectedAdapterId,
-                              modelId: _selectedModelId,
-                            ),
+                            a.copyWith(adapterId: adapterId, modelId: modelId),
                           );
                         }
                       }

@@ -58,16 +58,24 @@ class RigStreamUnavailable implements Exception {
   String toString() => 'RigStreamUnavailable($code): $message';
 }
 
-/// The enclosure control surface: probe, open, drive, watch, close.
+/// The enclosure control surface: probe, install host prerequisites, open,
+/// drive, watch and close.
 ///
-/// One implementation per backend: local QEMU for the desktop surface, the
-/// smolvm microVM for exec and browser. Everything workspace-scoped takes a
-/// required `workspaceId` — it is both the isolation boundary and what picks
-/// the database file.
+/// Backends include local QEMU for the desktop surface, smolvm for exec and
+/// browser, and host-managed Android/iOS simulators. Everything
+/// workspace-scoped takes a required `workspaceId`: it is both the isolation
+/// boundary and what picks the database file.
 abstract interface class RigPort {
   /// What this host can host, right now. Cheap: a PATH probe and a stat, never
   /// a download, because settings calls it on open.
   Future<RigCapabilities> probe();
+
+  /// Installs one pinned host-side setup artifact.
+  ///
+  /// The closed [action] vocabulary prevents callers from supplying a URL,
+  /// path, or checksum. Implementations re-probe platform prerequisites before
+  /// downloading.
+  Future<void> installBackendSetup(RigBackendSetupAction action);
 
   /// Boots a rig in [workspaceId] per [spec], attributed to [openedBy].
   ///
@@ -262,6 +270,11 @@ abstract interface class RigPort {
     required String imageId,
     required String sourcePath,
   });
+
+  /// Deletes the installed artifacts for [imageId].
+  ///
+  /// Throws when the image is unknown or is not installed.
+  Future<void> removeImage(String imageId);
 
   /// Tears down every rig this port owns (host shutdown).
   ///

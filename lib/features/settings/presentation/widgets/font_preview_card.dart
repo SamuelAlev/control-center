@@ -1,8 +1,9 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
+import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/core/theme/system_font_loader.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Whether the preview is for an app (UI) font or a code (monospace) font.
 enum FontContext {
@@ -98,13 +99,11 @@ class _FontPreviewCardState extends State<FontPreviewCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final tokens = resolveDesignTokens(context);
     final bg =
-        widget.backgroundColor ??
-        theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+        widget.backgroundColor ?? tokens.bgTertiary.withValues(alpha: 0.5);
     final border =
-        widget.borderColor ??
-        theme.colorScheme.outlineVariant.withValues(alpha: 0.5);
+        widget.borderColor ?? tokens.borderSecondary.withValues(alpha: 0.5);
 
     if (_isLoading) {
       return Container(
@@ -120,7 +119,7 @@ class _FontPreviewCardState extends State<FontPreviewCard> {
 
     final content = widget.context == FontContext.app
         ? _buildAppPreview()
-        : _buildCodePreview(theme);
+        : _buildCodePreview(tokens);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -155,22 +154,22 @@ class _FontPreviewCardState extends State<FontPreviewCard> {
     );
   }
 
-  Widget _buildCodePreview(ThemeData theme) {
-    final removedStyle = _buildStyle(13, color: Colors.red.shade400);
-    final addedStyle = _buildStyle(13, color: Colors.green.shade400);
-    final neutralStyle = _buildStyle(13, color: theme.colorScheme.onSurface);
+  Widget _buildCodePreview(DesignSystemTokens tokens) {
+    final removedStyle = _buildStyle(13, color: tokens.danger);
+    final addedStyle = _buildStyle(13, color: tokens.success);
+    final neutralStyle = _buildStyle(13, color: tokens.textPrimary);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _DiffLine(
           prefix: '-',
-          prefixColor: Colors.red.shade400,
+          prefixColor: tokens.danger,
           text: 'const oldValue = computeLegacy(input);',
           style: removedStyle,
         ),
         _DiffLine(
           prefix: '+',
-          prefixColor: Colors.green.shade400,
+          prefixColor: tokens.success,
           text: 'const newValue = computeModern(input);',
           style: addedStyle,
         ),

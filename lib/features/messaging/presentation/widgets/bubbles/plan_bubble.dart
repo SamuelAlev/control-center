@@ -7,7 +7,7 @@ import 'package:control_center/features/plan_studio/providers/plan_studio_provid
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Plan ids whose studio tab was already auto-opened this app session.

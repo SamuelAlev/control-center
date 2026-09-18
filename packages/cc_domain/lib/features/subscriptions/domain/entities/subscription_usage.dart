@@ -276,10 +276,10 @@ class SubscriptionUsage {
         ),
       );
 
-  /// Provider id (`claude`, `codex`, `zai`).
+  /// Provider id (`claude`, `codex`, `cursor`, `zai`, `kimi-code`).
   final String providerId;
 
-  /// Human display name (`Claude`, `Codex`, `z.ai`).
+  /// Human display name (`Claude`, `Codex`, `Cursor`, `z.ai`, `Kimi Code`).
   final String displayName;
 
   /// Whether usage could be read.

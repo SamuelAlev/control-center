@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_section_card.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/count_rail_item.dart';
@@ -31,18 +32,23 @@ class InboxRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final sections = PrInboxSection.values;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final section in PrInboxSection.values)
-          CountRailItem(
-            label: inboxSectionLabel(l10n, section),
-            count: counts[section] ?? 0,
-            selected: section == selected,
-            onPressed: () => onSelect(section),
-          ),
-      ],
+    return CcFluidHover(
+      itemCount: sections.length,
+      itemBuilder: (context, index) {
+        final section = sections[index];
+        return CountRailItem(
+          label: inboxSectionLabel(l10n, section),
+          count: counts[section] ?? 0,
+          selected: section == selected,
+          onPressed: () => onSelect(section),
+        );
+      },
+      layoutBuilder: (context, items) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: items,
+      ),
     );
   }
 }

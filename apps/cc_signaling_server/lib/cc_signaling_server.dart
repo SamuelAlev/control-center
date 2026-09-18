@@ -198,6 +198,13 @@ class SignalingBroker {
   /// The number of WebSocket connections currently open.
   int get connectionCount => _connectionCount;
 
+  /// The number of sockets currently holding outbound-queue state.
+  ///
+  /// Visible so a test can pin that this map is bounded by the LIVE
+  /// connections: it is keyed by [WebSocket] and a stale entry retains that
+  /// socket's whole object graph for the process lifetime.
+  int get outboxCount => _outbox.length;
+
   /// Starts the periodic garbage collector. Idempotent.
   void start() {
     if (_closed) {
@@ -362,6 +369,14 @@ class SignalingBroker {
     } finally {
       cleanup();
       await subscription.cancel();
+      // The outbox is keyed by the socket, so an entry left behind pins that
+      // WebSocket — and through it its consumer, protocol transformer and the
+      // detached socket — for the process lifetime. Only the paths that route
+      // through `_closeQuietly` (a refusal, an eviction, `bye`) dropped it;
+      // an ordinary remote disconnect arrives here instead, which leaked one
+      // entry per connection the broker had ever answered. Any write still
+      // in flight completes against the detached `_Outbox` and is discarded.
+      _outbox.remove(socket);
       _connectionCount--;
     }
   }
@@ -379,6 +394,9 @@ class SignalingBroker {
       }
     }
     _rooms.clear();
+    // Sockets that never joined a room are not peers, so nothing above drops
+    // their queue state.
+    _outbox.clear();
   }
 
   _JoinResult? _handleJoin(WebSocket socket, Map<String, dynamic> frame) {

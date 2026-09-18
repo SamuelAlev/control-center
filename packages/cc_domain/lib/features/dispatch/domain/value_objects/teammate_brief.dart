@@ -27,4 +27,29 @@ class TeammateBrief {
 
   /// Whether they report to nobody (a peer rather than a subordinate).
   final bool isTopLevel;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TeammateBrief &&
+          id == other.id &&
+          name == other.name &&
+          title == other.title &&
+          isTopLevel == other.isTopLevel &&
+          _skillsEq(skills, other.skills);
+
+  @override
+  int get hashCode => Object.hash(id, name, title, isTopLevel, skills.length);
+}
+
+bool _skillsEq(List<String> a, List<String> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }

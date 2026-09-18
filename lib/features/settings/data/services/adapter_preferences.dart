@@ -6,7 +6,6 @@ const _shortTaskAdapterIdKey = 'short_task_adapter_id';
 const _shortTaskModelIdKey = 'short_task_model_id';
 
 /// Default per-adapter "YOLO" / skip-permissions argv (non-secret).
-/// Goose uses env (`GOOSE_MODE=auto`) instead of a flag, so it has no default here.
 ///
 /// These are EXTRA flags appended after the resolved binary — store the flag
 /// alone, never the binary name (a stray `claude` token would be parsed as the
@@ -16,9 +15,6 @@ const _shortTaskModelIdKey = 'short_task_model_id';
 /// flag in the adapter settings so it stays user-editable.
 const Map<String, String> defaultAdapterArgs = {
   'claude-code': '--dangerously-skip-permissions',
-  'codex': '--dangerously-bypass-approvals-and-sandbox',
-  'gemini': '--yolo',
-  'cursor': '--yolo',
 };
 
 const _adapterArgsPrefix = 'adapter_args_';

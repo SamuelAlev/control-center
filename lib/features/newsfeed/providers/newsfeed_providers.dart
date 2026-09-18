@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_article.dart';
 import 'package:cc_domain/features/newsfeed/domain/entities/rss_feed.dart';
@@ -341,13 +343,20 @@ final contentBlockingProvider =
 /// Controller that tracks the state of filter-list updates and exposes
 /// manual refresh / auto-update operations.
 ///
-/// The filter-list cache (for the desktop ad-blocking webview) is desktop-only,
-/// so the actual read/update/refresh operations go through the platform seam
-/// (`filter_list_bindings.dart`): the real `FilterListService` on the VM, an
-/// empty no-rules state on web.
+/// The host fetches EasyList / uBlock and caches them under its data dir;
+/// desktop and web both read that cache over `newsfeed.filterLists.*`.
 class FilterListUpdateController extends Notifier<FilterListUpdateState> {
   @override
   FilterListUpdateState build() {
+    Future<void> hydrate() async {
+      try {
+        state = await ref.read(filterListPortProvider).readState();
+      } on Object {
+        // Offline / tests without an RPC host keep the empty state.
+      }
+    }
+
+    unawaited(hydrate());
     return readFilterListState(ref);
   }
 
@@ -359,7 +368,11 @@ class FilterListUpdateController extends Notifier<FilterListUpdateState> {
   /// Forces a full refresh, ignoring the 24-hour cooldown.
   Future<void> refresh() async {
     state = state.copyWith(isUpdating: true);
-    state = await refreshFilterList(ref);
+    try {
+      state = await refreshFilterList(ref);
+    } on Object {
+      state = state.copyWith(isUpdating: false);
+    }
   }
 }
 

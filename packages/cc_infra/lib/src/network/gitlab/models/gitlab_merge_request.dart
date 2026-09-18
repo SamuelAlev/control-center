@@ -40,6 +40,36 @@ class GitLabDiffRefs {
       baseSha.isNotEmpty && headSha.isNotEmpty && startSha.isNotEmpty;
 }
 
+/// A GitLab label as attached to a merge request.
+///
+/// The default list payload is names only (`["bug"]`). Passing
+/// `with_labels_details=true` upgrades each entry to an object with [color]
+/// (`#RRGGBB`) and [description].
+class GitLabLabel {
+  /// Creates a [GitLabLabel].
+  const GitLabLabel({
+    required this.name,
+    this.color = '',
+    this.description = '',
+  });
+
+  /// Reads a [GitLabLabel] off a decoded JSON object.
+  factory GitLabLabel.fromJson(Map<String, dynamic> json) => GitLabLabel(
+    name: json['name'] as String? ?? json['title'] as String? ?? '',
+    color: json['color'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+  );
+
+  /// Display name.
+  final String name;
+
+  /// Hex background, usually `#RRGGBB`. Empty when the payload was names only.
+  final String color;
+
+  /// Optional description.
+  final String description;
+}
+
 /// A GitLab merge request, as returned by `GET /projects/:id/merge_requests`
 /// and `.../merge_requests/:iid`.
 ///
@@ -60,6 +90,7 @@ class GitLabMergeRequest {
     this.author,
     this.assignees = const <GitLabUser>[],
     this.reviewers = const <GitLabUser>[],
+    this.labels = const <GitLabLabel>[],
     this.createdAt,
     this.updatedAt,
     this.mergedAt,
@@ -105,6 +136,7 @@ class GitLabMergeRequest {
                 ? const <GitLabUser>[]
                 : <GitLabUser>[singleAssignee]),
       reviewers: GitLabUser.listFromJson(json['reviewers']),
+      labels: _parseLabels(json['labels']),
       createdAt: parseDate(json['created_at']),
       updatedAt: parseDate(json['updated_at']),
       mergedAt: parseDate(json['merged_at']),
@@ -130,6 +162,25 @@ class GitLabMergeRequest {
           GitLabPipeline.maybeFromJson(json['head_pipeline']) ??
           GitLabPipeline.maybeFromJson(json['pipeline']),
     );
+  }
+
+  /// Accepts both the names-only list and the `with_labels_details` objects.
+  static List<GitLabLabel> _parseLabels(Object? raw) {
+    if (raw is! List) {
+      return const <GitLabLabel>[];
+    }
+    final out = <GitLabLabel>[];
+    for (final item in raw) {
+      if (item is String && item.isNotEmpty) {
+        out.add(GitLabLabel(name: item));
+      } else if (item is Map<String, dynamic>) {
+        final label = GitLabLabel.fromJson(item);
+        if (label.name.isNotEmpty) {
+          out.add(label);
+        }
+      }
+    }
+    return out;
   }
 
   /// Instance-wide merge-request id. Opaque to callers; carried as the
@@ -168,6 +219,9 @@ class GitLabMergeRequest {
   /// Assigned reviewers. Carries no per-reviewer verdict — that lives on the
   /// separate `/reviewers` endpoint.
   final List<GitLabUser> reviewers;
+
+  /// Labels currently on the merge request.
+  final List<GitLabLabel> labels;
 
   /// Creation timestamp.
   final DateTime? createdAt;

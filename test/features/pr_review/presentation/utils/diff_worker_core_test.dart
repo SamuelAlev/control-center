@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_worker_core.dart';
 import 'package:control_center/shared/utils/syntax_palette.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -203,6 +204,7 @@ void main() {
         final texts = tok[DiffWire.texts] as List;
         final colors = tok[DiffWire.colors] as List;
         final bgs = tok[DiffWire.bgs] as List;
+        final kinds = tok[DiffWire.kinds] as List;
         final total = lineLens.fold<int>(0, (a, b) => a + b);
         expect(
           texts,
@@ -211,7 +213,84 @@ void main() {
         );
         expect(colors, hasLength(total));
         expect(bgs, hasLength(total));
+        expect(kinds, hasLength(total));
       }
     },
   );
+
+  test('javascript regexp literals round-trip as DiffTokenKind.regexp', () {
+    const patch = '''
+@@ -1,1 +1,1 @@
+-const re = /abc/g;
++const re = /abc/gi;
+''';
+    final kinds = <int>[];
+    final texts = <String>[];
+    for (final tok in run(
+      patch,
+      language: 'javascript',
+    ).where((e) => e[DiffWire.type] == DiffWire.tok)) {
+      kinds.addAll((tok[DiffWire.kinds] as List).cast<int>());
+      texts.addAll((tok[DiffWire.texts] as List).cast<String>());
+    }
+    expect(
+      kinds,
+      contains(DiffTokenKind.regexp),
+      reason: 'at least one regexp token',
+    );
+    final regexpText = StringBuffer();
+    for (var i = 0; i < kinds.length; i++) {
+      if (kinds[i] == DiffTokenKind.regexp) {
+        regexpText.write(texts[i]);
+      }
+    }
+    expect(regexpText.toString(), contains('/abc/'));
+  });
+
+  test('JSON property names are not classified as symbols', () {
+    const patch = '''
+@@ -1,1 +1,1 @@
+-{"foo": 1}
++{"foo": 2}
+''';
+    final kinds = <int>[];
+    for (final tok in run(
+      patch,
+      language: 'json',
+    ).where((e) => e[DiffWire.type] == DiffWire.tok)) {
+      kinds.addAll((tok[DiffWire.kinds] as List).cast<int>());
+    }
+    expect(kinds, isNotEmpty);
+    expect(kinds, isNot(contains(DiffTokenKind.symbol)));
+    expect(kinds, isNot(contains(DiffTokenKind.regexp)));
+  });
+
+  test('dart class names round-trip as DiffTokenKind.symbol', () {
+    const patch = '''
+@@ -1,1 +1,1 @@
+-class Animal {}
++class Animal { }
+''';
+    final kinds = <int>[];
+    final texts = <String>[];
+    for (final tok in run(
+      patch,
+      language: 'dart',
+    ).where((e) => e[DiffWire.type] == DiffWire.tok)) {
+      kinds.addAll((tok[DiffWire.kinds] as List).cast<int>());
+      texts.addAll((tok[DiffWire.texts] as List).cast<String>());
+    }
+    expect(
+      kinds,
+      contains(DiffTokenKind.symbol),
+      reason: 'class name should be a symbol token',
+    );
+    final symbolText = StringBuffer();
+    for (var i = 0; i < kinds.length; i++) {
+      if (kinds[i] == DiffTokenKind.symbol) {
+        symbolText.write(texts[i]);
+      }
+    }
+    expect(symbolText.toString(), contains('Animal'));
+  });
 }

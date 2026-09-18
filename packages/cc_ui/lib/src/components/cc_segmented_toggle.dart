@@ -1,4 +1,6 @@
+import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -13,17 +15,28 @@ import 'package:flutter/widgets.dart';
 @immutable
 class CcSegment<T> {
   /// Creates a [CcSegment].
-  const CcSegment({required this.value, required this.label, this.icon});
+  const CcSegment({
+    required this.value,
+    required this.label,
+    this.icon,
+    this.iconOnly = false,
+  }) : assert(!iconOnly || icon != null, 'CcSegment.iconOnly requires an icon');
 
   /// The value reported through [CcSegmentedToggle.onChanged] when picked.
   final T value;
 
-  /// The segment's visible text. The caller localizes it.
+  /// The segment's name. Drawn as the visible label unless [iconOnly] is set,
+  /// in which case it is the tooltip and the semantic name. The caller
+  /// localizes it.
   final String label;
 
   /// Optional leading icon (an [IconData] from the bundled icon font —
   /// declare app glyphs via `tool/gen_icon_seams.py`; see `CcIcons`).
   final IconData? icon;
+
+  /// When true, only [icon] is drawn; [label] remains the tooltip and the
+  /// accessible name. Use for compact layout switches (grid / list).
+  final bool iconOnly;
 
   @override
   bool operator ==(Object other) =>
@@ -31,10 +44,11 @@ class CcSegment<T> {
       other is CcSegment<T> &&
           other.value == value &&
           other.label == label &&
-          other.icon == icon;
+          other.icon == icon &&
+          other.iconOnly == iconOnly;
 
   @override
-  int get hashCode => Object.hash(value, label, icon);
+  int get hashCode => Object.hash(value, label, icon, iconOnly);
 }
 
 /// Height/padding scale for a [CcSegmentedToggle] — the shared control ramp.
@@ -75,6 +89,9 @@ enum CcSegmentedToggleSize {
 /// group pattern): Tab lands on the *selected* segment, then `←`/`→` (and
 /// `↑`/`↓`, `Home`/`End`) move through the options, selecting each as it is
 /// focused. Wrapping is closed-loop.
+///
+/// **Icon-only.** [CcSegment.iconOnly] hides the label and keeps it as the
+/// tooltip and accessible name — the compact grid/list switch.
 ///
 /// Passing a null [onChanged] disables the whole control: it mutes to the
 /// disabled tokens and drops out of the focus order, while the selected segment
@@ -208,7 +225,7 @@ class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
     final t = context.ds;
     final disabled = widget.onChanged == null;
     final selectedIndex = _selectedIndex;
-    final duration = CcMotion.resolve(context, CcMotion.fast);
+    final duration = CcMotion.resolveFade(context, CcMotion.moderate);
     final height = switch (widget.size) {
       CcSegmentedToggleSize.sm => 32.0,
       CcSegmentedToggleSize.md => 40.0,
@@ -218,33 +235,18 @@ class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
     final tabStop = selectedIndex < 0 ? 0 : selectedIndex;
     final separator = disabled ? t.borderDisabled : t.borderSecondary;
 
-    final cells = <Widget>[];
-    for (var i = 0; i < widget.segments.length; i++) {
-      if (i > 0) {
-        cells.add(
-          _Separator(
-            // A separator touching the filled segment would cut into it; the
-            // fill's own edge is the division there.
-            visible: selectedIndex != i && selectedIndex != i - 1,
-            color: separator,
-            duration: duration,
-          ),
-        );
-      }
-      final cell = _Segment<T>(
-        segment: widget.segments[i],
-        selected: i == selectedIndex,
-        disabled: disabled,
-        focusable: i == tabStop,
-        focusNode: i < _segmentNodes.length ? _segmentNodes[i] : null,
-        tokens: t,
-        size: widget.size,
-        duration: duration,
-        fullWidth: widget.fullWidth,
-        onPressed: disabled ? null : () => _select(i),
-      );
-      cells.add(widget.fullWidth ? Expanded(child: cell) : cell);
-    }
+    Widget buildSegment(int index) => _Segment<T>(
+      segment: widget.segments[index],
+      selected: index == selectedIndex,
+      disabled: disabled,
+      focusable: index == tabStop,
+      focusNode: index < _segmentNodes.length ? _segmentNodes[index] : null,
+      tokens: t,
+      size: widget.size,
+      duration: duration,
+      fullWidth: widget.fullWidth,
+      onPressed: disabled ? null : () => _select(index),
+    );
 
     return Semantics(
       container: true,
@@ -263,12 +265,36 @@ class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
                 color: disabled ? t.borderDisabled : t.borderPrimary,
               ),
             ),
-            child: Row(
-              mainAxisSize: widget.fullWidth
-                  ? MainAxisSize.max
-                  : MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: cells,
+            child: CcFluidHover(
+              axis: CcFluidHoverAxis.x,
+              itemCount: widget.segments.length,
+              isItemDisabled: (_) => disabled,
+              itemBuilder: (context, index) => buildSegment(index),
+              layoutBuilder: (context, items) {
+                final cells = <Widget>[];
+                for (var i = 0; i < items.length; i++) {
+                  if (i > 0) {
+                    cells.add(
+                      _Separator(
+                        // The fill's own edge separates a selected segment.
+                        visible: selectedIndex != i && selectedIndex != i - 1,
+                        color: separator,
+                        duration: duration,
+                      ),
+                    );
+                  }
+                  cells.add(
+                    widget.fullWidth ? Expanded(child: items[i]) : items[i],
+                  );
+                }
+                return Row(
+                  mainAxisSize: widget.fullWidth
+                      ? MainAxisSize.max
+                      : MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: cells,
+                );
+              },
             ),
           ),
         ),
@@ -344,9 +370,11 @@ class _Segment<T> extends StatelessWidget {
 
     // MergeSemantics so "selected" lands on the same node as the button and its
     // label: as two nested nodes a screen reader announces the state apart from
-    // the option it belongs to. The label is left to the child Text — passing it
-    // to CcTappable as well would have it read twice.
-    return MergeSemantics(
+    // the option it belongs to. A visible label is left to the child Text —
+    // passing it to CcTappable as well would have it read twice. Icon-only
+    // segments have no Text, so the name goes on CcTappable instead.
+    final iconOnly = segment.iconOnly;
+    Widget segmentButton = MergeSemantics(
       child: Semantics(
         selected: selected,
         inMutuallyExclusiveGroup: true,
@@ -360,9 +388,11 @@ class _Segment<T> extends StatelessWidget {
           canRequestFocus: focusable,
           borderRadius: AppRadii.brSm,
           focusRingColor: t.focusRing,
+          semanticLabel: iconOnly ? segment.label : null,
           builder: (context, states) {
             final hovered = states.contains(WidgetState.hovered);
             final pressed = states.contains(WidgetState.pressed);
+            final fluidActive = CcFluidHover.isItemActive(context);
 
             final Color background;
             final Color foreground;
@@ -380,22 +410,24 @@ class _Segment<T> extends StatelessWidget {
               background = t.hoverStrong;
               foreground = t.textSecondary;
             } else if (hovered) {
-              background = t.hover;
+              background = fluidActive ? t.hover.withValues(alpha: 0) : t.hover;
               foreground = t.textSecondary;
             } else {
               background = t.hover.withValues(alpha: 0);
               foreground = t.textTertiary;
             }
 
-            final label = Text(
-              segment.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: baseStyle.copyWith(
-                color: foreground,
-                fontWeight: CcTypography.mediumWeight,
-              ),
-            );
+            final Widget? label = iconOnly
+                ? null
+                : Text(
+                    segment.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: baseStyle.copyWith(
+                      color: foreground,
+                      fontWeight: CcTypography.mediumWeight,
+                    ),
+                  );
 
             return AnimatedContainer(
               duration: duration,
@@ -413,9 +445,10 @@ class _Segment<T> extends StatelessWidget {
                   children: [
                     if (segment.icon != null) ...[
                       Icon(segment.icon, size: iconSize, color: foreground),
-                      const SizedBox(width: AppSpacing.xs),
+                      if (label != null) const SizedBox(width: AppSpacing.xs),
                     ],
-                    fullWidth ? Flexible(child: label) : label,
+                    if (label != null)
+                      fullWidth ? Flexible(child: label) : label,
                   ],
                 ),
               ),
@@ -424,5 +457,9 @@ class _Segment<T> extends StatelessWidget {
         ),
       ),
     );
+    if (iconOnly) {
+      segmentButton = CcTooltip(message: segment.label, child: segmentButton);
+    }
+    return segmentButton;
   }
 }

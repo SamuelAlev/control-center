@@ -9,7 +9,8 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_activity
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/thread_summary.dart';
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
+import 'package:cc_domain/features/messaging/domain/services/agent_question_service.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/agents/providers/conversation_run_tree_provider.dart';
@@ -79,38 +80,6 @@ final pendingFocusMessageProvider =
       PendingFocusMessageNotifier,
       ({String spaceId, String messageId})?
     >(PendingFocusMessageNotifier.new);
-
-/// An "open this agent run" target handed to the messaging IDE from outside it.
-///
-/// `isSubAgent` decides what opening means: a subagent's work never becomes chat
-/// messages, so it opens its own activity tab; a top-level run's activity IS the
-/// conversation, so it just brings the chat forward.
-typedef PendingAgentRun = ({
-  String spaceId,
-  String agentId,
-  String runId,
-  String label,
-  bool isSubAgent,
-});
-
-/// A one-shot run target, set by a surface that cannot open an IDE tab itself
-/// (the global sidebar's space flyout) immediately before navigating to the
-/// space. The IDE claims it on the first build where it matches the open
-/// conversation, opens the run and clears it — the same
-/// set-then-claim handshake [pendingFocusMessageProvider] uses for permalinks.
-class PendingAgentRunNotifier extends Notifier<PendingAgentRun?> {
-  @override
-  PendingAgentRun? build() => null;
-
-  /// Sets the pending run target, or clears it when null.
-  void set(PendingAgentRun? value) => state = value;
-}
-
-/// Provider for [PendingAgentRunNotifier].
-final pendingAgentRunProvider =
-    NotifierProvider<PendingAgentRunNotifier, PendingAgentRun?>(
-      PendingAgentRunNotifier.new,
-    );
 
 /// Side effect: stamps the user's read cursor for a space whenever it becomes
 /// selected, so the sidebar's unseen indicator clears on open. Lives in a
@@ -666,6 +635,11 @@ final spaceUserLastReadAtProvider = StreamProvider.autoDispose
 /// after that cursor. A never-opened space shows no dot, so legacy rows don't
 /// all light up at once. Reads the server-computed activity aggregate — no
 /// per-space message-list subscription.
+///
+/// When the space lists its conversations, the matching [conversationUnreadProvider]
+/// carries the same signal onto the conversation that actually has unseen
+/// work; the space row suppresses its own dot in that case so one unseen
+/// reply does not light both the parent and the child.
 final spaceUnreadProvider = Provider.autoDispose.family<bool, String>((
   ref,
   spaceId,
@@ -677,6 +651,27 @@ final spaceUnreadProvider = Provider.autoDispose.family<bool, String>((
   final lastAgentAt = _spaceActivityOf(ref, spaceId)?.lastAgentMessageAt;
   return lastAgentAt != null && lastAgentAt.isAfter(lastReadAt);
 });
+
+/// Whether one conversation has agent messages the user hasn't seen yet.
+///
+/// Same cursor as [spaceUnreadProvider] (read marks are still space-scoped —
+/// opening any conversation in the space clears the room) but compared against
+/// THAT conversation's last agent message, so the unread dot can sit on the
+/// row that has the unseen work instead of on the parent space.
+final conversationUnreadProvider = Provider.autoDispose
+    .family<bool, ConversationRef>((ref, key) {
+      final lastReadAt = ref
+          .watch(spaceUserLastReadAtProvider(key.spaceId))
+          .value;
+      if (lastReadAt == null) {
+        return false;
+      }
+      final lastAgentAt = _spaceActivityOf(
+        ref,
+        key.spaceId,
+      )?.lastAgentMessageAtByConversation[key.conversationId];
+      return lastAgentAt != null && lastAgentAt.isAfter(lastReadAt);
+    });
 
 /// Count of workspace spaces awaiting the user (unanswered agent question) —
 /// the "needs attention" badge on the sidebar Conversations entry. One sum

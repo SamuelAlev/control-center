@@ -92,7 +92,8 @@ class HarnessSystemPromptBuilder {
       'tickets, agents, PRs) for orchestration and the built-in tools '
       '(read, write, edit, bash, search, find, search_files) for the '
       'filesystem. Work in the current directory. Be concise and report '
-      'what you did.',
+      'what you did. Questions to the operator go through `ask_user` — '
+      'never as a chat message.',
     );
     if (workspaceId.isNotEmpty) {
       buffer.write(' Workspace: $workspaceId.');

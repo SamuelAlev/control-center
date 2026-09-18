@@ -13,7 +13,7 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/avatar_initials.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -198,7 +198,7 @@ class _HeaderBar extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: t.borderSecondary)),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 0, 10, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 0, 10, 0),
       height: 44,
       child: Row(
         children: [
@@ -514,9 +514,8 @@ class _ParticipantsSectionState extends State<_ParticipantsSection> {
           _ParticipantRow(attendee: attendee, l10n: l10n),
         if (collapsible)
           Padding(
-            padding: const EdgeInsets.only(left: 25, top: 2),
-            child: InkWell(
-              borderRadius: AppRadii.brSm,
+            padding: const EdgeInsetsDirectional.only(start: 25, top: 2),
+            child: GestureDetector(
               onTap: () => setState(() => _expanded = !_expanded),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
@@ -704,7 +703,7 @@ class _MeetingNoteAction extends StatelessWidget {
         CcButton(
           variant: CcButtonVariant.ghost,
           size: CcButtonSize.sm,
-          onPressed: () => showDialog<void>(
+          onPressed: () => showCcDialog<void>(
             context: context,
             builder: (_) => LinkMeetingSheet(
               workspaceId: event.workspaceId,
@@ -771,7 +770,7 @@ class _RsvpControlsState extends ConsumerState<_RsvpControls> {
         const SizedBox(width: 10),
         Expanded(
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: IgnorePointer(
               ignoring: _busy,
               child: Opacity(
@@ -831,8 +830,7 @@ class _Description extends StatelessWidget {
         for (final link in parsed.links)
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: InkWell(
-              borderRadius: AppRadii.brSm,
+            child: GestureDetector(
               onTap: () => unawaitedLaunch(link.url),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

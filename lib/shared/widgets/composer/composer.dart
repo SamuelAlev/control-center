@@ -22,7 +22,7 @@ import 'package:control_center/shared/widgets/composer/mention/mention_source.da
 import 'package:control_center/shared/widgets/composer/mention/mention_trigger.dart';
 import 'package:control_center/shared/widgets/composer/voice/voice_button.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -984,19 +984,24 @@ class _ComposerState extends ConsumerState<Composer> {
         if (query == null) {
           return const SizedBox.shrink();
         }
-        // Position the popup so its bottom-left meets the composer's top-left,
-        // i.e. floats just above the input. Wrapping in Positioned(width:…)
-        // keeps the follower's bounding box tight to the popup so the
-        // bottom-left anchor lines up with the popup's actual edge — not the
-        // overlay's edge — which is what was previously breaking placement.
+        // Position the popup so its bottom-start meets the composer's
+        // top-start, i.e. floats just above the input. Wrapping in
+        // Positioned(width:…) keeps the follower's bounding box tight to the
+        // popup so the bottom-start anchor lines up with the popup's actual
+        // edge — not the overlay's edge — which is what was previously
+        // breaking placement.
         return Positioned(
           width: 380,
           child: CompositedTransformFollower(
             link: _link,
             showWhenUnlinked: false,
             offset: const Offset(0, -6),
-            followerAnchor: Alignment.bottomLeft,
-            targetAnchor: Alignment.topLeft,
+            followerAnchor: AlignmentDirectional.bottomStart.resolve(
+              Directionality.of(overlayContext),
+            ),
+            targetAnchor: AlignmentDirectional.topStart.resolve(
+              Directionality.of(overlayContext),
+            ),
             child: MentionPopup(
               query: query,
               sources: widget.sources,

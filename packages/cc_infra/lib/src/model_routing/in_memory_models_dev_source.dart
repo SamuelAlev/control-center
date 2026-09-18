@@ -1,19 +1,14 @@
-import 'dart:convert';
+import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
 
-import 'package:cc_domain/features/model_routing/model_routing.dart';
-import 'package:cc_infra/src/model_routing/models_dev_snapshot.dart';
-
-/// A [ModelsDevSource] that serves a fixed in-memory document — by default the
-/// bundled models.dev snapshot. Pure (no `dart:io`), so it is safe on web and
-/// in tests; the disk/network-backed [ModelsDevSource] lives in
-/// `file_models_dev_source.dart` (VM only).
+/// A [ModelsDevSource] that serves a caller-supplied in-memory document.
+///
+/// Pure (no `dart:io`), so it is safe on web and in tests. Production reads
+/// go through `FileModelsDevSource` (VM only, cache under the server data dir)
+/// or `RpcModelsDevSource` on a thin client. There is no bundled snapshot —
+/// tests pass a fixture.
 class InMemoryModelsDevSource implements ModelsDevSource {
-  /// Creates an [InMemoryModelsDevSource] over [document]; defaults to the
-  /// bundled snapshot.
-  InMemoryModelsDevSource([Map<String, dynamic>? document])
-    : _document =
-          document ??
-          jsonDecode(bundledModelsDevSnapshotJson) as Map<String, dynamic>;
+  /// Creates an [InMemoryModelsDevSource] over a caller-supplied document.
+  InMemoryModelsDevSource(this._document);
 
   final Map<String, dynamic> _document;
 

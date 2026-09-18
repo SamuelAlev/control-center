@@ -18,12 +18,13 @@ class RigImageRow extends StatelessWidget {
     required this.onStartImport,
     required this.onCancelImport,
     required this.onConfirmImport,
+    required this.onDelete,
   });
 
   /// The image this row describes.
   final RigImageView image;
 
-  /// Whether a blocking action (an import) is running for it.
+  /// Whether a blocking import or delete is running for it.
   final bool busy;
 
   /// Whether a download is in flight on the SERVER for it.
@@ -47,6 +48,9 @@ class RigImageRow extends StatelessWidget {
 
   /// Imports whatever path is typed.
   final VoidCallback onConfirmImport;
+
+  /// Deletes the installed image. Null while there is nothing to delete.
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -109,8 +113,8 @@ class RigImageRow extends StatelessWidget {
             ),
             if (busy)
               const CcSpinner()
-            else if (!image.present && !importing) ...[
-              if (onDownload != null && !downloading) ...[
+            else if (!importing && !downloading) ...[
+              if (!image.present && onDownload != null) ...[
                 CcButton(
                   size: CcButtonSize.sm,
                   variant: CcButtonVariant.secondary,
@@ -119,13 +123,21 @@ class RigImageRow extends StatelessWidget {
                 ),
                 const SizedBox(width: AppSpacing.xs),
               ],
-              if (!downloading)
+              CcButton(
+                size: CcButtonSize.sm,
+                variant: CcButtonVariant.secondary,
+                onPressed: onStartImport,
+                child: Text(l10n.rigImageImport),
+              ),
+              if (onDelete != null) ...[
+                const SizedBox(width: AppSpacing.xs),
                 CcButton(
                   size: CcButtonSize.sm,
-                  variant: CcButtonVariant.secondary,
-                  onPressed: onStartImport,
-                  child: Text(l10n.rigImageImport),
+                  variant: CcButtonVariant.destructive,
+                  onPressed: onDelete,
+                  child: Text(l10n.delete),
                 ),
+              ],
             ],
           ],
         ),

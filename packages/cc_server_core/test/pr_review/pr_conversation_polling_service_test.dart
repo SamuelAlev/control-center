@@ -18,16 +18,13 @@ GitHubViewerPr _pr(String repoFullName, int number, [String title = 'T']) =>
       updatedAt: DateTime(2026, 8, 26),
     );
 
-GitHubIssueComment _issue(
-  int id,
-  String body, {
-  String login = 'octocat',
-}) => GitHubIssueComment(
-  id: id,
-  body: body,
-  user: GitHubUser(login: login, avatarUrl: ''),
-  createdAt: DateTime(2026, 8, 26),
-);
+GitHubIssueComment _issue(int id, String body, {String login = 'octocat'}) =>
+    GitHubIssueComment(
+      id: id,
+      body: body,
+      user: GitHubUser(login: login, avatarUrl: ''),
+      createdAt: DateTime(2026, 8, 26),
+    );
 
 GitHubReviewComment _review(
   int id,
@@ -51,12 +48,15 @@ class _FakeGateway implements GitHubPrConversationGateway {
   List<GitHubViewerPr> mentioned = [];
   List<GitHubViewerPr> shortMentioned = [];
   List<GitHubViewerPr> labeled = [];
+  bool allSuspended = false;
+  Set<String> suspendedOwnerLogins = {};
+  int searchCalls = 0;
+  int issueCommentCalls = 0;
   final issueComments =
       <String, List<GitHubIssueComment>>{}; // 'owner/repo#n' → list
   final reviewComments = <String, List<GitHubReviewComment>>{};
 
-  static String _key(String owner, String repo, int pr) =>
-      '$owner/$repo#$pr';
+  static String _key(String owner, String repo, int pr) => '$owner/$repo#$pr';
 
   void setIssue(
     String owner,
@@ -83,15 +83,30 @@ class _FakeGateway implements GitHubPrConversationGateway {
       List<GitHubViewerPr> labeled,
     })
   >
-  searchCandidates({DateTime? since}) async =>
-      (mentioned: mentioned, shortMentioned: shortMentioned, labeled: labeled);
+  searchCandidates({DateTime? since}) async {
+    searchCalls++;
+    return (
+      mentioned: mentioned,
+      shortMentioned: shortMentioned,
+      labeled: labeled,
+    );
+  }
+
+  @override
+  Future<bool> allInstallationsSuspended() async => allSuspended;
+
+  @override
+  Future<Set<String>> suspendedOwners() async => suspendedOwnerLogins;
 
   @override
   Future<List<GitHubIssueComment>> listIssueComments(
     String owner,
     String repo,
     int prNumber,
-  ) async => issueComments[_key(owner, repo, prNumber)] ?? const [];
+  ) async {
+    issueCommentCalls++;
+    return issueComments[_key(owner, repo, prNumber)] ?? const [];
+  }
 
   @override
   Future<List<GitHubReviewComment>> listReviewComments(
@@ -118,9 +133,7 @@ class _RecordingSink implements GitHubPrConversationSink {
         })
       >[];
   final labeled =
-      <
-        ({String workspaceId, String owner, String repo, int prNumber})
-      >[];
+      <({String workspaceId, String owner, String repo, int prNumber})>[];
 
   @override
   Future<void> handleInboundComment({
@@ -189,8 +202,9 @@ void main() {
     associatedPullRequests: () async => associated,
     // A wired store (even an empty one) means this is not a first run ever,
     // so the sweep acts on what it finds; only the baseline tests opt out.
-    loadDedupeState:
-        wireStore ? (() async => loadedState ?? _emptyStore) : null,
+    loadDedupeState: wireStore
+        ? (() async => loadedState ?? _emptyStore)
+        : null,
     saveDedupeState: (state) async => savedState = state,
     now: () => DateTime(2026, 8, 26, 12),
   );
@@ -226,46 +240,84 @@ void main() {
     });
   });
 
-  test('no app identity: the sweep does nothing and asks for nothing',
-      () async {
-    gateway.botLoginValue = '';
+  test(
+    'no app identity: the sweep does nothing and asks for nothing',
+    () async {
+      gateway.botLoginValue = '';
 
-    await poller.pollOnce();
+      await poller.pollOnce();
 
-    expect(gateway.mentioned, isEmpty);
-    expect(sink.inbound, isEmpty);
-    expect(sink.labeled, isEmpty);
-  });
+      expect(gateway.mentioned, isEmpty);
+      expect(sink.inbound, isEmpty);
+      expect(sink.labeled, isEmpty);
+    },
+  );
 
-  test('a short-alias mention (bare slug) is discovered like a full one',
-      () async {
+  test('suspended installations: the sweep does not hit GitHub', () async {
+    gateway.allSuspended = true;
     repoLinks['acme/app'] = ['ws-a'];
-    // The text-search lane found the PR; the comment says `@cc-test`, not
-    // `@cc-test[bot]`.
-    gateway.shortMentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@cc-test hello?')]);
-
-    await poller.pollOnce();
-
-    final call = sink.inbound.single;
-    expect(call.workspaceId, 'ws-a');
-    expect(call.comment.id, 11);
-  });
-
-  test('a mentioning comment is routed to the first linking workspace',
-      () async {
-    repoLinks['acme/app'] = ['ws-b', 'ws-a'];
-    gateway.mentioned = [_pr('acme/app', 7, 'Fix')];
+    gateway.mentioned = [_pr('acme/app', 7)];
     gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
 
     await poller.pollOnce();
 
-    final call = sink.inbound.single;
-    expect(call.workspaceId, 'ws-a');
-    expect(call.comment.id, 11);
-    expect(call.comment.isReviewComment, isFalse);
-    expect(call.prTitle, 'Fix');
+    expect(gateway.searchCalls, 0);
+    expect(gateway.issueCommentCalls, 0);
+    expect(sink.inbound, isEmpty);
   });
+
+  test('comment sweeps skip a suspended owner', () async {
+    gateway.suspendedOwnerLogins = {'frontify'};
+    associated = [
+      const AssociatedPullRequest(
+        workspaceId: 'ws-a',
+        repoFullName: 'Frontify/ffy-cli',
+        prNumber: 414,
+      ),
+    ];
+    gateway.setIssue('Frontify', 'ffy-cli', 414, [
+      _issue(11, '@$_botLogin hello?'),
+    ]);
+
+    await poller.pollOnce();
+
+    expect(gateway.issueCommentCalls, 0);
+    expect(sink.inbound, isEmpty);
+  });
+
+  test(
+    'a short-alias mention (bare slug) is discovered like a full one',
+    () async {
+      repoLinks['acme/app'] = ['ws-a'];
+      // The text-search lane found the PR; the comment says `@cc-test`, not
+      // `@cc-test[bot]`.
+      gateway.shortMentioned = [_pr('acme/app', 7)];
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@cc-test hello?')]);
+
+      await poller.pollOnce();
+
+      final call = sink.inbound.single;
+      expect(call.workspaceId, 'ws-a');
+      expect(call.comment.id, 11);
+    },
+  );
+
+  test(
+    'a mentioning comment is routed to the first linking workspace',
+    () async {
+      repoLinks['acme/app'] = ['ws-b', 'ws-a'];
+      gateway.mentioned = [_pr('acme/app', 7, 'Fix')];
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+
+      await poller.pollOnce();
+
+      final call = sink.inbound.single;
+      expect(call.workspaceId, 'ws-a');
+      expect(call.comment.id, 11);
+      expect(call.comment.isReviewComment, isFalse);
+      expect(call.prTitle, 'Fix');
+    },
+  );
 
   test('the same comment never fires twice', () async {
     repoLinks['acme/app'] = ['ws-a'];
@@ -291,19 +343,20 @@ void main() {
     expect(sink.inbound, isEmpty);
   });
 
-  test('an issue comment without a mention is other people\'s conversation',
-      () async {
-    repoLinks['acme/app'] = ['ws-a'];
-    gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, 'looks good to me')]);
+  test(
+    'an issue comment without a mention is other people\'s conversation',
+    () async {
+      repoLinks['acme/app'] = ['ws-a'];
+      gateway.mentioned = [_pr('acme/app', 7)];
+      gateway.setIssue('acme', 'app', 7, [_issue(11, 'looks good to me')]);
 
-    await poller.pollOnce();
+      await poller.pollOnce();
 
-    expect(sink.inbound, isEmpty);
-  });
+      expect(sink.inbound, isEmpty);
+    },
+  );
 
-  test('a reply in a bot review thread qualifies without a mention',
-      () async {
+  test('a reply in a bot review thread qualifies without a mention', () async {
     associated = [
       const AssociatedPullRequest(
         workspaceId: 'ws-a',
@@ -389,8 +442,12 @@ void main() {
     gateway.labeled = [_pr('acme/app', 9, 'Add thing')];
 
     await poller.pollOnce();
-    expect(sink.labeled.single,
-        (workspaceId: 'ws-a', owner: 'acme', repo: 'app', prNumber: 9));
+    expect(sink.labeled.single, (
+      workspaceId: 'ws-a',
+      owner: 'acme',
+      repo: 'app',
+      prNumber: 9,
+    ));
 
     await poller.pollOnce();
     expect(sink.labeled, hasLength(1));

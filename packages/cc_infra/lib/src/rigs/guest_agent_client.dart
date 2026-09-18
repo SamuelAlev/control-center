@@ -257,6 +257,35 @@ class GuestAgentClient {
     return response;
   }
 
+  /// Feeds one PCM16 microphone chunk into the guest's virtual input source.
+  ///
+  /// [start] atomically makes [sessionId] the active capture before any PCM is
+  /// sent. Chunks and [end] from a replaced session are acknowledged but
+  /// ignored, so delayed teardown cannot kill a newly selected microphone.
+  ///
+  /// Chunks are deliberately bounded HTTP requests rather than an unbounded
+  /// upload: this works through native and browser clients, gives each hop
+  /// natural backpressure, and keeps a disconnected microphone from leaving a
+  /// request body open forever.
+  Future<void> sendMicrophone(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async {
+    final rate = sampleRate.clamp(8000, 48000);
+    final count = channels.clamp(1, 2);
+    final session = Uri.encodeQueryComponent(sessionId);
+    final response = await _postBytes(
+      '/microphone?rate=$rate&channels=$count&session=$session'
+      '${start ? '&start=1' : ''}${end ? '&end=1' : ''}',
+      bytes,
+    );
+    await _decode(response, '/microphone');
+  }
+
   /// Asks the guest to change its display mode.
   ///
   /// Returns what the guest actually settled on: a guest can refuse a mode its
@@ -390,6 +419,22 @@ class GuestAgentClient {
     request.add(bytes);
     final response = await request.close().timeout(timeout);
     return _decode(response, path, timeout: timeout);
+  }
+
+  Future<HttpClientResponse> _postBytes(
+    String path,
+    Uint8List body, {
+    Duration timeout = _requestTimeout,
+  }) async {
+    final request = await _client.postUrl(
+      Uri.parse('http://$_host:$port$path'),
+    );
+    request.headers
+      ..set(HttpHeaders.authorizationHeader, 'Bearer $token')
+      ..contentType = ContentType.binary;
+    request.contentLength = body.length;
+    request.add(body);
+    return request.close().timeout(timeout);
   }
 
   Future<Map<String, dynamic>> _decode(

@@ -58,11 +58,11 @@ enum RigScrollDirection {
 /// One thing an actor (agent or human) does to a rig.
 ///
 /// Abstract here, SEALED per surface (`ComputerAction`, `BrowserAction`,
-/// `MobileAction` each seal their own family in their own file). That is where
-/// exhaustiveness earns its keep: an adapter switches over one surface's
-/// verbs and the compiler catches a missing case. A single sealed root would
-/// have to live in one file with every verb of every surface, and a
-/// cross-surface switch is not a thing any adapter wants to write.
+/// `MobileAction`, `IosAction` each seal their own family in their own file).
+/// That is where exhaustiveness earns its keep: an adapter switches over one
+/// surface's verbs and the compiler catches a missing case. A single sealed
+/// root would have to live in one file with every verb of every surface, and
+/// a cross-surface switch is not a thing any adapter wants to write.
 ///
 /// A tap is not a click and a CSS selector is not a coordinate, so there is
 /// deliberately no "do something" bag with optional fields — that shape pushes
@@ -72,6 +72,16 @@ enum RigScrollDirection {
 abstract class RigAction {
   /// Const base constructor.
   const RigAction();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RigAction &&
+          runtimeType == other.runtimeType &&
+          _rigValueEquals(toJson(), other.toJson());
+
+  @override
+  int get hashCode => Object.hash(runtimeType, _rigValueHash(toJson()));
 
   /// The surface this action belongs to. An action never crosses surfaces.
   RigSurface get surface;
@@ -93,6 +103,50 @@ abstract class RigAction {
   /// A one-line human summary for the action feed ("Clicked (412, 180)").
   /// Sentence case, no trailing period.
   String get summary;
+}
+
+bool _rigValueEquals(Object? left, Object? right) {
+  if (identical(left, right)) {
+    return true;
+  }
+  if (left is List && right is List) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (!_rigValueEquals(left[index], right[index])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  if (left is Map && right is Map) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (final entry in left.entries) {
+      if (!right.containsKey(entry.key) ||
+          !_rigValueEquals(entry.value, right[entry.key])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return left == right;
+}
+
+int _rigValueHash(Object? value) {
+  if (value is List) {
+    return Object.hashAll(value.map(_rigValueHash));
+  }
+  if (value is Map) {
+    return Object.hashAll(
+      value.entries.map(
+        (entry) => Object.hash(entry.key, _rigValueHash(entry.value)),
+      ),
+    );
+  }
+  return value.hashCode;
 }
 
 /// The outcome of parsing an untrusted action payload.
@@ -124,7 +178,7 @@ class RigActionInvalid extends RigActionParse {
   final String message;
 }
 
-// ── Argument readers shared by the three surface parsers ──────────────────
+// ── Argument readers shared by the four surface parsers ───────────────────
 //
 // Every one is total: they answer "is this the type I need" and never throw,
 // because the input is model-authored JSON and a `TypeError` three frames deep

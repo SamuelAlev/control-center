@@ -105,7 +105,7 @@ Foundations/
 ```
 
 The Foundations specimens (`ColorTokens`, `TypeScale`, `SpacingScale`,
-`RadiusScale`, `ElevationScale`, `MotionSpecimen`) render the design tokens live
+`RadiusScale`, `ElevationScale`, `MotionSpecimen`, `MotionSpeedsSpecimen`) render the design tokens live
 from the active theme — toggle the **Light/Dark** theme addon to audit both
 palettes at once.
 

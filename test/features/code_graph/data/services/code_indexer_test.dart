@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_edge.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_file_ingest.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_index_checkpoint.dart';
@@ -186,6 +187,7 @@ class StubCodeGraphRepository implements CodeGraphRepository {
     String s, {
     int? limit,
     String? checkoutId,
+    Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
   }) async => const [];
   @override
   Future<List<CodeSymbol>> callees(

@@ -17,11 +17,10 @@ class RpcAcpModelRepository implements AcpModelRepository {
   final RemoteRpcClient _client;
 
   @override
-  Future<List<AcpModel>> listModels(String adapterId, {String? cliPath}) async {
+  Future<List<AcpModel>> listModels(String adapterId) async {
     try {
       final data = await _client.call('acp.listModels', {
         'adapter_id': adapterId,
-        if (cliPath != null && cliPath.isNotEmpty) 'cli_path': cliPath,
       });
       return ((data['models'] as List?) ?? const [])
           .whereType<Map>()

@@ -39,6 +39,8 @@
   "showFileList": "Mostrar lista de arquivos",
   "searchInFilesHintField": "Pesquisar em arquivos…",
   "searchInFilesHint": "Pesquisar nos arquivos do pull request",
+  "searchInWholeRepo": "Pesquisar no repositório inteiro",
+  "searchInThisPullRequest": "Pesquisar neste pull request",
   "searchNoResults": "Nenhum resultado",
   "searchResultsCount": "{count, plural, =1{1 resultado} other{{count} resultados}} em {files, plural, =1{1 arquivo} other{{files} arquivos}}",
   "discardChangesTitle": "Descartar alterações?",
@@ -83,10 +85,11 @@
   "guardrailClassWorkspaceMutation": "Alterar a estrutura do espaço de trabalho",
   "guardrailClassEnclosureControl": "Controlar um recinto (rig)",
   "navRigs": "Rigs",
-  "rigsUnsupportedServer": "Este servidor não consegue alojar VM isoladas. Os rigs precisam de um hipervisor na máquina que executa o cc_server.",
+  "rigsUnsupportedServer": "Este servidor não pode alojar superfícies rig. Verifique os requisitos do anfitrião para a máquina que pretende utilizar.",
   "rigSurfaceComputer": "Computador",
   "rigSurfaceBrowser": "Navegador",
-  "rigSurfaceMobile": "Telemóvel",
+  "rigSurfaceAndroid": "Android",
+  "rigSurfaceIosSimulator": "Simulador de iOS",
   "rigSurfaceBrowserEngine": "{engine}",
   "rigBrowserEngineHint": "Um {engine} descartável, isolado da sua máquina. Abra outro motor para comparar a mesma página lado a lado.",
   "rigPhaseReady": "Pronto",
@@ -105,17 +108,20 @@
   "rigEgressNotEnforced": "A rede não está isolada neste backend — gere a sua própria conectividade.",
   "rigStartMachine": "Iniciar a máquina",
   "rigStartHint": "Inicia uma VM descartável que partilha com os seus agentes nesta conversa. É destruída ao fechar e nada do que lá acontece toca no seu computador.",
+  "rigStartAndroidHint": "Liga-se a um emulador Android que já está em execução no servidor. O acesso à rede não está isolado.",
+  "rigStartIosHint": "Cria um simulador iOS temporário no Mac do servidor. É eliminado quando o ambiente de testes é fechado; o acesso à rede não está isolado.",
   "rigStopMachine": "Parar a máquina",
   "rigSurfaceUnavailable": "Este servidor não consegue alojar este tipo de máquina.",
   "rigTabNeedsConversation": "Abra primeiro uma conversa — uma máquina pertence a uma delas, para que você e os seus agentes vejam o mesmo ecrã.",
   "ideMenuSectionTools": "Ferramentas",
-  "ideMenuSectionVirtualMachine": "Máquina virtual",
+  "ideMenuSectionMachines": "Máquinas",
   "ideMenuSectionReopen": "Reabrir",
   "ideMenuSearchHint": "Pesquisar",
   "ideMenuNoMatches": "Sem resultados",
   "rigMenuComputer": "Computador",
   "rigMenuBrowser": "Navegador",
-  "rigMenuMobile": "Telemóvel",
+  "rigMenuAndroid": "Android",
+  "rigMenuIosSimulator": "Simulador de iOS",
   "rigLabelNumbered": "{label} {suffix}",
   "ideCloseKeepTitle": "Fechar {name}?",
   "ideCloseKeepBodyMachine": "A máquina continua a correr em segundo plano — reabra-a quando quiser a partir da barra lateral. Desligue-a para libertar a memória agora.",
@@ -138,6 +144,9 @@
   },
   "rigsSettingsSubtitle": "O que este servidor consegue arrancar, as imagens base de que precisa e as máquinas em execução",
   "rigsCapabilitiesTitle": "Este servidor",
+  "rigInstallIosAutomation": "Instalar a ponte de automatização do iOS",
+  "rigInstallingIosAutomation": "A instalar a ponte de automatização do iOS…",
+  "rigIosAutomationInstalled": "Ponte de automatização do iOS instalada",
   "rigsImagesTitle": "Imagens base",
   "rigsImagesHint": "Cada rig arranca a partir de uma destas imagens só de leitura. Cada sessão escreve numa camada descartável, por isso um rig nunca pode alterar aquilo de que o seguinte parte.",
   "rigsRunningTitle": "Em execução",
@@ -536,9 +545,7 @@
   "remoteControlAndDevices": "Controle remoto e dispositivos",
   "remoteControlAndDevicesSettingsDescription": "Pareie telefones e configure o servidor de controle remoto.",
   "voiceAndMeetingsSettingsDescription": "Os modelos de voz e diarização alojados neste servidor.",
-  "filterSettingsHint": "Filtrar configurações",
   "needsSetupLabel": "Requer configuração",
-  "noSettingsMatch": "Nenhuma configuração corresponde a \"{query}\"",
   "collapseSidebar": "Recolher a barra lateral",
   "expandSidebar": "Expandir a barra lateral",
   "filterSpacesHint": "Filtrar espaços",
@@ -555,7 +562,6 @@
   "blocked": "Bloqueado",
   "idle": "Inativo",
   "noRunsYet": "Sem execuções",
-  "lastActiveAgo": "Ativo há {duration}",
   "copyPath": "Copiar caminho",
   "copyRelativePath": "Copiar caminho relativo",
   "nameRequired": "O nome é obrigatório",
@@ -939,14 +945,11 @@
   "@agent": {
     "description": "Agent"
   },
-  "agentCount": "{count} agente{plural, plural, =1{} other{s}}",
+  "agentCount": "{count, plural, =1{1 agente} other{{count} agentes}}",
   "@agentCount": {
     "description": "Agent count label",
     "placeholders": {
       "count": {
-        "type": "int"
-      },
-      "plural": {
         "type": "int"
       }
     }
@@ -1046,6 +1049,7 @@
   "agentApprovalRequired": "Aprovação necessária",
   "agentApprovalsMoreWaiting": "{count, plural, =1{Mais 1 em espera} other{Mais {count} em espera}}",
   "approved": "Aprovado",
+  "articleNoun": "Artigo",
   "articlesSubscribed": "Artigos dos seus feeds inscritos.",
   "askAi": "Ask AI",
   "askAiReviewDescription": "Pedir à IA para revisar esta PR",
@@ -1271,6 +1275,7 @@
   },
   "deleteWorkspace": "Excluir espaço de trabalho",
   "deny": "Negar",
+  "detailsLabel": "Detalhes",
   "descriptionLabel": "Descrição",
   "@descriptionLabel": {
     "description": "Description"
@@ -1819,13 +1824,6 @@
   "keybindings": "Atalhos de teclado",
   "keybindingsDescription": "Todos os atalhos de teclado. Os atalhos são fixos e não podem ser reatribuídos.",
   "killRunning": "Encerrar em execução",
-  "languageDutch": "Nederlands",
-  "languageEnglish": "English",
-  "languageFrench": "Français",
-  "languageGerman": "Deutsch",
-  "languageItalian": "Italiano",
-  "languagePortuguese": "Português",
-  "languageSpanish": "Español",
   "languageSystem": "Sistema",
   "leaveACommentEllipsis": "Deixe um comentário...",
   "@leaveACommentEllipsis": {
@@ -2325,6 +2323,7 @@
   "openApplicationSettings": "Abrir configurações do aplicativo",
   "openArticlesInApp": "Abrir artigos no app",
   "openInBrowser": "Abrir no navegador",
+  "openedInYourBrowser": "Aberto no seu navegador.",
   "openLabel": "Abrir",
   "openOnGithub": "Abrir no GitHub",
   "openStatus": "Aberto",
@@ -2416,6 +2415,8 @@
   "repoRemovedFromWorkspace": "{name} será removido deste espaço de trabalho. Os arquivos locais no disco não são afetados.",
   "repoAccessNoticeBody": "As credenciais do GitHub do servidor não conseguem ver {repos}. Se um repositório pertencer a uma organização, instale lá a GitHub App ou conecte um token com acesso.",
   "repoAccessNoticeTitle": "{count, plural, =1 {Um repositório não está acessível} other {{count} repositórios não estão acessíveis}}",
+  "repoAccessNoticeSuspendedTitle": "Instalação do GitHub App suspensa",
+  "repoAccessNoticeSuspendedBody": "Exibindo os últimos dados conhecidos de {repos}. Retome a instalação no GitHub ou conecte um token com acesso.",
   "repoNoAccessBadge": "Sem acesso",
   "reportsTo": "Reporta-se a",
   "reposCount": "Repositórios ({count})",
@@ -3824,6 +3825,10 @@
   "agentQuestionSubmit": "Enviar resposta",
   "agentQuestionFreeformHint": "Digite sua resposta…",
   "agentQuestionAnswerLabel": "Sua resposta",
+  "agentQuestionProgress": "Pergunta {index} de {count}",
+  "agentQuestionSkip": "Pular",
+  "agentQuestionSkippedLabel": "Pulada",
+  "agentQuestionFreeformOptionHint": "Descreva com suas palavras…",
   "reviewRequested": "Revisão solicitada",
   "connectGitHubHint": "Entre no GitHub ou adicione um token em Configurações → Você → Perfil e identidade → Hospedagem de código",
   "connectGitHubToLoadPrs": "Conecte o GitHub para carregar os pull requests",
@@ -3834,6 +3839,9 @@
   "prTimelineRequestedReview": "{actor} solicitou revisão de {reviewers}",
   "prTimelineRemovedReviewRequest": "{actor} removeu a solicitação de revisão para {reviewers}",
   "prTimelineRequestedAndRemovedReview": "{actor} solicitou revisão de {requested} e removeu a solicitação de revisão para {removed}",
+  "prTimelineAddedLabels": "{actor} adicionou {count, plural, =1{o rótulo} other{os rótulos}} {labels}",
+  "prTimelineRemovedLabels": "{actor} removeu {count, plural, =1{o rótulo} other{os rótulos}} {labels}",
+  "prTimelineAddedAndRemovedLabels": "{actor} adicionou {addedCount, plural, =1{o rótulo} other{os rótulos}} {added} e removeu {removedCount, plural, =1{o rótulo} other{os rótulos}} {removed}",
   "prTimelineCommitted": "{author} fez commit",
   "prTimelinePushedCommits": "{author} enviou {count, plural, =1{1 commit} other{{count} commits}}",
   "prTimelineApproved": "{author} aprovou estas alterações",
@@ -3860,6 +3868,7 @@
   "loadingEllipsis": "Carregando…",
   "loadingChecks": "Carregando verificações…",
   "noChecksYet": "Nenhuma verificação executada ainda",
+  "noChangesToReview": "Nenhuma alteração para revisar",
   "checksFailingCount": "{count} com falha",
   "showMore": "Mostrar mais",
   "showLess": "Mostrar menos",
@@ -3919,7 +3928,6 @@
   "searchTicketsHint": "Pesquisar tickets…",
   "noMatchingTickets": "Nenhum ticket corresponde",
   "clearAll": "Limpar tudo",
-  "agentsRunningCount": "{count, plural, =1{1 agente em execução} other{{count} agentes em execução}}",
   "reviewSummary": "{prs, plural, =1{1 PR aguardando} other{{prs} PRs aguardando}} sua revisão em {repos, plural, =1{1 repositório} other{{repos} repositórios}}",
   "manageWorkspacesSubtitle": "Renomeie um espaço e altere a sua marca — escolha um à esquerda para editá-lo.",
   "workspaceCount": "{count, plural, =0{Nenhum espaço} =1{1 espaço} other{{count} espaços}}",
@@ -5431,6 +5439,16 @@
   "sourceControl": "Controle de versão",
   "fixFindingTitle": "Corrigir: {location}",
   "openInEditor": "Abrir no editor",
+  "regexTesterTitle": "Testar expressão regular",
+  "regexTesterHint": "Digite um exemplo",
+  "regexMatch": "Correspondência",
+  "regexNoMatch": "Sem correspondência",
+  "regexInvalidPattern": "Padrão inválido",
+  "symbolLookupNone": "Nenhuma definição no índice ou neste pull request",
+  "symbolLookupInDiff": "Encontrado neste pull request",
+  "symbolLookupFromBase": "Do checkout base — o worktree deste PR ainda não está indexado",
+  "symbolImplementations": "Implementações",
+  "symbolCallersCount": "{count} chamadores",
   "commitMessageHint": "Mensagem de commit",
   "pushedToPr": "Enviado para a PR",
   "pushFailed": "Falha no push",
@@ -5763,13 +5781,6 @@
   "providerGenerationSaved": "Padrões de geração guardados",
   "providerGenerationInvalid": "Verifique os valores: tokens de saída máx. e top-k têm de ser positivos, temperatura 0–2, top-p 0–1.",
   "providerGenerationOverridden": "Personalizado",
-  "spaceFlyoutNeedsInput": "Precisa da sua resposta",
-  "spaceFlyoutPreparing": "A preparar",
-  "spaceFlyoutSetupFailed": "Falha na configuração",
-  "spaceFlyoutSetupStopped": "Configuração interrompida",
-  "spaceFlyoutNeverRun": "Nenhum agente trabalhou aqui ainda",
-  "spaceFlyoutContextUsage": "Janela de contexto: {used} usados, {percent} cheia",
-  "subagentsRunningCount": "{count, plural, =1{1 subagente} other{{count} subagentes}}",
   "branchNotPushed": "não enviado",
   "branchNotOnRemote": "“{branch}” só existe nesta conversa",
   "branchNotOnRemoteHint": "O GitHub nunca viu este branch, por isso um pull request ainda não pode usá-lo. Publicar envia os commits que já estão no worktree — alterações não commitadas ficam intactas.",
@@ -7421,6 +7432,14 @@
   "@renameConversation": {
     "description": "Rename a conversation — sidebar row menu item and dialog title"
   },
+  "spaceActions": "Ações do espaço",
+  "@spaceActions": {
+    "description": "Accessible name for the space row overflow menu trigger"
+  },
+  "conversationActions": "Ações da conversa",
+  "@conversationActions": {
+    "description": "Accessible name for the conversation row overflow menu trigger"
+  },
   "editSpaceRepos": "Editar repositórios",
   "@editSpaceRepos": {
     "description": "Edit a space's repository selection — sidebar row menu item"
@@ -7666,5 +7685,84 @@
   "credentialGateCancelRun": "Cancelar a execução",
   "credentialGateAccountsTried": "Contas tentadas",
   "credentialGateClaudeSignInHint": "Inicia sessão em Configurações → Adaptadores → Claude Code, ou executa o comando de início de sessão num terminal. A execução deteta-o sozinha.",
-  "credentialGateOpenSettings": "Abrir as configurações"
+  "credentialGateOpenSettings": "Abrir as configurações",
+  "selectModel": "Selecionar modelo",
+  "allModels": "Todos os modelos",
+  "noModelsMatchSearch": "Nenhum modelo corresponde à sua pesquisa",
+  "useCustomModelId": "Usar “{id}”",
+  "@useCustomModelId": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "modelFree": "Gratuito",
+  "modelOutputTokens": "{tokens} de saída",
+  "@modelOutputTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPricePerMTokens": "{input} de entrada / {output} de saída por 1M de tokens",
+  "@modelPricePerMTokens": {
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      }
+    }
+  },
+  "modelEffortLevels": "Esforço de raciocínio: {levels}",
+  "@modelEffortLevels": {
+    "placeholders": {
+      "levels": {
+        "type": "String"
+      }
+    }
+  },
+  "modelSupportsReasoning": "Suporta esforço de raciocínio",
+  "profileDeliveryMetrics": "Métricas de entrega",
+  "profileMetricsSample": "PRs analisados: {count}",
+  "profileMergeRate": "Taxa de merge",
+  "profileReviewCoverage": "Cobertura de revisão",
+  "profilePrSize": "Tamanho do PR",
+  "profileTimeToMerge": "Tempo até o merge",
+  "profileMergeTimeTrend": "Tendência do tempo de mesclagem",
+  "profileWeeklyMedian": "Mediana semanal, escala logarítmica",
+  "profilePrOpeningPattern": "Dia da semana × hora, hora local",
+  "profileFirstReview": "Tempo até a primeira revisão",
+  "profileMetricsTruncated": "Os percentis são calculados com base numa amostra limitada dos pedidos de integração disponíveis.",
+  "profileLinesChanged": "{count} linhas",
+  "profileDurationMinutes": "{count} min",
+  "profileDurationHours": "{count} h",
+  "profileDurationDaysHours": "{days} d {hours} h",
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "profileTeamMembers": "Membros: {count}",
+  "noPrsByTeamInWorkspace": "Nenhum pull request de {team} neste espaço de trabalho",
+  "profilePrStateFilterLabel": "Filtrar pull requests por estado",
+  "noProfilePrsMatchSearchHint": "Tente outro título ou número de pull request",
+  "rigNetworkUnrestricted": "Rede sem restrições",
+  "rigNetworkAllowAllHosts": "Permitir todos os anfitriões",
+  "rigNetworkBypassTitle": "Permitir todos os anfitriões da rede?",
+  "rigNetworkBypassBody": "Isto reinicia o ambiente isolado e elimina o trabalho sem commit que estiver no seu interior. Depois, o sistema convidado poderá aceder a qualquer anfitrião da rede até ser fechado.",
+  "rigNetworkRestartUnrestricted": "Reiniciar sem restrições",
+  "rigNetworkUnrestrictedBody": "Este ambiente isolado pode aceder a todos os anfitriões da rede. Feche-o e abra um novo para repor as restrições predefinidas.",
+  "rigNetworkAlreadyUnrestrictedBody": "Este emulador Android já gere a sua própria rede, pelo que o Control Center não pode impor uma lista de anfitriões permitidos. Não é necessário reiniciar.",
+  "rigClipboardPermissionHostToRigTitle": "Colar a área de transferência neste ambiente?",
+  "rigClipboardPermissionHostToRigBody": "Control Center lerá a área de transferência do seu dispositivo e enviará o conteúdo para o ambiente. O conteúdo da área de transferência pode conter senhas ou outros segredos.",
+  "rigClipboardPermissionRigToHostTitle": "Copiar a área de transferência deste ambiente?",
+  "rigClipboardPermissionRigToHostBody": "Control Center lerá a área de transferência do ambiente e substituirá a área de transferência do seu dispositivo pelo conteúdo dela. Trate o conteúdo do ambiente como não confiável.",
+  "rigClipboardAllowTenMinutes": "Permitir por 10 minutos",
+  "rigClipboardAlwaysAllow": "Permitir sempre",
+  "rigClipboardSettingsTitle": "Acesso à área de transferência",
+  "rigClipboardSettingsHint": "Escolha quais transferências da área de transferência podem ser executadas sem perguntar. Permissões temporárias expiram após 10 minutos.",
+  "rigClipboardAlwaysPasteTitle": "Sempre permitir colar em ambientes",
+  "rigClipboardAlwaysPasteDescription": "Enviar a área de transferência deste dispositivo para qualquer ambiente sem perguntar.",
+  "rigClipboardAlwaysCopyTitle": "Sempre permitir copiar de ambientes",
+  "rigClipboardAlwaysCopyDescription": "Colocar conteúdo da área de transferência de qualquer ambiente neste dispositivo sem perguntar."
 }

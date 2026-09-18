@@ -1,0 +1,455 @@
+{
+  "@@locale": "ar",
+
+  "appTitle": "Control Center",
+  "back": "رجوع",
+  "cancel": "إلغاء",
+  "retry": "إعادة المحاولة",
+  "tryAgain": "حاول مرة أخرى",
+  "settings": "الإعدادات",
+  "refresh": "تحديث",
+  "approve": "موافقة",
+  "deny": "رفض",
+  "continueLabel": "متابعة",
+  "agentQuestionHeader": "سؤال لك",
+  "agentQuestionAnsweredLabel": "تمت الإجابة",
+  "agentQuestionSkip": "تخطي",
+  "agentQuestionSkippedLabel": "تم التخطي",
+  "agentQuestionFreeformHint": "اكتب إجابتك…",
+  "agentApprovalRequired": "يلزم الموافقة",
+  "approveAndRemember": "الموافقة لمدة 8 ساعات",
+  "decline": "رفض",
+  "confirm": "تأكيد",
+  "send": "إرسال",
+  "close": "إغلاق",
+  "expand": "توسيع",
+  "zoomIn": "تكبير",
+  "zoomOut": "تصغير",
+  "resetZoom": "إعادة تعيين التكبير",
+
+  "scanQrPrompt": "امسح رمز QR من جهاز Mac لإقران هذا الهاتف.",
+  "scanQrHelp": "افتح الكاميرا ووجّهها نحو رمز QR المعروض في Control Center على جهاز Mac. يتصل هذا الهاتف مباشرة بجهاز Mac عبر رابط خاص.",
+  "connectingToMac": "جارٍ الاتصال بجهاز Mac…",
+  "connectingDetail": "جارٍ إنشاء رابط آمن ومباشر.",
+  "identityChangedTitle": "تغيّرت هوية الخادم",
+  "identityChangedBody": "لم يعد هذا الخادم يطابق الهوية المحفوظة عند الإقران. قد يعني ذلك أن الخادم أُعيد تثبيته — أو أن شيئًا ما يعترض الاتصال. حفاظًا على أمانك، لن يتصل هذا الجهاز. أزل الإقران، ثم امسح رمز QR جديدًا من جهاز Mac لإعادة الإقران.",
+  "removePairing": "إزالة الإقران",
+  "couldntConnect": "تعذّر الاتصال",
+  "pendingPairingTitle": "هل تريد الاتصال بهذا الخادم؟",
+  "pendingPairingBody": "طلب رابطٌ من Control Center الإقران بهذا الخادم. لا تتابع إلا إذا كنت أنت من بدأ ذلك.",
+  "connect": "اتصال",
+
+  "failureNotPaired": "غير مقترن — امسح رمز QR من جهاز Mac",
+  "failureUnreachable": "تعذّر الوصول إلى الخادم عبر أي مسار — تأكد من أنه يعمل، أو جرّب الشبكة نفسها",
+  "failureIdentityChanged": "تغيّرت هوية الخادم — إذا أُعيد تثبيته، فأعد إقران هذا الجهاز",
+  "failureAuthRejected": "رفض الخادم هذا الجهاز — أعد إقرانه من جهاز Mac",
+  "failureUnknown": "تعذّر الاتصال — انقر لإعادة المحاولة",
+
+  "statusConnected": "متصل",
+  "statusConnecting": "جارٍ الاتصال",
+  "statusOffline": "غير متصل",
+  "statusIdentityMismatch": "عدم تطابق الهوية",
+  "statusNotPaired": "غير مقترن",
+  "statusConfirmPairing": "تأكيد الإقران",
+
+  "connectionFailed": "فشل الاتصال",
+  "identityMismatchBanner": "تغيّرت هوية الخادم — توقّف الاتصال. أعد إقران هذا الجهاز للمتابعة.",
+  "tabInbox": "الوارد",
+  "tabTickets": "التذاكر",
+  "tabChat": "الدردشة",
+  "tabPrs": "PRs",
+  "tabCalendar": "التقويم",
+  "tabNews": "الأخبار",
+  "tabWaitingCount": "{label}، {count} في الانتظار",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "updateAvailable": "يتوفر إصدار جديد من Control Center",
+
+  "appearance": "المظهر",
+  "language": "اللغة",
+  "device": "الجهاز",
+  "themeSystem": "النظام",
+  "themeLight": "فاتح",
+  "themeDark": "داكن",
+  "languageSystem": "النظام",
+  "disconnectTapAgain": "انقر مرة أخرى لفصل هذا الجهاز عن جهاز Mac",
+  "disconnectDevice": "فصل هذا الجهاز",
+  "disconnect": "فصل",
+
+  "chooseWorkspace": "اختر مساحة العمل",
+  "workspaces": "مساحات العمل",
+  "workspacesLoadFailed": "تعذّر تحميل مساحات العمل",
+  "noWorkspacesYet": "لا توجد مساحات عمل بعد",
+  "selectWorkspace": "تحديد {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "inboxLoadFailed": "تعذّر تحميل الوارد",
+  "allCaughtUp": "اطّلعت على كل شيء",
+  "inboxNoForgeAccount": "لا يوجد حساب منصة Git متصل بالخادم، لذا لا يمكن نسب طلبات السحب إليك بعد.",
+  "inboxNothingWaiting": "لا شيء معطّل ولا يوجد طلب سحب في انتظارك.",
+  "blocked": "معطّل",
+  "sectionNeedsYourReview": "بحاجة إلى مراجعتك",
+  "sectionReturnedToYou": "أُعيدت إليك",
+  "sectionApprovedAndReady": "معتمدة وجاهزة",
+  "sectionYourDrafts": "مسوداتك",
+  "sectionWaitingForReviewers": "في انتظار المراجعين",
+  "sectionMergingAndMerged": "قيد الدمج ومدموجة حديثًا",
+  "sectionWaitingForAuthor": "في انتظار المؤلف",
+  "waitingAgo": "في الانتظار منذ {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": { "type": "String" }
+    }
+  },
+  "openConversation": "فتح المحادثة",
+
+  "calendarLoadFailed": "تعذّر تحميل التقويم",
+  "nothingScheduled": "لا شيء مجدول",
+  "calendarEmptyDescription": "تظهر هنا الأحداث من تقاويمك المتصلة.",
+  "agenda": "جدول الأعمال",
+  "syncCalendarsNow": "مزامنة التقاويم الآن",
+  "event": "حدث",
+  "eventNotFound": "لم يُعثر على الحدث",
+  "eventNotFoundDescription": "قد يكون خارج نطاق جدول الأعمال، أو أُزيل من المصدر.",
+  "joinMeeting": "الانضمام إلى الاجتماع",
+  "join": "انضمام",
+  "attendeesCount": "الحاضرون ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "details": "التفاصيل",
+  "allDay": "طوال اليوم",
+  "happeningNow": "يحدث الآن",
+  "inDuration": "بعد {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "attendeeAccepted": "وافق",
+  "attendeeDeclined": "اعتذر",
+  "attendeeMaybe": "ربما",
+  "attendeeNoReply": "لم يرد",
+  "organizer": "المنظّم",
+  "calendarNoAccounts": "لا يوجد تقويم متصل بمساحة العمل هذه. اربط تقويمًا من تطبيق سطح المكتب — يخزّن تسجيل الدخول رمزه على الخادم.",
+  "calendarReauthNeeded": "يحتاج أحد حسابات التقويم إلى إعادة الربط — وقد يكون ما تراه أدناه قديمًا. أعد ربطه من تطبيق سطح المكتب.",
+
+  "spacesLoadFailed": "تعذّر تحميل المساحات",
+  "noSpaces": "لا توجد مساحات",
+  "spacesEmptyDescription": "تظهر هنا المساحات الموجودة في مساحة العمل هذه.",
+  "thread": "سلسلة الرسائل",
+  "agentWorking": "الوكيل يعمل",
+  "messagesLoadFailed": "تعذّر تحميل الرسائل",
+  "noMessagesYet": "لا توجد رسائل بعد",
+  "noMessagesDescription": "أرسل رسالة لبدء المحادثة.",
+  "agentResponding": "الوكيل يرد",
+  "agentFinished": "انتهى الوكيل",
+  "attachmentsTooLarge": "{count, plural, zero{\u2068{names}\u2069 أكبر من أن تُرسل من هنا.} one{\u2068{names}\u2069 أكبر من أن يُرسل من هنا.} two{\u2068{names}\u2069 أكبر من أن يُرسلا من هنا.} few{\u2068{names}\u2069 أكبر من أن تُرسل من هنا.} many{\u2068{names}\u2069 أكبر من أن تُرسل من هنا.} other{\u2068{names}\u2069 أكبر من أن تُرسل من هنا.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, zero{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.} one{\u2068{names}\u2069 أكبر من أن يُرسل عبر المرحّل من هنا.} two{\u2068{names}\u2069 أكبر من أن يُرسلا عبر المرحّل من هنا.} few{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.} many{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.} other{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentUploadFailed": "تعذّر رفع المرفق. حاول مرة أخرى.",
+  "attachmentsLeftOut": "{count, plural, zero{لم يتعذّر رفع أي مرفق.} one{تعذّر رفع مرفق واحد فاستُبعد.} two{تعذّر رفع مرفقين فاستُبعدا.} few{تعذّر رفع {count} مرفقات فاستُبعدت.} many{تعذّر رفع {count} مرفقًا فاستُبعدت.} other{تعذّر رفع {count} مرفق فاستُبعدت.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teammate": "زميل",
+  "agent": "وكيل",
+  "attachFile": "إرفاق ملف",
+  "messageHint": "رسالة",
+  "removeAttachment": "إزالة \u2068{name}\u2069",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "articlesLoadFailed": "تعذّر تحميل المقالات",
+  "noArticles": "لا توجد مقالات",
+  "articlesEmptyDescription": "تظهر المقالات الجديدة هنا مع تحديث الخلاصات.",
+  "unread": "غير مقروءة",
+  "allFeeds": "كل الخلاصات",
+  "save": "حفظ",
+  "unsave": "إلغاء الحفظ",
+  "readFullArticle": "قراءة المقال كاملًا",
+
+  "ticketsLoadFailed": "تعذّر تحميل التذاكر",
+  "noTickets": "لا توجد تذاكر",
+  "ticketsEmptyDescription": "تظهر هنا التذاكر الموجودة في مساحة العمل هذه.",
+  "all": "الكل",
+  "ticket": "تذكرة",
+  "ticketLoadFailed": "تعذّر تحميل التذكرة",
+  "assignedTo": "مُسندة إلى {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openInBrowser": "فتح في المتصفح",
+  "status": "الحالة",
+  "assign": "إسناد",
+  "reassign": "إعادة إسناد",
+  "noAgents": "لا يوجد وكلاء",
+  "noAgentsDescription": "أسنِد وكيلًا من مساحة العمل هذه.",
+  "statusOpen": "مفتوحة",
+  "statusInProgress": "قيد التنفيذ",
+  "statusBlocked": "معطّلة",
+  "statusInReview": "قيد المراجعة",
+  "statusDone": "منجزة",
+  "statusBacklog": "قائمة الانتظار",
+
+  "lensNeedsMe": "بحاجة إليّ",
+  "lensMine": "طلباتي",
+  "prsLoadFailed": "تعذّر تحميل طلبات السحب",
+  "noOpenPullRequests": "لا توجد طلبات سحب مفتوحة",
+  "nothingWaitingOnReview": "لا شيء في انتظار مراجعتك",
+  "noOwnOpenPullRequests": "ليس لديك طلبات سحب مفتوحة",
+  "nothingBlocked": "لا شيء معطّل",
+  "prsEmptyDescription": "تظهر هنا طلبات السحب عبر مستودعات مساحة العمل هذه.",
+  "refreshPullRequests": "تحديث طلبات السحب",
+  "noForgeConnected": "لا توجد منصة Git متصلة بالخادم، لذا يتعذّر جلب طلبات السحب. اربط منصة من تطبيق سطح المكتب.",
+  "reposUnreadable": "{count, plural, zero{لم تتعذّر قراءة أي مستودع.} one{تعذّرت قراءة مستودع واحد.} two{تعذّرت قراءة مستودعين.} few{تعذّرت قراءة {count} مستودعات.} many{تعذّرت قراءة {count} مستودعًا.} other{تعذّرت قراءة {count} مستودع.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reposNotReadable": "تعذّرت قراءة: \u2068{names}\u2069",
+  "installationSuspendedTitle": "تم تعليق تثبيت GitHub App",
+  "installationSuspendedBody": "يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub، أو اربط رمز وصول لديه صلاحية الوصول.",
+  "installationSuspendedNotice": "تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub، أو اربط رمز وصول لديه صلاحية الوصول.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+
+  "draft": "مسودة",
+  "merged": "تم الدمج",
+  "closed": "مغلق",
+  "open": "مفتوح",
+  "approved": "تمت الموافقة",
+  "changesRequested": "طُلبت تغييرات",
+  "reviewRequired": "المراجعة مطلوبة",
+  "checksPassing": "الفحوصات ناجحة",
+  "checksFailing": "الفحوصات فاشلة",
+  "checksRunning": "الفحوصات قيد التشغيل",
+  "prSemanticLabel": "{title}، {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+
+  "pullRequest": "طلب سحب",
+  "prLoadFailed": "تعذّر تحميل طلب السحب هذا",
+  "openOnForge": "فتح على منصة Git",
+  "requestChangesNeedsComment": "أضف تعليقًا يوضح ما يلزم تغييره.",
+  "conversation": "المحادثة",
+  "files": "الملفات",
+  "checks": "الفحوصات",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "filesCount": "{count, plural, zero{لا ملفات} one{ملف واحد} two{ملفان} few{{count} ملفات} many{{count} ملفًا} other{{count} ملف}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commitsCount": "{count, plural, zero{لا إيداعات} one{إيداع واحد} two{إيداعان} few{{count} إيداعات} many{{count} إيداعًا} other{{count} إيداع}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "conflicts": "تعارضات",
+  "reviewers": "المراجعون",
+  "noDescriptionNoComments": "لا يوجد وصف ولا تعليقات بعد.",
+  "noChangedFiles": "لا توجد ملفات متغيّرة.",
+  "noChecksReported": "لم يُبلَّغ عن أي فحوصات للإيداع الأخير.",
+  "reviewCommentHint": "اكتب تعليق مراجعة…",
+  "comment": "تعليق",
+  "commentPosted": "نُشر التعليق",
+  "request": "طلب",
+  "squashAndMerge": "ضغط ودمج",
+  "noActionsAvailable": "{status} — لا توجد إجراءات متاحة.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "reviewApproved": "وافق",
+  "reviewRequestedChanges": "طلب تغييرات",
+  "reviewCommented": "راجع",
+  "reviewPending": "قيد الانتظار",
+  "unknownAuthor": "غير معروف",
+  "hideDiffFor": "إخفاء فروقات \u2068{file}\u2069",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "showDiffFor": "عرض فروقات \u2068{file}\u2069",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "checkRunning": "قيد التشغيل",
+  "checkPassed": "نجح",
+  "checkFailed": "فشل",
+  "checkCancelled": "أُلغي",
+  "checkSkipped": "تم تخطيه",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "checkSemanticLabel": "\u2068{name}\u2069، {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+
+  "noTextDiff": "لا يوجد فرق نصي لهذا الملف — فهو إما ثنائي أو أكبر من أن تعيده منصة Git.",
+  "showRemainingLines": "{count, plural, zero{عرض الأسطر المتبقية} one{عرض السطر المتبقي} two{عرض السطرين المتبقيين} few{عرض {count} أسطر متبقية} many{عرض {count} سطرًا متبقيًا} other{عرض {count} سطر متبقٍ}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "unchangedLines": "{count, plural, zero{لا أسطر غير متغيّرة} one{سطر واحد غير متغيّر} two{سطران غير متغيّرين} few{{count} أسطر غير متغيّرة} many{{count} سطرًا غير متغيّر} other{{count} سطر غير متغيّر}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "jumpToLatest": "الانتقال إلى الأحدث",
+  "streaming": "جارٍ البث",
+
+  "working": "جارٍ العمل",
+  "input": "الإدخال",
+  "output": "الإخراج",
+
+  "now": "الآن",
+  "agoMinutes": "{count} د",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoHours": "{count} س",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoDays": "{count} ي",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "today": "اليوم",
+  "tomorrow": "غدًا",
+  "yesterday": "أمس",
+  "durationMinutes": "{count} د",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count} س",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours} س {minutes} د",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  }
+}

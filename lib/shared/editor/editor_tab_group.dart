@@ -25,6 +25,7 @@ class EditorChrome {
   const EditorChrome({
     this.iconFor,
     this.leadingFor,
+    this.trailingFor,
     this.labelFor,
     this.dirtyFor,
     this.confirmClose,
@@ -44,6 +45,10 @@ class EditorChrome {
   /// builder receives the strip's resolved label color so the widget can tint
   /// itself like an icon.
   final Widget Function(Color color)? Function(EditorTab tab)? leadingFor;
+
+  /// Resolves interactive status controls shown between the label and close
+  /// slot. The builder receives the resolved tab-label color.
+  final Widget Function(Color color)? Function(EditorTab tab)? trailingFor;
 
   /// Resolves a tab's header label. Defaults to the tab's own `label`.
   final String Function(EditorTab tab)? labelFor;
@@ -83,6 +88,8 @@ class EditorChrome {
   IconData? _icon(EditorTab tab) => (iconFor ?? (t) => t.icon)(tab);
   Widget Function(Color color)? _leading(EditorTab tab) =>
       leadingFor?.call(tab);
+  Widget Function(Color color)? _trailing(EditorTab tab) =>
+      trailingFor?.call(tab);
   String _label(EditorTab tab) => (labelFor ?? (t) => t.label)(tab);
   bool _dirty(EditorTab tab) => (dirtyFor ?? (t) => false)(tab);
 }
@@ -307,6 +314,9 @@ class _EditorTabGroupState extends State<EditorTabGroup> {
           leadings: chrome.leadingFor == null
               ? null
               : [for (final t in tabs) chrome._leading(t)],
+          trailings: chrome.trailingFor == null
+              ? null
+              : [for (final t in tabs) chrome._trailing(t)],
           dirty: [for (final t in tabs) chrome._dirty(t)],
           selectedIndex: selected,
           onTabSelected: (i) {

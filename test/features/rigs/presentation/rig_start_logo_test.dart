@@ -16,10 +16,11 @@ import 'package:flutter_test/flutter_test.dart';
 /// affordance is the logo, not the generic surface glyph.
 void main() {
   RigBackendView backendFor(String surface) => RigBackendView(
-    backend: 'smolvm',
-    label: 'smolvm',
+    backend: surface == RigTabSurfaces.ios ? 'ios-simulator' : 'smolvm',
+    label: surface == RigTabSurfaces.ios ? 'iOS Simulator' : 'smolvm',
     available: true,
     surfaces: [surface],
+    enforcedEgress: surface != RigTabSurfaces.ios,
   );
 
   Future<void> pumpStart(
@@ -86,6 +87,26 @@ void main() {
     expect(find.byType(BrowserEngineLogo), findsNothing);
     expect(
       find.byIcon(RigTabSurfaces.iconFor(RigTabSurfaces.computer)),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('iOS start state names its simulator and host network', (
+    tester,
+  ) async {
+    await pumpStart(tester, surface: RigTabSurfaces.ios);
+    expect(find.text('iOS Simulator'), findsOneWidget);
+    expect(
+      find.text(
+        'Creates a disposable iOS Simulator on the server Mac. '
+        'It is deleted when the rig closes; network access is not enclosed.',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text(
+        'Network is not enclosed on this backend — it manages its own connectivity.',
+      ),
       findsOneWidget,
     );
   });

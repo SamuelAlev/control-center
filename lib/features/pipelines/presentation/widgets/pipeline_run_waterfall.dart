@@ -7,7 +7,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// A horizontal timing waterfall over a run's step-runs: each bar is offset and
 /// sized to the step's slice of the run's wall-clock window. Failed steps
@@ -81,7 +81,6 @@ class _PipelineRunWaterfallState extends State<PipelineRunWaterfall> {
       return const SizedBox.shrink();
     }
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
 
     // A finished run's timeline is frozen at its end, never at `now`. An
@@ -137,7 +136,6 @@ class _PipelineRunWaterfallState extends State<PipelineRunWaterfall> {
             clock: clock,
             costCents: widget.costByStepId[s.stepId],
             tokens: t,
-            theme: theme,
           ),
       ],
     );
@@ -195,7 +193,7 @@ class _PipelineRunWaterfallState extends State<PipelineRunWaterfall> {
                         ),
                         if (hasGap) ...[
                           const SizedBox(width: 8),
-                          _GapChip(idleMs: idleMs, tokens: t, theme: theme),
+                          _GapChip(idleMs: idleMs, tokens: t),
                         ],
                       ],
                     ),
@@ -229,7 +227,6 @@ class _WaterfallRow extends StatelessWidget {
     required this.clock,
     required this.costCents,
     required this.tokens,
-    required this.theme,
   });
 
   final PipelineStepRun stepRun;
@@ -242,7 +239,6 @@ class _WaterfallRow extends StatelessWidget {
   final DateTime clock;
   final int? costCents;
   final DesignSystemTokens tokens;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {
@@ -286,6 +282,11 @@ class _WaterfallRow extends StatelessWidget {
                     return SizedBox(
                       height: 14,
                       child: Stack(
+                        // RTL carve-out: the bar track is a time axis — each
+                        // offset is a fraction of the run's wall-clock window
+                        // and time runs left→right in every locale (the
+                        // diagram-canvas policy). The textual chrome around
+                        // the track mirrors normally.
                         children: [
                           Container(
                             decoration: BoxDecoration(
@@ -358,7 +359,7 @@ class _WaterfallRow extends StatelessWidget {
                       (stepRun.attemptCount > 1
                           ? ' ×${stepRun.attemptCount}'
                           : ''),
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.end,
                   style: CcTypography.caption.copyWith(
                     color: tokens.textQuaternary,
                   ),
@@ -370,7 +371,7 @@ class _WaterfallRow extends StatelessWidget {
                   (costCents != null && costCents! > 0)
                       ? _fmtCost(costCents!)
                       : '',
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.end,
                   style: CcTypography.caption.copyWith(
                     color: tokens.textTertiary,
                   ),
@@ -381,7 +382,7 @@ class _WaterfallRow extends StatelessWidget {
           if (stepRun.status == PipelineStepStatus.failed &&
               stepRun.errorMessage != null)
             Padding(
-              padding: const EdgeInsets.only(left: 4, top: 2),
+              padding: const EdgeInsetsDirectional.only(start: 4, top: 2),
               child: Text(
                 stepRun.errorMessage!,
                 maxLines: 2,
@@ -432,15 +433,10 @@ class _WaterfallRow extends StatelessWidget {
 /// break in the timeline. Carries a tooltip because "idle" alone doesn't say
 /// what the number measures.
 class _GapChip extends StatelessWidget {
-  const _GapChip({
-    required this.idleMs,
-    required this.tokens,
-    required this.theme,
-  });
+  const _GapChip({required this.idleMs, required this.tokens});
 
   final int idleMs;
   final DesignSystemTokens tokens;
-  final ThemeData theme;
 
   @override
   Widget build(BuildContext context) {

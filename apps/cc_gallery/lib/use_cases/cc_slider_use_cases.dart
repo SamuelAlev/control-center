@@ -5,13 +5,12 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
 /// Use-cases for [CcSlider] — the continuous/stepped value control.
 ///
-/// Sliders are keyboard-operable and carry a `semanticLabel` plus a formatter,
-/// so the announced value is the one a person means ("70 percent"), not a raw
-/// double.
+/// Hovering the track aims a future value (ghost + chip) without committing;
+/// a click writes it. The committed reading sits in mono at the start edge.
 
 const _path = '[Components]/Inputs';
 
-/// Continuous vs stepped, at the sizes the app actually uses.
+/// Continuous, stepped, labelled and disabled — the states the app uses.
 @widgetbook.UseCase(name: 'Continuous and stepped', type: CcSlider, path: _path)
 Widget ccSliderVariantsUseCase(BuildContext context) =>
     const Center(child: _SliderShowcase());
@@ -25,10 +24,25 @@ Widget ccSliderPlaygroundUseCase(BuildContext context) {
     max: 10,
   );
   final enabled = context.knobs.boolean(label: 'Enabled', initialValue: true);
+  final showValue = context.knobs.boolean(
+    label: 'Show value',
+    initialValue: true,
+  );
+  final showSteps = context.knobs.boolean(
+    label: 'Show steps',
+    initialValue: true,
+  );
+  final labelled = context.knobs.boolean(
+    label: 'Label prefix',
+    initialValue: false,
+  );
   return Center(
     child: _SliderShowcase(
       divisions: divisions == 0 ? null : divisions,
       enabled: enabled,
+      showValue: showValue,
+      showSteps: showSteps,
+      label: labelled ? 'Volume' : null,
       single: true,
     ),
   );
@@ -39,11 +53,17 @@ class _SliderShowcase extends StatefulWidget {
   const _SliderShowcase({
     this.divisions,
     this.enabled = true,
+    this.showValue = true,
+    this.showSteps,
+    this.label,
     this.single = false,
   });
 
   final int? divisions;
   final bool enabled;
+  final bool showValue;
+  final bool? showSteps;
+  final String? label;
   final bool single;
 
   @override
@@ -53,26 +73,35 @@ class _SliderShowcase extends StatefulWidget {
 class _SliderShowcaseState extends State<_SliderShowcase> {
   double _continuous = 0.7;
   double _stepped = 0.5;
+  double _named = 1;
+  double _opacity = 0.75;
+  double _concurrency = 4;
 
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
-    Widget labelled(String label, Widget slider) => Column(
+    Widget labelled(String caption, Widget slider) => Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: CcTypography.label.copyWith(color: t.textTertiary)),
+        Text(
+          caption,
+          style: CcTypography.label.copyWith(color: t.textTertiary),
+        ),
         const SizedBox(height: AppSpacing.xs),
-        SizedBox(width: 280, child: slider),
+        SizedBox(width: 320, child: slider),
       ],
     );
 
     if (widget.single) {
       return labelled(
-        'Value ${(_continuous * 100).round()}%',
+        'Hover the track to aim, click to set',
         CcSlider(
           value: _continuous,
           divisions: widget.divisions,
+          showValue: widget.showValue,
+          showSteps: widget.showSteps,
+          label: widget.label,
           semanticLabel: 'Value',
           semanticFormatter: (v) => '${(v * 100).round()} percent',
           onChanged: widget.enabled
@@ -86,7 +115,7 @@ class _SliderShowcaseState extends State<_SliderShowcase> {
       mainAxisSize: MainAxisSize.min,
       children: [
         labelled(
-          'Continuous — ${(_continuous * 100).round()}%',
+          'Continuous',
           CcSlider(
             value: _continuous,
             semanticLabel: 'Continuous value',
@@ -94,9 +123,9 @@ class _SliderShowcaseState extends State<_SliderShowcase> {
             onChanged: (v) => setState(() => _continuous = v),
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.xl),
         labelled(
-          'Stepped (4 divisions)',
+          'Steps',
           CcSlider(
             value: _stepped,
             divisions: 4,
@@ -104,7 +133,45 @@ class _SliderShowcaseState extends State<_SliderShowcase> {
             onChanged: (v) => setState(() => _stepped = v),
           ),
         ),
-        const SizedBox(height: AppSpacing.lg),
+        const SizedBox(height: AppSpacing.xl),
+        labelled(
+          'Named steps',
+          CcSlider(
+            value: _named,
+            min: 0,
+            max: 2,
+            divisions: 2,
+            stepLabels: const ['Low', 'Medium', 'High'],
+            showValue: false,
+            semanticLabel: 'Effort',
+            onChanged: (v) => setState(() => _named = v),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        labelled(
+          'Labelled',
+          CcSlider(
+            value: _opacity,
+            divisions: 20,
+            label: 'Opacity',
+            semanticLabel: 'Opacity',
+            onChanged: (v) => setState(() => _opacity = v),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        labelled(
+          'Integer range',
+          CcSlider(
+            value: _concurrency,
+            min: 1,
+            max: 8,
+            divisions: 7,
+            semanticLabel: 'Concurrency',
+            semanticFormatter: (v) => '${v.round()}',
+            onChanged: (v) => setState(() => _concurrency = v),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
         labelled(
           'Disabled',
           const CcSlider(

@@ -8,6 +8,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -33,6 +35,13 @@ class _ActiveWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
 final _space = Space(
   id: 'g-1',
   name: 'Dev Team',
+  createdAt: DateTime(2024),
+  updatedAt: DateTime(2024),
+);
+
+final _spaceB = Space(
+  id: 'g-2',
+  name: 'Ops',
   createdAt: DateTime(2024),
   updatedAt: DateTime(2024),
 );
@@ -70,16 +79,35 @@ Repo _repo(String id, String fullName) => Repo(
 
 /// Common provider overrides so the sidebar's per-row providers resolve to
 /// cheap defaults instead of reaching for DB/RPC infrastructure.
-List<Override> _commonOverrides({required List<Space> spaces}) => [
+List<Override> _commonOverrides({
+  required List<Space> spaces,
+  Set<String> unreadSpaceIds = const {},
+}) => [
   activeWorkspaceIdProvider.overrideWith(_ActiveWorkspaceIdNotifier.new),
   workspaceVisibleSpacesProvider(_workspaceId).overrideWithValue(spaces),
   appPreferencesProvider.overrideWithValue(prefs),
   workspacesProvider.overrideWith((ref) => Stream.value(const [])),
   for (final c in spaces) ...[
     spaceStatusProvider(c.id).overrideWithValue(SpaceStatus.idle),
-    spaceUnreadProvider(c.id).overrideWithValue(false),
+    spaceUnreadProvider(c.id).overrideWithValue(unreadSpaceIds.contains(c.id)),
     spacePrsProvider(c.id).overrideWithValue(const []),
   ],
+];
+
+/// A space with two live conversations — the sidebar lists them under the
+/// space row. [unread] lights the unread dot on those conversation ids.
+List<Override> _listedConversationOverrides({
+  Map<String, bool> unread = const {},
+}) => [
+  spaceConversationsProvider(
+    'g-1',
+  ).overrideWith((ref) => Stream.value(_twoConversations)),
+  spaceBusyConversationIdsProvider('g-1').overrideWithValue(const <String>{}),
+  for (final c in _twoConversations)
+    conversationUnreadProvider((
+      spaceId: 'g-1',
+      conversationId: c.id,
+    )).overrideWithValue(unread[c.id] ?? false),
 ];
 
 /// Hosts [ConversationsSidebarSection] at a spaces location so the widget's
@@ -112,6 +140,24 @@ Widget _wrap(GoRouter router) => CcTheme(
 );
 
 late AppPreferences prefs;
+
+Finder _overflowTrigger() => find.byWidgetPredicate(
+  (widget) => widget is CcIcon && widget.icon == AppIcons.moreVertical,
+);
+
+/// Hovers [row] so its overflow trigger takes layout space, then opens the
+/// dropdown. Widget tests default to a touch pointer, so hover is a real
+/// mouse move, matching the production reveal.
+Future<void> _openOverflow(WidgetTester tester, Finder row) async {
+  final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+  await mouse.addPointer(location: Offset.zero);
+  addTearDown(mouse.removePointer);
+  await mouse.moveTo(tester.getCenter(row));
+  await tester.pump();
+  await tester.tap(_overflowTrigger());
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
 
 void main() {
   setUp(() async {
@@ -162,6 +208,46 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Dev Team'), findsOneWidget);
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('space rows share a travelling fluid hover wash', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _commonOverrides(spaces: [_space, _spaceB]),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await pointer.addPointer(
+        location: tester.getCenter(find.text('Dev Team')),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      final highlight = tester.widget<AnimatedOpacity>(
+        find.byKey(const ValueKey<String>('cc-fluid-hover-highlight')),
+      );
+      expect(
+        highlight.opacity,
+        1,
+        reason: 'The spaces group must wash the hovered row, not skip it.',
+      );
+
+      await pointer.moveTo(tester.getCenter(find.text('Ops')));
+      await tester.pump();
+      await tester.pump();
+
+      final moved = tester.widget<AnimatedOpacity>(
+        find.byKey(const ValueKey<String>('cc-fluid-hover-highlight')),
+      );
+      expect(moved.opacity, 1);
       await tester.pumpWidget(Container());
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -262,7 +348,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('right-click archives the space instead of deleting it', (
+    testWidgets('overflow menu archives the space instead of deleting it', (
       tester,
     ) async {
       final port = _FakeMessagingPort();
@@ -282,12 +368,7 @@ void main() {
 
       // The row menu's only destructive-adjacent action is Archive — a
       // reversible hide, so it fires with no confirmation dialog.
-      await tester.tapAt(
-        tester.getCenter(find.text('Dev Team')),
-        buttons: kSecondaryMouseButton,
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _openOverflow(tester, find.text('Dev Team'));
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.archiveSpace), findsOneWidget);
@@ -308,12 +389,113 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('long-press on the space row opens the menu, never archives', (
+    testWidgets('overflow trigger is hidden until the row is hovered', (
       tester,
     ) async {
-      // Long-press is the mobile right-click: it must OPEN the menu. An
-      // instant fire on the hold itself is a mis-tap away from shelving a
-      // space the user only pressed a beat too long.
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _commonOverrides(spaces: [_space]),
+          child: _wrap(_router(spacesRoute(_workspaceId))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(_overflowTrigger(), findsNothing);
+
+      final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await mouse.addPointer(location: Offset.zero);
+      addTearDown(mouse.removePointer);
+      await mouse.moveTo(tester.getCenter(find.text('Dev Team')));
+      await tester.pump();
+
+      expect(_overflowTrigger(), findsOneWidget);
+      await tester.pumpWidget(Container());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'overflow trigger hides after the menu closes and the pointer leaves',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _commonOverrides(spaces: [_space]),
+            child: _wrap(_router(spacesRoute(_workspaceId))),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+        await mouse.addPointer(location: Offset.zero);
+        addTearDown(mouse.removePointer);
+        await mouse.moveTo(tester.getCenter(find.text('Dev Team')));
+        await tester.pump();
+
+        await tester.tap(_overflowTrigger());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+        expect(find.text(l10n.archiveSpace), findsOneWidget);
+        expect(_overflowTrigger(), findsOneWidget);
+
+        await tester.tapAt(const Offset(700, 500));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text(l10n.archiveSpace), findsNothing);
+        // The mouse is still over the row, so the trigger stays revealed.
+        expect(_overflowTrigger(), findsOneWidget);
+
+        await mouse.moveTo(const Offset(-20, -20));
+        await tester.pump();
+
+        expect(_overflowTrigger(), findsNothing);
+
+        await mouse.moveTo(tester.getCenter(find.text('Dev Team')));
+        await tester.pump();
+        expect(_overflowTrigger(), findsOneWidget);
+
+        await mouse.moveTo(const Offset(-20, -20));
+        await tester.pump();
+        expect(_overflowTrigger(), findsNothing);
+
+        await tester.pumpWidget(Container());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets('right-click no longer opens the space menu', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            messagingServiceProvider.overrideWithValue(_FakeMessagingPort()),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tapAt(
+        tester.getCenter(find.text('Dev Team')),
+        buttons: kSecondaryMouseButton,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(find.text(l10n.archiveSpace), findsNothing);
+      expect(find.text(l10n.renameSpace), findsNothing);
+      await tester.pumpWidget(Container());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('long-press on the space row does not archive or open a menu', (
+      tester,
+    ) async {
       final port = _FakeMessagingPort();
       final router = _router(spaceRoute(_workspaceId, 'g-1'));
 
@@ -334,33 +516,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-      expect(find.text(l10n.archiveSpace), findsOneWidget);
+      expect(find.text(l10n.archiveSpace), findsNothing);
       expect(
         port.archived,
         isEmpty,
         reason: 'the long-press alone must not archive the space',
-      );
-
-      // The deliberate second tap still archives.
-      await tester.tap(find.text(l10n.archiveSpace));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(port.archived, [(_workspaceId, 'g-1')]);
-      expect(
-        router.routerDelegate.currentConfiguration.uri.toString(),
-        spacesRoute(_workspaceId),
       );
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
     });
 
     testWidgets(
-      'long-press on a conversation row opens the menu, never archives',
+      'long-press on a conversation row does not archive or open a menu',
       (tester) async {
-        // Regression: a long-press used to archive the conversation outright —
-        // indistinguishable from a delete, because archived conversations have
-        // no restore surface. The long-press must only OPEN the menu.
         final conversations = _FakeConversationRepository();
         final router = _router(spaceRoute(_workspaceId, 'g-1'));
 
@@ -370,12 +538,7 @@ void main() {
               ..._commonOverrides(spaces: [_space]),
               messagingServiceProvider.overrideWithValue(_FakeMessagingPort()),
               conversationRepositoryProvider.overrideWithValue(conversations),
-              spaceConversationsProvider(
-                'g-1',
-              ).overrideWith((ref) => Stream.value(_twoConversations)),
-              spaceBusyConversationIdsProvider(
-                'g-1',
-              ).overrideWithValue(const <String>{}),
+              ..._listedConversationOverrides(),
             ],
             child: _wrap(router),
           ),
@@ -388,27 +551,18 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-        expect(find.text(l10n.archiveConversation), findsOneWidget);
+        expect(find.text(l10n.archiveConversation), findsNothing);
         expect(
           conversations.statusCalls,
           isEmpty,
           reason: 'the long-press alone must not archive the conversation',
         );
-
-        // The deliberate second tap still archives.
-        await tester.tap(find.text(l10n.archiveConversation));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(conversations.statusCalls, [
-          (workspaceId: _workspaceId, conversationId: 'conv-2'),
-        ]);
         await tester.pumpWidget(Container());
         await tester.pumpAndSettle();
       },
     );
 
-    testWidgets('space row menu offers rename, repositories and archive', (
+    testWidgets('space row overflow offers rename, repositories and archive', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -423,12 +577,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tapAt(
-        tester.getCenter(find.text('Dev Team')),
-        buttons: kSecondaryMouseButton,
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _openOverflow(tester, find.text('Dev Team'));
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       expect(find.text(l10n.renameSpace), findsOneWidget);
@@ -455,12 +604,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tapAt(
-        tester.getCenter(find.text('Dev Team')),
-        buttons: kSecondaryMouseButton,
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _openOverflow(tester, find.text('Dev Team'));
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.renameSpace));
@@ -510,12 +654,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tapAt(
-        tester.getCenter(find.text('Dev Team')),
-        buttons: kSecondaryMouseButton,
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _openOverflow(tester, find.text('Dev Team'));
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.editSpaceRepos));
@@ -561,12 +700,7 @@ void main() {
             ..._commonOverrides(spaces: [_space]),
             messagingServiceProvider.overrideWithValue(_FakeMessagingPort()),
             conversationRepositoryProvider.overrideWithValue(conversations),
-            spaceConversationsProvider(
-              'g-1',
-            ).overrideWith((ref) => Stream.value(_twoConversations)),
-            spaceBusyConversationIdsProvider(
-              'g-1',
-            ).overrideWithValue(const <String>{}),
+            ..._listedConversationOverrides(),
           ],
           child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
         ),
@@ -574,12 +708,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tapAt(
-        tester.getCenter(find.text('Design review')),
-        buttons: kSecondaryMouseButton,
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await _openOverflow(tester, find.text('Design review'));
 
       final l10n = await AppLocalizations.delegate.load(const Locale('en'));
       await tester.tap(find.text(l10n.renameConversation));
@@ -601,6 +730,99 @@ void main() {
       await tester.pumpWidget(Container());
       await tester.pumpAndSettle();
     });
+
+    testWidgets('conversation overflow archives the conversation', (
+      tester,
+    ) async {
+      final conversations = _FakeConversationRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._commonOverrides(spaces: [_space]),
+            messagingServiceProvider.overrideWithValue(_FakeMessagingPort()),
+            conversationRepositoryProvider.overrideWithValue(conversations),
+            ..._listedConversationOverrides(),
+          ],
+          child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await _openOverflow(tester, find.text('Design review'));
+
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.tap(find.text(l10n.archiveConversation));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(conversations.statusCalls, [
+        (workspaceId: _workspaceId, conversationId: 'conv-2'),
+      ]);
+      await tester.pumpWidget(Container());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets(
+      'unread dot sits on the conversation, not the parent space, when listed',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._commonOverrides(spaces: [_space], unreadSpaceIds: {'g-1'}),
+              ..._listedConversationOverrides(unread: {'conv-1': true}),
+            ],
+            child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        Finder indicatorOn(String label) => find.descendant(
+          of: find.ancestor(
+            of: find.text(label),
+            matching: find.byType(SpaceRow),
+          ),
+          matching: find.byType(SpaceTrailingIndicator),
+        );
+
+        expect(indicatorOn('Dev Team'), findsNothing);
+        expect(indicatorOn('Main thread'), findsOneWidget);
+        expect(indicatorOn('Design review'), findsNothing);
+        await tester.pumpWidget(Container());
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'unread dot stays on the space when conversations are not listed',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._commonOverrides(spaces: [_space], unreadSpaceIds: {'g-1'}),
+            ],
+            child: _wrap(_router(spaceRoute(_workspaceId, 'g-1'))),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Dev Team'),
+              matching: find.byType(SpaceRow),
+            ),
+            matching: find.byType(SpaceTrailingIndicator),
+          ),
+          findsOneWidget,
+        );
+        await tester.pumpWidget(Container());
+        await tester.pumpAndSettle();
+      },
+    );
 
     testWidgets('archive trigger opens the archived-spaces dialog', (
       tester,

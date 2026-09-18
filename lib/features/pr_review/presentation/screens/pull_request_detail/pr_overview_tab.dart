@@ -176,7 +176,10 @@ class _OverviewHeader extends StatelessWidget {
             children: [
               title,
               const SizedBox(height: 12),
-              Align(alignment: Alignment.centerLeft, child: actions),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: actions,
+              ),
             ],
           );
         }

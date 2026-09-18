@@ -216,8 +216,9 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
   /// Watches per-space activity signals for one workspace: newest message
   /// time, newest agent-message time (the unread-dot signal) and the open
   /// (unanswered) agent-question count (the needs-input signal). One aggregate
-  /// row per space — the sidebar's replacement for a full message-list
-  /// subscription per row.
+  /// row per conversation, folded into a space by the repository — the
+  /// sidebar's replacement for a full message-list subscription per row, and
+  /// the source of "which conversation has unseen agent work".
   ///
   /// EVERY conversation in the space counts, threads included: read marks are
   /// space-scoped, so unread aggregates across the whole space. This used to
@@ -234,6 +235,7 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
     List<
       ({
         String spaceId,
+        String conversationId,
         DateTime? lastMessageAt,
         DateTime? lastAgentMessageAt,
         int openQuestionCount,
@@ -243,6 +245,7 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
   watchSpaceActivity(String workspaceId) =>
       customSelect(
         'SELECT m.space_id AS space_id, '
+        'm.conversation_id AS conversation_id, '
         'MAX(m.created_at) AS last_message_at, '
         "MAX(CASE WHEN m.sender_type = 'agent' "
         'THEN m.created_at END) '
@@ -254,7 +257,7 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
         'JOIN spaces c ON c.id = m.space_id '
         'WHERE c.workspace_id = ? AND m.reverted = 0 '
         'AND c.archived_at IS NULL '
-        'GROUP BY m.space_id',
+        'GROUP BY m.space_id, m.conversation_id',
         variables: [Variable.withString(workspaceId)],
         readsFrom: {conversationMessagesTable, spacesTable},
       ).watch().map(
@@ -262,6 +265,7 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
           for (final row in rows)
             (
               spaceId: row.read<String>('space_id'),
+              conversationId: row.read<String>('conversation_id'),
               lastMessageAt: switch (row.readNullable<int>('last_message_at')) {
                 final int s => DateTime.fromMillisecondsSinceEpoch(s * 1000),
                 null => null,

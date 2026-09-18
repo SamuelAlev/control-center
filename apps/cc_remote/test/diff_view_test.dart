@@ -1,3 +1,4 @@
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/widgets/diff_view.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -15,16 +16,23 @@ void main() {
   // vertically scrolling parent. The vertical scroll is not incidental — the
   // view renders every budgeted row eagerly, so a bounded-height host would
   // fail on overflow rather than on anything the widget got wrong.
-  Widget host(Widget child) => Directionality(
-    textDirection: TextDirection.ltr,
-    child: CcTheme(
-      data: CcThemeData.light(),
-      child: MediaQuery(
-        data: const MediaQueryData(size: Size(390, 800)),
-        child: Center(
-          child: SizedBox(
-            width: 390,
-            child: SingleChildScrollView(child: child),
+  Widget host(Widget child) => Localizations(
+    locale: const Locale('en'),
+    delegates: const [
+      AppLocalizations.delegate,
+      DefaultWidgetsLocalizations.delegate,
+    ],
+    child: Directionality(
+      textDirection: TextDirection.ltr,
+      child: CcTheme(
+        data: CcThemeData.light(),
+        child: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 800)),
+          child: Center(
+            child: SizedBox(
+              width: 390,
+              child: SingleChildScrollView(child: child),
+            ),
           ),
         ),
       ),

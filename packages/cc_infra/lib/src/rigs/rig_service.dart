@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io' show Process;
+import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
@@ -30,6 +31,8 @@ import 'package:cc_infra/src/rigs/adb_client.dart';
 import 'package:cc_infra/src/rigs/browser_engine_attach.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
+import 'package:cc_infra/src/rigs/ios_rig_driver.dart';
+import 'package:cc_infra/src/rigs/ios_simulator_backend.dart';
 import 'package:cc_infra/src/rigs/guest_credential_service.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart';
 import 'package:cc_infra/src/rigs/rig_dev_tls.dart';
@@ -63,12 +66,134 @@ typedef RigSmolvmImageResolver =
 typedef RigBrowserEgressResolver =
     Future<List<String>> Function(String workspaceId);
 
+/// One persistent host-to-guest PCM lane for a browser rig.
+///
+/// Starting `smolvm machine exec` per audio chunk drops most of a real-time
+/// stream to process startup latency. This object owns one `pacat` child for
+/// the active capture session and closes it on replacement, end, or rig
+/// teardown.
+class _SmolvmBrowserMicrophone {
+  _SmolvmBrowserMicrophone({
+    required this.binary,
+    required this.machineName,
+    required this.rigId,
+  });
+
+  final String binary;
+  final String machineName;
+  final String rigId;
+
+  Process? _process;
+  String? _sessionId;
+  int? _sampleRate;
+  int? _channels;
+
+  Future<bool> send(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async {
+    if (start) {
+      await _closeProcess();
+      _sessionId = sessionId;
+    }
+    if (_sessionId != sessionId) {
+      return true;
+    }
+    if (end) {
+      _sessionId = null;
+      await _closeProcess();
+      return true;
+    }
+    if (bytes.isEmpty) {
+      return true;
+    }
+
+    final resolvedRate = sampleRate.clamp(8000, 96000);
+    final resolvedChannels = channels.clamp(1, 2);
+    if (_process == null ||
+        _sampleRate != resolvedRate ||
+        _channels != resolvedChannels) {
+      await _closeProcess();
+      _sampleRate = resolvedRate;
+      _channels = resolvedChannels;
+      _process = await Process.start(binary, [
+        'machine',
+        'exec',
+        '--name',
+        machineName,
+        '-i',
+        '--',
+        'env',
+        'PULSE_SERVER=unix:/tmp/cc-pulse/native',
+        'PULSE_SINK=ccmic',
+        'pacat',
+        '--playback',
+        '--device=ccmic',
+        '--format=s16le',
+        '--rate=$resolvedRate',
+        '--channels=$resolvedChannels',
+        '--latency-msec=50',
+      ]);
+      unawaited(_process!.stdout.drain<void>());
+      unawaited(
+        _process!.stderr
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .forEach(
+              (line) =>
+                  CcInfraLog.debug('rig/$rigId browser microphone: $line'),
+            ),
+      );
+    }
+
+    try {
+      _process!.stdin.add(bytes);
+      await _process!.stdin.flush();
+      return true;
+    } on Object catch (error) {
+      CcInfraLog.warning('rig/$rigId browser microphone failed: $error');
+      await _closeProcess();
+      return false;
+    }
+  }
+
+  Future<void> close() async {
+    _sessionId = null;
+    await _closeProcess();
+  }
+
+  Future<void> _closeProcess() async {
+    final process = _process;
+    _process = null;
+    _sampleRate = null;
+    _channels = null;
+    if (process == null) {
+      return;
+    }
+    try {
+      await process.stdin.close();
+    } on Object {
+      // A guest-side failure may already have closed the pipe.
+    }
+    try {
+      await process.exitCode.timeout(const Duration(seconds: 1));
+    } on Object {
+      process.kill();
+    }
+  }
+}
+
 /// One live rig: its record, its machine and its driver.
 class _LiveRig {
   _LiveRig({required this.rig});
 
   Rig rig;
   RigMachine? machine;
+  IosSimulatorSession? iosSession;
 
   /// The surface driver. It also owns the watch-lane stream: disposing it is
   /// what ends a viewer's frames, so there is no separate viewer registry to
@@ -99,6 +224,29 @@ class _LiveRig {
   /// at parked at its idle timeout, was destroyed at twice that, and was
   /// LRU-evicted in between — under the viewer, mid-frame.
   int watchers = 0;
+
+  /// Capture session currently allowed to feed the guest microphone.
+  ///
+  /// Set before forwarding `start=1`, so every later chunk/end is checked at
+  /// the authoritative server even when the installed guest image predates
+  /// guest-side session gating.
+  String? microphoneSessionId;
+
+  /// Completion tail for guest microphone writes.
+  ///
+  /// Each microphone-capable surface owns one playback process. Keeping start,
+  /// chunks, and end on one ordered lane prevents an already-forwarded old end
+  /// from overtaking the replacement start.
+  Future<void> microphoneForwarding = Future<void>.value();
+
+  Future<T> serializeMicrophone<T>(Future<T> Function() operation) {
+    final result = microphoneForwarding.then((_) => operation());
+    microphoneForwarding = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return result;
+  }
 
   /// Whether a consumer is attached: a pinned terminal or an open watch lane.
   /// The hard TTL ignores this — "somebody is using it", not "it may live
@@ -156,6 +304,7 @@ class RigService implements RigPort, RigPortsPort {
     required QemuEnclosureBackend qemu,
     required SmolvmEnclosureBackend smolvm,
     required RigImageStore images,
+    IosSimulatorBackend? ios,
     GuestCredentialService? credentials,
     DomainEventBus? eventBus,
     String? dataDir,
@@ -167,6 +316,7 @@ class RigService implements RigPort, RigPortsPort {
        _qemu = qemu,
        _smolvm = smolvm,
        _images = images,
+       _ios = ios,
        _credentials = credentials,
        _eventBus = eventBus,
        _dataDir = dataDir,
@@ -180,6 +330,7 @@ class RigService implements RigPort, RigPortsPort {
   final QemuEnclosureBackend _qemu;
   final SmolvmEnclosureBackend _smolvm;
   final RigImageStore _images;
+  final IosSimulatorBackend? _ios;
   final GuestCredentialService? _credentials;
   final DomainEventBus? _eventBus;
 
@@ -280,6 +431,7 @@ class RigService implements RigPort, RigPortsPort {
   Future<void> start() async {
     await _qemu.sweepOrphanedRuntimes();
     await _smolvm.sweepOrphanedRuntimes();
+    await _ios?.sweepOrphanedDevices();
     await _markStrandedSessionsFailed();
     // Dev-domain TLS: mint (or load) the local CA + leaf, then hand the
     // leaf's PUBLIC-key fingerprint to the browser workload builder so the
@@ -296,33 +448,56 @@ class RigService implements RigPort, RigPortsPort {
     );
   }
 
-  /// The last Android probe, cached like QEMU's.
+  /// Cached host-managed-device probes.
   ///
-  /// `probe()` is called by every rig surface on every open and by the
-  /// settings page on every visit, and `_probeAndroid` shells out to `adb`
-  /// and the emulator binary each time — which QEMU's probe explicitly does
-  /// not, for the same reason. Invalidated by [refreshProbe], the same way an
-  /// image download invalidates the QEMU one.
+  /// Probe calls sit on user-facing open/settings paths. Cache them until a
+  /// setup action or host-side image change explicitly invalidates the host.
   RigBackendCapabilities? _androidProbe;
 
   @override
   Future<RigCapabilities> probe() async {
+    final ios = _ios;
     final backends = <RigBackendCapabilities>[
       await _smolvm.probe(),
       await _qemu.probe(),
       _androidProbe ??= await _probeAndroid(),
+      if (ios != null) await ios.probe(),
     ];
     return RigCapabilities(backends: backends);
   }
 
+  @override
+  Future<void> installBackendSetup(RigBackendSetupAction action) async {
+    switch (action) {
+      case RigBackendSetupAction.iosAutomation:
+        final ios = _ios;
+        if (ios == null) {
+          throw StateError('iOS Simulator is not configured on this server.');
+        }
+        final capability = await ios.probe(refresh: true);
+        if (capability.available) {
+          return;
+        }
+        if (capability.setupAction != action) {
+          throw StateError(
+            capability.installHint ??
+                capability.note ??
+                'iOS Simulator prerequisites are incomplete.',
+          );
+        }
+        await ios.automationStore.install();
+        await ios.probe(refresh: true);
+    }
+  }
+
   /// Drops every cached probe, so the next [probe] re-reads the host.
-  ///
-  /// Called after anything that can change what this host can boot: an image
-  /// download or import, or an operator installing the Android SDK while the
-  /// server runs.
   Future<void> refreshProbe() async {
     _androidProbe = null;
-    await _qemu.probe(refresh: true);
+    final ios = _ios;
+    await Future.wait([
+      _qemu.probe(refresh: true),
+      if (ios != null) ios.probe(refresh: true),
+    ]);
   }
 
   /// Probes the mobile surface.
@@ -470,23 +645,18 @@ class RigService implements RigPort, RigPortsPort {
     }
   }
 
-  /// The backend a spec boots on.
-  ///
-  /// A property of the SURFACE, not of the host: a mobile rig drives the
-  /// Android emulator; exec (terminal) and browser rigs are smolvm microVMs;
-  /// the desktop surface keeps QEMU, the only backend here with a display
-  /// device. Stamping anything else would have the row claim an accelerator
-  /// we did not pick and the egress enforcement (`hasEnforcedEgress`) that
-  /// backend may not have.
-  ///
-  /// A spec that NAMES a backend is validated here: naming one the surface
-  /// does not run on is an error, never a silent downgrade.
+  /// Resolves and validates the one backend owned by [spec]'s surface.
   Future<EnclosureBackend> _backendFor(RigSpec spec) async {
-    final routed = spec.surface == RigSurface.mobile
-        ? EnclosureBackend.androidEmulator
-        : (spec.isExec || spec.surface == RigSurface.browser)
-        ? EnclosureBackend.smolvm
-        : (await _qemu.probe()).backend;
+    final routed = switch (spec.surface) {
+      RigSurface.mobile => EnclosureBackend.androidEmulator,
+      RigSurface.ios => EnclosureBackend.iosSimulator,
+      RigSurface.browser => EnclosureBackend.smolvm,
+      RigSurface.computer when spec.isExec => EnclosureBackend.smolvm,
+      RigSurface.computer => (await _qemu.probe()).backend,
+    };
+    if (routed == EnclosureBackend.iosSimulator && _ios == null) {
+      throw StateError('iOS Simulator is not configured on this server.');
+    }
     final requested = spec.backend;
     if (requested != null && requested != routed) {
       throw ArgumentError.value(
@@ -1000,6 +1170,55 @@ class RigService implements RigPort, RigPortsPort {
   ///
   /// The same split [_worktreeSyncFor] makes, exposed one level lower: the
   /// file lane needs the transport itself, not a worktree sync built on it.
+  Future<Stream<List<int>>?> _openSmolvmBrowserAudio(
+    SmolvmMachine machine,
+  ) async {
+    final binary = _smolvm.resolvedBinary;
+    if (binary == null) {
+      return null;
+    }
+    const command =
+        'PULSE_SERVER=unix:/tmp/cc-pulse/native '
+        'exec ffmpeg -nostdin -hide_banner -loglevel error '
+        '-f pulse -i ccout.monitor -vn -ac 2 -ar 44100 '
+        '-b:a 128k -f mp3 pipe:1';
+    final process = await Process.start(binary, [
+      'machine',
+      'exec',
+      '--name',
+      machine.name,
+      '--',
+      'sh',
+      '-c',
+      command,
+    ]);
+    late StreamController<List<int>> controller;
+    StreamSubscription<List<int>>? output;
+    StreamSubscription<String>? errors;
+    controller = StreamController<List<int>>(
+      onListen: () {
+        output = process.stdout.listen(
+          controller.add,
+          onError: controller.addError,
+          onDone: controller.close,
+        );
+        errors = process.stderr
+            .transform(utf8.decoder)
+            .transform(const LineSplitter())
+            .listen(
+              (line) =>
+                  CcInfraLog.debug('rig/${machine.rigId} browser audio: $line'),
+            );
+      },
+      onCancel: () async {
+        await output?.cancel();
+        await errors?.cancel();
+        process.kill();
+      },
+    );
+    return controller.stream;
+  }
+
   WorktreeTransport? _transportFor(RigMachine machine) {
     if (machine is QemuMachine) {
       return SshWorktreeTransport(
@@ -1137,6 +1356,90 @@ class RigService implements RigPort, RigPortsPort {
       CcInfraLog.warning('rig/$rigId: audio lane failed to open: $e');
       return null;
     }
+  }
+
+  /// Sends microphone PCM into a live computer or browser rig.
+  ///
+  /// This is mutating input, so it passes the same take-over chokepoint as
+  /// keyboard and pointer input. [start] replaces the active [sessionId]
+  /// before any asynchronous work; chunks and [end] from older sessions are
+  /// acknowledged but never forwarded to the guest.
+  ///
+  /// Chunks are intentionally not action-logged: their contents are private
+  /// audio and their cadence is high. Activity is persisted at most once per
+  /// second, matching streamed pointer movement.
+  Future<bool> sendAudioInput({
+    required String workspaceId,
+    required String rigId,
+    required Principal actor,
+    required String sessionId,
+    required Uint8List bytes,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async {
+    final live = _admit(workspaceId, rigId, mutating: true, actor: actor);
+    final driver = live?.driver;
+    if (live == null || driver == null) {
+      return false;
+    }
+    if (start) {
+      live.microphoneSessionId = sessionId;
+    }
+    bool stillAdmitted() =>
+        !live.closing &&
+        identical(live.driver, driver) &&
+        identical(
+          _admit(workspaceId, rigId, mutating: true, actor: actor),
+          live,
+        );
+    return live.serializeMicrophone(() async {
+      // Both session ownership and authorization can change while this waits
+      // behind an in-flight guest write. The exact live rig and driver must
+      // still be current; a captured driver is not authority after takeover
+      // or teardown.
+      if (!stillAdmitted()) {
+        return false;
+      }
+      if (live.microphoneSessionId != sessionId) {
+        return true;
+      }
+      await _wakeMachine(live);
+      // Waking a parked VM is asynchronous. Close, takeover, replacement, or
+      // driver disposal may land while it resumes, so no bytes cross the
+      // boundary until every condition is checked again.
+      if (!stillAdmitted()) {
+        return false;
+      }
+      if (live.microphoneSessionId != sessionId) {
+        return true;
+      }
+      final accepted = await driver.sendAudioInput(
+        bytes,
+        sessionId: sessionId,
+        sampleRate: sampleRate,
+        channels: channels,
+        start: start,
+        end: end,
+      );
+      if (!accepted && start && live.microphoneSessionId == sessionId) {
+        live.microphoneSessionId = null;
+      } else if (accepted && end && live.microphoneSessionId == sessionId) {
+        live.microphoneSessionId = null;
+      }
+      if (!accepted || !_isCurrent(live)) {
+        return accepted;
+      }
+      final now = DateTime.now();
+      live.rig = live.rig.copyWith(lastActivityAt: now);
+      if (end ||
+          now.difference(live.lastTouchWrite) > const Duration(seconds: 1)) {
+        live.lastTouchWrite = now;
+        await _repository.save(workspaceId, live.rig);
+      }
+      return true;
+    });
   }
 
   @override
@@ -1482,6 +1785,8 @@ class RigService implements RigPort, RigPortsPort {
       switch (rig.backend) {
         case EnclosureBackend.androidEmulator:
           await _bootMobile(live);
+        case EnclosureBackend.iosSimulator:
+          await _bootIos(live);
         case EnclosureBackend.smolvm:
           await _bootSmolvm(live);
         case EnclosureBackend.qemuHvf:
@@ -1734,10 +2039,21 @@ class RigService implements RigPort, RigPortsPort {
     }
 
     if (rig.surface == RigSurface.browser) {
+      final binary = _smolvm.resolvedBinary;
+      final microphone = binary == null
+          ? null
+          : _SmolvmBrowserMicrophone(
+              binary: binary,
+              machineName: machine.name,
+              rigId: rig.id,
+            );
       final driver = BrowserRigDriver(
         client: await _attachBrowser(machine),
         viewport: rig.spec.display,
         onUrlChanged: (url) => unawaited(_browserNavigated(live, url)),
+        audioStreamOpener: () => _openSmolvmBrowserAudio(machine),
+        audioInputSender: microphone?.send,
+        audioInputCloser: microphone?.close,
       );
       if (_bootAborted(live)) {
         await driver.dispose();
@@ -1845,6 +2161,87 @@ class RigService implements RigPort, RigPortsPort {
       lastActivityAt: DateTime.now(),
     );
     await _repository.save(rig.workspaceId, live.rig);
+  }
+
+  Future<void> _bootIos(_LiveRig live) async {
+    final backend = _ios;
+    if (backend == null) {
+      throw StateError('iOS Simulator is not configured on this server.');
+    }
+    final launched = Completer<void>();
+    live.launched = launched.future;
+    final IosSimulatorSession session;
+    try {
+      session = await backend.launch(
+        rigId: live.rig.id,
+        onProgress: (step) =>
+            unawaited(_updateStatus(live, RigProvisioning(step: step))),
+      );
+      if (_bootAborted(live)) {
+        await backend.close(session);
+        return;
+      }
+      live.iosSession = session;
+      _watchIosDeath(live, session);
+    } finally {
+      if (!launched.isCompleted) {
+        launched.complete();
+      }
+    }
+    final driver = IosRigDriver(
+      session: session,
+      backend: backend,
+      appRoots: [
+        if (live.rig.spec.worktreePath != null) live.rig.spec.worktreePath!,
+        if (_dataDir != null) _dataDir,
+      ],
+      onDisplayChanged: (display) =>
+          unawaited(_iosDisplayChanged(live, display)),
+    );
+    if (_bootAborted(live)) {
+      await driver.dispose();
+      await backend.close(session);
+      return;
+    }
+    live.driver = driver;
+    final now = DateTime.now();
+    live.rig = live.rig.copyWith(
+      status: const RigReady(),
+      display: session.display,
+      readyAt: now,
+      lastActivityAt: now,
+    );
+    await _repository.save(live.rig.workspaceId, live.rig);
+  }
+
+  Future<void> _iosDisplayChanged(_LiveRig live, RigDisplaySize display) async {
+    if (!_isCurrent(live) || live.rig.display == display) {
+      return;
+    }
+    live.rig = live.rig.copyWith(display: display);
+    await _repository.save(live.rig.workspaceId, live.rig);
+  }
+
+  void _watchIosDeath(_LiveRig live, IosSimulatorSession session) {
+    unawaited(
+      session.runner.exitCode.then((code) async {
+        if (!_isCurrent(live) || live.closing) {
+          return;
+        }
+        CcInfraLog.warning(
+          'rig/${live.rig.id}: WebDriverAgent exited unexpectedly (code $code)',
+        );
+        await _updateStatus(
+          live,
+          RigFailed('iOS automation exited unexpectedly (code $code).'),
+        );
+        await _teardown(
+          live,
+          RigCloseReason.backendFailure,
+          alreadyFailed: true,
+        );
+      }),
+    );
   }
 
   _LiveRig _requireLive(String workspaceId, String rigId) {
@@ -2263,6 +2660,14 @@ class RigService implements RigPort, RigPortsPort {
         CcInfraLog.warning('rig/${live.rig.id}: destroy failed: $e');
       }
     }
+    final iosSession = live.iosSession;
+    if (iosSession != null) {
+      try {
+        await _ios?.close(iosSession);
+      } on Object catch (e) {
+        CcInfraLog.warning('rig/${live.rig.id}: iOS teardown failed: $e');
+      }
+    }
     if (!alreadyFailed) {
       live.rig = live.rig.copyWith(
         status: RigClosed(reason),
@@ -2459,11 +2864,22 @@ class RigService implements RigPort, RigPortsPort {
   /// first instead of racing it onto the same `.part` file.
   final Map<String, Future<void>> _downloads = {};
 
+  /// Imports and removals in flight. They write the same paths as downloads,
+  /// so accepting either operation concurrently would race the image store's
+  /// `.part` file or delete a file another operation is about to install.
+  final Set<String> _imageChanges = {};
+
   @override
   Future<void> downloadImage(String imageId) async {
     final spec = _images.byId(imageId);
     if (spec == null) {
       throw RigImageException('No base image "$imageId" is catalogued.');
+    }
+    if (_imageChanges.contains(imageId)) {
+      throw RigImageException(
+        'The base image "$imageId" is already being changed. Wait for that '
+        'operation to finish.',
+      );
     }
     // Kicked off and NOT awaited. A base image is ~590 MB, so this runs for
     // minutes; awaiting it here held the caller's RPC call open for the whole
@@ -2511,8 +2927,33 @@ class RigService implements RigPort, RigPortsPort {
     if (spec == null) {
       throw RigImageException('No base image "$imageId" is catalogued.');
     }
-    await _images.importFrom(spec, sourcePath).drain<void>();
-    await refreshProbe();
+    _beginImageChange(imageId);
+    try {
+      await _images.importFrom(spec, sourcePath).drain<void>();
+      await refreshProbe();
+    } finally {
+      _imageChanges.remove(imageId);
+    }
+  }
+
+  @override
+  Future<void> removeImage(String imageId) async {
+    _beginImageChange(imageId);
+    try {
+      await _images.removeById(imageId);
+      await refreshProbe();
+    } finally {
+      _imageChanges.remove(imageId);
+    }
+  }
+
+  void _beginImageChange(String imageId) {
+    if (_downloads.containsKey(imageId) || !_imageChanges.add(imageId)) {
+      throw RigImageException(
+        'The base image "$imageId" is already being changed. Wait for that '
+        'operation to finish.',
+      );
+    }
   }
 
   /// Registers [rig] as live WITHOUT booting a machine.

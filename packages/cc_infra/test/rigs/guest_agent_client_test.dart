@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_clipboard.dart';
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
@@ -222,6 +223,65 @@ void main() {
 
       final sent = jsonDecode(requests.single.body) as Map<String, dynamic>;
       expect(sent['files'], ['/home/cc/a.txt']);
+    });
+  });
+
+  group('GuestAgentClient microphone', () {
+    late HttpServer server;
+    late GuestAgentClient client;
+    final requests = <({String path, List<int> body})>[];
+
+    setUp(() async {
+      requests.clear();
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((request) async {
+        requests.add((
+          path: request.uri.toString(),
+          body: await request.fold<List<int>>(
+            <int>[],
+            (bytes, chunk) => bytes..addAll(chunk),
+          ),
+        ));
+        request.response.statusCode = HttpStatus.ok;
+        request.response.write('{}');
+        await request.response.close();
+      });
+      client = GuestAgentClient(port: server.port, token: 'tok-1');
+    });
+
+    tearDown(() async {
+      client.close();
+      await server.close(force: true);
+    });
+
+    test('scopes start, chunks, and end to the same capture session', () async {
+      await client.sendMicrophone(
+        Uint8List(0),
+        sessionId: 'capture/a',
+        sampleRate: 48000,
+        channels: 1,
+        start: true,
+      );
+      await client.sendMicrophone(
+        Uint8List.fromList([1, 2, 3]),
+        sessionId: 'capture/a',
+        sampleRate: 48000,
+        channels: 1,
+      );
+      await client.sendMicrophone(
+        Uint8List(0),
+        sessionId: 'capture/a',
+        sampleRate: 48000,
+        channels: 1,
+        end: true,
+      );
+
+      expect(requests.map((request) => request.path), [
+        '/microphone?rate=48000&channels=1&session=capture%2Fa&start=1',
+        '/microphone?rate=48000&channels=1&session=capture%2Fa',
+        '/microphone?rate=48000&channels=1&session=capture%2Fa&end=1',
+      ]);
+      expect(requests[1].body, [1, 2, 3]);
     });
   });
 }

@@ -4,7 +4,7 @@ publish_to: "none"
 version: 0.0.1
 
 environment:
-  sdk: ">=3.11.0 <4.0.0"
+  sdk: ">=3.12.0 <4.0.0"
   flutter: ">=3.24.0"
 
 resolution: workspace
@@ -57,6 +57,15 @@ dependencies:
   # than pushed through the RPC socket, whose inbound frames the server caps at
   # 256 KB and closes past — see `attachments.dart`.
   http: ^1.6.0
+  # gen-l10n's runtime (message lookup) + locale-aware date formatting.
+  # Workspace-pinned to the same version as the root app.
+  intl: ^0.20.3
+  # Required by gen-l10n. Only `AppLocalizations.delegate` plus a hand-rolled
+  # widgets delegate are referenced at runtime — the Material/Cupertino
+  # localization data the package also carries is never reachable from this
+  # app, so the compiler tree-shakes it out of the web bundle.
+  flutter_localizations:
+    sdk: flutter
 
 dev_dependencies:
   flutter_test:
@@ -66,3 +75,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: false
+  generate: true

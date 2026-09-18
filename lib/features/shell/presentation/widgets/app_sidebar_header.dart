@@ -81,7 +81,7 @@ class AppSidebarHeader extends StatelessWidget {
       return const Padding(
         padding: EdgeInsets.only(bottom: AppSpacing.xs),
         child: Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: TitleBarWorkspaceChip(avatarSize: 36, iconOnly: true),
         ),
       );
@@ -93,7 +93,12 @@ class AppSidebarHeader extends StatelessWidget {
     // chip's own 10px internal horizontal padding (see _ChipButton), not
     // from an outer inset.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(0, 0, AppSpacing.xs, AppSpacing.xs),
+      padding: const EdgeInsetsDirectional.fromSTEB(
+        0,
+        0,
+        AppSpacing.xs,
+        AppSpacing.xs,
+      ),
       child: Row(
         children: [
           // The chooser stretches the row's free width (name ellipsizes, caret
@@ -141,7 +146,7 @@ class _HeaderIconButton extends StatelessWidget {
     // Opens to the right like the rail items' tooltips below — the header
     // button only ever lives in the sidebar.
     return CcTooltip(
-      placement: CcTooltipPlacement.right,
+      placement: CcTooltipPlacement.end,
       message: tooltip,
       child: CcTappable(
         onPressed: onPressed,

@@ -407,12 +407,13 @@ class _DialogFocusScopeState extends State<_DialogFocusScope> {
 
 /// Presents a modal dialog built by [builder], centered over a warm scrim.
 ///
-/// Implemented with [showGeneralDialog] (part of `package:flutter/widgets.dart`)
+/// Implemented with a [RawDialogRoute] (part of `package:flutter/widgets.dart`)
 /// so cc_ui stays off the Material layer. The scrim is a translucent
 /// `bgOverlay` wash over a [BackdropFilter] blur, so the surface beneath stays
 /// legible-but-defocused (frosted glass) instead of being fully obscured. The
-/// entrance is a quick fade + scale on the panel that collapses to an instant
-/// cut when motion is reduced (via [CcMotion.resolve]). Returns the value the
+/// panel enters on [CcMotion.slow] (fade + scale) and leaves on
+/// [CcMotion.slowExit] — one tier quicker, so a close never drags. Reduced
+/// motion drops the scale and keeps the opacity fade. Returns the value the
 /// dialog is popped with, or null if dismissed.
 ///
 /// Owns the modal accessibility lifecycle: focus is moved into the dialog on
@@ -426,9 +427,11 @@ Future<T?> showCcDialog<T>({
 }) {
   final theme = context.ccTheme;
   final t = theme?.tokens ?? DesignSystemTokens.light();
-  final duration = CcMotion.resolve(context, CcMotion.normal);
+  final reduced = CcMotion.reduced(context);
+  final enter = reduced ? CcMotion.fade : CcMotion.slow;
+  final exit = reduced ? CcMotion.fade : CcMotion.slowExit;
 
-  // `showGeneralDialog` presents into the root overlay, outside any route's
+  // The route presents into the root overlay, outside any route's
   // `Material`/text theme. The only ambient `DefaultTextStyle` there is
   // `WidgetsApp`'s error fallback — 48px red text with a double yellow
   // underline — which every dialog `Text` would otherwise inherit (and
@@ -443,66 +446,89 @@ Future<T?> showCcDialog<T>({
     ),
   );
 
-  return showGeneralDialog<T>(
-    context: context,
-    barrierDismissible: barrierDismissible,
-    barrierLabel: 'Dismiss',
-    // The scrim lives in the page content (so it can blur); keep the route's
-    // own barrier transparent but still dismissible.
-    barrierColor: const Color(0x00000000),
-    transitionDuration: duration,
-    pageBuilder: (context, animation, secondaryAnimation) {
-      final navigator = Navigator.of(context);
-      return DefaultTextStyle(
-        style: dialogTextStyle,
-        child: _DialogFocusScope(
-          // Escape (and scrim tap) dismiss only when allowed; danger dialogs
-          // set barrierDismissible false so they require an explicit choice.
-          onDismiss: barrierDismissible ? navigator.pop : null,
-          child: builder(context),
-        ),
-      );
-    },
-    transitionBuilder: (context, animation, secondaryAnimation, child) {
-      final curved = CurvedAnimation(
-        parent: animation,
-        curve: CcMotion.emphasized,
-      );
-      return Stack(
-        children: [
-          // Frosted scrim over the content beneath. `IgnorePointer` lets taps
-          // fall through to the route barrier (dismiss) and to the panel on
-          // top. The [BackdropFilter] must never sit inside an
-          // `Opacity`/`FadeTransition`: the save-layer boundary blanks its
-          // backdrop, so only the tint alpha and blur radius are animated here.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: curved,
-                builder: (context, _) {
-                  final v = curved.value;
-                  return BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 6 * v, sigmaY: 6 * v),
-                    child: ColoredBox(
-                      color: t.bgOverlay.withValues(alpha: 0.5 * v),
-                      child: const SizedBox.expand(),
-                    ),
-                  );
-                },
+  return Navigator.of(context, rootNavigator: true).push<T>(
+    _CcDialogRoute<T>(
+      barrierDismissible: barrierDismissible,
+      barrierLabel: 'Dismiss',
+      // The scrim lives in the page content (so it can blur); keep the route's
+      // own barrier transparent but still dismissible.
+      barrierColor: const Color(0x00000000),
+      enter: enter,
+      exit: exit,
+      pageBuilder: (context, animation, secondaryAnimation) {
+        final navigator = Navigator.of(context);
+        return DefaultTextStyle(
+          style: dialogTextStyle,
+          child: _DialogFocusScope(
+            // Escape (and scrim tap) dismiss only when allowed; danger dialogs
+            // set barrierDismissible false so they require an explicit choice.
+            onDismiss: barrierDismissible ? navigator.pop : null,
+            child: builder(context),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final fadeOnly = CcMotion.reduced(context);
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: fadeOnly ? CcMotion.standard : CcMotion.emphasized,
+        );
+        final panel = FadeTransition(
+          opacity: curved,
+          child: fadeOnly
+              ? child
+              : ScaleTransition(
+                  scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
+                  child: child,
+                ),
+        );
+        return Stack(
+          children: [
+            // Frosted scrim over the content beneath. `IgnorePointer` lets taps
+            // fall through to the route barrier (dismiss) and to the panel on
+            // top. The [BackdropFilter] must never sit inside an
+            // `Opacity`/`FadeTransition`: the save-layer boundary blanks its
+            // backdrop, so only the tint alpha and blur radius are animated here.
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: curved,
+                  builder: (context, _) {
+                    final v = curved.value;
+                    return BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 6 * v, sigmaY: 6 * v),
+                      child: ColoredBox(
+                        color: t.bgOverlay.withValues(alpha: 0.5 * v),
+                        child: const SizedBox.expand(),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          Center(
-            child: FadeTransition(
-              opacity: curved,
-              child: ScaleTransition(
-                scale: Tween<double>(begin: 0.96, end: 1).animate(curved),
-                child: child,
-              ),
-            ),
-          ),
-        ],
-      );
-    },
+            Center(child: panel),
+          ],
+        );
+      },
+    ),
   );
+}
+
+/// [RawDialogRoute] with a faster reverse so a close never drags at the
+/// enter duration. [showGeneralDialog] only exposes one duration.
+class _CcDialogRoute<T> extends RawDialogRoute<T> {
+  _CcDialogRoute({
+    required super.pageBuilder,
+    required Duration enter,
+    required this.exit,
+    super.barrierDismissible,
+    super.barrierLabel,
+    super.barrierColor,
+    super.transitionBuilder,
+  }) : super(transitionDuration: enter);
+
+  final Duration exit;
+
+  @override
+  Duration get reverseTransitionDuration => exit;
 }

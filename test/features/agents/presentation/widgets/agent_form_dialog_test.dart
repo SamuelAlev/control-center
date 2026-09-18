@@ -5,10 +5,12 @@ import 'package:cc_domain/features/settings/domain/entities/acp_model.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/agents/presentation/widgets/agent_effort_slider.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_form_dialog.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
-import 'package:control_center/features/settings/presentation/widgets/model_select.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
+import 'package:control_center/features/settings/providers/model_browser_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -87,8 +89,30 @@ Widget _wrapAgentForm({
 }) {
   return ProviderScope(
     overrides: [
-      if (models != null)
+      if (models != null) ...[
         adapterModelsProvider.overrideWith((ref, adapterId) async => models),
+        // The model browser reads the same catalog through its grouped shape.
+        modelBrowserGroupsProvider.overrideWith(
+          (ref, adapterId) async => [
+            ModelBrowserGroup(
+              id: 'test',
+              name: 'Test provider',
+              models: [
+                for (final m in models)
+                  ModelBrowserEntry(
+                    id: m.id,
+                    name: m.name,
+                    providerId: 'test',
+                    providerName: 'Test provider',
+                    contextWindow: m.contextWindow,
+                    thinkingLevels: m.thinkingLevels,
+                    defaultThinkingLevel: m.defaultThinkingLevel,
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ],
       activeWorkspaceIdProvider.overrideWith(
         () => _TestActiveWorkspaceNotifier(workspaceId),
       ),
@@ -269,8 +293,12 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      final installed = predefinedAdapters.firstWhere((a) => a.id == 'codex');
-      final missing = predefinedAdapters.firstWhere((a) => a.id == 'cursor');
+      final installed = predefinedAdapters.firstWhere(
+        (a) => a.id == 'cc-harness',
+      );
+      final missing = predefinedAdapters.firstWhere(
+        (a) => a.id == 'claude-code',
+      );
 
       await tester.pumpWidget(
         _wrapAgentForm(
@@ -696,7 +724,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // The effort dropdown is model-driven: it only renders when a model with
+      // The effort slider is model-driven: it only renders when a model with
       // thinking levels is selected. With no model chosen it stays hidden.
       expect(find.text('Reasoning effort'), findsNothing);
     });
@@ -889,7 +917,9 @@ void main() {
   });
 
   group('AgentSettingsForm reasoning effort', () {
-    testWidgets('renders reasoning effort select with options', (tester) async {
+    testWidgets('hides effort until the model lists thinking levels', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -903,8 +933,52 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Model-gated: hidden until a model with thinking levels is selected.
       expect(find.text('Reasoning effort'), findsNothing);
+    });
+
+    testWidgets('renders a named-step slider for the model\'s effort levels', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(
+        _wrapAgentForm(
+          agent: _testAgent(
+            adapterId: 'cc-harness',
+            modelId: 'opus',
+            effort: 'medium',
+          ),
+          adapters: [
+            _testDetectedAdapter('Control Center', 'cc-harness', '/bin/cc'),
+          ],
+          models: const [
+            AcpModel(
+              id: 'opus',
+              name: 'Opus',
+              thinkingLevels: [
+                ThinkingLevel(id: 'low', label: 'Low'),
+                ThinkingLevel(id: 'medium', label: 'Medium'),
+                ThinkingLevel(id: 'high', label: 'High'),
+              ],
+              defaultThinkingLevel: 'medium',
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Reasoning effort'), findsOneWidget);
+      expect(find.byType(AgentEffortSlider), findsOneWidget);
+      expect(find.byType(CcSlider), findsOneWidget);
+      expect(find.text('Low'), findsOneWidget);
+      expect(find.text('Medium'), findsOneWidget);
+      expect(find.text('High'), findsOneWidget);
     });
   });
 
@@ -938,17 +1012,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 200));
 
-        final modelField = find.descendant(
-          of: find.byType(ModelSelect),
-          matching: find.byType(EditableText),
-        );
-
-        // Selecting a model refreshes the context size to the model's window.
-        // Combo box: typing stages the value, Enter commits the selection.
-        await tester.enterText(modelField, 'zai/glm-5');
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.testTextInput.receiveAction(TextInputAction.done);
-        await tester.pump(const Duration(milliseconds: 200));
+        // Selecting a model from the browser refreshes the context size to
+        // the model's window.
+        await tester.tap(find.byType(ModelPickerField));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('GLM 5').first);
+        await tester.pumpAndSettle();
         expect(find.text('200000'), findsOneWidget);
 
         // The field stays editable — a custom value sticks…
@@ -958,10 +1027,10 @@ void main() {
         expect(find.text('200000'), findsNothing);
 
         // …until the next model change refreshes it again.
-        await tester.enterText(modelField, 'custom-ollama/llama3');
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.testTextInput.receiveAction(TextInputAction.done);
-        await tester.pump(const Duration(milliseconds: 200));
+        await tester.tap(find.byType(ModelPickerField));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Llama 3').first);
+        await tester.pumpAndSettle();
         expect(find.text('128000'), findsOneWidget);
       },
     );

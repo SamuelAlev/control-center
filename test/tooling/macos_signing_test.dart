@@ -168,7 +168,9 @@ void main() {
       );
       expect(
         script,
-        contains(r'''sed -n 's/^CodeDirectory .*flags=[^(]*(\([^)]*\)).*/\1/p' '''),
+        contains(
+          r'''sed -n 's/^CodeDirectory .*flags=[^(]*(\([^)]*\)).*/\1/p' ''',
+        ),
         reason:
             'without the per-file adhoc/hardened-runtime check the only signal '
             'that something is unsigned is a bare `status: Invalid` from the '
@@ -211,16 +213,45 @@ void main() {
     });
   });
 
-  test('Debug keeps automatic signing for local development', () {
+  test('Debug keeps Apple Development signing for local development', () {
     // Contributors sign with their own (possibly free) Apple team so the
     // data-protection keychain works — see RELEASING.md, "Local development
-    // signing". Release being ad-hoc must not have leaked into Debug.
+    // signing". The team id lives in git-ignored Signing.local.xcconfig, not
+    // here: a DEVELOPMENT_TEAM in project.pbxproj is one person's team
+    // committed for everyone. Release being ad-hoc must not have leaked into
+    // Debug.
     final body = configBody(runnerDebug);
     expect(
       body,
       contains('CODE_SIGN_ENTITLEMENTS = Runner/DebugProfile.entitlements'),
     );
-    expect(body, contains('DEVELOPMENT_TEAM'));
+    expect(
+      body,
+      contains('Apple Development'),
+      reason:
+          'Debug must keep the local-dev identity; ad-hoc "-" is Release only',
+    );
+    expect(
+      body,
+      isNot(contains('DEVELOPMENT_TEAM')),
+      reason:
+          'the team belongs in git-ignored Signing.local.xcconfig, not the '
+          'shared Xcode project',
+    );
+  });
+
+  test('no Apple team id is committed in the Xcode project', () {
+    // The comments in the Release block name DEVELOPMENT_TEAM on purpose
+    // (they explain why it must stay absent). Strip them the same way
+    // configBody does so a mention in a comment is not a committed setting.
+    final settings = pbxproj.replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '');
+    expect(
+      settings,
+      isNot(contains('DEVELOPMENT_TEAM')),
+      reason:
+          'a DEVELOPMENT_TEAM build setting is a hardcoded team id; local '
+          'dev writes it to Signing.local.xcconfig instead',
+    );
   });
 
   test('Flutter Assemble signs manually in every configuration', () {

@@ -9,7 +9,7 @@ import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart'
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
-import 'package:control_center/core/server/cc_server_process.dart';
+import 'package:cc_infra/src/process/cc_server_process.dart';
 import 'package:flutter_test/flutter_test.dart';
 import '../helpers/seed_databases.dart';
 import '../helpers/stage_server_natives.dart';
@@ -26,7 +26,7 @@ import '../helpers/stage_server_natives.dart';
 /// when that SDK or the staged natives are not present (e.g. a CI image
 /// without the .fvm checkout or a natives build), so it never blocks the
 /// suite. The supervisor logic itself is covered deterministically by
-/// test/core/server/cc_server_process_test.dart.
+/// packages/cc_infra/test/process/cc_server_process_test.dart.
 void main() {
   final repoRoot = Directory.current.path;
   // The SAME resolution the desktop uses, not a hardcoded `.fvm` path. This
@@ -48,14 +48,13 @@ void main() {
   final hookStagingAvailable =
       Directory('$repoRoot/build/natives').existsSync() ||
       File('$repoRoot/.cc_natives_prebuilt_dir').existsSync();
-  final skipReason =
-      !hasSdk
-          ? 'no Dart SDK found to run cc_server from source'
-          : !hookStagingAvailable && runningInCi
-          ? 'natives not staged at build/natives on this CI runner; the '
-              'cc_server build hook refuses to run without them (the e2e job '
-              'stages them via scripts/natives/build_natives.sh)'
-          : false;
+  final skipReason = !hasSdk
+      ? 'no Dart SDK found to run cc_server from source'
+      : !hookStagingAvailable && runningInCi
+      ? 'natives not staged at build/natives on this CI runner; the '
+            'cc_server build hook refuses to run without them (the e2e job '
+            'stages them via scripts/natives/build_natives.sh)'
+      : false;
 
   test(
     'desktop spawns cc_server and reads a seeded ticket over loopback RPC',

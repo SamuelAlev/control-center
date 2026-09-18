@@ -140,7 +140,7 @@ void main() {
   group('spaceAdapterEnforcementProvider', () {
     test("resolves the agent's own adapter", () async {
       final container = await _primed(
-        agents: [_agent('a1', 'opencode')],
+        agents: [_agent('a1', 'claude-code')],
         participants: [_participant('a1')],
         defaultAdapterId: 'cc-harness',
       );
@@ -149,7 +149,7 @@ void main() {
         spaceAdapterEnforcementProvider(_spaceId),
       );
       // The agent's own adapterId wins over the configured default.
-      expect(resolved?.adapter.id, 'opencode');
+      expect(resolved?.adapter.id, 'claude-code');
       expect(resolved?.enforcement.enforcesModeGuarantees, isFalse);
     });
 
@@ -170,14 +170,14 @@ void main() {
     test('reports the weakest adapter when agents disagree', () async {
       // A fully-enforced peer must never mask a sandbox-only one.
       final container = await _primed(
-        agents: [_agent('a1', 'cc-harness'), _agent('a2', 'gemini')],
+        agents: [_agent('a1', 'cc-harness'), _agent('a2', 'claude-code')],
         participants: [_participant('a1'), _participant('a2')],
       );
 
       final resolved = container.read(
         spaceAdapterEnforcementProvider(_spaceId),
       );
-      expect(resolved?.adapter.id, 'gemini');
+      expect(resolved?.adapter.id, 'claude-code');
       expect(resolved?.enforcement.enforcesModeGuarantees, isFalse);
     });
 
@@ -214,7 +214,7 @@ void main() {
         overrides: _overrides(
           agents: const [],
           participants: const [],
-          defaultAdapterId: 'gemini',
+          defaultAdapterId: 'claude-code',
         ),
       );
 
@@ -224,7 +224,7 @@ void main() {
           (w) =>
               w is CcTooltip &&
               (w.message ?? '').contains('relies on the sandbox only') &&
-              w.message!.contains('Gemini CLI') &&
+              w.message!.contains('Claude Code') &&
               w.message!.contains('Plan'),
         ),
         findsOneWidget,
@@ -239,7 +239,7 @@ void main() {
         overrides: _overrides(
           agents: const [],
           participants: const [],
-          defaultAdapterId: 'gemini',
+          defaultAdapterId: 'claude-code',
         ),
       );
 

@@ -1,5 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
-import 'package:control_center/features/agents/domain/usecases/create_agent.dart';
+import 'package:cc_domain/features/agents/domain/usecases/create_agent.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../fakes/fake_agent_repository.dart';

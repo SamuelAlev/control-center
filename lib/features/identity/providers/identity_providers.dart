@@ -72,12 +72,92 @@ final workspaceInvitesProvider =
           ref.watch(identityRepositoryProvider).watchInvites(workspaceId),
     );
 
-/// Live audit trail of one workspace, newest first.
-final workspaceActivityProvider =
-    StreamProvider.family<List<UserActivityDto>, String>(
-      (ref, workspaceId) =>
-          ref.watch(identityRepositoryProvider).watchActivity(workspaceId),
+/// Live cursor page of one workspace's audit trail.
+final workspaceActivityPageProvider =
+    StreamProvider.family<UserActivityPageDto, WorkspaceActivityPageQuery>(
+      (ref, query) => ref
+          .watch(identityRepositoryProvider)
+          .watchActivityPage(
+            query.workspaceId,
+            cursor: query.cursor,
+            query: query.search,
+            ip: query.ip,
+            countryCode: query.countryCode,
+            localNetwork: query.localNetwork,
+            userIds: query.userIds,
+          ),
     );
+
+/// Arguments for [workspaceActivityPageProvider] — workspace, cursor and
+/// the filters the table sends with each page.
+class WorkspaceActivityPageQuery {
+  /// Creates a [WorkspaceActivityPageQuery].
+  const WorkspaceActivityPageQuery({
+    required this.workspaceId,
+    this.cursor,
+    this.search = '',
+    this.ip,
+    this.countryCode,
+    this.localNetwork = false,
+    this.userIds = const [],
+  });
+
+  /// Workspace whose trail is shown.
+  final String workspaceId;
+
+  /// Opaque page cursor (`?cursor=`), or null for the newest page.
+  final String? cursor;
+
+  /// Case-insensitive substring over action / target / IP / details.
+  final String search;
+
+  /// Exact client IP filter.
+  final String? ip;
+
+  /// Exact ISO country-code filter.
+  final String? countryCode;
+
+  /// Private/loopback rows with no GeoIP country.
+  final bool localNetwork;
+
+  /// Actor ids whose display name matched [search].
+  final List<String> userIds;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WorkspaceActivityPageQuery &&
+          workspaceId == other.workspaceId &&
+          cursor == other.cursor &&
+          search == other.search &&
+          ip == other.ip &&
+          countryCode == other.countryCode &&
+          localNetwork == other.localNetwork &&
+          _idsEqual(userIds, other.userIds);
+
+  @override
+  int get hashCode => Object.hash(
+    workspaceId,
+    cursor,
+    search,
+    ip,
+    countryCode,
+    localNetwork,
+    Object.hashAll(userIds),
+  );
+}
+
+bool _idsEqual(List<String> a, List<String> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /// Live stream of the current user's own server-side preferences.
 final ownServerPrefsProvider = StreamProvider<Map<String, String>>(

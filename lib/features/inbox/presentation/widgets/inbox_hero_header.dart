@@ -120,7 +120,7 @@ class InboxHeroHeader extends ConsumerWidget {
                   height: (titleSize + AppSpacing.md + 18 * 1.4)
                       .roundToDouble(),
                   child: Align(
-                    alignment: Alignment.topLeft,
+                    alignment: AlignmentDirectional.topStart,
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [

@@ -1,7 +1,7 @@
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/workspace_events.dart';
 import 'package:cc_domain/testing/fake_workspace_repository.dart';
-import 'package:control_center/features/workspaces/domain/usecases/create_workspace.dart';
+import 'package:cc_domain/features/workspaces/domain/usecases/create_workspace.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../fakes/fake_filesystem_port.dart';

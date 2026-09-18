@@ -48,7 +48,9 @@ class HarnessProviderMeta {
 ///
 /// Remote OpenAI-compatible providers (openrouter/groq/deepseek/mistral/xai/
 /// zai/zai-coding/moonshotai/google-compat) take an API key; openai also supports
-/// a browser OAuth login and kimi-code is OAuth-only. Local or self-hosted
+/// a browser OAuth login, **codex** is ChatGPT Plus/Pro via the Codex Responses
+/// backend (OAuth, with an optional API key), cursor is OAuth (with an optional
+/// pasted session token) and kimi-code is OAuth-only. Local or self-hosted
 /// endpoints (Ollama, LM Studio, vLLM, private deployments, …) are added as
 /// custom providers instead.
 ///
@@ -76,6 +78,21 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
   'openai': HarnessProviderMeta(
     id: 'openai',
     displayName: 'OpenAI',
+    authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+  ),
+  // ChatGPT Plus/Pro (and Team) via the Codex Responses backend. Same public
+  // OAuth client as the Codex CLI / oh-my-pi; usage is `/wham/usage`, not a
+  // CLI spawn. Catalog ids are OpenAI SKUs (`gpt-5.5`, …).
+  'codex': HarnessProviderMeta(
+    id: 'codex',
+    displayName: 'Codex',
+    authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+    modelsDevProviderId: 'openai',
+  ),
+  // Cursor Ultra / Pro via the unofficial AgentService (HTTP/2 Connect).
+  'cursor': HarnessProviderMeta(
+    id: 'cursor',
+    displayName: 'Cursor',
     authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
   ),
   'openrouter': HarnessProviderMeta(
@@ -151,6 +168,8 @@ const Map<String, HarnessProviderMeta> harnessProviderMetas = {
 const List<String> harnessSupportedProviderIds = [
   'anthropic',
   'openai',
+  'codex',
+  'cursor',
   'openrouter',
   'groq',
   'google',

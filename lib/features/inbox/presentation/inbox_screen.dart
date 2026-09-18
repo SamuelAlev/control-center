@@ -25,6 +25,7 @@ import 'package:control_center/shared/utils/repo_filters.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/pinned_header_bleed_guard.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
+import 'package:control_center/shared/widgets/repo_access_banner.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -327,11 +328,18 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // The degraded-GitHub caveat over a list that HAS content ("this may
-          // be stale"). Suppressed on the empty branch, where the empty state
-          // already makes the stronger claim ("this list may not be true") —
-          // one screen never says it twice.
-          if (!isEmpty) const GitHubDegradedBanner(),
+          // Caveats over a list that HAS content ("this may be stale").
+          // Suppressed on the empty branch, where the empty state already
+          // makes the stronger claim ("this list may not be true") — one
+          // screen never says it twice.
+          if (!isEmpty) ...[
+            const GitHubDegradedBanner(),
+            RepoAccessBanner(
+              repos:
+                  ref.watch(prsByRepoProvider).value?.inaccessibleRepos ??
+                  const [],
+            ),
+          ],
           // The active-filters bar (chips + "add filter"); renders nothing
           // while no filter is active, so the gap is gated too.
           if (filtersActive) ...[
@@ -343,8 +351,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                 // Nothing to review: the rail has no counts to mirror, so the
                 // empty state takes the full width alone. It only claims "all
                 // caught up" when the emptiness is trustworthy — a GitHub
-                // outage or an unresolved viewer identity empties the inbox
-                // identically, and [InboxEmptyState] says so instead.
+                // outage, a suspended App install, or an unresolved viewer
+                // identity empties the inbox identically, and [InboxEmptyState]
+                // says so instead.
                 ? const InboxEmptyState()
                 : Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -390,11 +399,12 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                               // visibly grew and shrank.
                               slivers: [
                                 SliverPadding(
-                                  // The right inset keeps the cards (and their
-                                  // age column) clear of the overlaying
-                                  // scrollbar.
-                                  padding: const EdgeInsets.only(
-                                    right: AppSpacing.md,
+                                  // The trailing inset keeps the cards (and
+                                  // their age column) clear of the overlaying
+                                  // scrollbar, which follows the ambient
+                                  // directionality.
+                                  padding: const EdgeInsetsDirectional.only(
+                                    end: AppSpacing.md,
                                   ),
                                   sliver: SliverMainAxisGroup(
                                     slivers: [

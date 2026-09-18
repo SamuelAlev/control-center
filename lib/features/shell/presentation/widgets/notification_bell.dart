@@ -43,8 +43,8 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      followerAnchor: Alignment.topRight,
-      targetAnchor: Alignment.bottomRight,
+      followerAnchor: AlignmentDirectional.topEnd,
+      targetAnchor: AlignmentDirectional.bottomEnd,
       overlayBuilder: (context, _) => _NotificationPanel(
         onNavigate: (route) {
           _controller.hide();
@@ -149,11 +149,11 @@ class _PanelHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Padding(
-      // Right inset matches the rows' so the header's actions land on the same
-      // vertical line as each row's overflow button.
-      padding: const EdgeInsets.only(
-        left: AppSpacing.md,
-        right: AppSpacing.md,
+      // Trailing inset matches the rows' so the header's actions land on the
+      // same vertical line as each row's overflow button.
+      padding: const EdgeInsetsDirectional.only(
+        start: AppSpacing.md,
+        end: AppSpacing.md,
         top: AppSpacing.sm,
         bottom: AppSpacing.sm,
       ),
@@ -307,21 +307,21 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
                   : unread
                   ? accent.withValues(alpha: 0.05)
                   : null,
-              border: Border(
-                left: BorderSide(
+              border: BorderDirectional(
+                start: BorderSide(
                   color: unread ? accent : const Color(0x00000000),
                   width: 2,
                 ),
               ),
             ),
             child: Padding(
-              // The right inset clears the scrollbar: `RawScrollbar` paints its
-              // 8px thumb OVER the content rather than reserving a gutter, so
-              // without this the overflow button sits under the thumb. The wash
-              // and the spine stay full-bleed — only the content is inset.
-              padding: const EdgeInsets.only(
-                left: AppSpacing.sm,
-                right: AppSpacing.md,
+              // The trailing inset clears the scrollbar: `RawScrollbar` paints
+              // its 8px thumb OVER the content rather than reserving a gutter,
+              // so without this the overflow button sits under the thumb. The
+              // wash and the spine stay full-bleed — only the content is inset.
+              padding: const EdgeInsetsDirectional.only(
+                start: AppSpacing.sm,
+                end: AppSpacing.md,
                 top: AppSpacing.sm,
                 bottom: AppSpacing.sm,
               ),
@@ -407,8 +407,8 @@ class _EntryTileState extends ConsumerState<_EntryTile> {
                         // menu's default tappable it was a bare glyph that never
                         // reacted to the pointer.
                         toggleOnTargetTap: false,
-                        targetAnchor: Alignment.bottomRight,
-                        followerAnchor: Alignment.topRight,
+                        targetAnchor: AlignmentDirectional.bottomEnd,
+                        followerAnchor: AlignmentDirectional.topEnd,
                         minWidth: 172,
                         items: [
                           CcMenuItem(
@@ -579,9 +579,9 @@ class _BellButton extends StatelessWidget {
           semanticLabel: l10n.notificationsTooltip,
         ),
         if (unread > 0)
-          Positioned(
+          PositionedDirectional(
             top: 2,
-            right: 2,
+            end: 2,
             // Never absorb the tap; the button underneath owns it.
             child: IgnorePointer(
               child: Container(

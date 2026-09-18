@@ -1,4 +1,5 @@
-import 'package:cc_ui/src/theme/cc_theme.dart';
+import 'package:cc_ui/src/foundation/cc_motion.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 /// A scroll container whose edges fade *only while there is content beyond
@@ -16,7 +17,7 @@ import 'package:flutter/widgets.dart';
 /// ([BlendMode.dstIn]), so it needs no knowledge of the surface behind it,
 /// reads identically in light and dark themes, and can never intercept a
 /// pointer the way an overlaid gradient could. Edge transitions animate over
-/// ~150 ms and snap instantly under reduced motion.
+/// [CcMotion.moderate] and keep a short fade under reduced motion.
 ///
 /// Hints are driven by the nearest scrollable descendant (notification depth
 /// zero, matching [axis]); scrollables nested deeper are ignored. Content-size
@@ -75,13 +76,15 @@ class CcScrollAreaState extends State<CcScrollArea> {
   /// rounding must not flash a hint.
   static const double _tolerance = 0.5;
 
-  static const Duration _fadeDuration = Duration(milliseconds: 150);
+  static const Duration _fadeDuration = CcMotion.moderate;
 
   static const Color _opaque = Color(0xFFFFFFFF);
 
   bool _startHinted = false;
   bool _endHinted = false;
   late AxisDirection _axisDirection = _defaultDirection;
+  bool _applyScheduled = false;
+  ScrollMetrics? _pendingMetrics;
 
   /// Whether the leading edge currently hints at more content.
   @visibleForTesting
@@ -91,8 +94,11 @@ class CcScrollAreaState extends State<CcScrollArea> {
   @visibleForTesting
   bool get endEdgeVisible => _endHinted;
 
-  AxisDirection get _defaultDirection =>
-      widget.axis == Axis.vertical ? AxisDirection.down : AxisDirection.right;
+  // Before the first metrics arrive, assume the ambient reading direction for
+  // a horizontal area (the metrics then confirm or correct it).
+  AxisDirection get _defaultDirection => widget.axis == Axis.vertical
+      ? AxisDirection.down
+      : textDirectionToAxisDirection(Directionality.of(context));
 
   @override
   void didUpdateWidget(CcScrollArea oldWidget) {
@@ -101,10 +107,46 @@ class CcScrollAreaState extends State<CcScrollArea> {
       _startHinted = false;
       _endHinted = false;
       _axisDirection = _defaultDirection;
+      _pendingMetrics = null;
     }
   }
 
+  @override
+  void dispose() {
+    _pendingMetrics = null;
+    super.dispose();
+  }
+
   void _readMetrics(ScrollMetrics metrics) {
+    if (metrics.axis != widget.axis || !metrics.hasContentDimensions) {
+      return;
+    }
+    // [ScrollPosition.applyContentDimensions] dispatches both
+    // [ScrollMetricsNotification] and [ScrollEndNotification] from
+    // [RenderViewport.performLayout] (a ballistic fling that relayouts
+    // newly-attached slivers is the usual trigger). setState during that
+    // phase schedules a build in the middle of the frame.
+    final phase = SchedulerBinding.instance.schedulerPhase;
+    if (phase == SchedulerPhase.persistentCallbacks ||
+        phase == SchedulerPhase.midFrameMicrotasks) {
+      _pendingMetrics = metrics;
+      if (!_applyScheduled) {
+        _applyScheduled = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _applyScheduled = false;
+          final pending = _pendingMetrics;
+          _pendingMetrics = null;
+          if (pending != null && mounted) {
+            _commitMetrics(pending);
+          }
+        });
+      }
+      return;
+    }
+    _commitMetrics(metrics);
+  }
+
+  void _commitMetrics(ScrollMetrics metrics) {
     if (metrics.axis != widget.axis || !metrics.hasContentDimensions) {
       return;
     }
@@ -125,6 +167,9 @@ class CcScrollAreaState extends State<CcScrollArea> {
   /// The gradient runs from the before-edge to the after-edge, whichever
   /// physical sides those are — a reversed list hints "older content" at the
   /// top, an RTL horizontal list at the right.
+  // RTL carve-out: physical alignments are correct here — they are derived
+  // from the scrollable's live [AxisDirection], which already encodes the
+  // text direction for a horizontal list.
   (Alignment, Alignment) get _gradientAlignments => switch (_axisDirection) {
     AxisDirection.down => (Alignment.topCenter, Alignment.bottomCenter),
     AxisDirection.up => (Alignment.bottomCenter, Alignment.topCenter),
@@ -137,8 +182,7 @@ class CcScrollAreaState extends State<CcScrollArea> {
 
   @override
   Widget build(BuildContext context) {
-    final reduced = context.ccTheme?.reducedMotion ?? false;
-    final duration = reduced ? Duration.zero : _fadeDuration;
+    final duration = CcMotion.resolveFade(context, _fadeDuration);
     return NotificationListener<ScrollMetricsNotification>(
       onNotification: (notification) {
         if (notification.depth == 0) {

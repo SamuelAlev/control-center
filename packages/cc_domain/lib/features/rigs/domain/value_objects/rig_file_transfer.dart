@@ -83,6 +83,17 @@ class RigFilePayload {
     final ext = cleaned.substring(dot);
     return '${cleaned.substring(0, 200 - ext.length)}$ext';
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RigFilePayload &&
+          name == other.name &&
+          mediaType == other.mediaType &&
+          _bytesEq(bytes, other.bytes);
+
+  @override
+  int get hashCode => Object.hash(name, mediaType, bytes.length);
 }
 
 /// What a drop asked for, beyond the bytes themselves.
@@ -208,4 +219,16 @@ class RigFileBytes {
 
   /// MIME type when it could be inferred.
   final String? mediaType;
+}
+
+bool _bytesEq(Uint8List a, Uint8List b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }

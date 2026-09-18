@@ -116,7 +116,7 @@ class _PlanNodeInspectorState extends State<PlanNodeInspector> {
       width: 360,
       decoration: BoxDecoration(
         color: ds.bgSecondary,
-        border: Border(left: BorderSide(color: ds.borderPrimary)),
+        border: BorderDirectional(start: BorderSide(color: ds.borderPrimary)),
       ),
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -171,7 +171,7 @@ class _PlanNodeInspectorState extends State<PlanNodeInspector> {
             ),
           if (_canEdit)
             Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: CcButton(
                 variant: CcButtonVariant.ghost,
                 size: CcButtonSize.sm,

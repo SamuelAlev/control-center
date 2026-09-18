@@ -4,9 +4,9 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_natives/native_library_paths.dart' show nativeLibDirEnvVar;
 import 'package:cc_rpc/cc_rpc.dart';
-import 'package:control_center/core/server/cc_server_process.dart';
 import 'package:control_center/core/storage/control_center_paths.dart';
 import 'package:control_center/core/theme/font_loader_install.dart';
 import 'package:control_center/core/utils/app_log.dart';
@@ -120,7 +120,8 @@ String _generatePsk() {
 /// restarts it and the UI reconnects without losing its subscriptions.
 ///
 /// The server's data dir is the app-support root, so it opens the SAME
-/// `control_center.db` the desktop created before the thin-client flip.
+/// `global.db` + per-workspace `workspace.db` files the desktop used to
+/// keep in-process before the thin-client flip.
 ///
 /// Throws on failure: the desktop is a pure client and cannot self-serve, so
 /// a missing/failed server is surfaced to the boot path rather than silently

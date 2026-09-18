@@ -30,6 +30,9 @@ void main() {
     'assignees': [
       {'login': 'asg', 'avatar_url': 'aa'},
     ],
+    'labels': [
+      {'name': 'bug', 'color': 'd73a4a', 'description': 'Something is wrong'},
+    ],
     'reactions': {'total_count': 3, '+1': 2, 'heart': 1},
     'body_html': '<p>html</p>',
     'changed_files': 7,
@@ -52,6 +55,8 @@ void main() {
       expect(pr.requestedReviewers, hasLength(2));
       expect(pr.requestedReviewers.first.login, 'rev1');
       expect(pr.assignees.single.login, 'asg');
+      expect(pr.labels.single.name, 'bug');
+      expect(pr.labels.single.color, 'd73a4a');
       expect(pr.reactions, isA<GitHubReactionSummary>());
       expect(pr.reactions!.plusOne, 2);
       expect(pr.reactions!.heart, 1);
@@ -123,6 +128,7 @@ void main() {
         'rev2',
       ]);
       expect(restored.assignees.single.login, 'asg');
+      expect(restored.labels.single.name, 'bug');
       expect(restored.reactions?.plusOne, 2);
       expect(restored.bodyHtml, '<p>html</p>');
       expect(restored.changedFiles, 7);

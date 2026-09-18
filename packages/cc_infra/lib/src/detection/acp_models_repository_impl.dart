@@ -10,6 +10,6 @@ class AcpModelRepositoryImpl implements AcpModelRepository {
   final AcpModelsService _service;
 
   @override
-  Future<List<AcpModel>> listModels(String adapterId, {String? cliPath}) =>
-      _service.listModels(adapterId, cliPath: cliPath);
+  Future<List<AcpModel>> listModels(String adapterId) =>
+      _service.listModels(adapterId);
 }

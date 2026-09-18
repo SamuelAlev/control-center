@@ -14,7 +14,8 @@ guide](/manual/guides/use-rigs/).
 | Terminal (exec) | A shell over the VM's exec channel | microVM | `smolvm` | Yes |
 | Browser | Headless Chromium (CDP), Firefox (WebDriver BiDi) or WebKit (W3C WebDriver) | microVM | `smolvm` | Yes |
 | Computer | X11 desktop: input via the hypervisor, capture via the guest agent | QEMU | `qemu-hvf` (macOS), `qemu-kvm` (Linux), `qemu-tcg` (unaccelerated fallback, never chosen automatically) | Yes |
-| Mobile | Android over adb | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
+| Android | Android over ADB | Google's emulator | `android-emulator` | **No** — the emulator manages its own networking |
+| iOS | iOS Simulator through WebDriverAgent | CoreSimulator | `ios-simulator` | **No** — networking follows the host Mac |
 
 The terminal and the `computer_use` surface share the `computer` surface
 value; the terminal is distinguished by its exec image marker and is never
@@ -59,7 +60,8 @@ Engine-specific limits, stated rather than worked around:
 | Browser (Chromium) | `chromedp/headless-shell:stable`, digest-pinned | Automatically on first boot |
 | Browser (Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
 | Computer | A qcow2 desktop image | **Import** under Settings → Server → Enclosures (checksum-pinned downloads where published) |
-| Mobile | Google's system images | Through the Android SDK |
+| Android | Google's system images | Through the Android SDK |
+| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Enclosures |
 
 After the first boot of each microVM kind the server caches a pre-extracted
 copy under the data directory and boots every later machine from it —
@@ -158,12 +160,36 @@ without going through a clipboard.
 `tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
 `recents`, `enter`, `delete`, `tab`, `escape`, `volume_up`, `volume_down`,
 `power`, or any `KEYCODE_*`), `screenshot`○, `ui_dump`○, `install_apk`
-(confined to the rig's worktree and the server data directory), `start_app`.
+(confined to the rig's worktree and the server data directory), `start_app`,
+`stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
+`shell` takes an argv list and runs inside Android, never through a host shell;
+it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
 
 No clipboard verbs, and that is a property of Android rather than a gap:
-since Android 10 only the *focused app* may read the clipboard, and no ADB
-command, shell service call or permission changes it. Relaying it would need
-an app installed inside the device, which this product does not ship.
+since Android 10 only the *focused app* may read the clipboard. Relaying it
+would need an app installed inside the device, which this product does not ship.
+
+### `ios_use`
+
+`tap`, `swipe` (50–5000 ms), `type`, `key` (`enter`, `backspace`, `tab`,
+`escape`, arrow keys or one printable character; optional `command`,
+`control`, `option` and `shift` modifiers), `home`, `lock`, `unlock`,
+`screenshot`○, `ui_dump`○, `install_app` (a simulator `.app` directory
+confined to the rig worktree or server data directory), `start_app`, `stop_app`,
+`uninstall_app`, `open_url`, and `spawn`. `spawn` takes argv and executes
+inside the simulator through `simctl`; it never invokes a host shell.
+
+Coordinates are iOS screen **points**, not screenshot pixels. The live stream
+keeps the simulator's fixed size and letterboxes it instead of resizing the
+device. Host-to-simulator and simulator-to-host text clipboard transfer uses
+the same per-user, per-direction permission policy as other rigs; files and
+images are not accepted by the iOS pasteboard lane.
+
+Each rig creates an owned CoreSimulator device and WebDriverAgent session.
+Closing it stops WebDriverAgent, shuts down and deletes that device, and
+removes its registry entry. iOS rigs run only on a macOS server with Xcode,
+an installed iOS runtime and the pinned automation bridge. They expose no
+audio, microphone, file drop, host shell or enclosed-network guarantee.
 
 ### Management tools
 

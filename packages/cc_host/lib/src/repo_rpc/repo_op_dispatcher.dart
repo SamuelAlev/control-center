@@ -10,6 +10,7 @@ import 'package:cc_domain/features/guardrails/domain/services/action_guard_servi
 import 'package:cc_host/src/errors/rpc_error_mapping.dart';
 import 'package:cc_host/src/log/cc_host_log.dart';
 import 'package:cc_host/src/policy/session_capability.dart';
+import 'package:cc_host/src/repo_rpc/audit_details.dart';
 import 'package:cc_host/src/repo_rpc/repo_op.dart';
 
 /// Resolves the calling user's role in a workspace; null = not a member.
@@ -76,6 +77,7 @@ typedef UserActivityRecorder =
       String? targetType,
       String? targetId,
       String? ip,
+      Map<String, Object?>? details,
     });
 
 /// The workspace-scoped idempotency ledger (PRD 19 §3), consulted by the
@@ -632,7 +634,10 @@ class RepoOpDispatcher {
           CcHostLog.warning('write-ledger record for ${op.name} failed: $e');
         }
       }
-      if (op.kind != RepoOpKind.read && op.audited && workspaceId != null) {
+      if (op.kind != RepoOpKind.read &&
+          op.audited &&
+          workspaceId != null &&
+          (op.auditWhen == null || op.auditWhen!(args, data))) {
         // Two trails, one call. `user_activity` is the product's timeline of
         // what a person did; `guard_decisions` is the tamper-evident record
         // of the authorization verdict behind it. They share a correlation id
@@ -658,6 +663,7 @@ class RepoOpDispatcher {
           targetType: _targetTypeOf(op.name),
           targetId: _targetIdOf(args),
           ip: ctx.remoteAddress,
+          details: auditDetailsOf(args: args, result: data),
         );
         if (audit != null) {
           unawaited(
@@ -782,14 +788,33 @@ class RepoOpDispatcher {
     return dot > 0 ? opName.substring(0, dot) : null;
   }
 
-  /// Best-effort audit target id from conventional arg names. `path` and
-  /// `name` trail the id forms deliberately: a real identifier wins, then a
-  /// filesystem path (e.g. `repos.add`), then a display name (e.g.
-  /// `messaging.createSpace`).
+  /// Best-effort audit target id from conventional arg names. More-specific
+  /// entity ids win (`rig_id`, `session_id`, `key`) so a destroy names the
+  /// machine rather than falling through to a space; `path` and `name` trail
+  /// the id forms: a real identifier, then a filesystem path, then a display
+  /// name. The space a thing lived in rides on `details`, not here.
   static String? _targetIdOf(Map<String, dynamic> args) {
     for (final key in const [
       'id',
       'ticket_id',
+      'rig_id',
+      'session_id',
+      'key',
+      'image_id',
+      'feed_id',
+      'article_id',
+      'meeting_id',
+      'event_id',
+      'pr_id',
+      'plan_id',
+      'template_id',
+      'trigger_id',
+      'goal_id',
+      'project_id',
+      'team_id',
+      'member_id',
+      'skill_id',
+      'fact_id',
       'space_id',
       'conversation_id',
       'repo_id',

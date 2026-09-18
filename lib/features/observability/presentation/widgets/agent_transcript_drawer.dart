@@ -69,7 +69,7 @@ class AgentTranscriptDrawer extends ConsumerWidget {
       width: 440,
       decoration: BoxDecoration(
         color: t.bgPrimary,
-        border: Border(left: BorderSide(color: t.borderPrimary)),
+        border: BorderDirectional(start: BorderSide(color: t.borderPrimary)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

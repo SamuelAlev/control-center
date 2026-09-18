@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/entities/user_activity_entry.dart';
+import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/entities/workspace_invite.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
@@ -285,6 +286,23 @@ void main() {
       expect(rows.single.targetType, 'ticket');
     });
 
+    test('append round-trips a details snapshot', () async {
+      await activityRepo.append(
+        UserActivityEntry(
+          id: 'a-details',
+          workspaceId: 'w-details',
+          userId: 'u-1',
+          action: 'workspace_settings.set',
+          targetType: 'workspace_settings',
+          targetId: 'theme',
+          details: const {'key': 'theme', 'value': 'dark'},
+          createdAt: DateTime.utc(2026, 1, 3),
+        ),
+      );
+      final row = (await activityRepo.getForWorkspace('w-details')).single;
+      expect(row.details, {'key': 'theme', 'value': 'dark'});
+    });
+
     test('getForWorkspace is workspace-scoped', () async {
       await activityRepo.append(
         UserActivityEntry(
@@ -337,6 +355,81 @@ void main() {
         (await activityRepo.watchForWorkspace('w-1').first).single.id,
         'a-1',
       );
+    });
+
+    test('getPage paginates with a real total and cursors', () async {
+      for (var i = 0; i < 12; i++) {
+        await activityRepo.append(
+          UserActivityEntry(
+            id: 'p-$i',
+            workspaceId: 'w-1',
+            userId: 'u-1',
+            action: 'agents.upsert',
+            targetId: 'a-$i',
+            createdAt: DateTime.utc(2026, 1, 3, 0, i),
+          ),
+        );
+      }
+      final page1 = await activityRepo.getPage('w-1', limit: 10);
+      expect(page1.total, 12);
+      expect(page1.start, 1);
+      expect(page1.entries.length, 10);
+      expect(page1.entries.first.id, 'p-11');
+      expect(page1.nextCursor, isNotNull);
+      expect(page1.prevCursor, isNull);
+
+      final page2 = await activityRepo.getPage(
+        'w-1',
+        limit: 10,
+        cursor: page1.nextCursor,
+      );
+      expect(page2.total, 12);
+      expect(page2.start, 11);
+      expect(page2.entries.map((e) => e.id), ['p-1', 'p-0']);
+      expect(page2.nextCursor, isNull);
+      expect(page2.prevCursor, isNull);
+
+      final back = await activityRepo.getPage('w-1', limit: 10);
+      expect(back.entries.first.id, page1.entries.first.id);
+    });
+
+    test('getPage applies ip and query filters to the total', () async {
+      await activityRepo.append(
+        UserActivityEntry(
+          id: 'f-1',
+          workspaceId: 'w-1',
+          userId: 'u-1',
+          action: 'agents.upsert',
+          targetId: 'ceo',
+          ip: '203.0.113.7',
+          countryCode: 'FR',
+          createdAt: DateTime.utc(2026, 1, 4, 1),
+        ),
+      );
+      await activityRepo.append(
+        UserActivityEntry(
+          id: 'f-2',
+          workspaceId: 'w-1',
+          userId: 'u-2',
+          action: 'tickets.create',
+          targetId: 'T-9',
+          ip: '198.51.100.9',
+          createdAt: DateTime.utc(2026, 1, 4, 2),
+        ),
+      );
+      final byIp = await activityRepo.getPage(
+        'w-1',
+        filter: const UserActivityFilter(ip: '203.0.113.7'),
+      );
+      expect(byIp.total, 1);
+      expect(byIp.entries.single.id, 'f-1');
+
+      final byQuery = await activityRepo.getPage(
+        'w-1',
+        filter: const UserActivityFilter(query: 'ceo'),
+      );
+      expect(byQuery.total, 1);
+      expect(byQuery.entries.single.targetId, 'ceo');
     });
   });
 

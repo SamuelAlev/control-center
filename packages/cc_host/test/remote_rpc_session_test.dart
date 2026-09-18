@@ -464,6 +464,105 @@ void main() {
     );
 
     test(
+      'sub/unsubscribe does not consume the request budget',
+      () async {
+        // Fast space-switching bursts unsubscribe as autoDispose watches
+        // tear down. Refusing those leaks the server-side subscription —
+        // the client swallows the error — and the next space then collides
+        // with the per-session cap. Teardown is not work.
+        final space = _FakeChannel();
+        final watchQueries = WatchQueryRegistry([
+          WatchQuery(
+            name: 'newsfeed',
+            workspaceScoped: false,
+            handler: (_) => const Stream<Map<String, dynamic>>.empty(),
+          ),
+        ]);
+        final session = RemoteRpcSession(
+          deviceId: 'desktop',
+          userId: 'user-1',
+          space: space,
+          dispatcher: _RecordingDispatcher(),
+          workspaceResolver: (_) async => const [],
+          capability: SessionCapability.fullClient,
+          watchQueries: watchQueries,
+          requestLimiter: RemoteRateLimiter(
+            maxCallsPerWindow: 1,
+            maxMutationsPerWindow: 1,
+          ),
+        );
+        addTearDown(session.stop);
+        await session.start();
+
+        space.inject({
+          'jsonrpc': '2.0',
+          'method': 'session/list_workspaces',
+          'id': 1,
+        });
+        await pumpEventQueue(times: 5);
+        expect(space.sent, hasLength(1));
+        expect(space.sent.single.containsKey('error'), isFalse);
+
+        space.inject({
+          'jsonrpc': '2.0',
+          'method': RpcMethods.unsubscribe,
+          'id': 2,
+          'params': {'subscriptionId': 's-gone'},
+        });
+        await pumpEventQueue(times: 5);
+        expect(space.sent, hasLength(2));
+        expect(space.sent.last['id'], 2);
+        expect(space.sent.last['result'], {'ok': true});
+
+        space.inject({
+          'jsonrpc': '2.0',
+          'method': 'session/list_workspaces',
+          'id': 3,
+        });
+        await pumpEventQueue(times: 5);
+        expect(space.sent, hasLength(3));
+        expect(
+          (space.sent.last['error'] as Map)['code'],
+          RpcErrorCodes.rateLimited,
+        );
+      },
+    );
+
+    test('a first-party client gets a higher request budget than a phone', () {
+      final desktop = RemoteRpcSession(
+        deviceId: 'desktop',
+        userId: 'user-1',
+        space: _FakeChannel(),
+        dispatcher: _RecordingDispatcher(),
+        workspaceResolver: (_) async => const [],
+        capability: SessionCapability.fullClient,
+      );
+      final phone = RemoteRpcSession(
+        deviceId: 'phone',
+        userId: 'user-1',
+        space: _FakeChannel(),
+        dispatcher: _RecordingDispatcher(),
+        workspaceResolver: (_) async => const [],
+        capability: SessionCapability.phone,
+      );
+      addTearDown(desktop.stop);
+      addTearDown(phone.stop);
+
+      expect(
+        desktop.requestLimiter.maxCallsPerWindow,
+        RemoteRpcSession.fullClientRequestBudgetPerMinute,
+      );
+      expect(
+        phone.requestLimiter.maxCallsPerWindow,
+        RemoteRpcSession.phoneRequestBudgetPerMinute,
+      );
+      expect(
+        RemoteRpcSession.fullClientRequestBudgetPerMinute,
+        greaterThan(RemoteRpcSession.phoneRequestBudgetPerMinute),
+      );
+    });
+
+    test(
       'refuses work past the in-flight cap instead of queueing it',
       () async {
         final space = _FakeChannel();
@@ -855,6 +954,7 @@ void main() {
                 String? targetType,
                 String? targetId,
                 String? ip,
+                Map<String, Object?>? details,
               }) async => sink.add(ip),
         );
         final session = RemoteRpcSession(
@@ -904,6 +1004,7 @@ void main() {
               String? targetType,
               String? targetId,
               String? ip,
+              Map<String, Object?>? details,
             }) async => sink.add(ip),
       );
       final session = RemoteRpcSession(

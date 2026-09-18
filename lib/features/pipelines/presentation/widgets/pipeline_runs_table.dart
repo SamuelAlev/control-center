@@ -176,7 +176,7 @@ class _ColumnHeaderRow extends StatelessWidget {
             width: PipelineRunRowMetrics.duration,
             child: Text(
               l10n.pipelineRunColumnDuration,
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.end,
               style: style,
             ),
           ),
@@ -184,7 +184,7 @@ class _ColumnHeaderRow extends StatelessWidget {
             width: PipelineRunRowMetrics.started,
             child: Text(
               l10n.pipelineRunColumnStarted,
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.end,
               style: style,
             ),
           ),

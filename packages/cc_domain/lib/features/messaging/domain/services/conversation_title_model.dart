@@ -5,8 +5,7 @@
 /// default-runner rows in Settings → Adapters). There is no third "provider"
 /// axis: for the built-in `cc-harness` adapter the provider is folded into the
 /// model id (`anthropic/claude-haiku-4-5`), and an external CLI adapter
-/// (`claude-code`, `codex`, an ACP agent) owns its own auth and advertises
-/// plain model names.
+/// (`claude-code`) owns its own auth and advertises plain model names.
 ///
 /// Both unset/empty means automatic conversation titling is OFF: there is
 /// deliberately no fallback runner, so no generation happens until an admin

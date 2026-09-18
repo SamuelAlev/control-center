@@ -4,7 +4,6 @@ import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/di/settings_registry.dart';
-import 'package:control_center/features/agents/domain/usecases/create_agent.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_form_dialog.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_logs_tab.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_roster.dart';
@@ -293,21 +292,15 @@ class _AgentRegistryScreenState extends ConsumerState<AgentRegistryScreen> {
 
   Future<void> _createUnnamedAgent() async {
     final l10n = AppLocalizations.of(context);
-    final repo = ref.read(agentRepositoryProvider);
     final workspaceId = ref.read(activeWorkspaceIdProvider);
-    final fsService = ref.read(workspaceFilesystemPortProvider);
+    if (workspaceId == null) {
+      return;
+    }
     try {
-      final agent =
-          await CreateAgentUseCase(
-            repository: repo,
-            filesystemService: fsService,
-          ).execute(
-            CreateAgentCommand(
-              name: l10n.unnamedAgent,
-              title: l10n.unnamedAgent,
-              skills: const <String>[],
-              workspaceId: workspaceId,
-            ),
+      final agent = await ref.read(agentCreatePortProvider).create(
+            workspaceId: workspaceId,
+            name: l10n.unnamedAgent,
+            title: l10n.unnamedAgent,
           );
       if (!mounted) {
         return;

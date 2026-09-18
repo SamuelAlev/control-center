@@ -108,6 +108,8 @@ class WorkspaceAvatar extends ConsumerWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          // RTL carve-out: a decorative gradient angle, not reading-order
+          // geometry — the avatar must render identically in every locale.
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           stops: const [0.0, 0.34, 0.70, 1.0],

@@ -1,0 +1,35 @@
+{
+  "@@locale": "pt_PT",
+  "scanQrHelp": "Abra a câmera e aponte para o QR exibido no Control Center no seu Mac. Este celular liga-se diretamente ao Mac por um link privado.",
+  "connectingToMac": "A ligar ao seu Mac…",
+  "identityChangedBody": "Este servidor não corresponde mais à identidade guardada no emparelhamento. Isso pode significar que o servidor foi reinstalado — ou que algo está interceptando a ligação. Por segurança, este dispositivo não vai ligar. Remova o emparelhamento e escaneie um QR novo no seu Mac para emparelhar de novo.",
+  "couldntConnect": "Não foi possível ligar",
+  "pendingPairingTitle": "Ligar a este servidor?",
+  "connect": "Ligar",
+  "failureUnknown": "Não foi possível ligar — toque para tentar de novo",
+  "statusConnected": "Ligado",
+  "statusConnecting": "A ligar",
+  "connectionFailed": "Falha na ligação",
+  "identityMismatchBanner": "Identidade do servidor mudou — ligação interrompida. Emparelhe este dispositivo de novo para continuar.",
+  "disconnectTapAgain": "Toque de novo para desligar este dispositivo do seu Mac",
+  "disconnectDevice": "Desligar este dispositivo",
+  "disconnect": "Desligar",
+  "inboxNoForgeAccount": "Nenhuma conta de forge está ligada no servidor, então os pull requests ainda não podem ser atribuídos a você.",
+  "calendarEmptyDescription": "Os eventos dos calendários ligados aparecem aqui.",
+  "calendarNoAccounts": "Nenhum calendário está ligado neste workspace. Ligue um pelo app do desktop — o login guarda o token no servidor.",
+  "calendarReauthNeeded": "Uma conta de calendário precisa ser ligada novamente — o que você vê abaixo pode estar desatualizado. Volte a ligar pelo app do desktop.",
+  "attachFile": "Anexar um ficheiro",
+  "save": "Guardar",
+  "unsave": "Remover dos guardados",
+  "noForgeConnected": "Nenhuma forge está ligada no servidor, então não é possível buscar pull requests. Ligue uma pelo app para computador.",
+  "files": "Ficheiros",
+  "filesCount": "{count, plural, =1{1 ficheiro} other{{count} ficheiros}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noChangedFiles": "Nenhum ficheiro alterado.",
+  "noTextDiff": "Não há diff de texto para este ficheiro — é binário ou grande demais para a forge retornar."
+}

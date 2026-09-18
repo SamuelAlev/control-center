@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/count_rail_item.dart';
 import 'package:flutter/widgets.dart';
@@ -55,18 +56,23 @@ class PipelineRunFilterRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final filters = PipelineRunFilter.values;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final filter in PipelineRunFilter.values)
-          CountRailItem(
-            label: filter.label(l10n),
-            count: counts[filter] ?? 0,
-            selected: filter == selected,
-            onPressed: () => onSelect(filter),
-          ),
-      ],
+    return CcFluidHover(
+      itemCount: filters.length,
+      itemBuilder: (context, index) {
+        final filter = filters[index];
+        return CountRailItem(
+          label: filter.label(l10n),
+          count: counts[filter] ?? 0,
+          selected: filter == selected,
+          onPressed: () => onSelect(filter),
+        );
+      },
+      layoutBuilder: (context, items) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: items,
+      ),
     );
   }
 }

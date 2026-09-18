@@ -17,6 +17,8 @@
 /// terminal (the workspace-isolation invariant).
 library;
 
+import 'package:cc_domain/features/sandboxing/domain/terminal_command_buffer.dart';
+
 /// Owns server-side PTY terminal sessions and exposes their lifecycle for the
 /// `terminal.*` RPC surface.
 abstract interface class TerminalSessionPort {
@@ -57,7 +59,12 @@ abstract interface class TerminalSessionPort {
 
   /// Writes [data] (already-decoded bytes) to [sessionId]'s PTY stdin. A no-op
   /// when the session is gone. Throws on a cross-workspace mismatch.
-  Future<void> write({
+  ///
+  /// The result says whether this chunk *submitted* a command (Enter). Typing
+  /// without sending does nothing the audit trail should record; the
+  /// reconstructed line rides on [TerminalWriteResult.command] so the trail
+  /// can name what ran rather than the bare carriage return.
+  Future<TerminalWriteResult> write({
     required String workspaceId,
     required String sessionId,
     required List<int> data,

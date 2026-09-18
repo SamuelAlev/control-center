@@ -2,7 +2,9 @@ import 'package:cc_domain/features/observability/domain/usage_stats.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/observability/presentation/widgets/usage/usage_trend_chart.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/charts/chart_hover.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -113,5 +115,59 @@ void main() {
     await _pump(tester, const []);
 
     expect(find.text('No token usage recorded yet'), findsOneWidget);
+  });
+
+  testWidgets('hovering between days keeps the flyout up', (tester) async {
+    await _pump(tester, [
+      _series('opus', [0, 0, 25000000, 0, 0]),
+    ]);
+
+    final host = tester.getRect(find.byType(ChartHoverHost));
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+
+    // Midway between two day slots — the old 10px-from-spot hit test
+    // dropped the tooltip here, which is the flicker in the recording.
+    final plotLeft = host.left + 44;
+    final plotWidth = host.width - 44;
+    await gesture.moveTo(Offset(plotLeft + plotWidth * 0.37, host.center.dy));
+    await tester.pump();
+    expect(find.byType(ChartPointFlyoutCard), findsOneWidget);
+
+    await gesture.moveTo(Offset(plotLeft + plotWidth * 0.62, host.center.dy));
+    await tester.pump();
+    await tester.pump(CcMotion.moderate);
+    expect(find.byType(ChartPointFlyoutCard), findsOneWidget);
+    expect(find.textContaining('opus'), findsWidgets);
+  });
+
+  testWidgets('leaving the plot hides the flyout after the grace', (
+    tester,
+  ) async {
+    await _pump(tester, [
+      _series('opus', [1000, 2000, 3000]),
+    ]);
+
+    final host = tester.getRect(find.byType(ChartHoverHost));
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+
+    await gesture.moveTo(host.center);
+    await tester.pump();
+    expect(find.byType(ChartPointFlyoutCard), findsOneWidget);
+
+    await gesture.moveTo(Offset(host.center.dx, host.bottom + 24));
+    await tester.pump();
+    expect(find.byType(ChartPointFlyoutCard), findsOneWidget);
+    await tester.pump(CcMotion.fast);
+    final fade = tester.widget<AnimatedOpacity>(
+      find.descendant(
+        of: find.byType(ChartPointFlyout),
+        matching: find.byType(AnimatedOpacity),
+      ),
+    );
+    expect(fade.opacity, 0);
   });
 }

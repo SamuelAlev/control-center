@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:js_interop';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -132,14 +133,15 @@ class RemoteUpdateBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final controller = ref.read(remoteUpdateProvider.notifier);
+    final l10n = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       child: CcBanner(
-        title: 'A new Control Center is available',
+        title: l10n.updateAvailable,
         variant: CcBannerVariant.info,
         actions: [
           CcBannerAction(
-            label: 'Refresh',
+            label: l10n.refresh,
             primary: true,
             onPressed: controller.refresh,
           ),

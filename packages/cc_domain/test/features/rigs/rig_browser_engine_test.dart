@@ -140,5 +140,33 @@ void main() {
         expect(restored.supportsEngine(engine), isTrue);
       }
     });
+
+    test('unavailable capabilities retain surfaces and setup action', () {
+      final capabilities = RigBackendCapabilities.unavailable(
+        EnclosureBackend.iosSimulator,
+        note: 'Install the automation bridge.',
+        surfaces: const {RigSurface.ios},
+        setupAction: RigBackendSetupAction.iosAutomation,
+      );
+      expect(capabilities.supports(RigSurface.ios), isFalse);
+      expect(capabilities.surfaces, {RigSurface.ios});
+
+      final restored = RigBackendCapabilities.fromJson(capabilities.toJson());
+      expect(restored.backend, EnclosureBackend.iosSimulator);
+      expect(restored.surfaces, {RigSurface.ios});
+      expect(restored.setupAction, RigBackendSetupAction.iosAutomation);
+      expect(restored.toJson()['enforcedEgress'], isFalse);
+    });
+
+    test('unknown future setup actions decode to null', () {
+      final capabilities = RigBackendCapabilities.fromJson({
+        'backend': EnclosureBackend.iosSimulator.wire,
+        'available': false,
+        'surfaces': [RigSurface.ios.wire],
+        'setupAction': 'future-action',
+      });
+      expect(capabilities.setupAction, isNull);
+      expect(RigBackendSetupAction.fromWire('future-action'), isNull);
+    });
   });
 }

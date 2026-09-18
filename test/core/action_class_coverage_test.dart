@@ -87,12 +87,23 @@ void main() {
     }, // re-fetches + re-installs from GitHub
     'refresh_feeds': {'networkEgress'}, // fetches RSS over HTTP
     // --- Enclosures (rigs) ---
-    // Booting a VM spawns a hypervisor process; driving one is enclosure
-    // control; the guest reaches the network through the egress proxy. All
-    // three `*_use` tools inherit the set from their shared `RigUseTool`.
+    // Driving a rig is enclosure control and may spawn a host process with
+    // network access. The Android and iOS tools also install caller-built app
+    // bundles.
     'computer_use': {'enclosureControl', 'networkEgress', 'processSpawn'},
     'browser_use': {'enclosureControl', 'networkEgress', 'processSpawn'},
-    'mobile_use': {'enclosureControl', 'networkEgress', 'processSpawn'},
+    'mobile_use': {
+      'enclosureControl',
+      'networkEgress',
+      'processSpawn',
+      'packageInstall',
+    },
+    'ios_use': {
+      'enclosureControl',
+      'networkEgress',
+      'processSpawn',
+      'packageInstall',
+    },
     'rig_close': {'enclosureControl'}, // destroys a machine
     'rig_list': <String>{}, // read-only
     // --- Workspace structure (create/mutate repos/spaces/agents/workspaces) ---
@@ -275,12 +286,18 @@ void main() {
     // Enclosures: booting spawns a hypervisor, driving one is enclosure
     // control, and the guest reaches the network through the egress proxy.
     'rig.open': {'enclosureControl', 'processSpawn'},
+    'rig.restartUnrestricted': {
+      'enclosureControl',
+      'networkEgress',
+      'processSpawn',
+    },
     'rig.act': {'enclosureControl'},
     'rig.takeControl': {'enclosureControl'},
     'rig.releaseControl': {'enclosureControl'},
     'rig.destroy': {'enclosureControl'},
     'rig.downloadImage': {'networkEgress', 'packageInstall'},
     'rig.importImage': {'packageInstall'},
+    'rig.removeImage': {'fileDelete'},
     // Enclosure ports: each one reconfigures a host listener or the name that
     // reaches it. `setPortsAutoForward` stands in for an unbounded number of
     // `addPort`s, which is why it is not exempt for being a toggle.

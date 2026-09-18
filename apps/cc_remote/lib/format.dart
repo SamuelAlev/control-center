@@ -1,85 +1,94 @@
 /// Small display formatters shared by the phone's surfaces.
 ///
-/// Deliberately dependency-free and English-only: cc_remote ships no ARB
-/// bundle yet (its chrome is English, and `appLocaleProvider` stores the
-/// choice for when it does), so pulling `package:intl` in for these would add
-/// locale data to the most bandwidth-sensitive tier in the product for output
-/// nothing localises yet.
+/// Locale-aware: month/weekday names come from `package:intl`'s [DateFormat]
+/// (whose symbols are loaded once in `main()` via `initializeDateFormatting()`
+/// — required on web for non-English locales) and the relative words (`now`,
+/// `Today`, compact `4m`/`3h` forms) come from the ARB bundle. Every formatter
+/// takes the [BuildContext] it renders under, which supplies both the resolved
+/// locale and the [AppLocalizations] lookup.
 library;
+
+import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 
 /// A compact "time since" label: `now`, `4m`, `3h`, `6d`, then a date.
 ///
 /// Rows on a phone are dense; `2026-08-21` in a list of twenty PRs reads as
 /// noise, while `3d` reads as recency at a glance. Past two weeks the absolute
 /// date carries more than a growing day count, so it takes over.
-String shortAgo(DateTime? when) {
+String shortAgo(BuildContext context, DateTime? when) {
   if (when == null) {
     return '';
   }
+  final l10n = AppLocalizations.of(context);
   final delta = DateTime.now().difference(when.toLocal());
-  if (delta.isNegative) {
-    return 'now';
-  }
-  if (delta.inMinutes < 1) {
-    return 'now';
+  if (delta.isNegative || delta.inMinutes < 1) {
+    return l10n.now;
   }
   if (delta.inMinutes < 60) {
-    return '${delta.inMinutes}m';
+    return l10n.agoMinutes(delta.inMinutes);
   }
   if (delta.inHours < 24) {
-    return '${delta.inHours}h';
+    return l10n.agoHours(delta.inHours);
   }
   if (delta.inDays <= 14) {
-    return '${delta.inDays}d';
+    return l10n.agoDays(delta.inDays);
   }
-  return shortDate(when);
+  return shortDate(context, when);
 }
 
-/// `21 Aug` for a date in the current year, `21 Aug 2025` otherwise.
-String shortDate(DateTime when) {
+/// `Aug 21` (locale order) for a date in the current year, with the year
+/// appended otherwise.
+String shortDate(BuildContext context, DateTime when) {
   final local = when.toLocal();
-  final month = _months[local.month - 1];
+  final locale = _localeOf(context);
   return local.year == DateTime.now().year
-      ? '${local.day} $month'
-      : '${local.day} $month ${local.year}';
+      ? DateFormat.MMMd(locale).format(local)
+      : DateFormat.yMMMd(locale).format(local);
 }
 
-/// `14:05`, 24-hour.
-String clockTime(DateTime when) {
-  final local = when.toLocal();
-  return '${_two(local.hour)}:${_two(local.minute)}';
+/// `14:05` — 24-hour by design (dense rows), digits and separator follow the
+/// locale.
+String clockTime(BuildContext context, DateTime when) {
+  return DateFormat.Hm(_localeOf(context)).format(when.toLocal());
 }
 
-/// `Mon 21 Aug` — the calendar's day-header form.
-String dayHeading(DateTime day) {
+/// `Mon, Aug 21` — the calendar's day-header form, with `Today` / `Tomorrow` /
+/// `Yesterday` for the adjacent days.
+String dayHeading(BuildContext context, DateTime day) {
   final local = day.toLocal();
   final today = _dayKey(DateTime.now());
   final key = _dayKey(local);
+  final l10n = AppLocalizations.of(context);
   if (key == today) {
-    return 'Today';
+    return l10n.today;
   }
   if (key == today + 1) {
-    return 'Tomorrow';
+    return l10n.tomorrow;
   }
   if (key == today - 1) {
-    return 'Yesterday';
+    return l10n.yesterday;
   }
-  return '${_weekdays[local.weekday - 1]} ${local.day} '
-      '${_months[local.month - 1]}';
+  return DateFormat.MMMEd(_localeOf(context)).format(local);
 }
 
 /// A duration as `45m` / `1h 30m` / `2h`.
-String shortDuration(Duration d) {
+String shortDuration(BuildContext context, Duration d) {
+  final l10n = AppLocalizations.of(context);
   final minutes = d.inMinutes;
   if (minutes < 60) {
-    return '${minutes}m';
+    return l10n.durationMinutes(minutes);
   }
   final hours = minutes ~/ 60;
   final rest = minutes % 60;
-  return rest == 0 ? '${hours}h' : '${hours}h ${rest}m';
+  return rest == 0
+      ? l10n.durationHours(hours)
+      : l10n.durationHoursMinutes(hours, rest);
 }
 
-/// `+120 −8` churn, or an empty string when there is none.
+/// `+120 −8` churn, or an empty string when there is none. Numeric and
+/// universal — deliberately not localised.
 String churn(int additions, int deletions) {
   if (additions == 0 && deletions == 0) {
     return '';
@@ -104,29 +113,6 @@ DateTime startOfDay(DateTime when) {
 /// Whether [a] and [b] fall on the same local calendar day.
 bool sameDay(DateTime a, DateTime b) => _dayKey(a) == _dayKey(b);
 
-String _two(int n) => n.toString().padLeft(2, '0');
-
-const List<String> _months = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
-const List<String> _weekdays = [
-  'Mon',
-  'Tue',
-  'Wed',
-  'Thu',
-  'Fri',
-  'Sat',
-  'Sun',
-];
+/// The resolved locale as a BCP 47 tag, for [DateFormat] constructors.
+String _localeOf(BuildContext context) =>
+    Localizations.localeOf(context).toLanguageTag();

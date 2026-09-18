@@ -5,12 +5,13 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/pr_diff_toolbar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_keyboard_hints.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The PR "Files changed" body: a toolbar plus the unified single-canvas diff
@@ -37,6 +38,9 @@ class PrDiffView extends ConsumerStatefulWidget {
     this.onRequestSidebarSearch,
     this.onShowFileTree,
     this.onOpenFileInEditor,
+    this.workspaceId,
+    this.repoId,
+    this.spaceId,
   });
 
   /// Files changed in the PR, in display order.
@@ -44,7 +48,6 @@ class PrDiffView extends ConsumerStatefulWidget {
 
   /// Server-side review comments.
   final List<PrCodeReviewComment> comments;
-
 
   /// Commits in the PR (for the toolbar's commit-range selector).
   final List<PrCommit> commits;
@@ -98,7 +101,16 @@ class PrDiffView extends ConsumerStatefulWidget {
 
   /// Opens a file (repo-relative path) in an editable tab — wires the file
   /// header's "open in editor" action.
-  final ValueChanged<String>? onOpenFileInEditor;
+  final void Function(String path, {int? line})? onOpenFileInEditor;
+
+  /// Active workspace id, for code-graph symbol lookup.
+  final String? workspaceId;
+
+  /// Linked workspace repo id for this PR, or null when unlinked.
+  final String? repoId;
+
+  /// PR/space id used to pick the worktree code-graph partition.
+  final String? spaceId;
 
   @override
   ConsumerState<PrDiffView> createState() => PrDiffViewState();
@@ -114,6 +126,14 @@ class PrDiffViewState extends ConsumerState<PrDiffView> {
   /// Scrolls the diff so file [index] sits at the top.
   Future<void> jumpToFile(int index) async {
     await _unifiedKey.currentState?.jumpToFile(index);
+  }
+
+  /// Scrolls to [path] in the current diff (expanding a collapsed/preview
+  /// file and mapping a 1-based HEAD line onto a display row). Files that
+  /// are not in the current document fall through to
+  /// [PrDiffView.onOpenFileInEditor].
+  Future<void> jumpToPath(String path, {int? line}) async {
+    await _unifiedKey.currentState?.jumpToPath(path, line: line);
   }
 
   /// Opens [threadId], focuses it and scrolls it into view — the comment
@@ -132,13 +152,24 @@ class PrDiffViewState extends ConsumerState<PrDiffView> {
 
   /// The index of [path] in the diff's file list, or -1 when the file is not
   /// in the current scope (a commit-range view, or an active filter).
-  int filesIndexOf(String path) =>
-      widget.files.indexWhere((f) => f.filename == path);
+  int filesIndexOf(String path) {
+    for (var i = 0; i < widget.files.length; i++) {
+      final file = widget.files[i];
+      if (diffFilePathsMatch(file.filename, path)) {
+        return i;
+      }
+      final previous = file.previousFilename;
+      if (previous != null && diffFilePathsMatch(previous, path)) {
+        return i;
+      }
+    }
+    return -1;
+  }
 
   Color _mutedColor(BuildContext context) {
     final tokens =
         context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
+        ((context.ccTheme?.isDark ?? false)
             ? DesignSystemTokens.dark()
             : DesignSystemTokens.light());
     return tokens.textTertiary;
@@ -247,6 +278,9 @@ class PrDiffViewState extends ConsumerState<PrDiffView> {
           onRequestSidebarSearch: widget.onRequestSidebarSearch,
           onShowFileTree: widget.onShowFileTree,
           onOpenFileInEditor: widget.onOpenFileInEditor,
+          workspaceId: widget.workspaceId,
+          repoId: widget.repoId,
+          spaceId: widget.spaceId,
         ),
         SliverToBoxAdapter(
           child: Padding(

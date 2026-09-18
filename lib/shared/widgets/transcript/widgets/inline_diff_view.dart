@@ -180,12 +180,16 @@ class _InlineDiffViewState extends State<InlineDiffView> {
       constraints: BoxConstraints(maxHeight: widget.maxHeight),
       // No explicit scrollbar: the app-wide [CcScrollBehavior] injects the
       // design-system one, wired to this scrollable's controller.
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: SelectionArea(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: rows,
+      child: Directionality(
+        // Pinned per the carve-out below: diff gutters + code never mirror.
+        textDirection: TextDirection.ltr,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: SelectionArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: rows,
+            ),
           ),
         ),
       ),
@@ -193,6 +197,7 @@ class _InlineDiffViewState extends State<InlineDiffView> {
   }
 }
 
+// RTL carve-out: diff rows render source code, which stays LTR by policy.
 class _DiffRow extends StatelessWidget {
   const _DiffRow({
     required this.line,

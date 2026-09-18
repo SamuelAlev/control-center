@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show Color;
 
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:control_center/core/constants/app_constants.dart';
@@ -10,7 +11,7 @@ import 'package:control_center/features/calendar/presentation/utils/calendar_for
 import 'package:control_center/features/calendar/providers/calendar_sync_providers.dart';
 import 'package:control_center/features/calendar/providers/google_auth_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:flutter/material.dart' show Color, DateTimeRange;
+import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The persisted calendar view mode (month / week / agenda).

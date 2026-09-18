@@ -2,6 +2,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/src/oauth/browser_handoff_page.dart';
+import 'package:cc_harness_runtime/src/oauth/codex_oauth.dart';
+import 'package:cc_harness_runtime/src/oauth/cursor_oauth.dart';
 import 'package:cc_harness_runtime/src/oauth/kimi_oauth.dart';
 import 'package:cc_harness_runtime/src/oauth/oauth_provider.dart';
 import 'package:cc_harness_runtime/src/oauth/openai_oauth.dart';
@@ -13,10 +16,11 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// Owns every browser-login flow end to end (the "brain"). Two flow shapes live
 /// here because providers implement two:
 ///
-/// - **Redirect** (Anthropic, OpenAI): mint PKCE + state, host a loopback
+/// - **Redirect** (OpenAI, Codex): mint PKCE + state, host a loopback
 ///   callback on the provider's fixed port, exchange the returned code.
-/// - **Device code** (Kimi Code, RFC 8628): request a code, show the user a
-///   verification URL and poll the token endpoint server-side until it flips.
+/// - **Device-style poll** (Kimi Code, Cursor, Codex fallback): request a
+///   code, show the user a verification URL and poll the token endpoint
+///   server-side until it flips.
 ///
 /// Either way it persists the OAuth [ProviderCredential] and refreshes tokens
 /// before expiry. Clients only open the returned URL and poll status (or paste
@@ -40,12 +44,18 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
        // presents this app as Claude Code. `supports('anthropic')` is now
        // false, so `oauth.begin` refuses it even from a stale client.
        _providers = {
-         for (final p in providers ?? [OpenAiOAuth(http: http)])
+         for (final p
+             in providers ?? [OpenAiOAuth(http: http), CodexOAuth(http: http)])
            p.providerId: p,
        },
        _deviceProviders = {
          for (final p
-             in deviceProviders ?? [KimiOAuth(dataDir: dataDir, http: http)])
+             in deviceProviders ??
+                 [
+                   KimiOAuth(dataDir: dataDir, http: http),
+                   CursorOAuth(http: http),
+                   CodexOAuth(http: http),
+                 ])
            p.providerId: p,
        };
 
@@ -81,14 +91,29 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
   /// callback; device flows request a code and begin polling in the background,
   /// returning the user code for the client to display.
   Future<HarnessOAuthStart> start(String providerId) async {
+    final provider = _providers[providerId];
     final deviceProvider = _deviceProviders[providerId];
+    // Prefer the browser redirect when both exist (Codex): port 1455 is the
+    // allowlisted callback. Fall back to device when the port cannot bind —
+    // a remote `cc_server` or a busy 1455 (an in-flight OpenAI login).
+    if (provider != null) {
+      return _startRedirect(
+        providerId,
+        provider,
+        fallbackDevice: deviceProvider,
+      );
+    }
     if (deviceProvider != null) {
       return _startDevice(providerId, deviceProvider);
     }
-    final provider = _providers[providerId];
-    if (provider == null) {
-      throw StateError('Provider "$providerId" does not support OAuth.');
-    }
+    throw StateError('Provider "$providerId" does not support OAuth.');
+  }
+
+  Future<HarnessOAuthStart> _startRedirect(
+    String providerId,
+    HarnessOAuthProvider provider, {
+    HarnessDeviceOAuthProvider? fallbackDevice,
+  }) async {
     final pkce = Pkce.generate();
     final state = randomOAuthState();
     final flowId = randomOAuthState();
@@ -97,6 +122,11 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
     _flows[flowId] = flow;
     _armFlowExpiry(flowId, flow);
     await _bindLoopback(flowId, flow);
+    if (flow.server == null && fallbackDevice != null) {
+      _flows.remove(flowId);
+      flow.expiry?.cancel();
+      return _startDevice(providerId, fallbackDevice);
+    }
     return HarnessOAuthStart(
       flowId: flowId,
       authUrl: provider.buildAuthUrl(pkce: pkce, state: state),
@@ -162,7 +192,7 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
       }
     }
     if (flow.status.state == HarnessOAuthState.pending) {
-      flow.fail('The Kimi Code sign-in timed out. Start the login again.');
+      flow.fail('The sign-in timed out. Start the login again.');
     }
   }
 
@@ -284,6 +314,7 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
         request.response
           ..statusCode = 200
           ..headers.contentType = ContentType.html
+          ..headers.set('Cache-Control', 'no-store')
           ..write(_resultPage(error == null && code != null));
         await request.response.close();
         if (error != null) {
@@ -326,12 +357,13 @@ class HarnessOAuthBroker implements ProviderCredentialRefresher {
     }
   }
 
-  static String _resultPage(bool ok) =>
-      '<!doctype html><html><body '
-      'style="font-family:system-ui;padding:3rem;text-align:center">'
-      '<h2>${ok ? 'Signed in ✓' : 'Sign-in failed'}</h2>'
-      '<p>${ok ? 'You can close this tab and return to Control Center.' : 'Please return to Control Center and try again.'}</p>'
-      '</body></html>';
+  static String _resultPage(bool ok) => browserHandoffPage(
+    title: ok ? 'Signed in' : 'Sign-in failed',
+    body: ok
+        ? 'You can close this tab and return to Control Center.'
+        : 'Return to Control Center and try again.',
+    ok: ok,
+  );
 }
 
 /// Mutable state for one in-flight OAuth login.

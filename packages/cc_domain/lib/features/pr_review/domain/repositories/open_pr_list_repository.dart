@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/repo.dart' show Repo;
+import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 
 /// One linked repo's open pull requests, as returned by [OpenPrListRepository].
@@ -27,8 +28,9 @@ class RepoOpenPrs {
 /// One linked repo the server's credential cannot access: its poll probes were
 /// denied (GitHub answers 404 for a repo the token cannot see, or 401/403)
 /// consistently enough that the server parked it — most commonly because the
-/// GitHub App is not installed on the repo's org. The server keeps retrying on
-/// a slow cadence and unparks the repo the moment a probe succeeds.
+/// GitHub App is not installed on the repo's org, or because that installation
+/// has been suspended. The server keeps retrying on a slow cadence and unparks
+/// the repo the moment a probe succeeds.
 class InaccessibleRepo {
   /// Creates an [InaccessibleRepo] entry.
   const InaccessibleRepo({
@@ -38,6 +40,14 @@ class InaccessibleRepo {
     this.since,
   });
 
+  /// Wire [reason] when the GitHub App installation covering this repo's
+  /// owner has been suspended. The fix is to resume it on GitHub or connect
+  /// a token — not to install the app again.
+  static const String installationSuspended = 'installation_suspended';
+
+  /// Whether [reason] is [installationSuspended].
+  bool get isInstallationSuspended => reason == installationSuspended;
+
   /// The linked repo's id (matches a `Repo.id` in the active workspace).
   final String repoId;
 
@@ -45,7 +55,8 @@ class InaccessibleRepo {
   final String repoFullName;
 
   /// The denial's wire code: `not_found` (a 404 — GitHub's answer for a repo
-  /// the credential cannot see) or `auth_error` (401/403).
+  /// the credential cannot see), `auth_error` (401/403), or
+  /// [installationSuspended].
   final String reason;
 
   /// When the server parked the repo, or null when unknown.
@@ -147,5 +158,24 @@ abstract interface class OpenPrListRepository {
   Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(
     String workspaceId,
     String login,
+  );
+
+  /// All-state GitHub PR activity authored by [login] across [workspaceId]'s
+  /// linked repositories, including exact outcome counts and delivery metrics.
+  Future<GitHubProfileActivity> profileActivityForUser(
+    String workspaceId,
+    String login,
+  );
+
+  /// All-state GitHub PR activity authored by members of [organization]/[slug]
+  /// across [workspaceId]'s linked repositories.
+  ///
+  /// Team membership is resolved by the server on the calling user's GitHub
+  /// credential. The client never supplies a member list that could drift from
+  /// GitHub or silently omit private members.
+  Future<GitHubProfileActivity> profileActivityForTeam(
+    String workspaceId,
+    String organization,
+    String slug,
   );
 }

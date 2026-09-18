@@ -313,7 +313,7 @@ Future<void> _prepareDesktop() async {
   // Thin-client flip: the desktop opens NO database. It connects to a
   // `cc_server` that owns the data over loopback/WSS RPC — the same path the web
   // build uses. The user's persisted choice decides which server:
-  //   * LOCAL  → spawn a `cc_server` here (owns the SAME control_center.db under
+  //   * LOCAL  → spawn a `cc_server` here (owns global.db + per-workspace
   //     the app-support root) and connect to it over loopback.
   //   * REMOTE → resolve the active paired server's descriptor (best reachable
   //     path wins) with the stored pairing key + TOFU pin.

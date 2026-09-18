@@ -270,12 +270,16 @@ void main() {
         ),
         const DiffLineSpec(
           kind: DiffLineKind.deletion,
-          tokens: [DiffToken('const a = 1;', 0xFF112233)],
+          tokens: [
+            DiffToken('const a = 1;', 0xFF112233, kind: DiffTokenKind.regexp),
+          ],
           oldLine: 1,
         ),
         const DiffLineSpec(
           kind: DiffLineKind.addition,
-          tokens: [DiffToken('const a = 2;', 0xFF112233)],
+          tokens: [
+            DiffToken('const a = 2;', 0xFF112233, kind: DiffTokenKind.regexp),
+          ],
           newLine: 1,
         ),
       ];
@@ -305,6 +309,14 @@ void main() {
       // stronger background, never from recoloring the text.
       expect(delChanged.every((t) => t.colorValue == 0xFF112233), isTrue);
       expect(addChanged.every((t) => t.colorValue == 0xFF112233), isTrue);
+      expect(
+        specs[1].tokens.every((t) => t.kind == DiffTokenKind.regexp),
+        isTrue,
+      );
+      expect(
+        specs[2].tokens.every((t) => t.kind == DiffTokenKind.regexp),
+        isTrue,
+      );
     });
 
     test('falls back to a 40% accent tint when word-bg keys are absent', () {

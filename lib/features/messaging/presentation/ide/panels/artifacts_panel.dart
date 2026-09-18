@@ -96,7 +96,12 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                   child: CcTappable(
                     onPressed: () => setState(() => _open = !_open),
                     builder: (context, states) => Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        12,
+                        10,
+                        4,
+                        10,
+                      ),
                       child: Row(
                         children: [
                           Icon(
@@ -124,7 +129,7 @@ class _ArtifactCardState extends ConsumerState<_ArtifactCard> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(right: 6),
+                padding: const EdgeInsetsDirectional.only(end: 6),
                 child: CcIconButton(
                   icon: AppIcons.externalLink,
                   size: CcButtonSize.sm,

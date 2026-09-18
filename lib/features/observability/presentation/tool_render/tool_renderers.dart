@@ -9,7 +9,7 @@ import 'package:control_center/features/observability/presentation/tool_render/t
 import 'package:control_center/features/observability/presentation/widgets/obs_widgets.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A per-tool renderer: a one-line [summary] always shown in the card header and
@@ -203,7 +203,9 @@ class BashRenderer extends ToolRenderer {
   @override
   Widget summary(BuildContext context, ToolSegment s) => _summaryText(
     context,
-    ellipsize(_str(s.inputs, ['command', 'cmd', 'script']), 88),
+    // The per-call description outranks the raw command — same rule as the
+    // chat transcript row.
+    ellipsize(_str(s.inputs, ['description', 'command', 'cmd', 'script']), 88),
     error: s.isError,
   );
 
@@ -648,16 +650,14 @@ class _ToolCallCardState extends State<ToolCallCard> {
       margin: const EdgeInsets.only(bottom: AppSpacing.xs),
       decoration: BoxDecoration(
         color: t.bgSecondary,
-        borderRadius: AppRadii.brLg,
         border: Border.all(color: t.borderPrimary),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasBody)
-            InkWell(
+            GestureDetector(
               onTap: () => setState(() => _expanded = !_expanded),
-              borderRadius: AppRadii.brLg,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.sm),
                 child: header,

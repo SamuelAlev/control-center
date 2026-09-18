@@ -42,12 +42,14 @@ class EditorTabBar extends StatefulWidget {
     this.onUntitledDraft,
     this.icons,
     this.leadings,
+    this.trailings,
     this.dirty,
     this.inlineActions = const [],
     this.actions = const [],
   }) : assert(labels.length == tabs.length),
        assert(icons == null || icons.length == labels.length),
        assert(leadings == null || leadings.length == labels.length),
+       assert(trailings == null || trailings.length == labels.length),
        assert(dirty == null || dirty.length == labels.length);
 
   /// Id of the leaf this bar belongs to (carried in drag payloads).
@@ -68,6 +70,10 @@ class EditorTabBar extends StatefulWidget {
   /// color so the widget can tint itself like an icon. Must match [labels]
   /// length when provided.
   final List<Widget Function(Color color)?>? leadings;
+
+  /// Optional per-tab trailing status builders. Each receives the tab's
+  /// resolved label color and renders between the label and close slot.
+  final List<Widget Function(Color color)?>? trailings;
 
   /// Optional per-tab unsaved-changes ("dirty") flag. When a tab is dirty its
   /// close slot shows a filled dot instead of being empty; hovering the tab
@@ -443,6 +449,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
         index == _hovered || identical(widget.tabs[index], _contextMenuTab);
     final labelColor = selected ? t.fg : t.textTertiary;
     final leading = widget.leadings == null ? null : widget.leadings![index];
+    final trailing = widget.trailings == null ? null : widget.trailings![index];
     final background = selected
         ? t.bgPrimary
         : (hovered ? t.hover : const Color(0x00000000));
@@ -468,8 +475,8 @@ class _EditorTabBarState extends State<EditorTabBar> {
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: background,
-                border: Border(
-                  right: BorderSide(color: t.borderPrimary),
+                border: BorderDirectional(
+                  end: BorderSide(color: t.borderPrimary),
                   // The strip's single divider line is the editor body's top
                   // border (drawn by the host). The active tab alone paints its
                   // own bottom rule in the body color so it visually "opens" onto
@@ -544,6 +551,10 @@ class _EditorTabBarState extends State<EditorTabBar> {
                               ],
                             ),
                           ),
+                          if (trailing != null) ...[
+                            const SizedBox(width: 6),
+                            trailing(labelColor),
+                          ],
                           // Close / dirty affordance: the slot is always reserved
                           // (so the label never shifts). Hovering shows the close
                           // button; otherwise a dirty tab shows an unsaved-changes
@@ -608,7 +619,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
         : AnimatedSize(
             duration: CcMotion.normal,
             curve: CcMotion.standard,
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: collapsible,
           );
 
@@ -722,27 +733,26 @@ class _TabCloseButton extends StatelessWidget {
       onPressed: onTap,
       // Resilient lookup: this bar is pumped bare in tests and sub-windows,
       // where no AppLocalizations delegate may be mounted.
-      semanticLabel:
-          Localizations.of<AppLocalizations>(context, AppLocalizations)?.close,
+      semanticLabel: Localizations.of<AppLocalizations>(
+        context,
+        AppLocalizations,
+      )?.close,
       borderRadius: BorderRadius.circular(3),
-      builder:
-          (context, states) => DecoratedBox(
-            decoration: BoxDecoration(
-              color:
-                  states.contains(WidgetState.hovered)
-                      ? t.hover
-                      : const Color(0x00000000),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Center(
-              child: Icon(
-                AppIcons.x,
-                size: 13,
-                color:
-                    states.contains(WidgetState.hovered) ? t.fg : color,
-              ),
-            ),
+      builder: (context, states) => DecoratedBox(
+        decoration: BoxDecoration(
+          color: states.contains(WidgetState.hovered)
+              ? t.hover
+              : const Color(0x00000000),
+          borderRadius: BorderRadius.circular(3),
+        ),
+        child: Center(
+          child: Icon(
+            AppIcons.x,
+            size: 13,
+            color: states.contains(WidgetState.hovered) ? t.fg : color,
           ),
+        ),
+      ),
     );
   }
 }

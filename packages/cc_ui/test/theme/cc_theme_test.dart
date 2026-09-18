@@ -9,6 +9,8 @@ import '../cc_test_app.dart';
 /// equality and hashCode are pure logic; the InheritedWidget leg is driven
 /// through a `ccTestApp` subtree.
 void main() {
+  setUp(CcFonts.resetForTests);
+  tearDown(CcFonts.resetForTests);
   group('CcThemeData', () {
     test('.light() is the light appearance with light tokens', () {
       final d = CcThemeData.light();
@@ -166,6 +168,40 @@ void main() {
       expect(tokens, isNotNull);
       expect(theme, isNotNull);
       expect(theme!.brightness, CcBrightness.light);
+    });
+
+    testWidgets('binds only the ambient locale\'s script companion', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        Localizations(
+          locale: const Locale('th', 'TH'),
+          delegates: const [DefaultWidgetsLocalizations.delegate],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: const SizedBox.shrink(),
+          ),
+        ),
+      );
+      expect(CcFonts.scriptFallbackFamilies, contains('Sarabun'));
+      expect(CcFonts.scriptFallbackFamilies, isNot(contains('Rubik')));
+      expect(
+        CcFonts.scriptFallbackFamilies,
+        isNot(contains('IBM Plex Sans Arabic')),
+      );
+
+      await tester.pumpWidget(
+        Localizations(
+          locale: const Locale('he', 'IL'),
+          delegates: const [DefaultWidgetsLocalizations.delegate],
+          child: CcTheme(
+            data: CcThemeData.light(),
+            child: const SizedBox.shrink(),
+          ),
+        ),
+      );
+      expect(CcFonts.scriptFallbackFamilies, contains('Rubik'));
+      expect(CcFonts.scriptFallbackFamilies, isNot(contains('Sarabun')));
     });
   });
 }

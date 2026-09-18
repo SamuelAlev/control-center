@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_emoji/flutter_emoji.dart';
 
 final _emojiParser = EmojiParser();
@@ -200,12 +200,13 @@ class _GitHubUserStatusAvatarBadgeState
     if (box == null || !box.hasSize) {
       return;
     }
-    final left = box.localToGlobal(Offset.zero).dx;
+    // The pill unrolls toward the reading direction's end, so the room runs
+    // from the badge's start edge to the window edge it grows toward.
     final screen = MediaQuery.sizeOf(context).width;
-    _room = (screen - left - kCcOverlayMargin).clamp(
-      _kMinPillWidth,
-      _kMaxPillWidth,
-    );
+    final room = Directionality.of(context) == TextDirection.ltr
+        ? screen - box.localToGlobal(Offset.zero).dx - kCcOverlayMargin
+        : box.localToGlobal(Offset(box.size.width, 0)).dx - kCcOverlayMargin;
+    _room = room.clamp(_kMinPillWidth, _kMaxPillWidth);
   }
 
   @override
@@ -261,17 +262,17 @@ class _GitHubUserStatusAvatarBadgeState
         child: Stack(
           children: [
             Positioned.fill(child: widget.child),
-            Positioned(
-              right: 0,
+            PositionedDirectional(
+              end: 0,
               bottom: 0,
               child: Semantics(
                 label: text.isEmpty ? null : text,
                 child: CcOverlayAnchor(
                   controller: _overlay,
-                  // Left cap over left cap: the pill opens exactly on top of
-                  // the badge and every later frame grows to the right of it.
-                  targetAnchor: Alignment.centerLeft,
-                  followerAnchor: Alignment.centerLeft,
+                  // Start cap over start cap: the pill opens exactly on top of
+                  // the badge and every later frame grows toward the end.
+                  targetAnchor: AlignmentDirectional.centerStart,
+                  followerAnchor: AlignmentDirectional.centerStart,
                   offset: Offset.zero,
                   barrierDismissible: false,
                   target: badge,
@@ -573,7 +574,7 @@ class _StatusPillState extends State<_StatusPill> {
               foregroundDecoration: _pillBorder(tokens, isBusy, h),
               clipBehavior: Clip.antiAlias,
               child: OverflowBox(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 minWidth: width,
                 maxWidth: width,
                 minHeight: height,

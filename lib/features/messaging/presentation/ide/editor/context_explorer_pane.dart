@@ -525,7 +525,7 @@ class _Detail extends StatelessWidget {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       child: Align(
-        alignment: Alignment.topLeft,
+        alignment: AlignmentDirectional.topStart,
         child: SelectableRegion(
           selectionControls: _NoHandleSelectionControls(),
           child: Text(

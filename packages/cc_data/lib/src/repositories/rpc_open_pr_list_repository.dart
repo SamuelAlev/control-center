@@ -1,6 +1,7 @@
 import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_data/src/repositories/pr_dto_mapping.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -145,6 +146,56 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
             prs: _prsOf(raw),
           ),
     ];
+  }
+
+  @override
+  Future<GitHubProfileActivity> profileActivityForUser(
+    String workspaceId,
+    String login,
+  ) => _profileActivity({
+    'workspace_id': workspaceId,
+    'kind': 'user',
+    'login': login,
+  });
+
+  @override
+  Future<GitHubProfileActivity> profileActivityForTeam(
+    String workspaceId,
+    String organization,
+    String slug,
+  ) => _profileActivity({
+    'workspace_id': workspaceId,
+    'kind': 'team',
+    'organization': organization,
+    'slug': slug,
+  });
+
+  Future<GitHubProfileActivity> _profileActivity(
+    Map<String, dynamic> arguments,
+  ) async {
+    final data = await _client.readOr(
+      'github.profileActivity',
+      arguments,
+      const {},
+    );
+    final metricsRaw = data['metrics'];
+    final metrics = metricsRaw is Map
+        ? GitHubProfileMetrics.fromWire(metricsRaw.cast<String, dynamic>())
+        : GitHubProfileActivity.empty.metrics;
+    final repos = <GitHubProfileRepoPullRequests>[];
+    for (final raw in (data['repos'] as List?) ?? const []) {
+      if (raw is! Map) {
+        continue;
+      }
+      final repoId = raw['repo_id'] as String? ?? '';
+      if (repoId.isEmpty) {
+        continue;
+      }
+      repos.add(
+        GitHubProfileRepoPullRequests(repoId: repoId, prs: _prsOf(raw)),
+      );
+    }
+    return GitHubProfileActivity(metrics: metrics, repos: repos);
   }
 
   /// Maps a per-repo group's `prs` wire list to domain [PullRequest]s.

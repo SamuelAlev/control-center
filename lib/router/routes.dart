@@ -199,6 +199,23 @@ String settingsWorkspaceGeneralRoute(String workspaceId) =>
 String settingsMembersRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/members';
 
+/// Replaces or clears the `cursor` query param on [current] (the audit
+/// trail's page token). An empty/null cursor strips the param so the
+/// newest page is a clean members URL.
+String uriWithCursor(Uri current, String? cursor) {
+  final params = Map<String, String>.of(current.queryParameters)
+    ..remove('cursor');
+  if (cursor != null && cursor.isNotEmpty) {
+    params['cursor'] = cursor;
+  }
+  if (params.isEmpty) {
+    final raw = current.toString();
+    final q = raw.indexOf('?');
+    return q < 0 ? raw : raw.substring(0, q);
+  }
+  return current.replace(queryParameters: params).toString();
+}
+
 /// Settings → Workspace → Agents (registered agent identities).
 String settingsAgentsRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/agents';
@@ -284,6 +301,10 @@ String observabilityRoute(String workspaceId) =>
 /// GitHub user profile screen.
 String userProfileRoute(String workspaceId, String login) =>
     '/workspaces/$workspaceId/users/$login';
+
+/// GitHub organization team profile screen.
+String teamProfileRoute(String workspaceId, String organization, String slug) =>
+    '/workspaces/$workspaceId/teams/$organization/$slug';
 
 /// Pipeline runs list screen.
 String pipelinesRoute(String workspaceId) =>

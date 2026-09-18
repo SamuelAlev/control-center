@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cc_data/cc_data.dart' show RigBackendView;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
@@ -15,12 +17,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// do not support, which leaves the operator with a greyed-out tab and nowhere
 /// to find out what it needs. So an unavailable backend keeps its row and gains
 /// the exact command that would fix it.
-class CapabilitiesSection extends ConsumerWidget {
+class CapabilitiesSection extends ConsumerStatefulWidget {
   /// Creates a [CapabilitiesSection].
   const CapabilitiesSection({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CapabilitiesSection> createState() =>
+      _CapabilitiesSectionState();
+}
+
+class _CapabilitiesSectionState extends ConsumerState<CapabilitiesSection> {
+  String? _installingBackend;
+
+  Future<void> _install(RigBackendView backend) async {
+    final action = backend.setupAction;
+    if (action == null || _installingBackend != null) {
+      return;
+    }
+    setState(() => _installingBackend = backend.backend);
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(rigRepositoryProvider).installBackendSetup(action);
+      ref.invalidate(rigCapabilitiesProvider);
+      if (mounted) {
+        CcToastScope.of(context).show(l10n.rigIosAutomationInstalled);
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        CcToastScope.of(context).show('$error', variant: CcToastVariant.danger);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _installingBackend = null);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final capabilities = ref.watch(rigCapabilitiesProvider);
@@ -90,7 +124,13 @@ class CapabilitiesSection extends ConsumerWidget {
               const SizedBox(height: AppSpacing.md),
               for (final backend in backends) ...[
                 const CcDivider(),
-                BackendRow(backend: backend),
+                BackendRow(
+                  backend: backend,
+                  setupLoading: _installingBackend == backend.backend,
+                  onSetup: backend.setupAction == null
+                      ? null
+                      : () => unawaited(_install(backend)),
+                ),
               ],
               const SizedBox(height: AppSpacing.sm),
             ],
@@ -105,16 +145,30 @@ class CapabilitiesSection extends ConsumerWidget {
 /// make it able to.
 class BackendRow extends StatelessWidget {
   /// Creates a [BackendRow].
-  const BackendRow({super.key, required this.backend});
+  const BackendRow({
+    super.key,
+    required this.backend,
+    this.onSetup,
+    this.setupLoading = false,
+  });
 
   /// The backend this row describes.
   final RigBackendView backend;
+
+  /// Runs the backend-owned setup action.
+  final VoidCallback? onSetup;
+
+  /// Whether setup is currently executing.
+  final bool setupLoading;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
-    final needsDetail = backend.installHint != null || !backend.enforcedEgress;
+    final needsDetail =
+        backend.installHint != null ||
+        !backend.enforcedEgress ||
+        backend.setupAction != null;
 
     return SettingsEntityRow(
       title: backend.label,
@@ -133,10 +187,12 @@ class BackendRow extends StatelessWidget {
             children: [
               Icon(AppIcons.circleAlert, size: 12, color: t.warn),
               const SizedBox(width: AppSpacing.xs),
-              Text(
-                l10n.rigEgressNotEnforced,
-                style: CcTypography.caption.copyWith(
-                  color: t.textWarningPrimary,
+              Flexible(
+                child: Text(
+                  l10n.rigEgressNotEnforced,
+                  style: CcTypography.caption.copyWith(
+                    color: t.textWarningPrimary,
+                  ),
                 ),
               ),
             ],
@@ -146,11 +202,33 @@ class BackendRow extends StatelessWidget {
       // the command is a hint you have to translate, and retyping a path off a
       // screenshot is how typos get made. Not behind a disclosure: for an
       // unavailable backend it is the only actionable thing on the row.
-      detail: needsDetail && backend.installHint != null
-          ? SettingsField(
-              label: l10n.rigsInstallHintLabel,
-              layout: SettingsFieldLayout.stacked,
-              child: SettingsCopyField(value: backend.installHint),
+      detail:
+          needsDetail &&
+              (backend.installHint != null || backend.setupAction != null)
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (backend.installHint != null)
+                  SettingsField(
+                    label: l10n.rigsInstallHintLabel,
+                    layout: SettingsFieldLayout.stacked,
+                    child: SettingsCopyField(value: backend.installHint),
+                  ),
+                if (backend.installHint != null && onSetup != null)
+                  const SizedBox(height: AppSpacing.sm),
+                if (onSetup != null)
+                  CcButton(
+                    size: CcButtonSize.sm,
+                    variant: CcButtonVariant.secondary,
+                    loading: setupLoading,
+                    onPressed: setupLoading ? null : onSetup,
+                    child: Text(
+                      setupLoading
+                          ? l10n.rigInstallingIosAutomation
+                          : l10n.rigInstallIosAutomation,
+                    ),
+                  ),
+              ],
             )
           : null,
     );

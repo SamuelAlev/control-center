@@ -171,7 +171,7 @@ class PipelineRunRow extends StatelessWidget {
                 SizedBox(
                   width: PipelineRunRowMetrics.status,
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     child: PipelineStatusBadge.forRun(status: run.status),
                   ),
                 ),
@@ -179,7 +179,7 @@ class PipelineRunRow extends StatelessWidget {
                   width: PipelineRunRowMetrics.duration,
                   child: Text(
                     durationLabel,
-                    textAlign: TextAlign.right,
+                    textAlign: TextAlign.end,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -201,7 +201,7 @@ class PipelineRunRow extends StatelessWidget {
                   width: PipelineRunRowMetrics.started,
                   child: Text(
                     startedLabel,
-                    textAlign: TextAlign.right,
+                    textAlign: TextAlign.end,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(

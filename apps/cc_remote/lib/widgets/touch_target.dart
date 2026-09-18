@@ -66,6 +66,9 @@ class PhoneIconButton extends StatelessWidget {
         child: Center(
           widthFactor: 1,
           heightFactor: 1,
+          // Directional glyphs (back arrows, forward chevrons) mirror under
+          // RTL via `matchTextDirection` on their IconData in the AppIcons
+          // seam — no per-call-site flag is needed here.
           child: Icon(icon, size: iconSize, color: color ?? tokens.fgSecondary),
         ),
       ),

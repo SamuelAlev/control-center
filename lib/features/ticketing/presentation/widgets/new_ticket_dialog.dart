@@ -16,7 +16,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_text_field.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_toolbar.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -167,145 +167,141 @@ class _NewTicketDialogState extends ConsumerState<_NewTicketDialog> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: t.panel,
-          borderRadius: AppRadii.brLg,
           border: Border.all(color: t.borderPrimary),
           boxShadow: CcElevation.floating,
         ),
         child: ClipRRect(
-          borderRadius: AppRadii.brLg,
-          child: Material(
-            type: MaterialType.transparency,
-            child: CallbackShortcuts(
-              bindings: {
-                const SingleActivator(LogicalKeyboardKey.enter, meta: true):
-                    _submit,
-                const SingleActivator(LogicalKeyboardKey.enter, control: true):
-                    _submit,
-                const SingleActivator(LogicalKeyboardKey.escape): () =>
-                    Navigator.of(context).maybePop(),
-              },
-              child: SizedBox(
-                width: dialogWidth,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
-                      child: Row(
-                        children: [
-                          Icon(
-                            AppIcons.squarePen,
-                            size: 14,
-                            color: t.fgTertiary,
+          child: CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.enter, meta: true):
+                  _submit,
+              const SingleActivator(LogicalKeyboardKey.enter, control: true):
+                  _submit,
+              const SingleActivator(LogicalKeyboardKey.escape): () =>
+                  Navigator.of(context).maybePop(),
+            },
+            child: SizedBox(
+              width: dialogWidth,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+                    child: Row(
+                      children: [
+                        Icon(AppIcons.squarePen, size: 14, color: t.fgTertiary),
+                        const SizedBox(width: 8),
+                        Text(
+                          l10n.newTicket,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: t.textTertiary,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            l10n.newTicket,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                    child: CcTextField(
+                      controller: _titleController,
+                      focusNode: _titleFocus,
+                      autofocus: true,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submit(),
+                      textStyle: TextStyle(
+                        fontSize: 18,
+                        height: 1.3,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
+                      hintText: l10n.ticketTitlePlaceholder,
+                      chromeless: true,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: MarkdownToolbar(
+                            controller: _descriptionController,
+                            focusNode: _descriptionFocus,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        MarkdownTextField(
+                          controller: _descriptionController,
+                          focusNode: _descriptionFocus,
+                          hintText: l10n.ticketDescriptionPlaceholder,
+                          minLines: 3,
+                          maxLines: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _statusChip(l10n),
+                        _priorityChip(l10n),
+                        _assigneeChip(l10n, agents, agentNames),
+                        _projectChip(l10n, widget.workspaceId),
+                      ],
+                    ),
+                  ),
+                  Container(height: 1, color: t.borderSecondary),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                      20,
+                      12,
+                      16,
+                      14,
+                    ),
+                    child: Row(
+                      children: [
+                        CcSwitch(
+                          value: _createMore,
+                          onChanged: (v) => setState(() => _createMore = v),
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            l10n.createMore,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 13,
-                              fontWeight: FontWeight.w500,
                               color: t.textTertiary,
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
-                      child: CcTextField(
-                        controller: _titleController,
-                        focusNode: _titleFocus,
-                        autofocus: true,
-                        textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _submit(),
-                        textStyle: TextStyle(
-                          fontSize: 18,
-                          height: 1.3,
-                          fontWeight: FontWeight.w600,
-                          color: t.textPrimary,
                         ),
-                        hintText: l10n.ticketTitlePlaceholder,
-                        chromeless: true,
-                      ),
+                        const Spacer(),
+                        CcButton(
+                          variant: CcButtonVariant.secondary,
+                          onPressed: _submitting
+                              ? null
+                              : () => Navigator.of(context).pop(),
+                          child: Text(l10n.cancel),
+                        ),
+                        const SizedBox(width: 8),
+                        CcButton(
+                          onPressed: _submitting ? null : _submit,
+                          child: _submitting
+                              ? const CcSpinner(size: 16)
+                              : Text(l10n.create),
+                        ),
+                      ],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: MarkdownToolbar(
-                              controller: _descriptionController,
-                              focusNode: _descriptionFocus,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          MarkdownTextField(
-                            controller: _descriptionController,
-                            focusNode: _descriptionFocus,
-                            hintText: l10n.ticketDescriptionPlaceholder,
-                            minLines: 3,
-                            maxLines: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                      child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _statusChip(l10n),
-                          _priorityChip(l10n),
-                          _assigneeChip(l10n, agents, agentNames),
-                          _projectChip(l10n, widget.workspaceId),
-                        ],
-                      ),
-                    ),
-                    Container(height: 1, color: t.borderSecondary),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 16, 14),
-                      child: Row(
-                        children: [
-                          CcSwitch(
-                            value: _createMore,
-                            onChanged: (v) => setState(() => _createMore = v),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              l10n.createMore,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: t.textTertiary,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          CcButton(
-                            variant: CcButtonVariant.secondary,
-                            onPressed: _submitting
-                                ? null
-                                : () => Navigator.of(context).pop(),
-                            child: Text(l10n.cancel),
-                          ),
-                          const SizedBox(width: 8),
-                          CcButton(
-                            onPressed: _submitting ? null : _submit,
-                            child: _submitting
-                                ? const CcSpinner(size: 16)
-                                : Text(l10n.create),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -6,13 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   final l10n = AppLocalizationsEn();
 
-  UserActivityDto entry(String action, {String? targetId}) => UserActivityDto(
+  UserActivityDto entry(
+    String action, {
+    String? targetId,
+    Map<String, Object?>? details,
+  }) => UserActivityDto(
     id: 'x',
     workspaceId: 'ws-1',
     userId: 'u-1',
     action: action,
     targetType: 'x',
     targetId: targetId,
+    details: details,
     createdAt: DateTime(2026),
   );
 
@@ -108,6 +113,59 @@ void main() {
 
     test('returns the raw action only when it has no domain.verb shape', () {
       expect(describeActivity(l10n, entry('orphan')), 'orphan');
+    });
+  });
+
+  group('describeActivity details', () {
+    test('names the setting and the value that changed', () {
+      expect(
+        describeActivity(
+          l10n,
+          entry(
+            'workspace_settings.set',
+            targetId: 'conversation_titles',
+            details: const {
+              'key': 'conversation_titles',
+              'value': 'llm',
+            },
+          ),
+        ),
+        'Changed workspace · conversation_titles=llm',
+      );
+    });
+
+    test('names the rig and the space it lived in', () {
+      expect(
+        describeActivity(
+          l10n,
+          entry(
+            'rig.destroy',
+            targetId: 'rig-abc',
+            details: const {
+              'rig_id': 'rig-abc',
+              'conversation_id': 'space-9',
+              'reason': 'requested',
+              'surface': 'computer',
+            },
+          ),
+        ),
+        'Deleted rig · rig-abc · space=space-9 · reason=requested · '
+        'surface=computer',
+      );
+    });
+
+    test('prefers the submitted command over the session id', () {
+      expect(
+        describeActivity(
+          l10n,
+          entry(
+            'terminal.write',
+            targetId: 'tty1',
+            details: const {'session_id': 'tty1', 'command': 'ls -la'},
+          ),
+        ),
+        'Wrote terminal · ls -la · tty1',
+      );
     });
   });
 }

@@ -11,7 +11,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Fixed column widths shared by [InboxPrRow] and the section card's column
@@ -42,7 +42,7 @@ abstract final class InboxRowMetrics {
   static const double hPad = 16;
 }
 
-/// One table-like inbox row: avatar, title over `author · repo #number`, then
+/// One table-like inbox row: avatar, title over `author · repo #number · labels`, then
 /// aligned status / diff-churn / age columns. Clicking opens the PR detail.
 /// The shared display properties gate what renders: `author` (avatar +
 /// subtitle prefix), `id`, `checks`, `diff` and `updated`. The repo name is
@@ -196,9 +196,10 @@ class _TitleCell extends StatelessWidget {
     final author = pr.author?.login ?? '—';
 
     // The subtitle assembles the enabled properties (`author · repo #number`
-    // down to title-only). On the inbox the repo name is forced on (there are
-    // no repo sections, so the row meta is the only repo context); inside a
-    // repo section card [showRepo] is false and only `#number` remains.
+    // down to title-only). Labels sit after `#number` on the same row, joined
+    // with `·`. On the inbox the repo name is forced on (there are no repo
+    // sections, so the row meta is the only repo context); inside a repo
+    // section card [showRepo] is false and only `#number` remains.
     final repoPart = [
       if (showRepo) pr.repoFullName,
       if (props.contains(PrRowProperty.id)) '#${pr.number}',
@@ -208,6 +209,8 @@ class _TitleCell extends StatelessWidget {
       if (repoPart.isNotEmpty) repoPart,
     ].join(' · ');
 
+    final caption = CcTypography.caption.copyWith(color: tokens.muted);
+    final hasLabels = pr.labels.isNotEmpty;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -232,13 +235,23 @@ class _TitleCell extends StatelessWidget {
             _StackChip(item: item),
           ],
         ),
-        if (subtitle.isNotEmpty) ...[
+        if (subtitle.isNotEmpty || hasLabels) ...[
           const SizedBox(height: 1),
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: CcTypography.caption.copyWith(color: tokens.muted),
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (subtitle.isNotEmpty) Text(subtitle, style: caption),
+              if (subtitle.isNotEmpty && hasLabels) Text('·', style: caption),
+              for (final label in pr.labels)
+                CcColorTag(
+                  label: label.name,
+                  color: label.color,
+                  tooltip: label.description.isEmpty ? null : label.description,
+                  compact: true,
+                ),
+            ],
           ),
         ],
       ],
@@ -266,7 +279,7 @@ class _StackChip extends ConsumerWidget {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.sm),
+      padding: const EdgeInsetsDirectional.only(start: AppSpacing.sm),
       child: CcTooltip(
         message: l10n.partOfStack(membership.position, membership.total),
         child: Row(
@@ -378,7 +391,7 @@ class _ChangesCell extends StatelessWidget {
     if (additions == 0 && deletions == 0) {
       return Text(
         '—',
-        textAlign: TextAlign.right,
+        textAlign: TextAlign.end,
         style: base.copyWith(color: tokens.idle),
       );
     }
@@ -409,12 +422,15 @@ class _UpdatedCell extends StatelessWidget {
       neutral: tokens.muted,
       style: style,
     );
-    final aligned = Align(alignment: Alignment.centerRight, child: age);
+    final aligned = Align(
+      alignment: AlignmentDirectional.centerEnd,
+      child: age,
+    );
     if (date == null) {
       return aligned;
     }
     return Align(
-      alignment: Alignment.centerRight,
+      alignment: AlignmentDirectional.centerEnd,
       child: AppTimestamp(dateTime: date, child: age),
     );
   }

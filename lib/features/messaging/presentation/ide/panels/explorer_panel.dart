@@ -960,9 +960,14 @@ class _TreeRowTile extends StatelessWidget {
         case _TreeRowKind.loading:
         case _TreeRowKind.loadingMore:
           return Padding(
-            padding: EdgeInsets.fromLTRB(indent + 14, 4, AppSpacing.sm, 4),
+            padding: EdgeInsetsDirectional.fromSTEB(
+              indent + 14,
+              4,
+              AppSpacing.sm,
+              4,
+            ),
             child: const Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: CcSpinner(size: 12, strokeWidth: 2),
             ),
           );
@@ -972,7 +977,12 @@ class _TreeRowTile extends StatelessWidget {
             onPressed: () => onRetry(row),
             borderRadius: BorderRadius.zero,
             builder: (context, states) => Padding(
-              padding: EdgeInsets.fromLTRB(indent + 14, 4, AppSpacing.sm, 4),
+              padding: EdgeInsetsDirectional.fromSTEB(
+                indent + 14,
+                4,
+                AppSpacing.sm,
+                4,
+              ),
               child: Row(
                 children: [
                   Icon(AppIcons.triangleAlert, size: 14, color: t.textTertiary),
@@ -1040,7 +1050,12 @@ class _TreeRowTile extends StatelessWidget {
             color: hovered ? t.hover : const Color(0x00000000),
           ),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(indent, 4, AppSpacing.sm, 4),
+            padding: EdgeInsetsDirectional.fromSTEB(
+              indent,
+              4,
+              AppSpacing.sm,
+              4,
+            ),
             child: Row(
               children: [
                 // A directory with no chevron keeps the row aligned with its
@@ -1347,7 +1362,12 @@ class _ContentMatchRow extends StatelessWidget {
             color: hovered ? t.hover : const Color(0x00000000),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(34, 3, AppSpacing.sm, 3),
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              34,
+              3,
+              AppSpacing.sm,
+              3,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1355,7 +1375,7 @@ class _ContentMatchRow extends StatelessWidget {
                   width: 34,
                   child: Text(
                     '${match.line}',
-                    textAlign: TextAlign.right,
+                    textAlign: TextAlign.end,
                     style: TextStyle(fontSize: 11, color: t.textTertiary),
                   ),
                 ),

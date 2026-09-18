@@ -16,7 +16,7 @@ import 'package:control_center/features/ticketing/providers/ticketing_providers.
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -558,46 +558,42 @@ class _Panel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return Material(
-      type: MaterialType.transparency,
-      child: Container(
-        width: _panelWidth,
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        decoration: BoxDecoration(
-          color: t.bgPrimary,
-          borderRadius: AppRadii.brLg,
-          border: Border.all(color: t.borderSecondary),
-          boxShadow: AppShadows.golden,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            for (final entry in entries)
-              switch (entry) {
-                _MenuDivider() => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Container(height: 1, color: t.borderSecondary),
-                ),
-                final _MenuAction a => _Row(
-                  leading: a.leading,
-                  label: a.label,
-                  selected: a.selected,
-                  destructive: a.destructive,
-                  onTap: a.onTap,
-                  onHover: onHoverLeaf,
-                ),
-                final _MenuSub s => _Row(
-                  leading: s.leading,
-                  label: s.label,
-                  hasChildren: true,
-                  highlighted: s == openSub,
-                  onTap: () {},
-                  onHoverWithBox: (rect) => onHoverSub(s, rect),
-                ),
-              },
-          ],
-        ),
+    return Container(
+      width: _panelWidth,
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: t.bgPrimary,
+        border: Border.all(color: t.borderSecondary),
+        boxShadow: AppShadows.golden,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (final entry in entries)
+            switch (entry) {
+              _MenuDivider() => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Container(height: 1, color: t.borderSecondary),
+              ),
+              final _MenuAction a => _Row(
+                leading: a.leading,
+                label: a.label,
+                selected: a.selected,
+                destructive: a.destructive,
+                onTap: a.onTap,
+                onHover: onHoverLeaf,
+              ),
+              final _MenuSub s => _Row(
+                leading: s.leading,
+                label: s.label,
+                hasChildren: true,
+                highlighted: s == openSub,
+                onTap: () {},
+                onHoverWithBox: (rect) => onHoverSub(s, rect),
+              ),
+            },
+        ],
       ),
     );
   }
@@ -664,8 +660,7 @@ class _RowState extends State<_Row> {
                 ? (widget.destructive
                       ? t.fgErrorPrimary.withValues(alpha: 0.10)
                       : t.bgPrimaryHover)
-                : Colors.transparent,
-            borderRadius: AppRadii.brSm,
+                : const Color(0x00000000),
           ),
           child: Row(
             children: [

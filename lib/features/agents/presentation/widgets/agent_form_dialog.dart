@@ -6,19 +6,21 @@ import 'package:cc_domain/features/agents/domain/constants/builtin_agent_seeds.d
 import 'package:cc_domain/features/settings/domain/entities/acp_model.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/agents/presentation/widgets/agent_effort_slider.dart';
 import 'package:control_center/features/agents/presentation/widgets/claude_accounts_notice.dart';
 import 'package:control_center/features/agents/presentation/widgets/skill_assignment_section.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/field_placeholder.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
-import 'package:control_center/features/settings/presentation/widgets/model_select.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/capability_toggles.dart';
 import 'package:flutter/foundation.dart' show setEquals;
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The agent's configuration form — the Settings tab of the agent registry.
@@ -393,7 +395,15 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
     final adapterOptions = <String, String>{
       for (final a in available) a.name: a.id,
     };
-    final levels = _resolveSelectedModel()?.thinkingLevels ?? const [];
+    final adapterId = _selectedAdapterId;
+    final modelId = _selectedModelId;
+    final selectedModel = adapterId == null || modelId == null
+        ? null
+        : (ref.watch(adapterModelsProvider(adapterId)).value ??
+                  const <AcpModel>[])
+              .where((m) => m.id == modelId)
+              .firstOrNull;
+    final levels = selectedModel?.thinkingLevels ?? const [];
 
     return SettingsGroup(
       title: l10n.agentSectionRuntime,
@@ -434,7 +444,7 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
           ClaudeAccountsNotice(accounts: n),
         SettingsField(
           label: l10n.modelLabel,
-          child: ModelSelect(
+          child: ModelPickerField(
             adapterId: _selectedAdapterId,
             selectedModelId: _selectedModelId,
             onChange: _onModelChanged,
@@ -443,13 +453,11 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         if (levels.isNotEmpty)
           SettingsField(
             label: l10n.reasoningEffort,
-            child: CcSelect<String>(
-              hintText: l10n.selectEffortLevel,
-              options: [
-                for (final lvl in levels)
-                  CcSelectOption(value: lvl.id, label: lvl.label),
-              ],
-              value: levels.any((l) => l.id == _effort) ? _effort : null,
+            child: AgentEffortSlider(
+              levels: levels,
+              value: _effort,
+              defaultValue: selectedModel?.defaultThinkingLevel,
+              semanticLabel: l10n.reasoningEffort,
               onChanged: (v) => setState(() {
                 _effortUserEdited = true;
                 _effort = v;
@@ -474,8 +482,7 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
                 children: [
                   // The selected model's own context window first, so a
                   // customized value is one tap from the model default.
-                  if (_resolveSelectedModel()?.contextWindow
-                      case final modelContext?)
+                  if (selectedModel?.contextWindow case final modelContext?)
                     CcChip(
                       label: l10n.modelContextChip(
                         _compactTokens(modelContext),
@@ -550,8 +557,8 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
         ),
         if (_useCustomCapabilities)
           Padding(
-            padding: const EdgeInsets.only(
-              left: AppSpacing.sm,
+            padding: const EdgeInsetsDirectional.only(
+              start: AppSpacing.sm,
               top: AppSpacing.xs,
             ),
             child: CapabilityToggles(
@@ -641,19 +648,6 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
     }
   }
 
-  /// Resolves the currently-selected [AcpModel] (from the selected adapter's
-  /// catalog), or null when adapter/model is unset or not in the list.
-  AcpModel? _resolveSelectedModel() {
-    final adapterId = _selectedAdapterId;
-    final modelId = _selectedModelId;
-    if (adapterId == null || modelId == null) {
-      return null;
-    }
-    final models =
-        ref.read(adapterModelsProvider(adapterId)).value ?? const <AcpModel>[];
-    return models.where((m) => m.id == modelId).firstOrNull;
-  }
-
   /// Applies model-driven inference when the selected model changes: default
   /// the effort level to the model's default (unless the user chose one) and
   /// refresh the context window to the model's size. The context field stays
@@ -661,7 +655,13 @@ class _AgentSettingsFormState extends ConsumerState<AgentSettingsForm> {
   /// next model change re-fills it.
   void _onModelChanged(String? modelId) {
     setState(() => _selectedModelId = modelId);
-    final model = _resolveSelectedModel();
+    final adapterId = _selectedAdapterId;
+    if (adapterId == null || modelId == null) {
+      return;
+    }
+    final models =
+        ref.read(adapterModelsProvider(adapterId)).value ?? const <AcpModel>[];
+    final model = models.where((m) => m.id == modelId).firstOrNull;
     if (model == null) {
       return;
     }

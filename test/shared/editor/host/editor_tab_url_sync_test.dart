@@ -1,6 +1,7 @@
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 EditorTab tab(String kind, {String? dedupKey}) =>
@@ -63,10 +64,7 @@ void main() {
   group('locationWithEditorTab', () {
     test('sets the tab param on a bare location', () {
       expect(
-        locationWithEditorTab(
-          Uri.parse('/workspaces/w1/spaces/c1'),
-          'chat:c1',
-        ),
+        locationWithEditorTab(Uri.parse('/workspaces/w1/spaces/c1'), 'chat:c1'),
         '/workspaces/w1/spaces/c1?tab=chat%3Ac1',
       );
     });
@@ -110,6 +108,38 @@ void main() {
       expect(Uri.parse(location).queryParameters['tab'], key);
     });
   });
+
+  testWidgets(
+    'focused-tab URL writes use platform history instead of app navigation',
+    (tester) async {
+      MethodCall? call;
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.navigation,
+        (next) async {
+          call = next;
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.navigation,
+          null,
+        ),
+      );
+
+      await updateEditorTabRoute(
+        Uri.parse('/workspaces/w1/pull-requests/o/r/42?comment=9'),
+        'diff',
+      );
+
+      expect(call?.method, 'routeInformationUpdated');
+      expect(
+        (call?.arguments as Map<Object?, Object?>)['uri'],
+        '/workspaces/w1/pull-requests/o/r/42?comment=9&tab=diff',
+      );
+      expect((call?.arguments as Map<Object?, Object?>)['replace'], isFalse);
+    },
+  );
 
   group('EditorTabUrlTracker', () {
     late List<String?> written;

@@ -4,22 +4,25 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/activity_formatting.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/member_avatar.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// The workspace audit trail: who did what, newest first (the server caps the
-/// stream length). Each row carries the actor's avatar and name, the op as a
-/// mono action chip, a prose description of what happened, the network origin
-/// (IP / country) as clickable filter chips and a right-aligned timestamp —
-/// hairline-separated so a long trail scans as a ledger, not a text block.
+/// The workspace audit trail: who did what, newest first. Each row carries
+/// the actor's avatar and name, the op as a mono action chip, a prose
+/// description of what happened, the network origin (IP / country) as
+/// clickable filter chips and a right-aligned timestamp — hairline-separated
+/// so a long trail scans as a ledger, not a text block.
 ///
 /// The body is searchable (name, action, description, target, IP, country)
-/// and paginated ten rows per page; IP/country chip taps toggle list-wide
-/// filters that compose (AND) with the query and surface as dismissible
-/// chips above the list.
+/// and paginated ten rows per page against the server (keyset cursor, real
+/// total). The current page is `?cursor=` on the members URL; IP/country
+/// chip taps toggle list-wide filters that compose (AND) with the query
+/// and surface as dismissible chips above the list.
 class WorkspaceActivitySection extends ConsumerStatefulWidget {
   /// Creates a [WorkspaceActivitySection] for [workspaceId].
   const WorkspaceActivitySection({super.key, required this.workspaceId});
@@ -34,13 +37,11 @@ class WorkspaceActivitySection extends ConsumerStatefulWidget {
 
 class _WorkspaceActivitySectionState
     extends ConsumerState<WorkspaceActivitySection> {
-  static const _pageSize = 10;
-
   final _searchController = TextEditingController();
   String _query = '';
   String? _filterIp;
   String? _filterCountry;
-  int _page = 0;
+  String? _localCursor;
 
   @override
   void dispose() {
@@ -53,78 +54,91 @@ class _WorkspaceActivitySectionState
     super.didUpdateWidget(oldWidget);
     if (oldWidget.workspaceId != widget.workspaceId) {
       setState(() {
-        _page = 0;
         _filterIp = null;
         _filterCountry = null;
+        _localCursor = null;
       });
     }
   }
 
-  void _toggleIpFilter(String ip) => setState(() {
-    _filterIp = _filterIp == ip ? null : ip;
-    _page = 0;
-  });
-
-  void _toggleCountryFilter(String country) => setState(() {
-    _filterCountry = _filterCountry == country ? null : country;
-    _page = 0;
-  });
-
-  List<UserActivityDto> _filtered(
-    AppLocalizations l10n,
-    List<UserActivityDto> entries,
-    Map<String, UserDto> users,
-  ) {
-    final query = _query.trim().toLowerCase();
-    return entries.where((entry) {
-      if (_filterIp != null && entry.ip != _filterIp) {
-        return false;
-      }
-      if (_filterCountry != null &&
-          activityCountryLabel(l10n, entry) != _filterCountry) {
-        return false;
-      }
-      return query.isEmpty || _matchesQuery(l10n, entry, users, query);
-    }).toList();
+  String? _routeCursor() {
+    final router = GoRouter.maybeOf(context);
+    if (router == null) {
+      return _localCursor;
+    }
+    final cursor = GoRouterState.of(context).uri.queryParameters['cursor'];
+    return cursor == null || cursor.isEmpty ? null : cursor;
   }
 
-  bool _matchesQuery(
-    AppLocalizations l10n,
-    UserActivityDto entry,
-    Map<String, UserDto> users,
-    String query,
-  ) {
-    final user = users[entry.userId];
-    final name = user?.displayName.isNotEmpty ?? false
-        ? user!.displayName
-        : l10n.unknownUserLabel;
-    final haystack = [
-      name,
-      entry.action,
-      describeActivity(l10n, entry),
-      entry.targetId,
-      entry.ip,
-      activityCountryLabel(l10n, entry),
+  void _setCursor(String? cursor) {
+    final router = GoRouter.maybeOf(context);
+    if (router != null) {
+      final next = uriWithCursor(router.state.uri, cursor);
+      if (next == router.state.uri.toString()) {
+        return;
+      }
+      router.go(next);
+      return;
+    }
+    if (_localCursor == cursor) {
+      return;
+    }
+    setState(() => _localCursor = cursor);
+  }
+
+  void _toggleIpFilter(String ip) {
+    setState(() => _filterIp = _filterIp == ip ? null : ip);
+    _setCursor(null);
+  }
+
+  void _toggleCountryFilter(String country) {
+    setState(() => _filterCountry = _filterCountry == country ? null : country);
+    _setCursor(null);
+  }
+
+  List<String> _matchingUserIds(Map<String, UserDto> users, String query) {
+    if (query.isEmpty) {
+      return const [];
+    }
+    return [
+      for (final entry in users.entries)
+        if (entry.value.displayName.toLowerCase().contains(query) ||
+            entry.value.handle.toLowerCase().contains(query))
+          entry.key,
     ];
-    return haystack.any((s) => s?.toLowerCase().contains(query) ?? false);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final activityAsync = ref.watch(
-      workspaceActivityProvider(widget.workspaceId),
-    );
     final users = ref.watch(usersByIdProvider).value ?? const {};
-    final entries = activityAsync.asData?.value;
+    final query = _query.trim();
+    final localLabel = l10n.activityNetworkLocal;
+    final pageQuery = WorkspaceActivityPageQuery(
+      workspaceId: widget.workspaceId,
+      cursor: _routeCursor(),
+      search: query,
+      ip: _filterIp,
+      countryCode: _filterCountry != null && _filterCountry != localLabel
+          ? _filterCountry
+          : null,
+      localNetwork: _filterCountry == localLabel,
+      userIds: _matchingUserIds(users, query.toLowerCase()),
+    );
+    final activityAsync = ref.watch(workspaceActivityPageProvider(pageQuery));
+    final page = activityAsync.asData?.value;
+    final filtering =
+        query.isNotEmpty || _filterIp != null || _filterCountry != null;
 
     return SectionCard(
       label: l10n.activityLabel,
-      trailing: entries == null || entries.isEmpty
+      trailing: page == null || page.total == 0
           ? null
-          : _CountChip(count: entries.length),
+          : _CountChip(count: page.total),
       child: activityAsync.when(
+        skipLoadingOnReload: true,
+        skipLoadingOnRefresh: true,
         loading: () => const Padding(
           padding: EdgeInsets.all(AppSpacing.md),
           child: Center(child: CcSpinner()),
@@ -133,28 +147,23 @@ class _WorkspaceActivitySectionState
           l10n.couldNotLoadActivity,
           style: CcTypography.bodySm.copyWith(color: t.textErrorPrimary),
         ),
-        data: (entries) {
-          if (entries.isEmpty) {
+        data: (page) {
+          if (page.total == 0 && !filtering) {
             return Text(
               l10n.noActivityYet,
               style: CcTypography.bodySm.copyWith(color: t.textTertiary),
             );
           }
 
-          final filtered = _filtered(l10n, entries, users);
-          final pageCount = filtered.isEmpty
-              ? 1
-              : (filtered.length + _pageSize - 1) ~/ _pageSize;
-          // A shrinking list (filter, search, or a shorter stream) can leave
-          // the page index past the end — clamp it back into range.
-          if (_page >= pageCount) {
-            _page = pageCount - 1;
+          if (page.entries.isEmpty &&
+              page.total > 0 &&
+              pageQuery.cursor != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _setCursor(null);
+              }
+            });
           }
-          final start = _page * _pageSize;
-          final end = filtered.length < start + _pageSize
-              ? filtered.length
-              : start + _pageSize;
-          final pageEntries = filtered.sublist(start, end);
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,10 +173,10 @@ class _WorkspaceActivitySectionState
                 size: CcTextFieldSize.sm,
                 hintText: l10n.activitySearchHint,
                 prefix: Icon(AppIcons.search, size: 16, color: t.textTertiary),
-                onChanged: (value) => setState(() {
-                  _query = value;
-                  _page = 0;
-                }),
+                onChanged: (value) {
+                  setState(() => _query = value);
+                  _setCursor(null);
+                },
               ),
               if (_filterIp != null || _filterCountry != null) ...[
                 const SizedBox(height: 10),
@@ -180,45 +189,54 @@ class _WorkspaceActivitySectionState
                       _ActiveFilterChip(
                         label: l10n.activityFilterIp(_filterIp!),
                         clearLabel: l10n.activityClearFilter,
-                        onClear: () => setState(() => _filterIp = null),
+                        onClear: () {
+                          setState(() => _filterIp = null);
+                          _setCursor(null);
+                        },
                       ),
                     if (_filterCountry != null)
                       _ActiveFilterChip(
                         label: l10n.activityFilterCountry(_filterCountry!),
                         clearLabel: l10n.activityClearFilter,
-                        onClear: () => setState(() => _filterCountry = null),
+                        onClear: () {
+                          setState(() => _filterCountry = null);
+                          _setCursor(null);
+                        },
                       ),
                   ],
                 ),
               ],
               const SizedBox(height: 12),
-              if (filtered.isEmpty)
+              if (page.entries.isEmpty)
                 Text(
                   l10n.activityNoMatches,
                   style: CcTypography.bodySm.copyWith(color: t.textTertiary),
                 )
               else ...[
-                for (var i = 0; i < pageEntries.length; i++) ...[
+                for (var i = 0; i < page.entries.length; i++) ...[
                   if (i > 0) Container(height: 1, color: t.borderSecondary),
                   _ActivityRow(
-                    entry: pageEntries[i],
-                    user: users[pageEntries[i].userId],
-                    description: describeActivity(l10n, pageEntries[i]),
-                    country: activityCountryLabel(l10n, pageEntries[i]),
-                    onIpTap: () => _toggleIpFilter(pageEntries[i].ip!),
+                    entry: page.entries[i],
+                    user: users[page.entries[i].userId],
+                    description: describeActivity(l10n, page.entries[i]),
+                    country: activityCountryLabel(l10n, page.entries[i]),
+                    onIpTap: () => _toggleIpFilter(page.entries[i].ip!),
                     onCountryTap: () => _toggleCountryFilter(
-                      activityCountryLabel(l10n, pageEntries[i])!,
+                      activityCountryLabel(l10n, page.entries[i])!,
                     ),
                   ),
                 ],
                 const SizedBox(height: 10),
                 _PaginationFooter(
-                  start: start + 1,
-                  end: end,
-                  total: filtered.length,
-                  onPrevious: _page > 0 ? () => setState(() => _page--) : null,
-                  onNext: _page < pageCount - 1
-                      ? () => setState(() => _page++)
+                  start: page.start,
+                  end: page.end,
+                  total: page.total,
+                  onPrevious:
+                      page.prevCursor != null || pageQuery.cursor != null
+                      ? () => _setCursor(page.prevCursor)
+                      : null,
+                  onNext: page.nextCursor != null
+                      ? () => _setCursor(page.nextCursor)
                       : null,
                 ),
               ],
@@ -532,8 +550,8 @@ class _PaginationFooter extends StatelessWidget {
   }
 }
 
-/// The header count: how many entries the (server-capped) trail currently
-/// shows, in tabular mono on a quiet chip.
+/// The header count: how many entries the trail currently holds, in
+/// tabular mono on a quiet chip.
 class _CountChip extends StatelessWidget {
   const _CountChip({required this.count});
 

@@ -1,0 +1,44 @@
+{
+  "@@locale": "fr_CA",
+  "pairClientNameHint": "Nommez ce client (ex. ordinateur portatif)",
+  "pairScanQr": "Scannez ce code QR avec l'appareil photo de votre téléphone pour l'associer.",
+  "newsfeed": "Fil de nouvelles",
+  "newsfeedLabel": "Fil de nouvelles",
+  "newsfeedSettingsTitle": "Paramètres du fil de nouvelles",
+  "notificationCalendarAuthExpiredTitle": "Calendrier déconnecté",
+  "notificationCalendarAuthExpiredBodyNoEmail": "Reconnectez votre calendrier pour reprendre la synchronisation",
+  "notifyCalendarAuthExpired": "Lorsqu'un compte de calendrier doit être reconnecté",
+  "notificationGroupCalendar": "Calendrier",
+  "meetingAutoDetectDescription": "Surveille le calendrier et les applis de visioconférence, et propose d'enregistrer au début d'une réunion.",
+  "emailLabel": "Courriel",
+  "gitAuthorEmailLabel": "Courriel d'auteur git",
+  "settingsProfileDescription": "Votre nom, votre courriel et l'identité git apposée sur les commits faits en votre nom.",
+  "ssoEmailAttributeLabel": "Attribut courriel",
+  "chatLinkMethodEmail": "{externalUserId} · associé par courriel",
+  "@chatLinkMethodEmail": {
+    "description": "Subtitle of a chat link that was established automatically by email",
+    "placeholders": {
+      "externalUserId": {
+        "type": "String",
+        "example": "U024BE7LH"
+      }
+    }
+  },
+  "profileDeliveryMetrics": "Indicateurs de livraison",
+  "profileMetricsSample": "PR analysées : {count}",
+  "profileMergeRate": "Taux de fusion",
+  "profileReviewCoverage": "Couverture des révisions",
+  "profilePrSize": "Taille des PR",
+  "profileTimeToMerge": "Délai de fusion",
+  "profileFirstReview": "Délai avant la première révision",
+  "profileMetricsTruncated": "Les percentiles sont calculés à partir d’un échantillon limité des demandes de tirage disponibles.",
+  "profileLinesChanged": "{count} lignes",
+  "profileDurationMinutes": "{count} min",
+  "profileDurationHours": "{count} h",
+  "profileDurationDaysHours": "{days} j {hours} h",
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "profileTeamMembers": "Membres : {count}",
+  "noPrsByTeamInWorkspace": "Aucune demande de tirage de {team} dans cet espace de travail",
+  "profilePrStateFilterLabel": "Filtrer les demandes de tirage par état",
+  "noProfilePrsMatchSearchHint": "Essayez un autre titre ou numéro de demande de tirage"
+}

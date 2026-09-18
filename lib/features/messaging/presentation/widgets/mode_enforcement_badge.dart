@@ -55,7 +55,7 @@ class ModeEnforcementBadge extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const EdgeInsets.only(left: 6),
+      padding: const EdgeInsetsDirectional.only(start: 6),
       child: CcTooltip(
         message: message,
         placement: CcTooltipPlacement.top,

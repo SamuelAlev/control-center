@@ -7,6 +7,7 @@ import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/computer_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/mobile_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
@@ -16,12 +17,10 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 
-/// Shared behaviour for the three enclosure tools.
+/// Shared behaviour for the four enclosure and host-device tools.
 ///
-/// Each surface differs only in its verb vocabulary and its schema; opening,
-/// workspace validation, take-over handling and result shaping are identical,
-/// and duplicating them three ways is how one of the three quietly stops
-/// enforcing something.
+/// Each surface differs only in its verb vocabulary and schema; opening,
+/// workspace validation, take-over handling and result shaping are identical.
 /// The agent id recorded when a dispatcher supplied none.
 ///
 /// Deliberately NOT a plausible id. The old fallback was the literal string
@@ -30,9 +29,8 @@ import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 /// who acted. This one reads as what it is in every audit surface it reaches.
 const String kUnattributedRigAgentId = 'unattributed';
 
-/// The shared implementation behind `computer_use` / `browser_use` /
-/// `mobile_use`: one action vocabulary per surface, one resolution path, one
-/// set of declared effects.
+/// The shared implementation behind `computer_use`, `browser_use`,
+/// `mobile_use`, and `ios_use`: one resolution path and one effect contract.
 abstract class RigUseTool extends McpTool {
   /// Creates a [RigUseTool] over [rigs].
   RigUseTool({required RigPort rigs}) : _rigs = rigs;
@@ -66,13 +64,8 @@ abstract class RigUseTool extends McpTool {
 
   @override
   Set<ActionClass> get actionClasses => const {
-    // Driving a machine. Read-only modes deny this class wholesale.
     ActionClass.enclosureControl,
-    // The guest can reach the network through the egress proxy, so the tool
-    // declares it: the guardrail taxonomy is about worst-case EFFECT, not
-    // about which process made the syscall.
     ActionClass.networkEgress,
-    // Booting a rig spawns a hypervisor process on the host.
     ActionClass.processSpawn,
   };
 
@@ -557,13 +550,21 @@ class MobileUseTool extends RigUseTool {
   RigSurface get surface => RigSurface.mobile;
 
   @override
+  Set<ActionClass> get actionClasses => const {
+    ActionClass.enclosureControl,
+    ActionClass.networkEgress,
+    ActionClass.processSpawn,
+    ActionClass.packageInstall,
+  };
+
+  @override
   String get description =>
-      'Drives an Android device: tap, swipe, type, press keys, dump the view '
-      'hierarchy, install an APK, launch an app and take screenshots. Use '
-      'ui_dump to find what is on screen (it lists tappable elements with '
-      'their centre coordinates) rather than guessing from a screenshot. '
-      'Note: unlike the computer and browser surfaces, this device does not '
-      'have a deny-by-default network — its egress is not fully enclosed.';
+      'Drives an Android device: inspect and interact with the UI, install, '
+      'launch, stop, reset and uninstall apps, open deep links, run '
+      'argv-shaped device commands, and take screenshots. Use ui_dump before '
+      'guessing coordinates. The shell action runs inside Android, never in a '
+      'host shell. This host-managed device does not have deny-by-default '
+      'network egress.';
 
   @override
   RigActionParse parseAction(Map<String, dynamic> arguments) =>
@@ -582,6 +583,11 @@ class MobileUseTool extends RigUseTool {
         'ui_dump',
         'install_apk',
         'start_app',
+        'stop_app',
+        'clear_app_data',
+        'uninstall_app',
+        'open_url',
+        'shell',
       ],
       'description': 'The action to perform.',
     },
@@ -629,6 +635,142 @@ class MobileUseTool extends RigUseTool {
     'activity': {
       'type': 'string',
       'description': 'Optional explicit activity.',
+    },
+    'url': {
+      'type': 'string',
+      'description': 'Absolute web URL or application deep link.',
+    },
+    'argv': {
+      'type': 'array',
+      'items': {'type': 'string'},
+      'minItems': 1,
+      'maxItems': 64,
+      'description':
+          'Android command plus arguments. Runs inside the device without a '
+          'host shell; use for logcat, dumpsys, pm grant, and diagnostics.',
+    },
+  };
+}
+
+/// `ios_use` — drive an ephemeral iOS Simulator through WebDriverAgent.
+class IosUseTool extends RigUseTool {
+  /// Creates an [IosUseTool].
+  IosUseTool({required super.rigs});
+
+  @override
+  String get name => 'ios_use';
+
+  @override
+  RigSurface get surface => RigSurface.ios;
+
+  @override
+  Set<ActionClass> get actionClasses => const {
+    ActionClass.enclosureControl,
+    ActionClass.networkEgress,
+    ActionClass.processSpawn,
+    ActionClass.packageInstall,
+  };
+
+  @override
+  String get description =>
+      'Drives a disposable iOS Simulator on the server Mac. Inspect and '
+      'interact with the UI; install, launch, stop and uninstall apps; open '
+      'deep links; or run argv-shaped simulator processes. Call ui_dump '
+      'before guessing coordinates. Actions use simulator screen points. '
+      'Networking is host-managed, not enclosed.';
+
+  @override
+  RigActionParse parseAction(Map<String, dynamic> arguments) =>
+      IosAction.parse(arguments);
+
+  @override
+  Map<String, dynamic> get actionSchema => {
+    'action': {
+      'type': 'string',
+      'enum': [
+        'tap',
+        'swipe',
+        'type',
+        'key',
+        'home',
+        'lock',
+        'unlock',
+        'screenshot',
+        'ui_dump',
+        'install_app',
+        'start_app',
+        'stop_app',
+        'uninstall_app',
+        'open_url',
+        'spawn',
+      ],
+      'description': 'The action to perform.',
+    },
+    'coordinate': {
+      'type': 'array',
+      'items': {'type': 'integer'},
+      'minItems': 2,
+      'maxItems': 2,
+      'description': '[x, y] in simulator screen points, for tap.',
+    },
+    'from': {
+      'type': 'array',
+      'items': {'type': 'integer'},
+      'minItems': 2,
+      'maxItems': 2,
+      'description': 'Swipe origin [x, y] in simulator screen points.',
+    },
+    'to': {
+      'type': 'array',
+      'items': {'type': 'integer'},
+      'minItems': 2,
+      'maxItems': 2,
+      'description': 'Swipe destination [x, y] in simulator screen points.',
+    },
+    'duration_ms': {
+      'type': 'integer',
+      'minimum': 50,
+      'maximum': 5000,
+      'description': 'Swipe duration in milliseconds.',
+    },
+    'text': {'type': 'string', 'description': 'Literal text to type.'},
+    'key': {
+      'type': 'string',
+      'description':
+          'enter, backspace, tab, escape, arrow_up, arrow_down, arrow_left, '
+          'arrow_right, or one printable character.',
+    },
+    'modifiers': {
+      'type': 'array',
+      'items': {
+        'type': 'string',
+        'enum': ['command', 'control', 'option', 'shift'],
+      },
+      'uniqueItems': true,
+      'description': 'Optional closed modifier set for key.',
+    },
+    'path': {
+      'type': 'string',
+      'description':
+          'Host path to a simulator .app directory. Confined to the rig '
+          'worktree or server data directory.',
+    },
+    'bundle_id': {
+      'type': 'string',
+      'description': 'Reverse-DNS bundle id of an installed app.',
+    },
+    'url': {
+      'type': 'string',
+      'description': 'Absolute web URL or application deep link.',
+    },
+    'argv': {
+      'type': 'array',
+      'items': {'type': 'string'},
+      'minItems': 1,
+      'maxItems': 64,
+      'description':
+          'Simulator command plus arguments. Runs through simctl spawn '
+          'without a host shell; use for log, defaults, and diagnostics.',
     },
   };
 }

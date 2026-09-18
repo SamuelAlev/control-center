@@ -1,38 +1,47 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/ports/key_value_store.dart';
 import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
+import 'package:cc_domain/features/newsfeed/domain/helpers/abp_parser.dart';
 import 'package:cc_domain/features/newsfeed/domain/tracking_param_stripper.dart';
-import 'package:cc_infra/src/newsfeed/abp_parser.dart';
-import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as p;
 
-/// Downloads community ABP filter lists, parses them, merges them with the
-/// bundled defaults and caches the results in the app support directory.
+/// Downloads community ABP filter lists, parses them, and caches the merged
+/// rule list under the server data dir.
 ///
-/// Also downloads and parses uBlock Origin's `privacy-removeparam.txt`
-/// to maintain the set of tracking query parameters stripped from article URLs.
+/// Thin clients never dial these URLs — they read the cached document over
+/// `newsfeed.filterLists.*`. State and blocklist reads never fetch; [refresh]
+/// does, so boot stays off the ready-banner path.
 class FilterListService {
-  /// Creates a new [FilterListService].
-  FilterListService(this._dio, this._prefs, this._paths);
+  /// Creates a [FilterListService] whose cache lives at [cacheDir].
+  ///
+  /// [allowNetwork] gates fetching entirely, for tests, the demo, and
+  /// restricted environments.
+  FilterListService({
+    required this.cacheDir,
+    Dio? dio,
+    this.allowNetwork = true,
+    this.ttl = const Duration(hours: 24),
+  }) : _dio = dio ?? Dio();
+
+  /// Directory under the server data dir (`<dataDir>/filter_lists`).
+  final String cacheDir;
+
+  /// Whether network fetches are permitted.
+  final bool allowNetwork;
+
+  /// Freshness window for [refresh] when `force` is false.
+  final Duration ttl;
+
+  static const _userAgent =
+      'ControlCenter/1.0 (+https://github.com/SamuelAlev/control-center)';
+
+  static const _stateFile = 'state.json';
+  static const _etagsFile = 'etags.json';
+  static const _blocklistFile = 'blocklist_cached.json';
 
   final Dio _dio;
-  final KeyValueStore _prefs;
-  final CcPaths _paths;
-
-  // ── Configuration ────────────────────────────────────────────────────────
-
-  static const _kLastCheckKey = 'newsfeed.filterLists.lastCheck';
-  static const _kLastSuccessKey = 'newsfeed.filterLists.lastSuccess';
-  static const _kCookieHidingCountKey =
-      'newsfeed.filterLists.cookieHidingCount';
-  static const _kAdHidingCountKey = 'newsfeed.filterLists.adHidingCount';
-  static const _kNetworkBlockCountKey =
-      'newsfeed.filterLists.networkBlockCount';
-  static const _kRemoveParamsListKey = 'newsfeed.removeParams.list';
-  static const _kRemoveParamsCountKey = 'newsfeed.removeParams.count';
 
   static const _sources = [
     AbpSource(
@@ -56,9 +65,6 @@ class FilterListService {
           'https://raw.githubusercontent.com/uBlockOrigin/uAssets/refs/heads/master/filters/filters-general.txt',
       category: FilterCategory.ads,
     ),
-    // uBO's main filter file — contains the bulk of per-site scriptlet
-    // rules (set-constant globalPrivacyControl, abort-current-script,
-    // etc.) that aren't in the narrower category-specific lists.
     AbpSource(
       name: 'uassets_main',
       url:
@@ -83,17 +89,12 @@ class FilterListService {
           'https://raw.githubusercontent.com/uBlockOrigin/uAssets/refs/heads/master/filters/annoyances-cookies.txt',
       category: FilterCategory.cookies,
     ),
-    // uBO's auto-dismiss/auto-accept rules for CMP banners
-    // (Didomi, OneTrust, Sourcepoint, etc.) live here — these are the
-    // `+js(trusted-click-element, ...)` scriptlet rules.
     AbpSource(
       name: 'uassets_quick_fixes',
       url:
           'https://raw.githubusercontent.com/uBlockOrigin/uAssets/refs/heads/master/filters/quick-fixes.txt',
       category: FilterCategory.cookies,
     ),
-    // Broader annoyances list (the parent of annoyances-cookies). Adds
-    // overlays, popups, newsletter prompts, etc.
     AbpSource(
       name: 'uassets_annoyances_general',
       url:
@@ -108,28 +109,29 @@ class FilterListService {
         'https://raw.githubusercontent.com/uBlockOrigin/uAssets/master/filters/privacy-removeparam.txt',
   );
 
-  // ── Auto-update ────────────────────────────────────────────────────────
-
-  /// Checks whether an update is due (≥ 24 h since last check) and, if so,
-  /// performs a full refresh. Returns the current update state.
-  Future<FilterListUpdateState> autoUpdate() async {
-    final lastCheckStr = _prefs.getString(_kLastCheckKey);
-    if (lastCheckStr != null) {
-      final lastCheck = DateTime.tryParse(lastCheckStr);
-      if (lastCheck != null) {
-        final hoursSince = DateTime.now().difference(lastCheck).inHours;
-        if (hoursSince < 24) {
-          return readState();
-        }
-      }
-    }
-    return manualRefresh();
+  /// Returns the current update state from the on-disk cache.
+  FilterListUpdateState readState() {
+    final stored = _readStateFile();
+    return stored?.state ?? FilterListUpdateState.empty;
   }
 
-  /// Forces a full refresh, ignoring the 24-hour cooldown.
-  Future<FilterListUpdateState> manualRefresh() async {
-    await _prefs.setString(_kLastCheckKey, DateTime.now().toIso8601String());
+  /// Checks whether an update is due and, if so, performs a full refresh.
+  Future<FilterListUpdateState> autoUpdate() => refresh(force: false);
 
+  /// Refreshes the lists. When [force] is false, a cache younger than [ttl]
+  /// is returned as-is.
+  Future<FilterListUpdateState> refresh({bool force = true}) async {
+    if (!force) {
+      final stored = _readStateFile();
+      final lastCheck = stored?.state.lastCheck;
+      if (lastCheck != null && DateTime.now().difference(lastCheck) < ttl) {
+        return stored!.state;
+      }
+    }
+    return _refresh();
+  }
+
+  Future<FilterListUpdateState> _refresh() async {
     final errors = <String>[];
     final adsSelectors = <String>[];
     final cookiesSelectors = <String>[];
@@ -137,13 +139,12 @@ class FilterListService {
     final networkBlocks = <Map<String, dynamic>>[];
     final scriptlets = <ScriptletInjection>[];
     final removeParams = <String>{};
+    final now = DateTime.now();
 
-    // 1. Download and parse ABP sources.
     for (final source in _sources) {
       final raw = await _downloadWithEtag(source.url, source.name);
       if (raw == null) {
-        // 304 Not Modified — try to use previously cached raw file.
-        final cachedRaw = await _readCachedRaw(source.name);
+        final cachedRaw = _readCachedRaw(source.name);
         if (cachedRaw == null) {
           errors.add('${source.name}: no cached version available');
           continue;
@@ -159,8 +160,7 @@ class FilterListService {
         );
         continue;
       }
-      // 200 OK — save raw content and parse.
-      await _writeCachedRaw(source.name, raw);
+      _writeCachedRaw(source.name, raw);
       parseSource(
         raw,
         source,
@@ -172,29 +172,21 @@ class FilterListService {
       );
     }
 
-    // 2. Download and parse remove-params source.
     final rpRaw = await _downloadWithEtag(
       _removeParamsSource.url,
       _removeParamsSource.name,
     );
     if (rpRaw != null) {
-      await _writeCachedRaw(_removeParamsSource.name, rpRaw);
+      _writeCachedRaw(_removeParamsSource.name, rpRaw);
       removeParams.addAll(parseRemoveParams(rpRaw));
     } else {
-      final cachedRp = await _readCachedRaw(_removeParamsSource.name);
+      final cachedRp = _readCachedRaw(_removeParamsSource.name);
       if (cachedRp != null) {
         removeParams.addAll(parseRemoveParams(cachedRp));
       }
     }
-    // Merge with hardcoded defaults.
     removeParams.addAll(defaultRemoveParams());
 
-    // 3. Build the combined content rule list:
-    //    - network blocks (`block` action)
-    //    - universal CSS hiding (`css-display-none`, no `if-domain`)
-    //    - domain-scoped CSS hiding (`css-display-none` + `if-domain`)
-    // Selectors are chunked so a single malformed selector only drops
-    // its chunk rather than the whole hide list.
     final ruleList = <Map<String, dynamic>>[
       ...networkBlocks,
       ...buildCssDisplayNoneRules(adsSelectors),
@@ -203,31 +195,15 @@ class FilterListService {
       ...buildScriptletRules(scriptlets),
     ];
 
-    final cacheDir = await _cacheDir();
-    await File(
-      p.join(cacheDir.path, 'blocklist_cached.json'),
-    ).writeAsString(jsonEncode(ruleList));
+    _writeFile(_blocklistFile, jsonEncode(ruleList));
 
-    // 4. Persist remove-params metadata.
-    await _prefs.setString(_kRemoveParamsListKey, removeParams.join(','));
-    await _prefs.setInt(_kRemoveParamsCountKey, removeParams.length);
-
-    // 5. Count parsed rules and persist. Domain-scoped hides are
-    // bundled into whichever side of the count makes sense — they
-    // originate from both ads and cookies sources, so count them
-    // together under cookies (the more visible bucket in settings).
     final adHidingCount = adsSelectors.length;
     final cookieHidingCount = cookiesSelectors.length + domainHides.length;
     final networkBlockCount = networkBlocks.length;
 
-    await _prefs.setInt(_kAdHidingCountKey, adHidingCount);
-    await _prefs.setInt(_kCookieHidingCountKey, cookieHidingCount);
-    await _prefs.setInt(_kNetworkBlockCountKey, networkBlockCount);
-    await _prefs.setString(_kLastSuccessKey, DateTime.now().toIso8601String());
-
-    return FilterListUpdateState(
-      lastCheck: DateTime.now(),
-      lastSuccess: DateTime.now(),
+    final state = FilterListUpdateState(
+      lastCheck: now,
+      lastSuccess: now,
       isUpdating: false,
       errors: errors,
       cookieHidingRules: cookieHidingCount,
@@ -235,84 +211,52 @@ class FilterListService {
       networkBlockRules: networkBlockCount,
       removeParamsCount: removeParams.length,
     );
+    _writeStateFile(_StoredState(state: state, removeParams: removeParams));
+    return state;
   }
 
-  // ── Read cached ────────────────────────────────────────────────────────
-
-  /// Returns the merged content rule list (network blocks +
-  /// `css-display-none` entries), or an empty list if no cache exists
-  /// yet (e.g. before the first successful [manualRefresh]).
+  /// Returns the merged content rule list, or an empty list if no cache exists.
   Future<List<Map<String, dynamic>>> readBlocklist() async {
-    final cached = await _readCachedFile('blocklist_cached.json');
+    final cached = _readFile(_blocklistFile);
     if (cached == null) {
       return const [];
     }
     try {
-      final decoded = jsonDecode(cached) as List<dynamic>;
-      return decoded.map((e) => e as Map<String, dynamic>).toList();
+      final decoded = jsonDecode(cached);
+      if (decoded is! List) {
+        return const [];
+      }
+      return [
+        for (final entry in decoded)
+          if (entry is Map)
+            {for (final e in entry.entries) e.key.toString(): e.value},
+      ];
     } on Object {
       return const [];
     }
   }
 
   /// Returns the set of tracking query parameters to strip from URLs.
-  /// Reads the cached set from AppPreferences, falling back to the
-  /// hard-coded [defaultRemoveParams].
   Set<String> readRemoveParams() {
-    final raw = _prefs.getString(_kRemoveParamsListKey);
-    if (raw != null && raw.isNotEmpty) {
-      return raw.split(',').where((s) => s.isNotEmpty).toSet();
+    final stored = _readStateFile()?.removeParams;
+    if (stored != null && stored.isNotEmpty) {
+      return stored;
     }
     return defaultRemoveParams();
   }
 
-  // ── Private helpers ────────────────────────────────────────────────────
+  String? _readCachedRaw(String sourceName) => _readFile('$sourceName.txt');
 
-  Future<String?> _readCachedFile(String name) async {
-    try {
-      // ignore: avoid_slow_async_io
-      final file = File(p.join((await _cacheDir()).path, name));
-      // ignore: avoid_slow_async_io
-      if (await file.exists()) {
-        // ignore: avoid_slow_async_io
-        return await file.readAsString();
-      }
-    } on Object {
-      // ignore
-    }
-    return null;
-  }
+  void _writeCachedRaw(String sourceName, String content) =>
+      _writeFile('$sourceName.txt', content);
 
-  Future<String?> _readCachedRaw(String sourceName) async {
-    return _readCachedFile('$sourceName.txt');
-  }
-
-  Future<void> _writeCachedRaw(String sourceName, String content) async {
-    final file = File(p.join((await _cacheDir()).path, '$sourceName.txt'));
-    await file.writeAsString(content);
-  }
-
-  Future<Directory> _cacheDir() async {
-    // Cache under the app-support ROOT (`<root>/filter_lists`). The desktop
-    // previously reached this via `getApplicationSupportDirectory()`, which the
-    // app font-redirects to `<root>/fonts`, so the cache used to nest under
-    // `fonts/`; rooting at CcPaths puts it at the intended top level (a one-time
-    // re-download for existing installs).
-    final support = await _paths.root();
-    final dir = Directory(p.join(support.path, 'filter_lists'));
-    // ignore: avoid_slow_async_io
-    if (!await dir.exists()) {
-      // ignore: avoid_slow_async_io
-      await dir.create(recursive: true);
-    }
-    return dir;
-  }
-
-  /// Downloads [url] with conditional request using the stored ETag.
-  /// Returns `null` on 304 (not modified). Throws on hard errors.
   Future<String?> _downloadWithEtag(String url, String etagKey) async {
-    final etag = _prefs.getString('newsfeed.filterLists.etag.\$etagKey');
-    final headers = <String, dynamic>{};
+    if (!allowNetwork) {
+      return null;
+    }
+    final etags = _readEtags();
+    final headers = <String, dynamic>{'User-Agent': _userAgent};
+    final etag = etags[etagKey];
     if (etag != null && etag.isNotEmpty) {
       headers['If-None-Match'] = etag;
     }
@@ -323,6 +267,8 @@ class FilterListService {
         options: Options(
           headers: headers,
           responseType: ResponseType.plain,
+          sendTimeout: const Duration(seconds: 15),
+          receiveTimeout: const Duration(seconds: 30),
           validateStatus: (status) =>
               status != null && (status == 200 || status == 304),
         ),
@@ -334,15 +280,100 @@ class FilterListService {
 
       final newEtag = response.headers.value('etag');
       if (newEtag != null && newEtag.isNotEmpty) {
-        await _prefs.setString('newsfeed.filterLists.etag.\$etagKey', newEtag);
+        etags[etagKey] = newEtag;
+        _writeEtags(etags);
       }
       return response.data;
-    } on DioException catch (e) {
-      if (e.response?.statusCode == 304) {
+    } on Object {
+      return null;
+    }
+  }
+
+  Directory _ensureCacheDir() {
+    final dir = Directory(cacheDir);
+    if (!dir.existsSync()) {
+      dir.createSync(recursive: true);
+    }
+    return dir;
+  }
+
+  String? _readFile(String name) {
+    try {
+      final file = File(p.join(_ensureCacheDir().path, name));
+      if (!file.existsSync()) {
         return null;
       }
-      rethrow;
+      return file.readAsStringSync();
+    } on Object {
+      return null;
     }
+  }
+
+  void _writeFile(String name, String content) {
+    try {
+      final file = File(p.join(_ensureCacheDir().path, name));
+      file.writeAsStringSync(content);
+    } on Object {
+      // A read-only cache dir is non-fatal; the in-memory result still serves.
+    }
+  }
+
+  Map<String, String> _readEtags() {
+    final raw = _readFile(_etagsFile);
+    if (raw == null) {
+      return {};
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return {};
+      }
+      return {
+        for (final e in decoded.entries)
+          if (e.value is String) e.key.toString(): e.value as String,
+      };
+    } on Object {
+      return {};
+    }
+  }
+
+  void _writeEtags(Map<String, String> etags) =>
+      _writeFile(_etagsFile, jsonEncode(etags));
+
+  _StoredState? _readStateFile() {
+    final raw = _readFile(_stateFile);
+    if (raw == null) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return null;
+      }
+      final map = {for (final e in decoded.entries) e.key.toString(): e.value};
+      final paramsRaw = map['removeParams'];
+      final params = <String>{
+        if (paramsRaw is List)
+          for (final p in paramsRaw)
+            if (p is String && p.isNotEmpty) p,
+      };
+      return _StoredState(
+        state: FilterListUpdateState.fromJson(map),
+        removeParams: params,
+      );
+    } on Object {
+      return null;
+    }
+  }
+
+  void _writeStateFile(_StoredState stored) {
+    _writeFile(
+      _stateFile,
+      jsonEncode({
+        ...stored.state.toJson(),
+        'removeParams': stored.removeParams.toList()..sort(),
+      }),
+    );
   }
 
   /// Parses a raw filter list source and distributes the results into the
@@ -363,17 +394,12 @@ class FilterListService {
     } else {
       cookiesSelectors.addAll(result.cssSelectors);
     }
-    // Domain-scoped hides apply regardless of whether the source is
-    // categorised as ads or cookies — both can target CMP banners.
     domainHides.addAll(result.domainHides);
     scriptlets.addAll(result.scriptlets);
   }
 
   /// Serialises scriptlet entries into the same blocklist JSON as
-  /// network blocks + css-display-none rules. Action type is `scriptlet`
-  /// with `name` and `args` payload; the mapper / content blocker
-  /// pipeline skips this type and the AdBlockerWebView picks them up
-  /// for runtime JS injection.
+  /// network blocks + css-display-none rules.
   static List<Map<String, dynamic>> buildScriptletRules(
     List<ScriptletInjection> scriptlets,
   ) {
@@ -396,13 +422,9 @@ class FilterListService {
   }
 
   /// Number of selectors combined into a single `css-display-none` rule.
-  /// Smaller chunks compile faster and limit the blast radius if one
-  /// selector turns out to be invalid; larger chunks reduce the total
-  /// rule count. 25 is a balance.
   static const cssChunkSize = 25;
 
-  /// Wraps [selectors] into chunked `css-display-none` content-blocker
-  /// entries: each chunk is one rule with a comma-joined selector list.
+  /// Wraps [selectors] into chunked `css-display-none` content-blocker entries.
   static List<Map<String, dynamic>> buildCssDisplayNoneRules(
     List<String> selectors,
   ) {
@@ -423,19 +445,13 @@ class FilterListService {
   }
 
   /// Buckets [hides] by their domain set so selectors sharing the same
-  /// `if-domain` list compile into one rule each (then chunked the
-  /// same way universal selectors are). Without this, easylist's
-  /// thousands of domain-scoped hide rules would emit one
-  /// content-blocker entry per selector — pushing WKContentRuleList
-  /// past its rule cap.
+  /// `if-domain` list compile into one rule each.
   static List<Map<String, dynamic>> buildDomainScopedHideRules(
     List<DomainHide> hides,
   ) {
     final byDomainKey = <String, List<String>>{};
     final domainSets = <String, List<String>>{};
     for (final h in hides) {
-      // Use a sorted-domain key so `[a.com, b.com]` and `[b.com, a.com]`
-      // bucket together.
       final sorted = [...h.domains]..sort();
       final key = sorted.join('|');
       byDomainKey.putIfAbsent(key, () => <String>[]).add(h.selector);
@@ -465,17 +481,12 @@ class FilterListService {
   }
 
   /// Parses uBlock `$removeparam=` rules into a set of parameter names.
-  /// Package-visible so it can be unit-tested without spinning up the
-  /// full service.
   Set<String> parseRemoveParams(String raw) {
     final params = <String>{};
     final lines = const AbpLineSplitter().convert(raw);
     for (final line in lines) {
       final trimmed = line.trim();
-      if (trimmed.isEmpty) {
-        continue;
-      }
-      if (trimmed.startsWith('!')) {
+      if (trimmed.isEmpty || trimmed.startsWith('!')) {
         continue;
       }
 
@@ -485,10 +496,7 @@ class FilterListService {
       }
 
       final value = match.group(1)!;
-
-      // Skip domain-specific rules (anything before $removeparam that looks
-      // like a domain name contains a dot).
-      final dollarIdx = trimmed.indexOf('\$removeparam');
+      final dollarIdx = trimmed.indexOf(r'$removeparam');
       if (dollarIdx > 0) {
         final prefix = trimmed.substring(0, dollarIdx).trim();
         if (prefix.contains('.') && !prefix.startsWith('*')) {
@@ -496,39 +504,27 @@ class FilterListService {
         }
       }
 
-      // Skip regex patterns.
       if (value.startsWith('/') && value.endsWith('/')) {
         continue;
       }
 
-      // Handle multi-param: foo|bar|baz
-      final parts = value.split('|');
-      for (final part in parts) {
-        final p = part.trim();
-        if (p.isNotEmpty) {
-          params.add(p.toLowerCase());
+      for (final part in value.split('|')) {
+        final param = part.trim();
+        if (param.isNotEmpty) {
+          params.add(param.toLowerCase());
         }
       }
     }
     return params;
   }
-
-  /// Returns the current update state from persisted metadata.
-  FilterListUpdateState readState() {
-    return FilterListUpdateState(
-      lastCheck: DateTime.tryParse(_prefs.getString(_kLastCheckKey) ?? ''),
-      lastSuccess: DateTime.tryParse(_prefs.getString(_kLastSuccessKey) ?? ''),
-      isUpdating: false,
-      errors: const [],
-      cookieHidingRules: _prefs.getInt(_kCookieHidingCountKey) ?? 0,
-      adHidingRules: _prefs.getInt(_kAdHidingCountKey) ?? 0,
-      networkBlockRules: _prefs.getInt(_kNetworkBlockCountKey) ?? 0,
-      removeParamsCount: _prefs.getInt(_kRemoveParamsCountKey) ?? 0,
-    );
-  }
 }
 
-// ── Supporting types ─────────────────────────────────────────────────────
+class _StoredState {
+  const _StoredState({required this.state, required this.removeParams});
+
+  final FilterListUpdateState state;
+  final Set<String> removeParams;
+}
 
 /// Category of an ABP filter list (ads or cookie/privacy).
 enum FilterCategory {
@@ -558,13 +554,9 @@ class AbpSource {
   final FilterCategory category;
 }
 
-/// Metadata for the `$removeparam` remote source.
 class _RemoveParamsSource {
   const _RemoveParamsSource({required this.name, required this.url});
 
-  /// Storage key for this source.
   final String name;
-
-  /// Remote URL to download from.
   final String url;
 }

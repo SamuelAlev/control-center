@@ -140,7 +140,7 @@ class _NodeState extends State<_Node> {
         ),
         if (open)
           Padding(
-            padding: const EdgeInsets.only(left: 16, top: 2),
+            padding: const EdgeInsetsDirectional.only(start: 16, top: 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -186,7 +186,7 @@ class _ScalarRow extends StatelessWidget {
       final other => ('$other', _scalar(tokens)),
     };
     return Padding(
-      padding: const EdgeInsets.only(left: 18),
+      padding: const EdgeInsetsDirectional.only(start: 18),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,6 +1,29 @@
+import 'dart:convert';
+
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
+
+/// A setup action Control Center can perform for an unavailable rig backend.
+enum RigBackendSetupAction {
+  /// Download and verify the pinned WebDriverAgent simulator runner.
+  iosAutomation('ios-automation');
+
+  const RigBackendSetupAction(this.wire);
+
+  /// Stable RPC wire value.
+  final String wire;
+
+  /// Parses [value], or null for an unknown future action.
+  static RigBackendSetupAction? fromWire(String? value) {
+    for (final action in values) {
+      if (action.wire == value) {
+        return action;
+      }
+    }
+    return null;
+  }
+}
 
 /// What one enclosure backend can do on this host, right now.
 ///
@@ -17,6 +40,7 @@ class RigBackendCapabilities {
     this.supportsTerminals = false,
     this.requiresInstall = false,
     this.installHint,
+    this.setupAction,
     this.note,
     this.missingImages = const [],
     this.version,
@@ -26,14 +50,20 @@ class RigBackendCapabilities {
   factory RigBackendCapabilities.unavailable(
     EnclosureBackend backend, {
     required String note,
+    Set<RigSurface> surfaces = const {},
     bool requiresInstall = false,
     String? installHint,
+    RigBackendSetupAction? setupAction,
+    String? version,
   }) => RigBackendCapabilities(
     backend: backend,
     available: false,
+    surfaces: surfaces,
     requiresInstall: requiresInstall,
     installHint: installHint,
+    setupAction: setupAction,
     note: note,
+    version: version,
   );
 
   /// Which backend this describes.
@@ -73,6 +103,9 @@ class RigBackendCapabilities {
   /// The command that would install it, shown verbatim.
   final String? installHint;
 
+  /// An in-product setup action that can make this backend available.
+  final RigBackendSetupAction? setupAction;
+
   /// Operator-facing note (accelerator in use, why it is unavailable).
   final String? note;
 
@@ -98,13 +131,14 @@ class RigBackendCapabilities {
     'available': available,
     'accelerated': backend.isAccelerated,
     // Stated explicitly so the UI can warn rather than let a user assume the
-    // mobile surface is contained the way the VM surfaces are.
+    // host-managed device surfaces are contained the way VM surfaces are.
     'enforcedEgress': backend.hasEnforcedEgress,
     'surfaces': [for (final s in surfaces) s.wire],
     'browserEngines': [for (final e in browserEngines) e.wire],
     'terminals': supportsTerminals,
     'requiresInstall': requiresInstall,
     if (installHint != null) 'installHint': installHint,
+    if (setupAction != null) 'setupAction': setupAction!.wire,
     if (note != null) 'note': note,
     if (missingImages.isNotEmpty) 'missingImages': missingImages,
     if (version != null) 'version': version,
@@ -144,6 +178,9 @@ class RigBackendCapabilities {
         supportsTerminals: json['terminals'] as bool? ?? false,
         requiresInstall: json['requiresInstall'] as bool? ?? false,
         installHint: json['installHint'] as String?,
+        setupAction: RigBackendSetupAction.fromWire(
+          json['setupAction'] as String?,
+        ),
         note: EnclosureBackend.fromWire(json['backend'] as String?) == null
             ? 'This server reports a backend ("${json['backend']}") this '
                   'build does not know. Update the app to use it.'
@@ -212,4 +249,13 @@ class RigCapabilities {
           RigBackendCapabilities.fromJson(b.cast<String, dynamic>()),
     ],
   );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RigCapabilities &&
+          jsonEncode(toJson()) == jsonEncode(other.toJson());
+
+  @override
+  int get hashCode => backends.length;
 }

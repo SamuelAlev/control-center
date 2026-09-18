@@ -160,7 +160,7 @@ class _MeetingEqualizerBarsState extends State<MeetingEqualizerBars>
         mainAxisSize: MainAxisSize.min,
         children: List.generate(widget.barCount, (i) {
           return Padding(
-            padding: EdgeInsets.only(left: i == 0 ? 0 : 2),
+            padding: EdgeInsetsDirectional.only(start: i == 0 ? 0 : 2),
             child: AnimatedBuilder(
               animation: _controller,
               builder: (context, _) {

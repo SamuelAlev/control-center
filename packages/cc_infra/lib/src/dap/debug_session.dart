@@ -96,6 +96,10 @@ class DebugSession {
   Completer<void>? _breakpointsSettled;
   DebugStop? _lastStop;
   bool _terminated = false;
+
+  /// An entry pause is released at most once. A second continue is what
+  /// resumes THROUGH the breakpoint the first continue was meant to reach.
+  var _entryReleased = false;
   final _output = <String>[];
   final _stopped = StreamController<DebugStop>.broadcast();
 
@@ -202,12 +206,7 @@ class DebugSession {
       // makes it run past them.
       final epoch = _stopEpoch;
       await waitForBreakpoints();
-      // A real stop (a breakpoint, usually) may have landed for this thread
-      // while the breakpoints settled — the release must not drive the
-      // thread THROUGH it, leaving a stop nobody can read a stack from.
-      if (_stopEpoch == epoch) {
-        await _resume(thread);
-      }
+      await _releaseEntryPause(thread, epoch);
     }
   }
 
@@ -219,6 +218,26 @@ class DebugSession {
       // The program may have terminated between the stop and this call; that
       // is a finished run, not a failure to report.
     }
+  }
+
+  /// Releases a PauseStart/entry pause exactly once, and never if a real stop
+  /// has already landed.
+  ///
+  /// Dart's adapter sends `stopped: entry` and may also auto-resume via
+  /// `readyToResume`. A second `continue` then applies to the breakpoint the
+  /// isolate has just hit — `stack` reports "thread is not paused" and the
+  /// frame the agent asked for is gone. Yielding first lets a breakpoint
+  /// already on the event queue be recorded before we decide to continue.
+  Future<void> _releaseEntryPause(int threadId, int epoch) async {
+    await Future<void>.delayed(Duration.zero);
+    if (_entryReleased ||
+        _terminated ||
+        _stopEpoch != epoch ||
+        _lastStop != null) {
+      return;
+    }
+    _entryReleased = true;
+    await _resume(threadId);
   }
 
   /// Ends the session and kills the adapter.
@@ -277,14 +296,9 @@ class DebugSession {
           if (_configured) {
             final epoch = _stopEpoch;
             unawaited(
-              waitForBreakpoints().then((_) {
-                // A real stop for this thread since scheduling means the
-                // isolate is already somewhere worth looking; the release
-                // would resume it THROUGH that stop.
-                if (_stopEpoch == epoch) {
-                  _resume(thread);
-                }
-              }),
+              waitForBreakpoints().then(
+                (_) => _releaseEntryPause(thread, epoch),
+              ),
             );
           } else {
             // Breakpoints are not in yet; releasing now would run past them.

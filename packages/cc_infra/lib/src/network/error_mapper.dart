@@ -1,6 +1,40 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:dio/dio.dart';
 
+/// Wire code when GitHub refuses to mint because the App installation is
+/// suspended. Distinct from a generic `auth_error`: retrying cannot help
+/// until a human resumes the installation or the caller uses a token.
+const String kGitHubInstallationSuspendedCode = 'installation_suspended';
+
+/// Whether [statusCode] + [data] is GitHub saying this App installation has
+/// been suspended (`403` + that phrasing). Used by the App client so it can
+/// stop minting without going through [mapDioException].
+bool isGitHubInstallationSuspendedResponse(int? statusCode, Object? data) {
+  if (statusCode != 403) {
+    return false;
+  }
+  final text = (data is Map ? data['message'] : data)?.toString().toLowerCase();
+  return text != null && text.contains('installation has been suspended');
+}
+
+/// Whether [error] is GitHub refusing a suspended App installation.
+bool isGitHubInstallationSuspendedError(Object error) {
+  if (error is NetworkException) {
+    return error.code == kGitHubInstallationSuspendedCode ||
+        isGitHubInstallationSuspendedResponse(
+          error.statusCode,
+          error.responseBody,
+        );
+  }
+  if (error is DioException) {
+    return isGitHubInstallationSuspendedResponse(
+      error.response?.statusCode,
+      error.response?.data,
+    );
+  }
+  return false;
+}
+
 /// Map dio exception.
 NetworkException mapDioException(DioException e) {
   final statusCode = e.response?.statusCode;
@@ -37,6 +71,15 @@ NetworkException mapDioException(DioException e) {
     );
   }
 
+  if (isGitHubInstallationSuspendedResponse(statusCode, e.response?.data)) {
+    return NetworkException(
+      _reason(e) ?? 'This GitHub App installation has been suspended',
+      statusCode: statusCode,
+      responseBody: _responseString(e.response?.data),
+      code: kGitHubInstallationSuspendedCode,
+    );
+  }
+
   if (statusCode == 401 || statusCode == 403) {
     return NetworkException(
       _reason(e) ?? 'Authentication failed',
@@ -61,6 +104,22 @@ NetworkException mapDioException(DioException e) {
       statusCode: 409,
       responseBody: _responseString(e.response?.data),
       code: 'conflict',
+    );
+  }
+
+  if (statusCode == 406) {
+    final body = _responseString(e.response?.data);
+    final tooLarge =
+        body != null &&
+        (body.contains('too_large') ||
+            body.contains('exceeded the maximum number of lines'));
+    return NetworkException(
+      tooLarge
+          ? 'Pull request diff exceeded the forge size limit'
+          : (_reason(e) ?? 'Not acceptable'),
+      statusCode: 406,
+      responseBody: body,
+      code: tooLarge ? 'diff_too_large' : 'not_acceptable',
     );
   }
 

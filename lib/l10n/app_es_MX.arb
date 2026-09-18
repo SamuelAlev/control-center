@@ -1,0 +1,46 @@
+{
+  "@@locale": "es_MX",
+  "dictationHoldToTalkDescription": "Mantén presionado el botón del micrófono o el atajo para dictar y suéltalo para detener. Si está desactivado, presiona una vez para iniciar y otra para detener.",
+  "keybindingPushToTalk": "Presionar para hablar",
+  "rigSurfaceComputer": "Computadora",
+  "rigStartHint": "Inicia una VM desechable que compartes con tus agentes en esta conversación. Se destruye al cerrarse y nada de lo que ocurre en ella toca tu computadora.",
+  "rigTabNeedsConversation": "Abre primero una conversación: una máquina pertenece a una, para que tus agentes y tú vean la misma pantalla.",
+  "rigMenuComputer": "Computadora",
+  "watchVideoOn": "Ver video en {provider}",
+  "@watchVideoOn": {
+    "description": "Fallback label for an embedded video that can't render inline; tapping opens the provider's site in the browser.",
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "errorReportingTitle": "Compartir informes de fallas",
+  "errorReportingOnSubtitle": "Se envían diagnósticos de fallas, errores y rendimiento para ayudar a corregir errores (solo en versiones de producción).",
+  "errorReportingOffSubtitle": "Los diagnósticos están desactivados. No se envía ningún informe de fallas ni de errores.",
+  "onboardingDiagnosticsSubtitle": "Envía diagnósticos de fallas, errores y rendimiento para ayudarnos a solucionar problemas más rápido (solo en versiones de producción). Puedes cambiar esto en cualquier momento en Ajustes → Privacidad.",
+  "meetingToolbarHoldToStop": "Mantén presionado para detener la grabación",
+  "generalSectionComputers": "Computadoras",
+  "generalComputersEmpty": "Ninguna computadora abierta",
+  "keepAwakeTitle": "Mantener la computadora activa mientras los agentes trabajan",
+  "keepAwakeOnSubtitle": "La computadora no se suspenderá mientras un agente esté trabajando",
+  "keepAwakeOffSubtitle": "La computadora puede suspenderse aunque un agente esté trabajando",
+  "modalityVideo": "Video",
+  "profileDeliveryMetrics": "Métricas de entrega",
+  "profileMetricsSample": "PR analizados: {count}",
+  "profileMergeRate": "Tasa de fusión",
+  "profileReviewCoverage": "Cobertura de revisión",
+  "profilePrSize": "Tamaño del PR",
+  "profileTimeToMerge": "Tiempo hasta la fusión",
+  "profileFirstReview": "Tiempo hasta la primera revisión",
+  "profileMetricsTruncated": "Los percentiles se calculan a partir de una muestra limitada de las solicitudes de incorporación de cambios disponibles.",
+  "profileLinesChanged": "{count} líneas",
+  "profileDurationMinutes": "{count} min",
+  "profileDurationHours": "{count} h",
+  "profileDurationDaysHours": "{days} d {hours} h",
+  "profilePercentiles": "p50 {median} · p90 {p90}",
+  "profileTeamMembers": "Miembros: {count}",
+  "noPrsByTeamInWorkspace": "No hay pull requests de {team} en este espacio de trabajo",
+  "profilePrStateFilterLabel": "Filtrar pull requests por estado",
+  "noProfilePrsMatchSearchHint": "Prueba con otro título o número de pull request"
+}

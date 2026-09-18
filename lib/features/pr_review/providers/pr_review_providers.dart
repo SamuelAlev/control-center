@@ -816,6 +816,24 @@ final repoPermissionProvider = FutureProvider.autoDispose
       }
     });
 
+/// Whether the current user has write/admin permission on the PR's repo.
+final prRepoWriteAccessProvider = Provider.autoDispose.family<bool, PrRef>((
+  ref,
+  pr,
+) {
+  final prEntity = ref.watch(prDetailProvider(pr)).value;
+  if (prEntity == null) {
+    return false;
+  }
+  final parts = prEntity.repoFullName.split('/');
+  final owner = parts.isNotEmpty ? parts[0] : '';
+  final repoName = parts.length > 1 ? parts[1] : '';
+  return ref
+          .watch(repoPermissionProvider((owner: owner, repo: repoName)))
+          .whenOrNull(data: (perm) => perm == 'admin' || perm == 'write') ??
+      false;
+});
+
 /// Whether the current user may edit the given PR's title/body: the PR author,
 /// or a user with write/admin permission on the repo. Mirrors the derivation
 /// behind the title-bar merge/close actions.
@@ -835,13 +853,5 @@ final prCanEditProvider = Provider.autoDispose.family<bool, PrRef>((
       );
   final isAuthor =
       login.isNotEmpty && prEntity.author?.login.toLowerCase() == login;
-  final parts = prEntity.repoFullName.split('/');
-  final owner = parts.isNotEmpty ? parts[0] : '';
-  final repoName = parts.length > 1 ? parts[1] : '';
-  final hasWriteAccess =
-      ref
-          .watch(repoPermissionProvider((owner: owner, repo: repoName)))
-          .whenOrNull(data: (perm) => perm == 'admin' || perm == 'write') ??
-      false;
-  return isAuthor || hasWriteAccess;
+  return isAuthor || ref.watch(prRepoWriteAccessProvider(pr));
 });

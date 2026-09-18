@@ -63,27 +63,21 @@ dependencies:
   # Transport-agnostic RPC client + channel transports (web-safe). The desktop in REMOTE mode, the full web build and cc_remote dial a cc-server through this. The server half lives in cc_host. Workspace member.
   cc_rpc:
     path: packages/cc_rpc
-  # Server-side RPC kernel (VM-only): per-connection sessions, repo-op dispatch, subscriptions, rate limiting, tool policy, WSS server transport. Embedded by the desktop "be your own server" path and apps/cc_server. Workspace member.
-  cc_host:
-    path: packages/cc_host
-  # Server-side VM-only infrastructure adapters (pure dart:io impls of cc_domain ports: git/process/GitHub-CLI, schema validation, adapter/ACP detection).
-  # Kept SEPARATE from the cc_host kernel and free of Flutter/cc_natives so both link into the Flutter-free cc_server binary. Workspace member.
+  # Server-side VM-only infrastructure adapters. The thin client reaches a
+  # handful of IO seams only (CcPaths, CcInfraLog, local cc_server spawn,
+  # Tailscale discovery, process-meeting collector) — never Drift, dio
+  # forges, or dispatch. Workspace member.
   cc_infra:
     path: packages/cc_infra
-  # Remote data layer (web-safe): repository adapters that read/write over the cc_rpc client. The data source for the web build + desktop REMOTE mode; desktop LOCAL keeps the Drift repositories. Workspace member.
+  # Remote data layer (web-safe): repository adapters that read/write over the
+  # cc_rpc client. Every client (desktop LOCAL/REMOTE, web, phone) uses these.
   cc_data:
     path: packages/cc_data
-  # Pure-Dart persistence: the Drift schema (AppDatabase + tables + DAOs) lives here so the same database runs on the desktop and a dart build cli server.
-  cc_persistence:
-    path: packages/cc_persistence
-  # Pure-Dart app-server composition (RPC catalog + LocalRpcServer + event forwarding + secrets port). The desktop's in-process server uses it today; apps/cc_server is the same composition with no Flutter. Workspace member.
-  cc_server_core:
-    path: packages/cc_server_core
-  # The MCP tool surface (agent-facing API). The desktop registers these tools into its local MCP HTTP server; the wiring providers stay in lib but the tool classes + dispatcher live here so the headless cc_server reuses them.
-  cc_mcp:
-    path: packages/cc_mcp
-  # The MCP CLIENT — connects to EXTERNAL MCP servers and bridges their tools into the local registry, plus the cross-cutting tool ecosystem (BM25 tool discovery, capability tiers, config discovery, OAuth, background processes, semantic code search, advisor/watchdog).
-  # Pure Dart; links into both the desktop and the headless cc_server.
+  # The MCP CLIENT — connects to EXTERNAL MCP servers and bridges their tools
+  # into the local registry. Pure Dart; links into both the desktop and the
+  # headless cc_server.
+  cc_mcp_client:
+    path: packages/cc_mcp_client
   # TextMate-grammar syntax highlighting (pure-Dart Shiki port; replaced the
   # unmaintained `highlight` hljs port). Themed by the custom CC theme and
   # wired through lib/shared/syntax/ — grammars, language table, tokenizer
@@ -226,6 +220,17 @@ dependency_overrides:
   device_info_plus: ^13.2.0
 
 dev_dependencies:
+  # Server packages the root *tests* import (catalog, isolation, MCP tools).
+  # Production `lib/` must not — architecture_constraints_test forbids it and
+  # test/core/root_pubspec_server_deps_test.dart keeps them out of dependencies.
+  cc_host:
+    path: packages/cc_host
+  cc_persistence:
+    path: packages/cc_persistence
+  cc_server_core:
+    path: packages/cc_server_core
+  cc_mcp:
+    path: packages/cc_mcp
   sentry_dart_plugin: ^3.4.0
   # Pure-Dart Ed25519 for the local updater harness (tool/fake_update_server.dart
   # signs a fake Sparkle appcast with a throwaway dev key). Already in the graph

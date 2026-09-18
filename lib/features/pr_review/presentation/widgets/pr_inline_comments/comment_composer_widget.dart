@@ -27,6 +27,7 @@ class PrCommentComposer extends ConsumerStatefulWidget {
     required this.onCancel,
     this.onSubmitBatched,
     this.reviewInProgress = false,
+    this.onSuggest,
     this.placeholder = 'Leave a comment…',
     this.autofocus = true,
     this.initialText,
@@ -38,6 +39,10 @@ class PrCommentComposer extends ConsumerStatefulWidget {
   /// Queues the comment for the next review submission instead of posting it.
   /// Null hides the action (nothing here can batch — e.g. no PR connected).
   final void Function(String body)? onSubmitBatched;
+
+  /// Switches this anchored comment to an editable code suggestion, preserving
+  /// the comment draft already entered by the reviewer.
+  final ValueChanged<String>? onSuggest;
 
   /// Whether comments are already queued, which is the difference between
   /// "start a review" and "add to the one you started".
@@ -157,6 +162,11 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
     widget.onSubmit(text);
   }
 
+  void _suggest() {
+    _closeSlashMenu();
+    widget.onSuggest?.call(_ctrl.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens =
@@ -175,7 +185,7 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
         border: Border.all(color: tokens.borderSecondary),
         boxShadow: AppShadows.soft,
       ),
-      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 8, 10),
       child: Focus(
         canRequestFocus: false,
         onKeyEvent: (_, e) {
@@ -198,7 +208,7 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
             onSubmitted: (_) =>
                 _submit(batched: widget.onSubmitBatched != null),
             footer: (context) => Padding(
-              padding: const EdgeInsets.only(top: 8, right: 6),
+              padding: const EdgeInsetsDirectional.only(top: 8, end: 6),
               child: _submitRow(context),
             ),
           ),
@@ -214,18 +224,41 @@ class _PrCommentComposerState extends ConsumerState<PrCommentComposer> {
     // review at once. The batched one is primary — it is what a reviewer
     // working through a diff almost always means.
     if (widget.onSubmitBatched == null) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: _SendButton(onPressed: () => _submit(batched: false)),
+      if (widget.onSuggest == null) {
+        return Align(
+          alignment: AlignmentDirectional.centerEnd,
+          child: _SendButton(onPressed: () => _submit(batched: false)),
+        );
+      }
+      return Wrap(
+        alignment: WrapAlignment.end,
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          CcButton(
+            onPressed: _suggest,
+            variant: CcButtonVariant.secondary,
+            size: CcButtonSize.sm,
+            child: Text(l10n.addASuggestion),
+          ),
+          _SendButton(onPressed: () => _submit(batched: false)),
+        ],
       );
     }
-    // Wrap, not Row: three labelled actions do not fit a diff panel narrowed to
-    // a side-by-side window, and an overflowing Row would clip the primary one.
+    // Wrap, not Row: up to four labelled actions do not fit a diff panel
+    // narrowed to a side-by-side window, and a Row would clip the primary one.
     return Wrap(
       alignment: WrapAlignment.end,
       spacing: 6,
       runSpacing: 6,
       children: [
+        if (widget.onSuggest != null)
+          CcButton(
+            onPressed: _suggest,
+            variant: CcButtonVariant.ghost,
+            size: CcButtonSize.sm,
+            child: Text(l10n.addASuggestion),
+          ),
         CcButton(
           onPressed: widget.onCancel,
           variant: CcButtonVariant.ghost,

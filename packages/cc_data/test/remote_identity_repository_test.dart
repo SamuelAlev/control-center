@@ -118,16 +118,19 @@ void main() {
       expect(call.args.containsKey('git_author_email'), isFalse);
     });
 
-    test('markOnboardingFinished names the op and sends no arguments', () async {
-      // The target is always the session's own user, server-side. A `user_id`
-      // argument here would be a way to mark somebody else onboarded.
-      host.callResults['users.markOnboardingFinished'] = {
-        'onboarding_finished_at': '2026-01-02T03:04:05.000',
-      };
-      final repo = RemoteIdentityRepository(client);
-      await repo.markOnboardingFinished();
-      expect(host.lastCall('users.markOnboardingFinished')!.args, isEmpty);
-    });
+    test(
+      'markOnboardingFinished names the op and sends no arguments',
+      () async {
+        // The target is always the session's own user, server-side. A `user_id`
+        // argument here would be a way to mark somebody else onboarded.
+        host.callResults['users.markOnboardingFinished'] = {
+          'onboarding_finished_at': '2026-01-02T03:04:05.000',
+        };
+        final repo = RemoteIdentityRepository(client);
+        await repo.markOnboardingFinished();
+        expect(host.lastCall('users.markOnboardingFinished')!.args, isEmpty);
+      },
+    );
 
     test('me decodes onboarding_finished_at', () async {
       // The flag the onboarding gate reads: it lives on the USER, not in a
@@ -392,6 +395,47 @@ void main() {
       expect(entries.first.action, 'login');
       final sub = host.lastSubscribe!;
       expect(sub.args['workspace_id'], 'ws-1');
+    });
+
+    test('watchActivityPage sends the cursor and decodes the total', () async {
+      host.snapshotFor('activity.watchForWorkspace', {
+        'entries': [
+          {
+            'id': 'act-2',
+            'workspace_id': 'ws-1',
+            'user_id': 'u-1',
+            'action': 'agents.upsert',
+          },
+        ],
+        'total': 47,
+        'start': 11,
+        'next_cursor': 'next-token',
+        'prev_cursor': null,
+        'has_more': true,
+      });
+      final repo = RemoteIdentityRepository(client);
+      final page = await repo
+          .watchActivityPage(
+            'ws-1',
+            cursor: 'page-token',
+            query: 'ceo',
+            ip: '203.0.113.7',
+          )
+          .first;
+      expect(page.entries.single.id, 'act-2');
+      expect(page.total, 47);
+      expect(page.start, 11);
+      expect(page.end, 11);
+      expect(page.nextCursor, 'next-token');
+      expect(page.prevCursor, isNull);
+      expect(page.hasMore, isTrue);
+      expect(host.lastSubscribe!.args, {
+        'workspace_id': 'ws-1',
+        'cursor': 'page-token',
+        'limit': 10,
+        'query': 'ceo',
+        'ip': '203.0.113.7',
+      });
     });
   });
 }

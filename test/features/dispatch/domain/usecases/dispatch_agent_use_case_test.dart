@@ -266,7 +266,7 @@ void main() {
     );
 
     test('uses explicit adapterId over agent adapterId', () async {
-      final agent = _testAgent(adapterId: 'claude-code');
+      final agent = _testAgent(adapterId: 'cc-harness');
       agentRepo.addAgent(agent);
 
       final useCase = createUseCase();
@@ -274,11 +274,11 @@ void main() {
         workspaceId: _ws,
         agentId: agent.id,
         prompt: 'test',
-        adapterId: 'pi-dev',
+        adapterId: 'claude-code',
       );
 
-      expect(result.resolvedAdapterId, 'pi-dev');
-      expect(result.cliName, 'pi');
+      expect(result.resolvedAdapterId, 'claude-code');
+      expect(result.cliName, 'claude');
     });
 
     test('an unknown adapter id resolves to the built-in loop', () async {

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_hover_target.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -36,8 +35,10 @@ String? selectedSpaceIdFromLocation(String location, String? workspaceId) {
 /// A space row with its live status, unread signal and archive affordances,
 /// shared by the global sidebar's inline space list
 /// (`ConversationsSidebarSection`) and the spaces directory page's filtered
-/// list (`SpacesSubSidebar`).
-class SpaceSidebarItem extends ConsumerWidget {
+/// list (`SpacesSubSidebar`). Implements [CcFluidHoverTarget] so the enclosing
+/// [CcSidebarGroup] can wash the row with the same travelling highlight as
+/// Workspace nav.
+class SpaceSidebarItem extends ConsumerWidget implements CcFluidHoverTarget {
   /// Creates a [SpaceSidebarItem].
   const SpaceSidebarItem({
     super.key,
@@ -47,6 +48,7 @@ class SpaceSidebarItem extends ConsumerWidget {
     this.muted = false,
     this.conversationCount,
     this.runningShownOnConversations = false,
+    this.unreadShownOnConversations = false,
   });
 
   /// The space to render.
@@ -81,6 +83,20 @@ class SpaceSidebarItem extends ConsumerWidget {
   /// with no conversation id) keeps its signal here rather than losing it.
   final bool runningShownOnConversations;
 
+  /// Whether a visible conversation row beneath this one already carries the
+  /// unread dot for the unseen agent work that makes this space unread.
+  ///
+  /// Same placement rule as [runningShownOnConversations]: the signal belongs
+  /// on the most specific row the user can see. When the children carry it,
+  /// this row drops the idle unread dot so one unseen reply does not light
+  /// both the parent and the child. A never-listed single-conversation space
+  /// (and unread on an archived conversation no visible row can claim) keeps
+  /// the dot here.
+  final bool unreadShownOnConversations;
+
+  @override
+  bool get fluidHoverEnabled => true;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -88,7 +104,10 @@ class SpaceSidebarItem extends ConsumerWidget {
     final status = ref.watch(spaceStatusProvider(space.id));
     // Muted agent rows never read the unread provider — their notifications are
     // deliberately suppressed.
-    final unread = muted ? false : ref.watch(spaceUnreadProvider(space.id));
+    final unread = muted
+        ? false
+        : (!unreadShownOnConversations &&
+              ref.watch(spaceUnreadProvider(space.id)));
     final running =
         status == SpaceStatus.running && !runningShownOnConversations;
 
@@ -101,40 +120,18 @@ class SpaceSidebarItem extends ConsumerWidget {
       selected: selected,
     );
 
-    return GestureDetector(
-      onSecondaryTapDown: (details) =>
-          _showArchiveMenu(context, ref, details.globalPosition),
-      // Touch parity: a long-press is the mobile right-click, so it OPENS the
-      // same menu — archiving (or any row action) always takes the deliberate
-      // second tap, never the hold itself.
-      onLongPressStart: (details) =>
-          _showArchiveMenu(context, ref, details.globalPosition),
-      // Dwelling on the row opens a flyout to its right with the space's live
-      // state (which agents and subagents are running, for how long, how much
-      // context is left). The row itself is unchanged; the card is additive.
-      child: SpaceHoverTarget(
-        space: space,
-        child: SpaceRow(
-          leading: leading,
-          label: label,
-          selected: selected,
-          status: status,
-          unread: unread,
-          leadingHandlesRunning: true,
-          muted: muted,
-          count: conversationCount,
-          onPress: onPress,
-        ),
-      ),
-    );
-  }
-
-  void _showArchiveMenu(BuildContext context, WidgetRef ref, Offset position) {
-    final l10n = AppLocalizations.of(context);
-    showCcMenuAt(
-      context: context,
-      position: position,
-      items: [
+    return SpaceRow(
+      leading: leading,
+      label: label,
+      selected: selected,
+      status: status,
+      unread: unread,
+      leadingHandlesRunning: true,
+      muted: muted,
+      count: conversationCount,
+      onPress: onPress,
+      menuSemanticLabel: l10n.spaceActions,
+      menuItems: [
         CcMenuItem(
           label: l10n.renameSpace,
           icon: AppIcons.pencil,
@@ -199,9 +196,11 @@ class SpaceSidebarItem extends ConsumerWidget {
 /// with `accentOn` content, the same hover/pressed washes and padding — so
 /// spaces read as first-class sidebar items. It can't be a [CcSidebarItem]
 /// itself because that widget's icon-only API hosts no [leading] widget (an
-/// agent avatar / PR badge / spinner). (The 4px inter-item gap comes from the
-/// enclosing [CcSidebarGroup], same as [CcSidebarItem].)
-class SpaceRow extends StatelessWidget {
+/// agent avatar / PR badge / spinner). Implements [CcFluidHoverTarget] so a
+/// [CcSidebarGroup] of space rows shares the same travelling hover wash as
+/// Workspace nav. (The 4px inter-item gap comes from the enclosing
+/// [CcSidebarGroup], same as [CcSidebarItem].)
+class SpaceRow extends StatelessWidget implements CcFluidHoverTarget {
   /// Creates a [SpaceRow].
   const SpaceRow({
     super.key,
@@ -214,6 +213,8 @@ class SpaceRow extends StatelessWidget {
     required this.onPress,
     this.muted = false,
     this.count,
+    this.menuItems,
+    this.menuSemanticLabel,
   });
 
   /// The leading slot: a spinner while running, else the PR badge / pencil.
@@ -245,10 +246,37 @@ class SpaceRow extends StatelessWidget {
   /// accent unread/needs-input signals trailing the row). Null hides it.
   final int? count;
 
+  /// Hover-revealed overflow actions (rename / archive / …). Null hides the
+  /// trigger. The items themselves are supplied by the row that owns the
+  /// verbs — this widget only hosts the menu.
+  final List<CcMenuItem>? menuItems;
+
+  /// Accessible name for [menuItems]' icon-only trigger.
+  final String? menuSemanticLabel;
+
   /// Tap handler.
   final VoidCallback onPress;
 
-  Color _background(DesignSystemTokens t, Set<WidgetState> states) {
+  @override
+  bool get fluidHoverEnabled => true;
+
+  /// Hover always reveals the overflow. Focus only does when the last
+  /// interaction was a keyboard traversal — a mouse click focuses the
+  /// trigger (and the menu restores that focus on close), and treating
+  /// that like hover would leave the dots visible after the pointer left.
+  bool _overflowRevealed(Set<WidgetState> states) {
+    if (states.contains(WidgetState.hovered)) {
+      return true;
+    }
+    return states.contains(WidgetState.focused) &&
+        FocusModality.instance.isKeyboard;
+  }
+
+  Color _background(
+    DesignSystemTokens t,
+    Set<WidgetState> states, {
+    required bool fluidActive,
+  }) {
     if (selected) {
       return t.bgBrandSolid;
     }
@@ -256,7 +284,10 @@ class SpaceRow extends StatelessWidget {
       return t.hoverStrong;
     }
     if (states.contains(WidgetState.hovered)) {
-      return t.hover;
+      // The enclosing [CcFluidHover] paints the wash once; the row stays
+      // transparent while it is the nearest target so the overlay is not
+      // double-painted. Own-fill hover is the fallback outside a group.
+      return fluidActive ? t.hover.withValues(alpha: 0) : t.hover;
     }
     // Alpha-0 hover colour (not transparent-black), mirroring CcSidebarItem, so
     // the AnimatedContainer lerps only alpha on hover↔idle (no dark-gray flash).
@@ -299,9 +330,16 @@ class SpaceRow extends StatelessWidget {
               // animates the trailing inset drops to 0 so the fixed leading
               // glyph + gap can't overflow the narrowing row.
               height: kCcSidebarItemExtent,
-              padding: EdgeInsets.only(left: 9, right: transitioning ? 0 : 10),
+              padding: EdgeInsetsDirectional.only(
+                start: 9,
+                end: transitioning ? 0 : 10,
+              ),
               decoration: BoxDecoration(
-                color: _background(t, states),
+                color: _background(
+                  t,
+                  states,
+                  fluidActive: CcFluidHover.isItemActive(context),
+                ),
                 borderRadius: AppRadii.brSm,
                 // A 1px border is reserved on every row (alpha-0 when idle) so the
                 // layout never shifts when [selected] toggles the brand border on —
@@ -366,6 +404,17 @@ class SpaceRow extends StatelessWidget {
                       selected: selected,
                     ),
                   ],
+                  if (menuItems != null &&
+                      menuItems!.isNotEmpty &&
+                      menuSemanticLabel != null &&
+                      !transitioning)
+                    SpaceRowOverflowMenu(
+                      items: menuItems!,
+                      semanticLabel: menuSemanticLabel!,
+                      color: contentColor,
+                      revealed: _overflowRevealed(states),
+                      selected: selected,
+                    ),
                 ],
               ),
             );

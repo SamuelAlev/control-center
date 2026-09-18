@@ -199,6 +199,34 @@ void main() {
     );
     expect(find.byType(CcTooltip), findsOneWidget);
   });
+
+  testWidgets('dots-three matches the 16px toolbar glyph', (tester) async {
+    const dots = IconData(
+      0xe1fe,
+      fontFamily: 'PhosphorRegular',
+      fontPackage: 'cc_ui',
+    );
+    await tester.pumpWidget(
+      ccTestApp(
+        const Align(
+          alignment: Alignment.topLeft,
+          child: CcIconButton(
+            icon: dots,
+            onPressed: null,
+            semanticLabel: 'More',
+          ),
+        ),
+      ),
+    );
+
+    final paint = tester.widget<CustomPaint>(
+      find.descendant(
+        of: find.byType(CcIcon),
+        matching: find.byType(CustomPaint),
+      ),
+    );
+    expect(paint.size, const Size(16, 16));
+  });
 }
 
 void _noop() {}

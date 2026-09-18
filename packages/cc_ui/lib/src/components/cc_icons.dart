@@ -74,6 +74,7 @@ abstract final class CcIcons {
     0xe13a,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData circleCheck = IconData(
     0xe184,

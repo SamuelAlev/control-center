@@ -78,19 +78,28 @@ class _AdaptersSettingsState extends ConsumerState<AdaptersSettings> {
             child: Text(l10n.refresh),
           ),
         ],
-        child: ListView(
+        // One box, rather than a lazy sliver per section. These sections have
+        // radically different heights (the selected provider can expose
+        // hundreds of model rows). A heterogeneous SliverList estimates its
+        // max extent from whichever sections are currently laid out, so the
+        // desktop scrollbar thumb changes length while scrolling. Laying out
+        // the page column gives the ScrollPosition its exact extent up front.
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          children: [
-            _detectedCard(context, l10n, detected),
-            const SizedBox(height: AppSpacing.xl),
-            _defaultsCard(context, l10n, available),
-            const SizedBox(height: AppSpacing.xl),
-            // Model catalog & provider governance (PRD 05).
-            const ProvidersModelsSection(),
-            const SizedBox(height: AppSpacing.xl),
-            // Usage & cost summary (PRD 05).
-            const UsageSummaryCard(),
-          ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _detectedCard(context, l10n, detected),
+              const SizedBox(height: AppSpacing.xl),
+              _defaultsCard(context, l10n, available),
+              const SizedBox(height: AppSpacing.xl),
+              // Model catalog & provider governance (PRD 05).
+              const ProvidersModelsSection(),
+              const SizedBox(height: AppSpacing.xl),
+              // Usage & cost summary (PRD 05).
+              const UsageSummaryCard(),
+            ],
+          ),
         ),
       ),
     );

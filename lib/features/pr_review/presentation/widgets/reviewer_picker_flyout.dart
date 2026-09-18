@@ -9,9 +9,10 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_team_avatar.dart';
+import 'package:control_center/shared/widgets/github_team_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 PrReviewerCandidate _candidateFor(PrReviewer r) => switch (r) {
@@ -286,8 +287,7 @@ class _ReviewerPickerHeaderState extends ConsumerState<ReviewerPickerHeader> {
       _loading = async.isLoading && _candidates.isEmpty;
       _me = ref.watch(currentUserLoginProvider);
       _suggested =
-          ref.watch(suggestedReviewersProvider(widget.prRef)).value ??
-          const [];
+          ref.watch(suggestedReviewersProvider(widget.prRef)).value ?? const [];
     }
     if (widget.compact && !widget.enabled) {
       return const SizedBox.shrink();
@@ -440,6 +440,7 @@ class _ReviewerPickerHeaderState extends ConsumerState<ReviewerPickerHeader> {
     final selected = _selected.contains(c.selectionKey);
     return _ReviewerFlyoutRow(
       candidate: c,
+      organization: widget.prRef.repoFullName.split('/').first,
       selected: selected,
       locked: locked,
       state: selected ? _stateByIdentity[c.selectionKey] : null,
@@ -451,6 +452,7 @@ class _ReviewerPickerHeaderState extends ConsumerState<ReviewerPickerHeader> {
 class _ReviewerFlyoutRow extends StatelessWidget {
   const _ReviewerFlyoutRow({
     required this.candidate,
+    required this.organization,
     required this.selected,
     required this.locked,
     required this.state,
@@ -458,6 +460,7 @@ class _ReviewerFlyoutRow extends StatelessWidget {
   });
 
   final PrReviewerCandidate candidate;
+  final String organization;
   final bool selected;
   final bool locked;
   final PrReviewSubmissionState? state;
@@ -475,7 +478,9 @@ class _ReviewerFlyoutRow extends StatelessWidget {
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         return Container(
-          color: hovered && !locked ? t.bgPrimaryHover : Colors.transparent,
+          color: hovered && !locked
+              ? t.bgPrimaryHover
+              : const Color(0x00000000),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           child: Row(
             children: [
@@ -536,7 +541,11 @@ class _ReviewerFlyoutRow extends StatelessWidget {
     );
 
     if (isTeam) {
-      return row;
+      return GitHubTeamHoverTarget(
+        organization: organization,
+        slug: candidate.key,
+        child: row,
+      );
     }
     return GitHubUserHoverTarget(login: candidate.key, child: row);
   }

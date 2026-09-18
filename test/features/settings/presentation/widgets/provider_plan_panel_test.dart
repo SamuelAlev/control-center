@@ -149,10 +149,49 @@ void main() {
       expect(find.textContaining('usage'), findsNothing);
     });
 
+    testWidgets('two accounts of the same plan page by label', (tester) async {
+      await _pump(
+        tester,
+        providerId: 'codex',
+        accountLabel: 'plus@openai.com',
+        usage: [
+          SubscriptionUsage(
+            providerId: 'codex',
+            displayName: 'Codex',
+            status: SubscriptionStatus.ok,
+            accountId: 'oauth:pro@openai.com',
+            accountLabel: 'pro@openai.com',
+            windows: const [
+              SubscriptionWindow(id: '5h', label: '5h', usedFraction: 0.9),
+            ],
+            fetchedAt: DateTime.utc(2030),
+          ),
+          SubscriptionUsage(
+            providerId: 'codex',
+            displayName: 'Codex',
+            status: SubscriptionStatus.ok,
+            accountId: 'oauth:plus@openai.com',
+            accountLabel: 'plus@openai.com',
+            windows: const [
+              SubscriptionWindow(id: '5h', label: '5h', usedFraction: 0.12),
+            ],
+            fetchedAt: DateTime.utc(2030),
+          ),
+        ],
+      );
+
+      expect(find.text('plus@openai.com'), findsOneWidget);
+      expect(find.text('12%'), findsOneWidget);
+      expect(find.text('90%'), findsNothing);
+    });
+
     test('only plan providers map to a usage source', () {
-      // Claude/Codex usage comes from the CLIs' own logins — a different
+      // Claude usage still comes from the CLI's own login — a different
       // account from anything connected here, so it must not be shown per-tile.
-      expect(harnessPlanUsageIds.keys, containsAll(['zai-coding', 'kimi-code']));
+      expect(
+        harnessPlanUsageIds.keys,
+        containsAll(['zai-coding', 'kimi-code', 'cursor', 'codex']),
+      );
       expect(harnessPlanUsageIds.containsKey('anthropic'), isFalse);
       expect(harnessPlanUsageIds.containsKey('openai'), isFalse);
       expect(harnessPlanUsageIds.containsKey('moonshotai'), isFalse);

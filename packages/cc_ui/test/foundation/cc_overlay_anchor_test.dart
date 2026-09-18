@@ -142,39 +142,45 @@ void main() {
     },
   );
 
-  testWidgets('caps an over-tall overlay to the viewport so it can scroll', (
-    tester,
-  ) async {
-    final controller = CcOverlayController();
-    addTearDown(controller.dispose);
-    const contentKey = Key('tall-content');
-    await tester.pumpWidget(
-      ccTestApp(
-        Center(
-          child: CcOverlayAnchor(
-            controller: controller,
-            target: const SizedBox(width: 120, height: 40),
-            // Far taller than the 600px test surface.
-            overlayBuilder: (context, size) =>
-                const SizedBox(key: contentKey, width: 200, height: 2000),
+  testWidgets(
+    'caps an over-tall overlay to the gap beside the trigger so it can scroll',
+    (tester) async {
+      final controller = CcOverlayController();
+      addTearDown(controller.dispose);
+      const triggerKey = Key('trigger');
+      const contentKey = Key('tall-content');
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcOverlayAnchor(
+              controller: controller,
+              target: const SizedBox(key: triggerKey, width: 120, height: 40),
+              // Far taller than the 600px test surface.
+              overlayBuilder: (context, size) =>
+                  const SizedBox(key: contentKey, width: 200, height: 2000),
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    controller.show();
-    await tester.pumpAndSettle();
+      controller.show();
+      await tester.pumpAndSettle();
 
-    final screen = tester.getSize(find.byType(Overlay).first);
-    final rect = tester.getRect(find.byKey(contentKey));
-    expect(rect.top, greaterThanOrEqualTo(kCcOverlayMargin - 0.5));
-    expect(
-      rect.bottom,
-      lessThanOrEqualTo(screen.height - kCcOverlayMargin + 0.5),
-    );
-    expect(
-      rect.height,
-      lessThanOrEqualTo(screen.height - kCcOverlayMargin * 2 + 0.5),
-    );
-  });
+      final screen = tester.getSize(find.byType(Overlay).first);
+      final trigger = tester.getRect(find.byKey(triggerKey));
+      final rect = tester.getRect(find.byKey(contentKey));
+      expect(rect.top, greaterThanOrEqualTo(kCcOverlayMargin - 0.5));
+      expect(
+        rect.bottom,
+        lessThanOrEqualTo(screen.height - kCcOverlayMargin + 0.5),
+      );
+      // Stays on one side of the trigger rather than covering it.
+      expect(rect.overlaps(trigger), isFalse);
+      expect(
+        rect.top >= trigger.bottom - 0.5 || rect.bottom <= trigger.top + 0.5,
+        isTrue,
+      );
+      expect(rect.height, lessThan(screen.height - trigger.height));
+    },
+  );
 }

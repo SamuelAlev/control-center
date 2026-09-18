@@ -351,6 +351,7 @@ jobs:
         run: |
           dart run build_runner build --delete-conflicting-outputs
           flutter gen-l10n
+          (cd apps/cc_remote && flutter gen-l10n)
 
       - name: Fail if anything changed
         run: |
@@ -358,6 +359,7 @@ jobs:
             echo "::error::Committed generated code is stale. Run:"
             echo "  fvm dart run build_runner build --delete-conflicting-outputs"
             echo "  fvm flutter gen-l10n"
+            echo "  (cd apps/cc_remote && fvm flutter gen-l10n)"
             echo "and commit the result."
             git --no-pager diff --stat
             exit 1
@@ -442,9 +444,21 @@ jobs:
             exit 0
           fi
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "::warning title=Server e2e skipped::No natives cache for these inputs. This PR changes a native input, or main's cache was evicted — the server-boot suites did not run."
-            echo "run=false"  >> "$GITHUB_OUTPUT"
-            echo "build=false" >> "$GITHUB_OUTPUT"
+            native_touch=false
+            git fetch --no-tags --depth=1 origin "${{ github.base_ref }}" || true
+            changed="$(git diff --name-only "origin/${{ github.base_ref }}...HEAD" || git diff --name-only HEAD)"
+            if printf '%s\n' "$changed" | grep -Eq '^(packages/cc_natives/|scripts/natives/|packages/cc_server_core/lib/src/cc_server_runtime\.dart|packages/cc_server_core/lib/src/native_preflight\.dart)'; then
+              native_touch=true
+            fi
+            if [ "$native_touch" = "true" ]; then
+              echo "::error title=Server e2e required::This PR touches natives / cc_server_runtime / native_preflight and there is no natives cache. Build natives rather than skip."
+              echo "run=true"   >> "$GITHUB_OUTPUT"
+              echo "build=true"  >> "$GITHUB_OUTPUT"
+            else
+              echo "::warning title=Server e2e skipped::No natives cache for these inputs. This PR does not touch native boot paths — the server-boot suites did not run."
+              echo "run=false"  >> "$GITHUB_OUTPUT"
+              echo "build=false" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "run=true"   >> "$GITHUB_OUTPUT"
             echo "build=true"  >> "$GITHUB_OUTPUT"

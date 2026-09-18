@@ -86,22 +86,28 @@ class GrepResultBody extends StatelessWidget {
           const SizedBox(height: 4),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxHeight),
-            child: SingleChildScrollView(
-              // The overlay scrollbar hugs the viewport's right edge; this
-              // inset keeps the per-file match count from touching it.
-              padding: const EdgeInsets.only(right: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final group in result.groups)
-                    _FileGroup(
-                      group: group,
-                      baseStyle: baseStyle,
-                      tokens: tokens,
-                      pattern: pattern,
-                      dark: dark,
-                    ),
-                ],
+            // Pinned per the carve-out below: paths, gutters and matched code
+            // lines lay out LTR whatever the app locale. The stats line and
+            // note above/below stay on the ambient direction.
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: SingleChildScrollView(
+                // The overlay scrollbar hugs the viewport's end edge; this
+                // inset keeps the per-file match count from touching it.
+                padding: const EdgeInsetsDirectional.only(end: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final group in result.groups)
+                      _FileGroup(
+                        group: group,
+                        baseStyle: baseStyle,
+                        tokens: tokens,
+                        pattern: pattern,
+                        dark: dark,
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -230,6 +236,7 @@ class _FileGroup extends StatelessWidget {
   }
 }
 
+// RTL carve-out: match rows render source code, which stays LTR by policy.
 class _MatchRow extends StatelessWidget {
   const _MatchRow({
     required this.match,

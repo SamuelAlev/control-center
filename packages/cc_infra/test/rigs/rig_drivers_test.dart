@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
@@ -118,6 +119,11 @@ const List<int> _jpegBytes = [0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9];
       // Held open: the test drives the segment boundary itself.
       return;
     }
+    if (args.contains('uninstall') ||
+        args.any((arg) => arg.contains("'pm' 'clear'"))) {
+      process.complete(stdout: 'Success\n');
+      return;
+    }
     process.complete();
   });
   final ffmpeg = HostFfmpeg(path: _ffmpegPath, spawn: spawner.call);
@@ -181,6 +187,65 @@ void main() {
   });
 
   group('BrowserRigDriver', () {
+    test('opens the guest browser audio lane', () async {
+      final socket = _FakeCdpSocket();
+      var opens = 0;
+      final driver = BrowserRigDriver(
+        client: CdpClient.over(socket),
+        viewport: RigDisplaySize(1280, 800),
+        audioStreamOpener: () async {
+          opens++;
+          return Stream.value([1, 2, 3]);
+        },
+      );
+
+      final stream = await driver.openAudioStream();
+
+      expect(opens, 1);
+      expect(await stream!.expand((chunk) => chunk).toList(), [1, 2, 3]);
+    });
+    test('forwards browser microphone PCM and closes its guest lane', () async {
+      final socket = _FakeCdpSocket();
+      final calls = <(String, List<int>, bool, bool)>[];
+      var closed = false;
+      final driver = BrowserRigDriver(
+        client: CdpClient.over(socket),
+        viewport: RigDisplaySize(1280, 800),
+        audioInputSender:
+            (
+              Uint8List bytes, {
+              required String sessionId,
+              required int sampleRate,
+              required int channels,
+              bool start = false,
+              bool end = false,
+            }) async {
+              calls.add((sessionId, bytes.toList(), start, end));
+              return true;
+            },
+        audioInputCloser: () async => closed = true,
+      );
+
+      expect(
+        await driver.sendAudioInput(
+          Uint8List.fromList([1, 2, 3]),
+          sessionId: 'capture-1',
+          sampleRate: 16000,
+          channels: 1,
+          start: true,
+        ),
+        isTrue,
+      );
+      expect(calls, hasLength(1));
+      expect(calls.single.$1, 'capture-1');
+      expect(calls.single.$2, [1, 2, 3]);
+      expect(calls.single.$3, isTrue);
+      expect(calls.single.$4, isFalse);
+
+      await driver.dispose();
+      expect(closed, isTrue);
+    });
+
     test('scroll with a selector aims the wheel at that element', () async {
       // The regression this pins: the selector was parsed and dropped, so
       // scrolling a named container was accepted, logged as done, and moved
@@ -856,5 +921,41 @@ void main() {
       expect(result.isError, isFalse);
       expect(m.spawner.started.any((p) => p.args.contains('tap')), isTrue);
     });
+
+    test(
+      'developer lifecycle and shell actions reach the pinned device',
+      () async {
+        final m = _mobile();
+        final actions = <MobileAction>[
+          const MobileStopApp('com.example.app'),
+          const MobileClearAppData('com.example.app'),
+          const MobileUninstallApp('com.example.app'),
+          const MobileOpenUrl('my-app://debug'),
+          MobileShell(['logcat', '-d', '-t', '20']),
+        ];
+        for (final action in actions) {
+          final result = await m.driver.perform(action);
+          expect(
+            result.isError,
+            isFalse,
+            reason: '${action.verb}: ${result.text}',
+          );
+        }
+        final commands = m.spawner.started.map(
+          (process) => process.args.join(' '),
+        );
+        expect(commands.any((args) => args.contains('force-stop')), isTrue);
+        expect(
+          commands.any((args) => args.contains('pm') && args.contains('clear')),
+          isTrue,
+        );
+        expect(commands.any((args) => args.contains('uninstall')), isTrue);
+        expect(
+          commands.any((args) => args.contains('android.intent.action.VIEW')),
+          isTrue,
+        );
+        expect(commands.any((args) => args.contains('logcat')), isTrue);
+      },
+    );
   });
 }

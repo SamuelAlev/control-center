@@ -1,6 +1,10 @@
 import 'package:cc_harness/provider.dart';
+import 'package:cc_harness_runtime/src/oauth/codex_oauth.dart';
+import 'package:cc_harness_runtime/src/oauth/cursor_oauth.dart';
 import 'package:cc_harness_runtime/src/oauth/kimi_oauth.dart';
 import 'package:cc_harness_runtime/src/providers/anthropic_provider.dart';
+import 'package:cc_harness_runtime/src/providers/codex_provider.dart';
+import 'package:cc_harness_runtime/src/providers/cursor/cursor_provider.dart';
 import 'package:cc_harness_runtime/src/providers/openai_provider.dart';
 
 /// A provider id plus its (optional) model name, parsed from a qualified model
@@ -20,12 +24,12 @@ class ParsedModel {
 ///
 /// New providers plug in here; the agent loop stays provider-agnostic:
 /// Anthropic (native, API key or OAuth), OpenAI (native, API key or OAuth),
-/// the OpenAI-compatible family (OpenRouter, Groq, Google Gemini compat,
-/// DeepSeek, Mistral, xAI, z.ai, the GLM Coding Plan, Kimi), plus
-/// user-defined **custom providers** — any OpenAI- or Anthropic-compatible
-/// endpoint whose credential carries a [ProviderCredential.dialect] and base
-/// URL (Ollama, LM Studio, vLLM, private deployments, …), with an optional
-/// API key.
+  /// the OpenAI-compatible family (OpenRouter, Groq, Google Gemini compat,
+  /// DeepSeek, Mistral, xAI, z.ai, the GLM Coding Plan, Kimi), Cursor
+  /// (subscription, HTTP/2 AgentService), plus user-defined **custom
+  /// providers** — any OpenAI- or Anthropic-compatible endpoint whose
+  /// credential carries a [ProviderCredential.dialect] and base URL (Ollama,
+  /// LM Studio, vLLM, private deployments, …), with an optional API key.
 class HarnessProviderFactory {
   /// Creates a [HarnessProviderFactory].
   const HarnessProviderFactory();
@@ -94,6 +98,23 @@ class HarnessProviderFactory {
             if (isOAuth && credential?.accountId != null)
               'chatgpt-account-id': credential!.accountId!,
           },
+        );
+      case 'codex':
+        return CodexProvider(
+          apiKey: apiKey ?? oauthToken,
+          tokenResolver: isOAuth ? tokenResolver : null,
+          accountId: credential?.accountId,
+          baseUrl: baseUrl ??
+              (isOAuth ? CodexOAuth.backendApi : CodexOAuth.apiKeyBase),
+          chatgpt: isOAuth,
+          defaultModel: model ?? 'gpt-5.5',
+        );
+      case 'cursor':
+        return CursorProvider(
+          accessToken: oauthToken ?? apiKey,
+          tokenResolver: isOAuth ? tokenResolver : null,
+          baseUrl: baseUrl ?? CursorOAuth.defaultApiBase,
+          defaultModel: model ?? 'auto',
         );
       case 'openrouter':
         return OpenAiProvider(

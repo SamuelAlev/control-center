@@ -1,10 +1,9 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
 import 'package:cc_domain/features/newsfeed/domain/helpers/abp_parser.dart';
 import 'package:cc_infra/src/newsfeed/filter_list_service.dart';
-import 'package:cc_infra/src/util/cc_paths.dart';
-import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,11 +11,12 @@ import 'package:flutter_test/flutter_test.dart';
 late FilterListService _service;
 
 void main() {
-  setUpAll(() async {
-    final prefs = AppPreferences.inMemory({});
-    final paths = CcPaths(Directory.systemTemp.createTempSync('fl_test_').path);
-    // ignore: invalid_use_of_visible_for_testing_member
-    _service = FilterListService(Dio(), prefs, paths);
+  setUpAll(() {
+    _service = FilterListService(
+      cacheDir: Directory.systemTemp.createTempSync('fl_test_').path,
+      dio: Dio(),
+      allowNetwork: false,
+    );
   });
   // ── FilterListUpdateState ─────────────────────────────────────────────────
 
@@ -1006,27 +1006,25 @@ example.com\$removeparam=tracking
       expect(state.lastSuccess, isNull);
     });
 
-    test('returns persisted counts when cache exists', () async {
-      final prefs = AppPreferences.inMemory();
-      await prefs.setString(
-        'newsfeed.filterLists.lastCheck',
-        '2025-06-01T12:00:00.000',
+    test('returns persisted counts when cache exists', () {
+      final dir = Directory.systemTemp.createTempSync('fl_test_').path;
+      final seeded = FilterListUpdateState(
+        lastCheck: DateTime(2025, 6, 1, 12),
+        lastSuccess: DateTime(2025, 6, 1, 13),
+        isUpdating: false,
+        errors: const [],
+        cookieHidingRules: 7,
+        adHidingRules: 42,
+        networkBlockRules: 13,
+        removeParamsCount: 99,
       );
-      await prefs.setString(
-        'newsfeed.filterLists.lastSuccess',
-        '2025-06-01T13:00:00.000',
+      File('$dir/state.json').writeAsStringSync(
+        jsonEncode({...seeded.toJson(), 'removeParams': <String>[]}),
       );
-      await prefs.setInt('newsfeed.filterLists.adHidingCount', 42);
-      await prefs.setInt('newsfeed.filterLists.cookieHidingCount', 7);
-      await prefs.setInt('newsfeed.filterLists.networkBlockCount', 13);
-      await prefs.setInt('newsfeed.removeParams.count', 99);
-
-      // Build a service over the seeded prefs (the shared [_service] uses its
-      // own empty store), then read back the persisted metadata.
       final svcWithData = FilterListService(
-        Dio(),
-        prefs,
-        CcPaths(Directory.systemTemp.createTempSync('fl_test_').path),
+        cacheDir: dir,
+        dio: Dio(),
+        allowNetwork: false,
       );
       final state = svcWithData.readState();
       expect(state.adHidingRules, 42);
@@ -1054,13 +1052,18 @@ example.com\$removeparam=tracking
       expect(params, contains('gclid'));
     });
 
-    test('returns cached params when available', () async {
-      final prefs = AppPreferences.inMemory();
-      await prefs.setString('newsfeed.removeParams.list', 'custom_a,custom_b');
+    test('returns cached params when available', () {
+      final dir = Directory.systemTemp.createTempSync('fl_test_').path;
+      File('$dir/state.json').writeAsStringSync(
+        jsonEncode({
+          ...FilterListUpdateState.empty.toJson(),
+          'removeParams': ['custom_a', 'custom_b'],
+        }),
+      );
       final svcWithData = FilterListService(
-        Dio(),
-        prefs,
-        CcPaths(Directory.systemTemp.createTempSync('fl_test_').path),
+        cacheDir: dir,
+        dio: Dio(),
+        allowNetwork: false,
       );
       final params = svcWithData.readRemoveParams();
       expect(params, contains('custom_a'));
@@ -1068,10 +1071,20 @@ example.com\$removeparam=tracking
       expect(params, isNot(contains('utm_source')));
     });
 
-    test('handles empty cached string gracefully', () async {
-      final prefs = AppPreferences.inMemory();
-      await prefs.setString('newsfeed.removeParams.list', '');
-      final params = svc.readRemoveParams();
+    test('handles empty cached list gracefully', () {
+      final dir = Directory.systemTemp.createTempSync('fl_test_').path;
+      File('$dir/state.json').writeAsStringSync(
+        jsonEncode({
+          ...FilterListUpdateState.empty.toJson(),
+          'removeParams': <String>[],
+        }),
+      );
+      final svcWithData = FilterListService(
+        cacheDir: dir,
+        dio: Dio(),
+        allowNetwork: false,
+      );
+      final params = svcWithData.readRemoveParams();
       expect(params, contains('utm_source'));
       expect(params, contains('fbclid'));
     });

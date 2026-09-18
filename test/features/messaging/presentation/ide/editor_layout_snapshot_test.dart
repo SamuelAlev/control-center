@@ -7,6 +7,7 @@ import 'package:control_center/features/messaging/presentation/ide/editor/plan_t
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
+import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -117,6 +118,22 @@ void main() {
 
       final restored = decodeEditorLayout(encoded)!;
       expect((restored.root as EditorLeafNode).controller.selectedIndex, 0);
+    });
+
+    test('an iOS rig restores as start-deferred', () {
+      final ctl = _single([
+        const EditorTab(
+          kind: MessagingTabKinds.rig,
+          label: 'iOS Simulator',
+          args: {'surface': 'ios', 'slot': 's2'},
+        ),
+      ]);
+
+      final restored = decodeEditorLayout(encodeEditorLayout(ctl));
+      final tab = restored!.activeLeaf.controller.tabs.single;
+      expect(tab.args['surface'], 'ios');
+      expect(tab.args['slot'], 's2');
+      expect(tab.args[EditorLayoutCodec.deferStartArg], isTrue);
     });
   });
 

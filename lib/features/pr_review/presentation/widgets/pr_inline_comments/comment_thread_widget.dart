@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_renderer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reaction_bar.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
@@ -12,10 +15,12 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/pr_review/providers/reaction_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/syntax/grammar_registry.dart';
+import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Height of the one-line collapsed summary row, excluding the card's margin.
@@ -162,7 +167,6 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
           ? BoxDecoration(color: tokens.bgPrimary)
           : BoxDecoration(
               color: tokens.bgPrimary,
-              borderRadius: AppRadii.brMd,
               border: Border.all(color: borderColor),
               boxShadow: AppShadows.soft,
             ),
@@ -170,7 +174,7 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 10, 8, 0),
+            padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 8, 0),
             child: Row(
               children: [
                 if (widget.onToggleCollapsed != null) ...[
@@ -343,7 +347,7 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                     footer: (context) => Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Align(
-                        alignment: Alignment.centerRight,
+                        alignment: AlignmentDirectional.centerEnd,
                         child: _sending
                             ? const Padding(
                                 padding: EdgeInsets.symmetric(horizontal: 9),
@@ -360,7 +364,7 @@ class _PrInlineThreadBlockState extends ConsumerState<PrInlineThreadBlock> {
                 ),
               )
             else
-              InkWell(
+              GestureDetector(
                 onTap: () {
                   setState(() => _replying = true);
                   WidgetsBinding.instance.addPostFrameCallback(
@@ -471,7 +475,6 @@ class _CollapsedThreadRowState extends State<_CollapsedThreadRow> {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             decoration: BoxDecoration(
               color: _hovered ? tokens.bgPrimaryHover : tokens.bgPrimary,
-              borderRadius: AppRadii.brMd,
               border: widget.embedded
                   ? null
                   : Border.all(
@@ -583,11 +586,7 @@ class _InlineEntryTile extends StatelessWidget {
   final void Function(String newBody)? onEditSubmit;
   final VoidCallback? onEditCancel;
 
-  static final RegExp _suggestionFence = RegExp(
-    r'```suggestion\s*\n([\s\S]*?)\n?```',
-    multiLine: true,
-  );
-  bool get _isSuggestionEntry => _suggestionFence.hasMatch(entry.body);
+  bool get _isSuggestionEntry => parseSuggestionBlocks(entry.body).isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -646,7 +645,8 @@ class _InlineEntryTile extends StatelessWidget {
               const SizedBox(height: 4),
               if (isEditing && onEditSubmit != null)
                 _SuggestionEditor(
-                  initialCode: _extractSuggestedCode(),
+                  initialBody: entry.body,
+                  filePath: filePath,
                   onSubmit: onEditSubmit!,
                   onCancel: onEditCancel ?? () {},
                 )
@@ -671,20 +671,17 @@ class _InlineEntryTile extends StatelessWidget {
       ],
     );
   }
-
-  String _extractSuggestedCode() {
-    final match = _suggestionFence.firstMatch(entry.body);
-    return match?.group(1)?.trim() ?? '';
-  }
 }
 
 class _SuggestionEditor extends ConsumerStatefulWidget {
   const _SuggestionEditor({
-    required this.initialCode,
+    required this.initialBody,
     required this.onSubmit,
     required this.onCancel,
+    this.filePath,
   });
-  final String initialCode;
+  final String initialBody;
+  final String? filePath;
   final ValueChanged<String> onSubmit;
   final VoidCallback onCancel;
   @override
@@ -692,54 +689,160 @@ class _SuggestionEditor extends ConsumerStatefulWidget {
 }
 
 class _SuggestionEditorState extends ConsumerState<_SuggestionEditor> {
-  late final _ctrl = TextEditingController(text: widget.initialCode);
-  final _focus = FocusNode();
+  late final List<DiffSyntaxTextEditingController> _controllers;
+  late final List<FocusNode> _focusNodes;
+  final Set<String> _warmed = <String>{};
+  bool _dark = false;
+
+  String? get _language {
+    final path = widget.filePath;
+    return path == null ? null : shikiLangForPath(path);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final blocks = parseSuggestionBlocks(widget.initialBody);
+    final replacements = blocks.isEmpty
+        ? const <String>['']
+        : [for (final block in blocks) block.code];
+    _controllers = [
+      for (final replacement in replacements)
+        DiffSyntaxTextEditingController(
+          text: replacement,
+          languageId: _language,
+        ),
+    ];
+    _focusNodes = [for (var i = 0; i < replacements.length; i++) FocusNode()];
+    _warmGrammar();
+  }
+
+  void _warmGrammar() {
+    final language = _language;
+    if (language == null || !_warmed.add(language)) {
+      return;
+    }
+    unawaited(
+      ensureLanguageAvailable(language).then((available) {
+        if (!available || !mounted) {
+          return;
+        }
+        setState(() {
+          for (final controller in _controllers) {
+            controller.refreshHighlighting();
+          }
+        });
+      }),
+    );
+  }
+
+  void _addSuggestion() {
+    final controller = DiffSyntaxTextEditingController(
+      languageId: _language,
+      dark: _dark,
+    );
+    final focus = FocusNode();
+    setState(() {
+      _controllers.add(controller);
+      _focusNodes.add(focus);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        focus.requestFocus();
+      }
+    });
+  }
+
+  void _removeSuggestion(int index) {
+    if (_controllers.length == 1) {
+      return;
+    }
+    final controller = _controllers.removeAt(index);
+    final focus = _focusNodes.removeAt(index);
+    controller.dispose();
+    focus.dispose();
+    setState(() {});
+  }
 
   @override
   void dispose() {
-    _ctrl.dispose();
-    _focus.dispose();
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    for (final focus in _focusNodes) {
+      focus.dispose();
+    }
     super.dispose();
   }
 
   void _submit() {
-    final replacement = _ctrl.text;
-    if (replacement.trim().isEmpty) {
-      widget.onCancel();
-      return;
-    }
-    widget.onSubmit('```suggestion\n$replacement\n```');
+    widget.onSubmit(
+      replaceSuggestionBlocks(widget.initialBody, [
+        for (final controller in _controllers) controller.text,
+      ]),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
+    _dark = context.ccTheme?.isDark ?? false;
+    for (final controller in _controllers) {
+      controller.configure(languageId: _language, dark: _dark);
+    }
+    final codeStyle = AppFonts.codeStyleDynamic(
+      ref.watch(codeFontFamilyProvider),
+      fontSize: 12,
+      height: 1.55,
+      color: tokens.textPrimary,
+    );
     return Container(
       decoration: BoxDecoration(
         color: tokens.bgPrimary,
-        borderRadius: AppRadii.brMd,
         border: Border.all(color: tokens.borderSecondary),
       ),
-      padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 6, 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SelectionContainer.disabled(
-            child: CcTextField(
-              controller: _ctrl,
-              focusNode: _focus,
-              autofocus: true,
-              maxLines: null,
-              minLines: 2,
-              textStyle: AppFonts.codeStyleDynamic(
-                ref.watch(codeFontFamilyProvider),
-                fontSize: 12,
-                height: 1.55,
-                color: tokens.textPrimary,
+          for (var i = 0; i < _controllers.length; i++) ...[
+            if (i > 0) const CcDivider(),
+            SelectionContainer.disabled(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: CcTextField(
+                      controller: _controllers[i],
+                      focusNode: _focusNodes[i],
+                      autofocus: i == 0,
+                      maxLines: null,
+                      minLines: 2,
+                      textStyle: codeStyle,
+                      hintText: l10n.editSuggestedCodeHint,
+                      chromeless: true,
+                    ),
+                  ),
+                  if (_controllers.length > 1)
+                    CcIconButton(
+                      onPressed: () => _removeSuggestion(i),
+                      icon: AppIcons.x,
+                      variant: CcButtonVariant.ghost,
+                      size: CcButtonSize.sm,
+                      tooltip: l10n.remove,
+                    ),
+                ],
               ),
-              onChanged: (_) => setState(() {}),
-              hintText: AppLocalizations.of(context).editSuggestedCodeHint,
-              chromeless: true,
+            ),
+          ],
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: CcButton(
+              onPressed: _addSuggestion,
+              variant: CcButtonVariant.ghost,
+              size: CcButtonSize.sm,
+              child: Text(l10n.addASuggestion),
             ),
           ),
           const SizedBox(height: 8),
@@ -749,7 +852,7 @@ class _SuggestionEditorState extends ConsumerState<_SuggestionEditor> {
               CcButton(
                 variant: CcButtonVariant.secondary,
                 onPressed: widget.onCancel,
-                child: Text(AppLocalizations.of(context).cancel),
+                child: Text(l10n.cancel),
               ),
               const SizedBox(width: 8),
               _SendButton(onPressed: _submit),
@@ -803,10 +906,7 @@ class _SyncBadge extends StatelessWidget {
     };
     final pill = Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-      ),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

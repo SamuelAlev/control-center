@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/theme/cc_font_registry.dart';
+import 'package:cc_ui/src/theme/cc_script_fonts.dart';
 import 'package:flutter/widgets.dart';
 
 /// Font helpers for cc_ui — Manrope for UI text, Fira Code for code.
@@ -17,6 +20,13 @@ import 'package:flutter/widgets.dart';
 /// the UI family — `AppFonts.uiFamily` in the main app aliases it, so swapping
 /// the font means changing this one constant (plus the matching `family:` name
 /// in `pubspec.yaml`).
+///
+/// Script coverage Manrope lacks (Thai, Hebrew, Arabic-script, CJK, leftover
+/// Greek) is a SEPARATE lane: [activateForLocale] attaches only that locale's
+/// companion as `fontFamilyFallback` and FontLoaders its vendored file. The
+/// companions are package **assets**, not `fonts:` entries, so Flutter web
+/// does not download Thai+Hebrew+Arabic on an English boot. [CcTheme] calls
+/// [activateForLocale] from the ambient [Localizations] locale.
 ///
 /// Pure [TextStyle] helpers only (no Material `TextTheme`), so cc_ui stays on
 /// the widgets layer.
@@ -37,6 +47,43 @@ abstract final class CcFonts {
   /// BY NAME and never fetched — naming one is not "a user picked a font", it
   /// is the default. [_resolve] short-circuits on this set for that reason.
   static const bundledFamilies = {uiFamily, codeFamily};
+
+  /// Fallback families for the *active* locale's script, or empty when
+  /// Manrope covers it. Never the full catalogue — attaching every companion
+  /// would FontLoader Thai while the UI is in Hebrew.
+  static List<String> get scriptFallbackFamilies => _scriptFallbacks;
+
+  static List<String> _scriptFallbacks = const [];
+  static String? _activeTag;
+
+  /// Selects the script companion for [locale] and starts loading its
+  /// vendored file (if any). Passing `null` (no [Localizations] ancestor)
+  /// clears the fallbacks. Idempotent for the same locale.
+  ///
+  /// [load] is true in the widget tree and false in list-only tests so a
+  /// missing AssetBundle does not spam `debugPrint`.
+  static void activateForLocale(Locale? locale, {bool load = true}) {
+    final tag = locale == null
+        ? ''
+        : '${locale.languageCode}_${locale.scriptCode}_${locale.countryCode}';
+    if (tag == _activeTag) {
+      return;
+    }
+    _activeTag = tag;
+    final spec = locale == null ? null : CcScriptFonts.specFor(locale);
+    _scriptFallbacks = spec?.fallbackFamilies ?? const [];
+    if (load && spec != null && spec.assetPaths.isNotEmpty) {
+      unawaited(CcScriptFonts.ensureLoaded(spec));
+    }
+  }
+
+  /// Forgets locale + fallback state. For tests only.
+  @visibleForTesting
+  static void resetForTests() {
+    _activeTag = null;
+    _scriptFallbacks = const [];
+    CcScriptFonts.resetLoadedForTests();
+  }
 
   /// UI / body text in the bundled Manrope, or in [family] when given.
   static TextStyle ui({TextStyle? textStyle, String? family}) =>
@@ -79,18 +126,26 @@ abstract final class CcFonts {
       style = style.copyWith(fontFeatures: features);
     }
     if (family == null) {
-      return style.copyWith(fontFamily: bundled);
+      return style.copyWith(
+        fontFamily: bundled,
+        // The bundled family stays the PRIMARY font; the active locale's
+        // script companion only catches glyphs it has no coverage for, and
+        // a call site's own fallback list (an emoji font, say) survives
+        // after it.
+        fontFamilyFallback: [..._scriptFallbacks, ...?style.fontFamilyFallback],
+      );
     }
     // A bundled family is already registered under its real name, so it is
-    // applied directly and carries NO fallback list. Sending it through the
-    // registry instead named a per-weight variant (`packages/cc_ui/Manrope
-    // 400`) that nothing registers, which left the real font reachable only as
-    // a fallback — and a call site that names its own `fontFamilyFallback` (the
-    // markdown style adding an emoji font) then dropped it, so every space and
-    // digit in the body shaped in the emoji font while letters fell through to
-    // the system default.
+    // applied directly and never routed through the registry — that named a
+    // per-weight variant (`packages/cc_ui/Manrope 400`) that nothing
+    // registers, which left the real font reachable only as a fallback. The
+    // script fallbacks still ride along behind it, for the same reason as
+    // above.
     if (bundledFamilies.contains(family)) {
-      return style.copyWith(fontFamily: family);
+      return style.copyWith(
+        fontFamily: family,
+        fontFamilyFallback: [..._scriptFallbacks, ...?style.fontFamilyFallback],
+      );
     }
     // The surface's own bundled family is the fallback, so a code surface stays
     // monospaced while the selected family loads.
@@ -98,6 +153,7 @@ abstract final class CcFonts {
       family,
       style,
       fallbackFamily: bundled,
+      extraFallbacks: _scriptFallbacks,
     );
   }
 }

@@ -78,11 +78,13 @@ class ChatBridgesSection extends ConsumerWidget {
       label: surface == ChatBridgeSurface.myAccountLink
           ? l10n.chatMyAccountsTitle
           : l10n.chatBridgesTitle,
-      trailing: ScopeBadge(
-        surface == ChatBridgeSurface.myAccountLink
-            ? SettingScope.user
-            : SettingScope.workspace,
-      ),
+      // The workspace half already lives under Settings → Workspace; a
+      // WORKSPACE badge there restates the nav. Keep YOU on the personal
+      // half so a Profile page of mixed cards (forge, calendar, chat) still
+      // names whose credential this is.
+      trailing: surface == ChatBridgeSurface.myAccountLink
+          ? const ScopeBadge(SettingScope.user)
+          : null,
       child: Column(
         children: [
           for (final view in visible)

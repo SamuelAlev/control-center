@@ -11,7 +11,7 @@ import 'package:control_center/shared/utils/open_url.dart';
 import 'package:control_center/shared/widgets/auto_scroll/auto_scroll.dart';
 import 'package:control_center/shared/widgets/ready_auto_scroll.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -309,9 +309,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final tokens = context.designSystem;
+    final t = context.designSystem ?? DesignSystemTokens.light();
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -320,13 +318,13 @@ class _EmptyState extends StatelessWidget {
             width: 72,
             height: 72,
             decoration: BoxDecoration(
-              color: tokens?.bgSecondary ?? colors.surfaceContainerHighest,
+              color: t.bgSecondary,
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
               size: 32,
-              color: tokens?.fgTertiary ?? colors.onSurfaceVariant,
+              color: t.fgTertiary,
             ),
           ),
           const SizedBox(height: 16),
@@ -334,7 +332,7 @@ class _EmptyState extends StatelessWidget {
             title,
             style: CcTypography.title.copyWith(
               fontWeight: FontWeight.w600,
-              color: tokens?.textPrimary ?? colors.onSurface,
+              color: t.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -344,7 +342,7 @@ class _EmptyState extends StatelessWidget {
               body,
               textAlign: TextAlign.center,
               style: CcTypography.body.copyWith(
-                color: tokens?.textTertiary ?? colors.onSurfaceVariant,
+                color: t.textTertiary,
               ),
             ),
           ),

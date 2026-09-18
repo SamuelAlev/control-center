@@ -57,6 +57,10 @@ class CcFadeEdges extends StatelessWidget {
     final isVertical = axis == Axis.vertical;
     final extent = fadeExtent.clamp(0.0, 0.5).toDouble();
     final solid = extent <= 0.0;
+    // fadeStart/fadeEnd are logical edges, so the horizontal gradient runs
+    // start→end and mirrors under RTL (the shader callback gets no ambient
+    // Directionality, hence the explicit resolve).
+    final direction = Directionality.of(context);
 
     const opaque = Color(0xFFFFFFFF);
     const transparent = Color(0x00FFFFFF);
@@ -64,8 +68,12 @@ class CcFadeEdges extends StatelessWidget {
     return ShaderMask(
       shaderCallback: (Rect bounds) {
         return LinearGradient(
-          begin: isVertical ? Alignment.topCenter : Alignment.centerLeft,
-          end: isVertical ? Alignment.bottomCenter : Alignment.centerRight,
+          begin: isVertical
+              ? Alignment.topCenter
+              : AlignmentDirectional.centerStart,
+          end: isVertical
+              ? Alignment.bottomCenter
+              : AlignmentDirectional.centerEnd,
           colors: <Color>[
             (fadeStart && !solid) ? transparent : opaque,
             opaque,
@@ -73,7 +81,7 @@ class CcFadeEdges extends StatelessWidget {
             (fadeEnd && !solid) ? transparent : opaque,
           ],
           stops: <double>[0.0, extent, 1.0 - extent, 1.0],
-        ).createShader(bounds);
+        ).createShader(bounds, textDirection: direction);
       },
       blendMode: BlendMode.dstIn,
       child: child,

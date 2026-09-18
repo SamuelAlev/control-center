@@ -589,6 +589,25 @@ void main() {
       expect(c.id, 88);
     });
 
+    test('updateIssueComment PATCHes /issues/comments/{id}', () async {
+      final b = build((_) => _json({'id': 12, 'body': '- [x] done'}));
+      final c = await b.client.updateIssueComment(
+        owner,
+        repo,
+        commentId: 12,
+        body: '- [x] done',
+      );
+      final req = b.fake.requests.single;
+      expect(req.method, 'PATCH');
+      expect(
+        req.path,
+        '/repos/$owner/$repo/issues/comments/12',
+      );
+      expect((req.data as Map)['body'], '- [x] done');
+      expect(c.id, 12);
+      expect(c.body, '- [x] done');
+    });
+
     test(
       'submitReview includes body/commitId/comments only when provided',
       () async {

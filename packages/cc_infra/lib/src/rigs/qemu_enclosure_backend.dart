@@ -548,15 +548,17 @@ class QemuEnclosureBackend {
     // A surface is only offered when its image is actually on disk. Offering
     // one and failing at boot with "image missing" is the same information
     // three minutes later and after a wasted VM start.
+    const hostManagedSurfaces = {RigSurface.mobile, RigSurface.ios};
     final surfaces = <RigSurface>{
       for (final surface in RigSurface.values)
-        if (surface != RigSurface.mobile)
+        if (!hostManagedSurfaces.contains(surface))
           if (_images.defaultFor(surface) case final spec?)
             if (_images.isPresent(spec)) surface,
     };
     final missing = <String>[
       for (final surface in RigSurface.values)
-        if (surface != RigSurface.mobile) ..._images.missingFor(surface),
+        if (!hostManagedSurfaces.contains(surface))
+          ..._images.missingFor(surface),
     ];
 
     return RigBackendCapabilities(
@@ -642,6 +644,7 @@ class QemuEnclosureBackend {
         guestSecret: guestSecret,
         agentToken: agentToken,
         egressAllowlist: spec.egressAllowlist,
+        unrestrictedNetwork: spec.unrestrictedNetwork,
       );
     } on Object {
       // A missing `qemu-img`, a corrupt base image, a full disk or a failed
@@ -656,17 +659,18 @@ class QemuEnclosureBackend {
     final agentPort = await _freePort();
 
     // This rig's OWN egress proxies, filtering with ITS allowlist for its
-    // whole lifetime. The shared sandbox proxies hold one mutable config that
-    // every terminal spawn overwrites — behind those, a VM's effective egress
-    // policy would be whatever the most recent unrelated spawn set, and an
-    // empty allowlist here would mean "whatever they allow" instead of the
-    // deny-by-default floor the spec promises.
+    // whole lifetime. An explicitly unrestricted restart widens both proxy
+    // lanes and the QEMU NIC; widening only one would leave proxy-aware apps
+    // blocked while raw sockets escaped, a split policy nobody could reason
+    // about.
     final egress = NetworkConfig(
-      allowAll: false,
+      allowAll: spec.unrestrictedNetwork,
       allowedDomains: spec.egressAllowlist,
-      // Cloud metadata endpoints and telemetry sinks stay denied even when an
-      // allowlist entry would match them — denies win in the matcher.
-      deniedDomains: kBaselineDeniedDomains,
+      // Baseline denies are part of the normal enclosure boundary. The
+      // confirmed bypass promises every host, so it removes those too.
+      deniedDomains: spec.unrestrictedNetwork
+          ? const []
+          : kBaselineDeniedDomains,
     );
     // Configured AT START, not a few statements later. The listeners were
     // previously open for the gap in between — unreachable in practice (there
@@ -737,6 +741,7 @@ class QemuEnclosureBackend {
         httpProxyHostPort: httpProxy.port,
         socksProxyHostPort: socksProxy.port,
         credentialHostPort: credentialPort,
+        unrestrictedNetwork: spec.unrestrictedNetwork,
         seedImagePath: seedPath,
         machineType: qemuMachineFor(architecture),
         firmwarePath: _firmwarePath,
@@ -1077,6 +1082,7 @@ class QemuEnclosureBackend {
     required String guestSecret,
     required String agentToken,
     required List<String> egressAllowlist,
+    required bool unrestrictedNetwork,
   }) async {
     final keyPath = p.join(runtimeDir, 'id_ed25519');
     final keygen = await _which('ssh-keygen');
@@ -1107,6 +1113,7 @@ class QemuEnclosureBackend {
         'agent_token': agentToken,
         'credential_secret': guestSecret,
         'egress_allowlist': egressAllowlist,
+        'unrestricted_network': unrestrictedNetwork,
         'http_proxy':
             'http://${QemuGuestAddresses.httpProxy}:'
             '${QemuGuestAddresses.httpProxyPort}',

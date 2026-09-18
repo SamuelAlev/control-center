@@ -1,6 +1,7 @@
 import 'package:cc_ui/src/components/cc_autocomplete.dart';
 import 'package:cc_ui/src/components/cc_icons.dart';
 import 'package:cc_ui/src/components/cc_select.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -188,35 +189,147 @@ void main() {
       );
     });
 
-    testWidgets('clicking directly on the field text opens the full list', (
+    testWidgets(
+      'clicking a filled field opens the list prefiltered by its text',
+      (tester) async {
+        // A seeded (non-empty) field has no hint to tap; opening still
+        // filters by the current value so the user continues from it.
+        final controller = TextEditingController(text: 'Apple');
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: CcAutocomplete<String>(
+                options: _options,
+                hintText: 'Search',
+                controller: controller,
+                onSelected: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.byType(EditableText));
+        await tester.pumpAndSettle();
+
+        // 'Apple' matches twice: the field's own text and its panel row.
+        expect(find.text('Apple'), findsWidgets);
+        expect(find.text('Banana'), findsNothing);
+        expect(find.text('Cherry'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'clicking the field padding focuses it and keeps the panel open',
+      (tester) async {
+        // Regression: a click on chrome padding (outside the 18px glyph
+        // strip) showed the I-beam but never focused — pointer-down opened
+        // the overlay, then pointer-up hit the dismiss barrier.
+        final focusNode = FocusNode();
+        addTearDown(focusNode.dispose);
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: SizedBox(
+                width: 280,
+                child: CcAutocomplete<String>(
+                  options: _options,
+                  hintText: 'Search',
+                  focusNode: focusNode,
+                  onSelected: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final chrome = tester.getRect(find.byType(CcAutocomplete<String>));
+        final glyphs = tester.getRect(find.byType(EditableText));
+        expect(
+          chrome.top < glyphs.top,
+          isTrue,
+          reason: 'field chrome includes padding above the glyphs',
+        );
+        await tester.tapAt(Offset(glyphs.center.dx, chrome.top + 3));
+        await tester.pumpAndSettle();
+
+        expect(focusNode.hasFocus, isTrue);
+        expect(find.text('Apple'), findsOneWidget);
+        expect(find.text('Banana'), findsOneWidget);
+        expect(find.text('Cherry'), findsOneWidget);
+      },
+    );
+
+    testWidgets('double-clicking selects the word under the pointer', (
       tester,
     ) async {
-      // The model-chooser bug: a seeded (non-empty) field has no hint to tap,
-      // and the EditableText claims taps on the text before the field's own
-      // gesture detector — so the panel only opened after typing.
-      final controller = TextEditingController(text: 'Apple');
+      final controller = TextEditingController(text: 'hello world');
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         ccTestApp(
           Center(
-            child: CcAutocomplete<String>(
-              options: _options,
-              hintText: 'Search',
-              controller: controller,
-              onSelected: (_) {},
+            child: SizedBox(
+              width: 280,
+              child: CcAutocomplete<String>(
+                options: _options,
+                hintText: 'Search',
+                controller: controller,
+                onSelected: (_) {},
+              ),
             ),
           ),
         ),
       );
 
-      await tester.tap(find.byType(EditableText));
-      await tester.pumpAndSettle();
+      final target =
+          tester.getTopLeft(find.byType(EditableText)) + const Offset(10, 8);
+      await tester.tapAt(target, kind: PointerDeviceKind.mouse);
+      await tester.pump(const Duration(milliseconds: 80));
+      await tester.tapAt(target, kind: PointerDeviceKind.mouse);
+      await tester.pump();
 
-      // A committed selection reopens to the FULL list, not a one-row menu
-      // filtered by the selection's own label. 'Apple' matches twice: the
-      // field's own text and its panel row.
-      expect(find.text('Apple'), findsWidgets);
-      expect(find.text('Banana'), findsOneWidget);
-      expect(find.text('Cherry'), findsOneWidget);
+      expect(
+        controller.selection.textInside(controller.text),
+        'hello',
+        reason: 'double-click should select the word under the pointer',
+      );
+    });
+
+    testWidgets('click-dragging selects a text range', (tester) async {
+      final controller = TextEditingController(text: 'hello world');
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: SizedBox(
+              width: 280,
+              child: CcAutocomplete<String>(
+                options: _options,
+                hintText: 'Search',
+                controller: controller,
+                onSelected: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final left = tester.getTopLeft(find.byType(EditableText));
+      final gesture = await tester.startGesture(
+        left + const Offset(2, 8),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveTo(left + const Offset(200, 8));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+
+      expect(
+        controller.selection.isCollapsed,
+        isFalse,
+        reason: 'click-drag should select a range, not just move the caret',
+      );
     });
 
     testWidgets('options arriving after first build still open on click', (
@@ -284,13 +397,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // The single match ('Banana') carries the highlight wash without any
-      // arrow-key navigation: the DecoratedBox nearest the row's label holds
+      // arrow-key navigation: the Container nearest the row's label holds
       // the row's background, transparent unless highlighted.
       final rowBoxes = tester
-          .widgetList<DecoratedBox>(
+          .widgetList<Container>(
             find.ancestor(
               of: find.text('Banana'),
-              matching: find.byType(DecoratedBox),
+              matching: find.byType(Container),
             ),
           )
           .toList();
@@ -452,6 +565,72 @@ void main() {
 
       expect(committed, isNull);
     });
+
+    testWidgets('long lists cap at five and a half rows', (tester) async {
+      final manyOptions = [
+        for (var i = 0; i < 8; i++) CcSelectOption(value: 'v$i', label: 'V$i'),
+      ];
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: CcAutocomplete<String>(
+              options: manyOptions,
+              hintText: 'Search',
+              onSelected: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Search'));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getSize(find.byType(SingleChildScrollView)).height,
+        5.5 * 40.0,
+      );
+      await tester.scrollUntilVisible(
+        find.text('V7'),
+        40,
+        scrollable: find.byType(Scrollable).last,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('V7'), findsOneWidget);
+    });
+
+    testWidgets(
+      'a long list stays attached to the field instead of covering it',
+      (tester) async {
+        final manyOptions = [
+          for (var i = 0; i < 40; i++)
+            CcSelectOption(value: 'v$i', label: 'Option $i'),
+        ];
+        const fieldKey = Key('autocomplete-field');
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: SizedBox(
+                key: fieldKey,
+                width: 240,
+                child: CcAutocomplete<String>(
+                  options: manyOptions,
+                  hintText: 'Search',
+                  onSelected: (_) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Search'));
+        await tester.pumpAndSettle();
+
+        final field = tester.getRect(find.byKey(fieldKey));
+        final panel = tester.getRect(find.byType(SingleChildScrollView));
+        expect(panel.overlaps(field), isFalse);
+        expect(panel.top, greaterThanOrEqualTo(field.bottom));
+      },
+    );
   });
 }
 
@@ -473,12 +652,14 @@ class _AsyncLoaderState extends State<_AsyncLoader> {
       mainAxisSize: MainAxisSize.min,
       children: [
         GestureDetector(
-          onTap: () => setState(() => _options = _options.isEmpty
-              ? const [
-                  CcSelectOption(value: 'a', label: 'Apple'),
-                  CcSelectOption(value: 'b', label: 'Banana'),
-                ]
-              : _options),
+          onTap: () => setState(
+            () => _options = _options.isEmpty
+                ? const [
+                    CcSelectOption(value: 'a', label: 'Apple'),
+                    CcSelectOption(value: 'b', label: 'Banana'),
+                  ]
+                : _options,
+          ),
           child: const Text('Load'),
         ),
         CcAutocomplete<String>(

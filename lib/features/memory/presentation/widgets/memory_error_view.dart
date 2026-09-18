@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Friendly failure state for the memory surfaces. Replaces the raw
 /// `e.toString()` dump with a titled message, the underlying detail kept

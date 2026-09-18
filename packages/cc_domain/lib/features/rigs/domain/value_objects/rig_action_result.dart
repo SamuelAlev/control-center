@@ -101,4 +101,18 @@ class RigActionResult {
 
   /// Whether an image came back.
   bool get hasImage => imageBase64?.isNotEmpty ?? false;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RigActionResult &&
+          text == other.text &&
+          imageBase64 == other.imageBase64 &&
+          imageMediaType == other.imageMediaType &&
+          isError == other.isError &&
+          displaySize == other.displaySize;
+
+  @override
+  int get hashCode =>
+      Object.hash(text, imageBase64, imageMediaType, isError, displaySize);
 }

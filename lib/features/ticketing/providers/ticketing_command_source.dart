@@ -45,8 +45,7 @@ class TicketingCommandSource implements CommandSource {
     items.add(
       CommandItem(
         id: 'go-tickets',
-        label: 'Go to Tickets',
-        description: 'Navigate to the tickets board',
+        label: 'Go to tickets',
         icon: AppIcons.ticket,
         category: category,
         onExecute: () => router.go(
@@ -60,7 +59,6 @@ class TicketingCommandSource implements CommandSource {
       CommandItem(
         id: 'new-ticket',
         label: 'New ticket',
-        description: 'Create a new ticket in the active workspace',
         icon: AppIcons.ticket,
         category: category,
         onExecute: () {

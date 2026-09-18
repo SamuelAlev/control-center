@@ -19,6 +19,9 @@ class EnvProviderCredentialStore implements ProviderCredentialStore {
   static const Map<String, List<String>> envKeys = {
     'anthropic': ['ANTHROPIC_API_KEY'],
     'openai': ['OPENAI_API_KEY'],
+    // Metered Codex Responses (API key). The ChatGPT subscription is OAuth
+    // only — this var does not enable that lane.
+    'codex': ['OPENAI_CODEX_API_KEY'],
     'openrouter': ['OPENROUTER_API_KEY'],
     'groq': ['GROQ_API_KEY'],
     'google': ['GEMINI_API_KEY', 'GOOGLE_API_KEY'],
@@ -33,6 +36,9 @@ class EnvProviderCredentialStore implements ProviderCredentialStore {
     // Kimi Code is absent by design: the plan issues no API key, so there is no
     // env var that could enable it — it is reachable only via OAuth.
     'moonshotai': ['MOONSHOT_API_KEY'],
+    // Optional Cursor session token. Prefer the OAuth login in Settings —
+    // this is for headless servers that already hold a Bearer.
+    'cursor': ['CURSOR_API_KEY'],
   };
 
   @override

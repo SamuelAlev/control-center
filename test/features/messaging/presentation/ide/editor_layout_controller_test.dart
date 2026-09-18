@@ -265,6 +265,20 @@ void main() {
     });
   });
 
+  group('selection notifications', () {
+    test('reselecting the active tab is a no-op', () {
+      final controller = EditorTabGroupController()
+        ..insert(0, _tab('A'))
+        ..insert(1, _tab('B'));
+      var notifications = 0;
+      controller.addListener(() => notifications++);
+
+      controller.selectedIndex = controller.selectedIndex;
+
+      expect(notifications, 0);
+    });
+  });
+
   group('close selection', () {
     // Mirrors how a middle-click / close button / ⌘W reach the controller: a
     // single removeAt(index) on the leaf's controller. Selection must follow

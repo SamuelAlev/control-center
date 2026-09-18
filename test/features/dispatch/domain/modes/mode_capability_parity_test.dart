@@ -243,6 +243,23 @@ void main() {
       expect(preamble, isNot(contains('You do NOT have `$forbidden`')));
     });
 
+    test('ask_user on the surface is how the run asks the operator', () {
+      final preamble = buildCapabilityPreamble(
+        profileFor(Mode.chat),
+        materializedToolNames: const ['read', 'ask_user'],
+      );
+      expect(preamble, contains('`ask_user`'));
+      expect(preamble, contains('Do NOT write the question as a chat message'));
+    });
+
+    test('ask_user instruction is omitted when the tool is absent', () {
+      final preamble = buildCapabilityPreamble(
+        profileFor(Mode.plan),
+        materializedToolNames: const ['read', 'submit_plan'],
+      );
+      expect(preamble, isNot(contains('Questions to the operator')));
+    });
+
     test('every tool a mode prompt names is reachable in that mode', () {
       // The check that fails on drift. Two surfaces have to be consulted,
       // because two different mechanisms admit tools: bridged MCP tools go

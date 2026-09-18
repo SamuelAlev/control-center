@@ -18,8 +18,7 @@ class RuntimeProfilesTable extends Table {
   /// Display name of the profile.
   TextColumn get name => text()();
 
-  /// Protocol family the runtime speaks: `claude`, `acp`, `pi`, `codex`,
-  /// or `cli`.
+  /// Protocol family the runtime speaks: `claude`, `acp`, or `cli`.
   TextColumn get protocolFamily => text().withDefault(const Constant('cli'))();
 
   /// The CLI command (executable) the runtime launches.

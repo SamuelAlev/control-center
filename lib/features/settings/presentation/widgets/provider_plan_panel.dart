@@ -9,15 +9,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Harness provider id → the id its plan usage is reported under.
 ///
 /// Only plan-based providers appear: a metered API key has no quota to show, so
-/// its tile stays a key field and nothing more. `claude`/`codex` usage is
-/// deliberately absent — those snapshots come from the CLIs' own logins, which
-/// are a different account from anything connected here and showing one under
-/// the other's tile would misattribute the quota.
+/// its tile stays a key field and nothing more. Claude usage is still absent —
+/// that snapshot comes from the CLI's own login, a different account from
+/// anything connected here.
 const Map<String, String> harnessPlanUsageIds = {
   // `zai-coding`, not `zai`: the quota belongs to the GLM Coding Plan, and the
   // plain z.ai lane is a metered key billed against the account balance.
   'zai-coding': 'zai',
   'kimi-code': 'kimi-code',
+  // Cursor Ultra/Pro and Codex ChatGPT are the same accounts connected in
+  // Settings → Adapters.
+  'cursor': 'cursor',
+  'codex': 'codex',
 };
 
 /// The connected-plan block on a Settings → Adapters provider tile: which
@@ -56,12 +59,22 @@ class ProviderPlanPanel extends ConsumerWidget {
         ? const <SubscriptionUsage>[]
         : ref.watch(subscriptionUsageProvider).value ??
               const <SubscriptionUsage>[];
-    SubscriptionUsage? usage;
+    SubscriptionUsage? labeled;
+    SubscriptionUsage? first;
     for (final u in all) {
-      if (u.providerId == usageId) {
-        usage = u;
+      if (u.providerId != usageId) {
+        continue;
+      }
+      first ??= u;
+      // Several accounts of the same plan: pick the one this tile is
+      // showing. Fall through to the first snapshot when the live list has
+      // not stamped labels yet (a single-account install).
+      if (accountLabel != null && u.accountLabel == accountLabel) {
+        labeled = u;
+        break;
       }
     }
+    final usage = labeled ?? first;
     final windows = usage?.status == SubscriptionStatus.ok
         ? usage!.windows
         : const <SubscriptionWindow>[];

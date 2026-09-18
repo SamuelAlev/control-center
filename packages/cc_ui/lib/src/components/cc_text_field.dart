@@ -221,12 +221,19 @@ class _CcTextFieldState extends State<CcTextField>
   FocusNode get _focusNode =>
       widget.focusNode ?? (_internalFocus ??= FocusNode());
 
+  /// Whether the controller's text is currently empty; only a FLIP of this
+  /// changes what [build] produces. Assigned in [initState], not lazily: a
+  /// first read after paste would already see the new text and skip the
+  /// rebuild, leaving the placeholder under the value.
+  bool _textIsEmpty = true;
+
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
     _controller.addListener(_onTextChange);
     _focused = _focusNode.hasFocus;
+    _textIsEmpty = _controller.text.isEmpty;
   }
 
   @override
@@ -256,10 +263,6 @@ class _CcTextFieldState extends State<CcTextField>
     _internalController?.dispose();
     super.dispose();
   }
-
-  /// Whether the controller's text is currently empty; only a FLIP of this
-  /// changes what [build] produces.
-  late bool _textIsEmpty = _controller.text.isEmpty;
 
   void _onFocusChange() {
     if (_focused != _focusNode.hasFocus && mounted) {
@@ -381,8 +384,8 @@ class _CcTextFieldState extends State<CcTextField>
               // A multiline field's hint sits on the first line, not the
               // vertical centre of the grown box.
               alignment: widget.isMultiline
-                  ? Alignment.topLeft
-                  : Alignment.centerLeft,
+                  ? AlignmentDirectional.topStart
+                  : AlignmentDirectional.centerStart,
               child: Text(
                 widget.hintText!,
                 style: hintStyle,

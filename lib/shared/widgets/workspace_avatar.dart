@@ -180,8 +180,8 @@ class WorkspaceAvatar extends StatelessWidget {
       alignment: Alignment.center,
       decoration: ShapeDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
           stops: const [0.0, 0.34, 0.70, 1.0],
           colors: [ds.sunshine500, ds.sunshine900, ds.accent, ds.blockEdge],
         ),

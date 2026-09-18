@@ -4,7 +4,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/b
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/open_url.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Renders a ticket card with title and view button.
 class TicketCard extends StatelessWidget {
@@ -24,7 +24,7 @@ class TicketCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Align(
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: Container(

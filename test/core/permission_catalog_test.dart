@@ -46,7 +46,7 @@ void main() {
     'agentGoalRuns', 'agent_presence', 'agent_run_log', 'agent_working_memory',
     'agents', 'approval_routing', 'approvals', 'autonomy',
     'blob', 'cache', 'calendar', 'chat',
-    'checker', 'claude', 'claude_accounts', 'codeServer',
+    'checker', 'claude', 'claude_accounts', 'codeGraph', 'codeServer',
     'confirmation', 'connection', 'connectivity', 'context',
     'conversation', 'credential_gate', 'credentials', 'demo',
     'dictation', 'dispatch', 'evals', 'fleet',

@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
@@ -48,13 +49,13 @@ class DiffView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     final lines = parseUnifiedDiff(patch);
     if (lines.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(
-          'No text diff for this file — it is binary, or too large for the '
-          'forge to return one.',
+          l10n.noTextDiff,
           style: TextStyle(fontSize: 12, height: 1.4, color: t.textTertiary),
         ),
       );
@@ -66,7 +67,11 @@ class DiffView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DecoratedBox(
+        // RTL carve-out: diffs/code are universally LTR — gutters, markers and
+        // code order must not mirror with the app locale.
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: DecoratedBox(
           decoration: BoxDecoration(
             color: t.bgSecondary,
             borderRadius: BorderRadius.circular(6),
@@ -79,30 +84,33 @@ class DiffView extends StatelessWidget {
             // controller per row kept in sync, and on a phone the gutter is
             // four characters wide — the width it would save is not worth a
             // scroll position that can disagree with itself.
-            child: LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  // At least as wide as the viewport, so a short line still
-                  // paints its tint edge to edge instead of stopping mid-row.
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: IntrinsicWidth(
-                    // Required, not decorative. A scroll view hands its child
-                    // an UNBOUNDED width, and `CrossAxisAlignment.stretch`
-                    // resolves against the incoming maxWidth — so without a
-                    // finite width first, every row is asked to lay out at
-                    // infinity and the whole block throws. IntrinsicWidth
-                    // measures the longest row and makes that the Column's
-                    // width, which is also exactly the width the rows should
-                    // share. It costs a second measuring pass over the rows,
-                    // which is one more reason [kDiffRowBudget] exists.
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final line in shown)
-                          _DiffRow(line: line, tokens: t),
-                      ],
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    // At least as wide as the viewport, so a short line still
+                    // paints its tint edge to edge instead of stopping mid-row.
+                    constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                    ),
+                    child: IntrinsicWidth(
+                      // Required, not decorative. A scroll view hands its child
+                      // an UNBOUNDED width, and `CrossAxisAlignment.stretch`
+                      // resolves against the incoming maxWidth — so without a
+                      // finite width first, every row is asked to lay out at
+                      // infinity and the whole block throws. IntrinsicWidth
+                      // measures the longest row and makes that the Column's
+                      // width, which is also exactly the width the rows should
+                      // share. It costs a second measuring pass over the rows,
+                      // which is one more reason [kDiffRowBudget] exists.
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final line in shown)
+                            _DiffRow(line: line, tokens: t),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -118,7 +126,7 @@ class DiffView extends StatelessWidget {
             size: CcButtonSize.sm,
             onPressed: onExpand,
             child: Text(
-              'Show the remaining ${lines.length - kDiffRowBudget} lines',
+              l10n.showRemainingLines(lines.length - kDiffRowBudget),
             ),
           ),
         ],
@@ -146,7 +154,7 @@ class _DiffRow extends StatelessWidget {
       return _band(
         t.bgTertiary,
         Text(
-          '  ⋯  $count unchanged line${count == 1 ? '' : 's'}',
+          '  ⋯  ${AppLocalizations.of(context).unchangedLines(count)}',
           style: _mono(t.textTertiary),
         ),
       );
@@ -221,6 +229,8 @@ class _DiffRow extends StatelessWidget {
     ),
   );
 
+  // RTL carve-out: the gutter lives inside the LTR diff block — its numbers
+  // stay right-aligned against the marker column in every locale.
   Widget _gutter(int? number, DesignSystemTokens t) => SizedBox(
     width: 34,
     child: Padding(

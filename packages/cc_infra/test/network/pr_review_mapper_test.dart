@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
@@ -11,6 +12,7 @@ import 'package:cc_infra/src/network/models/github_check_run.dart';
 import 'package:cc_infra/src/network/models/github_commit.dart';
 import 'package:cc_infra/src/network/models/github_issue_comment.dart';
 import 'package:cc_infra/src/network/models/github_job_run.dart';
+import 'package:cc_infra/src/network/models/github_label.dart';
 import 'package:cc_infra/src/network/models/github_pr_review_state.dart';
 import 'package:cc_infra/src/network/models/github_pull_request.dart';
 import 'package:cc_infra/src/network/models/github_pull_request_file.dart';
@@ -122,9 +124,9 @@ void main() {
   group('reactionGroupsFromPerUser', () {
     test('returns empty when no reaction carries a login', () {
       expect(
-        reactionGroupsFromPerUser(
-          const [ForgeReaction(content: '+1', login: '')],
-        ),
+        reactionGroupsFromPerUser(const [
+          ForgeReaction(content: '+1', login: ''),
+        ]),
         isEmpty,
       );
     });
@@ -173,6 +175,14 @@ void main() {
           GitHubUser(login: 'rev1', avatarUrl: 'https://r1'),
         ],
         assignees: const [GitHubUser(login: 'asg1', avatarUrl: 'https://as1')],
+        labels: const [
+          GitHubLabel(
+            name: 'bug',
+            color: '#d73a4a',
+            description: 'Something is wrong',
+          ),
+          GitHubLabel(name: ''),
+        ],
         reactions: const GitHubReactionSummary(totalCount: 1, heart: 1),
         bodyHtml: '<p>html</p>',
         changedFiles: 7,
@@ -205,6 +215,13 @@ void main() {
       ]);
       expect(pr.assignees, [
         const PrUser(login: 'asg1', avatarUrl: 'https://as1'),
+      ]);
+      expect(pr.labels, [
+        const PrLabel(
+          name: 'bug',
+          color: 'd73a4a',
+          description: 'Something is wrong',
+        ),
       ]);
       expect(pr.bodyHtml, '<p>html</p>');
       expect(pr.changedFiles, 7);
@@ -328,6 +345,16 @@ void main() {
           },
         ],
       },
+      'labels': {
+        'nodes': [
+          {
+            'name': 'bug',
+            'color': 'd73a4a',
+            'description': 'Something is wrong',
+          },
+          {'name': '', 'color': 'ffffff'},
+        ],
+      },
       'lastCommit': {
         'nodes': [
           {
@@ -386,6 +413,13 @@ void main() {
         const PrUser(login: 'reviewer-a', avatarUrl: 'https://ra'),
       ]);
       expect(pr.requestedTeamSlugs, ['frontend-platform']);
+      expect(pr.labels, [
+        const PrLabel(
+          name: 'bug',
+          color: 'd73a4a',
+          description: 'Something is wrong',
+        ),
+      ]);
     });
 
     test('reviewedByMe is false when viewer login is null or empty', () {
@@ -1039,8 +1073,49 @@ void main() {
     });
 
     test('returns null for event kinds the feed does not consume', () {
-      const e = GitHubTimelineEvent(event: 'labeled');
+      const e = GitHubTimelineEvent(event: 'assigned');
       expect(prTimelineEventFromGitHub(e), isNull);
+    });
+
+    test('maps a labeled event and strips a leading hash from the color', () {
+      final e = GitHubTimelineEvent(
+        event: 'labeled',
+        actor: const GitHubUser(login: 'renovate[bot]', avatarUrl: ''),
+        label: const GitHubLabel(
+          name: 'dependencies',
+          color: '#0366d6',
+          description: 'Pull requests that update a dependency file',
+        ),
+        createdAt: DateTime.utc(2026, 7, 1),
+      );
+      final mapped = prTimelineEventFromGitHub(e);
+      expect(mapped, isNotNull);
+      expect(mapped!.kind, PrTimelineEventKind.labeled);
+      expect(mapped.actor?.login, 'renovate[bot]');
+      expect(
+        mapped.label,
+        const PrLabel(
+          name: 'dependencies',
+          color: '0366d6',
+          description: 'Pull requests that update a dependency file',
+        ),
+      );
+      expect(mapped.createdAt, DateTime.utc(2026, 7, 1));
+    });
+
+    test('maps unlabeled and drops a labeled event with no name', () {
+      const unlabeled = GitHubTimelineEvent(
+        event: 'unlabeled',
+        actor: GitHubUser(login: 'alice', avatarUrl: ''),
+        label: GitHubLabel(name: 'wip', color: 'eeeeee'),
+      );
+      final mapped = prTimelineEventFromGitHub(unlabeled);
+      expect(mapped!.kind, PrTimelineEventKind.unlabeled);
+      expect(mapped.label?.name, 'wip');
+      expect(mapped.label?.color, 'eeeeee');
+
+      const nameless = GitHubTimelineEvent(event: 'labeled');
+      expect(prTimelineEventFromGitHub(nameless), isNull);
     });
   });
 

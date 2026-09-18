@@ -1,0 +1,519 @@
+{
+  "@@locale": "sv",
+  "appTitle": "Control Center",
+  "back": "Tillbaka",
+  "cancel": "Avbryt",
+  "retry": "Försök igen",
+  "tryAgain": "Försök igen",
+  "settings": "Inställningar",
+  "refresh": "Uppdatera",
+  "approve": "Godkänn",
+  "deny": "Neka",
+  "continueLabel": "Fortsätt",
+  "agentQuestionHeader": "Fråga till dig",
+  "agentQuestionAnsweredLabel": "Besvarad",
+  "agentQuestionSkip": "Hoppa över",
+  "agentQuestionSkippedLabel": "Överhoppad",
+  "agentQuestionFreeformHint": "Skriv ditt svar…",
+  "agentApprovalRequired": "Godkännande krävs",
+  "approveAndRemember": "Godkänn i 8 timmar",
+  "decline": "Avböj",
+  "confirm": "Bekräfta",
+  "send": "Skicka",
+  "close": "Stäng",
+  "expand": "Visa mer",
+  "zoomIn": "Zooma in",
+  "zoomOut": "Zooma ut",
+  "resetZoom": "Återställ zoom",
+  "scanQrPrompt": "Skanna QR-koden från din Mac för att parkoppla den här telefonen.",
+  "scanQrHelp": "Öppna kameran och rikta den mot QR-koden som visas i Control Center på din Mac. Den här telefonen ansluter direkt till din Mac över en privat länk.",
+  "connectingToMac": "Ansluter till din Mac…",
+  "connectingDetail": "Upprättar en säker, direkt länk.",
+  "identityChangedTitle": "Serverns identitet har ändrats",
+  "identityChangedBody": "Den här servern matchar inte längre identiteten som sparades när du parkopplade. Det kan betyda att servern har installerats om — eller att något fångar upp anslutningen. För säkerhets skull ansluter den här enheten inte. Ta bort parkopplingen och skanna sedan en ny QR-kod från din Mac för att parkoppla igen.",
+  "removePairing": "Ta bort parkoppling",
+  "couldntConnect": "Kunde inte ansluta",
+  "pendingPairingTitle": "Anslut till den här servern?",
+  "pendingPairingBody": "En länk bad Control Center att parkoppla med den här servern. Fortsätt bara om du startade det själv.",
+  "connect": "Anslut",
+  "failureNotPaired": "Inte parkopplad — skanna QR-koden från din Mac",
+  "failureUnreachable": "Kunde inte nå servern på någon väg — kontrollera att den körs, eller prova samma nätverk",
+  "failureIdentityChanged": "Serverns identitet har ändrats — om den installerats om, parkoppla den här enheten igen",
+  "failureAuthRejected": "Servern avvisade den här enheten — parkoppla den igen från din Mac",
+  "failureUnknown": "Kunde inte ansluta — tryck för att försöka igen",
+  "statusConnected": "Ansluten",
+  "statusConnecting": "Ansluter",
+  "statusOffline": "Offline",
+  "statusIdentityMismatch": "Identitetsfel",
+  "statusNotPaired": "Inte parkopplad",
+  "statusConfirmPairing": "Bekräfta parkoppling",
+  "connectionFailed": "Anslutningen misslyckades",
+  "identityMismatchBanner": "Serverns identitet har ändrats — anslutningen stoppades. Parkoppla den här enheten igen för att fortsätta.",
+  "tabInbox": "Inkorg",
+  "tabTickets": "Ärenden",
+  "tabChat": "Chatt",
+  "tabPrs": "PRs",
+  "tabCalendar": "Kalender",
+  "tabNews": "Nyheter",
+  "tabWaitingCount": "{label}, {count} väntar",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateAvailable": "En ny Control Center är tillgänglig",
+  "appearance": "Utseende",
+  "language": "Språk",
+  "device": "Enhet",
+  "themeSystem": "System",
+  "themeLight": "Ljust",
+  "themeDark": "Mörkt",
+  "languageSystem": "System",
+  "disconnectTapAgain": "Tryck igen för att koppla från den här enheten från din Mac",
+  "disconnectDevice": "Koppla från den här enheten",
+  "disconnect": "Koppla från",
+  "chooseWorkspace": "Välj arbetsyta",
+  "workspaces": "Arbetsytor",
+  "workspacesLoadFailed": "Kunde inte läsa in arbetsytor",
+  "noWorkspacesYet": "Inga arbetsytor ännu",
+  "selectWorkspace": "Välj {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxLoadFailed": "Kunde inte läsa in inkorgen",
+  "allCaughtUp": "Du är ikapp",
+  "inboxNoForgeAccount": "Inget forge-konto är anslutet på servern, så pull requests kan inte tillskrivas dig ännu.",
+  "inboxNothingWaiting": "Inget är blockerat och ingen pull request väntar på dig.",
+  "blocked": "Blockerad",
+  "sectionNeedsYourReview": "Behöver din granskning",
+  "sectionReturnedToYou": "Åter till dig",
+  "sectionApprovedAndReady": "Godkända och redo",
+  "sectionYourDrafts": "Dina utkast",
+  "sectionWaitingForReviewers": "Väntar på granskare",
+  "sectionMergingAndMerged": "Sammanslås och nyligen sammanslagna",
+  "sectionWaitingForAuthor": "Väntar på författare",
+  "waitingAgo": "väntar {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "openConversation": "Öppna samtalet",
+  "calendarLoadFailed": "Kunde inte läsa in kalendern",
+  "nothingScheduled": "Inget inbokat",
+  "calendarEmptyDescription": "Händelser från dina anslutna kalendrar visas här.",
+  "agenda": "Agenda",
+  "syncCalendarsNow": "Synka kalendrar nu",
+  "event": "Händelse",
+  "eventNotFound": "Händelsen hittades inte",
+  "eventNotFoundDescription": "Den kan ligga utanför agendafönstret, eller ha tagits bort uppströms.",
+  "joinMeeting": "Anslut till mötet",
+  "join": "Anslut",
+  "attendeesCount": "Deltagare ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "details": "Detaljer",
+  "allDay": "Heldag",
+  "happeningNow": "Pågår nu",
+  "inDuration": "Om {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "attendeeAccepted": "accepterat",
+  "attendeeDeclined": "avböjt",
+  "attendeeMaybe": "kanske",
+  "attendeeNoReply": "inget svar",
+  "organizer": "organisatör",
+  "calendarNoAccounts": "Ingen kalender är ansluten för den här arbetsytan. Anslut en från desktopappen — inloggningen lagrar tokenet på servern.",
+  "calendarReauthNeeded": "Ett kalenderkonto måste anslutas igen — det du ser nedan kan vara inaktuellt. Anslut det igen från desktopappen.",
+  "spacesLoadFailed": "Kunde inte läsa in ytor",
+  "noSpaces": "Inga ytor",
+  "spacesEmptyDescription": "Ytor i den här arbetsytan visas här.",
+  "thread": "Tråd",
+  "agentWorking": "Agenten arbetar",
+  "messagesLoadFailed": "Kunde inte läsa in meddelanden",
+  "noMessagesYet": "Inga meddelanden ännu",
+  "noMessagesDescription": "Skicka ett meddelande för att starta samtalet.",
+  "agentResponding": "Agenten svarar",
+  "agentFinished": "Agenten är klar",
+  "attachmentsTooLarge": "{count, plural, =1{{names} är för stor för att skickas härifrån.} other{{names} är för stora för att skickas härifrån.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{{names} är för stor för att skickas över relän härifrån.} other{{names} är för stora för att skickas över relän härifrån.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentUploadFailed": "Kunde inte ladda upp bilagan. Försök igen.",
+  "attachmentsLeftOut": "{count, plural, =1{1 bilaga kunde inte laddas upp och utelämnades.} other{{count} bilagor kunde inte laddas upp och utelämnades.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teammate": "Kollega",
+  "agent": "Agent",
+  "attachFile": "Bifoga en fil",
+  "messageHint": "Meddelande",
+  "removeAttachment": "Ta bort {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "articlesLoadFailed": "Kunde inte läsa in artiklar",
+  "noArticles": "Inga artiklar",
+  "articlesEmptyDescription": "Nya artiklar visas här när flöden uppdateras.",
+  "unread": "Olästa",
+  "allFeeds": "Alla flöden",
+  "save": "Spara",
+  "unsave": "Ta bort sparad",
+  "readFullArticle": "Läs hela artikeln",
+  "ticketsLoadFailed": "Kunde inte läsa in ärenden",
+  "noTickets": "Inga ärenden",
+  "ticketsEmptyDescription": "Ärenden i den här arbetsytan visas här.",
+  "all": "Alla",
+  "ticket": "Ärende",
+  "ticketLoadFailed": "Kunde inte läsa in ärendet",
+  "assignedTo": "Tilldelad {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openInBrowser": "Öppna i webbläsaren",
+  "status": "Status",
+  "assign": "Tilldela",
+  "reassign": "Tilldela om",
+  "noAgents": "Inga agenter",
+  "noAgentsDescription": "Tilldela en agent från den här arbetsytan.",
+  "statusOpen": "Öppen",
+  "statusInProgress": "Pågår",
+  "statusBlocked": "Blockerad",
+  "statusInReview": "Under granskning",
+  "statusDone": "Klar",
+  "statusBacklog": "Backlog",
+  "lensNeedsMe": "Behöver mig",
+  "lensMine": "Mina",
+  "prsLoadFailed": "Kunde inte läsa in pull requests",
+  "noOpenPullRequests": "Inga öppna pull requests",
+  "nothingWaitingOnReview": "Inget väntar på din granskning",
+  "noOwnOpenPullRequests": "Du har inga öppna pull requests",
+  "nothingBlocked": "Inget är blockerat",
+  "prsEmptyDescription": "Pull requests från den här arbetsytans repon visas här.",
+  "refreshPullRequests": "Uppdatera pull requests",
+  "noForgeConnected": "Ingen forge är ansluten på servern, så inga pull requests kan hämtas. Anslut en från desktopappen.",
+  "reposUnreadable": "{count, plural, =1{1 repo kunde inte läsas.} other{{count} repon kunde inte läsas.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reposNotReadable": "Går inte att läsa: {names}",
+  "installationSuspendedTitle": "GitHub App-installationen är avstängd",
+  "installationSuspendedBody": "Visar senast kända data för {names}. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.",
+  "installationSuspendedNotice": "GitHub App-installationen är avstängd. Visar senast kända data för {names}. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "draft": "Utkast",
+  "merged": "Sammanslagen",
+  "closed": "Stängd",
+  "open": "Öppen",
+  "approved": "Godkänd",
+  "changesRequested": "Ändringar begärda",
+  "reviewRequired": "Granskning krävs",
+  "checksPassing": "Kontroller går igenom",
+  "checksFailing": "Kontroller misslyckas",
+  "checksRunning": "Kontroller körs",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Kunde inte läsa in den här pull requesten",
+  "openOnForge": "Öppna på forge",
+  "requestChangesNeedsComment": "Lägg till en kommentar som förklarar vad som behöver ändras.",
+  "conversation": "Samtal",
+  "files": "Filer",
+  "checks": "Kontroller",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 fil} other{{count} filer}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 commit} other{{count} commits}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflicts": "Konflikter",
+  "reviewers": "Granskare",
+  "noDescriptionNoComments": "Ingen beskrivning och inga kommentarer ännu.",
+  "noChangedFiles": "Inga ändrade filer.",
+  "noChecksReported": "Inga kontroller rapporterade för head-commit.",
+  "reviewCommentHint": "Lämna en granskningskommentar…",
+  "comment": "Kommentar",
+  "commentPosted": "Kommentaren publicerades",
+  "request": "Begär",
+  "squashAndMerge": "Squasha och slå samman",
+  "noActionsAvailable": "{status} — inga åtgärder tillgängliga.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewApproved": "godkände",
+  "reviewRequestedChanges": "begärde ändringar",
+  "reviewCommented": "granskade",
+  "reviewPending": "väntar",
+  "unknownAuthor": "okänd",
+  "hideDiffFor": "Dölj diffen för {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "showDiffFor": "Visa diffen för {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "checkRunning": "körs",
+  "checkPassed": "godkänd",
+  "checkFailed": "misslyckades",
+  "checkCancelled": "avbruten",
+  "checkSkipped": "hoppades över",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "noTextDiff": "Ingen textdiff för den här filen — den är binär, eller för stor för att forge ska returnera en.",
+  "showRemainingLines": "{count, plural, =1{Visa den återstående raden} other{Visa de återstående {count} raderna}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 oförändrad rad} other{{count} oförändrade rader}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToLatest": "Hoppa till senaste",
+  "streaming": "Strömmar",
+  "working": "Arbetar",
+  "input": "Indata",
+  "output": "Utdata",
+  "now": "nu",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "Idag",
+  "tomorrow": "Imorgon",
+  "yesterday": "Igår",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
+}

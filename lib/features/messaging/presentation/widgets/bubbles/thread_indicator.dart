@@ -96,8 +96,8 @@ class ThreadIndicator extends ConsumerWidget {
                   child: Stack(
                     children: [
                       for (var i = 0; i < faces.length; i++)
-                        Positioned(
-                          left: i * (avatar - overlap),
+                        PositionedDirectional(
+                          start: i * (avatar - overlap),
                           child: Container(
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,

@@ -110,12 +110,27 @@ ToolPresentation resolveToolPresentation(ToolSegment seg) {
         category: ToolCategory.edit,
         subtitle: shortenPath(filePath()),
       );
+    // Script tools carry a required per-call `description` (their command /
+    // code is not scannable the way a path is). When present it IS the row's
+    // label and the tool name demotes to the subtitle; older transcripts
+    // without one keep the tool-name-plus-command form.
     case 'bash':
+      final bashDescription = _firstLine(str('description'));
       return ToolPresentation(
         icon: AppIcons.terminal,
-        verb: 'Bash',
+        verb: bashDescription ?? 'Bash',
         category: ToolCategory.run,
-        subtitle: _firstLine(str('description') ?? str('command')),
+        subtitle: bashDescription != null
+            ? 'Bash'
+            : _firstLine(str('command')),
+      );
+    case 'eval':
+      final evalDescription = _firstLine(str('description'));
+      return ToolPresentation(
+        icon: AppIcons.terminal,
+        verb: evalDescription ?? 'Eval',
+        category: ToolCategory.run,
+        subtitle: evalDescription != null ? 'Eval' : _firstLine(str('code')),
       );
     case 'grep':
     case 'search':

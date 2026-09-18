@@ -52,7 +52,7 @@ typedef OneShotLauncher =
 /// MCP config is passed, no tools are declared and the process is given a
 /// throwaway working directory.
 ///
-/// Four transports, four mechanisms — the differences are stated rather than
+/// Three transports, three mechanisms — the differences are stated rather than
 /// smoothed over, because they are not equivalent:
 ///
 ///  * [AdapterTransport.harness] — no process at all. Builds an
@@ -63,10 +63,6 @@ typedef OneShotLauncher =
 ///    system prompt is folded into the piped prompt rather than passed as a
 ///    flag, so the invocation stays on the three flags this repo already
 ///    drives Claude Code with.
-///  * [AdapterTransport.structuredCli] — the bare CLI with a piped prompt,
-///    deliberately WITHOUT `--mode json`: the NDJSON event schema is parsed by
-///    the sandbox port, and reaching for it here would drag the sandbox onto
-///    this path for output we want as plain text anyway.
 ///  * [AdapterTransport.acp] — the full `initialize` → `session/new` →
 ///    `session/prompt` handshake over stdio via [AcpClient], collecting the
 ///    turn's [TextEvent]s.
@@ -138,14 +134,6 @@ class AdapterOneShotRunner {
         // Claude Code takes `--append-system-prompt`, but this repo has never
         // driven it, so the instruction rides in the piped prompt where every
         // CLI honours it identically.
-        input: '$systemPrompt\n\n$prompt',
-        timeout: timeout,
-      ),
-      AdapterTransport.structuredCli => _runPipedCli(
-        adapter: adapter,
-        args: [
-          if (modelId != null && modelId.isNotEmpty) ...['--model', modelId],
-        ],
         input: '$systemPrompt\n\n$prompt',
         timeout: timeout,
       ),

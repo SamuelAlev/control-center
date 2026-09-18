@@ -84,6 +84,10 @@ void main() {
       expect(resolveToolPresentation(tool('Bash')).category, ToolCategory.run);
     });
 
+    test('eval maps to run', () {
+      expect(resolveToolPresentation(tool('eval')).category, ToolCategory.run);
+    });
+
     test('harness edit/write/read show the file path as subtitle', () {
       expect(
         resolveToolPresentation(
@@ -154,6 +158,68 @@ void main() {
         resolveToolPresentation(tool('TodoWrite')).category,
         ToolCategory.other,
       );
+    });
+  });
+
+  group('script tool call descriptions', () {
+    test('bash description becomes the label, tool name the subtitle', () {
+      final p = resolveToolPresentation(
+        tool(
+          'bash',
+          inputs: {
+            'description': 'Rereading project constraints',
+            'command': 'cat CLAUDE.md',
+          },
+        ),
+      );
+      expect(p.verb, 'Rereading project constraints');
+      expect(p.subtitle, 'Bash');
+    });
+
+    test('bash without a description keeps the command subtitle', () {
+      final p = resolveToolPresentation(
+        tool('bash', inputs: {'command': 'git status'}),
+      );
+      expect(p.verb, 'Bash');
+      expect(p.subtitle, 'git status');
+    });
+
+    test('bash with no inputs stays a bare verb', () {
+      final p = resolveToolPresentation(tool('bash'));
+      expect(p.verb, 'Bash');
+      expect(p.subtitle, isNull);
+    });
+
+    test('eval description becomes the label, tool name the subtitle', () {
+      final p = resolveToolPresentation(
+        tool(
+          'eval',
+          inputs: {
+            'description': 'Implementing SQLite callbacks',
+            'code': 'from pathlib import Path\nprint(1)',
+          },
+        ),
+      );
+      expect(p.verb, 'Implementing SQLite callbacks');
+      expect(p.subtitle, 'Eval');
+    });
+
+    test('eval without a description previews the first code line', () {
+      final p = resolveToolPresentation(
+        tool('eval', inputs: {'code': 'from pathlib import Path\nprint(1)'}),
+      );
+      expect(p.verb, 'Eval');
+      expect(p.subtitle, 'from pathlib import Path');
+    });
+
+    test('a multi-line description is cut to its first line', () {
+      final p = resolveToolPresentation(
+        tool(
+          'bash',
+          inputs: {'description': 'First line\nsecond line', 'command': 'ls'},
+        ),
+      );
+      expect(p.verb, 'First line');
     });
   });
 

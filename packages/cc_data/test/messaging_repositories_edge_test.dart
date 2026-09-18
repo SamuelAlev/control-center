@@ -41,20 +41,11 @@ void main() {
       host.callResults['messaging.listSpaces'] = {
         'spaces': ['junk'],
       };
-      expect(
-        await RemoteMessagingRepository(client).listSpaces(_ws),
-        isEmpty,
-      );
-      expect(
-        host.lastCall('messaging.listSpaces')!.args['workspace_id'],
-        _ws,
-      );
+      expect(await RemoteMessagingRepository(client).listSpaces(_ws), isEmpty);
+      expect(host.lastCall('messaging.listSpaces')!.args['workspace_id'], _ws);
 
       host.callResults.remove('messaging.listSpaces');
-      expect(
-        await RemoteMessagingRepository(client).listSpaces(_ws),
-        isEmpty,
-      );
+      expect(await RemoteMessagingRepository(client).listSpaces(_ws), isEmpty);
     });
 
     test(
@@ -279,9 +270,7 @@ void main() {
     });
 
     test('retrySpaceProvisioning forwards the space_id', () async {
-      await RemoteMessagingRepository(
-        client,
-      ).retrySpaceProvisioning(_ws, 'c1');
+      await RemoteMessagingRepository(client).retrySpaceProvisioning(_ws, 'c1');
       final args = host.lastCall('messaging.retrySpaceProvisioning')!.args;
       expect(args['workspace_id'], _ws);
       expect(args['space_id'], 'c1');
@@ -374,9 +363,32 @@ void main() {
         client,
       ).watchSpaceActivity(_ws).first;
       expect(list.single.spaceId, 'c1');
+      expect(list.single.lastAgentMessageAtByConversation, isEmpty);
       // The typed activity watch is workspace-keyed: it pins the caller's id
       // rather than following the client's ambient active workspace.
       expect(host.lastSubscribe!.args['workspace_id'], _ws);
+    });
+
+    test('watchSpaceActivity maps per-conversation last agent times', () async {
+      host.snapshotFor('messaging.watchSpaceActivity', {
+        'spaces': [
+          {
+            'space_id': 'c1',
+            'last_agent_message_at': '2026-01-02T00:00:00.000',
+            'conversations': [
+              {
+                'conversation_id': 'conv-a',
+                'last_agent_message_at': '2026-01-02T00:00:00.000',
+              },
+              {'conversation_id': 'conv-b'},
+            ],
+          },
+        ],
+      });
+      final list = await RpcMessagingRepository(
+        client,
+      ).watchSpaceActivity(_ws).first;
+      expect(list.single.lastAgentMessageAtByConversation.keys, ['conv-a']);
     });
 
     test('getMessagePage delegates the window to the server', () async {
@@ -453,7 +465,6 @@ void main() {
       expect(page.hasMore, isFalse);
       expect(page.nextCursor, isNull);
     });
-
   });
 
   group('RpcMessagingRepository mutations + host-only guards', () {
@@ -526,10 +537,7 @@ void main() {
         () => repo.updateSpaceName(_ws, 'c1', 'n'),
         throwsUnsupportedError,
       );
-      expect(
-        () => repo.clearSpaceMessages(_ws, 'c1'),
-        throwsUnsupportedError,
-      );
+      expect(() => repo.clearSpaceMessages(_ws, 'c1'), throwsUnsupportedError);
       expect(
         () => repo.removeParticipant(_ws, 'c1', 'a1'),
         throwsUnsupportedError,

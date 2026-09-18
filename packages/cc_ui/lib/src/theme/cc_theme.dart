@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/widgets.dart';
 
@@ -63,9 +64,9 @@ class CcThemeData {
   /// Whether the appearance is light or dark.
   final CcBrightness brightness;
 
-  /// Whether animations should be suppressed (mirrors
-  /// `MediaQuery.disableAnimationsOf`). Components collapse durations to zero
-  /// when this is set.
+  /// Whether travel should be suppressed (mirrors
+  /// `MediaQuery.disableAnimationsOf`). Components drop translate/scale/size
+  /// and keep a short opacity fade (`CcMotion.resolveFade`).
   final bool reducedMotion;
 
   /// The resolved UI font family (e.g. `Manrope`), or null for the
@@ -122,7 +123,13 @@ class CcThemeData {
 /// `context.ccTheme`.
 class CcTheme extends InheritedWidget {
   /// Creates a [CcTheme] that exposes [data] to [child] and its descendants.
-  const CcTheme({required this.data, required super.child, super.key});
+  ///
+  /// The child is wrapped in a binder that FontLoads only the active
+  /// [Localizations] locale's script companion (Sarabun for Thai, Rubik for
+  /// Hebrew, IBM Plex Sans Arabic for Arabic-script, the OS UI face for CJK).
+  /// Latin/Cyrillic locales load nothing extra.
+  CcTheme({required this.data, required Widget child, super.key})
+    : super(child: _CcScriptFontBinder(child: child));
 
   /// The active design-system configuration.
   final CcThemeData data;
@@ -140,6 +147,29 @@ class CcTheme extends InheritedWidget {
 
   @override
   bool updateShouldNotify(CcTheme oldWidget) => data != oldWidget.data;
+}
+
+/// Picks the script companion from the ambient locale. Lives under [CcTheme]
+/// so every host (desktop, phone, gallery, tests) gets the same behaviour
+/// without a per-app hook; [Localizations] itself sits *above* [CcTheme].
+class _CcScriptFontBinder extends StatefulWidget {
+  const _CcScriptFontBinder({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_CcScriptFontBinder> createState() => _CcScriptFontBinderState();
+}
+
+class _CcScriptFontBinderState extends State<_CcScriptFontBinder> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    CcFonts.activateForLocale(Localizations.maybeLocaleOf(context));
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// Convenience accessors for the active [CcTheme] on [BuildContext].

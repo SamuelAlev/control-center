@@ -183,7 +183,7 @@ class PortMenu extends ConsumerWidget {
               unawaited(repo.removePort(workspaceId, rigId, port.guestPort)),
         ),
       ],
-      target: Icon(
+      target: CcIcon(
         AppIcons.moreHorizontal,
         size: 16,
         color: (context.designSystem ?? DesignSystemTokens.light()).fgSecondary,

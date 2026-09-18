@@ -95,10 +95,11 @@ class ConversationsSidebarSection extends ConsumerWidget {
               _EmptyHint(text: l10n.noSpacesYet)
             else
               for (final space in humanSpaces)
-                _SpaceEntry(
+                ..._spaceGroupChildren(
+                  context,
+                  ref,
                   space: space,
-                  selected: space.id == routeSpaceId,
-                  onPress: () => _selectAndNavigate(context, ref, space.id),
+                  routeSpaceId: routeSpaceId,
                 ),
           ],
         ),
@@ -129,31 +130,20 @@ class ConversationsSidebarSection extends ConsumerWidget {
     // provider, keeping the URL the single source of truth.
     GoRouter.of(context).go(spaceRoute(context.currentWorkspaceId!, spaceId));
   }
-}
 
-/// One space in the sidebar, folder-style: the space row plus — when the space
-/// holds parallel conversations — a flat indented row per ACTIVE conversation
-/// beneath it, the same set the space opens as editor tabs, with a quiet count
-/// chip on the space row. Solo-first: a single-conversation space renders just
-/// the space row (the row itself opens that conversation).
-class _SpaceEntry extends ConsumerWidget {
-  const _SpaceEntry({
-    required this.space,
-    required this.selected,
-    required this.onPress,
-  });
-
-  /// The space to render.
-  final Space space;
-
-  /// Whether this space is the route's selected space.
-  final bool selected;
-
-  /// Tap handler for the space row itself.
-  final VoidCallback onPress;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  /// Flattened [CcSidebarGroup] children for one space: the space row is a
+  /// [CcFluidHoverTarget] sibling of a [CcSidebarBranch] holding any
+  /// conversation rows. Expanded groups sit flush, and the branch is a hover
+  /// boundary so nested conversations keep their own wash. A wrapping
+  /// [Column] would make the whole folder one composite and the list would
+  /// lose travel between spaces.
+  List<Widget> _spaceGroupChildren(
+    BuildContext context,
+    WidgetRef ref, {
+    required Space space,
+    required String? routeSpaceId,
+  }) {
+    final selected = space.id == routeSpaceId;
     final conversations =
         ref.watch(spaceConversationsProvider(space.id)).value ??
         const <Conversation>[];
@@ -161,38 +151,33 @@ class _SpaceEntry extends ConsumerWidget {
         .where((c) => !c.isArchived)
         .toList(growable: false);
     final listed = active.length > 1;
-    // Which of the rows below is actually working. Only hand the space row's
-    // spinner down when a row the user can see will pick it up — a run in an
-    // archived conversation, or one carrying no conversation id, has no visible
-    // home and must keep its signal on the space.
     final busyIds = listed
         ? ref.watch(spaceBusyConversationIdsProvider(space.id))
         : const <String>{};
     final busyHere = listed && active.any((c) => busyIds.contains(c.id));
+    final unreadHere =
+        listed &&
+        active.any(
+          (c) => ref.watch(
+            conversationUnreadProvider((
+              spaceId: space.id,
+              conversationId: c.id,
+            )),
+          ),
+        );
+    final onPress = () => _selectAndNavigate(context, ref, space.id);
     final row = SpaceSidebarItem(
       space: space,
       selected: selected,
       conversationCount: listed ? active.length : null,
       runningShownOnConversations: busyHere,
+      unreadShownOnConversations: unreadHere,
       onPress: onPress,
     );
     if (!listed) {
-      return row;
+      return [row];
     }
 
-    // The indent drops in rail mode / while the width animates: at the rail's
-    // width it would push the rows past the edge (same rule as the Tickets
-    // accordion children).
-    final railMode =
-        (CcSidebarScope.collapsedOf(context) ?? false) ||
-        (CcSidebarScope.transitioningOf(context) ?? false);
-
-    // The focused conversation follows the URL: the path names the space and
-    // `?tab=` the focused editor tab, so the highlight clears the moment a
-    // non-chat tab (or another space) takes focus. A tab-less URL — and the
-    // seeded no-arg chat tab's space key — means the standing conversation,
-    // resolved only while the space is open (the provider is then already
-    // warm from the space surface itself).
     final tabKey = selected
         ? GoRouterState.of(context).uri.queryParameters[editorTabQueryParam]
         : null;
@@ -210,40 +195,29 @@ class _SpaceEntry extends ConsumerWidget {
       return tabKey == MessagingTabKinds.chatTabKey(c.id);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        row,
-        Padding(
-          padding: EdgeInsets.only(left: railMode ? 0 : AppSpacing.md),
-          // A label-less group keeps the rows on the sidebar's 4px rhythm.
-          child: CcSidebarGroup(
-            children: [
-              for (final c in active)
-                _ConversationRow(
-                  key: ValueKey(c.id),
-                  conversation: c,
-                  spaceId: space.id,
-                  selected: focused(c),
-                  running: busyIds.contains(c.id),
-                  // The last active conversation stays: a space always keeps
-                  // one live stream, so archiving it would only mint a fresh
-                  // standing one under a different name.
-                  canArchive: active.length > 1,
-                  onPress: () => GoRouter.of(context).go(
-                    spaceRoute(
-                      context.currentWorkspaceId!,
-                      space.id,
-                      tab: MessagingTabKinds.chatTabKey(c.id),
-                    ),
-                  ),
+    return [
+      row,
+      CcSidebarBranch(
+        children: [
+          for (final c in active)
+            _ConversationRow(
+              key: ValueKey(c.id),
+              conversation: c,
+              spaceId: space.id,
+              selected: focused(c),
+              running: busyIds.contains(c.id),
+              canArchive: active.length > 1,
+              onPress: () => GoRouter.of(context).go(
+                spaceRoute(
+                  context.currentWorkspaceId!,
+                  space.id,
+                  tab: MessagingTabKinds.chatTabKey(c.id),
                 ),
-            ],
-          ),
-        ),
-      ],
-    );
+              ),
+            ),
+        ],
+      ),
+    ];
   }
 }
 
@@ -253,8 +227,9 @@ class _SpaceEntry extends ConsumerWidget {
 /// slot has to hold a SPINNER while this conversation's agent is working, and
 /// [CcSidebarItem] takes an `IconData`, not a widget. [SpaceRow] reproduces the
 /// same look and already handles the rail-mode/width-transition behaviour a
-/// hand-rolled row would get subtly wrong.
-class _ConversationRow extends ConsumerWidget {
+/// hand-rolled row would get subtly wrong. Implements [CcFluidHoverTarget] so
+/// the enclosing [CcSidebarBranch] can wash the row.
+class _ConversationRow extends ConsumerWidget implements CcFluidHoverTarget {
   const _ConversationRow({
     super.key,
     required this.conversation,
@@ -279,48 +254,40 @@ class _ConversationRow extends ConsumerWidget {
   final VoidCallback onPress;
 
   @override
+  bool get fluidHoverEnabled => true;
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    return GestureDetector(
-      onSecondaryTapDown: (details) =>
-          _showMenu(context, ref, details.globalPosition),
-      // Touch parity for the right-click menu — it OPENS the menu, it never
-      // archives directly: an archived conversation has no restore surface,
-      // so an instant fire is unrecoverable (the space row's long-press CAN
-      // archive — archived spaces are restorable from the archive dialog).
-      onLongPressStart: (details) =>
-          _showMenu(context, ref, details.globalPosition),
-      child: SpaceRow(
-        leading: running
-            // The default accent spinner would vanish into the selected row's
-            // solid brand fill, so it follows the row's content colour.
-            ? CcSpinner(size: 18, color: selected ? t.accentOn : null)
-            : Icon(
-                conversation.isThread
-                    ? AppIcons.gitBranch
-                    : AppIcons.messageSquareText,
-                size: 18,
-              ),
-        label: conversationDisplayName(conversation, l10n),
-        selected: selected,
-        status: running ? SpaceStatus.running : SpaceStatus.idle,
-        // Unread is a SPACE-level signal (`spaceUnreadProvider`) and stays on
-        // the space row: duplicating one dot onto every child would say four
-        // things are unseen when one is.
-        unread: false,
-        leadingHandlesRunning: true,
-        onPress: onPress,
+    // Indent and tree rail are owned by the enclosing [CcSidebarBranch].
+    return SpaceRow(
+      leading: running
+          // The default accent spinner would vanish into the selected row's
+          // solid brand fill, so it follows the row's content colour.
+          ? CcSpinner(size: 18, color: selected ? t.accentOn : null)
+          : Icon(
+              conversation.isThread
+                  ? AppIcons.gitBranch
+                  : AppIcons.messageSquareText,
+              size: 18,
+            ),
+      label: conversationDisplayName(conversation, l10n),
+      selected: selected,
+      status: running ? SpaceStatus.running : SpaceStatus.idle,
+      // Unread is attributed to THIS conversation when the space lists its
+      // children. The parent space suppresses its own dot in that case so
+      // one unseen reply does not light both rows.
+      unread: ref.watch(
+        conversationUnreadProvider((
+          spaceId: spaceId,
+          conversationId: conversation.id,
+        )),
       ),
-    );
-  }
-
-  void _showMenu(BuildContext context, WidgetRef ref, Offset position) {
-    final l10n = AppLocalizations.of(context);
-    showCcMenuAt(
-      context: context,
-      position: position,
-      items: [
+      leadingHandlesRunning: true,
+      onPress: onPress,
+      menuSemanticLabel: l10n.conversationActions,
+      menuItems: [
         CcMenuItem(
           label: l10n.renameConversation,
           icon: AppIcons.pencil,
@@ -444,7 +411,7 @@ class _SidebarSectionState extends State<_SidebarSection> {
               child: IgnorePointer(
                 ignoring: transitioning,
                 child: Padding(
-                  padding: const EdgeInsets.only(left: 10),
+                  padding: const EdgeInsetsDirectional.only(start: 10),
                   child: Row(
                     children: [
                       // The label is tappable to toggle (a wide hit

@@ -76,9 +76,13 @@ void main() {
       expect(accountLaneForAdapter('claude-code'), AccountLane.claudeCode);
     });
 
-    test('a runner that owns its credential has no lane here', () {
-      expect(accountLaneForAdapter('codex'), AccountLane.none);
-      expect(accountLaneForAdapter('opencode'), AccountLane.none);
+    test('an unknown adapter id is the built-in harness, matching dispatch', () {
+      // Deleted runners (Codex, OpenCode, cursor-agent) fall through the same
+      // lookup `DispatchAgentUseCase` uses, so a leftover id still describes
+      // the lane the run actually takes.
+      expect(accountLaneForAdapter('codex'), AccountLane.harness);
+      expect(accountLaneForAdapter('opencode'), AccountLane.harness);
+      expect(accountLaneForAdapter('cursor-agent'), AccountLane.harness);
     });
   });
 
@@ -151,7 +155,9 @@ void main() {
       );
     });
 
-    testWidgets('another runner never shows it', (tester) async {
+    testWidgets('an unknown adapter id uses the harness account lane', (
+      tester,
+    ) async {
       expect(
         await _visible(
           tester,
@@ -167,7 +173,7 @@ void main() {
             ),
           ],
         ),
-        isFalse,
+        isTrue,
       );
     });
   });

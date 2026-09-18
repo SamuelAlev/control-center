@@ -5,6 +5,10 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 
 /// Use-cases for [CcIconButton] — the square, icon-only sibling of [CcButton].
 ///
+/// Overflow glyphs paint through [CcIcon], which draws Phosphor Regular's
+/// `dots-three` SVG (the same viewBox 256 paths as phosphoricons.com) at
+/// 16 px — the same size as every other [CcIconButton] glyph.
+///
 /// Each builder is annotated with `@widgetbook.UseCase`; widgetbook_generator
 /// groups them under `Components → Buttons → CcIconButton` (from
 /// [CcIconButton] as the `type` and the bracketed `path` segments). The
@@ -14,6 +18,18 @@ import 'package:widgetbook_annotation/widgetbook_annotation.dart' as widgetbook;
 const _path = '[Components]/Buttons';
 
 void _noop() {}
+
+/// Phosphor Regular `dots-three` — same SVG the website serves.
+const _dotsThree = IconData(
+  0xe1fe,
+  fontFamily: 'PhosphorRegular',
+  fontPackage: 'cc_ui',
+);
+const _dotsThreeVertical = IconData(
+  0xe208,
+  fontFamily: 'PhosphorRegular',
+  fontPackage: 'cc_ui',
+);
 
 /// Every color variant side by side, plus the disabled treatment.
 @widgetbook.UseCase(name: 'Variants', type: CcIconButton, path: _path)
@@ -53,6 +69,16 @@ Widget ccIconButtonVariantsUseCase(BuildContext context) {
           tooltip: 'Workspace settings',
         ),
         CcIconButton(icon: CcIcons.lock, onPressed: null, tooltip: 'Locked'),
+        CcIconButton(
+          icon: _dotsThree,
+          onPressed: _noop,
+          tooltip: 'More actions',
+        ),
+        CcIconButton(
+          icon: _dotsThreeVertical,
+          onPressed: _noop,
+          tooltip: 'More actions',
+        ),
       ],
     ),
   );

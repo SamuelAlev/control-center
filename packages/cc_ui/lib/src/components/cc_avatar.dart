@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
 import 'package:cc_ui/src/primitives/image_fade.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
@@ -76,8 +77,6 @@ class CcAvatar extends StatelessWidget {
       // Logos and favicons are frequently transparent PNGs, so anything painted
       // behind them bleeds through `BoxFit.cover`'s transparent pixels. The
       // initials belong solely to the image-absent path and the `errorBuilder`.
-      final reduceMotion =
-          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
       content = ImageFade(
         image: sized,
         placeholder: _disc(t),
@@ -85,9 +84,7 @@ class CcAvatar extends StatelessWidget {
         height: size,
         fit: BoxFit.cover,
         alignment: Alignment.center,
-        duration: reduceMotion
-            ? Duration.zero
-            : const Duration(milliseconds: 250),
+        duration: CcMotion.resolveFade(context, CcMotion.moderate),
         // Already-cached avatars (the common case after first load) appear
         // instantly rather than re-fading on every build.
         syncDuration: Duration.zero,

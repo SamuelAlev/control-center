@@ -51,7 +51,7 @@ class _FeedsCard extends ConsumerWidget {
     return SectionCard(
       label: l10n.feedsCount(feeds.length),
       padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-      headerPadding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
       trailing: CcButton(
         variant: CcButtonVariant.secondary,
         size: CcButtonSize.sm,
@@ -116,7 +116,7 @@ class _FeedRow extends ConsumerWidget {
     return Opacity(
       opacity: dimmed ? 0.6 : 1,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 8, 10),
         child: Row(
           children: [
             _FaviconBadge(feed: feed),
@@ -237,8 +237,8 @@ class _FaviconBadge extends StatelessWidget {
         clipBehavior: Clip.none,
         children: [
           Center(child: FeedFavicon(feed: feed, size: 28)),
-          Positioned(
-            right: 0,
+          PositionedDirectional(
+            end: 0,
             bottom: 0,
             child: Container(
               width: 11,

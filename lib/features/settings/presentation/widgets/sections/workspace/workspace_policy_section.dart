@@ -223,7 +223,7 @@ class _WorkspacePolicySectionState
           ),
           const SizedBox(height: 8),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             // Writes immediately rather than waiting for Save: this one rides
             // the `workspace_settings` lane, not the `workspace.upsert` the
             // fields above share, and a single Save button that persisted some
@@ -249,7 +249,7 @@ class _WorkspacePolicySectionState
           ),
           const SizedBox(height: AppSpacing.md),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: CcButton(
               loading: _saving,
               onPressed: isAdmin ? () => _save(workspace) : null,

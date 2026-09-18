@@ -1,5 +1,6 @@
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +12,9 @@ final localeProvider = NotifierProvider<LocaleNotifier, Locale?>(
 );
 
 /// Persistent locale preference backed by [AppPreferences].
+///
+/// The stored value is a BCP 47 tag (`fr-FR`) naming a [kAppLocaleVariants]
+/// entry. Anything else is treated as unset (follow system).
 class LocaleNotifier extends Notifier<Locale?> {
   late AppPreferences _prefs;
 
@@ -21,36 +25,26 @@ class LocaleNotifier extends Notifier<Locale?> {
     if (saved == null) {
       return null;
     }
-    return _localeFromString(saved);
+    return parsePersistedLocale(saved)?.locale;
   }
 
   /// Sets the locale override. Pass `null` to follow the system default.
+  ///
+  /// Only a shipped BCP 47 tag (`fr-FR`) is persisted. A bare language
+  /// (`fr`) or any other unrecognised value is treated as follow-system.
   void setLocale(Locale? locale) {
     if (locale == null) {
       _prefs.remove(localeKey);
-    } else {
-      _prefs.setString(localeKey, _localeToString(locale));
+      state = null;
+      return;
     }
-    state = locale;
-  }
-
-  /// Serializes a [Locale] as `'languageCode'` or `'languageCode_countryCode'`.
-  static String _localeToString(Locale l) {
-    final country = l.countryCode;
-    return country != null && country.isNotEmpty
-        ? '${l.languageCode}_$country'
-        : l.languageCode;
-  }
-
-  /// Deserializes a persisted locale string.
-  static Locale? _localeFromString(String s) {
-    final parts = s.split('_');
-    if (parts.length == 2) {
-      return Locale(parts[0], parts[1]);
+    final variant = parsePersistedLocale(formatLocaleTag(locale));
+    if (variant == null) {
+      _prefs.remove(localeKey);
+      state = null;
+      return;
     }
-    if (parts.length == 1) {
-      return Locale(parts[0]);
-    }
-    return null;
+    _prefs.setString(localeKey, variant.tag);
+    state = variant.locale;
   }
 }

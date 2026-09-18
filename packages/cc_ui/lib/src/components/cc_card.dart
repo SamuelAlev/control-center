@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
@@ -62,8 +63,9 @@ class CcCard extends StatelessWidget {
       semanticLabel: semanticLabel,
       builder: (context, states) {
         final hovered =
-            states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.pressed);
+            states.contains(WidgetState.pressed) ||
+            (states.contains(WidgetState.hovered) &&
+                !CcFluidHover.isItemActive(context));
         // The hover token is a translucent wash; layer it over the base fill so
         // the panel never becomes transparent.
         return DecoratedBox(

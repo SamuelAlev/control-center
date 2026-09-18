@@ -65,18 +65,19 @@ void main() {
       expect(f.spawner.started, hasLength(3));
       for (final process in f.spawner.started) {
         expect(process.executable, _adb);
-        expect(
-          process.args.take(2),
-          ['-s', _serial],
-          reason: 'The serial must lead every argv, before the sub-command.',
-        );
+        expect(process.args.take(2), [
+          '-s',
+          _serial,
+        ], reason: 'The serial must lead every argv, before the sub-command.');
       }
     });
 
     test('the streaming commands are pinned too', () async {
       final f = _client();
       // Failed on purpose below; the argv is what this test is about.
-      unawaited(f.client.screencap().then<void>((_) {}, onError: (Object _) {}));
+      unawaited(
+        f.client.screencap().then<void>((_) {}, onError: (Object _) {}),
+      );
       await pumpEventQueue();
       final capture = f.spawner.started.single;
       expect(capture.args.take(2), ['-s', _serial]);
@@ -97,24 +98,26 @@ void main() {
       expect(f.spawner.started.single.args, contains('sys.boot_completed'));
     });
 
-    test('a disconnected device is named, not left as a raw adb error',
-        () async {
-      final f = _client(
-        answer: (_) => _out(
-          '',
-          exitCode: 1,
-          stderr: "error: device '$_serial' not found",
-        ),
-      );
-      await expectLater(
-        f.client.ensureReady(),
-        throwsA(
-          isA<AdbDeviceGoneException>()
-              .having((e) => e.serial, 'serial', _serial)
-              .having((e) => e.message, 'message', contains(_serial)),
-        ),
-      );
-    });
+    test(
+      'a disconnected device is named, not left as a raw adb error',
+      () async {
+        final f = _client(
+          answer: (_) => _out(
+            '',
+            exitCode: 1,
+            stderr: "error: device '$_serial' not found",
+          ),
+        );
+        await expectLater(
+          f.client.ensureReady(),
+          throwsA(
+            isA<AdbDeviceGoneException>()
+                .having((e) => e.serial, 'serial', _serial)
+                .having((e) => e.message, 'message', contains(_serial)),
+          ),
+        );
+      },
+    );
 
     test('an attached but unbooted device is refused', () async {
       // Acting between "ADB answers" and "Android is up" gets taps swallowed
@@ -184,10 +187,7 @@ void main() {
       final outside = Directory.systemTemp.createTempSync('adb-apk-outside');
       addTearDown(() => outside.deleteSync(recursive: true));
       final file = apk('secret.apk', inside: outside);
-      final f = _client(
-        answer: (_) => _out('Success'),
-        apkRoots: [root.path],
-      );
+      final f = _client(answer: (_) => _out('Success'), apkRoots: [root.path]);
       // The confinement message names the RESOLVED root (the check compares
       // resolved paths, and Windows resolves the 8.3 short-name TEMP
       // ('RUNNER~1') to the real user dir), so expect that form.
@@ -217,8 +217,7 @@ void main() {
       final outside = Directory.systemTemp.createTempSync('adb-apk-outside');
       addTearDown(() => outside.deleteSync(recursive: true));
       final real = apk('real.apk', inside: outside);
-      final link = Link(p.join(root.path, 'link.apk'))
-        ..createSync(real.path);
+      final link = Link(p.join(root.path, 'link.apk'))..createSync(real.path);
       final f = _client(answer: (_) => _out('Success'), apkRoots: [root.path]);
       await expectLater(
         f.client.installApk(link.path),
@@ -330,10 +329,14 @@ void main() {
       // The old check was `stdout.contains('Error')`, which called this a
       // failure and left the model retrying a launch that had worked.
       final f = _client(
-        answer: (_) =>
-            _out('Starting: Intent { cmp=com.example/.ErrorReporterActivity }\n'),
+        answer: (_) => _out(
+          'Starting: Intent { cmp=com.example/.ErrorReporterActivity }\n',
+        ),
       );
-      await f.client.startApp('com.example', activity: '.ErrorReporterActivity');
+      await f.client.startApp(
+        'com.example',
+        activity: '.ErrorReporterActivity',
+      );
       expect(f.spawner.started.single.args, contains('start'));
     });
 
@@ -342,6 +345,77 @@ void main() {
       await expectLater(
         f.client.startApp('com.example'),
         throwsA(isA<AdbException>()),
+      );
+    });
+  });
+
+  group('developer controls', () {
+    test('stop, clear and uninstall target the pinned package', () async {
+      final f = _client(answer: (_) => _out('Success\n'));
+      await f.client.stopApp('com.example.app');
+      await f.client.clearAppData('com.example.app');
+      await f.client.uninstallApp('com.example.app');
+
+      expect(f.spawner.started[0].args.join(' '), contains('force-stop'));
+      expect(f.spawner.started[1].args.join(' '), contains('pm'));
+      expect(f.spawner.started[1].args.join(' '), contains('clear'));
+      expect(f.spawner.started[2].args, contains('uninstall'));
+      expect(
+        f.spawner.started.every(
+          (process) =>
+              process.args.contains('com.example.app') ||
+              process.args.join(' ').contains('com.example.app'),
+        ),
+        isTrue,
+      );
+    });
+
+    test('deep-link metacharacters stay one quoted device argument', () async {
+      final f = _client(answer: (_) => _out('Starting: Intent'));
+      await f.client.openUrl('my-app://route?x=1&y=2');
+
+      final args = f.spawner.started.single.args;
+      expect(args.take(3), ['-s', _serial, 'shell']);
+      expect(args, hasLength(4));
+      expect(
+        args.singleWhere((arg) => arg.contains('my-app://')),
+        contains('&'),
+      );
+      expect(args.last, contains("'my-app://route?x=1&y=2'"));
+    });
+
+    test('shell preserves argv boundaries and returns device output', () async {
+      final f = _client(answer: (_) => _out('line one\nline two\n'));
+      final output = await f.client.shell([
+        'logcat',
+        '-d',
+        '--pid',
+        "app's pid",
+      ]);
+
+      expect(output, 'line one\nline two');
+      expect(f.spawner.started.single.args.last, contains("'app'\\''s pid'"));
+    });
+
+    test('failed clear and shell commands keep their diagnostics', () async {
+      final clear = _client(answer: (_) => _out('Failed', exitCode: 1));
+      await expectLater(
+        clear.client.clearAppData('com.example.app'),
+        throwsA(isA<AdbException>()),
+      );
+
+      final shell = _client(
+        answer: (_) => _out('', exitCode: 42, stderr: 'permission denied'),
+      );
+      await expectLater(
+        shell.client.shell(['pm', 'grant', 'com.example.app', 'camera']),
+        throwsA(
+          isA<AdbException>().having(
+            (error) => error.message,
+            'message',
+            contains('permission denied'),
+          ),
+        ),
       );
     });
   });
@@ -414,7 +488,8 @@ void main() {
     });
 
     test('escaped quotes inside a value survive', () {
-      const xml = '<node text="Say &quot;hi&quot;" class="a.B" '
+      const xml =
+          '<node text="Say &quot;hi&quot;" class="a.B" '
           'content-desc="a &amp; b"/>';
       final node = AdbClient.parseNodeAttributes(xml).single;
       expect(node['text'], 'Say "hi"');

@@ -43,6 +43,7 @@ import 'package:cc_domain/core/domain/services/activity_logger.dart';
 import 'package:cc_domain/core/domain/services/agent_mention_parser.dart';
 import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
+import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_port.dart';
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
 import 'package:cc_domain/features/fonts/fonts.dart';
 import 'package:cc_domain/features/governance/domain/repositories/approval_repository.dart';
@@ -68,7 +69,9 @@ import 'package:cc_domain/features/settings/domain/repositories/acp_model_reposi
 import 'package:cc_domain/features/settings/domain/repositories/adapter_repository.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/weather/domain/repositories/weather_repository.dart';
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/services/json_schema_validator.dart';
+import 'package:cc_domain/features/model_routing/domain/services/model_catalog_service.dart';
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/core/notifications/notification_preferences.dart';
 import 'package:control_center/core/notifications/notification_sound_service.dart';
@@ -173,6 +176,11 @@ final workspaceRepositoryProvider = Provider<WorkspaceRepository>((ref) {
 /// Provides the [RepoRepository] the UI reads through.
 final repoRepositoryProvider = Provider<RepoRepository>((ref) {
   return RpcRepoRepository(ref.watch(rpcClientProvider));
+});
+
+/// Slim code-graph lookup for the PR-diff symbol popover (`codeGraph.symbolLookup`).
+final codeGraphLookupProvider = Provider<CodeGraphLookupPort>((ref) {
+  return RpcCodeGraphLookupRepository(ref.watch(rpcClientProvider));
 });
 
 /// Provides the [RepoScriptRepository] the UI reads through — per-repo
@@ -319,10 +327,10 @@ final acpModelRepositoryProvider = Provider<AcpModelRepository>(
   buildAcpModelRepository,
 );
 
-/// Provides the [ModelCatalogService] (PRD 05). Desktop assembles the models.dev
-/// catalog in-process (disk cache → snapshot → network); web serves the bundled
-/// snapshot. The catalog is global reference data, so it is not workspace- or
-/// DB-scoped — only governance policy (workspace-scoped) flows over RPC.
+/// Provides the [ModelCatalogService] (PRD 05). The host fetches models.dev
+/// and caches it under its data dir; both desktop and web read that document
+/// over `models.catalog`. The catalog is global reference data, so it is not
+/// workspace- or DB-scoped — only governance policy (workspace-scoped) is.
 final modelCatalogServiceProvider = Provider<ModelCatalogService>(
   buildModelCatalogService,
 );

@@ -61,7 +61,7 @@ class _SkillSourcesPanelState extends ConsumerState<SkillSourcesPanel> {
         label: l10n.skills,
         expands: true,
         padding: const EdgeInsets.fromLTRB(0, 14, 0, 0),
-        headerPadding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+        headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -98,7 +98,7 @@ class _SkillSourcesPanelState extends ConsumerState<SkillSourcesPanel> {
                   }
                   return SettingsMasterDetail(
                   railWidth: 250,
-                  railPadding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                  railPadding: const EdgeInsetsDirectional.fromSTEB(12, 12, 8, 12),
                   rail: _SourceRail(
                     sources: sources,
                     selectedSourceId: _selectedSourceId,

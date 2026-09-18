@@ -4,7 +4,7 @@ publish_to: "none"
 version: 0.0.1
 
 environment:
-  sdk: ">=3.11.0 <4.0.0"
+  sdk: ">=3.12.0 <4.0.0"
   flutter: ">=3.24.0"
 
 resolution: workspace
@@ -66,3 +66,17 @@ flutter:
     - family: PhosphorRegular
       fonts:
         - asset: fonts/Phosphor-Regular.ttf
+
+  # Script companions are ASSETS, not `fonts:` entries. Flutter web downloads
+  # every FontManifest.json family at engine boot, so declaring Sarabun /
+  # Rubik / IBM Plex Sans Arabic there would load all three on an English
+  # cold start. CcFonts.activateForLocale FontLoaders only the active locale's
+  # file (Thai → Sarabun, Hebrew → Rubik, ar/fa/ur → IBM Plex Sans Arabic).
+  # CJK stays on the OS UI face — a bundled Noto CJK is tens of megabytes.
+  # Licenses live beside the files (SIL OFL 1.1).
+  assets:
+    - fonts/scripts/Sarabun-Regular.ttf
+    - fonts/scripts/Sarabun-SemiBold.ttf
+    - fonts/scripts/Rubik-Variable.ttf
+    - fonts/scripts/IBMPlexSansArabic-Regular.ttf
+    - fonts/scripts/IBMPlexSansArabic-SemiBold.ttf

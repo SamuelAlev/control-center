@@ -337,8 +337,8 @@ class _ReaderToolbar extends StatelessWidget {
       child: Row(
         children: [
           CcTooltip(
-            targetAnchor: Alignment.bottomLeft,
-            followerAnchor: Alignment.topLeft,
+            targetAnchor: AlignmentDirectional.bottomStart,
+            followerAnchor: AlignmentDirectional.topStart,
             message: l10n.closeReader,
             child: CcIconButton(
               icon: AppIcons.x,
@@ -401,8 +401,8 @@ class _ReaderToolbar extends StatelessWidget {
           const SizedBox(width: 8),
           if (onToggleSaved != null)
             CcTooltip(
-              targetAnchor: Alignment.bottomRight,
-              followerAnchor: Alignment.topRight,
+              targetAnchor: AlignmentDirectional.bottomEnd,
+              followerAnchor: AlignmentDirectional.topEnd,
               message: saved ? l10n.removeBookmark : l10n.bookmarkLabel,
               child: CcIconButton(
                 icon: AppIcons.bookmark,
@@ -413,8 +413,8 @@ class _ReaderToolbar extends StatelessWidget {
               ),
             ),
           CcTooltip(
-            targetAnchor: Alignment.bottomRight,
-            followerAnchor: Alignment.topRight,
+            targetAnchor: AlignmentDirectional.bottomEnd,
+            followerAnchor: AlignmentDirectional.topEnd,
             message: l10n.openInBrowser,
             child: CcIconButton(
               icon: AppIcons.externalLink,

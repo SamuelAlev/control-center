@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/github_reference_link_builder.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_body_editor.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
@@ -15,7 +16,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/utils/github_markdown_preprocessor.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The Overview tab's main column: the metadata strip, the (editable) PR
@@ -41,8 +42,11 @@ class PrHeaderSection extends ConsumerWidget {
     final descriptionPending =
         ref.watch(prDetailPendingProvider(prRef)) && pr.body.isEmpty;
 
+    final edit = ref.watch(prEditProvider(prRef));
+    final displayBody = edit.optimisticBody ?? pr.body;
+
     final markdown = PrBodyMarkdown(
-      body: pr.body,
+      body: displayBody,
       bodyHtml: pr.bodyHtml,
       repoFullName: pr.repoFullName,
       pending: descriptionPending,
@@ -51,6 +55,23 @@ class PrHeaderSection extends ConsumerWidget {
             .read(prDetailPollingProvider(prRef).notifier)
             .invalidateAttachments();
       },
+      onTaskCheckboxChanged: ref.watch(prCanEditProvider(prRef))
+          ? (index, _) {
+              final l10n = AppLocalizations.of(context);
+              final toaster = CcToastScope.of(context);
+              ref
+                  .read(prEditProvider(prRef).notifier)
+                  .toggleTaskListItem(currentBody: displayBody, index: index)
+                  .then((error) {
+                    if (error != null && context.mounted) {
+                      toaster.show(
+                        l10n.failedToUpdateDescription(error),
+                        variant: CcToastVariant.danger,
+                      );
+                    }
+                  });
+            }
+          : null,
     );
     // The body editor is gated on edit access: the PR author, or a user with
     // write/admin on the repo (same derivation as the merge/close actions in
@@ -59,7 +80,7 @@ class PrHeaderSection extends ConsumerWidget {
 
     final body = PrBodyEditor(
       prRef: prRef,
-      initialMarkdown: pr.body,
+      initialMarkdown: displayBody,
       repoFullName: pr.repoFullName,
       canEdit: canEdit,
       bodyHtml: pr.bodyHtml,
@@ -105,10 +126,11 @@ class PrTitle extends StatelessWidget {
   /// The one shared title style — a document heading, not a page banner —
   /// used by the read view, the inline editor and the edit affordance's
   /// line-height math so they can never drift apart.
-  static TextStyle? styleOf(BuildContext context) => Theme.of(context)
-      .textTheme
-      .titleMedium
-      ?.copyWith(fontSize: 18, fontWeight: FontWeight.w600, height: 1.35);
+  static TextStyle styleOf(BuildContext context) => CcTypography.title.copyWith(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    height: 1.35,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -123,11 +145,11 @@ class PrTitle extends StatelessWidget {
         pr.title,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: style?.copyWith(color: t.textPrimary),
+        style: style.copyWith(color: t.textPrimary),
         leading: [
           TextSpan(
             text: '#${pr.number} ',
-            style: style?.copyWith(
+            style: style.copyWith(
               fontWeight: CcTypography.regularWeight,
               color: t.textTertiary,
             ),
@@ -148,6 +170,7 @@ class PrBodyMarkdown extends ConsumerWidget {
     this.bodyHtml,
     this.pending = false,
     this.onAttachmentLoadFailed,
+    this.onTaskCheckboxChanged,
   });
 
   /// True while [body] is merely unfetched rather than genuinely absent —
@@ -169,7 +192,8 @@ class PrBodyMarkdown extends ConsumerWidget {
   /// only valid for 5 minutes).
   final VoidCallback? onAttachmentLoadFailed;
 
-  /// GitHub bearer token forwarded to authenticated image fetches.
+  /// Task-list checkbox toggle. Null keeps the boxes read-only.
+  final void Function(int index, bool checked)? onTaskCheckboxChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -208,6 +232,7 @@ class PrBodyMarkdown extends ConsumerWidget {
       data: body,
       bodyHtml: bodyHtml,
       onAttachmentLoadFailed: onAttachmentLoadFailed,
+      onTaskCheckboxChanged: onTaskCheckboxChanged,
       repoOwner: owner,
       repoName: repo,
       codeFontFamily: codeFont,

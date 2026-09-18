@@ -148,8 +148,8 @@ class _TreeRow extends ConsumerWidget {
     final toast = CcToastScope.maybeOf(context);
 
     return Padding(
-      padding: EdgeInsets.only(
-        left: depth * AppSpacing.lg,
+      padding: EdgeInsetsDirectional.only(
+        start: depth * AppSpacing.lg,
         bottom: AppSpacing.sm,
       ),
       child: Row(

@@ -6,6 +6,7 @@ import 'package:control_center/shared/widgets/markdown/markdown_registries.dart'
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+part 'artifact_table_metrics.dart';
 
 /// Renders an [ArtifactTableBlock] as a tokenized data table.
 ///
@@ -188,8 +189,8 @@ class _ArtifactTableState extends State<ArtifactTable> {
     Widget cell(List<CcInlineNode> nodes, int column, TextStyle style) {
       final align = switch (widget.columns[column].align) {
         ArtifactColumnAlign.center => TextAlign.center,
-        ArtifactColumnAlign.right => TextAlign.right,
-        ArtifactColumnAlign.left || null => TextAlign.left,
+        ArtifactColumnAlign.right => TextAlign.end,
+        ArtifactColumnAlign.left || null => TextAlign.start,
       };
       return Padding(
         padding: padding,
@@ -199,7 +200,7 @@ class _ArtifactTableState extends State<ArtifactTable> {
         child: Align(
           alignment: switch (align) {
             TextAlign.center => Alignment.center,
-            TextAlign.right => AlignmentDirectional.centerEnd,
+            TextAlign.end => AlignmentDirectional.centerEnd,
             _ => AlignmentDirectional.centerStart,
           },
           child: DefaultTextStyle.merge(
@@ -270,43 +271,4 @@ class _ArtifactTableState extends State<ArtifactTable> {
       ),
     );
   }
-}
-
-/// Plain-text length of an inline run, and whether it contains media (an image
-/// or a custom inline that may size itself with a `LayoutBuilder`).
-({int length, bool media}) _inlineMetrics(List<CcInlineNode> nodes) {
-  var length = 0;
-  var media = false;
-
-  void walk(List<CcInlineNode> ns) {
-    for (final node in ns) {
-      switch (node) {
-        case CcText(:final text):
-          length += text.length;
-        case CcInlineCode(:final code):
-          length += code.length;
-        case CcInlineHtml(:final raw):
-          length += raw.length;
-        case CcEmphasis(:final children):
-          walk(children);
-        case CcStrong(:final children):
-          walk(children);
-        case CcStrikethrough(:final children):
-          walk(children);
-        case CcLink(:final children):
-          walk(children);
-        case CcSoftBreak():
-        case CcHardBreak():
-          length += 1;
-        case CcImage():
-        case CcCustomInline():
-          media = true;
-        default:
-          break;
-      }
-    }
-  }
-
-  walk(nodes);
-  return (length: length, media: media);
 }

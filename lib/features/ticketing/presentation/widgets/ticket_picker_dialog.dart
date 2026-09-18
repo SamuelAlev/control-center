@@ -4,7 +4,7 @@ import 'package:control_center/features/ticketing/presentation/widgets/ticket_vi
 import 'package:control_center/features/ticketing/providers/ticketing_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -178,7 +178,7 @@ class _ResultRow extends StatelessWidget {
       builder: (context, states) {
         final hovered = states.contains(WidgetState.hovered);
         return Container(
-          color: hovered ? t.bgPrimaryHover : Colors.transparent,
+          color: hovered ? t.bgPrimaryHover : const Color(0x00000000),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
           child: Row(
             children: [

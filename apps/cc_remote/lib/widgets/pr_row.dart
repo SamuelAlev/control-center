@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_remote/app_icons.dart';
 import 'package:cc_remote/format.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/widgets/workspace_avatar.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
@@ -32,18 +33,47 @@ class PrRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
     final pr = item.pr;
-    final meta = <String>[
-      if (showRepo && pr.repoFullName.isNotEmpty) pr.repoFullName,
-      '#${pr.number}',
-      if (pr.author?.login.isNotEmpty ?? false) pr.author!.login,
-      if (shortAgo(pr.updatedAt ?? pr.createdAt).isNotEmpty)
-        shortAgo(pr.updatedAt ?? pr.createdAt),
-    ];
+    final metaStyle = TextStyle(fontSize: 12, color: t.textTertiary);
+    final ago = shortAgo(context, pr.updatedAt ?? pr.createdAt);
+    final metaParts = <Widget>[];
+    void addText(String value) {
+      if (metaParts.isNotEmpty) {
+        metaParts.add(Text('·', style: metaStyle));
+      }
+      metaParts.add(Text(value, style: metaStyle));
+    }
+
+    if (showRepo && pr.repoFullName.isNotEmpty) {
+      addText(pr.repoFullName);
+    }
+    addText('#${pr.number}');
+    if (pr.labels.isNotEmpty) {
+      if (metaParts.isNotEmpty) {
+        metaParts.add(Text('·', style: metaStyle));
+      }
+      for (final label in pr.labels) {
+        metaParts.add(
+          CcColorTag(
+            label: label.name,
+            color: label.color,
+            tooltip: label.description.isEmpty ? null : label.description,
+            compact: true,
+          ),
+        );
+      }
+    }
+    if (pr.author?.login.isNotEmpty ?? false) {
+      addText(pr.author!.login);
+    }
+    if (ago.isNotEmpty) {
+      addText(ago);
+    }
 
     return CcCard(
       interactive: true,
-      semanticLabel: '${pr.title}, ${prLifecycleLabel(pr)}',
+      semanticLabel: l10n.prSemanticLabel(pr.title, prLifecycleLabel(l10n, pr)),
       onPressed: () => context.push(prRoute(item.repo.id, pr.number)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,11 +103,11 @@ class PrRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  meta.join(' · '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 12, color: t.textTertiary),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: metaParts,
                 ),
                 const SizedBox(height: 8),
                 Wrap(
@@ -86,12 +116,12 @@ class PrRow extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     if (pr.isDraft)
-                      const CcBadge(
-                        label: 'Draft',
+                      CcBadge(
+                        label: l10n.draft,
                         variant: CcBadgeVariant.neutral,
                       ),
-                    ?_reviewBadge(pr),
-                    ?_checksBadge(pr),
+                    ?_reviewBadge(l10n, pr),
+                    ?_checksBadge(l10n, pr),
                     if (churn(pr.additions, pr.deletions).isNotEmpty)
                       Text(
                         churn(pr.additions, pr.deletions),
@@ -109,7 +139,7 @@ class PrRow extends StatelessWidget {
           ),
           if (item.repo.hasForgeRemote)
             Padding(
-              padding: const EdgeInsets.only(left: 8, top: 2),
+              padding: const EdgeInsetsDirectional.only(start: 8, top: 2),
               child: RemoteAvatar(
                 url: pr.author?.avatarUrl,
                 fallbackLabel: pr.author?.login ?? '',
@@ -121,37 +151,39 @@ class PrRow extends StatelessWidget {
     );
   }
 
-  static Widget? _reviewBadge(PullRequest pr) => switch (pr.reviewDecision) {
-    PrReviewDecision.approved => const CcBadge(
-      label: 'Approved',
-      variant: CcBadgeVariant.success,
-    ),
-    PrReviewDecision.changesRequested => const CcBadge(
-      label: 'Changes requested',
-      variant: CcBadgeVariant.danger,
-    ),
-    PrReviewDecision.reviewRequired => const CcBadge(
-      label: 'Review required',
-      variant: CcBadgeVariant.info,
-    ),
-    PrReviewDecision.none => null,
-  };
+  static Widget? _reviewBadge(AppLocalizations l10n, PullRequest pr) =>
+      switch (pr.reviewDecision) {
+        PrReviewDecision.approved => CcBadge(
+          label: l10n.approved,
+          variant: CcBadgeVariant.success,
+        ),
+        PrReviewDecision.changesRequested => CcBadge(
+          label: l10n.changesRequested,
+          variant: CcBadgeVariant.danger,
+        ),
+        PrReviewDecision.reviewRequired => CcBadge(
+          label: l10n.reviewRequired,
+          variant: CcBadgeVariant.info,
+        ),
+        PrReviewDecision.none => null,
+      };
 
-  static Widget? _checksBadge(PullRequest pr) => switch (pr.checksStatus) {
-    PrChecksStatus.passing => const CcBadge(
-      label: 'Checks passing',
-      variant: CcBadgeVariant.success,
-    ),
-    PrChecksStatus.failing => const CcBadge(
-      label: 'Checks failing',
-      variant: CcBadgeVariant.danger,
-    ),
-    PrChecksStatus.pending => const CcBadge(
-      label: 'Checks running',
-      variant: CcBadgeVariant.warning,
-    ),
-    PrChecksStatus.none => null,
-  };
+  static Widget? _checksBadge(AppLocalizations l10n, PullRequest pr) =>
+      switch (pr.checksStatus) {
+        PrChecksStatus.passing => CcBadge(
+          label: l10n.checksPassing,
+          variant: CcBadgeVariant.success,
+        ),
+        PrChecksStatus.failing => CcBadge(
+          label: l10n.checksFailing,
+          variant: CcBadgeVariant.danger,
+        ),
+        PrChecksStatus.pending => CcBadge(
+          label: l10n.checksRunning,
+          variant: CcBadgeVariant.warning,
+        ),
+        PrChecksStatus.none => null,
+      };
 }
 
 /// The lifecycle glyph: draft, merged, closed or open.
@@ -178,14 +210,14 @@ Color prLifecycleColor(DesignSystemTokens t, PullRequest pr) {
 }
 
 /// The lifecycle word, for screen readers and the detail header.
-String prLifecycleLabel(PullRequest pr) {
+String prLifecycleLabel(AppLocalizations l10n, PullRequest pr) {
   if (pr.isMerged) {
-    return 'Merged';
+    return l10n.merged;
   }
   if (pr.isClosed) {
-    return 'Closed';
+    return l10n.closed;
   }
-  return pr.isDraft ? 'Draft' : 'Open';
+  return pr.isDraft ? l10n.draft : l10n.open;
 }
 
 class _MetaChip extends StatelessWidget {

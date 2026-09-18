@@ -8,7 +8,7 @@ import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Renders a message body with markdown and timestamp.
 class BubbleBody extends StatelessWidget {
@@ -19,7 +19,6 @@ class BubbleBody extends StatelessWidget {
     required this.createdAt,
     required this.codeFont,
     required this.tokens,
-    required this.theme,
     this.textStream,
     this.isLive = false,
     this.isEdited = false,
@@ -36,9 +35,6 @@ class BubbleBody extends StatelessWidget {
 
   /// Design system tokens for theming.
   final DesignSystemTokens tokens;
-
-  /// Current theme data.
-  final ThemeData theme;
 
   /// Live text stream (for streaming messages).
   final Stream<String>? textStream;

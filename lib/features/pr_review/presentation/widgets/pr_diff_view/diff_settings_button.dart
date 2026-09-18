@@ -33,8 +33,8 @@ class DiffSettingsButton extends ConsumerWidget {
         ref.watch(diffOverflowModeProvider) == DiffOverflowMode.wrap;
     final ligatures = ref.watch(fontSettingsProvider).codeFontLigatures;
     return CcPopover(
-      targetAnchor: Alignment.bottomRight,
-      followerAnchor: Alignment.topRight,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       semanticLabel: l10n.diffViewSettings,
       target: CcTooltip(
         message: l10n.diffViewSettings,

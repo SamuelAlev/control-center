@@ -112,6 +112,77 @@ void main() {
     expect(find.byType(Icon), findsOneWidget);
   });
 
+  testWidgets('icon-only segments hide the label and keep a tooltip', (
+    tester,
+  ) async {
+    const grid = IconData(0xe800);
+    const list = IconData(0xe801);
+    await tester.pumpWidget(
+      ccTestApp(
+        CcSegmentedToggle<String>(
+          segments: const [
+            CcSegment(
+              value: 'grid',
+              label: 'Grid view',
+              icon: grid,
+              iconOnly: true,
+            ),
+            CcSegment(
+              value: 'list',
+              label: 'List view',
+              icon: list,
+              iconOnly: true,
+            ),
+          ],
+          value: 'grid',
+          onChanged: (_) {},
+        ),
+      ),
+    );
+
+    expect(find.text('Grid view'), findsNothing);
+    expect(find.text('List view'), findsNothing);
+    expect(find.byIcon(grid), findsOneWidget);
+    expect(find.byIcon(list), findsOneWidget);
+    expect(
+      tester
+          .widgetList<CcTooltip>(find.byType(CcTooltip))
+          .map((t) => t.message),
+      ['Grid view', 'List view'],
+    );
+  });
+
+  testWidgets('icon-only tap fires onChanged', (tester) async {
+    const list = IconData(0xe801);
+    String? changed;
+    await tester.pumpWidget(
+      ccTestApp(
+        CcSegmentedToggle<String>(
+          segments: const [
+            CcSegment(
+              value: 'grid',
+              label: 'Grid view',
+              icon: IconData(0xe800),
+              iconOnly: true,
+            ),
+            CcSegment(
+              value: 'list',
+              label: 'List view',
+              icon: list,
+              iconOnly: true,
+            ),
+          ],
+          value: 'grid',
+          onChanged: (v) => changed = v,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byIcon(list));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(changed, 'list');
+  });
+
   testWidgets('a null onChanged disables the control', (tester) async {
     await tester.pumpWidget(
       ccTestApp(
@@ -330,12 +401,19 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('CcSegment compares by value, label and icon', () {
+  test('CcSegment compares by value, label, icon and iconOnly', () {
     const a = CcSegment(value: 'x', label: 'X');
     const b = CcSegment(value: 'x', label: 'X');
     const c = CcSegment(value: 'x', label: 'X', icon: IconData(0xe800));
+    const d = CcSegment(
+      value: 'x',
+      label: 'X',
+      icon: IconData(0xe800),
+      iconOnly: true,
+    );
     expect(a, b);
     expect(a.hashCode, b.hashCode);
     expect(a, isNot(c));
+    expect(c, isNot(d));
   });
 }

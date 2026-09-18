@@ -78,7 +78,7 @@ class _Header extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(10, 8, 8, 8),
       child: Row(
         children: [
           Icon(AppIcons.circleDot, size: 15, color: t.fgBrandPrimary),

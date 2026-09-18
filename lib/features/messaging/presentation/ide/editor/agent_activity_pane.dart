@@ -274,8 +274,8 @@ class _Timeline extends ConsumerWidget {
           ),
         ),
         if (isLive && !following)
-          Positioned(
-            right: AppSpacing.md,
+          PositionedDirectional(
+            end: AppSpacing.md,
             bottom: AppSpacing.md,
             child: CcButton(
               icon: AppIcons.arrowDown,

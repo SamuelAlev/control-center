@@ -47,4 +47,28 @@ class EvalTask {
 
   /// Serializes to a JSON string.
   String toJsonString() => jsonEncode(toJson());
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EvalTask &&
+          prompt == other.prompt &&
+          agentId == other.agentId &&
+          mode == other.mode &&
+          _mapEquals(setup, other.setup);
+
+  @override
+  int get hashCode => Object.hash(prompt, agentId, mode, setup.length);
+}
+
+bool _mapEquals(Map<String, dynamic> a, Map<String, dynamic> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (final e in a.entries) {
+    if (b[e.key] != e.value) {
+      return false;
+    }
+  }
+  return true;
 }

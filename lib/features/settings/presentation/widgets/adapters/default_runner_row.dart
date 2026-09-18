@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
-import 'package:control_center/features/settings/presentation/widgets/model_select.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -71,7 +71,7 @@ class DefaultRunnerRow extends ConsumerWidget {
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: ModelSelect(
+            child: ModelPickerField(
               adapterId: currentAdapterId,
               selectedModelId: currentModelId,
               onChange: (id) {

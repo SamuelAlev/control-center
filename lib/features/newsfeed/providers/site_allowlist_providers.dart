@@ -1,6 +1,6 @@
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/newsfeed/domain/repositories/site_allowlist_repository.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
-import 'package:control_center/features/newsfeed/data/repositories/shared_prefs_site_allowlist_repository.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final siteAllowlistRepositoryProvider = Provider<SiteAllowlistRepository>((
   ref,
 ) {
-  return SharedPrefsSiteAllowlistRepository(ref.watch(appPreferencesProvider));
+  return KeyValueSiteAllowlistRepository(ref.watch(appPreferencesProvider));
 });
 
 /// Streams the current per-domain allowlist.

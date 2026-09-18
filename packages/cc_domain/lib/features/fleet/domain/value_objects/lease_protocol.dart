@@ -47,6 +47,18 @@ class WorkerRegistration {
     'protocolVersion': protocolVersion,
     'platform': platform,
   };
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is WorkerRegistration &&
+          name == other.name &&
+          capsJson == other.capsJson &&
+          protocolVersion == other.protocolVersion &&
+          platform == other.platform;
+
+  @override
+  int get hashCode => Object.hash(name, capsJson, protocolVersion, platform);
 }
 
 /// A lease handed to a worker: everything it needs to run one job (PRD 20 §2).

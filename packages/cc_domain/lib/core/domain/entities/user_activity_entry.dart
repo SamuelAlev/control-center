@@ -15,6 +15,7 @@ class UserActivityEntry {
     this.deviceId,
     this.ip,
     this.countryCode,
+    this.details,
     required this.createdAt,
   }) {
     if (id.isEmpty) {
@@ -63,6 +64,12 @@ class UserActivityEntry {
   /// unknown IPs and rows recorded before geo resolution existed.
   final String? countryCode;
 
+  /// Sanitized snapshot of the mutation's arguments (and a few contextual
+  /// result fields): which setting, which value, which rig, which space.
+  /// Null on rows recorded before details existed, or when nothing useful
+  /// survived redaction.
+  final Map<String, Object?>? details;
+
   /// When the action happened.
   final DateTime createdAt;
 
@@ -80,6 +87,7 @@ class UserActivityEntry {
           deviceId == other.deviceId &&
           ip == other.ip &&
           countryCode == other.countryCode &&
+          _mapEquals(details, other.details) &&
           createdAt == other.createdAt;
 
   @override
@@ -93,6 +101,22 @@ class UserActivityEntry {
     deviceId,
     ip,
     countryCode,
+    details == null ? null : Object.hashAll(details!.entries),
     createdAt,
   );
+}
+
+bool _mapEquals(Map<String, Object?>? a, Map<String, Object?>? b) {
+  if (identical(a, b)) {
+    return true;
+  }
+  if (a == null || b == null || a.length != b.length) {
+    return false;
+  }
+  for (final entry in a.entries) {
+    if (b[entry.key] != entry.value) {
+      return false;
+    }
+  }
+  return true;
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
+import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_edge.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_file_ingest.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_index_checkpoint.dart';
@@ -67,8 +68,15 @@ class DaoCodeGraphRepository implements CodeGraphRepository {
     String symbolId, {
     int? limit,
     String? checkoutId,
+    Set<CodeEdgeKind> kinds = const {CodeEdgeKind.calls},
   }) => _dao(workspaceId)
-      .getCallers(workspaceId, symbolId, limit: limit, checkoutId: checkoutId)
+      .getCallers(
+        workspaceId,
+        symbolId,
+        kinds: kinds,
+        limit: limit,
+        checkoutId: checkoutId,
+      )
       .then((rows) => rows.map(_symbolMapper.toDomain).toList());
 
   @override

@@ -177,6 +177,21 @@ class FakeGitHubPrClient extends GitHubPrClient {
     CancelToken? cancelToken,
   }) async => issueComments['$owner/$repo/$number'] ?? const [];
 
+  /// Records each conversation-comment body edit.
+  final List<({int commentId, String body})> updatedIssueComments = [];
+
+  @override
+  Future<GitHubIssueComment> updateIssueComment(
+    String owner,
+    String repo, {
+    required int commentId,
+    required String body,
+    CancelToken? cancelToken,
+  }) async {
+    updatedIssueComments.add((commentId: commentId, body: body));
+    return GitHubIssueComment(id: commentId, body: body);
+  }
+
   @override
   Future<List<GitHubCheckRun>> listCheckRuns(
     String owner,
@@ -320,8 +335,13 @@ class FakePrDiffSource implements PrDiffSource {
   final List<PrFile>? files;
   final Object? error;
 
+  /// How many times [watchFiles] ran. Distinguishes "local git was the
+  /// fallback" from "we never left the API source".
+  int watchFilesCalls = 0;
+
   @override
   Stream<PrFilesLoad> watchFiles(PrSourceRequest req) async* {
+    watchFilesCalls++;
     if (error != null) {
       throw error!;
     }
@@ -657,6 +677,13 @@ class FakePrReviewRepository implements PrReviewRepository {
     required int prNumber,
     String? title,
     String? body,
+  }) async {}
+
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
   }) async {}
 
   @override
@@ -2448,7 +2475,8 @@ void main() {
     // A forge drops `patch` once a single file's diff outgrows its per-file
     // response cap: the file still reports its +/- counts, but its body is
     // empty and the viewer renders an expanded accordion with nothing in it.
-    // The PR's raw unified diff has no per-file cap, so it is the refill.
+    // The PR's raw unified diff has no per-file cap, so it is the first
+    // refill; when that 406s (GitHub's 20 000-line cap) we clone locally.
 
     test('backfills a patch the forge withheld from the raw diff', () async {
       mockPr.pullRequests['o/r/42'] = _ghPr(changedFiles: 2);
@@ -2473,11 +2501,13 @@ void main() {
           ),
         ],
       );
+      final localSource = FakePrDiffSource();
 
       final repo = _makeRepo(
         db: db,
         apiClient: apiClient,
         apiDiffSource: apiSource,
+        localDiffSource: localSource,
       );
       final results = await repo.watchFiles(42).toList();
 
@@ -2492,10 +2522,12 @@ void main() {
       // The refilled list is what gets cached, so the next open is instant.
       final cached = await db.cacheDao.read('ws1', 'prFiles', 'o/r#42');
       expect(cached, contains('@@ -1,3 +1,3 @@'));
+      // Local clone is the fallback, not the common path.
+      expect(localSource.watchFilesCalls, 0);
     });
 
     test(
-      're-emits nothing when the raw diff cannot supply the patch',
+      'falls back to a local clone when the raw diff is too large',
       () async {
         mockPr.pullRequests['o/r/42'] = _ghPr(changedFiles: 1);
         mockPr.diffError = Exception('406 diff too large');
@@ -2510,18 +2542,103 @@ void main() {
             ),
           ],
         );
+        final localSource = FakePrDiffSource(
+          files: [
+            PrFile(
+              filename: 'huge.json',
+              status: PrFileStatus.modified,
+              additions: 900,
+              deletions: 4000,
+              patch: '@@ -1,3 +1,3 @@\n {\n-  "a": 1\n+  "a": 2\n }',
+            ),
+          ],
+        );
 
         final repo = _makeRepo(
           db: db,
           apiClient: apiClient,
           apiDiffSource: apiSource,
+          localDiffSource: localSource,
         );
         final results = await repo.watchFiles(42).toList();
 
-        expect(results.length, 1);
-        expect(results.single.single.patch, isEmpty);
+        expect(mockPr.diffCalls, 1);
+        expect(localSource.watchFilesCalls, 1);
+        expect(
+          results.last.single.patch,
+          '@@ -1,3 +1,3 @@\n {\n-  "a": 1\n+  "a": 2\n }',
+        );
       },
     );
+
+    test(
+      'skips the raw-diff fetch when changed-line churn exceeds GitHub\'s cap',
+      () async {
+        mockPr.pullRequests['o/r/42'] = _ghPr(changedFiles: 1);
+        mockPr.diffs['o/r/42'] = _rawDiff;
+        final apiSource = FakePrDiffSource(
+          files: [
+            PrFile(
+              filename: 'huge.json',
+              status: PrFileStatus.modified,
+              additions: 15000,
+              deletions: 6000,
+              patch: '',
+            ),
+          ],
+        );
+        final localSource = FakePrDiffSource(
+          files: [
+            PrFile(
+              filename: 'huge.json',
+              status: PrFileStatus.modified,
+              additions: 15000,
+              deletions: 6000,
+              patch: '@@ -1,3 +1,3 @@\n {\n-  "a": 1\n+  "a": 2\n }',
+            ),
+          ],
+        );
+
+        final repo = _makeRepo(
+          db: db,
+          apiClient: apiClient,
+          apiDiffSource: apiSource,
+          localDiffSource: localSource,
+        );
+        final results = await repo.watchFiles(42).toList();
+
+        expect(mockPr.diffCalls, 0);
+        expect(localSource.watchFilesCalls, 1);
+        expect(results.last.single.patch, isNotEmpty);
+      },
+    );
+
+    test('keeps the API file tree when the local-git fallback fails', () async {
+      mockPr.pullRequests['o/r/42'] = _ghPr(changedFiles: 1);
+      mockPr.diffError = Exception('406 diff too large');
+      final apiSource = FakePrDiffSource(
+        files: [
+          PrFile(
+            filename: 'huge.json',
+            status: PrFileStatus.modified,
+            additions: 900,
+            deletions: 4000,
+            patch: '',
+          ),
+        ],
+      );
+
+      final repo = _makeRepo(
+        db: db,
+        apiClient: apiClient,
+        apiDiffSource: apiSource,
+        localDiffSource: FakePrDiffSource(error: Exception('clone failed')),
+      );
+      final results = await repo.watchFiles(42).toList();
+
+      expect(results.first.single.filename, 'huge.json');
+      expect(results.last.single.patch, isEmpty);
+    });
 
     test('does not fetch the raw diff for a pure rename', () async {
       mockPr.pullRequests['o/r/42'] = _ghPr(changedFiles: 1);
@@ -2718,6 +2835,18 @@ void main() {
       final repo = _makeRepo(db: db, apiClient: apiClient);
       // Should not throw — early return before API call.
       await repo.updatePullRequest(prNumber: 1);
+    });
+
+    test('updateIssueComment PATCHes the conversation comment', () async {
+      final repo = _makeRepo(db: db, apiClient: apiClient);
+      await repo.updateIssueComment(
+        prNumber: 1,
+        commentId: 9,
+        body: '- [x] done',
+      );
+      expect(mockPr.updatedIssueComments, hasLength(1));
+      expect(mockPr.updatedIssueComments.single.commentId, 9);
+      expect(mockPr.updatedIssueComments.single.body, '- [x] done');
     });
 
     test('addAssignees with empty list returns immediately', () async {

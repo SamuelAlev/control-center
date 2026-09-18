@@ -29,13 +29,7 @@ AgentBackend _backendFor(Adapter adapter) {
       return AcpBackend(
         cliName: adapter.cliName,
         acpArgs: adapter.acpArgs,
-        // Goose runs in auto-approve mode via env rather than a flag.
-        defaultEnvironment: adapter.cliName == 'goose'
-            ? const {'GOOSE_MODE': 'auto'}
-            : const {},
       );
-    case AdapterTransport.structuredCli:
-      return StructuredCliBackend(cliName: adapter.cliName);
     case AdapterTransport.claudeCli:
       return ClaudeCliBackend(cliName: adapter.cliName);
   }

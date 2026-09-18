@@ -22,7 +22,7 @@ import 'package:control_center/features/workspaces/providers/workspace_scope.dar
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/agent_avatar.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Header bar displaying the open conversation (falling back to the space)
@@ -40,9 +40,7 @@ class SpaceHeader extends ConsumerWidget {
   /// The space to display.
   final Space space;
 
-  /// The open conversation, when one is resolved. Its title is the header's
-  /// title (empty → the untitled placeholder); null (still resolving) keeps
-  /// the space name so the header never blinks.
+  /// Open conversation title, or the space name while it is still resolving.
   final Conversation? conversation;
 
   /// Callback to manage participants.
@@ -53,7 +51,6 @@ class SpaceHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final participantsAsync = ref.watch(spaceParticipantsProvider(space.id));
     final participants = participantsAsync.value ?? const [];
@@ -72,7 +69,7 @@ class SpaceHeader extends ConsumerWidget {
         : (space.name.isNotEmpty ? space.name : l10n.spaceLabel);
     final subtitle = agents.isEmpty
         ? l10n.noAgents
-        : l10n.agentCount(agents.length, agents.length);
+        : l10n.agentCount(agents.length);
 
     return Container(
       height: 56,
@@ -100,7 +97,7 @@ class SpaceHeader extends ConsumerWidget {
                 Text(
                   subtitle,
                   style: CcTypography.caption.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                    color: tokens.textTertiary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -273,7 +270,7 @@ class _TakeoverButton extends ConsumerWidget {
       return;
     }
     ref.invalidate(takeoverStatusProvider(spaceId));
-    ref.read(openCodeServerTabRequestProvider(spaceId).notifier).request();
+    ref.read(codeServerTabRequestProvider(spaceId).notifier).request();
   }
 }
 
@@ -425,7 +422,7 @@ class _ParticipantRow extends ConsumerWidget {
                       Text(
                         title,
                         style: CcTypography.caption.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: tokens.textTertiary,
                         ),
                       ),
                   ],
@@ -442,7 +439,11 @@ class _ParticipantRow extends ConsumerWidget {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 6, left: 34, right: 4),
+            padding: const EdgeInsetsDirectional.only(
+              top: 6,
+              start: 34,
+              end: 4,
+            ),
             child: CcSelect<AutonomyLevel?>(
               label: l10n.autonomyDialLabel,
               // The dial decides whether this agent's risky effects are
@@ -517,9 +518,7 @@ class _CheckerSection extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           l10n.checkerCaption,
-          style: CcTypography.caption.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+          style: CcTypography.caption.copyWith(color: context.ds.textTertiary),
         ),
       ],
     );
@@ -588,7 +587,7 @@ class _InviteSectionState extends State<_InviteSection> {
           ),
           const SizedBox(height: 8),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: CcButton(
               onPressed: _selected == null
                   ? null

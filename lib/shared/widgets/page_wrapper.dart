@@ -1,5 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Wraps a page with a consistent header (title + actions). Breadcrumbs are
 /// rendered in the shell title bar — the active route resolves them via the
@@ -143,7 +143,7 @@ class PageHeaderText extends StatelessWidget {
       children: [
         Text(
           title,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          style: CcTypography.display.copyWith(
             fontWeight: FontWeight.w700,
             color: tokens.textPrimary,
             height: 1.25,
@@ -153,7 +153,7 @@ class PageHeaderText extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             subtitle!,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            style: CcTypography.body.copyWith(
               color: tokens.textTertiary,
               height: 1.5,
             ),

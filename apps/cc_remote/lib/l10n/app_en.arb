@@ -1,0 +1,1050 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Control Center",
+  "@appTitle": {
+    "description": "The product name, used as the app/window title and on the pairing screen."
+  },
+
+  "back": "Back",
+  "@back": {
+    "description": "Semantic label for the back arrow in detail-screen headers."
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Generic cancel button."
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Button on the connection-failed banner that retries the connection."
+  },
+  "tryAgain": "Try again",
+  "@tryAgain": {
+    "description": "Button on the failed connect screen that retries the connection."
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings screen title and the semantic label of the gear button in the header."
+  },
+  "refresh": "Refresh",
+  "@refresh": {
+    "description": "Button on the update banner that reloads the PWA to the new deploy."
+  },
+  "approve": "Approve",
+  "@approve": {
+    "description": "Button approving a blocked agent action or a pull request review."
+  },
+  "deny": "Deny",
+  "continueLabel": "Continue",
+  "agentQuestionHeader": "Question for you",
+  "agentQuestionAnsweredLabel": "Answered",
+  "agentQuestionSkip": "Skip",
+  "agentQuestionSkippedLabel": "Skipped",
+  "agentQuestionFreeformHint": "Type your answer…",
+  "agentApprovalRequired": "Approval required",
+  "approveAndRemember": "Approve for 8 hours",
+  "@deny": {
+    "description": "Button denying a blocked agent action (inbox approval card)."
+  },
+  "decline": "Decline",
+  "@decline": {
+    "description": "Button declining a pending agent confirmation in a conversation."
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Second-tap confirmation on the disconnect-device button."
+  },
+  "send": "Send",
+  "@send": {
+    "description": "Button sending the composed message."
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Image viewer: closes the fullscreen viewer."
+  },
+  "expand": "Expand",
+  "@expand": {
+    "description": "Image viewer: opens an embedded image fullscreen."
+  },
+  "zoomIn": "Zoom in",
+  "@zoomIn": {
+    "description": "Image viewer zoom-in control."
+  },
+  "zoomOut": "Zoom out",
+  "@zoomOut": {
+    "description": "Image viewer zoom-out control."
+  },
+  "resetZoom": "Reset zoom",
+  "@resetZoom": {
+    "description": "Image viewer zoom-reset control."
+  },
+
+  "scanQrPrompt": "Scan the QR code from your Mac to pair this phone.",
+  "@scanQrPrompt": {
+    "description": "Connect screen: primary instruction when the phone is not paired."
+  },
+  "scanQrHelp": "Open your camera and point it at the QR shown in Control Center on your Mac. This phone connects directly to your Mac over a private link.",
+  "@scanQrHelp": {
+    "description": "Connect screen: secondary help text under the pairing instruction."
+  },
+  "connectingToMac": "Connecting to your Mac…",
+  "@connectingToMac": {
+    "description": "Connect screen: title while the phone resolves a path and authenticates."
+  },
+  "connectingDetail": "Establishing a secure, direct link.",
+  "@connectingDetail": {
+    "description": "Connect screen: subtitle while connecting."
+  },
+  "identityChangedTitle": "Server identity changed",
+  "@identityChangedTitle": {
+    "description": "Connect screen: title of the terminal identity-mismatch stop."
+  },
+  "identityChangedBody": "This server no longer matches the identity saved when you paired. That can mean the server was reinstalled — or that something is intercepting the connection. To stay safe, this device will not connect. Remove the pairing, then scan a fresh QR code from your Mac to pair again.",
+  "@identityChangedBody": {
+    "description": "Connect screen: explanation of the identity-mismatch stop and the way forward."
+  },
+  "removePairing": "Remove pairing",
+  "@removePairing": {
+    "description": "Button that forgets the stored pairing (identity-mismatch recovery)."
+  },
+  "couldntConnect": "Couldn't connect",
+  "@couldntConnect": {
+    "description": "Connect screen: title after repeated connection failures."
+  },
+  "pendingPairingTitle": "Connect to this server?",
+  "@pendingPairingTitle": {
+    "description": "Connect screen: title of the confirm gate for a link-delivered pairing offer."
+  },
+  "pendingPairingBody": "A link asked Control Center to pair with this server. Only continue if you started it yourself.",
+  "@pendingPairingBody": {
+    "description": "Connect screen: explanation of the pairing confirm gate."
+  },
+  "connect": "Connect",
+  "@connect": {
+    "description": "Button confirming a pending pairing offer."
+  },
+
+  "failureNotPaired": "Not paired — scan the QR code from your Mac",
+  "@failureNotPaired": {
+    "description": "Connection-failure reason: no pairing record exists."
+  },
+  "failureUnreachable": "Couldn't reach your server on any path — check it's running, or try the same network",
+  "@failureUnreachable": {
+    "description": "Connection-failure reason: no connection path reached the server."
+  },
+  "failureIdentityChanged": "The server's identity changed — if it was reinstalled, re-pair this device",
+  "@failureIdentityChanged": {
+    "description": "Connection-failure reason: the server's identity no longer matches the pinned fingerprint."
+  },
+  "failureAuthRejected": "The server rejected this device — re-pair it from your Mac",
+  "@failureAuthRejected": {
+    "description": "Connection-failure reason: the device credential was rejected."
+  },
+  "failureUnknown": "Couldn't connect — tap to retry",
+  "@failureUnknown": {
+    "description": "Connection-failure reason: fallback when the cause is unknown."
+  },
+
+  "statusConnected": "Connected",
+  "@statusConnected": {
+    "description": "Connection chip: a path is live and authenticated."
+  },
+  "statusConnecting": "Connecting",
+  "@statusConnecting": {
+    "description": "Connection chip: resolving the best path or reconnecting."
+  },
+  "statusOffline": "Offline",
+  "@statusOffline": {
+    "description": "Connection chip: repeated connect failures."
+  },
+  "statusIdentityMismatch": "Identity mismatch",
+  "@statusIdentityMismatch": {
+    "description": "Connection chip: the server's identity no longer matches the pinned fingerprint."
+  },
+  "statusNotPaired": "Not paired",
+  "@statusNotPaired": {
+    "description": "Connection chip: no pairing record."
+  },
+  "statusConfirmPairing": "Confirm pairing",
+  "@statusConfirmPairing": {
+    "description": "Connection chip: a pairing offer is awaiting explicit confirmation."
+  },
+
+  "connectionFailed": "Connection failed",
+  "@connectionFailed": {
+    "description": "Fallback text of the connection-failed banner when no reason is known."
+  },
+  "identityMismatchBanner": "Server identity changed — connection stopped. Re-pair this device to continue.",
+  "@identityMismatchBanner": {
+    "description": "Shell banner for a mid-session identity mismatch."
+  },
+  "tabInbox": "Inbox",
+  "@tabInbox": {
+    "description": "Bottom tab label: the unified inbox."
+  },
+  "tabTickets": "Tickets",
+  "@tabTickets": {
+    "description": "Bottom tab label: tickets."
+  },
+  "tabChat": "Chat",
+  "@tabChat": {
+    "description": "Bottom tab label: messaging spaces."
+  },
+  "tabPrs": "PRs",
+  "@tabPrs": {
+    "description": "Bottom tab label: pull requests."
+  },
+  "tabCalendar": "Calendar",
+  "@tabCalendar": {
+    "description": "Bottom tab label: the calendar agenda."
+  },
+  "tabNews": "News",
+  "@tabNews": {
+    "description": "Bottom tab label: the newsfeed."
+  },
+  "tabWaitingCount": "{label}, {count} waiting",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "updateAvailable": "A new Control Center is available",
+  "@updateAvailable": {
+    "description": "Banner shown when a newer deploy of the PWA is live at the origin."
+  },
+
+  "appearance": "Appearance",
+  "@appearance": {
+    "description": "Settings section header for the theme choice."
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Settings section header for the language choice."
+  },
+  "device": "Device",
+  "@device": {
+    "description": "Settings section header for device management (disconnect)."
+  },
+  "themeSystem": "System",
+  "@themeSystem": {
+    "description": "Theme option: follow the platform brightness."
+  },
+  "themeLight": "Light",
+  "@themeLight": {
+    "description": "Theme option: light appearance."
+  },
+  "themeDark": "Dark",
+  "@themeDark": {
+    "description": "Theme option: dark appearance."
+  },
+  "languageSystem": "System",
+  "@languageSystem": {
+    "description": "Language option: follow the platform locale."
+  },
+  "disconnectTapAgain": "Tap again to disconnect this device from your Mac",
+  "@disconnectTapAgain": {
+    "description": "Armed state of the disconnect card, asking for a confirming second tap."
+  },
+  "disconnectDevice": "Disconnect this device",
+  "@disconnectDevice": {
+    "description": "Label of the disconnect-device card."
+  },
+  "disconnect": "Disconnect",
+  "@disconnect": {
+    "description": "First-tap label of the disconnect button."
+  },
+
+  "chooseWorkspace": "Choose workspace",
+  "@chooseWorkspace": {
+    "description": "Header button label while no workspace is resolved yet."
+  },
+  "workspaces": "Workspaces",
+  "@workspaces": {
+    "description": "Workspace picker screen title."
+  },
+  "workspacesLoadFailed": "Couldn't load workspaces",
+  "@workspacesLoadFailed": {
+    "description": "Error state of the workspace picker."
+  },
+  "noWorkspacesYet": "No workspaces yet",
+  "@noWorkspacesYet": {
+    "description": "Empty state of the workspace picker."
+  },
+  "selectWorkspace": "Select {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "inboxLoadFailed": "Couldn't load your inbox",
+  "@inboxLoadFailed": {
+    "description": "Error state of the inbox tab."
+  },
+  "allCaughtUp": "You’re all caught up",
+  "@allCaughtUp": {
+    "description": "Inbox empty-state title."
+  },
+  "inboxNoForgeAccount": "No forge account is connected on the server, so pull requests can’t be attributed to you yet.",
+  "@inboxNoForgeAccount": {
+    "description": "Inbox empty-state description when no forge account is connected."
+  },
+  "inboxNothingWaiting": "Nothing is blocked and no pull request is waiting on you.",
+  "@inboxNothingWaiting": {
+    "description": "Inbox empty-state description when the inbox is genuinely empty."
+  },
+  "blocked": "Blocked",
+  "@blocked": {
+    "description": "Label of the blocked-agents inbox section and the blocked PR lens."
+  },
+  "sectionNeedsYourReview": "Needs your review",
+  "@sectionNeedsYourReview": {
+    "description": "Inbox PR section: review requests naming the operator."
+  },
+  "sectionReturnedToYou": "Returned to you",
+  "@sectionReturnedToYou": {
+    "description": "Inbox PR section: PRs returned to the operator with changes requested."
+  },
+  "sectionApprovedAndReady": "Approved and ready",
+  "@sectionApprovedAndReady": {
+    "description": "Inbox PR section: approved PRs ready to merge."
+  },
+  "sectionYourDrafts": "Your drafts",
+  "@sectionYourDrafts": {
+    "description": "Inbox PR section: the operator's draft PRs."
+  },
+  "sectionWaitingForReviewers": "Waiting for reviewers",
+  "@sectionWaitingForReviewers": {
+    "description": "Inbox PR section: PRs awaiting other reviewers."
+  },
+  "sectionMergingAndMerged": "Merging and recently merged",
+  "@sectionMergingAndMerged": {
+    "description": "Inbox PR section: PRs merging or recently merged."
+  },
+  "sectionWaitingForAuthor": "Waiting for author",
+  "@sectionWaitingForAuthor": {
+    "description": "Inbox PR section: PRs waiting on their author."
+  },
+  "waitingAgo": "waiting {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": { "type": "String" }
+    }
+  },
+  "openConversation": "Open the conversation",
+  "@openConversation": {
+    "description": "Button on an approval card opening the space the request came from."
+  },
+
+  "calendarLoadFailed": "Couldn't load your calendar",
+  "@calendarLoadFailed": {
+    "description": "Error state of the calendar tab."
+  },
+  "nothingScheduled": "Nothing scheduled",
+  "@nothingScheduled": {
+    "description": "Calendar empty-state title."
+  },
+  "calendarEmptyDescription": "Events from your connected calendars appear here.",
+  "@calendarEmptyDescription": {
+    "description": "Calendar empty-state description."
+  },
+  "agenda": "Agenda",
+  "@agenda": {
+    "description": "Calendar tab toolbar title."
+  },
+  "syncCalendarsNow": "Sync calendars now",
+  "@syncCalendarsNow": {
+    "description": "Semantic label of the calendar refresh button."
+  },
+  "event": "Event",
+  "@event": {
+    "description": "Fallback title of the event detail header while the event resolves."
+  },
+  "eventNotFound": "Event not found",
+  "@eventNotFound": {
+    "description": "Event detail: the event is not in the agenda window."
+  },
+  "eventNotFoundDescription": "It may be outside the agenda window, or removed upstream.",
+  "@eventNotFoundDescription": {
+    "description": "Event detail: why an event may not be found."
+  },
+  "joinMeeting": "Join meeting",
+  "@joinMeeting": {
+    "description": "Button opening the event's meeting link."
+  },
+  "join": "Join",
+  "@join": {
+    "description": "Compact join button on the up-next card."
+  },
+  "attendeesCount": "Attendees ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "details": "Details",
+  "@details": {
+    "description": "Event detail: description section header."
+  },
+  "allDay": "All day",
+  "@allDay": {
+    "description": "Label for an all-day event."
+  },
+  "happeningNow": "Happening now",
+  "@happeningNow": {
+    "description": "Up-next card lead while the meeting is live."
+  },
+  "inDuration": "In {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "attendeeAccepted": "accepted",
+  "@attendeeAccepted": {
+    "description": "Attendee response status: accepted."
+  },
+  "attendeeDeclined": "declined",
+  "@attendeeDeclined": {
+    "description": "Attendee response status: declined."
+  },
+  "attendeeMaybe": "maybe",
+  "@attendeeMaybe": {
+    "description": "Attendee response status: tentative."
+  },
+  "attendeeNoReply": "no reply",
+  "@attendeeNoReply": {
+    "description": "Attendee response status: no answer yet."
+  },
+  "organizer": "organizer",
+  "@organizer": {
+    "description": "Badge marking the event organizer in the attendee list."
+  },
+  "calendarNoAccounts": "No calendar is connected for this workspace. Connect one from the desktop app — the sign-in stores its token on the server.",
+  "@calendarNoAccounts": {
+    "description": "Notice when no calendar account is connected."
+  },
+  "calendarReauthNeeded": "A calendar account needs to be reconnected — what you see below may be out of date. Reconnect it from the desktop app.",
+  "@calendarReauthNeeded": {
+    "description": "Notice when a calendar account's credential expired."
+  },
+
+  "spacesLoadFailed": "Couldn't load spaces",
+  "@spacesLoadFailed": {
+    "description": "Error state of the messaging tab."
+  },
+  "noSpaces": "No spaces",
+  "@noSpaces": {
+    "description": "Messaging empty-state title."
+  },
+  "spacesEmptyDescription": "Spaces in this workspace appear here.",
+  "@spacesEmptyDescription": {
+    "description": "Messaging empty-state description."
+  },
+  "thread": "Thread",
+  "@thread": {
+    "description": "Conversation screen header title."
+  },
+  "agentWorking": "Agent is working",
+  "@agentWorking": {
+    "description": "Banner above a conversation while an agent run is active."
+  },
+  "messagesLoadFailed": "Couldn't load messages",
+  "@messagesLoadFailed": {
+    "description": "Error state of a conversation."
+  },
+  "noMessagesYet": "No messages yet",
+  "@noMessagesYet": {
+    "description": "Conversation empty-state title."
+  },
+  "noMessagesDescription": "Send a message to start the conversation.",
+  "@noMessagesDescription": {
+    "description": "Conversation empty-state description."
+  },
+  "agentResponding": "Agent responding",
+  "@agentResponding": {
+    "description": "Screen-reader announcement when an agent turn starts streaming."
+  },
+  "agentFinished": "Agent finished",
+  "@agentFinished": {
+    "description": "Screen-reader announcement when an agent turn completes with no answer text."
+  },
+  "attachmentsTooLarge": "{count, plural, =1{{names} is too large to send from here.} other{{names} are too large to send from here.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{{names} is too large to send over the relay from here.} other{{names} are too large to send over the relay from here.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentUploadFailed": "Couldn't upload the attachment. Try again.",
+  "@attachmentUploadFailed": {
+    "description": "Composer error: no attachment survived the upload and there was no text."
+  },
+  "attachmentsLeftOut": "{count, plural, =1{1 attachment couldn't be uploaded and was left out.} other{{count} attachments couldn't be uploaded and were left out.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teammate": "Teammate",
+  "@teammate": {
+    "description": "Fallback display name for another member's message."
+  },
+  "agent": "Agent",
+  "@agent": {
+    "description": "Fallback display name for an agent message."
+  },
+  "attachFile": "Attach a file",
+  "@attachFile": {
+    "description": "Semantic label of the composer's attach button."
+  },
+  "messageHint": "Message",
+  "@messageHint": {
+    "description": "Hint text of the message composer."
+  },
+  "removeAttachment": "Remove {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "articlesLoadFailed": "Couldn't load articles",
+  "@articlesLoadFailed": {
+    "description": "Error state of the newsfeed tab."
+  },
+  "noArticles": "No articles",
+  "@noArticles": {
+    "description": "Newsfeed empty-state title."
+  },
+  "articlesEmptyDescription": "New articles appear here as feeds update.",
+  "@articlesEmptyDescription": {
+    "description": "Newsfeed empty-state description."
+  },
+  "unread": "Unread",
+  "@unread": {
+    "description": "Newsfeed filter chip: unread articles only."
+  },
+  "allFeeds": "All feeds",
+  "@allFeeds": {
+    "description": "Newsfeed filter chip: articles from every feed."
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Semantic label of the bookmark button (article not yet saved)."
+  },
+  "unsave": "Unsave",
+  "@unsave": {
+    "description": "Semantic label of the bookmark button (article already saved)."
+  },
+  "readFullArticle": "Read full article",
+  "@readFullArticle": {
+    "description": "Button opening the article's source URL in the browser."
+  },
+
+  "ticketsLoadFailed": "Couldn't load tickets",
+  "@ticketsLoadFailed": {
+    "description": "Error state of the tickets tab."
+  },
+  "noTickets": "No tickets",
+  "@noTickets": {
+    "description": "Tickets empty-state title."
+  },
+  "ticketsEmptyDescription": "Tickets in this workspace appear here.",
+  "@ticketsEmptyDescription": {
+    "description": "Tickets empty-state description."
+  },
+  "all": "All",
+  "@all": {
+    "description": "Filter chip matching everything (tickets, pull requests)."
+  },
+  "ticket": "Ticket",
+  "@ticket": {
+    "description": "Fallback title of the ticket detail header while the ticket resolves."
+  },
+  "ticketLoadFailed": "Couldn't load ticket",
+  "@ticketLoadFailed": {
+    "description": "Error state of the ticket detail screen."
+  },
+  "assignedTo": "Assigned to {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openInBrowser": "Open in browser",
+  "@openInBrowser": {
+    "description": "Button opening the ticket's URL in the browser."
+  },
+  "status": "Status",
+  "@status": {
+    "description": "Ticket detail: status section header."
+  },
+  "assign": "Assign",
+  "@assign": {
+    "description": "Button assigning an agent to an unassigned ticket."
+  },
+  "reassign": "Reassign",
+  "@reassign": {
+    "description": "Button reassigning an already-assigned ticket."
+  },
+  "noAgents": "No agents",
+  "@noAgents": {
+    "description": "Agent chooser empty-state title."
+  },
+  "noAgentsDescription": "Assign an agent from this workspace.",
+  "@noAgentsDescription": {
+    "description": "Agent chooser empty-state description."
+  },
+  "statusOpen": "Open",
+  "@statusOpen": {
+    "description": "Ticket status: open."
+  },
+  "statusInProgress": "In progress",
+  "@statusInProgress": {
+    "description": "Ticket status: in progress."
+  },
+  "statusBlocked": "Blocked",
+  "@statusBlocked": {
+    "description": "Ticket status: blocked."
+  },
+  "statusInReview": "In review",
+  "@statusInReview": {
+    "description": "Ticket status: in review."
+  },
+  "statusDone": "Done",
+  "@statusDone": {
+    "description": "Ticket status: done."
+  },
+  "statusBacklog": "Backlog",
+  "@statusBacklog": {
+    "description": "Ticket status: backlog."
+  },
+
+  "lensNeedsMe": "Needs me",
+  "@lensNeedsMe": {
+    "description": "PR filter lens: PRs whose review request names the operator."
+  },
+  "lensMine": "Mine",
+  "@lensMine": {
+    "description": "PR filter lens: the operator's own open PRs."
+  },
+  "prsLoadFailed": "Couldn't load pull requests",
+  "@prsLoadFailed": {
+    "description": "Error state of the PR tab."
+  },
+  "noOpenPullRequests": "No open pull requests",
+  "@noOpenPullRequests": {
+    "description": "PR empty state for the 'all' lens."
+  },
+  "nothingWaitingOnReview": "Nothing waiting on your review",
+  "@nothingWaitingOnReview": {
+    "description": "PR empty state for the 'needs me' lens."
+  },
+  "noOwnOpenPullRequests": "You have no open pull requests",
+  "@noOwnOpenPullRequests": {
+    "description": "PR empty state for the 'mine' lens."
+  },
+  "nothingBlocked": "Nothing blocked",
+  "@nothingBlocked": {
+    "description": "PR empty state for the 'blocked' lens."
+  },
+  "prsEmptyDescription": "Pull requests across this workspace’s repos appear here.",
+  "@prsEmptyDescription": {
+    "description": "PR empty-state description on the 'all' lens."
+  },
+  "refreshPullRequests": "Refresh pull requests",
+  "@refreshPullRequests": {
+    "description": "Semantic label of the PR refresh button."
+  },
+  "noForgeConnected": "No forge is connected on the server, so no pull requests can be fetched. Connect one from the desktop app.",
+  "@noForgeConnected": {
+    "description": "Notice when the server has no forge credential to poll with."
+  },
+  "reposUnreadable": "{count, plural, =1{1 repo could not be read.} other{{count} repos could not be read.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reposNotReadable": "Not readable: {names}",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "installationSuspendedTitle": "GitHub App installation suspended",
+  "@installationSuspendedTitle": {
+    "description": "Title when the GitHub App installation is suspended and lists are cached."
+  },
+  "installationSuspendedBody": "Showing last known data for {names}. Resume the installation on GitHub, or connect a token.",
+  "@installationSuspendedBody": {
+    "description": "Empty-inbox body when the GitHub App installation is suspended.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+  "installationSuspendedNotice": "GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub, or connect a token.",
+  "@installationSuspendedNotice": {
+    "description": "Inline notice on inbox and PR list when the GitHub App installation is suspended.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+
+  "draft": "Draft",
+  "@draft": {
+    "description": "PR lifecycle: a draft pull request."
+  },
+  "merged": "Merged",
+  "@merged": {
+    "description": "PR lifecycle: merged. Also the success notice after merging."
+  },
+  "closed": "Closed",
+  "@closed": {
+    "description": "PR lifecycle: closed without merging."
+  },
+  "open": "Open",
+  "@open": {
+    "description": "PR lifecycle: open."
+  },
+  "approved": "Approved",
+  "@approved": {
+    "description": "PR review decision badge; also the success notice after approving."
+  },
+  "changesRequested": "Changes requested",
+  "@changesRequested": {
+    "description": "PR review decision badge; also the success notice after requesting changes."
+  },
+  "reviewRequired": "Review required",
+  "@reviewRequired": {
+    "description": "PR review decision badge: a review is still required."
+  },
+  "checksPassing": "Checks passing",
+  "@checksPassing": {
+    "description": "PR badge: CI checks are passing."
+  },
+  "checksFailing": "Checks failing",
+  "@checksFailing": {
+    "description": "PR badge: CI checks are failing."
+  },
+  "checksRunning": "Checks running",
+  "@checksRunning": {
+    "description": "PR badge: CI checks are still running."
+  },
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+
+  "pullRequest": "Pull request",
+  "@pullRequest": {
+    "description": "Fallback title of the PR detail header while the repo name resolves."
+  },
+  "prLoadFailed": "Couldn't load this pull request",
+  "@prLoadFailed": {
+    "description": "Error state of the PR detail screen."
+  },
+  "openOnForge": "Open on the forge",
+  "@openOnForge": {
+    "description": "Semantic label of the button opening the PR on GitHub/GitLab."
+  },
+  "requestChangesNeedsComment": "Add a comment explaining what needs changing.",
+  "@requestChangesNeedsComment": {
+    "description": "Validation error: a request-changes review needs a body."
+  },
+  "conversation": "Conversation",
+  "@conversation": {
+    "description": "PR detail tab: description, reviews and comments."
+  },
+  "files": "Files",
+  "@files": {
+    "description": "PR detail tab: changed files."
+  },
+  "checks": "Checks",
+  "@checks": {
+    "description": "PR detail tab: CI check runs."
+  },
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 file} other{{count} files}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 commit} other{{count} commits}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "conflicts": "Conflicts",
+  "@conflicts": {
+    "description": "Badge: the PR has merge conflicts."
+  },
+  "reviewers": "Reviewers",
+  "@reviewers": {
+    "description": "Label introducing the PR's reviewer list."
+  },
+  "noDescriptionNoComments": "No description and no comments yet.",
+  "@noDescriptionNoComments": {
+    "description": "Conversation tab empty state."
+  },
+  "noChangedFiles": "No changed files.",
+  "@noChangedFiles": {
+    "description": "Files tab empty state."
+  },
+  "noChecksReported": "No checks reported for the head commit.",
+  "@noChecksReported": {
+    "description": "Checks tab empty state."
+  },
+  "reviewCommentHint": "Leave a review comment…",
+  "@reviewCommentHint": {
+    "description": "Hint text of the review comment composer."
+  },
+  "comment": "Comment",
+  "@comment": {
+    "description": "Button submitting a comment-only review."
+  },
+  "commentPosted": "Comment posted",
+  "@commentPosted": {
+    "description": "Success notice after posting a review comment."
+  },
+  "request": "Request",
+  "@request": {
+    "description": "Button submitting a request-changes review."
+  },
+  "squashAndMerge": "Squash and merge",
+  "@squashAndMerge": {
+    "description": "Button squash-merging the PR."
+  },
+  "noActionsAvailable": "{status} — no actions available.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "reviewApproved": "approved",
+  "@reviewApproved": {
+    "description": "Timeline badge: this review approved the PR."
+  },
+  "reviewRequestedChanges": "requested changes",
+  "@reviewRequestedChanges": {
+    "description": "Timeline badge: this review requested changes."
+  },
+  "reviewCommented": "reviewed",
+  "@reviewCommented": {
+    "description": "Timeline badge: this review only commented."
+  },
+  "reviewPending": "pending",
+  "@reviewPending": {
+    "description": "Timeline badge: this review is still pending."
+  },
+  "unknownAuthor": "unknown",
+  "@unknownAuthor": {
+    "description": "Fallback author name on a conversation bubble."
+  },
+  "hideDiffFor": "Hide the diff for {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "showDiffFor": "Show the diff for {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "checkRunning": "running",
+  "@checkRunning": {
+    "description": "CI check state: still running."
+  },
+  "checkPassed": "passed",
+  "@checkPassed": {
+    "description": "CI check state: succeeded."
+  },
+  "checkFailed": "failed",
+  "@checkFailed": {
+    "description": "CI check state: failed, timed out or needs action."
+  },
+  "checkCancelled": "cancelled",
+  "@checkCancelled": {
+    "description": "CI check state: cancelled or stale."
+  },
+  "checkSkipped": "skipped",
+  "@checkSkipped": {
+    "description": "CI check state: skipped or neutral."
+  },
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+
+  "noTextDiff": "No text diff for this file — it is binary, or too large for the forge to return one.",
+  "@noTextDiff": {
+    "description": "Shown when a file has no textual patch."
+  },
+  "showRemainingLines": "{count, plural, =1{Show the remaining line} other{Show the remaining {count} lines}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 unchanged line} other{{count} unchanged lines}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "jumpToLatest": "Jump to latest",
+  "@jumpToLatest": {
+    "description": "Pill re-engaging follow mode and snapping to the newest message."
+  },
+  "streaming": "Streaming",
+  "@streaming": {
+    "description": "Pill label while an agent turn streams below the fold."
+  },
+
+  "working": "Working",
+  "@working": {
+    "description": "Transcript footer while the agent turn is still streaming."
+  },
+  "input": "Input",
+  "@input": {
+    "description": "Transcript tool call: the inputs section label."
+  },
+  "output": "Output",
+  "@output": {
+    "description": "Transcript tool call: the outputs section label."
+  },
+
+  "now": "now",
+  "@now": {
+    "description": "Compact time-since label for under a minute ago."
+  },
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "today": "Today",
+  "@today": {
+    "description": "Calendar day heading for the current day."
+  },
+  "tomorrow": "Tomorrow",
+  "@tomorrow": {
+    "description": "Calendar day heading for the next day."
+  },
+  "yesterday": "Yesterday",
+  "@yesterday": {
+    "description": "Calendar day heading for the previous day."
+  },
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  }
+}

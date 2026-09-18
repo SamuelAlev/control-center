@@ -13,6 +13,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_detail
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/editor/editor_tab_bar.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart'
     show EditorLayoutPersistence;
 import 'package:flutter/material.dart';
@@ -98,11 +99,8 @@ class _NoopCacheRepository implements CacheRepository {
 }
 
 /// The [PrRef] for this suite's screens: `owner/repo` in workspace `ws`.
-PrRef _prRefOf(int number) => (
-  workspaceId: 'ws',
-  repoFullName: 'owner/repo',
-  number: number,
-);
+PrRef _prRefOf(int number) =>
+    (workspaceId: 'ws', repoFullName: 'owner/repo', number: number);
 
 void main() {
   late AppPreferences prefs;
@@ -131,7 +129,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(),
-            prDetailProvider(_prRefOf(42)).overrideWith((ref) => const Stream.empty()),
+            prDetailProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => const Stream.empty()),
           ],
           child: _wrap(
             CcTheme(
@@ -153,12 +153,54 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
+    testWidgets('loading workbench tabs remain switchable', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ...baseOverrides(),
+            prDetailProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => const Stream.empty()),
+          ],
+          child: _wrap(
+            CcTheme(
+              data: CcThemeData.light(),
+              child: const PullRequestDetailScreen(
+                workspaceId: 'ws',
+                owner: 'owner',
+                repo: 'repo',
+                prNumber: 42,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(PrOverviewSkeleton), findsOneWidget);
+      final tabBar = tester.widget<EditorTabBar>(find.byType(EditorTabBar));
+      expect(tabBar.selectedIndex, 0);
+      tabBar.onTabSelected(1);
+      await tester.pump();
+      expect(
+        tester.widget<EditorTabBar>(find.byType(EditorTabBar)).selectedIndex,
+        1,
+      );
+      expect(find.byType(PrDiffTabSkeleton), findsOneWidget);
+      expect(find.byType(PrOverviewSkeleton), findsNothing);
+
+      await tester.pumpWidget(Container());
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
     testWidgets('renders not found state when PR is null', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 99),
-            prDetailProvider(_prRefOf(99)).overrideWith((ref) => Stream.value(null)),
+            prDetailProvider(
+              _prRefOf(99),
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: _wrap(
             CcTheme(
@@ -213,7 +255,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 999),
-            prDetailProvider(_prRefOf(999)).overrideWith((ref) => Stream.value(null)),
+            prDetailProvider(
+              _prRefOf(999),
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: _wrap(
             CcTheme(
@@ -322,7 +366,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 42),
-            prDetailProvider(_prRefOf(42)).overrideWith((ref) => Stream.value(pr)),
+            prDetailProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => Stream.value(pr)),
           ],
           child: _wrap(
             CcTheme(
@@ -359,7 +405,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 55),
-            prDetailProvider(_prRefOf(55)).overrideWith((ref) => Stream.value(pr)),
+            prDetailProvider(
+              _prRefOf(55),
+            ).overrideWith((ref) => Stream.value(pr)),
           ],
           child: _wrap(
             CcTheme(
@@ -401,7 +449,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 77),
-            prDetailProvider(_prRefOf(77)).overrideWith((ref) => Stream.value(pr)),
+            prDetailProvider(
+              _prRefOf(77),
+            ).overrideWith((ref) => Stream.value(pr)),
           ],
           child: _wrap(
             CcTheme(
@@ -438,7 +488,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 88),
-            prDetailProvider(_prRefOf(88)).overrideWith((ref) => Stream.value(pr)),
+            prDetailProvider(
+              _prRefOf(88),
+            ).overrideWith((ref) => Stream.value(pr)),
           ],
           child: _wrap(
             CcTheme(
@@ -466,7 +518,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 555),
-            prDetailProvider(_prRefOf(555)).overrideWith((ref) => Stream.value(null)),
+            prDetailProvider(
+              _prRefOf(555),
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: _wrap(
             CcTheme(
@@ -524,7 +578,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(),
-            prDetailProvider(_prRefOf(42)).overrideWith((ref) => const Stream.empty()),
+            prDetailProvider(
+              _prRefOf(42),
+            ).overrideWith((ref) => const Stream.empty()),
           ],
           child: _wrap(
             CcTheme(
@@ -553,7 +609,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 404),
-            prDetailProvider(_prRefOf(404)).overrideWith((ref) => Stream.value(null)),
+            prDetailProvider(
+              _prRefOf(404),
+            ).overrideWith((ref) => Stream.value(null)),
           ],
           child: _wrap(
             CcTheme(
@@ -581,7 +639,9 @@ void main() {
         ProviderScope(
           overrides: [
             ...baseOverrides(prNumber: 7),
-            prDetailProvider(_prRefOf(7)).overrideWith((ref) => const Stream.empty()),
+            prDetailProvider(
+              _prRefOf(7),
+            ).overrideWith((ref) => const Stream.empty()),
           ],
           child: _wrap(
             CcTheme(

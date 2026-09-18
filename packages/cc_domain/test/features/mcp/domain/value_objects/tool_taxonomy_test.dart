@@ -18,6 +18,8 @@ void main() {
       expect(toolCategoryFor('publish_artifact'), ToolCategory.artifacts);
       expect(toolCategoryFor('install_skill'), ToolCategory.skills);
       expect(toolCategoryFor('rig_use'), ToolCategory.rigs);
+      expect(toolCategoryFor('mobile_use'), ToolCategory.rigs);
+      expect(toolCategoryFor('ios_use'), ToolCategory.rigs);
       expect(toolCategoryFor('list_meetings'), ToolCategory.meetings);
       expect(toolCategoryFor('read'), ToolCategory.workspace);
     });

@@ -683,10 +683,10 @@ class GitHubPrClient {
     }
   }
 
-  /// Lists conversation-timeline events for the PR, filtered to the review
-  /// request events the activity feed renders (`review_requested` /
-  /// `review_request_removed`). Other event kinds (reviews, comments, commits)
-  /// ride their dedicated endpoints.
+  /// Lists conversation-timeline events for the PR, filtered to the kinds
+  /// the activity feed renders (`review_requested` / `review_request_removed`
+  /// / `labeled` / `unlabeled`). Other event kinds (reviews, comments,
+  /// commits) ride their dedicated endpoints.
   Future<List<GitHubTimelineEvent>> listTimelineEvents(
     String owner,
     String repo,
@@ -704,7 +704,9 @@ class GitHubPrClient {
           .where(
             (e) =>
                 e.event == 'review_requested' ||
-                e.event == 'review_request_removed',
+                e.event == 'review_request_removed' ||
+                e.event == 'labeled' ||
+                e.event == 'unlabeled',
           )
           .toList(growable: false);
     } on DioException catch (e) {
@@ -1020,6 +1022,41 @@ class GitHubPrClient {
       throw const FormatException(
         'Unexpected payload from review-comment POST',
       );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.cancel) {
+        rethrow;
+      }
+
+      throw mapDioException(e);
+    }
+  }
+
+  /// Replaces the body of a top-level conversation comment.
+  ///
+  /// The PR conversation is the issues API
+  /// (`PATCH /issues/comments/{id}`), so this is how a GFM task-list
+  /// checkbox in a comment (or a Renovate rebase-check in the PR body,
+  /// which uses [updatePullRequest] instead) is persisted without opening
+  /// the editor. Inline review comments have [editReviewComment].
+  Future<GitHubIssueComment> updateIssueComment(
+    String owner,
+    String repo, {
+    required int commentId,
+    required String body,
+    CancelToken? cancelToken,
+  }) async {
+    _requireOwnerRepo(owner, repo);
+    try {
+      final response = await _dio.patch(
+        '/repos/$owner/$repo/issues/comments/$commentId',
+        data: {'body': body},
+        cancelToken: cancelToken,
+      );
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return GitHubIssueComment.fromJson(data);
+      }
+      throw const FormatException('Unexpected payload from comment PATCH');
     } on DioException catch (e) {
       if (e.type == DioExceptionType.cancel) {
         rethrow;

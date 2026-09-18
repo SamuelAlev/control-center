@@ -42,6 +42,30 @@ void main() {
       expect(RigTabSurfaces.allocateSlot(const {'s2'}), isNull);
     });
   });
+  group('audio capabilities', () {
+    test('browser and computer tabs can listen to machine audio', () {
+      expect(
+        RigTabSurfaces.supportsAudioOutput(RigTabSurfaces.browser),
+        isTrue,
+      );
+      expect(
+        RigTabSurfaces.supportsAudioOutput(RigTabSurfaces.computer),
+        isTrue,
+      );
+      expect(
+        RigTabSurfaces.supportsAudioOutput(RigTabSurfaces.mobile),
+        isFalse,
+      );
+    });
+
+    test('computer and browser tabs accept microphone input', () {
+      expect(
+        RigTabSurfaces.supportsMicrophone(RigTabSurfaces.computer),
+        isTrue,
+      );
+      expect(RigTabSurfaces.supportsMicrophone(RigTabSurfaces.browser), isTrue);
+    });
+  });
 
   group('which tabs count as the same kind', () {
     const webkit = RigTabTarget(
@@ -136,6 +160,14 @@ void main() {
         isNull,
       );
     });
+
+    test('iOS simulators allocate independent slots', () {
+      const simulator = RigTabTarget(RigTabSurfaces.ios);
+      final next = RigTabSurfaces.nextTarget(simulator, const [
+        {'surface': 'ios'},
+      ]);
+      expect(next.slotId, 's2');
+    });
   });
 
   group('tab identity', () {
@@ -198,21 +230,33 @@ void main() {
   });
 
   group('menu order', () {
-    test('browsers, then the phone, then the desktop', () {
+    test('browsers, Android, iOS, then the desktop', () {
       // The desktop is the heavyweight machine a conversation needs least
-      // often, so it follows the phone rather than leading the browsers.
-      final targets = RigTabSurfaces.targets({
-        RigBrowserEngine.chromium,
-        RigBrowserEngine.firefox,
-        RigBrowserEngine.webkit,
-      });
+      // often, so it follows the phone surfaces rather than leading browsers.
+      final targets = RigTabSurfaces.targets(
+        {
+          RigBrowserEngine.chromium,
+          RigBrowserEngine.firefox,
+          RigBrowserEngine.webkit,
+        },
+        advertisedSurfaces: const {RigTabSurfaces.ios},
+      );
       expect(targets.map((t) => t.surface), [
         RigTabSurfaces.browser,
         RigTabSurfaces.browser,
         RigTabSurfaces.browser,
         RigTabSurfaces.mobile,
+        RigTabSurfaces.ios,
         RigTabSurfaces.computer,
       ]);
+    });
+
+    test('an older server does not advertise an unusable iOS tab', () {
+      final targets = RigTabSurfaces.targets({RigBrowserEngine.chromium});
+      expect(
+        targets.any((target) => target.surface == RigTabSurfaces.ios),
+        isFalse,
+      );
     });
   });
 }

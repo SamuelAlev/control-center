@@ -4,6 +4,8 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/mobile_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action_result.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_state.dart';
@@ -29,6 +31,9 @@ class _FakeRigPort implements RigPort {
 
   /// Specs that were opened.
   final List<RigSpec> opened = [];
+
+  /// Backend setup actions requested through the port.
+  final List<RigBackendSetupAction> setupActions = [];
 
   /// What `act` should answer with.
   RigActionResult response = RigActionResult.ok('done');
@@ -158,6 +163,11 @@ class _FakeRigPort implements RigPort {
   Future<RigCapabilities> probe() async => RigCapabilities.none;
 
   @override
+  Future<void> installBackendSetup(RigBackendSetupAction action) async {
+    setupActions.add(action);
+  }
+
+  @override
   List<Map<String, dynamic>> imageStatuses() => const [];
 
   @override
@@ -168,6 +178,9 @@ class _FakeRigPort implements RigPort {
     required String imageId,
     required String sourcePath,
   }) async {}
+
+  @override
+  Future<void> removeImage(String imageId) async {}
 
   @override
   Stream<List<Rig>> watch(String workspaceId) =>
@@ -283,11 +296,9 @@ void main() {
       final port = _FakeRigPort(
         rigs: [_rig(id: 'r1', workspaceId: 'ws1', conversationId: 'c1')],
       );
-      await ComputerUseTool(rigs: port).call({
-        'workspace_id': 'ws1',
-        'space_id': 'c1',
-        'action': 'screenshot',
-      });
+      await ComputerUseTool(
+        rigs: port,
+      ).call({'workspace_id': 'ws1', 'space_id': 'c1', 'action': 'screenshot'});
       expect(
         port.opened,
         isEmpty,
@@ -298,13 +309,112 @@ void main() {
 
     test('a space with no rig gets one opened', () async {
       final port = _FakeRigPort();
-      await BrowserUseTool(rigs: port).call({
-        'workspace_id': 'ws1',
-        'space_id': 'c1',
-        'action': 'screenshot',
-      });
+      await BrowserUseTool(
+        rigs: port,
+      ).call({'workspace_id': 'ws1', 'space_id': 'c1', 'action': 'screenshot'});
       expect(port.opened.single.surface, RigSurface.browser);
       expect(port.opened.single.conversationId, 'c1');
+    });
+
+    test(
+      'iOS reuses the default space simulator and preserves action types',
+      () async {
+        final port = _FakeRigPort(
+          rigs: [
+            _rig(
+              id: 'ios-1',
+              workspaceId: 'ws1',
+              surface: RigSurface.ios,
+              conversationId: 'c1',
+            ),
+          ],
+        );
+        final tool = IosUseTool(rigs: port);
+        final calls = <Map<String, dynamic>>[
+          {
+            'action': 'tap',
+            'coordinate': [10, 20],
+          },
+          {
+            'action': 'swipe',
+            'from': [10, 20],
+            'to': [30, 40],
+            'duration_ms': 250,
+          },
+          {'action': 'type', 'text': 'hello'},
+          {
+            'action': 'key',
+            'key': 'enter',
+            'modifiers': ['command'],
+          },
+          {'action': 'home'},
+          {'action': 'lock'},
+          {'action': 'unlock'},
+          {'action': 'screenshot'},
+          {'action': 'ui_dump'},
+          {'action': 'install_app', 'path': '/workspace/App.app'},
+          {'action': 'start_app', 'bundle_id': 'com.example.app'},
+          {'action': 'stop_app', 'bundle_id': 'com.example.app'},
+          {'action': 'uninstall_app', 'bundle_id': 'com.example.app'},
+          {'action': 'open_url', 'url': 'my-app://debug'},
+          {
+            'action': 'spawn',
+            'argv': ['log', 'show', '--last', '1m'],
+          },
+        ];
+        for (final call in calls) {
+          final result = await tool.call({
+            'workspace_id': 'ws1',
+            'space_id': 'c1',
+            ...call,
+          });
+          expect(result.isError, isFalse, reason: '$call');
+        }
+        expect(port.opened, isEmpty);
+        expect(port.acted, hasLength(calls.length));
+        expect(port.acted.every((entry) => entry.action is IosAction), isTrue);
+      },
+    );
+
+    test('Android exposes the full developer-control vocabulary', () async {
+      final port = _FakeRigPort(
+        rigs: [
+          _rig(
+            id: 'android-1',
+            workspaceId: 'ws1',
+            surface: RigSurface.mobile,
+            conversationId: 'c1',
+          ),
+        ],
+      );
+      final tool = MobileUseTool(rigs: port);
+      final calls = <Map<String, dynamic>>[
+        {
+          'action': 'tap',
+          'coordinate': [10, 20],
+        },
+        {'action': 'install_apk', 'path': '/workspace/App.apk'},
+        {'action': 'start_app', 'package': 'com.example.app'},
+        {'action': 'stop_app', 'package': 'com.example.app'},
+        {'action': 'clear_app_data', 'package': 'com.example.app'},
+        {'action': 'uninstall_app', 'package': 'com.example.app'},
+        {'action': 'open_url', 'url': 'my-app://debug'},
+        {
+          'action': 'shell',
+          'argv': ['logcat', '-d', '-t', '50'],
+        },
+      ];
+      for (final call in calls) {
+        final result = await tool.call({
+          'workspace_id': 'ws1',
+          'space_id': 'c1',
+          ...call,
+        });
+        expect(result.isError, isFalse, reason: '$call');
+      }
+      expect(port.opened, isEmpty);
+      expect(port.acted, hasLength(calls.length));
+      expect(port.acted.every((entry) => entry.action is MobileAction), isTrue);
     });
   });
 
@@ -392,11 +502,20 @@ void main() {
         ComputerUseTool(rigs: port),
         BrowserUseTool(rigs: port),
         MobileUseTool(rigs: port),
+        IosUseTool(rigs: port),
       ]) {
         expect(tool.actionClasses, contains(ActionClass.enclosureControl));
         expect(tool.actionClasses, contains(ActionClass.processSpawn));
         expect(tool.actionClasses, contains(ActionClass.networkEgress));
       }
+      expect(
+        IosUseTool(rigs: port).actionClasses,
+        contains(ActionClass.packageInstall),
+      );
+      expect(
+        MobileUseTool(rigs: port).actionClasses,
+        contains(ActionClass.packageInstall),
+      );
     });
 
     test('listing rigs is effect-free but closing one is not', () {
@@ -414,6 +533,7 @@ void main() {
         ComputerUseTool(rigs: port),
         BrowserUseTool(rigs: port),
         MobileUseTool(rigs: port),
+        IosUseTool(rigs: port),
         RigListTool(rigs: port),
         RigCloseTool(rigs: port),
       ]) {

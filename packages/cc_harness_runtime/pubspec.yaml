@@ -4,7 +4,7 @@ publish_to: "none"
 version: 0.0.1
 
 environment:
-  sdk: ">=3.11.0 <4.0.0"
+  sdk: ">=3.12.0 <4.0.0"
 
 resolution: workspace
 
@@ -12,6 +12,7 @@ dependencies:
   cc_harness:
     path: ../cc_harness
   crypto: ^3.0.7
+  http2: ^2.3.1
   path: ^1.9.1
 
 dev_dependencies:

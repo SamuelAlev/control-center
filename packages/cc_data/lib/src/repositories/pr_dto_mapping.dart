@@ -1,6 +1,7 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 
@@ -36,6 +37,11 @@ PullRequest pullRequestFromWireDto(PullRequestDto d) => PullRequest(
   assignees: d.assignees
       .map((u) => PrUser(login: u.login, avatarUrl: u.avatarUrl))
       .toList(),
+  labels: [
+    for (final l in d.labels)
+      if (l.name.isNotEmpty)
+        PrLabel(name: l.name, color: l.color, description: l.description),
+  ],
   mergedAt: d.mergedAt == null ? null : DateTime.tryParse(d.mergedAt!),
   reviewedByMe: d.reviewedByMe,
   bodyHtml: d.bodyHtml,

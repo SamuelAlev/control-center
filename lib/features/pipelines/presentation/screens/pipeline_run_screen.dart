@@ -85,7 +85,7 @@ class _PipelineRunScreenState extends ConsumerState<PipelineRunScreen> {
               SizedBox(
                 width: 320,
                 child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(24, 8, 16, 24),
+                  padding: const EdgeInsetsDirectional.fromSTEB(24, 8, 16, 24),
                   itemCount: pipelines.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
@@ -436,7 +436,7 @@ class _RunFormState extends State<_RunForm> {
           ],
         const SizedBox(height: 8),
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: CcButton(
             onPressed: widget.running || !_isValid
                 ? null

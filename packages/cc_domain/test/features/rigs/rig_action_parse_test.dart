@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/computer_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/mobile_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:test/test.dart';
@@ -111,10 +112,7 @@ void main() {
       // The take-over lock lets observation through while a human drives, so
       // this classification is load-bearing rather than cosmetic.
       expect(const ComputerScreenshot().mutatesGuest, isFalse);
-      expect(
-        const ComputerWait(Duration(seconds: 1)).mutatesGuest,
-        isFalse,
-      );
+      expect(const ComputerWait(Duration(seconds: 1)).mutatesGuest, isFalse);
       expect(
         const ComputerClick(button: RigMouseButton.left).mutatesGuest,
         isTrue,
@@ -154,11 +152,7 @@ void main() {
 
     test('fill accepts an empty string as "clear the field"', () {
       final fill = parsed<BrowserFill>(
-        BrowserAction.parse({
-          'action': 'fill',
-          'selector': '#q',
-          'text': '',
-        }),
+        BrowserAction.parse({'action': 'fill', 'selector': '#q', 'text': ''}),
       );
       expect(fill.text, isEmpty);
     });
@@ -295,12 +289,16 @@ void main() {
     });
 
     test('reload takes an optional hard flag', () {
-      expect(parsed<BrowserReload>(
-        BrowserAction.parse({'action': 'reload'}),
-      ).hard, isFalse);
-      expect(parsed<BrowserReload>(
-        BrowserAction.parse({'action': 'reload', 'hard': true}),
-      ).hard, isTrue);
+      expect(
+        parsed<BrowserReload>(BrowserAction.parse({'action': 'reload'})).hard,
+        isFalse,
+      );
+      expect(
+        parsed<BrowserReload>(
+          BrowserAction.parse({'action': 'reload', 'hard': true}),
+        ).hard,
+        isTrue,
+      );
     });
 
     test('stop_loading takes no arguments', () {
@@ -371,7 +369,10 @@ void main() {
     test('install_apk insists on an apk', () {
       expect(
         invalid(
-          MobileAction.parse({'action': 'install_apk', 'path': '/tmp/thing.zip'}),
+          MobileAction.parse({
+            'action': 'install_apk',
+            'path': '/tmp/thing.zip',
+          }),
         ),
         contains('.apk'),
       );
@@ -388,6 +389,217 @@ void main() {
       );
       expect(swipe.duration.inMilliseconds, lessThanOrEqualTo(5000));
     });
+
+    test('developer lifecycle, deep-link and shell actions are typed', () {
+      expect(
+        parsed<MobileStopApp>(
+          MobileAction.parse({
+            'action': 'stop_app',
+            'package': 'com.example.app',
+          }),
+        ),
+        const MobileStopApp('com.example.app'),
+      );
+      expect(
+        parsed<MobileClearAppData>(
+          MobileAction.parse({
+            'action': 'clear_app_data',
+            'package': 'com.example.app',
+          }),
+        ).package,
+        'com.example.app',
+      );
+      expect(
+        parsed<MobileUninstallApp>(
+          MobileAction.parse({
+            'action': 'uninstall_app',
+            'package': 'com.example.app',
+          }),
+        ).verb,
+        'uninstall_app',
+      );
+      expect(
+        parsed<MobileOpenUrl>(
+          MobileAction.parse({
+            'action': 'open_url',
+            'url': 'my-app://debug/route?value=1',
+          }),
+        ).url,
+        'my-app://debug/route?value=1',
+      );
+      expect(
+        parsed<MobileShell>(
+          MobileAction.parse({
+            'action': 'shell',
+            'argv': ['logcat', '-d', '-t', '50'],
+          }),
+        ).argv,
+        ['logcat', '-d', '-t', '50'],
+      );
+      expect(
+        MobileAction.parse({'action': 'shell', 'argv': []}),
+        isA<RigActionInvalid>(),
+      );
+      expect(
+        MobileAction.parse({'action': 'open_url', 'url': 'relative/path'}),
+        isA<RigActionInvalid>(),
+      );
+    });
+  });
+
+  group('iOS actions', () {
+    test('tap and swipe round-trip simulator points', () {
+      final tap = parsed<IosTap>(
+        IosAction.parse({
+          'action': 'tap',
+          'coordinate': [12, 34],
+        }),
+      );
+      expect(tap.toJson(), {
+        'action': 'tap',
+        'coordinate': [12, 34],
+      });
+
+      final swipe = parsed<IosSwipe>(
+        IosAction.parse({
+          'action': 'swipe',
+          'from': [1, 2],
+          'to': [30, 40],
+          'duration_ms': 999999,
+        }),
+      );
+      expect(swipe.duration.inMilliseconds, 5000);
+      expect(swipe.toJson()['duration_ms'], 5000);
+    });
+
+    test('key accepts only the closed key and modifier vocabularies', () {
+      final key = parsed<IosKey>(
+        IosAction.parse({
+          'action': 'key',
+          'key': 'arrow_left',
+          'modifiers': ['command', 'shift'],
+        }),
+      );
+      expect(key.modifiers, {IosKeyModifier.command, IosKeyModifier.shift});
+      expect(key.toJson()['modifiers'], ['command', 'shift']);
+      expect(
+        parsed<IosKey>(IosAction.parse({'action': 'key', 'key': 'é'})).key,
+        'é',
+      );
+      expect(
+        invalid(IosAction.parse({'action': 'key', 'key': 'two'})),
+        contains('unsupported iOS key'),
+      );
+      expect(
+        invalid(
+          IosAction.parse({
+            'action': 'key',
+            'key': 'a',
+            'modifiers': ['hyper'],
+          }),
+        ),
+        contains('hyper'),
+      );
+    });
+
+    test('device verbs are distinct from keyboard keys', () {
+      expect(parsed<IosHome>(IosAction.parse({'action': 'home'})).verb, 'home');
+      expect(parsed<IosLock>(IosAction.parse({'action': 'lock'})).verb, 'lock');
+      expect(
+        parsed<IosUnlock>(IosAction.parse({'action': 'unlock'})).verb,
+        'unlock',
+      );
+      expect(
+        IosAction.parse({'action': 'key', 'key': 'home'}),
+        isA<RigActionInvalid>(),
+      );
+    });
+
+    test('observations do not mutate while app actions do', () {
+      expect(const IosScreenshot().mutatesGuest, isFalse);
+      expect(const IosUiDump().mutatesGuest, isFalse);
+      expect(const IosInstallApp('/tmp/App.app').mutatesGuest, isTrue);
+      expect(const IosStartApp('com.example.app').mutatesGuest, isTrue);
+    });
+
+    test('install path and bundle id are validated', () {
+      expect(
+        invalid(
+          IosAction.parse({'action': 'install_app', 'path': '/tmp/App.zip'}),
+        ),
+        contains('.app'),
+      );
+      expect(
+        parsed<IosInstallApp>(
+          IosAction.parse({
+            'action': 'install_app',
+            'path': '/tmp/Example.app',
+          }),
+        ).path,
+        '/tmp/Example.app',
+      );
+      expect(
+        invalid(
+          IosAction.parse({'action': 'start_app', 'bundle_id': 'not a bundle'}),
+        ),
+        contains('reverse-DNS'),
+      );
+      expect(
+        parsed<IosStartApp>(
+          IosAction.parse({
+            'action': 'start_app',
+            'bundle_id': 'com.example.app',
+          }),
+        ).bundleId,
+        'com.example.app',
+      );
+    });
+
+    test('developer lifecycle, deep-link and spawn actions are typed', () {
+      expect(
+        parsed<IosStopApp>(
+          IosAction.parse({
+            'action': 'stop_app',
+            'bundle_id': 'com.example.app',
+          }),
+        ),
+        const IosStopApp('com.example.app'),
+      );
+      expect(
+        parsed<IosUninstallApp>(
+          IosAction.parse({
+            'action': 'uninstall_app',
+            'bundle_id': 'com.example.app',
+          }),
+        ).bundleId,
+        'com.example.app',
+      );
+      expect(
+        parsed<IosOpenUrl>(
+          IosAction.parse({
+            'action': 'open_url',
+            'url': 'my-app://debug/route',
+          }),
+        ).url,
+        'my-app://debug/route',
+      );
+      expect(
+        parsed<IosSpawn>(
+          IosAction.parse({
+            'action': 'spawn',
+            'argv': ['log', 'show', '--last', '1m'],
+          }),
+        ).argv,
+        ['log', 'show', '--last', '1m'],
+      );
+      expect(
+        IosAction.parse({
+          'action': 'spawn',
+          'argv': [''],
+        }),
+        isA<RigActionInvalid>(),
+      );
+    });
   });
 
   group('surface separation', () {
@@ -401,6 +613,10 @@ void main() {
       );
       expect(
         BrowserAction.parse({'action': 'ui_dump'}),
+        isA<RigActionInvalid>(),
+      );
+      expect(
+        IosAction.parse({'action': 'navigate', 'url': 'https://example.test'}),
         isA<RigActionInvalid>(),
       );
     });

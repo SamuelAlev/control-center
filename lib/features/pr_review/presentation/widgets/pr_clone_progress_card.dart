@@ -4,7 +4,7 @@ import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart'
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Blocking progress card shown while a large-PR local clone is running.
 ///

@@ -28,7 +28,7 @@ import 'package:control_center/features/settings/presentation/widgets/sections/s
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Onboarding step: install the server's voice (speech-to-text) model.
@@ -62,7 +62,7 @@ class OnboardingVoiceStep extends ConsumerWidget {
           return _ServerManagedPlaceholder(onBack: onBack, onForward: onFinish);
         }
         final control = ref.watch(voiceModelControlProvider);
-        final theme = Theme.of(context);
+        final t = context.designSystem ?? DesignSystemTokens.light();
         final tokens = context.designSystem;
         final isInstalled = status.status == ModelLifecycleStatus.installed;
         final isDownloading = status.status == ModelLifecycleStatus.downloading;
@@ -96,9 +96,9 @@ class OnboardingVoiceStep extends ConsumerWidget {
                         : AppIcons.mic,
                     size: 18,
                     color: isInstalled
-                        ? theme.colorScheme.primary
+                        ? t.fgBrandPrimary
                         : hasError
-                        ? theme.colorScheme.error
+                        ? t.textErrorPrimary
                         : tokens?.textTertiary,
                   ),
                   const SizedBox(width: 10),
@@ -136,7 +136,7 @@ class OnboardingVoiceStep extends ConsumerWidget {
                 Text(
                   status.error!,
                   style: CcTypography.caption.copyWith(
-                    color: theme.colorScheme.error,
+                    color: t.textErrorPrimary,
                   ),
                 ),
               ],

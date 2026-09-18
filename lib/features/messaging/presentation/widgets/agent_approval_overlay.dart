@@ -3,12 +3,17 @@ import 'dart:math' as math;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_card.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
+import 'package:control_center/features/messaging/providers/visible_conversation_spaces.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A global, always-on-top surface that lists agent actions awaiting a human
-/// decision and lets the user approve or deny them inline.
+/// decision for conversations that are **not** currently on screen.
+///
+/// When the conversation is open, the permission prompt renders the same
+/// request inline above the composer and this overlay hides it, so the
+/// operator never answers twice.
 ///
 /// The SERVER blocks an agent whenever it hits an approval-gated action
 /// (a destructive command, a privileged MCP tool) and publishes the request to
@@ -51,13 +56,6 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
   /// double-submit while the server round-trips.
   final Set<String> _responding = {};
 
-  /// How long "approve for a while" lasts. Deliberately a fixed, short window
-  /// rather than a picker: the point is to stop a burst of identical prompts,
-  /// not to let someone quietly grant a long-lived exemption from a dialog.
-  /// The server clamps it regardless, and narrows the scope to what the
-  /// responder's role may write.
-  static const int _rememberSeconds = 8 * 60 * 60;
-
   Future<void> _respond(
     String id, {
     required bool approved,
@@ -73,7 +71,7 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
           .respond(
             id,
             approved: approved,
-            rememberForSeconds: remember ? _rememberSeconds : null,
+            rememberForSeconds: remember ? kApprovalRememberSeconds : null,
           );
     } finally {
       if (mounted) {
@@ -84,8 +82,12 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final pending = ref.watch(pendingConfirmationsProvider).asData?.value;
-    if (pending == null || pending.isEmpty) {
+    final visible = ref.watch(visibleConversationSpacesProvider);
+    final pending =
+        (ref.watch(pendingConfirmationsProvider).asData?.value ?? const [])
+            .where((r) => r.spaceId.isEmpty || !visible.contains(r.spaceId))
+            .toList();
+    if (pending.isEmpty) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
@@ -99,7 +101,7 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
     final peeks = math.min(waiting, _maxPeeks);
 
     return Align(
-      alignment: Alignment.bottomRight,
+      alignment: AlignmentDirectional.bottomEnd,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: ConstrainedBox(
@@ -113,7 +115,7 @@ class _AgentApprovalOverlayState extends ConsumerState<AgentApprovalOverlay> {
               if (waiting > 0) ...[
                 Text(
                   l10n.agentApprovalsMoreWaiting(waiting),
-                  textAlign: TextAlign.right,
+                  textAlign: TextAlign.end,
                   style: TextStyle(
                     fontSize: 11,
                     color: t.textTertiary,

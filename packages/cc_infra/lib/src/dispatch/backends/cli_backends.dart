@@ -1,56 +1,13 @@
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 
-/// Backend for the structured NDJSON CLI mode (`--mode json`). Driven
-/// by the dispatch session's sandbox-exec path; this class only builds the
-/// argv + declares its (empty) default env.
-class StructuredCliBackend implements AgentBackend {
-  /// Creates a [StructuredCliBackend].
-  const StructuredCliBackend({
-    required this.cliName,
-    this.jsonModeConstraint = _defaultJsonConstraint,
-  });
-
-  @override
-  final String cliName;
-
-  @override
-  AdapterTransport get transport => AdapterTransport.structuredCli;
-
-  @override
-  String? get acpArgs => null;
-
-  /// The system-prompt constraint that makes Pi emit one JSON object per line.
-  final String jsonModeConstraint;
-
-  static const String _defaultJsonConstraint =
-      'Output structured JSON events. Each line must be a valid JSON object.';
-
-  @override
-  List<String> buildArgs({String? modelId, String? effortLevel}) {
-    final args = <String>['--mode', 'json'];
-    if (modelId != null && modelId.isNotEmpty) {
-      args.addAll(['--model', modelId]);
-    }
-    // Pi exposes reasoning via `--thinking <level>`.
-    if (effortLevel != null && effortLevel.isNotEmpty) {
-      args.addAll(['--thinking', effortLevel]);
-    }
-    args.addAll(['--append-system-prompt', jsonModeConstraint]);
-    return args;
-  }
-
-  @override
-  Map<String, String> defaultEnv() => const {};
-}
-
 /// Backend for Claude Code driven directly as a structured CLI: `claude -p`
-/// is spawned inside the OS sandbox (like Pi) and emits `stream-json` NDJSON
-/// that the dispatch session parses. This class declares the transport + the
-/// argv flags the session passes after the binary; the full flag set
-/// (including `--permission-mode` / `--mcp-config`) is assembled by
-/// [buildClaudeArgs], which has access to the conversation mode + MCP config
-/// that the [AgentBackend.buildArgs] contract does not.
+/// is spawned inside the OS sandbox and emits `stream-json` NDJSON that the
+/// dispatch session parses. This class declares the transport + the argv flags
+/// the session passes after the binary; the full flag set (including
+/// `--permission-mode` / `--mcp-config`) is assembled by [buildClaudeArgs],
+/// which has access to the conversation mode + MCP config that the
+/// [AgentBackend.buildArgs] contract does not.
 class ClaudeCliBackend implements AgentBackend {
   /// Creates a [ClaudeCliBackend].
   const ClaudeCliBackend({this.cliName = 'claude'});

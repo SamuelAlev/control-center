@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
 import 'package:control_center/features/service_status/presentation/widgets/github_degraded_banner.dart'
     show isGitHubDegraded, kGitHubStatusPageUrl;
 import 'package:control_center/features/service_status/presentation/widgets/service_status_indicator.dart'
@@ -15,10 +16,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Why an empty inbox may not be the truth.
 ///
-/// The inbox is a projection of GitHub state: an outage (or an unresolved
-/// viewer identity) empties it exactly like a genuinely clear queue does, and
-/// "You're all caught up" then reads as a confident lie. When one of these
-/// holds, the empty state says what it actually knows instead.
+/// The inbox is a projection of GitHub state: an outage, a suspended GitHub
+/// App install, or an unresolved viewer identity empties it exactly like a
+/// genuinely clear queue does, and "You're all caught up" then reads as a
+/// confident lie. When one of these holds, the empty state says what it
+/// actually knows instead.
 enum InboxEmptyCaveat {
   /// githubstatus.com reports an incident, degradation or maintenance, so the
   /// snapshot behind this list may be stale or partial.
@@ -29,17 +31,26 @@ enum InboxEmptyCaveat {
   /// every login is empty), so the list is empty *by construction* — regardless
   /// of how many pull requests are actually waiting.
   identityUnresolved,
+
+  /// The GitHub App installation covering linked repos is suspended, so the
+  /// poller has parked them and this empty inbox is last-known data (or never
+  /// fetched), not a trustworthy clear queue.
+  installationSuspended,
 }
 
 /// Decides which caveat (if any) applies to an empty inbox.
 ///
-/// An unresolved identity outranks a degraded GitHub, even though the outage is
-/// usually what caused it. "GitHub might be down" is true but leaves the
-/// operator staring at an inbox with no idea why it is empty; "we don't know
-/// who you are on GitHub" is the specific fact, and it is the one that says
-/// this list is empty *by construction* rather than possibly-incomplete. When
-/// both hold, the degradation still shows up as the likely cause and the
-/// status page stays one click away.
+/// An unresolved identity outranks everything else, even though an outage or a
+/// suspended install is usually what caused it. "GitHub might be down" / "the
+/// install is suspended" are true but leave the operator staring at an inbox
+/// with no idea why it is empty; "we don't know who you are on GitHub" is the
+/// specific fact, and it is the one that says this list is empty *by
+/// construction* rather than possibly-incomplete. When identity and a
+/// degraded GitHub both hold, the degradation still shows up as the likely
+/// cause and the status page stays one click away.
+///
+/// A suspended installation outranks a degraded GitHub: we already know why
+/// polling stopped, and githubstatus.com is the wrong next step.
 ///
 /// What counts as degraded is [isGitHubDegraded]'s call, shared with the banner
 /// so the two surfaces cannot disagree.
@@ -52,9 +63,13 @@ enum InboxEmptyCaveat {
 InboxEmptyCaveat? resolveInboxEmptyCaveat({
   required GitHubStatusIndicator? indicator,
   required Map<ForgeHost, String> viewerLogins,
+  bool installationSuspended = false,
 }) {
   if (viewerLogins.values.every((login) => login.isEmpty)) {
     return InboxEmptyCaveat.identityUnresolved;
+  }
+  if (installationSuspended) {
+    return InboxEmptyCaveat.installationSuspended;
   }
   return isGitHubDegraded(indicator) ? InboxEmptyCaveat.githubDegraded : null;
 }
@@ -73,9 +88,16 @@ class InboxEmptyState extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final status = ref.watch(githubStatusProvider).value;
+    final inaccessible =
+        ref.watch(prsByRepoProvider).value?.inaccessibleRepos ?? const [];
+    final suspended = [
+      for (final repo in inaccessible)
+        if (repo.isInstallationSuspended) repo,
+    ];
     final caveat = resolveInboxEmptyCaveat(
       indicator: status?.indicator,
       viewerLogins: ref.watch(viewerLoginsProvider),
+      installationSuspended: suspended.isNotEmpty,
     );
 
     switch (caveat) {
@@ -83,6 +105,14 @@ class InboxEmptyState extends ConsumerWidget {
         return EmptyState(
           message: l10n.inboxAllCaughtUp,
           icon: AppIcons.checkCircle2,
+        );
+      case InboxEmptyCaveat.installationSuspended:
+        return EmptyState(
+          message: l10n.repoAccessNoticeSuspendedTitle,
+          description: l10n.repoAccessNoticeSuspendedBody(
+            suspended.map((r) => r.repoFullName).join(', '),
+          ),
+          icon: AppIcons.alertTriangle,
         );
       case InboxEmptyCaveat.githubDegraded:
         return EmptyState(

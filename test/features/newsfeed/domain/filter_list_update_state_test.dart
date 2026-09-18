@@ -243,5 +243,28 @@ void main() {
         },
       );
     });
+
+    group('toJson / fromJson', () {
+      test('round-trips timestamps, errors, and counts', () {
+        final original = FilterListUpdateState(
+          lastCheck: now,
+          lastSuccess: later,
+          isUpdating: false,
+          errors: const ['easylist: timeout'],
+          cookieHidingRules: 4,
+          adHidingRules: 12,
+          networkBlockRules: 3,
+          removeParamsCount: 7,
+        );
+        expect(FilterListUpdateState.fromJson(original.toJson()), original);
+      });
+
+      test('empty round-trips', () {
+        expect(
+          FilterListUpdateState.fromJson(FilterListUpdateState.empty.toJson()),
+          FilterListUpdateState.empty,
+        );
+      });
+    });
   });
 }

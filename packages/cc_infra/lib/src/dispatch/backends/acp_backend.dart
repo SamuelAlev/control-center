@@ -2,7 +2,7 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart' show AcpClient;
 
-/// Backend for ACP-native adapters (OpenCode, Gemini, Goose, Cursor, Codex).
+/// Backend for ACP-native adapters.
 ///
 /// It is a stateless config holder: the dispatch session spawns
 /// `<cliPath> <acpArgs> <argsOverride>` per dispatch and drives the ACP
@@ -23,7 +23,7 @@ class AcpBackend implements AgentBackend {
   @override
   final String? acpArgs;
 
-  /// Per-adapter default env (e.g. `{'GOOSE_MODE': 'auto'}` for Goose).
+  /// Per-adapter default env.
   final Map<String, String> defaultEnvironment;
 
   @override

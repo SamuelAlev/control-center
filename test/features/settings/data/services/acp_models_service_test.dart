@@ -73,20 +73,6 @@ void main() {
       }
     });
 
-    test('returns models for opencode adapter', () async {
-      final models = await service.listModels('opencode');
-
-      expect(models, isNotEmpty);
-      expect(models.every((m) => m.id.isNotEmpty), isTrue);
-    });
-
-    test('returns models for pi-dev adapter', () async {
-      final models = await service.listModels('pi-dev');
-
-      expect(models, isNotEmpty);
-      expect(models.every((m) => m.id.isNotEmpty), isTrue);
-    });
-
     test('returns empty list for unknown adapter id', () async {
       final models = await service.listModels('unknown-adapter');
 
@@ -110,19 +96,8 @@ void main() {
       }
     });
 
-    test('codex models carry OpenAI thinking levels + low default', () async {
-      final models = await service.listModels('codex');
-      expect(models, isNotEmpty);
-      for (final model in models) {
-        expect(
-          model.thinkingLevels,
-          isNotNull,
-          reason: '${model.id} missing thinkingLevels',
-        );
-        expect(model.defaultThinkingLevel, 'low');
-        final ids = model.thinkingLevels!.map((l) => l.id).toSet();
-        expect(ids, containsAll(['low', 'medium', 'high', 'xhigh']));
-      }
+    test('codex is not an adapter catalog', () async {
+      expect(await service.listModels('codex'), isEmpty);
     });
 
     test('curated claude-code model carries its context window', () async {
@@ -133,66 +108,9 @@ void main() {
       expect(opus.defaultThinkingLevel, isNotNull);
     });
 
-    test('returns models for every new ACP adapter', () async {
-      for (final adapterId in ['gemini', 'goose', 'cursor']) {
-        final models = await service.listModels(adapterId);
-        expect(models, isNotEmpty, reason: '$adapterId has no models');
-      }
-    });
-  });
-
-  group('parseCursorModelList', () {
-    test('parses the tabular `--list-models` output', () {
-      final models = parseCursorModelList('''
-Available models
-
-auto - Auto (default)
-gpt-5.3-codex - Codex 5.3
-claude-4.6-opus-high - Claude Opus 4.6 High
-Tip: pass --model <id> to pick one
-''');
-
-      expect(models.map((m) => m.id), [
-        'auto',
-        'gpt-5.3-codex',
-        'claude-4.6-opus-high',
-      ]);
-      expect(models.first.name, 'Auto (default)');
-    });
-
-    test('stops at the trailing tip and drops duplicates', () {
-      final models = parseCursorModelList('''
-Available models
-
-auto - Auto
-auto - Auto
-Tip: run `agent login` first
-ignored - Not a model
-''');
-
-      expect(models.map((m) => m.id), ['auto']);
-    });
-
-    test('strips ANSI styling from a colorized table', () {
-      final models = parseCursorModelList(
-        '\x1B[1mAvailable models\x1B[0m\n\n\x1B[32mauto\x1B[0m - Auto\n',
-      );
-
-      expect(models.single.id, 'auto');
-    });
-
-    test('parses the legacy single-line catalog', () {
-      final models = parseCursorModelList(
-        'Error: unknown model.\nAvailable models: auto, gpt-5.1, sonnet-4.5\n',
-      );
-
-      expect(models.map((m) => m.id), ['auto', 'gpt-5.1', 'sonnet-4.5']);
-      expect(models.first.name, 'auto');
-    });
-
-    test('returns empty for output it does not recognize', () {
-      expect(parseCursorModelList(''), isEmpty);
-      expect(parseCursorModelList('Authentication required'), isEmpty);
+    test('Cursor is not an adapter catalog', () async {
+      expect(await service.listModels('cursor'), isEmpty);
+      expect(await service.listModels('cursor-agent'), isEmpty);
     });
   });
 

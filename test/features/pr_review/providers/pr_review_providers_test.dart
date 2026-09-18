@@ -335,75 +335,91 @@ void main() {
   });
 
   group('PR-keyed reads bind to the key\'s own repo', () {
-    // The wrong-repo 404 regression: PR #33373 from app-server opened while
+    // The wrong-repo 404 regression: PR from repo A opened while
     // the ACTIVE repo (UI selection) is a sibling repo must still be fetched
-    // from app-server. Under the old ambient-scope design the number rode
-    // whatever repo was pinned/active for a frame after navigation —
-    // GET /repos/Frontify/web-app/pulls/33373 → 404.
-    test('prDetailProvider fetches through the key repo, not the active repo',
-        () async {
-      final appServer = Repo(
-        id: 'repo-app-server',
-        name: 'app-server',
-        path: '/tmp/app-server',
-        remoteOwner: 'Frontify',
-        remoteName: 'app-server',
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      );
-      final webApp = Repo(
-        id: 'repo-web-app',
-        name: 'web-app',
-        path: '/tmp/web-app',
-        remoteOwner: 'Frontify',
-        remoteName: 'web-app',
-        createdAt: DateTime(2026),
-        updatedAt: DateTime(2026),
-      );
+    // from repo A. Under the old ambient-scope design the number rode
+    // whatever repo was pinned/active for a frame after navigation.
+    test(
+      'prDetailProvider fetches through the key repo, not the active repo',
+      () async {
+        final appServer = Repo(
+          id: 'repo-repo-a',
+          name: 'repo-a',
+          path: '/tmp/repo-a',
+          remoteOwner: 'controlcenter',
+          remoteName: 'repo-a',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        );
+        final webApp = Repo(
+          id: 'repo-repo-b',
+          name: 'repo-b',
+          path: '/tmp/repo-b',
+          remoteOwner: 'controlcenter',
+          remoteName: 'repo-b',
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+        );
 
-      final fetches = <({String repo, int number})>[];
+        final fetches = <({String repo, int number})>[];
 
-      final container = ProviderContainer(
-        overrides: [
-          reposForWorkspaceProvider('ws').overrideWith(
-            (ref) => Stream.value([appServer, webApp]),
-          ),
-          forgeProviderRegistryProvider.overrideWith(
-            (ref) => ForgeProviderRegistry([_RecordingFactory(fetches)]),
-          ),
-          // The WRONG repo is the active one — the exact setup that produced
-          // the wrong-repo 404s.
-          activeRepoProvider.overrideWith((ref) => webApp),
-          activeWorkspaceProvider.overrideWithValue(
-            Workspace(
-              id: 'ws',
-              name: 'Frontify',
-              createdAt: DateTime(2026),
-              updatedAt: DateTime(2026),
+        final container = ProviderContainer(
+          overrides: [
+            reposForWorkspaceProvider(
+              'ws',
+            ).overrideWith((ref) => Stream.value([appServer, webApp])),
+            forgeProviderRegistryProvider.overrideWith(
+              (ref) => ForgeProviderRegistry([_RecordingFactory(fetches)]),
             ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
+            // The WRONG repo is the active one — the exact setup that produced
+            // the wrong-repo 404s.
+            activeRepoProvider.overrideWith((ref) => webApp),
+            activeWorkspaceProvider.overrideWithValue(
+              Workspace(
+                id: 'ws',
+                name: 'controlcenter',
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
 
-      const key = (
-        workspaceId: 'ws',
-        repoFullName: 'Frontify/app-server',
-        number: 33373,
-      );
-      container.listen(prDetailProvider(key), (_, _) {}, fireImmediately: true);
-      await container.read(prDetailProvider(key).future);
+        const key = (
+          workspaceId: 'ws',
+          repoFullName: 'controlcenter/repo-a',
+          number: 33373,
+        );
+        container.listen(
+          prDetailProvider(key),
+          (_, _) {},
+          fireImmediately: true,
+        );
+        await container.read(prDetailProvider(key).future);
 
-      expect(fetches, [
-        (repo: 'app-server', number: 33373),
-      ], reason: 'the number must ride the key\'s own repo, never the active one');
-    });
+        expect(
+          fetches,
+          [(repo: 'repo-a', number: 33373)],
+          reason:
+              'the number must ride the key\'s own repo, never the active one',
+        );
+      },
+    );
 
     test('same number in two repos resolves two different keys', () async {
       // Numbers are per-repo: the two keys must be distinct provider elements
       // so a watch on one can never be served by the other\'s repository.
-      const a = (workspaceId: 'ws', repoFullName: 'Frontify/app-server', number: 7);
-      const b = (workspaceId: 'ws', repoFullName: 'Frontify/ffy-cli', number: 7);
+      const a = (
+        workspaceId: 'ws',
+        repoFullName: 'controlcenter/repo-a',
+        number: 7,
+      );
+      const b = (
+        workspaceId: 'ws',
+        repoFullName: 'controlcenter/ffy-cli',
+        number: 7,
+      );
       expect(a == b, isFalse);
       expect(a.hashCode == b.hashCode, isFalse);
     });

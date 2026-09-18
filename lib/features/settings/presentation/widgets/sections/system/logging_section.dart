@@ -4,7 +4,7 @@ import 'package:control_center/core/providers/app_log_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// General Settings → Logging level selector.
@@ -53,23 +53,21 @@ class _LogLevelOption extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
     final borderColor = selected
-        ? (tokens?.borderBrand ?? tokens?.textPrimary ?? Colors.grey)
-        : (tokens?.borderSecondary ?? Colors.grey);
+        ? (tokens?.borderBrand ?? tokens?.textPrimary ?? const Color(0xFF9E9E9E))
+        : (tokens?.borderSecondary ?? const Color(0xFF9E9E9E));
     final bg = selected
-        ? (tokens?.bgBrandPrimary ?? Colors.transparent)
-        : Colors.transparent;
+        ? (tokens?.bgBrandPrimary ?? const Color(0x00000000))
+        : const Color(0x00000000);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      child: InkWell(
+      child: GestureDetector(
         onTap: onSelect,
-        borderRadius: AppRadii.brSm,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
             color: bg,
             border: Border.all(color: borderColor),
-            borderRadius: AppRadii.brSm,
           ),
           child: Row(
             children: [

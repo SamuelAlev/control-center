@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 /// Selection is owned by the block's single `CcSelectionRegion`, not per row —
 /// a row that owned its own selection could not be part of a drag that crossed
 /// into the row below it.
+// RTL carve-out: diff row (code + line-number gutter) stays LTR.
 class SuggestionDiffLine extends StatelessWidget {
   /// Creates a [SuggestionDiffLine].
   const SuggestionDiffLine({

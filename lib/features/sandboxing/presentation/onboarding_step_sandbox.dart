@@ -5,7 +5,8 @@ import 'package:control_center/features/sandboxing/providers/sandboxing_provider
 import 'package:control_center/features/settings/providers/privacy_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show SelectableText;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Onboarding step that turns the OS-level native sandbox on (or opts the
@@ -112,9 +113,9 @@ class _OnboardingStepSandboxState extends ConsumerState<OnboardingStepSandbox> {
               CcDivider(
                 color:
                     tokens?.borderSoft ??
-                    Theme.of(
-                      context,
-                    ).colorScheme.onSurface.withValues(alpha: 0.12),
+                    (context.designSystem ?? DesignSystemTokens.light())
+                        .textPrimary
+                        .withValues(alpha: 0.12),
               ),
               const SizedBox(height: 16),
               const _DiagnosticsConsentRow(),

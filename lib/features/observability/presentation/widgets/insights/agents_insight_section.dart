@@ -53,7 +53,7 @@ class AgentsInsightSection extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: CcButton(
                   variant: CcButtonVariant.secondary,
                   size: CcButtonSize.sm,
@@ -112,7 +112,7 @@ class _NumHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: width,
-      child: Text(label, style: style, textAlign: TextAlign.right),
+      child: Text(label, style: style, textAlign: TextAlign.end),
     );
   }
 }
@@ -138,7 +138,7 @@ class _AgentInsightTile extends StatelessWidget {
       child: Text(
         text,
         style: numStyle,
-        textAlign: TextAlign.right,
+        textAlign: TextAlign.end,
         maxLines: 1,
       ),
     );
@@ -188,7 +188,7 @@ class _AgentInsightTile extends StatelessWidget {
                   child: Text(
                     formatRelativeTime(context, row.lastActive),
                     style: CcTypography.caption.copyWith(color: t.textTertiary),
-                    textAlign: TextAlign.right,
+                    textAlign: TextAlign.end,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

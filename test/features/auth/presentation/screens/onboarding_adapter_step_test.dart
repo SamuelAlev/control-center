@@ -22,6 +22,7 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/model_picker_field.dart';
 import 'package:control_center/features/settings/providers/harness_providers_providers.dart';
 import 'package:control_center/features/settings/providers/model_catalog_providers.dart';
 import 'package:control_center/features/settings/providers/settings_providers.dart';
@@ -53,10 +54,13 @@ void main() {
     },
   );
 
-  /// Pumps the full onboarding flow and drives it to step 3 (adapter): step 1
+  /// Pumps the full onboarding flow and drives it to the adapter step: step 1
   /// Continue (authenticated), step 2 workspace create (fake), sandbox
   /// "Use sandbox" (native available).
-  Future<void> pumpToAdapterStep(WidgetTester tester) async {
+  Future<void> pumpToAdapterStep(
+    WidgetTester tester, {
+    AdapterDetectionNotifier Function() detection = _FakeDetectedAdapters.new,
+  }) async {
     tester.view.physicalSize = const Size(900, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -89,7 +93,7 @@ void main() {
           sandboxDetectionProvider.overrideWith(
             (ref) => Future.value(macNativeDetection),
           ),
-          detectedAdaptersProvider.overrideWith(_FakeDetectedAdapters.new),
+          detectedAdaptersProvider.overrideWith(detection),
           harnessProviderRepositoryProvider.overrideWithValue(repository),
           rawModelCatalogProvider.overrideWith(
             (ref) => Future.value(ModelCatalog.empty),
@@ -181,28 +185,29 @@ void main() {
       expect(find.text('Log in to Anthropic'), findsNothing);
       expect(repository.savedKeys['anthropic'], 'sk-onboarding');
 
-      // The model field is now a real autocomplete; the connected provider's
-      // model is selectable and unlocks Continue.
+      // The model field is now the browser picker; the connected provider's
+      // model is one tap away and unlocks Continue.
       expect(find.text('Connect a provider to see models.'), findsNothing);
-      expect(find.byType(CcAutocomplete<String>), findsOneWidget);
-      final modelField = find.descendant(
-        of: find.byType(CcAutocomplete<String>),
-        matching: find.byType(EditableText),
-      );
-      await tester.enterText(modelField, 'anthropic/claude-test');
+      expect(find.byType(ModelPickerField), findsOneWidget);
+
+      // Opening the browser stages nothing: Continue stays disabled until a
+      // row is actually picked.
+      await tester.ensureVisible(find.byType(ModelPickerField));
+      await tester.pump();
+      await tester.tap(find.byType(ModelPickerField));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
-
-      // Combo box semantics: typing stages the custom model id but does not
-      // commit it, so Continue stays disabled until Enter.
+      await tester.pump(const Duration(milliseconds: 300));
       expect(
         tester
             .widget<CcButton>(find.widgetWithText(CcButton, 'Continue'))
             .onPressed,
         isNull,
       );
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+
+      await tester.tap(find.text('claude-test').first);
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(
@@ -233,13 +238,13 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
 
-      final modelField = find.descendant(
-        of: find.byType(CcAutocomplete<String>),
-        matching: find.byType(EditableText),
-      );
-      await tester.enterText(modelField, 'anthropic/claude-test');
+      await tester.ensureVisible(find.byType(ModelPickerField));
       await tester.pump();
-      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.tap(find.byType(ModelPickerField));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('claude-test').first);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -263,6 +268,80 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'does not wait for Claude Code detection before showing the built-in runner',
+    (tester) async {
+      await pumpToAdapterStep(
+        tester,
+        detection: _HarnessReadyWhileClaudeChecks.new,
+      );
+
+      expect(find.text('Control Center (built-in)'), findsOneWidget);
+      expect(find.text('Select a provider to log in'), findsOneWidget);
+      expect(find.text('Detecting adapters…'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'prefers the built-in runner when Claude Code is also installed',
+    (tester) async {
+      await pumpToAdapterStep(tester, detection: _BothRunnersFound.new);
+
+      expect(find.text('Select a provider to log in'), findsOneWidget);
+
+      await tester.tap(find.text('Control Center (built-in)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Claude Code'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the built-in runner lists Cursor as a provider next to Anthropic',
+    (tester) async {
+      await pumpToAdapterStep(tester);
+
+      await tester.tap(find.text('Select a provider to log in'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Anthropic'), findsWidgets);
+      expect(find.text('Cursor'), findsOneWidget);
+
+      await tester.tap(find.text('Cursor').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Log in to Cursor'), findsOneWidget);
+      expect(find.text('Log in with browser'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a leftover deleted-runner preference still lands on the built-in',
+    (tester) async {
+      prefs = AppPreferences.inMemory({'default_chat_adapter_id': 'pi'});
+      await pumpToAdapterStep(tester);
+
+      expect(find.text('Control Center (built-in)'), findsOneWidget);
+      expect(find.text('Select a provider to log in'), findsOneWidget);
+    },
+  );
+
+  testWidgets('empty detection no longer tells the operator to install Pi', (
+    tester,
+  ) async {
+    await pumpToAdapterStep(tester, detection: _NoAdaptersFound.new);
+
+    expect(
+      find.text('No runners detected yet. Refresh to scan again.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Install Pi'), findsNothing);
+    expect(find.textContaining('@anthropic/pi'), findsNothing);
+    expect(find.text('Select a provider to log in'), findsNothing);
+  });
 }
 
 /// The roster a freshly created workspace is seeded with: a CEO and four
@@ -330,10 +409,37 @@ class _FakeCreateWorkspaceNotifier extends CreateWorkspaceNotifier {
 class _FakeDetectedAdapters extends AdapterDetectionNotifier {
   @override
   List<DetectedAdapter> build() => [
+    DetectedAdapter(adapter: builtInAdapter, status: DetectionStatus.found),
+  ];
+}
+
+/// Production starts every catalogued runner as `checking`. The built-in loop
+/// is always found (no binary); Claude Code's `--version` can lag. The step
+/// must not hide the provider login behind that probe.
+class _HarnessReadyWhileClaudeChecks extends AdapterDetectionNotifier {
+  @override
+  List<DetectedAdapter> build() => [
+    DetectedAdapter(adapter: builtInAdapter, status: DetectionStatus.found),
     DetectedAdapter(
-      adapter: predefinedAdapters.firstWhere((a) => a.id == 'cc-harness'),
-      status: DetectionStatus.found,
+      adapter: predefinedAdapters.firstWhere((a) => a.id == 'claude-code'),
+      status: DetectionStatus.checking,
     ),
+  ];
+}
+
+class _BothRunnersFound extends AdapterDetectionNotifier {
+  @override
+  List<DetectedAdapter> build() => [
+    for (final adapter in predefinedAdapters)
+      DetectedAdapter(adapter: adapter, status: DetectionStatus.found),
+  ];
+}
+
+class _NoAdaptersFound extends AdapterDetectionNotifier {
+  @override
+  List<DetectedAdapter> build() => [
+    for (final adapter in predefinedAdapters)
+      DetectedAdapter(adapter: adapter, status: DetectionStatus.notFound),
   ];
 }
 
@@ -354,7 +460,15 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
     hasCredential: true,
   );
 
-  var _providers = const [_anthropicDisconnected];
+  static const _cursorDisconnected = HarnessProviderInfo(
+    id: 'cursor',
+    displayName: 'Cursor',
+    authMethods: [HarnessAuthMethod.oauth, HarnessAuthMethod.apiKey],
+    enabled: HarnessProviderEnabled.disabled,
+    hasCredential: false,
+  );
+
+  var _providers = const [_anthropicDisconnected, _cursorDisconnected];
   final savedKeys = <String, String>{};
 
   @override
@@ -382,7 +496,7 @@ class _FakeHarnessProviderRepository implements HarnessProviderRepository {
     String? accountLabel,
   }) async {
     savedKeys[providerId] = apiKey;
-    _providers = const [_anthropicConnected];
+    _providers = const [_anthropicConnected, _cursorDisconnected];
   }
 
   @override

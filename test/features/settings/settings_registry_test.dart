@@ -107,6 +107,16 @@ void main() {
         'chat_bridges.workspace-setup',
         'messaging.conversation-titles',
       });
+      expect({
+        for (final s in registry.sections) s.id: s.slot,
+      }, {
+        'forge.connections': SettingsSlot.userProfile,
+        'ticketing.connection': SettingsSlot.workspaceGeneral,
+        'calendar.accounts': SettingsSlot.userProfile,
+        'chat_bridges.my-account-link': SettingsSlot.userProfile,
+        'chat_bridges.workspace-setup': SettingsSlot.workspaceGeneral,
+        'messaging.conversation-titles': SettingsSlot.workspaceGeneral,
+      });
     });
   });
 

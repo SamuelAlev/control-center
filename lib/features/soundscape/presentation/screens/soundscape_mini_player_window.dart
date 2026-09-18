@@ -7,6 +7,7 @@ import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/features/soundscape/presentation/notifiers/soundscape_mini_player_controller.dart';
 import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';
@@ -49,13 +50,14 @@ class _SoundscapeMiniPlayerWindowState
 
   @override
   Widget build(BuildContext context) {
-    final localeCode = ref.watch(localeProvider)?.languageCode;
+    final localeOverride = ref.watch(localeProvider);
     return Window(
       controller: _controller,
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        locale: localeCode != null ? Locale(localeCode) : null,
-        supportedLocales: AppLocalizations.supportedLocales,
+        locale: localeOverride,
+        supportedLocales: kSupportedAppLocales,
+        localeResolutionCallback: resolveAppLocale,
         localizationsDelegates: const [
           AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
@@ -115,7 +117,7 @@ class _MiniPlayerView extends ConsumerWidget {
               // grip stay fully tappable/draggable; centre the label within that
               // height so it doesn't ride against the top edge.
               child: Align(
-                alignment: Alignment.centerLeft,
+                alignment: AlignmentDirectional.centerStart,
                 child: Text(
                   sceneName,
                   maxLines: 1,

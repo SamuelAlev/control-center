@@ -128,7 +128,7 @@ class _WhatIfProbeSectionState extends ConsumerState<WhatIfProbeSection> {
           ),
           const SizedBox(height: AppSpacing.xs),
           Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: CcSegmentedToggle<Mode>(
               value: _mode,
               onChanged: (m) => setState(() => _mode = m),

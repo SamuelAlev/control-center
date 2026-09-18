@@ -527,7 +527,7 @@ abstract final class DesignSystemPalette {
   static const Color amber950 = Color(0xFF4E1D09);
 
   // Sunshine — the golden-hour brand scale. Reserved for BOUNDED brand
-  // graphics only (the 3x3 logo mosaic, the golden-hour horizon, the sunset
+  // graphics only (the brand mark, the golden-hour horizon, the sunset
   // CTA). Never use as text or as a page background.
   /// Sunshine 900 — deep golden amber.
   static const Color sunshine900 = Color(0xFFFF8A00);
@@ -541,10 +541,10 @@ abstract final class DesignSystemPalette {
   /// Sunshine 300 — light gold.
   static const Color sunshine300 = Color(0xFFFFD06A);
 
-  /// Bright yellow — the highest note of the mosaic.
+  /// Bright yellow — the highest note of the brand-mark gradient.
   static const Color brightYellow = Color(0xFFFFD900);
 
-  /// Block-edge — burnt-orange terminus of the block mosaic.
+  /// Block-edge — burnt-orange terminus of the brand-mark gradient.
   static const Color blockEdge = Color(0xFFC03E0F);
 
   /// White from the design system palette.

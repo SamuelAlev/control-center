@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/github_user.dart';
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -29,8 +29,8 @@ class GitHubUserHoverTarget extends StatefulWidget {
     required this.child,
     this.enabled = true,
     this.showDelay = const Duration(milliseconds: 450),
-    this.targetAnchor = Alignment.bottomLeft,
-    this.followerAnchor = Alignment.topLeft,
+    this.targetAnchor = AlignmentDirectional.bottomStart,
+    this.followerAnchor = AlignmentDirectional.topStart,
   });
 
   /// The GitHub login whose profile the card shows.
@@ -46,10 +46,10 @@ class GitHubUserHoverTarget extends StatefulWidget {
   final Duration showDelay;
 
   /// Point on the target the card aligns to.
-  final Alignment targetAnchor;
+  final AlignmentGeometry targetAnchor;
 
   /// Point on the card aligned to [targetAnchor].
-  final Alignment followerAnchor;
+  final AlignmentGeometry followerAnchor;
 
   @override
   State<GitHubUserHoverTarget> createState() => _GitHubUserHoverTargetState();

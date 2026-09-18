@@ -6,6 +6,7 @@ library;
 // contract — re-exported here so a tool author needs one import, not two.
 export 'src/messages.dart' show HarnessImageBlock;
 export 'src/tools/action_class.dart';
+export 'src/tools/call_description.dart';
 export 'src/tools/command_runner.dart';
 export 'src/tools/file_search_port.dart';
 export 'src/tools/staged_edit.dart';

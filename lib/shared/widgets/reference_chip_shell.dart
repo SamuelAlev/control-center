@@ -1,5 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Rounded, bordered container used by inline GitHub reference chips
 /// (PR previews, commit previews). Owns the consistent look across types.
@@ -23,20 +23,15 @@ class ReferenceChipShell extends StatelessWidget {
     final border = tokens.borderSecondary;
     final background = tokens.bgSecondary;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadii.brSm,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: background,
-            border: Border.all(color: border),
-            borderRadius: AppRadii.brSm,
-          ),
-          child: child,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: background,
+          border: Border.all(color: border),
         ),
+        child: child,
       ),
     );
   }
@@ -63,7 +58,7 @@ class ReferenceFallbackLink extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
     final linkColor = tokens?.fgBrandPrimary ?? const Color(0xFFfa500f);
-    return InkWell(
+    return GestureDetector(
       onTap: onTap,
       child: CcLinkText(
         label,

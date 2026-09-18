@@ -912,6 +912,7 @@ class UserActivityDto {
     this.deviceId,
     this.ip,
     this.countryCode,
+    this.details,
     this.createdAt,
   });
 
@@ -926,6 +927,7 @@ class UserActivityDto {
         deviceId: json['device_id'] as String?,
         ip: json['ip'] as String?,
         countryCode: json['country_code'] as String?,
+        details: _activityDetailsFromJson(json['details']),
         createdAt: json['created_at'] is String
             ? DateTime.tryParse(json['created_at'] as String)
             : null,
@@ -940,6 +942,7 @@ class UserActivityDto {
   final String? deviceId;
   final String? ip;
   final String? countryCode;
+  final Map<String, Object?>? details;
   final DateTime? createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -952,8 +955,24 @@ class UserActivityDto {
     if (deviceId != null) 'device_id': deviceId,
     if (ip != null) 'ip': ip,
     if (countryCode != null) 'country_code': countryCode,
+    if (details != null) 'details': details,
     if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
   };
+}
+
+Map<String, Object?>? _activityDetailsFromJson(Object? raw) {
+  if (raw is Map) {
+    return raw.map((k, v) => MapEntry('$k', v));
+  }
+  if (raw is String && raw.isNotEmpty) {
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry('$k', v));
+      }
+    } catch (_) {}
+  }
+  return null;
 }
 
 /// RSS feed wire DTO.
@@ -2561,6 +2580,27 @@ class ReactionGroupDto {
   };
 }
 
+/// PrLabel wire DTO — a forge label currently on a pull request.
+class PrLabelDto {
+  PrLabelDto({required this.name, this.color = '', this.description = ''});
+
+  factory PrLabelDto.fromJson(Map<String, dynamic> json) => PrLabelDto(
+    name: json['name'] as String? ?? '',
+    color: json['color'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+  );
+
+  final String name;
+  final String color;
+  final String description;
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'color': color,
+    if (description.isNotEmpty) 'description': description,
+  };
+}
+
 /// PullRequest wire DTO — the full PR detail shape needed to reconstruct a
 /// `PullRequest` entity on a thin client. Enum fields (`state`, `checks_status`,
 /// `mergeable_state`, `review_decision`) travel as their stored strings;
@@ -2587,6 +2627,7 @@ class PullRequestDto {
     this.requestedReviewers = const [],
     this.requestedTeamSlugs = const [],
     this.assignees = const [],
+    this.labels = const [],
     this.reviewedByMe = false,
     this.reactions = const [],
     this.bodyHtml,
@@ -2631,6 +2672,10 @@ class PullRequestDto {
         .whereType<Map>()
         .map((u) => PrUserDto.fromJson(u.cast<String, dynamic>()))
         .toList(),
+    labels: ((json['labels'] as List?) ?? const [])
+        .whereType<Map>()
+        .map((l) => PrLabelDto.fromJson(l.cast<String, dynamic>()))
+        .toList(),
     reviewedByMe: json['reviewed_by_me'] as bool? ?? false,
     reactions: ((json['reactions'] as List?) ?? const [])
         .whereType<Map>()
@@ -2667,6 +2712,7 @@ class PullRequestDto {
   final List<PrUserDto> requestedReviewers;
   final List<String> requestedTeamSlugs;
   final List<PrUserDto> assignees;
+  final List<PrLabelDto> labels;
   final bool reviewedByMe;
   final List<ReactionGroupDto> reactions;
   final String? bodyHtml;
@@ -2700,6 +2746,7 @@ class PullRequestDto {
     'requested_reviewers': requestedReviewers.map((u) => u.toJson()).toList(),
     'requested_team_slugs': requestedTeamSlugs,
     'assignees': assignees.map((u) => u.toJson()).toList(),
+    'labels': labels.map((l) => l.toJson()).toList(),
     'reviewed_by_me': reviewedByMe,
     'reactions': reactions.map((r) => r.toJson()).toList(),
     'body_html': ?bodyHtml,
@@ -2923,7 +2970,8 @@ class PrReviewSubmissionDto {
 }
 
 /// PrTimelineEvent wire DTO — a conversation-timeline event (review requested
-/// / review request removed) for the PR Overview activity feed.
+/// / review request removed / labeled / unlabeled) for the PR Overview
+/// activity feed.
 class PrTimelineEventDto {
   PrTimelineEventDto({
     required this.kind,
@@ -2931,6 +2979,7 @@ class PrTimelineEventDto {
     this.reviewerName = '',
     this.reviewerIsTeam = false,
     this.reviewerAvatarUrl = '',
+    this.label,
     this.createdAt,
   });
 
@@ -2943,6 +2992,9 @@ class PrTimelineEventDto {
         reviewerName: json['reviewer_name'] as String? ?? '',
         reviewerIsTeam: json['reviewer_is_team'] as bool? ?? false,
         reviewerAvatarUrl: json['reviewer_avatar_url'] as String? ?? '',
+        label: json['label'] is Map
+            ? PrLabelDto.fromJson((json['label'] as Map).cast<String, dynamic>())
+            : null,
         createdAt: json['created_at'] as String?,
       );
 
@@ -2951,6 +3003,7 @@ class PrTimelineEventDto {
   final String reviewerName;
   final bool reviewerIsTeam;
   final String reviewerAvatarUrl;
+  final PrLabelDto? label;
   final String? createdAt;
 
   Map<String, dynamic> toJson() => {
@@ -2959,6 +3012,7 @@ class PrTimelineEventDto {
     'reviewer_name': reviewerName,
     'reviewer_is_team': reviewerIsTeam,
     'reviewer_avatar_url': reviewerAvatarUrl,
+    'label': ?label?.toJson(),
     'created_at': ?createdAt,
   };
 }

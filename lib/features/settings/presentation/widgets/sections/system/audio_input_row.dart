@@ -259,7 +259,7 @@ class _LevelMeter extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designSystem;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(30, 0, 0, 0),
+      padding: const EdgeInsetsDirectional.fromSTEB(30, 0, 0, 0),
       child: Row(
         children: [
           Expanded(
@@ -278,7 +278,7 @@ class _LevelMeter extends StatelessWidget {
                 height: 1.3,
                 color: tokens?.textTertiary,
               ),
-              textAlign: TextAlign.right,
+              textAlign: TextAlign.end,
             ),
           ),
         ],

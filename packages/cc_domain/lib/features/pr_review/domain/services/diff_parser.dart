@@ -1,11 +1,75 @@
 import 'package:meta/meta.dart';
 
+/// Compact per-token classification for the PR-diff canvas (not TextMate
+/// scopes). Encoded as a small int so it survives the worker wire without
+/// shipping scope strings.
+abstract final class DiffTokenKind {
+  /// No special interaction.
+  static const int none = 0;
+
+  /// A regular-expression literal (`string.regexp*` TextMate scopes).
+  static const int regexp = 1;
+
+  /// A code-graph symbol (class/function/type name), not every identifier.
+  static const int symbol = 2;
+}
+
+/// Maps TextMate [scopes] (from `TokenizeOptions.includeExplanation`) onto a
+/// [DiffTokenKind]. Scopes are dropped after this; the painter only needs the
+/// int.
+int diffTokenKindFromScopes(List<String>? scopes) {
+  if (scopes == null || scopes.isEmpty) {
+    return DiffTokenKind.none;
+  }
+  var symbol = false;
+  for (final scope in scopes) {
+    if (scope.startsWith('string.regexp')) {
+      return DiffTokenKind.regexp;
+    }
+    // Data languages have no code-graph symbols. JSON keys are
+    // `support.type.property-name.json` — without this they would look like
+    // types and underline under Cmd/Ctrl.
+    if (scope.startsWith('source.json') ||
+        scope.contains('.json') ||
+        scope.startsWith('source.yaml') ||
+        scope.startsWith('source.toml')) {
+      return DiffTokenKind.none;
+    }
+    if (scope.startsWith('string.') ||
+        scope.startsWith('comment.') ||
+        scope.startsWith('keyword.') ||
+        scope.startsWith('storage.') ||
+        scope.startsWith('constant.') ||
+        scope.startsWith('punctuation.') ||
+        scope.contains('property-name') ||
+        scope.startsWith('entity.name.tag') ||
+        scope.startsWith('variable.language')) {
+      return DiffTokenKind.none;
+    }
+    // User-declared names (`entity.name.*`) plus Dart types: the Dart
+    // grammar scopes those as `support.class` at both declaration and use.
+    // `support.function` / `support.type` / `support.variable` are library
+    // APIs (Zod `null`, `Promise`, `console`) that are never in the graph.
+    if (scope.startsWith('entity.name') ||
+        scope.startsWith('entity.other.inherited-class') ||
+        scope.startsWith('support.class')) {
+      symbol = true;
+    }
+  }
+  return symbol ? DiffTokenKind.symbol : DiffTokenKind.none;
+}
+
 /// A pre-tokenized span within a diff line. ARGB-int color so the value is
 /// trivially sendable across isolate boundaries.
 @immutable
 class DiffToken {
   /// Creates a [DiffToken].
-  const DiffToken(this.text, this.colorValue, {this.backgroundColorValue});
+  const DiffToken(
+    this.text,
+    this.colorValue, {
+    this.backgroundColorValue,
+    this.kind = DiffTokenKind.none,
+  });
 
   /// Raw text of this token.
   final String text;
@@ -15,6 +79,9 @@ class DiffToken {
 
   /// ARGB background color, or `null` to inherit the base background.
   final int? backgroundColorValue;
+
+  /// Compact interaction kind ([DiffTokenKind]); default [DiffTokenKind.none].
+  final int kind;
 }
 
 /// A diff line carrying its highlighted token list.

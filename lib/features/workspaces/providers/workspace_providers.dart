@@ -2,13 +2,12 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:control_center/core/providers/event_bus_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/provider_bindings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
-import 'package:control_center/features/workspaces/domain/usecases/create_workspace.dart'
-    show CreateWorkspaceCommand, CreateWorkspaceUseCase;
+import 'package:cc_data/cc_data.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// shared_preferences key for the last-active workspace id. Public so the web
@@ -316,17 +315,28 @@ class CreateWorkspaceNotifier extends Notifier<AsyncValue<String?>> {
   Future<String?> create({required String name, String? logoPath}) async {
     state = const AsyncLoading();
     try {
-      final repository = ref.read(workspaceRepositoryProvider);
-      final eventBus = ref.read(domainEventBusProvider);
-      final filesystem = ref.read(workspaceFilesystemPortProvider);
-      final useCase = CreateWorkspaceUseCase(
-        repository: repository,
-        eventBus: eventBus,
-        filesystem: filesystem,
-      );
-      final workspace = await useCase.execute(
-        CreateWorkspaceCommand(name: name, logoPath: logoPath),
-      );
+      final workspace = await RpcWorkspaceRepository(
+        ref.read(rpcClientProvider),
+      ).create(name: name);
+      if (logoPath != null) {
+        final filesystem = ref.read(workspaceFilesystemPortProvider);
+        String? persistedLogo;
+        try {
+          persistedLogo = await filesystem.persistLogo(workspace.id, logoPath);
+        } on Exception {
+          persistedLogo = null;
+        }
+        if (persistedLogo != null) {
+          await ref
+              .read(workspaceRepositoryProvider)
+              .upsert(
+                workspace.copyWith(
+                  logoPath: persistedLogo,
+                  updatedAt: DateTime.now(),
+                ),
+              );
+        }
+      }
       // Pre-seed the active id so workspace-scoped providers resolve against
       // the new workspace immediately. NAVIGATION is the caller's business —
       // this provider file must not change the route: onboarding's workspace

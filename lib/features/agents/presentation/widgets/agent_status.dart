@@ -3,7 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/live_dot.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Resolved colours, icon and label for an [AgentLiveState], read from the
 /// design system token set so light/dark and contrast come from one place.
@@ -139,7 +139,7 @@ class AgentStatusDot extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: visual.filled ? visual.dotColor : Colors.transparent,
+        color: visual.filled ? visual.dotColor : const Color(0x00000000),
         shape: BoxShape.circle,
         border: visual.filled
             ? null

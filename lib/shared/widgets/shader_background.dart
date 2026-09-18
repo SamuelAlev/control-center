@@ -1,7 +1,8 @@
 import 'dart:ui' as ui;
 
 import 'package:control_center/core/utils/app_log.dart';
-import 'package:flutter/material.dart';
+import 'package:cc_ui/cc_ui.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Asset path for the dark-mode fluted-glass cloudscape shader.
@@ -96,7 +97,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
     if (widget.shaderAsset != null) {
       return widget.shaderAsset!;
     }
-    final brightness = Theme.of(context).brightness;
+    final brightness = (context.ccTheme?.brightness == CcBrightness.dark ? Brightness.dark : Brightness.light);
     return brightness == Brightness.light
         ? _lightShaderAsset
         : _darkShaderAsset;
@@ -218,7 +219,7 @@ class _ShaderBackgroundState extends State<ShaderBackground>
   Widget build(BuildContext context) {
     if (!_loaded || _program == null || _shader == null) {
       return Container(
-        color: Theme.of(context).colorScheme.surface,
+        color: (context.designSystem ?? DesignSystemTokens.light()).surface,
         child: widget.child,
       );
     }

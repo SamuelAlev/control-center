@@ -52,10 +52,7 @@ void main() {
     ],
     // Web-safe thin-client data layer (RPC-backed repository adapters). Must run
     // on Flutter web: no dart:io/ffi, no drift/sqlite3, no VM infra/persistence,
-    // no Flutter. Only cc_domain + cc_rpc.
-    // Web-safe thin-client data layer — CLOSED allowlist: only cc_domain +
-    // cc_rpc. Anything else (dart:io/ffi, drift/sqlite3/dio, ANY VM/server
-    // package incl. cc_mcp/cc_server_core) would break `flutter build web`.
+    // no Flutter. cc_domain + cc_rpc + cc_harness (web-safe kernel types).
     'cc_data': [
       'package:flutter',
       'dart:ui',
@@ -128,6 +125,21 @@ void main() {
       'package:cc_natives',
       'package:cc_persistence',
       'package:cc_server_core',
+      'package:drift',
+      'package:sqlite3',
+    ],
+    // MCP CLIENT: dart:io is its job (stdio child processes). No Flutter, no
+    // server persistence, no cc_infra (it talks to external MCP servers, not
+    // our VM adapters).
+    'cc_mcp_client': [
+      'package:flutter',
+      'dart:ui',
+      'package:control_center',
+      'package:cc_infra',
+      'package:cc_persistence',
+      'package:cc_server_core',
+      'package:cc_host',
+      'package:cc_natives',
       'package:drift',
       'package:sqlite3',
     ],
@@ -314,6 +326,17 @@ void main() {
       'cc_natives',
       'cc_persistence',
       'cc_server_core',
+      'drift',
+      'sqlite3',
+    ],
+    'cc_mcp_client': [
+      'control_center',
+      'flutter',
+      'cc_infra',
+      'cc_persistence',
+      'cc_server_core',
+      'cc_host',
+      'cc_natives',
       'drift',
       'sqlite3',
     ],

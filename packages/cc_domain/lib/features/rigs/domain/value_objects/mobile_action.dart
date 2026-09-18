@@ -16,7 +16,8 @@ sealed class MobileAction extends RigAction {
     if (verb == null) {
       return const RigActionInvalid(
         'Missing or invalid argument: action (expected one of tap, swipe, '
-        'type, key, screenshot, ui_dump, install_apk, start_app)',
+        'type, key, screenshot, ui_dump, install_apk, start_app, stop_app, '
+        'clear_app_data, uninstall_app, open_url, shell)',
       );
     }
     switch (verb) {
@@ -89,32 +90,95 @@ sealed class MobileAction extends RigAction {
         }
         return RigActionParsed(MobileInstallApk(path));
       case 'start_app':
-        final package = rigOptString(args, 'package');
+      case 'stop_app':
+      case 'clear_app_data':
+      case 'uninstall_app':
+        final package = _parsePackage(args);
         if (package == null) {
           return const RigActionInvalid(
-            'Missing or invalid argument: package (e.g. com.example.app)',
+            'Missing or invalid argument: package '
+            '(expected a valid Android package name in reverse-DNS form)',
           );
         }
-        // The package name is interpolated into an `am start` argument, so it
-        // is validated as a package name rather than trusted. Nothing here
-        // reaches a shell through a string, but a value that cannot be a
-        // package is a mistake worth naming at the boundary.
-        if (!RegExp(
-          r'^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$',
-        ).hasMatch(package)) {
-          return RigActionInvalid(
-            'Invalid argument: "$package" is not a valid Android package name',
+        if (verb == 'start_app') {
+          return RigActionParsed(
+            MobileStartApp(
+              package: package,
+              activity: rigOptString(args, 'activity'),
+            ),
           );
         }
-        return RigActionParsed(
-          MobileStartApp(
-            package: package,
-            activity: rigOptString(args, 'activity'),
-          ),
-        );
+        if (verb == 'stop_app') {
+          return RigActionParsed(MobileStopApp(package));
+        }
+        if (verb == 'clear_app_data') {
+          return RigActionParsed(MobileClearAppData(package));
+        }
+        return RigActionParsed(MobileUninstallApp(package));
+      case 'open_url':
+        final url = _parseUrl(args);
+        if (url == null) {
+          return const RigActionInvalid(
+            'Missing or invalid argument: url '
+            '(expected an absolute URL or app deep link)',
+          );
+        }
+        return RigActionParsed(MobileOpenUrl(url));
+      case 'shell':
+        final argv = _parseArgv(args);
+        if (argv == null) {
+          return const RigActionInvalid(
+            'Missing or invalid argument: argv (expected 1–64 non-empty '
+            'strings without NUL bytes)',
+          );
+        }
+        return RigActionParsed(MobileShell(argv));
       default:
         return RigActionInvalid('Unknown mobile action: "$verb"');
     }
+  }
+
+  static final RegExp _packagePattern = RegExp(
+    r'^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$',
+  );
+
+  static String? _parsePackage(Map<String, dynamic> args) {
+    final package = rigOptString(args, 'package');
+    return package != null && _packagePattern.hasMatch(package)
+        ? package
+        : null;
+  }
+
+  static String? _parseUrl(Map<String, dynamic> args) {
+    final value = rigOptString(args, 'url');
+    if (value == null || value.length > 8192 || value.contains('\u0000')) {
+      return null;
+    }
+    final parsed = Uri.tryParse(value);
+    return parsed != null && parsed.scheme.isNotEmpty ? value : null;
+  }
+
+  static List<String>? _parseArgv(Map<String, dynamic> args) {
+    final raw = args['argv'];
+    if (raw is! List || raw.isEmpty || raw.length > 64) {
+      return null;
+    }
+    final argv = <String>[];
+    var size = 0;
+    for (final value in raw) {
+      if (value is! String ||
+          value.isEmpty ||
+          value.contains('\u0000') ||
+          value.length > 4096) {
+        return null;
+      }
+      size += value.length;
+      if (size > 32768) {
+        return null;
+      }
+      argv.add(value);
+    }
+    return argv;
   }
 }
 
@@ -340,4 +404,98 @@ class MobileStartApp extends MobileAction {
 
   @override
   String get summary => 'Started $package';
+}
+
+/// Stops one running Android package.
+class MobileStopApp extends MobileAction {
+  /// Creates a stop action.
+  const MobileStopApp(this.package);
+
+  /// Android package name.
+  final String package;
+
+  @override
+  String get verb => 'stop_app';
+
+  @override
+  Map<String, dynamic> toJson() => {'action': verb, 'package': package};
+
+  @override
+  String get summary => 'Stopped $package';
+}
+
+/// Clears one Android package's app data.
+class MobileClearAppData extends MobileAction {
+  /// Creates an app-data reset action.
+  const MobileClearAppData(this.package);
+
+  /// Android package name.
+  final String package;
+
+  @override
+  String get verb => 'clear_app_data';
+
+  @override
+  Map<String, dynamic> toJson() => {'action': verb, 'package': package};
+
+  @override
+  String get summary => 'Cleared app data for $package';
+}
+
+/// Removes one Android package from the device.
+class MobileUninstallApp extends MobileAction {
+  /// Creates an uninstall action.
+  const MobileUninstallApp(this.package);
+
+  /// Android package name.
+  final String package;
+
+  @override
+  String get verb => 'uninstall_app';
+
+  @override
+  Map<String, dynamic> toJson() => {'action': verb, 'package': package};
+
+  @override
+  String get summary => 'Uninstalled $package';
+}
+
+/// Opens an absolute web URL or application deep link.
+class MobileOpenUrl extends MobileAction {
+  /// Creates a URL action.
+  const MobileOpenUrl(this.url);
+
+  /// Absolute URL or custom-scheme deep link.
+  final String url;
+
+  @override
+  String get verb => 'open_url';
+
+  @override
+  Map<String, dynamic> toJson() => {'action': verb, 'url': url};
+
+  @override
+  String get summary => 'Opened $url';
+}
+
+/// Runs one argv-shaped command inside the Android device.
+///
+/// This is the escape hatch for developer operations not represented by a
+/// stable typed verb: `pm grant`, `logcat`, `dumpsys`, file inspection, and
+/// other Android platform tools. It never invokes a host shell.
+class MobileShell extends MobileAction {
+  /// Creates a device command.
+  MobileShell(List<String> argv) : argv = List.unmodifiable(argv);
+
+  /// Device command and arguments.
+  final List<String> argv;
+
+  @override
+  String get verb => 'shell';
+
+  @override
+  Map<String, dynamic> toJson() => {'action': verb, 'argv': argv};
+
+  @override
+  String get summary => 'Ran ${argv.first} on the Android device';
 }

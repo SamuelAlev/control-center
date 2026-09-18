@@ -12,7 +12,7 @@ import 'package:control_center/features/memory/providers/memory_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/empty_state.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// How the fact list is ordered.
@@ -198,7 +198,7 @@ class _FactsTabState extends ConsumerState<FactsTab> {
   }
 
   Future<void> _editFact(BuildContext context, MemoryFact fact) async {
-    final edited = await showDialog<MemoryFact>(
+    final edited = await showCcDialog<MemoryFact>(
       context: context,
       builder: (_) => FactEditDialog(fact: fact),
     );

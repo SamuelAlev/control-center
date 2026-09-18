@@ -740,6 +740,33 @@ class BitbucketForgePrClient implements ForgePrClient {
     );
   }
 
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required String commentId,
+    required String body,
+    Object? cancelToken,
+  }) async {
+    final id = int.tryParse(commentId.trim());
+    if (id == null) {
+      throw ArgumentError.value(
+        commentId,
+        'commentId',
+        'Bitbucket comment ids are integers',
+      );
+    }
+    await _client.updatePullRequestComment(
+      owner,
+      repo,
+      prNumber,
+      id,
+      <String, dynamic>{
+        'content': <String, dynamic>{'raw': body},
+      },
+      cancelToken: _token(cancelToken),
+    );
+  }
+
   /// Submits a review verdict.
   ///
   /// Bitbucket has no batched review (`pendingReviewBatching` is false), so a

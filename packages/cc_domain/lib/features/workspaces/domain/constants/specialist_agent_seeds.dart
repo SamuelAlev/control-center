@@ -110,7 +110,7 @@ fix bugs, refactor code and write tests.
 
 ## Workflow
 
-1. Re-read the task description; ask clarifying questions if scope is unclear.
+1. Re-read the task description; call `ask_user` if scope is unclear.
 2. Read the affected files before editing.
 3. Make the change.
 4. Run the relevant tests.

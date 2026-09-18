@@ -3,6 +3,12 @@ import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// How long "approve for a while" lasts. Deliberately a fixed, short window
+/// rather than a picker: the point is to stop a burst of identical prompts,
+/// not to let someone quietly grant a long-lived exemption from a dialog.
+/// The server clamps it regardless.
+const int kApprovalRememberSeconds = 8 * 60 * 60;
+
 /// The RPC-backed repository for host-global agent-action approvals.
 ///
 /// Backs the desktop/web approval surface, mirroring the phone's

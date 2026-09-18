@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_remote/app_icons.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
@@ -71,7 +72,7 @@ class _AgentTranscriptState extends State<AgentTranscript> {
         Icon(AppIcons.loader, size: 12, color: t.fgTertiary),
         const SizedBox(width: 5),
         Text(
-          'Working',
+          AppLocalizations.of(context).working,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -114,14 +115,16 @@ class _AgentTranscriptState extends State<AgentTranscript> {
     if (s.text.trim().isEmpty) {
       return null;
     }
-    // A faint left rail sets the agent's thinking apart from its answer now
+    // A faint leading rail sets the agent's thinking apart from its answer now
     // that both interleave in one column (the answer is upright primary text).
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: t.borderSecondary, width: 2)),
+        border: BorderDirectional(
+          start: BorderSide(color: t.borderSecondary, width: 2),
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.only(left: 8),
+        padding: const EdgeInsetsDirectional.only(start: 8),
         child: Text(
           s.text,
           style: TextStyle(
@@ -143,10 +146,15 @@ class _AgentTranscriptState extends State<AgentTranscript> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        child: Text(
-          text,
-          style: CcFonts.code(
-            textStyle: TextStyle(fontSize: 12, height: 1.4, color: fg),
+        // RTL carve-out: error/violation payloads are log output — LTR in
+        // every locale.
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Text(
+            text,
+            style: CcFonts.code(
+              textStyle: TextStyle(fontSize: 12, height: 1.4, color: fg),
+            ),
           ),
         ),
       ),
@@ -155,6 +163,12 @@ class _AgentTranscriptState extends State<AgentTranscript> {
 
   Widget _tool(DesignSystemTokens t, ToolSegment s) {
     final open = _expanded.contains(s.toolCallId);
+    // Script tools (bash/eval) send a required per-call description; showing
+    // it instead of the bare tool name keeps this surface scannable too.
+    final description = s.inputs?['description'];
+    final label = description is String && description.trim().isNotEmpty
+        ? description.trim().split('\n').first
+        : s.toolName;
     final (icon, color) = switch (s.status) {
       ToolSegmentStatus.running => (AppIcons.loader, t.fgTertiary),
       ToolSegmentStatus.ok => (AppIcons.check, t.fgSuccessPrimary),
@@ -189,7 +203,7 @@ class _AgentTranscriptState extends State<AgentTranscript> {
                   const SizedBox(width: 7),
                   Flexible(
                     child: Text(
-                      s.toolName,
+                      label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: CcFonts.code(
@@ -212,8 +226,14 @@ class _AgentTranscriptState extends State<AgentTranscript> {
                 ],
               ),
               if (open) ...[
-                if (s.inputs != null) _detail(t, 'Input', _pretty(s.inputs)),
-                if (s.outputs.isNotEmpty) _detail(t, 'Output', s.outputs),
+                if (s.inputs != null)
+                  _detail(
+                    t,
+                    AppLocalizations.of(context).input,
+                    _pretty(s.inputs),
+                  ),
+                if (s.outputs.isNotEmpty)
+                  _detail(t, AppLocalizations.of(context).output, s.outputs),
               ],
             ],
           ),
@@ -237,15 +257,20 @@ class _AgentTranscriptState extends State<AgentTranscript> {
             ),
           ),
           const SizedBox(height: 2),
-          Text(
-            body,
-            maxLines: 8,
-            overflow: TextOverflow.ellipsis,
-            style: CcFonts.code(
-              textStyle: TextStyle(
-                fontSize: 11,
-                height: 1.4,
-                color: t.textSecondary,
+          // RTL carve-out: tool inputs/outputs are code/JSON — LTR in every
+          // locale.
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text(
+              body,
+              maxLines: 8,
+              overflow: TextOverflow.ellipsis,
+              style: CcFonts.code(
+                textStyle: TextStyle(
+                  fontSize: 11,
+                  height: 1.4,
+                  color: t.textSecondary,
+                ),
               ),
             ),
           ),

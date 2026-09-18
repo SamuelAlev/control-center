@@ -9,7 +9,7 @@ import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 /// env. Process lifecycle (sandbox exec, ACP subprocess, claude -p) is
 /// owned by the dispatch session, which switches on [transport].
 abstract interface class AgentBackend {
-  /// The CLI name this backend handles (e.g. 'pi', 'claude', 'gemini').
+  /// The CLI name this backend handles (e.g. 'claude', 'cc-harness').
   String get cliName;
 
   /// How this backend's CLI is driven.
@@ -20,9 +20,8 @@ abstract interface class AgentBackend {
   String? get acpArgs;
 
   /// Builds argv[1..] (everything after the binary path) for this backend,
-  /// given the resolved model + effort level. The structured-CLI backend
-  /// returns its `--mode json` / `--model` / constraint argv; ACP backends
-  /// return `[]` (their args live in [acpArgs] / the protocol).
+  /// given the resolved model + effort level. ACP backends return `[]`
+  /// (their args live in [acpArgs] / the protocol).
   List<String> buildArgs({String? modelId, String? effortLevel});
 
   /// Default env this backend contributes. Merged under the caller / broker env; an explicit per-adapter override wins.

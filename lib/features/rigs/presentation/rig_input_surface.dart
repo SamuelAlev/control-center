@@ -20,11 +20,14 @@ import 'package:control_center/core/infrastructure/clipboard/host_clipboard.dart
 import 'package:control_center/core/keybindings/text_input_surface.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/features/rigs/presentation/rig_action_queue.dart';
+import 'package:control_center/features/rigs/presentation/rig_clipboard_permission_dialog.dart';
 import 'package:control_center/features/rigs/presentation/rig_key_translation.dart';
 import 'package:control_center/features/rigs/presentation/rig_keystroke_coalescer.dart';
+import 'package:control_center/features/rigs/providers/rig_clipboard_permissions.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/rigs/providers/rig_transfer_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/features/rigs/presentation/rig_ios_key_translation.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -86,6 +89,19 @@ RigClipboardChord? rigClipboardChordFor(KeyEvent event) {
   }
   return null;
 }
+
+/// Whether a clipboard bridge must be rebound after a rig widget update.
+///
+/// A network-policy restart replaces the live rig while preserving the tab and
+/// its [RigInputSurface] state. Comparing only the server proxy leaves the
+/// bridge signed for the closed rig id, so the next paste targets a machine
+/// that no longer exists.
+bool rigClipboardBridgeIdentityChanged({
+  required String oldWorkspaceId,
+  required String oldRigId,
+  required String newWorkspaceId,
+  required String newRigId,
+}) => oldWorkspaceId != newWorkspaceId || oldRigId != newRigId;
 
 /// Captures pointer and keyboard input over a rig's live canvas and forwards
 /// it to the guest.
@@ -174,6 +190,18 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     if (!widget.enabled || !widget.active) {
       _keystrokes.flush();
     }
+    if (rigClipboardBridgeIdentityChanged(
+      oldWorkspaceId: oldWidget.workspaceId,
+      oldRigId: oldWidget.rig.id,
+      newWorkspaceId: widget.workspaceId,
+      newRigId: widget.rig.id,
+    )) {
+      _bindClipboardBridge();
+      _lastGuestPoint = null;
+      _iosPointer = null;
+      _iosGestureStart = null;
+      _iosGestureStartedAt = null;
+    }
   }
 
   /// Actions waiting to be sent, in input order.
@@ -187,6 +215,9 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
 
   bool _leftDown = false;
   int _downButtons = 0;
+  int? _iosPointer;
+  (int, int)? _iosGestureStart;
+  DateTime? _iosGestureStartedAt;
 
   // ── The clipboard and file bridge ───────────────────────────────────────
 
@@ -204,6 +235,18 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   /// of its own (a paste of files).
   (int, int)? _lastGuestPoint;
 
+  /// Rebinds clipboard transfers to the current workspace and live rig id.
+  void _bindClipboardBridge() {
+    final client = _transferClient;
+    _bridge = client == null
+        ? null
+        : rigClipboardBridgeFor(
+            client: client,
+            workspaceId: widget.workspaceId,
+            rigId: widget.rig.id,
+          );
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -214,13 +257,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     _transferClient?.close();
     final client = rigTransferClientFor(context);
     _transferClient = client;
-    _bridge = client == null
-        ? null
-        : rigClipboardBridgeFor(
-            client: client,
-            workspaceId: widget.workspaceId,
-            rigId: widget.rig.id,
-          );
+    _bindClipboardBridge();
   }
 
   @override
@@ -247,7 +284,8 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     );
   }
 
-  /// Runs a clipboard chord: forward it to the guest, then move the content.
+  /// Runs a clipboard chord only after the relevant boundary crossing has
+  /// been approved.
   Future<void> _runClipboardChord(RigClipboardChord chord) async {
     final bridge = _bridge;
     if (bridge == null || _clipboardBusy) {
@@ -255,6 +293,24 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     }
     _clipboardBusy = true;
     try {
+      final direction = chord == RigClipboardChord.paste
+          ? RigClipboardDirection.hostToRig
+          : RigClipboardDirection.rigToHost;
+      if (!await ensureRigClipboardPermission(
+        context: context,
+        ref: ref,
+        rigId: widget.rig.id,
+        direction: direction,
+      )) {
+        // On Windows/Linux the host and guest use the same Ctrl shortcut.
+        // Refusing the boundary crossing must not also eat Ctrl+C inside a
+        // guest terminal or prevent a guest-local paste. On Apple platforms
+        // Cmd is the host-only crossing shortcut and must not become Ctrl.
+        if (!_usesMetaClipboardShortcut) {
+          _enqueueGuestClipboardChord(chord);
+        }
+        return;
+      }
       if (chord == RigClipboardChord.paste) {
         await _pasteIntoGuest(bridge);
       } else {
@@ -267,22 +323,38 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     }
   }
 
-  /// Tells the guest to copy, then carries what it copied to this host.
-  Future<void> _copyFromGuest(
-    RigClipboardBridge bridge, {
-    required bool cut,
-  }) async {
-    final letter = cut ? 'x' : 'c';
-    // In the GUEST's vocabulary, always ctrl — a Linux desktop and a Chromium
-    // page both copy with ctrl, whatever the host's own convention is.
+  /// Whether the host clipboard chord uses Cmd rather than the guest's Ctrl.
+  bool get _usesMetaClipboardShortcut =>
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// Sends the guest-side Ctrl chord without moving clipboard content.
+  void _enqueueGuestClipboardChord(RigClipboardChord chord) {
+    final letter = switch (chord) {
+      RigClipboardChord.copy => 'c',
+      RigClipboardChord.cut => 'x',
+      RigClipboardChord.paste => 'v',
+    };
     _enqueue(
-      _isComputer
+      _isIos
+          ? rigIosClipboardKeyAction(letter)
+          : _isComputer
           ? {'action': 'key', 'text': 'ctrl+$letter'}
           : {
               'action': 'key',
               'key': letter,
               'modifiers': ['ctrl'],
             },
+    );
+  }
+
+  /// Tells the guest to copy, then carries what it copied to this host.
+  Future<void> _copyFromGuest(
+    RigClipboardBridge bridge, {
+    required bool cut,
+  }) async {
+    _enqueueGuestClipboardChord(
+      cut ? RigClipboardChord.cut : RigClipboardChord.copy,
     );
     // Awaited, not assumed: reading before the chord has reached the guest
     // reads the PREVIOUS clipboard, and writing that to the host is silent
@@ -321,15 +393,7 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
       return;
     }
     if (pushed.ok) {
-      _enqueue(
-        _isComputer
-            ? {'action': 'key', 'text': 'ctrl+v'}
-            : {
-                'action': 'key',
-                'key': 'v',
-                'modifiers': ['ctrl'],
-              },
-      );
+      _enqueueGuestClipboardChord(RigClipboardChord.paste);
       return;
     }
     // The guest's clipboard could not be written — on the browser surface
@@ -375,9 +439,8 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
 
   /// Enqueues a non-text action, flushing buffered keystrokes ahead of it.
   ///
-  /// The flush lives HERE rather than at each call site so ordering cannot be
-  /// forgotten by a later one: text the user typed always reaches the guest
-  /// before the click, key or scroll that followed it.
+  /// The flush lives here rather than at each call site so ordering cannot be
+  /// forgotten: text always reaches the guest before the click or key after it.
   void _enqueue(Map<String, dynamic> action, {bool coalesce = false}) {
     _keystrokes.flush();
     _enqueueRaw(action, coalesce: coalesce);
@@ -388,31 +451,24 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
 
   // ── Coordinate mapping ──────────────────────────────────────────────────
 
-  /// Maps a canvas-local position to guest pixels, or null when it falls in
-  /// the letterbox or the guest's display size is not known yet.
+  /// Maps a canvas-local point through the same contained frame as the image.
   (int, int)? _toGuest(Offset local, Size canvas) {
-    final gw = widget.rig.displayWidth;
-    final gh = widget.rig.displayHeight;
-    if (gw == null || gh == null || gw <= 0 || gh <= 0) {
+    final guestWidth = widget.rig.displayWidth;
+    final guestHeight = widget.rig.displayHeight;
+    if (guestWidth == null || guestHeight == null) {
       return null;
     }
-    final scale = _min(canvas.width / gw, canvas.height / gh);
-    if (scale <= 0) {
-      return null;
-    }
-    final ox = (canvas.width - gw * scale) / 2;
-    final oy = (canvas.height - gh * scale) / 2;
-    final x = (local.dx - ox) / scale;
-    final y = (local.dy - oy) / scale;
-    if (x < 0 || y < 0 || x >= gw || y >= gh) {
-      return null;
-    }
-    return (x.round().clamp(0, gw - 1), y.round().clamp(0, gh - 1));
+    return rigContainedGuestPoint(
+      local: local,
+      canvas: canvas,
+      guestWidth: guestWidth,
+      guestHeight: guestHeight,
+    );
   }
 
-  static double _min(double a, double b) => a < b ? a : b;
+  bool get _isComputer => widget.rig.surfaceKind == RigSurface.computer;
 
-  bool get _isComputer => widget.rig.surfaceKind != RigSurface.browser;
+  bool get _isIos => widget.rig.surfaceKind == RigSurface.ios;
 
   // ── Pointer ─────────────────────────────────────────────────────────────
 
@@ -422,6 +478,19 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     // text even when the press itself lands in the letterbox and sends
     // nothing.
     _keystrokes.flush();
+    if (_isIos) {
+      if (_iosPointer != null || event.buttons != kPrimaryMouseButton) {
+        return;
+      }
+      final point = _toGuest(event.localPosition, canvas);
+      if (point == null) {
+        return;
+      }
+      _iosPointer = event.pointer;
+      _iosGestureStart = point;
+      _iosGestureStartedAt = DateTime.now();
+      return;
+    }
     final point = _toGuest(event.localPosition, canvas);
     if (point == null) {
       return;
@@ -447,6 +516,9 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   DateTime _lastHoverSent = DateTime.fromMillisecondsSinceEpoch(0);
 
   void _onPointerMove(PointerMoveEvent event, Size canvas) {
+    if (_isIos) {
+      return;
+    }
     if (!_leftDown) {
       return;
     }
@@ -467,6 +539,9 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   /// desktop behaves. Throttled — the queue coalesces backlog, and the time
   /// gate keeps a fast wiggle from becoming an RPC per pixel.
   void _onPointerHover(PointerHoverEvent event, Size canvas) {
+    if (_isIos) {
+      return;
+    }
     final now = DateTime.now();
     if (now.difference(_lastHoverSent).inMilliseconds < 25) {
       return;
@@ -495,6 +570,14 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   /// the user clicks again to break it. A cancelled press is still a press
   /// that must end.
   void _onPointerCancel(PointerCancelEvent event, Size canvas) {
+    if (_isIos) {
+      if (event.pointer == _iosPointer) {
+        _iosPointer = null;
+        _iosGestureStart = null;
+        _iosGestureStartedAt = null;
+      }
+      return;
+    }
     _keystrokes.flush();
     _downButtons = 0;
     if (!_leftDown) {
@@ -506,6 +589,30 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
 
   void _onPointerUp(PointerUpEvent event, Size canvas) {
     _keystrokes.flush();
+    if (_isIos) {
+      if (event.pointer != _iosPointer) {
+        return;
+      }
+      final from = _iosGestureStart;
+      final startedAt = _iosGestureStartedAt;
+      final to = _toGuest(event.localPosition, canvas);
+      _iosPointer = null;
+      _iosGestureStart = null;
+      _iosGestureStartedAt = null;
+      if (from == null || to == null) {
+        return;
+      }
+      _enqueue(
+        rigIosGestureAction(
+          from: from,
+          to: to,
+          elapsed: startedAt == null
+              ? const Duration(milliseconds: 300)
+              : DateTime.now().difference(startedAt),
+        ),
+      );
+      return;
+    }
     final point = _toGuest(event.localPosition, canvas);
     final buttons = _downButtons;
     _downButtons = 0;
@@ -555,6 +662,9 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   }
 
   void _onPointerSignal(PointerSignalEvent event, Size canvas) {
+    if (_isIos) {
+      return;
+    }
     if (event is! PointerScrollEvent) {
       return;
     }
@@ -613,6 +723,30 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
     final alt = pressed.isAltPressed;
     final meta = pressed.isMetaPressed;
     final shift = pressed.isShiftPressed;
+    if (_isIos) {
+      final character = event.character;
+      if (character != null &&
+          character.isNotEmpty &&
+          !ctrl &&
+          !alt &&
+          !meta &&
+          !kRigControlCharacters.contains(character)) {
+        _keystrokes.add(character);
+        return KeyEventResult.handled;
+      }
+      final action = rigIosKeyAction(
+        key: event.logicalKey,
+        character: character,
+        control: ctrl,
+        alt: alt,
+        meta: meta,
+        shift: shift,
+      );
+      if (action != null) {
+        _enqueue(action);
+      }
+      return KeyEventResult.handled;
+    }
 
     final character = event.character;
     if (_isComputer) {
@@ -717,6 +851,9 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
   /// canvas point to a guest pixel — a drop delivered at (0, 0) hits the
   /// wrong element on every page there has ever been.
   Widget _wrapWithFileTransfer({required Size canvas, required Widget child}) {
+    if (_isIos) {
+      return child;
+    }
     // ── OUT ──────────────────────────────────────────────────────────────
     //
     // Nothing tells a host that a drag STARTED inside a guest: there is no

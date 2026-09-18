@@ -1,6 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/emoji_data.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_emoji/flutter_emoji.dart';
 
 final _emojiParser = EmojiParser();
@@ -176,10 +176,12 @@ class _LegacyEmojiChooserBody extends StatelessWidget {
       left = (anchorPosition!.dx - 8).clamp(12, screenW - cardW - 12);
     }
 
-    final card = Material(
-      elevation: 16,
-      borderRadius: BorderRadius.circular(12),
-      color: t.bgPrimary,
+    final card = DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: t.bgPrimary,
+        boxShadow: CcElevation.floating,
+      ),
       child: Container(
         width: cardW,
         constraints: const BoxConstraints(maxHeight: cardMaxH),

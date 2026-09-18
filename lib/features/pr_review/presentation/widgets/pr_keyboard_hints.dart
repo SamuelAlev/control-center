@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// A single keyboard-hint entry: the key-cap glyph(s) and the action they
 /// trigger. Multiple [keys] are rendered as adjacent chips.

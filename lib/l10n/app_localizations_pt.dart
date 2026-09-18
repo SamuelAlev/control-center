@@ -182,7 +182,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get rigsUnsupportedServer =>
-      'Este servidor não consegue alojar VM isoladas. Os rigs precisam de um hipervisor na máquina que executa o cc_server.';
+      'Este servidor não pode alojar superfícies rig. Verifique os requisitos do anfitrião para a máquina que pretende utilizar.';
 
   @override
   String get rigSurfaceComputer => 'Computador';
@@ -191,7 +191,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get rigSurfaceBrowser => 'Navegador';
 
   @override
-  String get rigSurfaceMobile => 'Telemóvel';
+  String get rigSurfaceAndroid => 'Android';
+
+  @override
+  String get rigSurfaceIosSimulator => 'Simulador de iOS';
 
   @override
   String rigSurfaceBrowserEngine(String engine) {
@@ -254,6 +257,14 @@ class AppLocalizationsPt extends AppLocalizations {
       'Inicia uma VM descartável que partilha com os seus agentes nesta conversa. É destruída ao fechar e nada do que lá acontece toca no seu computador.';
 
   @override
+  String get rigStartAndroidHint =>
+      'Liga-se a um emulador Android que já está em execução no servidor. O acesso à rede não está isolado.';
+
+  @override
+  String get rigStartIosHint =>
+      'Cria um simulador iOS temporário no Mac do servidor. É eliminado quando o ambiente de testes é fechado; o acesso à rede não está isolado.';
+
+  @override
   String get rigStopMachine => 'Parar a máquina';
 
   @override
@@ -268,7 +279,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get ideMenuSectionTools => 'Ferramentas';
 
   @override
-  String get ideMenuSectionVirtualMachine => 'Máquina virtual';
+  String get ideMenuSectionMachines => 'Máquinas';
 
   @override
   String get ideMenuSectionReopen => 'Reabrir';
@@ -286,7 +297,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get rigMenuBrowser => 'Navegador';
 
   @override
-  String get rigMenuMobile => 'Telemóvel';
+  String get rigMenuAndroid => 'Android';
+
+  @override
+  String get rigMenuIosSimulator => 'Simulador de iOS';
 
   @override
   String rigLabelNumbered(String label, String suffix) {
@@ -328,6 +342,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get rigsCapabilitiesTitle => 'Este servidor';
+
+  @override
+  String get rigInstallIosAutomation =>
+      'Instalar a ponte de automatização do iOS';
+
+  @override
+  String get rigInstallingIosAutomation =>
+      'A instalar a ponte de automatização do iOS…';
+
+  @override
+  String get rigIosAutomationInstalled =>
+      'Ponte de automatização do iOS instalada';
 
   @override
   String get rigsImagesTitle => 'Imagens base';
@@ -1549,15 +1575,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Os modelos de voz e diarização alojados neste servidor.';
 
   @override
-  String get filterSettingsHint => 'Filtrar configurações';
-
-  @override
   String get needsSetupLabel => 'Requer configuração';
-
-  @override
-  String noSettingsMatch(String query) {
-    return 'Nenhuma configuração corresponde a \"$query\"';
-  }
 
   @override
   String get collapseSidebar => 'Recolher a barra lateral';
@@ -1614,11 +1632,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get noRunsYet => 'Sem execuções';
-
-  @override
-  String lastActiveAgo(String duration) {
-    return 'Ativo há $duration';
-  }
 
   @override
   String get copyPath => 'Copiar caminho';
@@ -2522,14 +2535,14 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agent => 'Agente';
 
   @override
-  String agentCount(int count, int plural) {
+  String agentCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
-      plural,
+      count,
       locale: localeName,
-      other: 's',
-      one: '',
+      other: '$count agentes',
+      one: '1 agente',
     );
-    return '$count agente$_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -2671,6 +2684,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get approved => 'Aprovado';
+
+  @override
+  String get articleNoun => 'Artigo';
 
   @override
   String get articlesSubscribed => 'Artigos dos seus feeds inscritos.';
@@ -3085,6 +3101,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get deny => 'Negar';
+
+  @override
+  String get detailsLabel => 'Detalhes';
 
   @override
   String get descriptionLabel => 'Descrição';
@@ -3784,27 +3803,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get killRunning => 'Encerrar em execução';
 
   @override
-  String get languageDutch => 'Nederlands';
-
-  @override
-  String get languageEnglish => 'English';
-
-  @override
-  String get languageFrench => 'Français';
-
-  @override
-  String get languageGerman => 'Deutsch';
-
-  @override
-  String get languageItalian => 'Italiano';
-
-  @override
-  String get languagePortuguese => 'Português';
-
-  @override
-  String get languageSpanish => 'Español';
-
-  @override
   String get languageSystem => 'Sistema';
 
   @override
@@ -4379,6 +4377,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get openInBrowser => 'Abrir no navegador';
 
   @override
+  String get openedInYourBrowser => 'Aberto no seu navegador.';
+
+  @override
   String get openLabel => 'Abrir';
 
   @override
@@ -4591,6 +4592,15 @@ class AppLocalizationsPt extends AppLocalizations {
       one: 'Um repositório não está acessível',
     );
     return '$_temp0';
+  }
+
+  @override
+  String get repoAccessNoticeSuspendedTitle =>
+      'Instalação do GitHub App suspensa';
+
+  @override
+  String repoAccessNoticeSuspendedBody(String repos) {
+    return 'Exibindo os últimos dados conhecidos de $repos. Retome a instalação no GitHub ou conecte um token com acesso.';
   }
 
   @override
@@ -6922,6 +6932,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentQuestionAnswerLabel => 'Sua resposta';
 
   @override
+  String agentQuestionProgress(int index, int count) {
+    return 'Pergunta $index de $count';
+  }
+
+  @override
+  String get agentQuestionSkip => 'Pular';
+
+  @override
+  String get agentQuestionSkippedLabel => 'Pulada';
+
+  @override
+  String get agentQuestionFreeformOptionHint => 'Descreva com suas palavras…';
+
+  @override
   String get reviewRequested => 'Revisão solicitada';
 
   @override
@@ -6973,6 +6997,51 @@ class AppLocalizationsPt extends AppLocalizations {
     String removed,
   ) {
     return '$actor solicitou revisão de $requested e removeu a solicitação de revisão para $removed';
+  }
+
+  @override
+  String prTimelineAddedLabels(String actor, String labels, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'os rótulos',
+      one: 'o rótulo',
+    );
+    return '$actor adicionou $_temp0 $labels';
+  }
+
+  @override
+  String prTimelineRemovedLabels(String actor, String labels, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'os rótulos',
+      one: 'o rótulo',
+    );
+    return '$actor removeu $_temp0 $labels';
+  }
+
+  @override
+  String prTimelineAddedAndRemovedLabels(
+    String actor,
+    String added,
+    int addedCount,
+    String removed,
+    int removedCount,
+  ) {
+    String _temp0 = intl.Intl.pluralLogic(
+      addedCount,
+      locale: localeName,
+      other: 'os rótulos',
+      one: 'o rótulo',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      removedCount,
+      locale: localeName,
+      other: 'os rótulos',
+      one: 'o rótulo',
+    );
+    return '$actor adicionou $_temp0 $added e removeu $_temp1 $removed';
   }
 
   @override
@@ -7054,6 +7123,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get noChecksYet => 'Nenhuma verificação executada ainda';
+
+  @override
+  String get noChangesToReview => 'Nenhuma alteração para revisar';
 
   @override
   String checksFailingCount(int count) {
@@ -7241,17 +7313,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get clearAll => 'Limpar tudo';
-
-  @override
-  String agentsRunningCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count agentes em execução',
-      one: '1 agente em execução',
-    );
-    return '$_temp0';
-  }
 
   @override
   String reviewSummary(int prs, int repos) {
@@ -10409,6 +10470,40 @@ class AppLocalizationsPt extends AppLocalizations {
   String get openInEditor => 'Abrir no editor';
 
   @override
+  String get regexTesterTitle => 'Testar expressão regular';
+
+  @override
+  String get regexTesterHint => 'Digite um exemplo';
+
+  @override
+  String get regexMatch => 'Correspondência';
+
+  @override
+  String get regexNoMatch => 'Sem correspondência';
+
+  @override
+  String get regexInvalidPattern => 'Padrão inválido';
+
+  @override
+  String get symbolLookupNone =>
+      'Nenhuma definição no índice ou neste pull request';
+
+  @override
+  String get symbolLookupInDiff => 'Encontrado neste pull request';
+
+  @override
+  String get symbolLookupFromBase =>
+      'Do checkout base — o worktree deste PR ainda não está indexado';
+
+  @override
+  String get symbolImplementations => 'Implementações';
+
+  @override
+  String symbolCallersCount(int count) {
+    return '$count chamadores';
+  }
+
+  @override
   String get commitMessageHint => 'Mensagem de commit';
 
   @override
@@ -10484,6 +10579,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get searchInFilesHint => 'Pesquisar nos arquivos do pull request';
+
+  @override
+  String get searchInWholeRepo => 'Pesquisar no repositório inteiro';
+
+  @override
+  String get searchInThisPullRequest => 'Pesquisar neste pull request';
 
   @override
   String get searchNoResults => 'Nenhum resultado';
@@ -10922,37 +11023,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get providerGenerationOverridden => 'Personalizado';
-
-  @override
-  String get spaceFlyoutNeedsInput => 'Precisa da sua resposta';
-
-  @override
-  String get spaceFlyoutPreparing => 'A preparar';
-
-  @override
-  String get spaceFlyoutSetupFailed => 'Falha na configuração';
-
-  @override
-  String get spaceFlyoutSetupStopped => 'Configuração interrompida';
-
-  @override
-  String get spaceFlyoutNeverRun => 'Nenhum agente trabalhou aqui ainda';
-
-  @override
-  String spaceFlyoutContextUsage(String used, String percent) {
-    return 'Janela de contexto: $used usados, $percent cheia';
-  }
-
-  @override
-  String subagentsRunningCount(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count subagentes',
-      one: '1 subagente',
-    );
-    return '$_temp0';
-  }
 
   @override
   String get branchNotPushed => 'não enviado';
@@ -13568,6 +13638,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get renameConversation => 'Renomear conversa';
 
   @override
+  String get spaceActions => 'Ações do espaço';
+
+  @override
+  String get conversationActions => 'Ações da conversa';
+
+  @override
   String get editSpaceRepos => 'Editar repositórios';
 
   @override
@@ -14249,4 +14325,1939 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get credentialGateOpenSettings => 'Abrir as configurações';
+
+  @override
+  String get selectModel => 'Selecionar modelo';
+
+  @override
+  String get allModels => 'Todos os modelos';
+
+  @override
+  String get noModelsMatchSearch => 'Nenhum modelo corresponde à sua pesquisa';
+
+  @override
+  String useCustomModelId(String id) {
+    return 'Usar “$id”';
+  }
+
+  @override
+  String get modelFree => 'Gratuito';
+
+  @override
+  String modelOutputTokens(String tokens) {
+    return '$tokens de saída';
+  }
+
+  @override
+  String modelPricePerMTokens(String input, String output) {
+    return '$input de entrada / $output de saída por 1M de tokens';
+  }
+
+  @override
+  String modelEffortLevels(String levels) {
+    return 'Esforço de raciocínio: $levels';
+  }
+
+  @override
+  String get modelSupportsReasoning => 'Suporta esforço de raciocínio';
+
+  @override
+  String get profileDeliveryMetrics => 'Métricas de entrega';
+
+  @override
+  String profileMetricsSample(int count) {
+    return 'PRs analisados: $count';
+  }
+
+  @override
+  String get profileMergeRate => 'Taxa de merge';
+
+  @override
+  String get profileReviewCoverage => 'Cobertura de revisão';
+
+  @override
+  String get profilePrSize => 'Tamanho do PR';
+
+  @override
+  String get profileTimeToMerge => 'Tempo até o merge';
+
+  @override
+  String get profileMergeTimeTrend => 'Tendência do tempo de mesclagem';
+
+  @override
+  String get profileWeeklyMedian => 'Mediana semanal, escala logarítmica';
+
+  @override
+  String get profilePrOpeningPattern => 'Dia da semana × hora, hora local';
+
+  @override
+  String get profileFirstReview => 'Tempo até a primeira revisão';
+
+  @override
+  String get profileMetricsTruncated =>
+      'Os percentis são calculados com base numa amostra limitada dos pedidos de integração disponíveis.';
+
+  @override
+  String profileLinesChanged(String count) {
+    return '$count linhas';
+  }
+
+  @override
+  String profileDurationMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String profileDurationHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String profileDurationDaysHours(int days, int hours) {
+    return '$days d $hours h';
+  }
+
+  @override
+  String profilePercentiles(String median, String p90) {
+    return 'p50 $median · p90 $p90';
+  }
+
+  @override
+  String profileTeamMembers(int count) {
+    return 'Membros: $count';
+  }
+
+  @override
+  String noPrsByTeamInWorkspace(String team) {
+    return 'Nenhum pull request de $team neste espaço de trabalho';
+  }
+
+  @override
+  String get profilePrStateFilterLabel => 'Filtrar pull requests por estado';
+
+  @override
+  String get noProfilePrsMatchSearchHint =>
+      'Tente outro título ou número de pull request';
+
+  @override
+  String get rigNetworkUnrestricted => 'Rede sem restrições';
+
+  @override
+  String get rigNetworkAllowAllHosts => 'Permitir todos os anfitriões';
+
+  @override
+  String get rigNetworkBypassTitle => 'Permitir todos os anfitriões da rede?';
+
+  @override
+  String get rigNetworkBypassBody =>
+      'Isto reinicia o ambiente isolado e elimina o trabalho sem commit que estiver no seu interior. Depois, o sistema convidado poderá aceder a qualquer anfitrião da rede até ser fechado.';
+
+  @override
+  String get rigNetworkRestartUnrestricted => 'Reiniciar sem restrições';
+
+  @override
+  String get rigNetworkUnrestrictedBody =>
+      'Este ambiente isolado pode aceder a todos os anfitriões da rede. Feche-o e abra um novo para repor as restrições predefinidas.';
+
+  @override
+  String get rigNetworkAlreadyUnrestrictedBody =>
+      'Este emulador Android já gere a sua própria rede, pelo que o Control Center não pode impor uma lista de anfitriões permitidos. Não é necessário reiniciar.';
+
+  @override
+  String get rigClipboardPermissionHostToRigTitle =>
+      'Colar a área de transferência neste ambiente?';
+
+  @override
+  String get rigClipboardPermissionHostToRigBody =>
+      'Control Center lerá a área de transferência do seu dispositivo e enviará o conteúdo para o ambiente. O conteúdo da área de transferência pode conter senhas ou outros segredos.';
+
+  @override
+  String get rigClipboardPermissionRigToHostTitle =>
+      'Copiar a área de transferência deste ambiente?';
+
+  @override
+  String get rigClipboardPermissionRigToHostBody =>
+      'Control Center lerá a área de transferência do ambiente e substituirá a área de transferência do seu dispositivo pelo conteúdo dela. Trate o conteúdo do ambiente como não confiável.';
+
+  @override
+  String get rigClipboardAllowTenMinutes => 'Permitir por 10 minutos';
+
+  @override
+  String get rigClipboardAlwaysAllow => 'Permitir sempre';
+
+  @override
+  String get rigClipboardSettingsTitle => 'Acesso à área de transferência';
+
+  @override
+  String get rigClipboardSettingsHint =>
+      'Escolha quais transferências da área de transferência podem ser executadas sem perguntar. Permissões temporárias expiram após 10 minutos.';
+
+  @override
+  String get rigClipboardAlwaysPasteTitle =>
+      'Sempre permitir colar em ambientes';
+
+  @override
+  String get rigClipboardAlwaysPasteDescription =>
+      'Enviar a área de transferência deste dispositivo para qualquer ambiente sem perguntar.';
+
+  @override
+  String get rigClipboardAlwaysCopyTitle =>
+      'Sempre permitir copiar de ambientes';
+
+  @override
+  String get rigClipboardAlwaysCopyDescription =>
+      'Colocar conteúdo da área de transferência de qualquer ambiente neste dispositivo sem perguntar.';
+}
+
+/// The translations for Portuguese, as used in Portugal (`pt_PT`).
+class AppLocalizationsPtPt extends AppLocalizationsPt {
+  AppLocalizationsPtPt() : super('pt_PT');
+
+  @override
+  String get agentActivityNotRecorded =>
+      'Nenhuma atividade foi registada para esta execução';
+
+  @override
+  String get agentActivityWaiting => 'A aguardar atividade…';
+
+  @override
+  String get rigsCustomImagesHint =>
+      'Aponte o Terminal (VM) ou o Navegador (VM) para a sua própria imagem — estenda as padrão com as ferramentas do seu projeto, ou use uma compatível de um registo. Máquinas novas passam a usá-la; as em execução mantêm a delas. Veja o guia de rigs para o que uma imagem deve fornecer.';
+
+  @override
+  String get rigsCustomImageInvalid =>
+      'Introduza uma referência de registo como repo/nome:tag. Caminhos locais e arquivos não são permitidos.';
+
+  @override
+  String get rigsCustomImageSaved =>
+      'Guardado. Máquinas novas inicializam esta imagem; as em execução mantêm a delas.';
+
+  @override
+  String get rigImageNotPublishedHint =>
+      'Nenhuma imagem foi publicada para isto ainda, então não há nada para descarregar. Importe uma imagem de disco compatível para o ativar.';
+
+  @override
+  String get rigPortsEmpty =>
+      'Nada está a escutar ainda. Inicie um servidor no terminal — um servidor de desenvolvimento na porta 3000 aparece aqui.';
+
+  @override
+  String get rigPortsExposeLan => 'Partilhar na rede local';
+
+  @override
+  String get rigPortsInactive => 'não está a escutar';
+
+  @override
+  String get serverConnection => 'Ligação com o servidor';
+
+  @override
+  String get serverModeLocal => 'Executar nesta aplicação';
+
+  @override
+  String get serverModeRemote => 'Ligar a uma instância remota';
+
+  @override
+  String get serverModeRemoteDescription =>
+      'Ligue-se a um servidor do Control Center em execução em outro lugar. Seus dados ficam nesse servidor.';
+
+  @override
+  String get shutdownServiceMcpConnections => 'Ligações MCP';
+
+  @override
+  String get serverSharingTitle => 'Partilhar este servidor';
+
+  @override
+  String get serverSharingDescription =>
+      'Torne este servidor acessível a partir dos seus outros dispositivos. Nada é exposto publicamente a menos que você ative um túnel abaixo. Os convites de pareamento incluem automaticamente os endereços atuais do servidor; crie-os nas definições do espaço de trabalho.';
+
+  @override
+  String get serverSharingUnavailable =>
+      'Os controlos de partilha não estão disponíveis neste servidor.';
+
+  @override
+  String get serverSharingMdnsOff =>
+      'Este servidor não está a ser anunciado na sua rede local (mDNS)';
+
+  @override
+  String get serverSharingTunnelStarting => 'A iniciar o túnel…';
+
+  @override
+  String get serverSharingUpdateFailedTitle =>
+      'Não foi possível atualizar a partilha';
+
+  @override
+  String get pairClientTypeDesktop => 'Aplicação para computador';
+
+  @override
+  String get pairCredentialsIntro =>
+      'Ligue o novo cliente com estes dados, ou abra o link nele.';
+
+  @override
+  String get pairServerUnreachable =>
+      'Outros dispositivos não conseguem aceder a este servidor diretamente, então um novo cliente não pode ligar. Defina a URL pública do servidor para emparelhar mais clientes.';
+
+  @override
+  String get serverSetupSubtitle =>
+      'O Control Center precisa de um servidor que seja o dono dos seus dados. Execute um nesta aplicação ou ligue-se a uma instância em execução em outro lugar.';
+
+  @override
+  String get serverSetupRunLocal => 'Executar nesta aplicação';
+
+  @override
+  String get serverSetupConnect => 'Ligar';
+
+  @override
+  String get serverSetupInvalidUrl =>
+      'Introduza uma URL de servidor ws:// ou wss:// válida.';
+
+  @override
+  String get serverSetupCouldNotConnect => 'Não foi possível ligar';
+
+  @override
+  String get serverSetupErrorIdentityMismatch =>
+      'A identidade do servidor não corresponde à guardada neste dispositivo. Se o servidor foi reinstalado ou redefinido, remova o servidor guardado e emparelhe novamente.';
+
+  @override
+  String get serverSetupErrorGeneric =>
+      'Ocorreu um erro ao ligar. Expanda os detalhes técnicos abaixo para mais informações.';
+
+  @override
+  String get calendarConnectGoogle => 'Ligar o Google Calendar';
+
+  @override
+  String get calendarDisconnect => 'Desligar';
+
+  @override
+  String get calendarReconnect => 'Voltar a ligar';
+
+  @override
+  String get calendarSyncing => 'A sincronizar…';
+
+  @override
+  String get calendarSettingsDescription =>
+      'Ligue uma conta Google para sincronizar eventos neste espaço de trabalho.';
+
+  @override
+  String get calendarConnecting => 'A ligar…';
+
+  @override
+  String get calendarConnectError => 'Não foi possível ligar o Google Calendar';
+
+  @override
+  String get calendarConnectCredsHint =>
+      'Introduza o ID do cliente e o segredo OAuth (device-code) do seu projeto Google. O servidor faz a ligação e a sincronização — o seu navegador nunca guarda os tokens.';
+
+  @override
+  String get calendarConnectApproveInstruction =>
+      'Abra a página de verificação em qualquer dispositivo, inicie sessão e introduza este código:';
+
+  @override
+  String get calendarConnectWaiting => 'A aguardar aprovação…';
+
+  @override
+  String get notificationCalendarAuthExpiredTitle => 'Calendário desligado';
+
+  @override
+  String notificationCalendarAuthExpiredBody(String email) {
+    return 'Volte a ligar $email para retomar a sincronização';
+  }
+
+  @override
+  String get notificationCalendarAuthExpiredBodyNoEmail =>
+      'Volte a ligar seu calendário para retomar a sincronização';
+
+  @override
+  String get notifyCalendarAuthExpired =>
+      'Quando uma conta de calendário precisa ser ligada novamente';
+
+  @override
+  String calendarConnectedAs(String email) {
+    return 'Ligado como $email';
+  }
+
+  @override
+  String get prFilterCurrentUser => 'Utilizador atual';
+
+  @override
+  String get kbTabs => 'separadores';
+
+  @override
+  String get kbSearch => 'pesquisar';
+
+  @override
+  String get diffSharingOffSubtitle =>
+      'Os agentes usam apenas metadados estruturados (caminhos de ficheiros, números de linha, descrição da PR); nenhum código bruto sai da aplicação.';
+
+  @override
+  String get errorReportingTitle => 'Partilhar relatórios de falhas';
+
+  @override
+  String get onboardingDiagnosticsSubtitle =>
+      'Envie diagnósticos de falhas, erros e desempenho para nos ajudar a corrigir problemas mais rápido (apenas em versões de produção). Você pode alterar isso a qualquer momento em Definições → Privacidade.';
+
+  @override
+  String get deletePipelineRun => 'Eliminar execução do pipeline';
+
+  @override
+  String deletePipelineRunConfirm(String template) {
+    return 'Eliminar esta execução de \"$template\"? Esta ação não pode ser desfeita.';
+  }
+
+  @override
+  String errorDeletingPipelineRun(String error) {
+    return 'Erro ao eliminar a execução do pipeline: $error';
+  }
+
+  @override
+  String get deleteTicket => 'Eliminar ticket';
+
+  @override
+  String deleteTicketConfirm(String title) {
+    return 'Eliminar \"$title\"? Esta ação não pode ser desfeita.';
+  }
+
+  @override
+  String errorDeletingTicket(String error) {
+    return 'Erro ao eliminar o ticket: $error';
+  }
+
+  @override
+  String deleteWorkspaceConfirm(String name) {
+    return 'Eliminar \"$name\"? Os repositórios vinculados no disco não são afetados.';
+  }
+
+  @override
+  String errorDeletingWorkspace(String error) {
+    return 'Erro ao eliminar o espaço de trabalho: $error';
+  }
+
+  @override
+  String get nodeConfigReducerHelp =>
+      'Como fundir quando esta chave de saída já tem um valor';
+
+  @override
+  String get nodeConfigTeamId => 'ID da equipa';
+
+  @override
+  String get activityTargetFile => 'um ficheiro';
+
+  @override
+  String get activityTargetProvider => 'um fornecedor';
+
+  @override
+  String get activityTargetTeam => 'uma equipa';
+
+  @override
+  String activityVerbConnected(String target) {
+    return 'Ligou $target';
+  }
+
+  @override
+  String activityVerbDisconnected(String target) {
+    return 'Desligou $target';
+  }
+
+  @override
+  String get activityTargetMemoryFact => 'um facto de memória';
+
+  @override
+  String get activityTargetProviderPolicy => 'uma política de fornecedor';
+
+  @override
+  String get activityUpdatedSavedArticle => 'Atualizou um artigo guardado';
+
+  @override
+  String get activityStartedCalendarConnect =>
+      'Iniciou a ligação do calendário';
+
+  @override
+  String get activityDisconnectedCalendar => 'Desligou o calendário';
+
+  @override
+  String get activityMarkedFileViewed => 'Marcou um ficheiro como visto';
+
+  @override
+  String get activityRespondedToApproval =>
+      'Respondeu a um pedido de aprovação';
+
+  @override
+  String get activityRemovedProviderCredential =>
+      'Removeu uma credencial de fornecedor';
+
+  @override
+  String get adaptersAutoDetected =>
+      'Executores de agentes detectados automaticamente nesta máquina. Instale as ferramentas CLI ausentes para ativar executores adicionais.';
+
+  @override
+  String get addFromFile => 'Adicionar de ficheiro';
+
+  @override
+  String get addRepoBrowseIntro =>
+      'Navegue pelas pastas na máquina que executa o servidor e selecione os checkouts git para registar.';
+
+  @override
+  String get appFont => 'Fonte da aplicação';
+
+  @override
+  String get articlesSubscribed => 'Artigos dos seus feeds subscritos.';
+
+  @override
+  String get attachFiles => 'Anexar ficheiros';
+
+  @override
+  String get awaitingYourReview => 'A aguardar a sua revisão';
+
+  @override
+  String get checking => 'A verificar';
+
+  @override
+  String get checkingEllipsis => 'A verificar…';
+
+  @override
+  String get chooseAppFont => 'Escolher fonte da aplicação';
+
+  @override
+  String get commentOnThisFile => 'Comentar este ficheiro';
+
+  @override
+  String get prCloneProgressCloningTitle => 'A clonar repositório';
+
+  @override
+  String prCloneProgressCloningSubtitle(int fileCount) {
+    return 'Este PR modifica $fileCount ficheiros, excedendo o limite da API do GitHub. A clonar o repositório localmente…';
+  }
+
+  @override
+  String get prCloneProgressCloningSubtitleNoCount =>
+      'Este PR excede o limite de ficheiros da API do GitHub. A clonar o repositório localmente…';
+
+  @override
+  String get prCloneProgressFetchingTitle => 'A obter refs';
+
+  @override
+  String get prCloneProgressFetchingSubtitle =>
+      'A obter o branch base e a ref do PR…';
+
+  @override
+  String get prCloneProgressComputingSubtitle =>
+      'A executar git diff localmente…';
+
+  @override
+  String get delete => 'Eliminar';
+
+  @override
+  String get deleteAgent => 'Eliminar agente';
+
+  @override
+  String deleteAgentConfirm(String name) {
+    return 'Eliminar \"$name\"? Esta ação não pode ser desfeita.';
+  }
+
+  @override
+  String get deleteSpace => 'Eliminar espaço';
+
+  @override
+  String deleteConfirmName(String name) {
+    return 'Eliminar \"$name\"?';
+  }
+
+  @override
+  String get deleteFact => 'Eliminar facto';
+
+  @override
+  String deleteFeedConfirm(String name) {
+    return 'Eliminar \"$name\"?';
+  }
+
+  @override
+  String get deletePolicy => 'Eliminar política';
+
+  @override
+  String get deletePolicyConfirm =>
+      'Eliminar esta política? Esta ação não pode ser desfeita.';
+
+  @override
+  String get deleteWorkspace => 'Eliminar espaço de trabalho';
+
+  @override
+  String get download => 'Descarregar';
+
+  @override
+  String get downloadingLabel => 'A descarregar';
+
+  @override
+  String downloadingModel(int pct) {
+    return 'A descarregar modelo… $pct%';
+  }
+
+  @override
+  String get deleteMessage => 'Eliminar mensagem';
+
+  @override
+  String get deleteMessageConfirm =>
+      'Eliminar esta mensagem? Isso não pode ser desfeito.';
+
+  @override
+  String get messageDeleted => 'Mensagem eliminada';
+
+  @override
+  String get embeddingInstalled =>
+      'Modelo de embedding local instalado. Pesquisa híbrida ativada.';
+
+  @override
+  String get embeddingNotInstalled =>
+      'Não instalado. A pesquisa volta a ser apenas por palavras-chave até ser ativado.';
+
+  @override
+  String get embeddingRedownloadBody =>
+      'Os ficheiros do modelo existente serão eliminados e descarregados novamente. A pesquisa semântica ficará indisponível até o descarregamento ser concluído.';
+
+  @override
+  String get embeddingRemoveBody =>
+      'A pesquisa semântica será desativada até você reinstalá-la. Você pode instalá-la novamente a qualquer momento.';
+
+  @override
+  String get redownloadDiarizationModel =>
+      'Descarregar novamente o modelo de diarização';
+
+  @override
+  String errorDeletingAgent(String error) {
+    return 'Erro ao eliminar agente: $error';
+  }
+
+  @override
+  String extractingModel(int pct) {
+    return 'A extrair modelo… $pct%';
+  }
+
+  @override
+  String get fact => 'Facto';
+
+  @override
+  String get facts => 'Factos';
+
+  @override
+  String failedToLoadLogs(String error) {
+    return 'Falha ao carregar registos: $error';
+  }
+
+  @override
+  String get filesChanged => 'Ficheiros alterados';
+
+  @override
+  String get filesMentionSection => 'Ficheiros';
+
+  @override
+  String get keybindingFocusSearch => 'Focar na pesquisa';
+
+  @override
+  String get keybindingFocusThePullRequestSearchFieldDescription =>
+      'Focar no campo de pesquisa de pull requests';
+
+  @override
+  String get letsPluginTools => 'Vamos ligar as suas ferramentas.';
+
+  @override
+  String get loadingAgents => 'A carregar agentes…';
+
+  @override
+  String get loadingModels => 'A carregar modelos…';
+
+  @override
+  String get loadingProviders => 'A carregar fornecedores…';
+
+  @override
+  String get logs => 'Registos';
+
+  @override
+  String get manageParticipants => 'Gerir participantes';
+
+  @override
+  String get manageWorkspaces => 'Gerir espaços de trabalho';
+
+  @override
+  String get mcpNotAvailableOnServer =>
+      'O controle do servidor MCP não está disponível no servidor ligado.';
+
+  @override
+  String get modelManagedOnServer =>
+      'Este modelo é executado no host do servidor e é gerido lá.';
+
+  @override
+  String get navSettings => 'Definições';
+
+  @override
+  String get newsfeedSettingsDescription =>
+      'Gerir os seus feeds subscritos e as preferências do leitor.';
+
+  @override
+  String get newsfeedSettingsTitle => 'Definições de notícias';
+
+  @override
+  String get noFileAnchor =>
+      'Nenhuma âncora de ficheiro — não é possível postar comentário inline.';
+
+  @override
+  String get notificationPrMerged => 'PR fundida';
+
+  @override
+  String get notifyPrMerged => 'Notificar quando uma pull request for fundida.';
+
+  @override
+  String get notificationPrMergeReadiness => 'Pronto para fundir';
+
+  @override
+  String get notifyPrMergeReadiness =>
+      'Notificar quando uma pull request sua ficar pronta para fundir, ou deixar de estar.';
+
+  @override
+  String get notificationPrReadyToMerge => 'Pronto para fundir';
+
+  @override
+  String get notificationPrMergeBlocked => 'Já não é possível fundir';
+
+  @override
+  String notificationPrMergeBlockedBodyOther(String prTitle) {
+    return '$prTitle já não pode ser fundida.';
+  }
+
+  @override
+  String get openApplicationSettings => 'Abrir definições da aplicação';
+
+  @override
+  String get openArticlesInApp => 'Abrir artigos na aplicação';
+
+  @override
+  String get prMergedBody => 'Uma pull request foi fundida';
+
+  @override
+  String get prsMerged => 'PRs fundidas';
+
+  @override
+  String get redownload => 'Descarregar novamente';
+
+  @override
+  String get redownloadEmbeddingModel =>
+      'Descarregar novamente o modelo de embedding?';
+
+  @override
+  String get redownloadVoiceModel => 'Descarregar novamente o modelo de voz?';
+
+  @override
+  String repoRemovedFromWorkspace(String name) {
+    return '$name será removido deste espaço de trabalho. Os ficheiros locais no disco não são afetados.';
+  }
+
+  @override
+  String repoAccessNoticeBody(String repos) {
+    return 'As credenciais do GitHub do servidor não conseguem ver $repos. Se um repositório pertencer a uma organização, instale lá a GitHub App ou associe um token com acesso.';
+  }
+
+  @override
+  String get repositoriesSettings => 'Definições de repositórios';
+
+  @override
+  String get enclosedTerminalStartHint =>
+      'Este shell é executado na VM descartável desta conversa. Ela inicia quando você o abre, não quando a aplicação abre.';
+
+  @override
+  String get terminalStreamReconnecting =>
+      'transmissão interrompida — a voltar a ligar…';
+
+  @override
+  String get save => 'Guardar';
+
+  @override
+  String get savingEllipsis => 'A guardar…';
+
+  @override
+  String get searchOrTypeModel =>
+      'Pesquisar ou introduzir o nome de um modelo…';
+
+  @override
+  String get semanticSearch => 'Pesquisa semântica';
+
+  @override
+  String get settingsLabel => 'Definições';
+
+  @override
+  String get settingsLanguageDescription => 'Escolher o idioma da aplicação.';
+
+  @override
+  String get signedIn => 'Ligado.';
+
+  @override
+  String signedInAs(String username) {
+    return 'Ligado como $username.';
+  }
+
+  @override
+  String skillSaved(String name) {
+    return 'Habilidade \"$name\" guardada.';
+  }
+
+  @override
+  String get skillSourceInvalidUrl =>
+      'Introduza uma URL de repositório GitHub (https://github.com/dono/repositorio).';
+
+  @override
+  String skillSourceFilesCount(num count) {
+    return '$count ficheiros';
+  }
+
+  @override
+  String get skillOriginRegistry => 'Registo';
+
+  @override
+  String get skillSaveAnywayOverride => 'Entendo o risco — guardar mesmo assim';
+
+  @override
+  String get skillStateUnmanaged => 'Não gerido';
+
+  @override
+  String get skipAcceptRisk => 'Saltar — Eu aceito o risco';
+
+  @override
+  String get skipForNow => 'Saltar por enquanto';
+
+  @override
+  String get skipSandboxing => 'Saltar sandboxing';
+
+  @override
+  String get startOnAppLaunch => 'Iniciar ao abrir a aplicação';
+
+  @override
+  String get onboardingStepConnect => 'Ligar';
+
+  @override
+  String get typeCommandOrSearch => 'Introduza um comando ou pesquise…';
+
+  @override
+  String get userAgentDescription =>
+      'Deixe vazio para usar o User-Agent padrão da aplicação. Alguns sites bloqueiam User-Agents que não são de navegador.';
+
+  @override
+  String get viewLogs => 'Ver registos';
+
+  @override
+  String get voiceRedownloadBody =>
+      'Os ficheiros do modelo existente serão eliminados e o arquivo de ~200 MB descarregado novamente. A transcrição de voz ficará indisponível até o descarregamento ser concluído.';
+
+  @override
+  String get workspaceScopedSkills =>
+      'Ficheiros de habilidades com escopo do espaço de trabalho anexados aos agentes.';
+
+  @override
+  String get convertToDraftConfirm =>
+      'Este pull request voltará a ser um rascunho. As pedidos de revisão pendentes serão descartadas e ele não poderá ser fundido até que o marques como pronto novamente.';
+
+  @override
+  String get invalidDomain => 'Introduza um domínio válido (ex. exemplo.com)';
+
+  @override
+  String get pipelineWaterfallIdleTooltip =>
+      'Tempo excluído do total ativo: a execução estava parada ou a aguardar entre etapas.';
+
+  @override
+  String get teamsLoadError => 'Não foi possível carregar as equipas';
+
+  @override
+  String get teamsEmptyTitle => 'Nenhuma equipa ainda';
+
+  @override
+  String get teamsEmptyDescription =>
+      'Agrupe agentes em equipas para que o trabalho atribuído a uma equipa seja encaminhado por um líder que delega.';
+
+  @override
+  String get teamCreateTitle => 'Nova equipa';
+
+  @override
+  String get teamEditTitle => 'Editar equipa';
+
+  @override
+  String get teamNameLabel => 'Nome da equipa';
+
+  @override
+  String get teamDescriptionHint => 'Pelo que esta equipa é responsável';
+
+  @override
+  String get teamLeaderHelp =>
+      'O coordenador que recebe o trabalho atribuído à equipa e delega ao membro mais adequado.';
+
+  @override
+  String get teamInstructionsHelp =>
+      'Anexadas ao briefing do líder — convenções da equipa, regras de escalonamento, tom.';
+
+  @override
+  String get teamSaved => 'Equipa guardada';
+
+  @override
+  String get teamNoAgentsToAdd => 'Todos os agentes já estão nesta equipa.';
+
+  @override
+  String get teamRemoveMember => 'Remover da equipa';
+
+  @override
+  String get teamSelectPrompt => 'Selecione uma equipa';
+
+  @override
+  String get teamSelectPromptDescription =>
+      'Escolha uma equipa da lista ou crie uma nova.';
+
+  @override
+  String get teamDeleteTitle => 'Eliminar equipa?';
+
+  @override
+  String teamDeleteBody(String name) {
+    return '$name será eliminada. Seus agentes não são afetados.';
+  }
+
+  @override
+  String get pipelineTemplateDeleteConfirmTitle => 'Eliminar modelo?';
+
+  @override
+  String pipelineTemplateDeleteConfirmBody(String name) {
+    return 'Eliminar o modelo de pipeline $name? Não é possível desfazer.';
+  }
+
+  @override
+  String get pipelineTemplateEditorSubtitle =>
+      'Arraste tipos de nós da barra lateral até o canvas e ligue-os.';
+
+  @override
+  String get unsavedChanges => 'Alterações não guardadas';
+
+  @override
+  String get nodeConfigNoUpstream => 'Não há outros nós para ligar.';
+
+  @override
+  String get conditionModeFilesAny => 'Ficheiro(s) existe(m) — algum';
+
+  @override
+  String get conditionModeFilesAll => 'Ficheiros existem — todos';
+
+  @override
+  String get conditionFilePaths => 'Caminhos de ficheiro';
+
+  @override
+  String get syncHealthNoConfigs => 'Ainda sem ligações de sincronização';
+
+  @override
+  String get triggerEventPrMerged => 'PR fundida';
+
+  @override
+  String get ticketingApiKeySubtitle =>
+      'Injeta a chave de API do fornecedor de tickets no sandbox.';
+
+  @override
+  String get ticketingProvider => 'Fornecedor de tickets';
+
+  @override
+  String get connectGitHubAndTicketing =>
+      'Ligue um alojamento de código para que o Control Center possa ler os teus pull requests, issues e revisões. Opcionalmente conecta um fornecedor de tickets. As credenciais ficam no teu servidor, nunca nesta máquina.';
+
+  @override
+  String get bulkDeleteTitle => 'Eliminar tickets';
+
+  @override
+  String bulkDeleteMessage(int count) {
+    return 'Eliminar $count tickets selecionados? Isso não pode ser desfeito.';
+  }
+
+  @override
+  String get saveArticle => 'Guardar artigo';
+
+  @override
+  String get removeFromSaved => 'Remover dos guardados';
+
+  @override
+  String get agentQuestionFreeformHint => 'Introduza sua resposta…';
+
+  @override
+  String get connectGitHubHint =>
+      'Entre no GitHub ou adicione um token em Definições → Você → Perfil e identidade → Hospedagem de código';
+
+  @override
+  String get connectGitHubToLoadPrs =>
+      'Ligue o GitHub para carregar os pull requests';
+
+  @override
+  String prTimelineRemovedReviewRequest(String actor, String reviewers) {
+    return '$actor removeu o pedido de revisão para $reviewers';
+  }
+
+  @override
+  String prTimelineRequestedAndRemovedReview(
+    String actor,
+    String requested,
+    String removed,
+  ) {
+    return '$actor solicitou revisão de $requested e removeu o pedido de revisão para $removed';
+  }
+
+  @override
+  String get loadingEllipsis => 'A carregar…';
+
+  @override
+  String get loadingChecks => 'A carregar verificações…';
+
+  @override
+  String get pullRequestNotFoundBody =>
+      'Ela pode ter sido fundida, fechada ou movida.';
+
+  @override
+  String get factsHint =>
+      'Os factos aparecerão aqui à medida que seus agentes aprendem.';
+
+  @override
+  String get noFactsMatch => 'Nenhum facto corresponde à sua pesquisa';
+
+  @override
+  String get confidenceTooltip =>
+      'O quanto os agentes têm certeza de que este facto é verdadeiro, de 0 a 100%.';
+
+  @override
+  String get supersededTooltip => 'Um facto mais recente substituiu este.';
+
+  @override
+  String get deleteProject => 'Eliminar projeto';
+
+  @override
+  String deleteProjectConfirm(String name) {
+    return 'Eliminar \"$name\"? Os tickets são mantidos e removidos do projeto.';
+  }
+
+  @override
+  String reviewSummary(int prs, int repos) {
+    String _temp0 = intl.Intl.pluralLogic(
+      prs,
+      locale: localeName,
+      other: '$prs PRs a aguardar',
+      one: '1 PR a aguardar',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      repos,
+      locale: localeName,
+      other: '$repos repositórios',
+      one: '1 repositório',
+    );
+    return '$_temp0 a sua revisão em $_temp1';
+  }
+
+  @override
+  String get failedToSaveLogo =>
+      'Falha ao guardar o logo. Verifique se a aplicação pode ler o ficheiro selecionado.';
+
+  @override
+  String get workspaceNameFieldHelp =>
+      'Exibido no seletor, na trilha de navegação e em todas as ecrãs.';
+
+  @override
+  String get deleteThisWorkspace => 'Eliminar este espaço';
+
+  @override
+  String deleteWorkspaceLongDescription(String name) {
+    return 'Remove permanentemente $name, as suas ligações de repositório, agentes e memória. Esta ação não pode ser desfeita.';
+  }
+
+  @override
+  String discardChangesQuestion(String name) {
+    return 'Descartar alterações não guardadas em $name?';
+  }
+
+  @override
+  String get noFilesChanged => 'Nenhum ficheiro alterado';
+
+  @override
+  String get searchReviewers => 'Pesquisar pessoas e equipas…';
+
+  @override
+  String get teamsSectionLabel => 'Equipas';
+
+  @override
+  String get team => 'Equipa';
+
+  @override
+  String get meetingStatusRecording => 'A gravar';
+
+  @override
+  String get meetingStatusProcessing => 'A processar';
+
+  @override
+  String get meetingsSearchHint => 'Filtrar por título, pessoa, aplicação…';
+
+  @override
+  String get meetingsTranscribing => 'a transcrever e resumindo…';
+
+  @override
+  String get meetingsStillTranscribing =>
+      'Ainda a transcrever — o resumo aparecerá quando terminar.';
+
+  @override
+  String get meetingsNoMatchHint => 'Tente outro filtro ou termo de pesquisa.';
+
+  @override
+  String get meetingNotesSavedLocally => 'Guardado localmente';
+
+  @override
+  String get meetingNotesSaving => 'A guardar…';
+
+  @override
+  String get meetingDecisionsEmpty => 'Nenhuma decisão registada.';
+
+  @override
+  String get meetingDeleteActionItem => 'Eliminar ação';
+
+  @override
+  String get meetingDeleteDecision => 'Eliminar decisão';
+
+  @override
+  String get meetingAutoDetectDescription =>
+      'Vigia o calendário e as aplicações de videoconferência e oferece-se para gravar quando uma reunião começa.';
+
+  @override
+  String get meetingsRecordingCrumb => 'A gravar…';
+
+  @override
+  String get meetingHudRecording => 'a gravar';
+
+  @override
+  String get transcriptStatusReadingFiles => 'A ler ficheiros…';
+
+  @override
+  String get transcriptStatusRunningCommands => 'A executar comandos…';
+
+  @override
+  String transcriptStatusRunningTool(String tool) {
+    return 'A executar $tool…';
+  }
+
+  @override
+  String transcriptGrepStats(int matches, int files) {
+    String _temp0 = intl.Intl.pluralLogic(
+      matches,
+      locale: localeName,
+      other: '$matches correspondências',
+      one: '1 correspondência',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files ficheiros',
+      one: '1 ficheiro',
+    );
+    return '$_temp0 · $_temp1';
+  }
+
+  @override
+  String get meetingSaveVoiceProfileTitle => 'Guardar perfil de voz?';
+
+  @override
+  String meetingSaveVoiceProfileBody(String name) {
+    return 'Reconhecer $name automaticamente em reuniões futuras ao guardar a sua impressão de voz.';
+  }
+
+  @override
+  String meetingVoiceProfileSaved(String name) {
+    return 'Perfil de voz guardado para $name';
+  }
+
+  @override
+  String get meetingVoiceProfileSaveFailed =>
+      'Não foi possível guardar o perfil de voz';
+
+  @override
+  String get voiceProfilesDescription =>
+      'Vozes guardadas são reconhecidas automaticamente em reuniões futuras.';
+
+  @override
+  String get voiceProfilesEmpty =>
+      'Ainda não há vozes guardadas. Dê um nome a um participante na transcrição de uma reunião e escolha «Guardar perfil de voz».';
+
+  @override
+  String get deleteVoiceProfileTitle => 'Eliminar perfil de voz?';
+
+  @override
+  String deleteVoiceProfileBody(String name) {
+    return 'Parar de reconhecer $name? A impressão de voz guardada será removida. Os nomes já aplicados em reuniões anteriores são mantidos.';
+  }
+
+  @override
+  String get connectedLabel => 'Ligado';
+
+  @override
+  String get ideCloseTab => 'Fechar separador';
+
+  @override
+  String get ideCloseSaved => 'Fechar guardadas';
+
+  @override
+  String get ideNewTabMenu => 'Novo separador';
+
+  @override
+  String ideRevertConfirmMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros',
+      one: '1 ficheiro',
+    );
+    return 'Reverter $_temp0 para HEAD? Isso descarta as alterações da árvore de trabalho.';
+  }
+
+  @override
+  String get ideRevertUntracked =>
+      'Ficheiros não rastreados não podem ser revertidos';
+
+  @override
+  String get ideRevertFailed =>
+      'Não foi possível reverter os ficheiros. A árvore de trabalho da conversa pode estar indisponível.';
+
+  @override
+  String ideRevertSomeSkipped(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros',
+      one: '1 ficheiro',
+    );
+    return '$_temp0 não pôde(puderam) ser revertido(s) (não rastreado).';
+  }
+
+  @override
+  String get ideSearchFilters => 'Filtros de pesquisa';
+
+  @override
+  String get ideSearchFilesToInclude => 'Ficheiros a incluir';
+
+  @override
+  String get ideSearchFilesToExclude => 'Ficheiros a excluir';
+
+  @override
+  String get ideNoOpenTabs => 'Sem separadores abertos — use + para abrir';
+
+  @override
+  String get ideBrowserAddressHint => 'Introduza um endereço ou pesquise';
+
+  @override
+  String get ideBrowserEnterUrl =>
+      'Introduza um URL na barra de endereço para começar a navegar';
+
+  @override
+  String ideUnsavedChangesTitle(String fileName) {
+    return 'Guardar alterações em $fileName?';
+  }
+
+  @override
+  String get ideUnsavedChangesBody =>
+      'Suas alterações serão perdidas se você não guardá-las.';
+
+  @override
+  String get ideDontSave => 'Não guardar';
+
+  @override
+  String get editorAutoSaveDescription =>
+      'Guardar automaticamente as alterações no editor incorporado.';
+
+  @override
+  String get ideCodeServerInstalling => 'A preparar o editor…';
+
+  @override
+  String get ideFileSearchFailed => 'Não foi possível pesquisar ficheiros';
+
+  @override
+  String get ideSearchInFiles => 'Pesquisar nos ficheiros';
+
+  @override
+  String get ideFileLoading => 'A carregar…';
+
+  @override
+  String get ideFileBinary => 'Ficheiro binário';
+
+  @override
+  String get mcpExternalServersDescription =>
+      'Ligue-se a servidores MCP externos (GitHub, Sentry, Postgres, automação de navegador). Os servidores configurados para Claude, Cursor, VS Code e outras ferramentas são detectados automaticamente.';
+
+  @override
+  String get mcpReconnect => 'Voltar a ligar';
+
+  @override
+  String get mcpExternalConnectionsNote =>
+      'Os servidores MCP externos são executados no servidor de agentes (partilhado por desktop e web). Autorizar servidores OAuth só está disponível no desktop.';
+
+  @override
+  String get mcpStatusConnected => 'Ligado';
+
+  @override
+  String get mcpStatusConnecting => 'A ligar…';
+
+  @override
+  String get providersAndModels => 'Fornecedores e modelos';
+
+  @override
+  String get providersAndModelsDescription =>
+      'Liste todos os fornecedores que o agente integrado pode usar — defina uma chave de API ou entre pelo navegador, veja os modelos e preços de cada fornecedor ligado e controle quais fornecedores este espaço de trabalho pode usar.';
+
+  @override
+  String get noUsageYet => 'Nenhum uso registado ainda.';
+
+  @override
+  String get harnessConnectProviderForModels =>
+      'Ligue um fornecedor para ver os modelos.';
+
+  @override
+  String get providerWaitingForBrowser =>
+      'A aguardar a sua autorização no navegador…';
+
+  @override
+  String get providerConnectedApiKey => 'Ligado via chave de API';
+
+  @override
+  String get providerConnectedOauth => 'Ligado';
+
+  @override
+  String providerConnectedAccount(String account) {
+    return 'Ligado · $account';
+  }
+
+  @override
+  String get providerNotConnected => 'Não ligado';
+
+  @override
+  String get preparingWorkspace => 'A preparar espaço de trabalho…';
+
+  @override
+  String provisioningRunningSetupScript(String repo) {
+    return 'A executar o script de configuração de $repo…';
+  }
+
+  @override
+  String get repoScriptsSetupHelp =>
+      'É executado no worktree do espaço logo após sua criação — instalar dependências, gerar ficheiros. Uma falha marca o espaço como falho; tentar novamente o executa de novo.';
+
+  @override
+  String get repoScriptsArchiveHelp =>
+      'É executado pouco antes da eliminação do worktree de um espaço — limpa recursos fora do worktree. Uma falha nunca bloqueia a eliminação.';
+
+  @override
+  String get repoScriptsSaved => 'Scripts guardados';
+
+  @override
+  String provisioningCloningRepo(String repo) {
+    return 'A clonar $repo…';
+  }
+
+  @override
+  String get unknownUserLabel => 'Utilizador desconhecido';
+
+  @override
+  String get inviteRepoAccessExplainer =>
+      'Apenas os repositórios marcados são partilhados com o convidado, no nível escolhido. Todo o resto permanece oculto.';
+
+  @override
+  String get inviteRedeemHint =>
+      'Partilhe o código com o convidado; ele o resgatará com a URL do seu servidor.';
+
+  @override
+  String get inviteLoopbackWarningBody =>
+      'Colaboradores em outras máquinas não poderão aceder a este servidor. Inicie um túnel (Definições → Integrações → Partilhar este servidor) ou ligue-se à sua rede para que utilizadores externos possam ligar-se.';
+
+  @override
+  String revokeDeviceConfirm(String label) {
+    return 'Revogar $label? Ele é desligado imediatamente e já não pode aceder a este servidor.';
+  }
+
+  @override
+  String get deviceNeverSeen => 'Nunca ligado';
+
+  @override
+  String get profileSectionDescription =>
+      'Como você aparece para a equipa e na autoria dos commits do git.';
+
+  @override
+  String get profileSaved => 'Perfil guardado';
+
+  @override
+  String get notesSaveFailed => 'Não foi possível guardar a nota';
+
+  @override
+  String planEstimateBlastRadius(int files, int symbols) {
+    return 'Raio de impacto: $files ficheiros, $symbols símbolos';
+  }
+
+  @override
+  String get planPlaybookDelete => 'Eliminar playbook';
+
+  @override
+  String get cheatSheetThisScreen => 'Esta ecrã';
+
+  @override
+  String get keybindingShowKeyboardShortcutsDescription =>
+      'Mostrar a folha de referência de atalhos de teclado da ecrã atual';
+
+  @override
+  String get inboxSeverityWaiting => 'A aguardar';
+
+  @override
+  String get inboxSectionNeedsYourReview => 'A aguardar a sua revisão';
+
+  @override
+  String get inboxSectionWaitingForReviewers => 'A aguardar revisores';
+
+  @override
+  String get inboxSectionMergingAndMerged => 'Em merge e fundidas recentemente';
+
+  @override
+  String get inboxSectionWaitingForAuthor => 'A aguardar o autor';
+
+  @override
+  String get optimisticChangeReverted =>
+      'Essa alteração não foi guardada e foi revertida';
+
+  @override
+  String get offlineSyncingLabel => 'a sincronizar';
+
+  @override
+  String get fleetNoWorkers =>
+      'Ainda não há trabalhadores — uma segunda máquina a executar `cc_worker --server <url>` entra na frota.';
+
+  @override
+  String get bannerCalendarReconnect => 'Voltar a ligar';
+
+  @override
+  String get saving => 'A guardar…';
+
+  @override
+  String get saved => 'Guardado';
+
+  @override
+  String get saveFailed => 'Falha ao guardar';
+
+  @override
+  String get toggleFileTree => 'Mostrar ou ocultar a árvore de ficheiros';
+
+  @override
+  String get diffViewSettings => 'Definições de visualização do diff';
+
+  @override
+  String diffFilesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros',
+      one: '1 ficheiro',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get searchInFiles => 'Pesquisar em ficheiros';
+
+  @override
+  String get showFileList => 'Mostrar lista de ficheiros';
+
+  @override
+  String get searchInFilesHintField => 'Pesquisar em ficheiros…';
+
+  @override
+  String get searchInFilesHint => 'Pesquisar nos ficheiros do pull request';
+
+  @override
+  String searchResultsCount(int count, int files) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count resultados',
+      one: '1 resultado',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      files,
+      locale: localeName,
+      other: '$files ficheiros',
+      one: '1 ficheiro',
+    );
+    return '$_temp0 em $_temp1';
+  }
+
+  @override
+  String discardChangesMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros',
+      one: '1 ficheiro',
+    );
+    return 'Redefinir $_temp0 para HEAD? Isso não pode ser desfeito.';
+  }
+
+  @override
+  String discardedFiles(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros descartados',
+      one: '1 ficheiro descartado',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String discardedWithSkipped(int reverted, int skipped) {
+    String _temp0 = intl.Intl.pluralLogic(
+      reverted,
+      locale: localeName,
+      other: '$reverted ficheiros descartados',
+      one: '1 ficheiro descartado',
+    );
+    return '$_temp0; $skipped ignorado(s) (não rastreado(s))';
+  }
+
+  @override
+  String get prWorktreeUnavailableHint =>
+      'Falha ao preparar os ficheiros do pull request. Reabra o pull request para tentar novamente.';
+
+  @override
+  String get artifactOpenInTab => 'Abrir num separador';
+
+  @override
+  String chatConnectProvider(String provider) {
+    return 'Ligar $provider';
+  }
+
+  @override
+  String get chatDisconnectProvider => 'Desligar';
+
+  @override
+  String get chatStateConnecting => 'A ligar…';
+
+  @override
+  String get chatStateError => 'Erro de ligação';
+
+  @override
+  String get chatNotConnected => 'Não ligado';
+
+  @override
+  String chatStreamingUnavailable(String provider) {
+    return 'O streaming ao vivo está desligado para esta aplicação do $provider — as respostas chegam numa única mensagem.';
+  }
+
+  @override
+  String chatAdminOnly(String provider) {
+    return 'Só um administrador pode ligar o $provider neste espaço de trabalho.';
+  }
+
+  @override
+  String chatConnectHint(String provider) {
+    return 'Crie uma aplicação do $provider e cole aqui as credenciais. O Control Center conecta-se para fora até o $provider, então este servidor não precisa de endereço público.';
+  }
+
+  @override
+  String get chatFieldConfigRefreshToken =>
+      'Token de configuração da aplicação';
+
+  @override
+  String get chatCustomizeBotUnavailable =>
+      'O Control Center precisa de um token de configuração da aplicação para editar o bot. Volte a ligar incluindo um.';
+
+  @override
+  String chatCreateAppTitle(String provider) {
+    return 'Criar a aplicação do $provider';
+  }
+
+  @override
+  String chatCreateAppHint(String provider) {
+    return 'O Control Center pode criar a aplicação do $provider para você, com as permissões e os eventos certos já definidos. Você termina no $provider e depois cola as credenciais aqui.';
+  }
+
+  @override
+  String get chatCreateApp => 'Criar aplicação';
+
+  @override
+  String get chatCreateAppCta => 'Criar a aplicação para mim';
+
+  @override
+  String get chatAppNameLabel => 'Nome da aplicação';
+
+  @override
+  String chatAppCreated(String provider, String appId) {
+    return 'O $provider criou a aplicação $appId.';
+  }
+
+  @override
+  String get chatStepInstall => 'Instalar a aplicação';
+
+  @override
+  String get chatOpenAppSettings => 'Abrir as definições da aplicação';
+
+  @override
+  String chatScopesChangedReinstall(String provider) {
+    return 'O $provider alterou as permissões da aplicação. Reinstale-a para que passem a valer.';
+  }
+
+  @override
+  String get chatReinstallApp => 'Reinstalar a aplicação';
+
+  @override
+  String chatIconNotEditable(String provider) {
+    return 'O ícone do bot só pode ser alterado nas definições da aplicação do $provider.';
+  }
+
+  @override
+  String chatCreateAppLinkHint(String provider) {
+    return 'Também pode criá-la no $provider, sem token. As definições acima seguem com o link.';
+  }
+
+  @override
+  String chatSetupLinkBody(String provider) {
+    return 'O $provider abriu no seu navegador com esta configuração pré-preenchida. Crie a aplicação lá, conclua estes passos e volte com os tokens.';
+  }
+
+  @override
+  String chatSetupLinkNotManageable(String provider) {
+    return 'O $provider não informa qual aplicação criou, por isso personalizar o bot a partir daqui exigirá mais tarde um token de configuração da aplicação.';
+  }
+
+  @override
+  String get calendarUseBuiltinApp =>
+      'Usar a aplicação Google do Control Center';
+
+  @override
+  String get aboutAppVersion => 'Versão da aplicação';
+
+  @override
+  String get aboutServerVersion => 'Servidor ligado';
+
+  @override
+  String get serverStaleTitle =>
+      'O servidor integrado é anterior a esta aplicação';
+
+  @override
+  String serverStaleBody(String serverVersion, String appVersion) {
+    return 'O cc_server em execução é $serverVersion enquanto esta aplicação é $appVersion. Reinicie a aplicação para que ela use a versão mais recente do servidor integrado; em desenvolvimento, recompile-o com `dart build cli` em apps/cc_server.';
+  }
+
+  @override
+  String get updateChecking => 'A verificar atualizações…';
+
+  @override
+  String get updateDeferredBusy =>
+      'Uma atualização está pronta, mas uma reunião está a ser gravada — ela será oferecida após o término.';
+
+  @override
+  String get settingsServerConnection => 'Ligação e status';
+
+  @override
+  String get settingsModelProviders => 'Fornecedores de modelos';
+
+  @override
+  String get settingsDiagnosticsDescription =>
+      'Isolamento, indexação, sincronização, registo e relatórios de erro desta instalação.';
+
+  @override
+  String get settingsWorkspaceGeneralDescription =>
+      'Identidade, políticas e convenções partilhadas por todos neste espaço de trabalho.';
+
+  @override
+  String get connect => 'Ligar';
+
+  @override
+  String get disconnect => 'Desligar';
+
+  @override
+  String get notConnected => 'Não ligado';
+
+  @override
+  String get checkingConnection => 'A verificar a ligação…';
+
+  @override
+  String get deleteSpaceConfirm =>
+      'Eliminar este espaço? Todas as mensagens serão perdidas.';
+
+  @override
+  String get viaServerApp => 'pela aplicação deste servidor';
+
+  @override
+  String get providerApps => 'Aplicações do fornecedor';
+
+  @override
+  String get providerAppsDescription =>
+      'Como este servidor se autentica a si próprio e com o quê uma pessoa entra. O trabalho em segundo plano — webhooks, sondagens, sincronização — usa a aplicação, nunca o token de uma pessoa.';
+
+  @override
+  String get providerAppId => 'Id da aplicação';
+
+  @override
+  String get ssoConnectionCardDescription =>
+      'Escolha como as pessoas entram neste servidor e depois ative essa ligação.';
+
+  @override
+  String get ssoSaveConnection => 'Guardar ligação';
+
+  @override
+  String get ssoNoMethodLiveNote =>
+      'Nenhum método de entrada está ativo. Os dispositivos novos entram com um convite ou uma chave de emparelhamento até você configurar uma ligação e ativá-la.';
+
+  @override
+  String get ssoMethodSamlBlurb =>
+      'Para fornecedores de identidade que falam SAML 2.0, como Okta, Entra ID ou Google Workspace.';
+
+  @override
+  String get ssoMethodOidcBlurb =>
+      'Para fornecedores de identidade que falam OpenID Connect. Normalmente o mais simples de configurar dos dois.';
+
+  @override
+  String get ssoGroupIdentityProvider => 'Fornecedor de identidade';
+
+  @override
+  String get ssoIssuerDescription =>
+      'A URL base que serve o documento de descoberta do fornecedor.';
+
+  @override
+  String get ssoGroupHandoff => 'O que o seu fornecedor de identidade precisa';
+
+  @override
+  String get ssoGroupHandoffDescription =>
+      'Cole estes valores na aplicação que você criou no seu fornecedor.';
+
+  @override
+  String get ssoOriginUnknownBody =>
+      'As URLs de entrada e de retorno são criadas a partir dela, por isso o seu fornecedor não consegue alcançar este servidor até definir uma. Adicione uma URL pública ou ative um túnel em Servidor → Ligação.';
+
+  @override
+  String get ssoAcsUrlDescription =>
+      'Para onde o seu fornecedor envia a asserção assinada.';
+
+  @override
+  String get ssoSpEntityIdResolvedLabel =>
+      'ID de entidade do fornecedor de serviço';
+
+  @override
+  String get ssoMetadataUrlDescription =>
+      'Fornecedores que importam metadados podem obtê-los aqui.';
+
+  @override
+  String get ssoRedirectUriDescription =>
+      'Adicione-a às URIs de redirecionamento permitidas da aplicação do seu fornecedor.';
+
+  @override
+  String get ssoGroupAttributeMappingDescription =>
+      'Qual claim carrega cada campo. Mantenha os padrões, a não ser que o seu fornecedor os renomeie.';
+
+  @override
+  String get ssoRoleMapGroupHint => 'Nome do grupo no seu fornecedor';
+
+  @override
+  String get ssoClockSkewDescription =>
+      'Segundos de tolerância nos carimbos de data e hora das asserções. 90 serve para a maioria dos fornecedores.';
+
+  @override
+  String get ssoScimTokenOnceBody =>
+      'Copiado para a área de transferência. Ele aparece uma única vez e não pode ser recuperado, então cole no seu fornecedor agora.';
+
+  @override
+  String get providersNoneConnectedNote =>
+      'Nenhum fornecedor está ligado, então o runtime de agentes integrado não tem onde ser executado. Adicione uma chave de API ou entre em um deles abaixo.';
+
+  @override
+  String get providersFilterHint => 'Filtrar fornecedores';
+
+  @override
+  String get providerDeniedHereBody =>
+      'Os agentes daqui não podem usar este fornecedor, mesmo estando ligado. Outros espaços de trabalho não são afetados.';
+
+  @override
+  String get providerNeedsSignIn => 'Entre para usar este fornecedor';
+
+  @override
+  String get providerNeedsApiKey =>
+      'Adicione uma chave de API para usar este fornecedor';
+
+  @override
+  String get providerGenerationDefaults => 'Padrões do fornecedor';
+
+  @override
+  String get providerNoModelsYet =>
+      'Nenhum modelo informado ainda. Ligue o fornecedor e depois sincronize.';
+
+  @override
+  String get providerAppBotLoginEmpty =>
+      'Teste a ligação para resolver o login do bot.';
+
+  @override
+  String get providerAppsGroupSignInDescription =>
+      'Permite que cada membro ligue a própria conta e obtenha credenciais próprias.';
+
+  @override
+  String get guardrailFamilyFiles => 'Ficheiros';
+
+  @override
+  String get sandboxGroupIsolationDescription =>
+      'Onde os processos e as gravações de ficheiros de um agente acontecem de facto.';
+
+  @override
+  String get rigsStarting => 'A iniciar';
+
+  @override
+  String ssoOtherKindUnsaved(String method) {
+    return '$method tem alterações não guardadas';
+  }
+
+  @override
+  String agentClaudeAccountsNoticeBody(int count) {
+    return 'Este executor entra com uma das $count contas do Claude Code neste host. Escolha qual, ou alterne entre elas, no separador Contas.';
+  }
+
+  @override
+  String get deleteSpacePermanently => 'Eliminar permanentemente';
+
+  @override
+  String get deleteSteeringCard => 'Eliminar mensagem na fila';
+
+  @override
+  String get demoFilePickerTitle => 'Ficheiros da demo';
+
+  @override
+  String get settingsBackupRestoreDescription =>
+      'Instantâneos de todos os bases de dados deste servidor, além de exportar, importar e eliminar um espaço de trabalho.';
+
+  @override
+  String get backupSnapshotsExplainer =>
+      'Um instantâneo copia cada base de dados para uma pasta com data e hora no host do servidor. Restaurar a instalação inteira é copiar essa pasta de volta com o servidor parado; um único espaço de trabalho pode ser restaurado aqui.';
+
+  @override
+  String get backupSnapshotIncompleteNote =>
+      'O manifesto está ausente ou aponta para ficheiros que não existem, então este instantâneo não restaura a instalação inteira. Os ficheiros de espaço de trabalho que ele tem ainda podem ser adotados um a um.';
+
+  @override
+  String get backupWorkspaceDataExplainer =>
+      'Um espaço de trabalho é um único ficheiro de base de dados, então exportá-lo copia esse ficheiro em vez de despejar tabela por tabela. Importar substitui tudo no espaço de trabalho de destino pelo ficheiro indicado.';
+
+  @override
+  String get backupExportedFileLabel => 'Ficheiro exportado no servidor';
+
+  @override
+  String backupImportBody(String name) {
+    return 'Isto substitui tudo em $name pelo conteúdo do ficheiro. O que esse espaço de trabalho tem agora é perdido, e não dá para desfazer.';
+  }
+
+  @override
+  String get backupImportSourceLabel =>
+      'Ficheiro de base de dados do espaço de trabalho';
+
+  @override
+  String get backupImportSourceDescription =>
+      'Um ficheiro .db que o servidor consiga ler. Os caminhos são resolvidos no host do servidor, não neste dispositivo.';
+
+  @override
+  String get backupImportChooseFile => 'Escolher ficheiro';
+
+  @override
+  String backupDeleteBody(String name) {
+    return '$name desaparece de todas as listas e pesquisas. Seu ficheiro de base de dados continua no disco, os backups continuam incluindo ele, e nada recupera esse espaço automaticamente.';
+  }
+
+  @override
+  String get backupExportOnServerAction => 'Guardar no servidor';
+
+  @override
+  String get backupDownloadAction => 'Descarregar';
+
+  @override
+  String backupDownloadSaved(String path) {
+    return 'Guardado em $path';
+  }
+
+  @override
+  String get backupRestoreFromDeviceDescription =>
+      'Escolha aqui um ficheiro de base de dados de espaço de trabalho e o Control Center o envia ao servidor. É o caminho que funciona quando o servidor não é esta máquina.';
+
+  @override
+  String get backupUploadAction => 'Escolher um ficheiro e enviar';
+
+  @override
+  String get backupTransferUnavailable =>
+      'Esta ligação chega ao servidor por um relay, que não transporta ficheiros. Ligue-se diretamente ao servidor para descarregar ou enviar um backup.';
+
+  @override
+  String get backupTransferForbidden =>
+      'O servidor recusou. Descarregar um espaço de trabalho exige o papel admin, restaurá-lo exige owner, e um instantâneo inteiro exige o operador da instalação.';
+
+  @override
+  String get backupTransferTooLarge =>
+      'O ficheiro é maior do que o servidor aceita.';
+
+  @override
+  String get credentialGateClaudeSignInHint =>
+      'Inicia sessão em Definições → Adaptadores → Claude Code, ou executa o comando de início de sessão num terminal. A execução deteta-o sozinha.';
+
+  @override
+  String get credentialGateOpenSettings => 'Abrir as definições';
+
+  @override
+  String get profileDeliveryMetrics => 'Métricas de entrega';
+
+  @override
+  String profileMetricsSample(int count) {
+    return 'PR analisados: $count';
+  }
+
+  @override
+  String get profileMergeRate => 'Taxa de integração';
+
+  @override
+  String get profileReviewCoverage => 'Cobertura de revisão';
+
+  @override
+  String get profilePrSize => 'Tamanho do PR';
+
+  @override
+  String get profileTimeToMerge => 'Tempo até à integração';
+
+  @override
+  String get profileFirstReview => 'Tempo até à primeira revisão';
+
+  @override
+  String get profileMetricsTruncated =>
+      'Os percentis são calculados com base numa amostra limitada dos pedidos de integração disponíveis.';
+
+  @override
+  String profileLinesChanged(String count) {
+    return '$count linhas';
+  }
+
+  @override
+  String profileDurationMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String profileDurationHours(int count) {
+    return '$count h';
+  }
+
+  @override
+  String profileDurationDaysHours(int days, int hours) {
+    return '$days d $hours h';
+  }
+
+  @override
+  String profilePercentiles(String median, String p90) {
+    return 'p50 $median · p90 $p90';
+  }
+
+  @override
+  String profileTeamMembers(int count) {
+    return 'Membros: $count';
+  }
+
+  @override
+  String noPrsByTeamInWorkspace(String team) {
+    return 'Não existem pull requests de $team neste espaço de trabalho';
+  }
+
+  @override
+  String get profilePrStateFilterLabel => 'Filtrar pull requests por estado';
+
+  @override
+  String get noProfilePrsMatchSearchHint =>
+      'Experimente outro título ou número de pull request';
 }

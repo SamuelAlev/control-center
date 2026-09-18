@@ -32,7 +32,7 @@ class PrSidebarFilterToggle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 5),
       child: Align(
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
           child: GestureDetector(

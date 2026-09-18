@@ -42,21 +42,33 @@ void main() {
   );
 
   group('create argv containment', () {
-    test(
-      'loopback-only outbound is always present and bare --net never is',
-      () {
-        final args = buildSmolvmCreateArgs(plan());
-        expect(
-          args,
-          contains('--outbound-localhost-only'),
-          reason:
-              'Without it the guest has no route to the host-loopback '
-              'credential broker, and without a bare --net ban nothing stops a '
-              'later edit handing the guest unfenced egress.',
-        );
-        expect(args, isNot(contains('--net')));
-      },
-    );
+    test('restricted rigs use loopback-only outbound and never bare --net', () {
+      final args = buildSmolvmCreateArgs(plan());
+      expect(
+        args,
+        contains('--outbound-localhost-only'),
+        reason:
+            'Without it the guest has no route to the host-loopback '
+            'credential broker, and bare --net is reserved for an explicit '
+            'confirmed bypass.',
+      );
+      expect(args, isNot(contains('--net')));
+    });
+
+    test('a confirmed unrestricted rig uses bare --net without host gates', () {
+      final args = buildSmolvmCreateArgs(
+        plan(
+          spec: RigSpec.exec(
+            conversationId: 'c1',
+            unrestrictedNetwork: true,
+            egressAllowlist: const ['example.com'],
+          ),
+        ),
+      );
+      expect(args, contains('--net'));
+      expect(args, isNot(contains('--outbound-localhost-only')));
+      expect(args, isNot(contains('--allow-host')));
+    });
 
     test('every allowlist entry becomes its own --allow-host', () {
       final args = buildSmolvmCreateArgs(
@@ -287,7 +299,7 @@ void main() {
       );
       expect(
         smolvmPackFileName(kSmolvmExecImage),
-        isNot(smolvmPackFileName(kSmolvmBrowserImage)),
+        isNot(smolvmPackFileName(kSmolvmDebianBrowserImage)),
       );
       expect(smolvmPackFileName(kSmolvmExecImage), endsWith('.smolmachine'));
     });
@@ -337,36 +349,39 @@ void main() {
       }
     });
 
-    test('a Chromium machine installs nothing at boot', () {
+    test('a Chromium machine warms and starts the shared audio lane', () {
       final args = buildSmolvmCreateArgs(
         plan(
           spec: RigSpec(surface: RigSurface.browser, conversationId: 'c1'),
-          image: kSmolvmBrowserImage,
+          image: kSmolvmDebianBrowserImage,
           devtoolsHostPort: 9222,
         ),
       );
-      expect(
-        args,
-        isNot(contains('--init')),
-        reason:
-            'The browser image is baked, not installed: a boot-time package '
-            'install is the first-start race that hung CDP behind a dead '
-            'forward. The pinned image exists to make it impossible.',
-      );
+      final initAt = args.indexOf('--init');
+      expect(initAt, greaterThanOrEqualTo(0));
+      expect(args[initAt + 1], contains('pulseaudio'));
+      expect(args[initAt + 1], contains('ffmpeg'));
+      expect(args[initAt + 1], contains('chromium'));
+      expect(args[initAt + 1], contains('pulseaudio-utils'));
+      final script = args.last;
+      expect(script, contains('sink_name=ccout'));
+      expect(script, contains('sink_name=ccmic'));
+      expect(script, contains('source_name=ccinput'));
+      expect(script, contains('PULSE_SOURCE=ccinput'));
+      expect(script, contains('pactl set-default-source ccinput'));
+      expect(script, contains('PULSE_SERVER=unix:/tmp/cc-pulse/native'));
+      expect(script, contains('install -d -o pulse -g pulse'));
+      expect(script, contains('pactl list short sinks'));
+      expect(script, isNot(contains('server.log 2>&1 || true')));
       final hosts = [
         for (var i = 0; i < args.length - 1; i++)
           if (args[i] == '--allow-host') args[i + 1],
       ];
-      expect(
-        hosts,
-        isNot(contains('dl-cdn.alpinelinux.org')),
-        reason: 'No install means no package mirror in the egress policy.',
-      );
+      expect(hosts, contains('deb.debian.org'));
     });
 
     test('every pinned image carries a digest', () {
       expect(kSmolvmExecImage, contains('@sha256:'));
-      expect(kSmolvmBrowserImage, contains('@sha256:'));
       expect(kSmolvmDebianBrowserImage, contains('@sha256:'));
       for (final engine in RigBrowserEngine.values) {
         expect(
@@ -397,26 +412,24 @@ void main() {
         reason:
             'Chromium ignores --remote-debugging-address and binds DevTools '
             'to loopback unconditionally, and the host -p forward reaches '
-            'the guest NIC, never guest loopback. The image bakes in socat '
-            'for exactly this (chromedp/docker-headless-shell#31); without '
-            'the relay the forward black-holes and the rig never reports '
-            'ready.',
+            'the guest NIC, never guest loopback. The distro Chromium still '
+            'binds DevTools to loopback, so the explicit relay is required.',
       );
       expect(
         script,
-        contains('exec /headless-shell/headless-shell'),
+        contains('exec chromium --headless=new'),
         reason:
-            'exec keeps the browser the workload\'s main process: when it '
-            'dies the machine stops and the rig is reported dead, instead '
-            'of wedging behind a still-live relay.',
+            'The distro Chromium build retains PulseAudio support; upstream '
+            'headless-shell compiles every Linux audio backend out.',
       );
       expect(script, contains('--remote-debugging-port=9223'));
+      expect(script, contains('--use-fake-ui-for-media-stream'));
       expect(
         script,
         isNot(contains('--remote-debugging-address')),
         reason:
-            'The flag is dead in current Chromium — carrying it re-embeds '
-            'the myth that headless-shell can bind the NIC itself.',
+            'The flag is dead in current Chromium and the socat relay is the '
+            'supported guest-NIC bridge.',
       );
       expect(
         script,
@@ -540,6 +553,12 @@ void main() {
             'the debug port, the rig times out on readiness, and the only '
             'symptom is silence.',
       );
+      expect(
+        workloadOf(argvFor(RigBrowserEngine.firefox)),
+        contains('media.navigator.permission.disabled'),
+        reason:
+            'Headless Firefox cannot present a microphone permission prompt.',
+      );
     });
 
     test('the Firefox workload relays the loopback-bound remote agent', () {
@@ -659,33 +678,18 @@ void main() {
       }
     });
 
-    test('only the engines that install get the archives in their gate', () {
-      List<String> hostsFor(RigBrowserEngine engine) {
+    test('every audio-capable engine gets package mirrors while warming', () {
+      for (final engine in RigBrowserEngine.values) {
         final args = argvFor(engine);
-        return [
+        final hosts = [
           for (var i = 0; i < args.length - 1; i++)
             if (args[i] == '--allow-host') args[i + 1],
         ];
-      }
-
-      expect(
-        hostsFor(RigBrowserEngine.chromium),
-        isNot(contains('deb.debian.org')),
-        reason:
-            'Chromium boots a baked image and installs nothing, so a package '
-            'mirror in its egress policy would be a grant nothing uses.',
-      );
-      for (final engine in [
-        RigBrowserEngine.firefox,
-        RigBrowserEngine.webkit,
-      ]) {
         expect(
-          hostsFor(engine),
+          hosts,
           containsAll(kBrowserRigAptMirrors),
           reason:
-              'A bare Debian cannot become ${engine.label} without the '
-              'archives, and the failure would look like a browser that never '
-              'appears.',
+              '${engine.label} needs PulseAudio and ffmpeg in its warm pack.',
         );
       }
     });
@@ -738,10 +742,8 @@ void main() {
       expect(firefox, isNot(webkit));
       expect(
         smolvmPackVariantFor(browserSpec(RigBrowserEngine.chromium)),
-        isEmpty,
-        reason:
-            'Chromium keeps the unvariant name so an existing cached pack on '
-            'an upgraded host is still the pack it was.',
+        startsWith('audio-v1-'),
+        reason: 'Pre-audio Chromium packs must not be reused.',
       );
     });
 

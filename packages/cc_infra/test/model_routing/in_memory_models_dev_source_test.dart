@@ -1,14 +1,12 @@
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart'
     show ModelsDevSource;
-import 'package:cc_domain/features/model_routing/model_routing.dart'
-    show ModelsDevSource;
 import 'package:cc_infra/src/model_routing/in_memory_models_dev_source.dart';
-import 'package:cc_infra/src/model_routing/models_dev_snapshot.dart';
 import 'package:test/test.dart';
 
 /// `InMemoryModelsDevSource` is a pure in-process [ModelsDevSource] — it serves
-/// a fixed document (the bundled snapshot by default) for both `load` and
-/// `refresh`. These pin its no-IO contract.
+/// a caller-supplied fixture for both `load` and `refresh`. These pin its
+/// no-IO contract; production reads go through the disk cache, not a bundled
+/// snapshot.
 void main() {
   group('InMemoryModelsDevSource', () {
     test('load returns the supplied document', () async {
@@ -36,23 +34,6 @@ void main() {
       final result = await source.refresh();
 
       expect(result, same(doc));
-    });
-
-    test(
-      'defaults to the bundled snapshot when no document is supplied',
-      () async {
-        final source = InMemoryModelsDevSource();
-
-        final result = await source.load();
-
-        expect(result, isNotNull);
-        expect(result!.isNotEmpty, isTrue);
-      },
-    );
-
-    test('bundled snapshot is itself a Map', () {
-      // Confirms the JSON shape decodes to a map and not a list/string.
-      expect(bundledModelsDevSnapshotJson.isNotEmpty, isTrue);
     });
   });
 }

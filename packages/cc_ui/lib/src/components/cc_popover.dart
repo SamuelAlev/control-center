@@ -21,8 +21,8 @@ class CcPopover extends StatefulWidget {
     required this.target,
     required this.overlayBuilder,
     this.controller,
-    this.targetAnchor = Alignment.bottomLeft,
-    this.followerAnchor = Alignment.topLeft,
+    this.targetAnchor = AlignmentDirectional.bottomStart,
+    this.followerAnchor = AlignmentDirectional.topStart,
     this.offset = const Offset(0, 6),
     this.matchTargetWidth = false,
     this.barrierDismissible = true,
@@ -41,13 +41,14 @@ class CcPopover extends StatefulWidget {
   /// null.
   final CcOverlayController? controller;
 
-  /// Point on the target the panel aligns to.
-  final Alignment targetAnchor;
+  /// Point on the target the panel aligns to (directional — mirrors in RTL).
+  final AlignmentGeometry targetAnchor;
 
   /// Point on the panel aligned to [targetAnchor].
-  final Alignment followerAnchor;
+  final AlignmentGeometry followerAnchor;
 
-  /// Extra offset applied to the panel.
+  /// Extra offset applied to the panel. With directional anchors the `dx` is
+  /// logical (toward the reading direction's end) and mirrors under RTL.
   final Offset offset;
 
   /// Constrain the panel to the target's width.

@@ -35,6 +35,11 @@ void main() {
     late _RecordingRigPort rigs;
     late HttpClient client;
     late int port;
+    late Uint8List microphoneBytes;
+    late Principal microphoneActor;
+    late bool microphoneEnd;
+    late String microphoneSession;
+    late bool microphoneStart;
 
     String sign(String target) =>
         RemoteControlCrypto.signProxyTarget(target, psk);
@@ -49,9 +54,39 @@ void main() {
           },
         );
 
+    Uri microphoneUrl({bool start = false, bool end = false}) =>
+        Uri.parse('http://127.0.0.1:$port/rig/stream/$rigId').replace(
+          queryParameters: {
+            'w': workspaceId,
+            'd': deviceId,
+            's': sign('rig:$workspaceId/$rigId'),
+            'lane': 'microphone',
+            'rate': '16000',
+            'channels': '1',
+            'session': 'capture-a',
+            if (start) 'start': '1',
+            if (end) 'end': '1',
+          },
+        );
+
+    Uri audioUrl() =>
+        Uri.parse('http://127.0.0.1:$port/rig/stream/$rigId').replace(
+          queryParameters: {
+            'w': workspaceId,
+            'd': deviceId,
+            's': sign('rig:$workspaceId/$rigId'),
+            'lane': 'audio',
+          },
+        );
+
     setUp(() async {
       rigs = _RecordingRigPort();
       client = HttpClient();
+      microphoneBytes = Uint8List(0);
+      microphoneActor = const UserPrincipal('unset');
+      microphoneEnd = false;
+      microphoneSession = '';
+      microphoneStart = false;
       server = LocalRpcServer(
         dispatcher: _StubDispatcher(),
         devicesDao: _StubDevicesDao(),
@@ -59,6 +94,36 @@ void main() {
         eventBus: DomainEventBus(),
         workspaceResolver: (_) async => const [],
         rigTransfer: rigs,
+        rigStream:
+            ({
+              required String workspaceId,
+              required String rigId,
+              required Map<String, dynamic> request,
+            }) async => request['lane'] == 'audio'
+            ? (
+                bytes: Stream<List<int>>.value([0x49, 0x44, 0x33]),
+                contentType: 'audio/mpeg',
+              )
+            : null,
+        rigAudioInput:
+            ({
+              required String workspaceId,
+              required String rigId,
+              required Principal actor,
+              required String sessionId,
+              required Uint8List bytes,
+              required int sampleRate,
+              required int channels,
+              required bool start,
+              required bool end,
+            }) async {
+              microphoneBytes = Uint8List.fromList(bytes);
+              microphoneActor = actor;
+              microphoneSession = sessionId;
+              microphoneStart = start;
+              microphoneEnd = end;
+              return sampleRate == 16000 && channels == 1;
+            },
         // Membership is the access boundary in this product, not possession
         // of a pairing key — the routes check it on top of the signature.
         resolveRole: (ws, userId) async =>
@@ -82,6 +147,14 @@ void main() {
       final request = await client.postUrl(uri);
       final bytes = utf8.encode(jsonEncode(body));
       request.headers.contentType = ContentType.json;
+      request.contentLength = bytes.length;
+      request.add(bytes);
+      return request.close();
+    }
+
+    Future<HttpClientResponse> postBytes(Uri uri, Uint8List bytes) async {
+      final request = await client.postUrl(uri);
+      request.headers.contentType = ContentType.binary;
       request.contentLength = bytes.length;
       request.add(bytes);
       return request.close();
@@ -123,6 +196,42 @@ void main() {
       await (await get(url('/rig/clipboard/$rigId'))).drain<void>();
 
       expect(rigs.lastActor, const UserPrincipal('user-a'));
+    });
+
+    test('POST /rig/stream microphone attributes and forwards PCM', () async {
+      final start = await postBytes(microphoneUrl(start: true), Uint8List(0));
+      await start.drain<void>();
+      expect(start.statusCode, HttpStatus.noContent);
+      expect(microphoneSession, 'capture-a');
+      expect(microphoneStart, isTrue);
+
+      final response = await postBytes(
+        microphoneUrl(),
+        Uint8List.fromList([0, 1, 255, 127]),
+      );
+      await response.drain<void>();
+
+      expect(response.statusCode, HttpStatus.noContent);
+      expect(microphoneBytes, [0, 1, 255, 127]);
+      expect(microphoneActor, const UserPrincipal('user-a'));
+      expect(microphoneEnd, isFalse);
+      expect(microphoneSession, 'capture-a');
+      expect(microphoneStart, isFalse);
+
+      final end = await postBytes(microphoneUrl(end: true), Uint8List(0));
+      await end.drain<void>();
+      expect(end.statusCode, HttpStatus.noContent);
+      expect(microphoneBytes, isEmpty);
+      expect(microphoneEnd, isTrue);
+    });
+
+    test('GET /rig/stream audio relays the guest output unchanged', () async {
+      final response = await get(audioUrl());
+      final bytes = await response.expand((chunk) => chunk).toList();
+
+      expect(response.statusCode, HttpStatus.ok);
+      expect(response.headers.contentType?.mimeType, 'audio/mpeg');
+      expect(bytes, [0x49, 0x44, 0x33]);
     });
 
     test('POST /rig/clipboard writes text and an image', () async {

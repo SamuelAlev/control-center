@@ -6,6 +6,7 @@ import 'package:cc_domain/cc_domain.dart'
     show NotFoundException, ValidationException, WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
+import 'package:cc_domain/features/sandboxing/domain/terminal_command_buffer.dart';
 import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
@@ -289,6 +290,7 @@ class _Session {
   /// requested.
   final SandboxBackend backend;
   final Pty pty;
+  final TerminalCommandBuffer commands = TerminalCommandBuffer();
 
   /// Releases the VM pin this session holds, if it runs in one. Called exactly
   /// once, on teardown.
@@ -529,14 +531,18 @@ class TerminalSessionService implements TerminalSessionPort {
   }) => _require(sessionId, workspaceId).titles;
 
   @override
-  Future<void> write({
+  Future<TerminalWriteResult> write({
     required String workspaceId,
     required String sessionId,
     required List<int> data,
   }) async {
     final session = _sessions[sessionId];
     _assertOwned(session, workspaceId);
-    session?.pty.write(Uint8List.fromList(data));
+    if (session == null) {
+      return TerminalWriteResult.none;
+    }
+    session.pty.write(Uint8List.fromList(data));
+    return session.commands.feed(data);
   }
 
   @override

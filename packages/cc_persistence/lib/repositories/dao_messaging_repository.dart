@@ -146,18 +146,70 @@ class DaoMessagingRepository implements MessagingRepository {
   /// Per-space activity signals for [workspaceId], computed in SQL. NOT
   /// part of [MessagingRepository]: server-only projection behind
   /// `messaging.watchSpaceActivity`.
+  ///
+  /// The DAO emits one row per conversation; we fold those into one
+  /// [SpaceActivity] per space so the wire stays one list the sidebar already
+  /// knows, while still carrying which conversation has the unseen agent
+  /// message (the unread dot belongs on that row, not on the parent space).
   Stream<List<SpaceActivity>> watchSpaceActivity(String workspaceId) =>
-      _distinctRows(_dao(workspaceId).watchSpaceActivity(workspaceId)).map(
-        (rows) => [
-          for (final row in rows)
-            SpaceActivity(
-              spaceId: row.spaceId,
-              lastMessageAt: row.lastMessageAt,
-              lastAgentMessageAt: row.lastAgentMessageAt,
-              openQuestionCount: row.openQuestionCount,
-            ),
-        ],
+      _distinctRows(
+        _dao(
+          workspaceId,
+        ).watchSpaceActivity(workspaceId).map(_foldSpaceActivity),
       );
+
+  /// Folds per-conversation SQL rows into one [SpaceActivity] per space:
+  /// space-level maxima/sums plus the conversation → last-agent-message map
+  /// the sidebar uses to place the unread dot.
+  static List<SpaceActivity> _foldSpaceActivity(
+    List<
+      ({
+        String spaceId,
+        String conversationId,
+        DateTime? lastMessageAt,
+        DateTime? lastAgentMessageAt,
+        int openQuestionCount,
+      })
+    >
+    rows,
+  ) {
+    final bySpace = <String, _SpaceActivityAcc>{};
+    for (final row in rows) {
+      final acc = bySpace.putIfAbsent(row.spaceId, _SpaceActivityAcc.new);
+      acc.openQuestionCount += row.openQuestionCount;
+      acc.lastMessageAt = _later(acc.lastMessageAt, row.lastMessageAt);
+      acc.lastAgentMessageAt = _later(
+        acc.lastAgentMessageAt,
+        row.lastAgentMessageAt,
+      );
+      final agentAt = row.lastAgentMessageAt;
+      if (agentAt != null) {
+        acc.lastAgentMessageAtByConversation[row.conversationId] = agentAt;
+      }
+    }
+    return [
+      for (final e in bySpace.entries)
+        SpaceActivity(
+          spaceId: e.key,
+          lastMessageAt: e.value.lastMessageAt,
+          lastAgentMessageAt: e.value.lastAgentMessageAt,
+          lastAgentMessageAtByConversation: Map.unmodifiable(
+            e.value.lastAgentMessageAtByConversation,
+          ),
+          openQuestionCount: e.value.openQuestionCount,
+        ),
+    ];
+  }
+
+  static DateTime? _later(DateTime? a, DateTime? b) {
+    if (a == null) {
+      return b;
+    }
+    if (b == null) {
+      return a;
+    }
+    return b.isAfter(a) ? b : a;
+  }
 
   @override
   Future<Message?> getMessageById(String workspaceId, String messageId) async {
@@ -838,4 +890,12 @@ class DaoMessagingRepository implements MessagingRepository {
     ).getMessagesWithoutEmbedding(limit: limit);
     return _mapper.messagesToDomain(rows);
   }
+}
+
+/// Mutable fold of one space's per-conversation activity rows.
+class _SpaceActivityAcc {
+  DateTime? lastMessageAt;
+  DateTime? lastAgentMessageAt;
+  int openQuestionCount = 0;
+  final Map<String, DateTime> lastAgentMessageAtByConversation = {};
 }

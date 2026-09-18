@@ -466,7 +466,7 @@ void main() {
       expect(createSql.read<String>('sql'), contains('UNIQUE'));
     });
 
-    test('a fresh database carries the audit ip/country columns', () async {
+    test('a fresh database carries the audit ip/country/details columns', () async {
       final db = createTestDatabase();
       addTearDown(db.close);
 
@@ -475,7 +475,36 @@ void main() {
           .get();
       final columns = rows.map((r) => r.read<String>('name')).toSet();
 
-      expect(columns, containsAll(<String>['ip', 'country_code']));
+      expect(columns, containsAll(<String>['ip', 'country_code', 'details']));
+    });
+
+    test('an existing v7 database is migrated to carry activity details', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v8_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
+
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement(
+        'ALTER TABLE user_activity DROP COLUMN details',
+      );
+      await setup.customStatement('PRAGMA user_version = 7');
+      await setup.close();
+
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+
+      final columns = await db
+          .customSelect("PRAGMA table_info('user_activity')")
+          .get()
+          .then((rows) => rows.map((r) => r.read<String>('name')).toSet());
+      expect(columns, contains('details'));
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
 
     test('a fresh database carries the generic chat link tables', () async {

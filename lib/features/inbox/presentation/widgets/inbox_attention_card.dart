@@ -3,7 +3,7 @@ import 'package:control_center/features/inbox/presentation/models/inbox_attentio
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// The pinned attention strip above the PR sections: everything non-PR that
 /// blocks the operator or explicitly requests them (blocked agents, failed

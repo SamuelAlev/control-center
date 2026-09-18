@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -54,12 +55,17 @@ class CcTile extends StatelessWidget {
   /// Optional accessibility label override for the interactive row.
   final String? semanticLabel;
 
-  Color _background(DesignSystemTokens t, Set<WidgetState> states) {
+  Color _background(
+    DesignSystemTokens t,
+    Set<WidgetState> states, {
+    required bool fluidActive,
+  }) {
     if (states.contains(WidgetState.pressed)) {
       return t.hoverStrong;
     }
     if (states.contains(WidgetState.hovered)) {
-      return selected ? t.accentSoft : t.hover;
+      if (selected) return t.accentSoft;
+      return fluidActive ? t.hover.withValues(alpha: 0) : t.hover;
     }
     if (selected) {
       return t.accentSoft;
@@ -67,7 +73,11 @@ class CcTile extends StatelessWidget {
     return t.hover.withValues(alpha: 0);
   }
 
-  Widget _buildRow(DesignSystemTokens t, Color background) {
+  Widget _buildRow(
+    BuildContext context,
+    DesignSystemTokens t,
+    Color background,
+  ) {
     final titleColor = selected ? t.accent : t.textPrimary;
 
     final Widget titleWidget = title is Widget
@@ -85,7 +95,7 @@ class CcTile extends StatelessWidget {
           );
 
     return AnimatedContainer(
-      duration: CcMotion.fast,
+      duration: CcMotion.resolveFade(context, CcMotion.fast),
       curve: CcMotion.standard,
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.md,
@@ -139,14 +149,18 @@ class CcTile extends StatelessWidget {
     if (onTap == null) {
       // Static row — selection still tints the background.
       final background = selected ? t.accentSoft : t.hover.withValues(alpha: 0);
-      return _buildRow(t, background);
+      return _buildRow(context, t, background);
     }
 
     return CcTappable(
       onPressed: onTap,
       borderRadius: AppRadii.brSm,
       semanticLabel: semanticLabel,
-      builder: (context, states) => _buildRow(t, _background(t, states)),
+      builder: (context, states) => _buildRow(
+        context,
+        t,
+        _background(t, states, fluidActive: CcFluidHover.isItemActive(context)),
+      ),
     );
   }
 }

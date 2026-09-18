@@ -34,9 +34,9 @@ class SettingsDisclosure extends StatefulWidget {
     this.expanded,
     this.onExpandedChanged,
     this.dense = false,
-    this.childPadding = const EdgeInsets.only(
+    this.childPadding = const EdgeInsetsDirectional.only(
       top: AppSpacing.md,
-      left: AppSpacing.xl,
+      start: AppSpacing.xl,
     ),
   });
 

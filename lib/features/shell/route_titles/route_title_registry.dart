@@ -81,6 +81,8 @@ final Map<String, RouteTitleBuilder> routeTitleRegistry = {
   '${settingsPipelinesRoute(workspaceIdParam)}/:templateId': (_, _, l10n) =>
       l10n.pipelineTemplatesTitle,
   userProfileRoute(workspaceIdParam, ':login'): _userProfileTitle,
+  teamProfileRoute(workspaceIdParam, ':organization', ':slug'):
+      _teamProfileTitle,
 };
 
 String? _pullRequestDetailTitle(
@@ -110,6 +112,19 @@ String? _userProfileTitle(
 ) {
   final login = state.pathParameters['login'] ?? '';
   return login.isEmpty ? l10n.usersLabel : login;
+}
+
+String? _teamProfileTitle(
+  WidgetRef ref,
+  GoRouterState state,
+  AppLocalizations l10n,
+) {
+  final organization = state.pathParameters['organization'] ?? '';
+  final slug = state.pathParameters['slug'] ?? '';
+  if (organization.isEmpty || slug.isEmpty) {
+    return l10n.teamsSectionLabel;
+  }
+  return '$organization/$slug';
 }
 
 /// Resolves the full browser-tab title for [state]: the page label followed by

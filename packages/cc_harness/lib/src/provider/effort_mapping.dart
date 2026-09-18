@@ -46,3 +46,35 @@ String googleThinkingLevel(ReasoningEffort effort) => switch (effort) {
   ReasoningEffort.high => 'high',
   ReasoningEffort.xhigh => 'high',
 };
+
+/// The effort vocabulary to assume for a reasoning model whose catalog entry
+/// documents none, keyed by the models.dev provider id.
+///
+/// This is the picker-side reflection of the wire mappings above: the levels a
+/// provider can actually DISTINGUISH. [anthropicEffort] maps `minimal` onto
+/// `low`, so offering `minimal` on an Anthropic model would be a second knob
+/// position with identical behavior — but `xhigh` is real and was silently
+/// clamped to `high` by `ThinkingConfig.resolve` when the flat low/medium/high
+/// fallback stood in for every provider. [openAiEffort] is the mirror image:
+/// `minimal` is a real OpenAI tier, `xhigh` collapses onto `high`. Providers
+/// with no dedicated mapping keep the conventional three-step knob.
+List<ReasoningEffort> defaultProviderEfforts(String providerId) =>
+    switch (providerId) {
+      'anthropic' => const [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+        ReasoningEffort.xhigh,
+      ],
+      'openai' => const [
+        ReasoningEffort.minimal,
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ],
+      _ => const [
+        ReasoningEffort.low,
+        ReasoningEffort.medium,
+        ReasoningEffort.high,
+      ],
+    };

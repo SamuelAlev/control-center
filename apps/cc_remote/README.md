@@ -170,3 +170,16 @@ Every workspace-scoped stream passes its `workspace_id` EXPLICITLY and watches
 its ambient workspace only into args that do not already name one, and a
 subscription captures its args once — so a stream opened before a workspace
 switch keeps re-registering with the old workspace for the rest of the session.
+
+## Intentional forks from the desktop
+
+The phone is a separate app (`apps/cc_remote`) and must not import the root
+`control_center` package. A few UI pieces therefore exist twice on purpose:
+
+- **Unified diff parsing** is *not* forked — both clients call
+  `parseUnifiedDiff` in `cc_domain`.
+- **Jump-to-latest, workspace avatar, agent transcript rows, markdown wiring,
+  and `format.dart`** are phone-local copies. Keep them local unless a bug
+  shows the two sides drifting; do not extract a third widgets package just to
+  share chrome the phone deliberately simplifies.
+

@@ -16,13 +16,13 @@ final subscriptionsRepositoryProvider = Provider<RpcSubscriptionsRepository>(
 /// polling.
 const Duration _refreshInterval = Duration(minutes: 10);
 
-/// Polls live subscription usage (Claude Code, Codex, z.ai) and exposes the
-/// latest per-provider snapshots for the title-bar usage pill.
+/// Polls live subscription usage (Claude Code, Codex, Cursor, z.ai, Kimi) and
+/// exposes the latest per-provider snapshots for the title-bar usage pill.
 ///
 /// Fetched SERVER-SIDE over the `subscriptions.usage` op: the host reads each
-/// CLI's own credentials and the z.ai key from the harness provider credential
-/// store (Settings → Adapters → Providers & models), then calls the provider
-/// usage endpoints. No credential ever leaves the server.
+/// CLI's own credentials and the Cursor/z.ai/Kimi credentials from the harness
+/// provider credential store (Settings → Adapters → Providers & models), then
+/// calls the provider usage endpoints. No credential ever leaves the server.
 final subscriptionUsageProvider =
     AsyncNotifierProvider<SubscriptionUsageNotifier, List<SubscriptionUsage>>(
       SubscriptionUsageNotifier.new,
@@ -35,8 +35,8 @@ class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
 
   @override
   Future<List<SubscriptionUsage>> build() async {
-    // Re-fetch when the z.ai provider connection changes (key saved/removed
-    // under Settings → Adapters), but not on unrelated provider edits. Both
+    // Re-fetch when a plan provider is connected or disconnected under
+    // Settings → Adapters, but not on unrelated provider edits. Both z.ai
     // lanes count: the quota is the coding plan's, but an install that
     // connected its plan key under plain `zai` before the lanes were split is
     // still what the server falls back to.
@@ -44,7 +44,12 @@ class SubscriptionUsageNotifier extends AsyncNotifier<List<SubscriptionUsage>> {
       harnessProvidersProvider.select(
         (p) =>
             p.asData?.value.any(
-              (i) => (i.id == 'zai-coding' || i.id == 'zai') && i.connected,
+              (i) =>
+                  (i.id == 'zai-coding' ||
+                      i.id == 'zai' ||
+                      i.id == 'kimi-code' ||
+                      i.id == 'cursor') &&
+                  i.connected,
             ) ??
             false,
       ),

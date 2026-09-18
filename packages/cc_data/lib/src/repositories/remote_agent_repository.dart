@@ -40,9 +40,47 @@ class RemoteAgentRepository {
         : null;
   }
 
-  /// Inserts or updates [agent] (the host owns persistence). The workspace
+  /// Creates an agent on the host. Duplicate-name refusal, id minting and
+  /// `AGENTS.md` generation run server-side (`agents.create`).
+  Future<AgentDto> create({
+    required String workspaceId,
+    required String name,
+    required String title,
+    List<String> skills = const [],
+    String? reportsTo,
+    String? persona,
+    String? systemPrompt,
+    String? adapterId,
+    String? modelId,
+    bool strictMode = false,
+    String? effort,
+    int? contextSize,
+  }) async {
+    final data = await _client.call('agents.create', {
+      'workspace_id': workspaceId,
+      'name': name,
+      'title': title,
+      'skills': skills,
+      if (reportsTo != null) 'reportsTo': reportsTo,
+      if (persona != null) 'persona': persona,
+      if (systemPrompt != null) 'systemPrompt': systemPrompt,
+      if (adapterId != null) 'adapterId': adapterId,
+      if (modelId != null) 'modelId': modelId,
+      'strictMode': strictMode,
+      if (effort != null) 'effort': effort,
+      if (contextSize != null) 'contextSize': contextSize,
+    });
+    final agent = data['agent'];
+    if (agent is! Map) {
+      throw StateError('agents.create returned no agent');
+    }
+    return AgentDto.fromJson(agent.cast<String, dynamic>());
+  }
+
+  /// Updates an existing agent (the host owns persistence). The workspace
   /// comes from [AgentDto.workspaceId] — an agent's own workspace is the only
-  /// authoritative answer, so it is never threaded separately.
+  /// authoritative answer, so it is never threaded separately. Creating a new
+  /// row this way is refused — use [create].
   Future<void> upsert(AgentDto agent) => _client.call('agents.upsert', {
     'workspace_id': agent.workspaceId,
     'agent': agent.toJson(),

@@ -211,6 +211,8 @@ void main() {
   });
 }
 
-Widget _checkbox(bool checked) => Text('$checked');
+Widget _checkbox(bool checked, {ValueChanged<bool>? onChanged}) =>
+    Text('$checked');
 
-Widget _otherCheckbox(bool checked) => Text('other:$checked');
+Widget _otherCheckbox(bool checked, {ValueChanged<bool>? onChanged}) =>
+    Text('other:$checked');

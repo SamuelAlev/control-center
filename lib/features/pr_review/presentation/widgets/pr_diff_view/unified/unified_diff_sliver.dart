@@ -2,9 +2,11 @@ import 'dart:math' as math;
 
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/diff_overflow_mode.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_structure_store.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_config.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -12,111 +14,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// Per-frame visual configuration for the unified diff sliver. Cheap to
-/// rebuild; the render object diffs it to decide between repaint and relayout.
-@immutable
-class UnifiedDiffPaintConfig {
-  /// Creates a paint config.
-  const UnifiedDiffPaintConfig({
-    required this.brightness,
-    required this.baseStyle,
-    required this.gutterBgColor,
-    required this.gutterBorderColor,
-    required this.expandGapBgColor,
-    required this.expandGapBorderColor,
-    required this.expandGapTextColor,
-    required this.commentHighlightColor,
-    required this.commentHighlightActiveColor,
-    required this.revision,
-    this.topInset = 0,
-    this.overflowMode = DiffOverflowMode.scroll,
-    this.searchFile = -1,
-    this.searchRawIndex = -1,
-    this.splitMode = false,
-  });
-
-  /// Active theme brightness (drives colours; baked into cached paragraphs).
-  final Brightness brightness;
-
-  /// Base monospace text style.
-  final TextStyle baseStyle;
-
-  /// Opaque gutter background.
-  final Color gutterBgColor;
-
-  /// Gutter/code divider colour.
-  final Color gutterBorderColor;
-
-  /// Expand-gap row colours (the gap rows are widgets now, but the painter
-  /// still uses these for any residual fills).
-  final Color expandGapBgColor;
-
-  /// Expand-gap border colour.
-  final Color expandGapBorderColor;
-
-  /// Expand-gap label colour.
-  final Color expandGapTextColor;
-
-  /// Google-Docs-style background drawn over a commented range.
-  final Color commentHighlightColor;
-
-  /// Background drawn over the commented range whose thread is focused.
-  final Color commentHighlightActiveColor;
-
-  /// Monotonic counter bumped whenever the document's row layout changes.
-  final int revision;
-
-  /// Pixels of viewport-top occupied by a pinned ancestor (the tab strip), so
-  /// the sticky header pins just below it instead of behind it.
-  final double topInset;
-
-  /// Whether long lines wrap or scroll horizontally.
-  final DiffOverflowMode overflowMode;
-
-  /// Current search-match file + raw line index to highlight (-1 = none).
-  final int searchFile;
-
-  /// Current search-match raw line index (-1 = none).
-  final int searchRawIndex;
-
-  /// Side-by-side (split) rendering: deletions/old-numbers on the left half,
-  /// additions/new-numbers on the right, context on both.
-  final bool splitMode;
-}
-
-/// Gutter width used per side in split mode (one line-number column).
-const double kDiffSplitGutterWidth = kDiffGutterPillSlot + 44 + 8;
-
-/// A persistent comment highlight to paint over one display row: the display
-/// column span `[startCol, endCol)` (a null [endCol] means "to the row's right
-/// edge"), drawn in the active colour when its thread is focused or hovered.
-@immutable
-class DiffCommentHighlight {
-  /// Creates a highlight descriptor.
-  const DiffCommentHighlight({
-    required this.startCol,
-    this.endCol,
-    this.active = false,
-    this.groupId,
-  });
-
-  /// First display column (tabs expanded) of the highlight.
-  final int startCol;
-
-  /// Exclusive end display column, or null for "to the right edge".
-  final int? endCol;
-
-  /// Whether this row's thread is the focused one (darker highlight).
-  final bool active;
-
-  /// Id of the conversation this row belongs to.
-  ///
-  /// Rows sharing an id light up together on hover and click to the same
-  /// thread — which is what makes a seven-row comment read as ONE mark rather
-  /// than seven, and what lets a collapsed conversation be reopened from the
-  /// code it is about.
-  final String? groupId;
-}
+part 'unified_diff_sliver_input.dart';
+part 'unified_diff_sliver_painting.dart';
 
 /// Sliver widget hosting the unified diff. Code rows are painted directly on a
 /// single canvas; the comparatively rare interactive rows (file headers, gap
@@ -308,8 +207,29 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// The conversation covering the row at main-axis position [mainAxisPosition]
   /// (sliver-local), or null. Feeds the host overlay's hover tracking.
   String? commentGroupAtMain(double mainAxisPosition) {
-    final row = _displayRowAt(mainAxisPosition);
+    final row = displayRowAt(mainAxisPosition);
     return row == null ? null : commentGroupAt(row.$1, row.$2);
+  }
+
+  DiffInteractiveSpan? _gotoUnderline;
+  DiffGotoLanding? _gotoLanding;
+
+  /// The Cmd/Ctrl+hovered interactive span, or null. Paint-only.
+  set gotoUnderline(DiffInteractiveSpan? value) {
+    if (_gotoUnderline == value) {
+      return;
+    }
+    _gotoUnderline = value;
+    markNeedsPaint();
+  }
+
+  /// Transient identifier flash after a go-to jump. Paint-only.
+  set gotoLanding(DiffGotoLanding? value) {
+    if (_gotoLanding == value) {
+      return;
+    }
+    _gotoLanding = value;
+    markNeedsPaint();
   }
 
   /// Bumped (post-frame) after every paint (scroll / selection / layout /
@@ -335,9 +255,9 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// scrollable.
   late final PanGestureRecognizer _selectRecognizer =
       PanGestureRecognizer(supportedDevices: const {PointerDeviceKind.mouse})
-        ..onStart = _onSelectStart
-        ..onUpdate = _onSelectUpdate
-        ..onEnd = _onSelectEnd;
+        ..onStart = _handleSelectStart
+        ..onUpdate = _handleSelectUpdate
+        ..onEnd = _handleSelectEnd;
 
   /// Tap recognizer for the code area: a plain click (no drag) clears any
   /// active text selection. A drag is claimed by `_selectRecognizer`, which
@@ -364,37 +284,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   double get _monoAdvance =>
       _monoAdvanceCache ??= measureMonoAdvanceWidth(_config.baseStyle);
 
-  /// Code area width available for wrapping (gutter + inner padding removed),
-  /// per side in split mode. Drives `colsPerRow`.
-  double _codeWidthFor(double crossAxisExtent) {
-    if (_config.splitMode) {
-      final double halfW = math.max(0.0, (crossAxisExtent - 1) / 2);
-      return math.max(
-        0.0,
-        halfW - kDiffSplitGutterWidth - kDiffCodePadLeft - kDiffCodePadRight,
-      );
-    }
-    return math.max(
-      0.0,
-      crossAxisExtent - kDiffGutterWidth - kDiffCodePadLeft - kDiffCodePadRight,
-    );
-  }
-
-  /// Visible code viewport width (gutter removed), per side in split mode.
-  /// Drives the horizontal-scroll extent.
-  double _codeViewportWidthFor(double crossAxisExtent) {
-    if (_config.splitMode) {
-      final double halfW = math.max(0.0, (crossAxisExtent - 1) / 2);
-      return math.max(0.0, halfW - kDiffSplitGutterWidth);
-    }
-    return math.max(0.0, crossAxisExtent - kDiffGutterWidth);
-  }
-
-  /// Effective gutter width for file [file] in unified mode. Added/removed files
-  /// (and pure renames) carry only one line-number column, so their gutter — and
-  /// therefore the code start — collapses to [kDiffSingleGutterWidth]. Split mode
-  /// keeps [kDiffGutterWidth] here: its per-side hit-test paths predate the
-  /// collapse and char selection is disabled, so the value is unused there.
+  /// Effective gutter width for file [file] in unified mode.
   double gutterWidthOf(int file) {
     if (_config.splitMode) {
       return kDiffGutterWidth;
@@ -404,8 +294,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         : kDiffSingleGutterWidth;
   }
 
-  /// Maximum horizontal scroll offset in scroll mode (0 in wrap mode or when
-  /// the widest line already fits).
+  /// Maximum horizontal scroll offset in scroll mode.
   double get maxHorizontalScrollExtent {
     if (_config.overflowMode != DiffOverflowMode.scroll) {
       return 0;
@@ -418,17 +307,13 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         cols * _monoAdvance + kDiffCodePadLeft + kDiffCodePadRight;
     return math.max(
       0.0,
-      contentWidth - _codeViewportWidthFor(_lastCrossAxisExtent),
+      contentWidth - codeViewportWidthFor(_lastCrossAxisExtent),
     );
   }
 
-  /// The owned offset, clamped to the live content extent (so a stale offset
-  /// from a since-widened viewport can never overscroll).
   double get _effectiveHScroll =>
       _horizontalScrollOffset.clamp(0.0, maxHorizontalScrollExtent);
 
-  /// Pans the code to [offset] (clamped). Used by the wheel handler and the
-  /// host's horizontal scrollbar; a paint-only update.
   void applyHorizontalPan(double offset) {
     final double clamped = offset.clamp(0.0, maxHorizontalScrollExtent);
     if (clamped == _horizontalScrollOffset) {
@@ -438,54 +323,10 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     markNeedsPaint();
   }
 
-  void _scheduleLayoutModeTick() {
-    if (_layoutModeTickScheduled) {
-      return;
-    }
-    _layoutModeTickScheduled = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _layoutModeTickScheduled = false;
-      if (attached) {
-        onLayoutModeChanged?.call();
-      }
-    });
-  }
-
   /// Whether there is an active selection (for the view's copy shortcut).
   bool get hasSelection => _selAnchor != null && _selFocus != null;
 
-  /// Raw source text of the current selection, or null if none. Assembled from
-  /// the document model so it is correct across files (and rows the canvas
-  /// never painted), marker-free, with real tabs — and sliced at the precise
-  /// start/end columns.
-  String? copySelectionText() {
-    final a = _selAnchor;
-    final f = _selFocus;
-    if (a == null || f == null) {
-      return null;
-    }
-    final text = _document.copyTextBetween(a.$1, a.$2, a.$3, f.$1, f.$2, f.$3);
-    return text.isEmpty ? null : text;
-  }
-
-  /// Clears the active selection and repaints.
-  void clearSelection() {
-    if (_selAnchor == null && _selFocus == null) {
-      return;
-    }
-    _selAnchor = null;
-    _selFocus = null;
-    markNeedsPaint();
-    onSelectionChanged?.call();
-  }
-
   // ── Geometry exposure for the host review overlay ───────────────────────
-  // The review overlay (floating toolbar, gutter pill, commenter avatars) lives
-  // in the root Overlay and positions itself in GLOBAL screen coordinates. A
-  // RenderSliver has no localToGlobal and its paint transform through a
-  // SliverMainAxisGroup is awkward, so the *view* does the screen mapping from
-  // the enclosing scrollable's box + scroll offset; the sliver only exposes the
-  // document-space primitives the view needs.
 
   /// Monospace advance of the active base style (display column → pixels).
   double get monoAdvanceWidth => _monoAdvance;
@@ -495,80 +336,8 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// position.
   double get precedingScrollExtent => _precedingScrollExtent;
 
-  /// Active selection as a normalised range in display space, or null. Columns
-  /// are clamped display columns; startLine/endLine are display lines in the
-  /// focus file (selection never spans files for anchoring — the focus wins).
-  ({int file, int startLine, int startCol, int endLine, int endCol})?
-  selectionRange() {
-    final a = _selAnchor;
-    final f = _selFocus;
-    if (a == null || f == null) {
-      return null;
-    }
-    // Anchor a comment to the focus file; clamp the range to it.
-    final file = f.$1;
-    var sl = a.$1 == file ? a.$2 : 0;
-    var sc = a.$1 == file ? a.$3 : 0;
-    var el = f.$2;
-    var ec = f.$3;
-    if (el < sl || (el == sl && ec < sc)) {
-      final tl = sl, tc = sc;
-      sl = el;
-      sc = ec;
-      el = tl;
-      ec = tc;
-    }
-    return (file: file, startLine: sl, startCol: sc, endLine: el, endCol: ec);
-  }
-
-  /// Resolves the `(file, displayLine, displayColumn)` cell at viewport
-  /// position `(mainAxisPosition, crossAxisPosition)`.
-  (int, int, int)? _cellAt(double mainAxisPosition, double crossAxisPosition) {
-    final double scrollPos = constraints.scrollOffset + mainAxisPosition;
-    if (scrollPos < 0 || _document.totalExtent <= 0) {
-      return null;
-    }
-    final clamped = scrollPos.clamp(0.0, _document.totalExtent - 0.001);
-    final int f = _document.fileAtOffset(clamped);
-    if (_document.isPreviewing(f)) {
-      // No selectable code rows over a Markdown preview body; a drag crossing
-      // into one resolves to no cell (rather than a hidden source line).
-      return null;
-    }
-    if (!_document.isExpanded(f)) {
-      return (f, 0, 0);
-    }
-    final double yLocal = clamped - _document.offsetOfFile(f);
-    final int line = yLocal < _document.headerHeight
-        ? 0
-        : _document.lineAtFileLocalY(f, yLocal);
-    final double lineTop = _document.lineTopInFile(f, line);
-    final int subRow = ((yLocal - lineTop) / kDiffLineHeight).floor().clamp(
-      0,
-      1 << 20,
-    );
-    return (f, line, _columnAt(crossAxisPosition, f, line, subRow));
-  }
-
-  /// Display column under cross-axis x [crossAxisPosition] on `(file, line)`,
-  /// clamped to that line's rendered width. The gutter is pinned, so code
-  /// starts at `gutterWidthOf(file) + kDiffCodePadLeft` (unified mode — a
-  /// collapsed-gutter file starts further left). [subRow] is the wrapped sub-row
-  /// under the cursor (0 in scroll mode); the horizontal scroll offset is folded
-  /// in for scroll mode. Only one of the two terms is ever non-zero (the modes
-  /// are mutually exclusive).
-  int _columnAt(double crossAxisPosition, int file, int line, int subRow) {
-    final double codeStartX = gutterWidthOf(file) + kDiffCodePadLeft;
-    final double local = crossAxisPosition - codeStartX + _effectiveHScroll;
-    final int colInRow = local <= 0 ? 0 : (local / _monoAdvance).round();
-    final int base = _config.overflowMode == DiffOverflowMode.wrap
-        ? subRow * _colsPerRow
-        : 0;
-    return (base + colInRow).clamp(0, _document.displayWidthOf(file, line));
-  }
-
-  void _onSelectStart(DragStartDetails details) {
-    final anchor = _cellAt(_selDownMain, _selDownCross);
+  void _handleSelectStart(DragStartDetails details) {
+    final anchor = cellAt(_selDownMain, _selDownCross);
     _selAnchor = anchor;
     _selFocus = anchor;
     _selAccumDy = 0;
@@ -576,68 +345,24 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     _selMoved = false;
   }
 
-  void _onSelectUpdate(DragUpdateDetails details) {
+  void _handleSelectUpdate(DragUpdateDetails details) {
     _selAccumDy += details.delta.dy;
     _selAccumDx += details.delta.dx;
     if (!_selMoved && _selAccumDy.abs() < 2 && _selAccumDx.abs() < 2) {
-      return; // ignore micro-jitter so a click doesn't select
+      return;
     }
     _selMoved = true;
-    _selFocus = _cellAt(
-      _selDownMain + _selAccumDy,
-      _selDownCross + _selAccumDx,
-    );
+    _selFocus = cellAt(_selDownMain + _selAccumDy, _selDownCross + _selAccumDx);
     markNeedsPaint();
     onSelectionChanged?.call();
   }
 
-  void _onSelectEnd(DragEndDetails details) {
+  void _handleSelectEnd(DragEndDetails details) {
     if (!_selMoved) {
-      clearSelection(); // a plain click clears any prior selection
+      clearSelection();
     } else {
       onSelectionChanged?.call();
     }
-  }
-
-  /// Display-column span `[start, end)` to highlight on `(file, displayLine)`,
-  /// or `(null, null)` if the row is outside the selection. A null `end` means
-  /// "to the row's right edge" (interior fully selected).
-  (int?, int?) _selectionColsFor(int file, int displayLine) {
-    final a = _selAnchor;
-    final f = _selFocus;
-    if (a == null || f == null) {
-      return (null, null);
-    }
-    var sf = a.$1, sl = a.$2, sc = a.$3;
-    var ef = f.$1, el = f.$2, ec = f.$3;
-    final aAfterB = ef < sf || (ef == sf && (el < sl || (el == sl && ec < sc)));
-    if (aAfterB) {
-      final tf = sf, tl = sl, tc = sc;
-      sf = ef;
-      sl = el;
-      sc = ec;
-      ef = tf;
-      el = tl;
-      ec = tc;
-    }
-    if (file < sf || (file == sf && displayLine < sl)) {
-      return (null, null);
-    }
-    if (file > ef || (file == ef && displayLine > el)) {
-      return (null, null);
-    }
-    final bool atStart = file == sf && displayLine == sl;
-    final bool atEnd = file == ef && displayLine == el;
-    if (atStart && atEnd) {
-      return (math.min(sc, ec), math.max(sc, ec));
-    }
-    if (atStart) {
-      return (sc, null); // from sc to the right edge
-    }
-    if (atEnd) {
-      return (0, ec); // from the start to ec
-    }
-    return (0, null); // whole interior
   }
 
   /// Persistent per-line layout cache (survives config changes).
@@ -652,18 +377,11 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       _precedingScrollExtent + _document.offsetOfFile(index);
 
   /// Scroll offset that reveals file [index] with its header docked just below
-  /// the pinned tab strip. [scrollOffsetForFile] places the header top at
-  /// viewport y=0, which hides the first topInset px of content behind the
-  /// floating sticky header.
+  /// the pinned tab strip.
   double revealOffsetForFile(int index) =>
       math.max(0, scrollOffsetForFile(index) - _config.topInset);
 
-  /// Scroll offset that reveals one LINE of file [index], with the same
-  /// sticky-header inset [revealOffsetForFile] applies.
-  ///
-  /// The line-level mirror of [revealOffsetForFile], used to land a comment
-  /// permalink on the row the comment is anchored to rather than at the top of
-  /// its file — on a large diff those can be thousands of pixels apart.
+  /// Scroll offset that reveals one LINE of file [index].
   double revealOffsetForLine(int index, int displayLine) => math.max(
     0,
     _precedingScrollExtent +
@@ -671,10 +389,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         _config.topInset,
   );
 
-  /// Whether a file header is currently pinned (docked) at the top. The root-
-  /// overlay review layer reads this to cull affordances that would otherwise
-  /// paint over the pinned header (it sits above the sliver and isn't clipped
-  /// by it).
   bool get stickyHeaderPinned => _stickyPinned;
 
   Set<int> _lastTokenSet = const {};
@@ -689,17 +403,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// is clipped so it sits flush under the tab strip.
   bool _stickyPinned = false;
 
-  /// Drops every cached paragraph — called after a gap expand shifts a file's
-  /// row indices, or after a refresh replaces the file set/order, so stale
-  /// `(file, line)` entries can't be reused.
-  ///
-  /// Also clears `_lastTokenSet` and relayouts: the store's syntax colour was
-  /// dropped alongside and the visible-file index set is often unchanged after
-  /// a refresh — without resetting the gate the next layout would skip
-  /// re-requesting tokens, leaving visible files stuck as plain text until the
-  /// user scrolls. (Files whose tokens are still resident — e.g. a gap expand
-  /// that spliced them — are skipped inside `requestTokens`, so no needless
-  /// re-fetch or colour flash.)
   void clearLineCache() {
     lineCache.clear();
     _lastTokenSet = const {};
@@ -782,71 +485,14 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     super.dispose();
   }
 
-  /// Resolves the context/addition/deletion code row at [mainAxisPosition]
-  /// (any cross-axis x), or null if that Y isn't on a code row.
-  (int, int)? _codeRowAt(double mainAxisPosition) {
-    final double scrollPos = constraints.scrollOffset + mainAxisPosition;
-    if (scrollPos < 0 || scrollPos >= _document.totalExtent) {
-      return null;
-    }
-    final int f = _document.fileAtOffset(scrollPos);
-    if (!_document.isExpanded(f) || _document.isPreviewing(f)) {
-      return null;
-    }
-    final raw = _document.structureOf(f);
-    if (raw == null) {
-      return null;
-    }
-    final double yLocal = scrollPos - _document.offsetOfFile(f);
-    if (yLocal < _document.headerHeight) {
-      return null; // header row
-    }
-    final int displayLine = _document.lineAtFileLocalY(f, yLocal);
-    final int rawIndex = _document.rawIndexOf(f, displayLine);
-    if (rawIndex < 0 || rawIndex >= raw.length) {
-      return null;
-    }
-    final kind = raw.kindAt(rawIndex);
-    if (kind == DiffLineKind.context ||
-        kind == DiffLineKind.addition ||
-        kind == DiffLineKind.deletion) {
-      return (f, rawIndex);
-    }
-    return null;
-  }
-
-  /// `(fileIndex, displayLine)` for the code row at [mainAxisPosition], or null
-  /// when the position is not over one. Same resolution as [_codeRowAt] but in
-  /// DISPLAY-line space, which is how comment highlights are keyed.
-  (int, int)? _displayRowAt(double mainAxisPosition) {
-    final double scrollPos = constraints.scrollOffset + mainAxisPosition;
-    if (scrollPos < 0 || scrollPos >= _document.totalExtent) {
-      return null;
-    }
-    final int f = _document.fileAtOffset(scrollPos);
-    if (!_document.isExpanded(f) || _document.isPreviewing(f)) {
-      return null;
-    }
-    final double yLocal = scrollPos - _document.offsetOfFile(f);
-    if (yLocal < _document.headerHeight) {
-      return null;
-    }
-    return (f, _document.lineAtFileLocalY(f, yLocal));
-  }
-
   @override
   bool hitTestSelf({
     required double mainAxisPosition,
     required double crossAxisPosition,
   }) {
-    // Capture pointers over code rows: gutter taps create line comments;
-    // mouse drags in the code area select text. Non-mouse drags are rejected
-    // by the mouse-only select recognizer, so scrolling still works.
-    if (_codeRowAt(mainAxisPosition) != null) {
+    if (codeRowAt(mainAxisPosition) != null) {
       return true;
     }
-    // In horizontal-scroll mode, also capture (for the wheel handler) anywhere
-    // over the diff so a horizontal swipe scrolls the code even off a row.
     return _config.overflowMode == DiffOverflowMode.scroll &&
         maxHorizontalScrollExtent > 0;
   }
@@ -854,31 +500,27 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   @override
   void handleEvent(PointerEvent event, SliverHitTestEntry entry) {
     if (event is PointerScrollEvent) {
-      _handlePointerScroll(event);
+      handlePointerScroll(event);
       return;
     }
     if (event is! PointerDownEvent) {
       return;
     }
-    final hit = _codeRowAt(entry.mainAxisPosition);
+    final hit = codeRowAt(entry.mainAxisPosition);
     if (hit == null) {
       return;
     }
     _downMain = entry.mainAxisPosition;
     if (entry.crossAxisPosition < gutterWidthOf(hit.$1)) {
-      _tapRecognizer.addPointer(event); // gutter → line comment
+      _tapRecognizer.addPointer(event);
     } else {
       _selDownMain = entry.mainAxisPosition;
       _selDownCross = entry.crossAxisPosition;
-      _selectRecognizer.addPointer(event); // code area → mouse-drag selection
-      _clearSelectionTapRecognizer.addPointer(event); // click → clear selection
+      _selectRecognizer.addPointer(event);
+      _clearSelectionTapRecognizer.addPointer(event);
     }
   }
 
-  /// A plain click in the code area. On a highlighted row it opens that
-  /// conversation — the highlight is the only trace a collapsed thread leaves
-  /// on the code, so it has to be the way back in. Anywhere else it clears the
-  /// selection, as before.
   void _handleCodeTap() {
     final m = _downMain;
     final tap = onCommentTap;
@@ -898,117 +540,10 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       return;
     }
     clearSelection();
-    final hit = _codeRowAt(m);
+    final hit = codeRowAt(m);
     if (hit != null && onGutterTap != null) {
       onGutterTap!(hit.$1, hit.$2);
     }
-  }
-
-  /// Pans the code horizontally on a trackpad horizontal swipe (or shift+wheel)
-  /// in scroll mode. Pure-vertical scrolls are left untouched so the enclosing
-  /// vertical scrollable still flings. The scroll signal is claimed via the
-  /// resolver only when there's a horizontal component, so vertical wins
-  /// otherwise.
-  void _handlePointerScroll(PointerScrollEvent event) {
-    if (_config.overflowMode != DiffOverflowMode.scroll) {
-      return;
-    }
-    final double maxX = maxHorizontalScrollExtent;
-    if (maxX <= 0) {
-      return;
-    }
-    var dx = event.scrollDelta.dx;
-    if (dx == 0 && HardwareKeyboard.instance.isShiftPressed) {
-      dx = event.scrollDelta.dy;
-    }
-    if (dx == 0) {
-      return;
-    }
-    final double current = _effectiveHScroll;
-    final double next = (current + dx).clamp(0.0, maxX);
-    if (next == current) {
-      return;
-    }
-    // Consume the scroll signal (deepest registrant wins the resolver) so the
-    // enclosing vertical scrollable doesn't also act on it.
-    GestureBinding.instance.pointerSignalResolver.register(event, (_) {
-      applyHorizontalPan(next);
-    });
-  }
-
-  int _laidOutCount() {
-    var count = 0;
-    var child = firstChild;
-    while (child != null) {
-      count++;
-      child = childAfter(child);
-    }
-    return count;
-  }
-
-  void _setChildOffset(RenderBox child, int index) {
-    (child.parentData! as SliverMultiBoxAdaptorParentData).layoutOffset =
-        _slots[index].offset;
-  }
-
-  BoxConstraints _constraintsFor(int index, double crossAxisExtent) {
-    final slot = _slots[index];
-    switch (slot.kind) {
-      case DiffSlotKind.header:
-      case DiffSlotKind.gap:
-        return BoxConstraints.tightFor(
-          width: crossAxisExtent,
-          height: slot.height,
-        );
-      case DiffSlotKind.comment:
-      case DiffSlotKind.composer:
-      case DiffSlotKind.preview:
-        // Loose height so the block self-sizes; its measured height is fed
-        // back into the document for the next layout.
-        return BoxConstraints(
-          minWidth: crossAxisExtent,
-          maxWidth: crossAxisExtent,
-          maxHeight: double.infinity,
-        );
-    }
-  }
-
-  /// First slot index whose `offset >= value` (lower bound).
-  int _firstSlotAtOrAfter(double value) {
-    var lo = 0;
-    var hi = _slots.length;
-    while (lo < hi) {
-      final mid = (lo + hi) >> 1;
-      if (_slots[mid].offset < value) {
-        lo = mid + 1;
-      } else {
-        hi = mid;
-      }
-    }
-    return lo;
-  }
-
-  /// Visible slot range `[first, last]` intersecting `[start, end]`, or null.
-  ({int first, int last})? _visibleSlotRange(double start, double end) {
-    if (_slots.isEmpty) {
-      return null;
-    }
-    // Largest slot index with offset <= start; include it if it extends past
-    // start (a tall comment straddling the top edge).
-    final atOrAfterStart = _firstSlotAtOrAfter(start);
-    var first = atOrAfterStart;
-    if (atOrAfterStart > 0) {
-      final prev = _slots[atOrAfterStart - 1];
-      if (prev.offset + prev.height > start) {
-        first = atOrAfterStart - 1;
-      }
-    }
-    // Last slot with offset < end.
-    final last = _firstSlotAtOrAfter(end) - 1;
-    if (last < first) {
-      return null;
-    }
-    return (first: first, last: math.min(last, _slots.length - 1));
   }
 
   @override
@@ -1025,20 +560,20 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     // A change moved per-line heights, so clear the paragraph cache (laid out
     // at the old width) and ask the host to rebuild slot offsets (post-frame —
     // we can't setState during layout).
-    final double codeWidth = _codeWidthFor(crossAxisExtent);
+    final double codeWidth = codeWidthFor(crossAxisExtent);
     final int colsPerRow = _config.overflowMode == DiffOverflowMode.wrap
         ? math.max(1, (codeWidth / _monoAdvance).floor())
         : (1 << 30);
     _colsPerRow = colsPerRow;
     if (_document.setLayoutMode(_config.overflowMode, colsPerRow)) {
       lineCache.clear();
-      _scheduleLayoutModeTick();
+      scheduleLayoutModeTick();
     }
 
     final double total = _document.totalExtent;
 
     if (_slots.isEmpty || _document.fileCount == 0) {
-      collectGarbage(_laidOutCount(), 0);
+      collectGarbage(laidOutCount(), 0);
       geometry = total > 0
           ? SliverGeometry(
               scrollExtent: total,
@@ -1078,9 +613,9 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     // Compute sticky state before layout so the sticky file's header slot can
     // be force-included in the laid-out range even when scrolled deep into the
     // file (its natural offset is above the viewport).
-    _computeSticky(constraints);
+    computeSticky(constraints);
 
-    final range = _visibleSlotRange(cacheStart, cacheEnd);
+    final range = visibleSlotRange(cacheStart, cacheEnd);
     var layoutFirst = range?.first ?? _stickySlotIndex;
     var layoutLast = range?.last ?? _stickySlotIndex;
     if (_stickySlotIndex >= 0) {
@@ -1092,9 +627,9 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       }
     }
     if (layoutFirst < 0 || layoutLast < layoutFirst) {
-      collectGarbage(_laidOutCount(), 0);
+      collectGarbage(laidOutCount(), 0);
     } else {
-      _layoutSlotRange(layoutFirst, layoutLast, crossAxisExtent);
+      layoutSlotRange(layoutFirst, layoutLast, crossAxisExtent);
     }
 
     // Drive colour fetching for visible expanded files.
@@ -1118,142 +653,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     );
 
     childManager.didFinishLayout();
-  }
-
-  void _layoutSlotRange(int first, int last, double crossAxisExtent) {
-    // Drop everything if the kept range is disjoint from current children
-    // (big scrollbar jump) so the jump stays O(visible), not O(distance).
-    if (firstChild != null) {
-      final curFirst = indexOf(firstChild!);
-      final curLast = indexOf(lastChild!);
-      if (curLast < first || curFirst > last) {
-        collectGarbage(_laidOutCount(), 0);
-      }
-    }
-
-    if (firstChild == null) {
-      if (!addInitialChild(index: first, layoutOffset: _slots[first].offset)) {
-        return;
-      }
-      firstChild!.layout(
-        _constraintsFor(first, crossAxisExtent),
-        parentUsesSize: true,
-      );
-      _setChildOffset(firstChild!, first);
-    }
-
-    while (indexOf(firstChild!) > first) {
-      final leading = insertAndLayoutLeadingChild(
-        _constraintsFor(indexOf(firstChild!) - 1, crossAxisExtent),
-        parentUsesSize: true,
-      );
-      if (leading == null) {
-        break;
-      }
-      _setChildOffset(leading, indexOf(leading));
-    }
-
-    var child = firstChild!;
-    while (true) {
-      final idx = indexOf(child);
-      child.layout(_constraintsFor(idx, crossAxisExtent), parentUsesSize: true);
-      _setChildOffset(child, idx);
-      if (idx >= last) {
-        break;
-      }
-      // Insert when the chain ends (tail) *or* skips an index — a slot inserted
-      // mid-list (e.g. opening a composer) relocates the trailing children, so
-      // `childAfter` returns a non-contiguous index and the new slot's child
-      // must be built into the gap. Without the index check it is skipped: its
-      // reserved height shows as white space with nothing painted in it.
-      var next = childAfter(child);
-      if (next == null || indexOf(next) != idx + 1) {
-        next = insertAndLayoutChild(
-          _constraintsFor(idx + 1, crossAxisExtent),
-          after: child,
-          parentUsesSize: true,
-        );
-        if (next == null) {
-          break;
-        }
-      }
-      _setChildOffset(next, indexOf(next));
-      child = next;
-    }
-
-    var leadingGarbage = 0;
-    var trailingGarbage = 0;
-    RenderBox? c = firstChild;
-    while (c != null && indexOf(c) < first) {
-      leadingGarbage++;
-      c = childAfter(c);
-    }
-    c = lastChild;
-    while (c != null && indexOf(c) > last) {
-      trailingGarbage++;
-      c = childBefore(c);
-    }
-    collectGarbage(leadingGarbage, trailingGarbage);
-  }
-
-  /// Header slot index for [file] (the slot at the file's top offset), or -1.
-  int _headerSlotOf(int file) {
-    if (file < 0 || file >= _document.fileCount) {
-      return -1;
-    }
-    final idx = _firstSlotAtOrAfter(_document.offsetOfFile(file));
-    return (idx < _slots.length &&
-            _slots[idx].fileIndex == file &&
-            _slots[idx].kind == DiffSlotKind.header)
-        ? idx
-        : -1;
-  }
-
-  void _computeSticky(SliverConstraints constraints) {
-    // Conservative candidate (the file at the sliver's scroll top) so its
-    // header slot is force-included in the laid-out range. paint() refines
-    // this to the file at the tab line once it knows the screen origin —
-    // which is always >= this file, so its slot is still laid out.
-    _stickyFile = _document.fileAtOffset(constraints.scrollOffset);
-    _stickySlotIndex = _headerSlotOf(_stickyFile);
-    // _stickyHeaderTop is computed in paint() (needs the viewport paint origin).
-  }
-
-  /// Computes the sticky header's main-axis offset in paint, where [originY]
-  /// is the sliver's screen-space paint origin in viewport coordinates. Because
-  /// this sliver is a repaint boundary, the `offset` passed to paint() is
-  /// `Offset.zero` and the real position lives on its OffsetLayer — paint()
-  /// reads it from there and passes it here. The header pins just below the
-  /// full-height pinned tab strip ([UnifiedDiffPaintConfig.topInset]) so it
-  /// never slides behind it and is pushed up by the next file's header during
-  /// handoff.
-  double _stickyMainAxis(double originY) {
-    if (_stickySlotIndex < 0) {
-      _stickyPinned = false;
-      return 0;
-    }
-    final double scrollOffset = constraints.scrollOffset;
-    final double topInset = _config.topInset;
-    final double naturalScreenY =
-        originY + (_document.offsetOfFile(_stickyFile) - scrollOffset);
-    // Pin as soon as the header reaches the inset line (`<=`, not `<`): at
-    // exactly the top it must pin so its top border is clipped and it sits
-    // flush under whatever bounds the top (the pinned tab strip, or an external
-    // toolbar when topInset is 0). Leaving it unpinned there paints the header's
-    // top border right beneath the toolbar's border — a doubled line.
-    if (naturalScreenY > topInset) {
-      _stickyPinned = false;
-      return naturalScreenY - originY; // not pinned — natural position
-    }
-    final double nextScreenY = _stickyFile + 1 < _document.fileCount
-        ? originY + (_document.offsetOfFile(_stickyFile + 1) - scrollOffset)
-        : double.infinity;
-    final double pinnedScreenY = math.min(
-      topInset,
-      nextScreenY - _document.headerHeight,
-    );
-    _stickyPinned = true;
-    return pinnedScreenY - originY;
   }
 
   @override
@@ -1286,12 +685,12 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     if (_config.splitMode) {
       const double divider = 1;
       final double halfW = math.max(0, (crossAxisExtent - divider) / 2);
-      final leftPainter = _makeRowPainter(
+      final leftPainter = makeRowPainter(
         gutterWidth: kDiffSplitGutterWidth,
         hideOldGutter: false,
         hideNewGutter: true,
       );
-      final rightPainter = _makeRowPainter(
+      final rightPainter = makeRowPainter(
         gutterWidth: kDiffSplitGutterWidth,
         hideOldGutter: true,
         hideNewGutter: false,
@@ -1300,7 +699,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         ..save()
         ..clipRect(Rect.fromLTWH(offset.dx, offset.dy, halfW, paintH))
         ..translate(offset.dx, offset.dy);
-      _paintCode(
+      paintCode(
         canvas,
         (_) => leftPainter,
         scrollOffset,
@@ -1316,7 +715,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
           Rect.fromLTWH(offset.dx + halfW + divider, offset.dy, halfW, paintH),
         )
         ..translate(offset.dx + halfW + divider, offset.dy);
-      _paintCode(
+      paintCode(
         canvas,
         (_) => rightPainter,
         scrollOffset,
@@ -1341,7 +740,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       // has no numbers) collapse to a single column with a narrower gutter, so
       // their code starts further left. Build each variant lazily and pick per
       // file; the shared line cache is gutter-independent, so it's reused safely.
-      final fullPainter = _makeRowPainter(
+      final fullPainter = makeRowPainter(
         gutterWidth: kDiffGutterWidth,
         hideOldGutter: false,
         hideNewGutter: false,
@@ -1353,13 +752,13 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
           case DiffGutterMode.both:
             return fullPainter;
           case DiffGutterMode.newOnly:
-            return newOnlyPainter ??= _makeRowPainter(
+            return newOnlyPainter ??= makeRowPainter(
               gutterWidth: kDiffSingleGutterWidth,
               hideOldGutter: true,
               hideNewGutter: false,
             );
           case DiffGutterMode.oldOnly:
-            return oldOnlyPainter ??= _makeRowPainter(
+            return oldOnlyPainter ??= makeRowPainter(
               gutterWidth: kDiffSingleGutterWidth,
               hideOldGutter: false,
               hideNewGutter: true,
@@ -1371,7 +770,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         ..save()
         ..clipRect(offset & Size(crossAxisExtent, paintH))
         ..translate(offset.dx, offset.dy);
-      _paintCode(
+      paintCode(
         canvas,
         painterFor,
         scrollOffset,
@@ -1406,8 +805,8 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     final double tabLineScroll =
         scrollOffset + math.max(0.0, _config.topInset - originY);
     _stickyFile = _document.fileAtOffset(tabLineScroll);
-    _stickySlotIndex = _headerSlotOf(_stickyFile);
-    _stickyHeaderTop = _stickyMainAxis(originY);
+    _stickySlotIndex = headerSlotOf(_stickyFile);
+    _stickyHeaderTop = stickyMainAxis(originY);
 
     // Paint slot children on top of the code. Non-sticky first, then the
     // pinned sticky header last so it overlays everything.
@@ -1459,151 +858,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
           pinnedFileListenable?.value = _stickyPinned ? _stickyFile : null;
         }
       });
-    }
-  }
-
-  UnifiedRowPainter _makeRowPainter({
-    required double gutterWidth,
-    required bool hideOldGutter,
-    required bool hideNewGutter,
-  }) {
-    return UnifiedRowPainter(
-      cache: lineCache,
-      brightness: _config.brightness,
-      baseStyle: _config.baseStyle,
-      gutterWidth: gutterWidth,
-      hideOldGutter: hideOldGutter,
-      hideNewGutter: hideNewGutter,
-      horizontalScrollOffset: _effectiveHScroll,
-      overflowMode: _config.overflowMode,
-      colsPerRow: _colsPerRow,
-      gutterBgColor: _config.gutterBgColor,
-      gutterBorderColor: _config.gutterBorderColor,
-      expandGapBgColor: _config.expandGapBgColor,
-      expandGapBorderColor: _config.expandGapBorderColor,
-      expandGapTextColor: _config.expandGapTextColor,
-      commentHighlightColor: _config.commentHighlightColor,
-      commentHighlightActiveColor: _config.commentHighlightActiveColor,
-    );
-  }
-
-  /// Paints the visible code rows of every expanded file in `[bandTop, bandBottom]`
-  /// using the painter [painterFor] returns for each file index — unified mode
-  /// hands collapsed-gutter files (added/removed) a single-column painter, while
-  /// split mode returns the same per-side painter for every file. When [skipKind]
-  /// is set, rows of that kind are left blank (used for per-side filtering in
-  /// split mode). The canvas is assumed to be translated to the column's origin
-  /// already.
-  void _paintCode(
-    Canvas canvas,
-    UnifiedRowPainter Function(int file) painterFor,
-    double scrollOffset,
-    double bandTop,
-    double bandBottom,
-    double width, {
-    DiffLineKind? skipKind,
-  }) {
-    final double headerHeight = _document.headerHeight;
-    var f = _document.fileAtOffset(math.max(0, bandTop));
-    while (f < _document.fileCount) {
-      final double fileTop = _document.offsetOfFile(f);
-      if (fileTop >= bandBottom) {
-        break;
-      }
-      // Previewing files render their body as a hosted Markdown slot, not code
-      // rows — skip painting them here.
-      if (_document.isExpanded(f) && !_document.isPreviewing(f)) {
-        final raw = _document.structureOf(f);
-        if (raw != null && raw.length > 0) {
-          final painter = painterFor(f);
-          final double bodyTop = fileTop + headerHeight;
-          final double fileBottom = fileTop + _document.heightOfFile(f);
-          final double segTop = math.max(bandTop, bodyTop);
-          final double segBottom = math.min(bandBottom, fileBottom);
-          if (segBottom > segTop) {
-            final int firstLine = _document.lineAtFileLocalY(
-              f,
-              segTop - fileTop,
-            );
-            final int lastLine = _document.lineAtFileLocalY(
-              f,
-              segBottom - fileTop,
-            );
-            final int displayCount = _document.lineCountOf(f);
-            final tokens = _store.tokensOf(f);
-            for (
-              var displayLine = firstLine;
-              displayLine <= lastLine && displayLine < displayCount;
-              displayLine++
-            ) {
-              final int rawIndex = _document.rawIndexOf(f, displayLine);
-              final kind = raw.kindAt(rawIndex);
-              // Gap rows are hosted as widgets; skipKind hides the other side.
-              if (kind == DiffLineKind.expandGap || kind == skipKind) {
-                continue;
-              }
-              final double y =
-                  _document.offsetOfLine(f, displayLine) - scrollOffset;
-              final bool isSearchHit =
-                  _config.searchFile == f && _config.searchRawIndex == rawIndex;
-              // Char-precise highlight only in unified mode — the column origin
-              // assumes the single unified gutter; split's two columns would
-              // mis-place it.
-              final (int?, int?) sel = _config.splitMode
-                  ? (null, null)
-                  : _selectionColsFor(f, displayLine);
-              final hl = _config.splitMode
-                  ? null
-                  : _commentHighlights[f]?[displayLine];
-              painter.paintRow(
-                canvas: canvas,
-                y: y,
-                raw: raw,
-                fileIndex: f,
-                line: rawIndex,
-                tokens: tokens,
-                width: width,
-                visualRows: _document.visualRowsOf(f, displayLine),
-                displayWidth: _document.displayWidthOf(f, displayLine),
-                searchMatch: isSearchHit,
-                selStartCol: sel.$1,
-                selEndCol: sel.$2,
-                commentStartCol: hl?.startCol,
-                commentEndCol: hl?.endCol,
-                // Hover reads as "this is what you would click", so every row
-                // of the hovered conversation takes the focused colour.
-                commentActive:
-                    (hl?.active ?? false) ||
-                    (hl?.groupId != null &&
-                        hl!.groupId == _hoveredCommentGroup),
-              );
-            }
-          }
-        }
-      }
-      // Close every expanded file's content block with a bottom hairline —
-      // under the last code row / trailing "Show end of file" expander /
-      // last comment slot, above the breathing-room gap. This is the file
-      // boundary the eye expects; the docked (pinned) header deliberately
-      // paints no top border of its own (it sits flush under the toolbar),
-      // so without this line a file's content would just fade into the gap.
-      // Collapsed files need none: the header's own bottom border closes
-      // them.
-      if (_document.isExpanded(f)) {
-        final double contentBottom =
-            fileTop + _document.heightOfFile(f) - _document.fileSeparator;
-        if (contentBottom >= bandTop && contentBottom <= bandBottom) {
-          final double y = contentBottom - scrollOffset;
-          canvas.drawLine(
-            Offset(0, y),
-            Offset(width, y),
-            Paint()
-              ..color = _config.gutterBorderColor
-              ..strokeWidth = 1,
-          );
-        }
-      }
-      f++;
     }
   }
 

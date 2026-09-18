@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -151,21 +152,21 @@ class _CcTabViewState extends State<CcTabView> {
           child: Focus(
             canRequestFocus: false,
             onKeyEvent: _onKey,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (var i = 0; i < widget.tabs.length; i++)
-                  _Tab(
-                    label: widget.tabs[i].label,
-                    semanticLabel: widget.tabs[i].semanticLabel,
-                    selected: i == widget.selectedIndex,
-                    // Roving tabindex: only the selected tab is a Tab stop.
-                    focusable: i == widget.selectedIndex,
-                    focusNode: i < _tabNodes.length ? _tabNodes[i] : null,
-                    tokens: t,
-                    onPressed: () => _select(i),
-                  ),
-              ],
+            child: CcFluidHover(
+              axis: CcFluidHoverAxis.x,
+              itemCount: widget.tabs.length,
+              itemBuilder: (context, i) => _Tab(
+                label: widget.tabs[i].label,
+                semanticLabel: widget.tabs[i].semanticLabel,
+                selected: i == widget.selectedIndex,
+                // Roving tabindex: only the selected tab is a Tab stop.
+                focusable: i == widget.selectedIndex,
+                focusNode: i < _tabNodes.length ? _tabNodes[i] : null,
+                tokens: t,
+                onPressed: () => _select(i),
+              ),
+              layoutBuilder: (context, items) =>
+                  Row(mainAxisSize: MainAxisSize.min, children: items),
             ),
           ),
         ),
@@ -216,7 +217,7 @@ class _Tab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = tokens;
-    final duration = CcMotion.resolve(context, CcMotion.fast);
+    final duration = CcMotion.resolveFade(context, CcMotion.moderate);
     return Semantics(
       selected: selected,
       child: CcTappable(
@@ -228,9 +229,12 @@ class _Tab extends StatelessWidget {
         builder: (context, states) {
           final hovered = states.contains(WidgetState.hovered);
           final pressed = states.contains(WidgetState.pressed);
+          final fluidActive = CcFluidHover.isItemActive(context);
           final Color background = pressed
               ? t.hoverStrong
-              : (hovered && !selected ? t.hover : t.hover.withValues(alpha: 0));
+              : (hovered && !selected && !fluidActive
+                    ? t.hover
+                    : t.hover.withValues(alpha: 0));
           final foreground = selected
               ? t.fg
               : (hovered ? t.fgSecondary : t.textTertiary);

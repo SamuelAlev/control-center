@@ -10,7 +10,7 @@ import 'package:control_center/features/messaging/providers/message_edit_provide
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/file_reference_chip.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Renders a user message as a right-aligned bubble, capped at ~75% of the
@@ -113,7 +113,6 @@ class UserBubble extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
     final tokens = resolveTokens(context);
     final topPad = collapseHeader ? AppSpacing.xxs : AppSpacing.xl;
     final deleted = message.isDeleted;
@@ -237,7 +236,6 @@ class UserBubble extends ConsumerWidget {
                                             createdAt: message.createdAt,
                                             codeFont: codeFont,
                                             tokens: tokens,
-                                            theme: theme,
                                             isEdited: message.isEdited,
                                           ),
                                           // What the person attached, still

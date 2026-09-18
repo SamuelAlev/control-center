@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
@@ -352,6 +353,19 @@ class _FakeOpenPrListRepository implements OpenPrListRepository {
     final hook = onClosed;
     return hook != null ? hook(workspaceId, login) : Future.value(closed);
   }
+
+  @override
+  Future<GitHubProfileActivity> profileActivityForUser(
+    String workspaceId,
+    String login,
+  ) async => GitHubProfileActivity.empty;
+
+  @override
+  Future<GitHubProfileActivity> profileActivityForTeam(
+    String workspaceId,
+    String organization,
+    String slug,
+  ) async => GitHubProfileActivity.empty;
 
   @override
   Future<WorkspaceOpenPrs> listOpenForWorkspace(String workspaceId) =>

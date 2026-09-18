@@ -34,9 +34,29 @@ enum RemoteStatus {
   pendingPairing,
 }
 
-/// [RemoteStatus] plus a user-facing [reason] (sentence case).
+/// Why a connection attempt failed. The UI maps each case to localized copy —
+/// the session layer has no [BuildContext], so it never produces user-facing
+/// strings itself.
+enum RemoteFailureReason {
+  /// No pairing record exists.
+  notPaired,
+
+  /// No path reached the server.
+  unreachable,
+
+  /// The server's identity no longer matches the pinned fingerprint.
+  identityChanged,
+
+  /// The server rejected this device's credential.
+  authRejected,
+
+  /// Anything the classifier could not name.
+  unknown,
+}
+
+/// [RemoteStatus] plus a machine-readable failure [reason].
 class RemoteUiState {
-  const RemoteUiState._(this.status, {this.reason});
+  const RemoteUiState._(this.status, {this.reason, this.debugDetail});
 
   /// Not paired.
   const RemoteUiState.notPaired()
@@ -50,9 +70,15 @@ class RemoteUiState {
   const RemoteUiState.connected()
     : this._(RemoteStatus.connected, reason: null);
 
-  /// Connection failed with a human-facing [reason].
-  const RemoteUiState.connectionFailed(String reason)
-    : this._(RemoteStatus.connectionFailed, reason: reason);
+  /// Connection failed with a classified [reason].
+  const RemoteUiState.connectionFailed(
+    RemoteFailureReason reason, {
+    String? debugDetail,
+  }) : this._(
+         RemoteStatus.connectionFailed,
+         reason: reason,
+         debugDetail: debugDetail,
+       );
 
   /// The server's identity no longer matches the pinned fingerprint.
   const RemoteUiState.identityMismatch()
@@ -65,8 +91,12 @@ class RemoteUiState {
   /// The status.
   final RemoteStatus status;
 
-  /// Optional human-facing detail (set for [RemoteStatus.connectionFailed]).
-  final String? reason;
+  /// Why the connection failed (set for [RemoteStatus.connectionFailed]).
+  final RemoteFailureReason? reason;
+
+  /// The raw error, debug builds only — shown beside the localized reason so
+  /// the cause is visible without opening DevTools. Null in release.
+  final String? debugDetail;
 
   /// Convenience for the UI.
   bool get isNotPaired => status == RemoteStatus.notPaired;
@@ -77,10 +107,11 @@ class RemoteUiState {
       identical(this, other) ||
       other is RemoteUiState &&
           status == other.status &&
-          reason == other.reason;
+          reason == other.reason &&
+          debugDetail == other.debugDetail;
 
   @override
-  int get hashCode => Object.hash(status, reason);
+  int get hashCode => Object.hash(status, reason, debugDetail);
 }
 
 /// Thrown when no pairing record is available (the user has not scanned a QR).
@@ -423,7 +454,12 @@ class RemoteSession {
           _lastError = e;
           _failures++;
           if (_failures >= _failureThreshold) {
-            _setState(RemoteUiState.connectionFailed(_friendlyReason(e)));
+            _setState(
+              RemoteUiState.connectionFailed(
+                _failureReason(e),
+                debugDetail: _debugDetail(e),
+              ),
+            );
           }
         }
         final base = (1000 * (1 << backoffStep.clamp(0, 5))).clamp(1000, 30000);
@@ -490,9 +526,11 @@ class RemoteSession {
         _setState(const RemoteUiState.connected());
       case ServerConnectionPhase.reconnecting:
         if (status.attempt >= _failureThreshold) {
+          final error = _lastError ?? status.error;
           _setState(
             RemoteUiState.connectionFailed(
-              _friendlyReason(_lastError ?? status.error),
+              _failureReason(error),
+              debugDetail: _debugDetail(error),
             ),
           );
         } else {
@@ -627,7 +665,7 @@ class RemoteSession {
     rlog(
       'state',
       '${_state.status.name} → ${next.status.name}'
-          '${next.reason != null ? ' (${next.reason})' : ''}'
+          '${next.reason != null ? ' (${next.reason!.name})' : ''}'
           ' [failures=$_failures]',
     );
     _state = next;
@@ -636,29 +674,31 @@ class RemoteSession {
     }
   }
 
-  String _friendlyReason(Object? error) {
+  RemoteFailureReason _failureReason(Object? error) {
     if (error is NotPairedException) {
-      return 'Not paired — scan the QR code from your Mac';
+      return RemoteFailureReason.notPaired;
     }
     if (error != null) {
       switch (classifyConnectionError(error)) {
         case ConnectionFailureKind.unreachable:
-          return "Couldn't reach your server on any path — check it's "
-              'running, or try the same network';
+          return RemoteFailureReason.unreachable;
         case ConnectionFailureKind.identityMismatch:
-          return "The server's identity changed — if it was reinstalled, "
-              're-pair this device';
+          return RemoteFailureReason.identityChanged;
         case ConnectionFailureKind.authRejected:
-          return 'The server rejected this device — re-pair it from your Mac';
+          return RemoteFailureReason.authRejected;
         case ConnectionFailureKind.unknown:
           break;
       }
     }
-    // In debug builds, surface the real error on the connect screen itself so
-    // the cause is visible without opening DevTools. Stripped from release.
+    return RemoteFailureReason.unknown;
+  }
+
+  /// In debug builds, the raw error travels with the state so the connect
+  /// screen can show the cause without DevTools. Stripped from release.
+  String? _debugDetail(Object? error) {
     if (kDebugMode && error != null) {
-      return "Couldn't connect — tap to retry  [${error.runtimeType}: $error]";
+      return '${error.runtimeType}: $error';
     }
-    return "Couldn't connect — tap to retry";
+    return null;
   }
 }

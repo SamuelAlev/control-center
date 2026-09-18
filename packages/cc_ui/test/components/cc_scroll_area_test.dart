@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/components/cc_scroll_area.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -137,6 +138,43 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets(
+      'a ScrollEnd dispatched during layout does not schedule a build',
+      (tester) async {
+        // Mirrors the production path: a ballistic fling relayouts newly
+        // attached slivers, [ScrollPosition.applyContentDimensions] fires
+        // [ScrollEndNotification] from [RenderViewport.performLayout], and
+        // the area used to setState in that callback.
+        await tester.pumpWidget(
+          ccTestApp(
+            SizedBox(
+              height: 200,
+              width: 200,
+              child: CcScrollArea(
+                child: _DispatchScrollEndOnLayout(
+                  metrics: FixedScrollMetrics(
+                    minScrollExtent: 0,
+                    maxScrollExtent: 1000,
+                    pixels: 100,
+                    viewportDimension: 200,
+                    axisDirection: AxisDirection.down,
+                    devicePixelRatio: 1,
+                  ),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          ),
+        );
+        expect(tester.takeException(), isNull);
+
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+        expect(_state(tester).startEdgeVisible, isTrue);
+        expect(_state(tester).endEdgeVisible, isTrue);
+      },
+    );
+
     testWidgets('a nested scrollable does not drive the hints', (tester) async {
       await tester.pumpWidget(
         ccTestApp(
@@ -169,4 +207,52 @@ void main() {
       expect(_state(tester).endEdgeVisible, isFalse);
     });
   });
+}
+
+/// Dispatches a [ScrollEndNotification] from [RenderObject.performLayout] so
+/// tests can hit the layout-phase path without a real ballistic viewport.
+class _DispatchScrollEndOnLayout extends SingleChildRenderObjectWidget {
+  const _DispatchScrollEndOnLayout({
+    required this.metrics,
+    required super.child,
+  });
+
+  final ScrollMetrics metrics;
+
+  @override
+  RenderObject createRenderObject(BuildContext context) {
+    return _RenderDispatchScrollEndOnLayout(
+      notificationContext: context,
+      metrics: metrics,
+    );
+  }
+
+  @override
+  void updateRenderObject(
+    BuildContext context,
+    covariant _RenderDispatchScrollEndOnLayout renderObject,
+  ) {
+    renderObject
+      ..notificationContext = context
+      ..metrics = metrics;
+  }
+}
+
+class _RenderDispatchScrollEndOnLayout extends RenderProxyBox {
+  _RenderDispatchScrollEndOnLayout({
+    required this.notificationContext,
+    required this.metrics,
+  });
+
+  BuildContext notificationContext;
+  ScrollMetrics metrics;
+
+  @override
+  void performLayout() {
+    super.performLayout();
+    ScrollEndNotification(
+      metrics: metrics,
+      context: notificationContext,
+    ).dispatch(notificationContext);
+  }
 }

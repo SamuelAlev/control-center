@@ -5,6 +5,7 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_remote/app_connection.dart';
+import 'package:cc_remote/l10n/remote_locales.dart';
 import 'package:cc_remote/media_proxy.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter/foundation.dart';
@@ -269,22 +270,22 @@ final spaceMessagesProvider = StreamProvider.autoDispose
       if (client == null || workspaceId == null || conversationId == null) {
         return const Stream.empty();
       }
-      return RemoteMessagingRepository(
-        client,
-      ).watchMessages(workspaceId, spaceId, conversationId).map(
-        // A QUEUED steering card has not reached the agent yet — the desktop
-        // renders it in the steering queue strip below the trail. The phone
-        // has no strip (v1), so hide it here rather than showing it as a sent
-        // bubble that did nothing. The moment it is injected (or converted
-        // at run end) the row re-emits and renders as a normal user bubble.
-        (messages) => [
-          for (final m in messages)
-            if (!(m.messageType == 'steering' &&
-                m.metadata is Map &&
-                (m.metadata as Map)['steerState'] == 'queued'))
-              m,
-        ],
-      );
+      return RemoteMessagingRepository(client)
+          .watchMessages(workspaceId, spaceId, conversationId)
+          .map(
+            // A QUEUED steering card has not reached the agent yet — the desktop
+            // renders it in the steering queue strip below the trail. The phone
+            // has no strip (v1), so hide it here rather than showing it as a sent
+            // bubble that did nothing. The moment it is injected (or converted
+            // at run end) the row re-emits and renders as a normal user bubble.
+            (messages) => [
+              for (final m in messages)
+                if (!(m.messageType == 'steering' &&
+                    m.metadata is Map &&
+                    (m.metadata as Map)['steerState'] == 'queued'))
+                  m,
+            ],
+          );
     });
 
 /// Live active run logs for a conversation (`agent_run_log.watchActiveByConversation`)
@@ -365,9 +366,9 @@ final themePreferenceProvider =
       ThemePreferenceNotifier.new,
     );
 
-/// Persisted locale preference (a language code, or null to follow the
-/// platform). The phone PWA's chrome is English today; this stores the choice
-/// and applies the locale so translated strings take effect once added.
+/// Persisted locale preference (a BCP 47 tag like `ar-SA`, or null to follow
+/// the platform). Same tag shape the desktop picker stores, so a shared
+/// preference resolves on both clients.
 final appLocaleProvider = NotifierProvider<AppLocaleNotifier, String?>(
   AppLocaleNotifier.new,
 );
@@ -388,16 +389,19 @@ class ThemePreferenceNotifier extends Notifier<ThemePreference> {
 class AppLocaleNotifier extends Notifier<String?> {
   @override
   String? build() {
-    return ref.watch(sharedPrefsProvider).getString('app_locale');
+    final saved = ref.watch(sharedPrefsProvider).getString('app_locale');
+    return canonicalRemoteLocaleTag(saved);
   }
 
   void set(String? code) {
     final prefs = ref.read(sharedPrefsProvider);
-    if (code == null) {
+    final tag = canonicalRemoteLocaleTag(code);
+    if (tag == null) {
       prefs.remove('app_locale');
-    } else {
-      prefs.setString('app_locale', code);
+      state = null;
+      return;
     }
-    state = code;
+    prefs.setString('app_locale', tag);
+    state = tag;
   }
 }

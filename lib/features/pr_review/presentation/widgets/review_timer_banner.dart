@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:ui' show Color;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/review_session_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A non-modal banner that shows elapsed review time and surfaces a fatigue
@@ -75,14 +76,15 @@ class _ReviewTimerBannerState extends ConsumerState<ReviewTimerBanner> {
 
     // Warning semantic tokens from the design system.
     final warningBg =
-        tokens?.bgWarningSecondary ?? Colors.orange.withValues(alpha: 0.12);
-    final warningFg = tokens?.fgWarningPrimary ?? Colors.orange;
+        tokens?.bgWarningSecondary ??
+            const Color(0xFFFF9800).withValues(alpha: 0.12);
+    final warningFg =
+        tokens?.fgWarningPrimary ?? const Color(0xFFFF9800);
     final warningBorder =
-        tokens?.fgWarningSecondary ?? Colors.orange.withValues(alpha: 0.35);
+        tokens?.fgWarningSecondary ??
+            const Color(0xFFFF9800).withValues(alpha: 0.35);
 
-    return Material(
-      color: Colors.transparent,
-      child: Container(
+    return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
@@ -109,7 +111,6 @@ class _ReviewTimerBannerState extends ConsumerState<ReviewTimerBanner> {
             ),
           ],
         ),
-      ),
     );
   }
 }

@@ -10,7 +10,7 @@ import 'package:cc_harness/provider.dart';
 /// The document is `{providerId: {id, name, env, npm, doc, models: {...}}}`;
 /// each model carries cost, limits, modalities, reasoning options and status.
 /// Unknown / malformed entries are skipped rather than throwing so a partial or
-/// drifted upstream snapshot still yields a usable catalog.
+/// drifted upstream document still yields a usable catalog.
 abstract final class ModelsDevParser {
   /// Parses the full document. Providers start [ProviderDisabled]; enablement
   /// is resolved later (it depends on the host's env/accounts).
@@ -95,7 +95,9 @@ abstract final class ModelsDevParser {
         : null;
 
     final reasoning = raw['reasoning'] == true;
-    final thinking = reasoning ? _thinking(raw['reasoning_options']) : null;
+    final thinking = reasoning
+        ? _thinking(providerId, raw['reasoning_options'])
+        : null;
 
     return ModelInfo(
       id: modelId,
@@ -135,17 +137,22 @@ abstract final class ModelsDevParser {
     return const [ModelModality.text];
   }
 
-  static ThinkingConfig? _thinking(Object? reasoningOptions) {
+  static ThinkingConfig? _thinking(
+    String providerId,
+    Object? reasoningOptions,
+  ) {
     if (reasoningOptions is! List) {
       // Reasoning model with no documented effort vocabulary: still flag it as
-      // reasoning-capable with the conventional low/medium/high knob.
-      return const ThinkingConfig(
-        efforts: [
-          ReasoningEffort.low,
-          ReasoningEffort.medium,
-          ReasoningEffort.high,
-        ],
-        defaultLevel: ReasoningEffort.medium,
+      // reasoning-capable, but with the PROVIDER's wire vocabulary rather than
+      // a flat low/medium/high — the flat fallback hid Anthropic's `xhigh`
+      // (and let `ThinkingConfig.resolve` clamp a chosen xhigh down to high)
+      // and OpenAI's `minimal` on every model models.dev doesn't annotate.
+      final efforts = defaultProviderEfforts(providerId);
+      return ThinkingConfig(
+        efforts: efforts,
+        defaultLevel: efforts.contains(ReasoningEffort.medium)
+            ? ReasoningEffort.medium
+            : efforts.first,
       );
     }
     final efforts = <ReasoningEffort>[];
@@ -174,11 +181,9 @@ abstract final class ModelsDevParser {
       // budget semantics, so we don't synthesize per-effort budgets here.
     }
     if (efforts.isEmpty) {
-      efforts.addAll(const [
-        ReasoningEffort.low,
-        ReasoningEffort.medium,
-        ReasoningEffort.high,
-      ]);
+      // Options present but none parseable: same provider-aware fallback as a
+      // missing block, so a drifted upstream shape cannot shrink the knob.
+      efforts.addAll(defaultProviderEfforts(providerId));
     }
     efforts.sort((a, b) => a.index.compareTo(b.index));
     return ThinkingConfig(

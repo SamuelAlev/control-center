@@ -29,6 +29,12 @@ class RigBrowserToolbar extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     required this.rig,
+    required this.onNetworkSecurity,
+    this.networkRestarting = false,
+    this.audioOn = false,
+    this.onToggleAudio,
+    this.microphoneOn = false,
+    this.onToggleMicrophone,
   });
 
   /// The owning workspace.
@@ -36,6 +42,24 @@ class RigBrowserToolbar extends ConsumerStatefulWidget {
 
   /// The browser rig being driven.
   final RigView rig;
+
+  /// Opens the per-session network security setting.
+  final VoidCallback onNetworkSecurity;
+
+  /// Whether the unrestricted replacement is being started.
+  final bool networkRestarting;
+
+  /// Whether guest audio currently plays here.
+  final bool audioOn;
+
+  /// Toggles guest audio; null when this panel has no output lane.
+  final VoidCallback? onToggleAudio;
+
+  /// Whether the viewer's microphone currently feeds the guest.
+  final bool microphoneOn;
+
+  /// Toggles microphone input; null when this panel has no input lane.
+  final VoidCallback? onToggleMicrophone;
 
   @override
   ConsumerState<RigBrowserToolbar> createState() => _RigBrowserToolbarState();
@@ -268,6 +292,48 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
                     style: CcTypography.caption.copyWith(color: t.textTertiary),
                   ),
                 ),
+              if (widget.rig.networkIsUnrestricted)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
+                  child: CcStatusTag(
+                    label: l10n.rigNetworkUnrestricted,
+                    tone: CcStatusTone.caution,
+                  ),
+                ),
+              if (widget.onToggleAudio != null)
+                CcIconButton(
+                  icon: widget.audioOn ? AppIcons.volume2 : AppIcons.volumeOff,
+                  size: CcButtonSize.sm,
+                  onPressed: widget.onToggleAudio,
+                  tooltip: widget.audioOn
+                      ? l10n.rigAudioMute
+                      : l10n.rigAudioListen,
+                ),
+              if (widget.onToggleMicrophone != null)
+                CcIconButton(
+                  icon: widget.microphoneOn ? AppIcons.mic : AppIcons.micOff,
+                  size: CcButtonSize.sm,
+                  onPressed: widget.onToggleMicrophone,
+                  tooltip: l10n.meetingRecordMic,
+                ),
+              CcIconButton(
+                icon: widget.networkRestarting
+                    ? AppIcons.refreshCw
+                    : widget.rig.networkIsUnrestricted
+                    ? AppIcons.shieldOff
+                    : AppIcons.shield,
+                size: CcButtonSize.sm,
+                color: widget.rig.networkIsUnrestricted
+                    ? t.fgWarningPrimary
+                    : null,
+                loading: widget.networkRestarting,
+                onPressed: widget.networkRestarting
+                    ? null
+                    : widget.onNetworkSecurity,
+                tooltip: widget.rig.networkIsUnrestricted
+                    ? l10n.rigNetworkUnrestricted
+                    : l10n.rigNetworkAllowAllHosts,
+              ),
             ],
           ),
         ),

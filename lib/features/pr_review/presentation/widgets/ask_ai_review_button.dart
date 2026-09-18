@@ -95,8 +95,8 @@ class _AskAiReviewButtonState extends ConsumerState<AskAiReviewButton> {
         const SizedBox(width: 2),
         CcMenu(
           semanticLabel: l10n.askAiReviewAtLevel,
-          targetAnchor: Alignment.bottomRight,
-          followerAnchor: Alignment.topRight,
+          targetAnchor: AlignmentDirectional.bottomEnd,
+          followerAnchor: AlignmentDirectional.topEnd,
           minWidth: 200,
           items: [
             for (final level in ReviewLevel.values)

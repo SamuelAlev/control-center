@@ -2,6 +2,7 @@ import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -19,6 +20,8 @@ class RigView {
     required this.backendLabel,
     required this.phase,
     required this.accelerated,
+    this.egressEnforced = true,
+    this.unrestrictedNetwork = false,
     this.isExec = false,
     this.detail,
     this.closeReason,
@@ -49,6 +52,13 @@ class RigView {
     backendLabel: wire['backend_label'] as String? ?? '',
     phase: wire['phase'] as String? ?? '',
     accelerated: wire['accelerated'] as bool?,
+    egressEnforced:
+        wire['egress_enforced'] as bool? ??
+        !{
+          RigSurface.mobile.wire,
+          RigSurface.ios.wire,
+        }.contains(wire['surface']),
+    unrestrictedNetwork: wire['unrestricted_network'] as bool? ?? false,
     detail: wire['detail'] as String?,
     closeReason: wire['close_reason'] as String?,
     displayWidth: wire['display_width'] as int?,
@@ -114,6 +124,19 @@ class RigView {
   /// False when accelerated or unknown — the badge claims slowness only when
   /// the server actually reported it.
   bool get isEmulated => accelerated == false;
+
+  /// Whether this backend can enforce the normal per-host egress gate.
+  ///
+  /// False on the host Android emulator, whose networking is already outside
+  /// the enclosure gate. The UI states that limitation instead of offering a
+  /// security switch that cannot change it.
+  final bool egressEnforced;
+
+  /// Whether this session was explicitly restarted without the host gate.
+  final bool unrestrictedNetwork;
+
+  /// Whether every network host is effectively reachable.
+  bool get networkIsUnrestricted => unrestrictedNetwork || !egressEnforced;
 
   /// Boot step or failure message.
   final String? detail;
@@ -198,6 +221,7 @@ class RigBackendView {
     this.note,
     this.missingImages = const [],
     this.version,
+    this.setupAction,
   });
 
   /// Builds a view from the `rig.detect` wire map.
@@ -228,6 +252,9 @@ class RigBackendView {
         if (i is String) i,
     ],
     version: wire['version'] as String?,
+    setupAction: RigBackendSetupAction.fromWire(
+      wire['setupAction'] as String?,
+    ),
   );
 
   /// Backend wire id.
@@ -273,6 +300,9 @@ class RigBackendView {
 
   /// Detected version.
   final String? version;
+
+  /// In-product owner-only setup action, when this backend advertises one.
+  final RigBackendSetupAction? setupAction;
 }
 
 /// One base image as the client sees it.
@@ -379,6 +409,10 @@ class RemoteRigRepository {
     }
   }
 
+  /// Installs one server-owned, checksum-pinned backend prerequisite.
+  Future<void> installBackendSetup(RigBackendSetupAction action) =>
+      _client.call('rig.installBackendSetup', {'action': action.wire});
+
   /// Starts downloading [imageId].
   ///
   /// Returns as soon as the server ACCEPTS the download, not when it finishes:
@@ -392,9 +426,15 @@ class RemoteRigRepository {
   Future<void> importImage(String imageId, String path) =>
       _client.call('rig.importImage', {'image_id': imageId, 'path': path});
 
+  /// Deletes the installed artifacts for [imageId] from the server.
+  Future<void> removeImage(String imageId) =>
+      _client.call('rig.removeImage', {'image_id': imageId});
+
   /// Every rig in the bound workspace.
   Future<List<RigView>> list(String workspaceId) async {
-    final data = await _client.readOr('rig.list', {'workspace_id': workspaceId}, const {});
+    final data = await _client.readOr('rig.list', {
+      'workspace_id': workspaceId,
+    }, const {});
     return _rigs(data);
   }
 
@@ -462,6 +502,19 @@ class RemoteRigRepository {
       text: data['text'] as String? ?? '',
       isError: data['is_error'] as bool? ?? false,
     );
+  }
+
+  /// Restarts a live enclosure without its host egress gate.
+  ///
+  /// The server owns the cutover: it closes the old machine and opens the
+  /// replacement from the persisted spec, so the client cannot widen any
+  /// other resource or filesystem field while asking for network access.
+  Future<RigView> restartUnrestricted(String workspaceId, String rigId) async {
+    final data = await _client.call('rig.restartUnrestricted', {
+      'workspace_id': workspaceId,
+      'rig_id': rigId,
+    });
+    return RigView.fromWire(data);
   }
 
   /// Takes exclusive input control.

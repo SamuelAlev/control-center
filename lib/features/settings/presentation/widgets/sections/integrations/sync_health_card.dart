@@ -45,7 +45,7 @@ class SyncHealthCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerEnd,
                   child: _SyncNowButton(),
                 ),
                 const SizedBox(height: 10),

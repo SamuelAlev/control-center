@@ -38,17 +38,9 @@ final adapterModelsProvider = FutureProvider.family<List<AcpModel>, String?>((
     } on Object {
       catalog = ModelCatalog.empty;
     }
-    return [
-      for (final m in models) _harnessModel(m, catalog.resolve(m.id)),
-    ];
+    return [for (final m in models) _harnessModel(m, catalog.resolve(m.id))];
   }
-  final cliPath = detected
-      .where((d) => d.adapter.id == adapterId)
-      .map((d) => d.path)
-      .firstOrNull;
-  return ref
-      .read(acpModelRepositoryProvider)
-      .listModels(adapterId, cliPath: cliPath);
+  return ref.read(acpModelRepositoryProvider).listModels(adapterId);
 });
 
 /// Projects one live harness model onto the picker's model shape, enriched with
@@ -57,7 +49,7 @@ final adapterModelsProvider = FutureProvider.family<List<AcpModel>, String?>((
 /// The live `providers.listModels` endpoint reports id, display name, context
 /// and pricing — never reasoning support — so the effort vocabulary can only
 /// come from the catalog. It used to come from nowhere at all, which is why the
-/// built-in adapter showed no effort dropdown for any model.
+/// built-in adapter showed no effort slider for any model.
 AcpModel _harnessModel(HarnessModelInfo m, ModelInfo? info) {
   final thinking = harnessThinkingLevels(info);
   return AcpModel(

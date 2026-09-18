@@ -59,7 +59,7 @@ class EvalTool extends HarnessTool {
   bool get parallelSafe => false;
 
   @override
-  Map<String, dynamic> get inputSchema => {
+  Map<String, dynamic> get inputSchema => withRequiredCallDescription({
     'type': 'object',
     'properties': {
       'code': {'type': 'string', 'description': 'The cell to run.'},
@@ -75,7 +75,7 @@ class EvalTool extends HarnessTool {
       },
     },
     'required': ['code'],
-  };
+  });
 
   @override
   Future<HarnessToolResult> execute(
@@ -85,6 +85,12 @@ class EvalTool extends HarnessTool {
     final code = args['code'];
     if (code is! String || code.trim().isEmpty) {
       return HarnessToolResult.error('Missing or invalid argument: code');
+    }
+    // A cell is a wall of code in the transcript; the description is what a
+    // reader scans instead, so a call without one is rejected.
+    final missingDescription = missingCallDescription(args);
+    if (missingDescription != null) {
+      return missingDescription;
     }
     final language = args['language'] == 'javascript'
         ? KernelLanguage.javascript

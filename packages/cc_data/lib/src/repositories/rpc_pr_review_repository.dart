@@ -6,6 +6,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/job_run_detail.dart
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_stack.dart';
@@ -102,6 +103,11 @@ class RpcPrReviewRepository implements PrReviewRepository {
     requestedReviewers: d.requestedReviewers.map(_prUserFromDto).toList(),
     requestedTeamSlugs: d.requestedTeamSlugs,
     assignees: d.assignees.map(_prUserFromDto).toList(),
+    labels: [
+      for (final l in d.labels)
+        if (l.name.isNotEmpty)
+          PrLabel(name: l.name, color: l.color, description: l.description),
+    ],
     mergedAt: d.mergedAt == null ? null : DateTime.tryParse(d.mergedAt!),
     reviewedByMe: d.reviewedByMe,
     reactions: _reactionsFromDto(d.reactions),
@@ -160,6 +166,13 @@ class RpcPrReviewRepository implements PrReviewRepository {
         reviewerName: d.reviewerName,
         reviewerIsTeam: d.reviewerIsTeam,
         reviewerAvatarUrl: d.reviewerAvatarUrl,
+        label: d.label == null || d.label!.name.isEmpty
+            ? null
+            : PrLabel(
+                name: d.label!.name,
+                color: d.label!.color,
+                description: d.label!.description,
+              ),
         createdAt: d.createdAt == null ? null : DateTime.tryParse(d.createdAt!),
       );
 
@@ -836,6 +849,20 @@ class RpcPrReviewRepository implements PrReviewRepository {
   }) => _client.call(
     'pr_review.updatePullRequest',
     _coords({'pr_number': prNumber, 'title': ?title, 'body': ?body}),
+  );
+
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) => _client.call(
+    'pr_review.updateIssueComment',
+    _coords({
+      'pr_number': prNumber,
+      'comment_id': commentId,
+      'body': body,
+    }),
   );
 
   @override

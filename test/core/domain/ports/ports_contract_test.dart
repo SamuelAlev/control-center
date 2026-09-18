@@ -605,6 +605,14 @@ void main() {
       expect(answer.toPromptString(), '(no answer)');
     });
 
+    test('skipped is not empty and serializes', () {
+      const answer = AgentQuestionAnswer(skipped: true);
+      expect(answer.isEmpty, isFalse);
+      expect(answer.toPromptString(), 'Skipped');
+      expect(answer.toJson()['skipped'], isTrue);
+      expect(AgentQuestionAnswer.fromJson({'skipped': true}).skipped, isTrue);
+    });
+
     test('toPromptString with empty labels and whitespace freeText', () {
       const answer = AgentQuestionAnswer(freeText: '   ');
       expect(answer.toPromptString(), '(no answer)');

@@ -79,8 +79,12 @@ class EditorTabGroupController extends ChangeNotifier {
       _tabs.isEmpty ? 0 : _selectedIndex.clamp(0, _tabs.length - 1);
 
   set selectedIndex(int value) {
-    _selectedIndex = value;
-    _visit(value);
+    final next = _tabs.isEmpty ? 0 : value.clamp(0, _tabs.length - 1);
+    if (next == selectedIndex) {
+      return;
+    }
+    _selectedIndex = next;
+    _visit(next);
     notifyListeners();
   }
 

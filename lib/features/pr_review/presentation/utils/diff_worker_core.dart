@@ -90,6 +90,10 @@ abstract final class DiffWire {
   /// tok: flattened token ARGB background colors (nullable).
   static const String bgs = 'bg';
 
+  /// tok: flattened token kinds ([DiffTokenKind] ints), parallel to [texts].
+  /// Older payloads omit this; the decoder treats a missing array as zeros.
+  static const String kinds = 'k';
+
   // ── err event ────────────────────────────────────────────────────────────
   /// err: human-readable message.
   static const String message = 'm';
@@ -275,12 +279,14 @@ Map<String, dynamic> _encodeTok(int startIndex, List<List<DiffToken>> lines) {
   final texts = <String>[];
   final colors = <int?>[];
   final bgs = <int?>[];
+  final kinds = <int>[];
   for (final line in lines) {
     lineLens.add(line.length);
     for (final t in line) {
       texts.add(t.text);
       colors.add(t.colorValue);
       bgs.add(t.backgroundColorValue);
+      kinds.add(t.kind);
     }
   }
   return <String, dynamic>{
@@ -290,6 +296,7 @@ Map<String, dynamic> _encodeTok(int startIndex, List<List<DiffToken>> lines) {
     DiffWire.texts: texts,
     DiffWire.colors: colors,
     DiffWire.bgs: bgs,
+    DiffWire.kinds: kinds,
   };
 }
 
@@ -302,7 +309,8 @@ bool _tokensEqual(List<DiffToken> a, List<DiffToken> b) {
   for (var i = 0; i < a.length; i++) {
     if (a[i].text != b[i].text ||
         a[i].colorValue != b[i].colorValue ||
-        a[i].backgroundColorValue != b[i].backgroundColorValue) {
+        a[i].backgroundColorValue != b[i].backgroundColorValue ||
+        a[i].kind != b[i].kind) {
       return false;
     }
   }
@@ -365,6 +373,9 @@ List<List<DiffToken>> _tokenizeHunk(
         // Guard against minified single-line bundles that backtracking
         // grammars choke on; such a line comes back as one plain token.
         tokenizeMaxLineLength: 4000,
+        // Scopes are classified to a compact [DiffToken.kind] and dropped
+        // before the wire — needed to recognise JS/TS regexp literals.
+        includeExplanation: true,
       ),
     );
     lines = reattachCarriageReturns(text, lines);
@@ -391,7 +402,13 @@ List<DiffToken> _rowTokens(List<ThemedToken> line, String content) {
     if (t.content.isEmpty) {
       continue;
     }
-    tokens.add(DiffToken(t.content, ccArgbForTokenColor(t.color)));
+    tokens.add(
+      DiffToken(
+        t.content,
+        ccArgbForTokenColor(t.color),
+        kind: diffTokenKindFromScopes(t.scopes),
+      ),
+    );
     chars += t.content.length;
   }
   if (tokens.isEmpty || chars != content.length) {

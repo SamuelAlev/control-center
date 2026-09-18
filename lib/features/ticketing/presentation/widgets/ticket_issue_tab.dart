@@ -4,7 +4,8 @@ import 'package:control_center/features/ticketing/presentation/widgets/markdown_
 import 'package:control_center/features/ticketing/presentation/widgets/ticket_properties_rail.dart';
 import 'package:control_center/features/ticketing/providers/ticket_patch_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInputAction;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The "Issue" tab: the ticket's editable title and description, followed by

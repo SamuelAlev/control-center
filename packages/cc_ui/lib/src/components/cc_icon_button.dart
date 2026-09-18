@@ -1,4 +1,5 @@
 import 'package:cc_ui/src/components/cc_button.dart';
+import 'package:cc_ui/src/components/cc_icon.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
 import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
@@ -138,13 +139,13 @@ class CcIconButton extends StatelessWidget {
         }
 
         final iconColor = disabled ? fg : (color ?? fg);
-        Widget glyph = Icon(icon, size: 16, color: iconColor);
+        Widget glyph = CcIcon(icon, size: 16, color: iconColor);
         if (loading) {
           glyph = _SpinningIcon(child: glyph);
         }
         Widget content = Center(child: glyph);
         content = AnimatedContainer(
-          duration: CcMotion.resolve(context, CcMotion.fast),
+          duration: CcMotion.resolveFade(context, CcMotion.fast),
           curve: CcMotion.standard,
           width: box,
           height: box,

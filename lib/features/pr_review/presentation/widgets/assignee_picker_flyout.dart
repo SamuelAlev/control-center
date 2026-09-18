@@ -8,7 +8,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 bool _ci(Iterable<String> set, String x) =>
@@ -327,7 +327,7 @@ class _AssigneeFlyoutRow extends StatelessWidget {
         builder: (context, states) {
           final hovered = states.contains(WidgetState.hovered);
           return Container(
-            color: hovered ? t.bgPrimaryHover : Colors.transparent,
+            color: hovered ? t.bgPrimaryHover : const Color(0x00000000),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             child: Row(
               children: [

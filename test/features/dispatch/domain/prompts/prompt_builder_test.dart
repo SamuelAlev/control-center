@@ -121,6 +121,8 @@ void main() {
       expect(result, contains('1.'));
       expect(result, contains('2.'));
       expect(result, contains('7.'));
+      expect(result, contains('8.'));
+      expect(result, contains('`ask_user`'));
     });
 
     test('executionContract for chat includes memory instruction (rule 7)', () {

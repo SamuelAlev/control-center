@@ -1,4 +1,5 @@
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/sandboxing/github_app_token_minter.dart'
     show GitHubAppConfig, GitHubAppTokenMinter, MintedToken;
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
@@ -29,6 +30,7 @@ class GitHubInstallation {
     required this.id,
     required this.account,
     this.repositorySelection = '',
+    this.suspendedAt,
   });
 
   /// The numeric installation id.
@@ -40,11 +42,19 @@ class GitHubInstallation {
   /// `all` or `selected` — which of the account's repositories are covered.
   final String repositorySelection;
 
+  /// When GitHub suspended this installation, or null while it is active.
+  final DateTime? suspendedAt;
+
+  /// Whether GitHub has suspended this installation. Minting a token cannot
+  /// succeed until a human resumes it (or the caller uses a PAT instead).
+  bool get isSuspended => suspendedAt != null;
+
   /// The wire shape the settings screen renders.
   Map<String, Object?> toJson() => {
     'id': id,
     'account': account,
     'repository_selection': repositorySelection,
+    if (suspendedAt != null) 'suspended_at': suspendedAt!.toIso8601String(),
   };
 }
 
@@ -112,8 +122,16 @@ class GitHubAppClient {
 
   final Map<int, ({String token, DateTime expiresAt})> _tokens = {};
   final Map<String, int> _installationByOwner = {};
+  final Set<int> _suspendedIds = {};
+  final Set<String> _suspendedOwners = {};
   List<GitHubInstallation>? _installations;
+  DateTime? _installationsFetchedAt;
   GitHubAppBotInfo? _botInfo;
+
+  /// How often a suspended installation is re-listed. Resume is a human
+  /// action; retrying mint every poll only 403s. Five minutes is the same
+  /// idle cadence the conversation poller already uses.
+  static const _suspendedRecheck = Duration(minutes: 5);
 
   GitHubAppTokenMinter _minterFor(int installationId) => GitHubAppTokenMinter(
     dio: _dio,
@@ -169,10 +187,17 @@ class GitHubAppClient {
   ///
   /// Cached after the first success: installations change when a human clicks
   /// Install, not per request. [refresh] re-reads them, which is what the
-  /// settings "test" action does.
+  /// settings "test" action does. A cached list that includes a suspended
+  /// installation is treated as stale after five minutes so a resume is
+  /// picked up without a restart.
   Future<List<GitHubInstallation>> installations({bool refresh = false}) async {
     final cached = _installations;
-    if (cached != null && !refresh) {
+    final fetchedAt = _installationsFetchedAt;
+    final stale =
+        _suspendedIds.isNotEmpty &&
+        fetchedAt != null &&
+        _now().difference(fetchedAt) >= _suspendedRecheck;
+    if (cached != null && !refresh && !stale) {
       return cached;
     }
     try {
@@ -182,7 +207,8 @@ class GitHubAppClient {
       );
       final data = response.data;
       if (data is! List) {
-        return _installations = const [];
+        _adoptInstallations(const []);
+        return const [];
       }
       final parsed = [
         for (final entry in data.whereType<Map>())
@@ -190,20 +216,50 @@ class GitHubAppClient {
             id: (entry['id'] as num?)?.toInt() ?? 0,
             account: (entry['account'] as Map?)?['login'] as String? ?? '',
             repositorySelection: entry['repository_selection'] as String? ?? '',
+            suspendedAt: DateTime.tryParse(
+              entry['suspended_at'] as String? ?? '',
+            ),
           ),
       ].where((i) => i.id != 0).toList();
-      for (final installation in parsed) {
-        if (installation.account.isNotEmpty) {
-          _installationByOwner[installation.account.toLowerCase()] =
-              installation.id;
-        }
-      }
-      return _installations = parsed;
+      _adoptInstallations(parsed);
+      return parsed;
     } on DioException {
       // Do NOT cache a failure: a network blip would otherwise leave the app
       // permanently "not installed anywhere" until the next restart.
       return const [];
     }
+  }
+
+  /// Whether the app installation covering [owner] is suspended.
+  ///
+  /// Loads the installation list (honouring the suspended-recheck TTL) so the
+  /// first caller of a freshly constructed client still learns the truth.
+  Future<bool> isOwnerSuspended(String owner) async {
+    if (owner.isEmpty) {
+      return false;
+    }
+    await installations();
+    return _suspendedOwners.contains(owner.toLowerCase());
+  }
+
+  /// Whether every known installation is suspended. Empty (no app, or none
+  /// installed) is not this condition — that is a missing identity, not a
+  /// paused one.
+  Future<bool> allInstallationsSuspended() async {
+    final list = await installations();
+    if (list.isEmpty) {
+      return false;
+    }
+    return list.every(
+      (installation) =>
+          installation.isSuspended || _suspendedIds.contains(installation.id),
+    );
+  }
+
+  /// Logins of accounts whose installation is currently suspended.
+  Future<Set<String>> suspendedOwners() async {
+    await installations();
+    return Set.unmodifiable(_suspendedOwners);
   }
 
   /// An installation token covering [owner] (an org or user login), or null
@@ -225,6 +281,12 @@ class GitHubAppClient {
   /// GitHub issues these for an hour; the cache is honoured until five minutes
   /// before expiry so a token cannot die mid-request.
   Future<String?> tokenForInstallation(int installationId) async {
+    if (_suspendedIds.contains(installationId)) {
+      await installations();
+      if (_suspendedIds.contains(installationId)) {
+        return null;
+      }
+    }
     final cached = _tokens[installationId];
     if (cached != null &&
         cached.expiresAt.isAfter(_now().add(const Duration(minutes: 5)))) {
@@ -239,7 +301,10 @@ class GitHubAppClient {
             _now().add(const Duration(minutes: 55)),
       );
       return minted.token;
-    } on Object {
+    } on Object catch (e) {
+      if (isGitHubInstallationSuspendedError(e)) {
+        _markSuspended(installationId);
+      }
       // A revoked app, a suspended installation, GitHub being down: all mean
       // "no app credential right now", and the caller has other lanes.
       return null;
@@ -269,7 +334,10 @@ class GitHubAppClient {
       return await _minterFor(
         installation,
       ).mint(repositories: repositories, permissions: permissions);
-    } on Object {
+    } on Object catch (e) {
+      if (isGitHubInstallationSuspendedError(e)) {
+        _markSuspended(installation);
+      }
       return null;
     }
   }
@@ -290,11 +358,20 @@ class GitHubAppClient {
       return null;
     }
     final key = owner.toLowerCase();
+    if (_suspendedOwners.contains(key)) {
+      await installations();
+      if (_suspendedOwners.contains(key)) {
+        return null;
+      }
+    }
     final cached = _installationByOwner[key];
     if (cached != null) {
       return cached;
     }
     await installations(refresh: true);
+    if (_suspendedOwners.contains(key)) {
+      return null;
+    }
     return _installationByOwner[key];
   }
 
@@ -317,8 +394,47 @@ class GitHubAppClient {
   void invalidate() {
     _tokens.clear();
     _installationByOwner.clear();
+    _suspendedIds.clear();
+    _suspendedOwners.clear();
     _installations = null;
+    _installationsFetchedAt = null;
     _botInfo = null;
+  }
+
+  void _adoptInstallations(List<GitHubInstallation> parsed) {
+    _installationByOwner.clear();
+    _suspendedIds.clear();
+    _suspendedOwners.clear();
+    for (final installation in parsed) {
+      if (installation.account.isEmpty) {
+        continue;
+      }
+      final key = installation.account.toLowerCase();
+      if (installation.isSuspended) {
+        _suspendedIds.add(installation.id);
+        _suspendedOwners.add(key);
+        continue;
+      }
+      _installationByOwner[key] = installation.id;
+    }
+    _installations = parsed;
+    _installationsFetchedAt = _now();
+  }
+
+  void _markSuspended(int installationId) {
+    _suspendedIds.add(installationId);
+    _tokens.remove(installationId);
+    final list = _installations;
+    if (list != null) {
+      for (final installation in list) {
+        if (installation.id == installationId &&
+            installation.account.isNotEmpty) {
+          _suspendedOwners.add(installation.account.toLowerCase());
+          _installationByOwner.remove(installation.account.toLowerCase());
+        }
+      }
+    }
+    _installationsFetchedAt ??= _now();
   }
 
   Options _appOptions() => Options(

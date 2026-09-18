@@ -17,6 +17,9 @@ import 'package:flutter/widgets.dart';
 ///   panes reparents the live element instead of rebuilding it.
 /// - **Lazy build**: a body is only built once its tab has been *visible* at
 ///   least once; never-seen tabs render nothing until first revealed.
+/// - **Offscreen reuse**: once a tab is hidden, its content widget is reused
+///   until visibility changes again. A tab switch therefore rebuilds the
+///   incoming and outgoing bodies, not every tab the operator has visited.
 /// - **TickerMode**: hidden tabs stop burning frames (spinners, cursors,
 ///   implicit animations) while their element is kept alive.
 /// - **Webview LRU**: only the [WebviewLru.maxHidden] most-recently-visible
@@ -40,6 +43,10 @@ class EditorBodyHost {
   // Keyed by tab identity (EditorTab has no `==`). Pruned in [reconcile].
   final Map<EditorTab, GlobalKey> _bodyKeys = {};
   final Set<EditorTab> _visitedTabs = Set<EditorTab>.identity();
+  final Map<EditorTab, Widget> _contentWidgets =
+      Map<EditorTab, Widget>.identity();
+  final Map<EditorTab, bool> _contentVisibility =
+      Map<EditorTab, bool>.identity();
 
   /// A stable [GlobalKey] for [tab]'s body (created on first use).
   GlobalKey keyFor(EditorTab tab) => _bodyKeys.putIfAbsent(tab, GlobalKey.new);
@@ -47,13 +54,17 @@ class EditorBodyHost {
   /// Whether [tab] has ever been visible (and thus its body built).
   bool hasVisited(EditorTab tab) => _visitedTabs.contains(tab);
 
-  /// Wraps a tab body with keep-alive, lazy-build, TickerMode and webview
-  /// suspension. [buildContent] is invoked only when the tab has been visible
-  /// and is not suspended; [buildSuspended] renders the lightweight placeholder
-  /// for an evicted hidden webview (falls back to an empty box when omitted).
+  /// Wraps a tab body with keep-alive, lazy-build, offscreen reuse, TickerMode
+  /// and webview suspension.
   ///
-  /// Side effect: marks [tab] visited and notes webview recency when
-  /// [isVisible] — mirrors the engine's build-time visibility signal.
+  /// [buildContent] runs when the tab is visible or its visibility just
+  /// changed. Stable hidden tabs reuse the same widget instance, preventing an
+  /// [IndexedStack] rebuild from walking every previously visited body. Visible
+  /// tabs still rebuild normally, so provider and host configuration updates
+  /// reach the on-screen surface.
+  ///
+  /// [buildSuspended] renders the lightweight placeholder for an evicted hidden
+  /// webview (and falls back to an empty box when omitted).
   Widget wrap(
     EditorTab tab, {
     required bool isVisible,
@@ -74,23 +85,42 @@ class EditorBodyHost {
     final suspended =
         _isWebviewKind(tab.kind) &&
         _webviewLru.shouldSuspend(tab, isVisible: isVisible);
-    // TickerMode sits INSIDE the KeyedSubtree so GlobalKey reparenting across
-    // pane moves keeps the element, while a hidden tab's animations/tickers stop
-    // burning frames.
+    final content = switch ((suspended, visited)) {
+      (true, _) => buildSuspended?.call() ?? const SizedBox.shrink(),
+      (false, true) => _contentFor(
+        tab,
+        isVisible: isVisible,
+        buildContent: buildContent,
+      ),
+      _ => const SizedBox.shrink(),
+    };
+    // TickerMode sits inside the KeyedSubtree so GlobalKey reparenting across
+    // pane moves keeps the element, while a hidden tab's animations and tickers
+    // stop burning frames.
     return KeyedSubtree(
       key: keyFor(tab),
       child: TickerMode(
         enabled: isVisible,
-        child: ColoredBox(
-          color: background,
-          child: suspended
-              ? (buildSuspended?.call() ?? const SizedBox.shrink())
-              : visited
-              ? buildContent()
-              : const SizedBox.shrink(),
-        ),
+        child: ColoredBox(color: background, child: content),
       ),
     );
+  }
+
+  Widget _contentFor(
+    EditorTab tab, {
+    required bool isVisible,
+    required Widget Function() buildContent,
+  }) {
+    final previousVisibility = _contentVisibility[tab];
+    final cached = _contentWidgets[tab];
+    if (cached != null && !isVisible && previousVisibility == isVisible) {
+      return cached;
+    }
+
+    final content = buildContent();
+    _contentWidgets[tab] = content;
+    _contentVisibility[tab] = isVisible;
+    return content;
   }
 
   /// Drops keep-alive entries for tabs no longer in [liveTabs] (from
@@ -100,6 +130,8 @@ class EditorBodyHost {
     final live = Set<EditorTab>.identity()..addAll(liveTabs);
     _bodyKeys.removeWhere((tab, _) => !live.contains(tab));
     _visitedTabs.removeWhere((tab) => !live.contains(tab));
+    _contentWidgets.removeWhere((tab, _) => !live.contains(tab));
+    _contentVisibility.removeWhere((tab, _) => !live.contains(tab));
     _webviewLru.prune(live.contains);
   }
 }

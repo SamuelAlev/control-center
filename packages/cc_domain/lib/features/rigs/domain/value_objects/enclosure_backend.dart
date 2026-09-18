@@ -1,9 +1,9 @@
-/// The hypervisor stack behind a rig.
+/// The execution backend behind a rig.
 ///
-/// Every value here is producible by a backend that exists — there are no
-/// aspirational entries. A backend that has not been built does not get an
-/// enum value, because a value nothing can return reads as a capability when
-/// it is only an intention.
+/// Every value here is producible by an adapter that exists — there are no
+/// aspirational entries. Most are hypervisor stacks; the host-managed device
+/// simulators are named separately because they do not provide the same
+/// containment.
 enum EnclosureBackend {
   /// QEMU accelerated by Apple's Hypervisor.framework (macOS, arm64/x86_64).
   /// The Tier 1 default on a Mac.
@@ -26,6 +26,12 @@ enum EnclosureBackend {
   /// containment we do not have, so it gets its own value and its own honest
   /// note.
   androidEmulator('android-emulator', 'Android emulator'),
+
+  /// Apple's CoreSimulator on the macOS host.
+  ///
+  /// This is host-managed execution, not a VM Control Center configures or
+  /// network-isolates. Each rig owns an ephemeral simulator device.
+  iosSimulator('ios-simulator', 'iOS Simulator'),
 
   /// A smolvm microVM: libkrun over Hypervisor.framework (macOS), KVM (Linux)
   /// or WHP (Windows), booting a digest-pinned OCI image. Hosts the exec
@@ -55,11 +61,13 @@ enum EnclosureBackend {
 
   /// Whether this backend's guest gets egress confined to an allowlist.
   ///
-  /// False for the Android emulator: it manages its own networking, so its
-  /// egress is not enforced the way the other surfaces' is (per-rig proxies
-  /// on QEMU, the VMM's own DNS/IP gate on smolvm). The UI and the tool
-  /// description say so rather than implying parity.
-  bool get hasEnforcedEgress => this != EnclosureBackend.androidEmulator;
+  /// False for the host-managed device simulators: they own their networking,
+  /// so their egress is not enforced the way VM surfaces' is (per-rig proxies
+  /// on QEMU, the VMM's own DNS/IP gate on smolvm). The UI and tool
+  /// descriptions say so rather than implying parity.
+  bool get hasEnforcedEgress =>
+      this != EnclosureBackend.androidEmulator &&
+      this != EnclosureBackend.iosSimulator;
 
   /// Parses [value] back into a backend, or null when unknown.
   static EnclosureBackend? fromWire(String? value) {

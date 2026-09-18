@@ -98,7 +98,12 @@ class CcFontRegistry {
   /// family appropriate to the SURFACE (a monospace surface must not fall back
   /// to a proportional font — that would reflow code mid-load), else the default
   /// from [install] is used.
-  TextStyle apply(String family, TextStyle? base, {String? fallbackFamily}) {
+  TextStyle apply(
+    String family,
+    TextStyle? base, {
+    String? fallbackFamily,
+    Iterable<String> extraFallbacks = const [],
+  }) {
     final style = base ?? const TextStyle();
     if (family.isEmpty) {
       return style;
@@ -114,10 +119,13 @@ class CcFontRegistry {
       // Three jobs: let an OS-installed family (registered under its real name)
       // resolve, render in the app's own font while bytes are in flight and
       // cover glyphs outside the loaded subset (a Latin cut has no Cyrillic)
-      // instead of showing tofu.
+      // instead of showing tofu. [extraFallbacks] (the script fallbacks, see
+      // CcFonts.scriptFallbackFamilies) slot in ahead of the caller's own
+      // list.
       fontFamilyFallback: [
         family,
         ?fallback,
+        ...extraFallbacks,
         ...?style.fontFamilyFallback,
       ],
     );

@@ -1,0 +1,519 @@
+{
+  "@@locale": "nb",
+  "appTitle": "Control Center",
+  "back": "Tilbake",
+  "cancel": "Avbryt",
+  "retry": "Prøv på nytt",
+  "tryAgain": "Prøv på nytt",
+  "settings": "Innstillinger",
+  "refresh": "Oppdater",
+  "approve": "Godkjenn",
+  "deny": "Nekt",
+  "continueLabel": "Fortsett",
+  "agentQuestionHeader": "Spørsmål til deg",
+  "agentQuestionAnsweredLabel": "Besvart",
+  "agentQuestionSkip": "Hopp over",
+  "agentQuestionSkippedLabel": "Hoppet over",
+  "agentQuestionFreeformHint": "Skriv svaret ditt…",
+  "agentApprovalRequired": "Godkjenning kreves",
+  "approveAndRemember": "Godkjenn i 8 timer",
+  "decline": "Avslå",
+  "confirm": "Bekreft",
+  "send": "Send",
+  "close": "Lukk",
+  "expand": "Utvid",
+  "zoomIn": "Zoom inn",
+  "zoomOut": "Zoom ut",
+  "resetZoom": "Tilbakestill zoom",
+  "scanQrPrompt": "Skann QR-koden fra Macen din for å pare denne telefonen.",
+  "scanQrHelp": "Åpne kameraet og pek det mot QR-koden som vises i Control Center på Macen. Denne telefonen kobler seg direkte til Macen over en privat lenke.",
+  "connectingToMac": "Kobler til Macen din…",
+  "connectingDetail": "Oppretter en sikker, direkte lenke.",
+  "identityChangedTitle": "Serveridentiteten er endret",
+  "identityChangedBody": "Denne serveren samsvarer ikke lenger med identiteten som ble lagret da du paret. Det kan bety at serveren ble installert på nytt — eller at noe avlytter tilkoblingen. For sikkerhets skyld kobler ikke denne enheten til. Fjern paringen, og skann deretter en ny QR-kode fra Macen for å pare på nytt.",
+  "removePairing": "Fjern paring",
+  "couldntConnect": "Kunne ikke koble til",
+  "pendingPairingTitle": "Koble til denne serveren?",
+  "pendingPairingBody": "En lenke ba Control Center om å pare med denne serveren. Fortsett bare hvis du startet det selv.",
+  "connect": "Koble til",
+  "failureNotPaired": "Ikke paret — skann QR-koden fra Macen",
+  "failureUnreachable": "Nådde ikke serveren på noen sti — sjekk at den kjører, eller prøv samme nettverk",
+  "failureIdentityChanged": "Serveridentiteten er endret — hvis den ble installert på nytt, par denne enheten på nytt",
+  "failureAuthRejected": "Serveren avviste denne enheten — par den på nytt fra Macen",
+  "failureUnknown": "Kunne ikke koble til — trykk for å prøve på nytt",
+  "statusConnected": "Tilkoblet",
+  "statusConnecting": "Kobler til",
+  "statusOffline": "Frakoblet",
+  "statusIdentityMismatch": "Identitetsavvik",
+  "statusNotPaired": "Ikke paret",
+  "statusConfirmPairing": "Bekreft paring",
+  "connectionFailed": "Tilkoblingen mislyktes",
+  "identityMismatchBanner": "Serveridentiteten er endret — tilkoblingen ble stoppet. Par denne enheten på nytt for å fortsette.",
+  "tabInbox": "Innboks",
+  "tabTickets": "Saker",
+  "tabChat": "Chat",
+  "tabPrs": "PRs",
+  "tabCalendar": "Kalender",
+  "tabNews": "Nyheter",
+  "tabWaitingCount": "{label}, {count} venter",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateAvailable": "En ny Control Center er tilgjengelig",
+  "appearance": "Utseende",
+  "language": "Språk",
+  "device": "Enhet",
+  "themeSystem": "System",
+  "themeLight": "Lys",
+  "themeDark": "Mørk",
+  "languageSystem": "System",
+  "disconnectTapAgain": "Trykk igjen for å koble denne enheten fra Macen",
+  "disconnectDevice": "Koble fra denne enheten",
+  "disconnect": "Koble fra",
+  "chooseWorkspace": "Velg arbeidsområde",
+  "workspaces": "Arbeidsområder",
+  "workspacesLoadFailed": "Kunne ikke laste arbeidsområder",
+  "noWorkspacesYet": "Ingen arbeidsområder ennå",
+  "selectWorkspace": "Velg {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxLoadFailed": "Kunne ikke laste innboksen",
+  "allCaughtUp": "Du er à jour",
+  "inboxNoForgeAccount": "Ingen forge-konto er tilkoblet på serveren, så pull requests kan ikke tilskrives deg ennå.",
+  "inboxNothingWaiting": "Ingenting er blokkert, og ingen pull request venter på deg.",
+  "blocked": "Blokkert",
+  "sectionNeedsYourReview": "Trenger gjennomgangen din",
+  "sectionReturnedToYou": "Returnert til deg",
+  "sectionApprovedAndReady": "Godkjent og klare",
+  "sectionYourDrafts": "Dine utkast",
+  "sectionWaitingForReviewers": "Venter på reviewere",
+  "sectionMergingAndMerged": "Sammenslåing og nylig slått sammen",
+  "sectionWaitingForAuthor": "Venter på forfatter",
+  "waitingAgo": "venter {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "openConversation": "Åpne samtalen",
+  "calendarLoadFailed": "Kunne ikke laste kalenderen",
+  "nothingScheduled": "Ingenting planlagt",
+  "calendarEmptyDescription": "Hendelser fra de tilkoblede kalenderne vises her.",
+  "agenda": "Agenda",
+  "syncCalendarsNow": "Synkroniser kalendere nå",
+  "event": "Hendelse",
+  "eventNotFound": "Hendelsen ble ikke funnet",
+  "eventNotFoundDescription": "Den kan ligge utenfor agendavinduet, eller være fjernet oppstrøms.",
+  "joinMeeting": "Bli med i møte",
+  "join": "Bli med",
+  "attendeesCount": "Deltakere ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "details": "Detaljer",
+  "allDay": "Hele dagen",
+  "happeningNow": "Pågår nå",
+  "inDuration": "Om {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "attendeeAccepted": "akseptert",
+  "attendeeDeclined": "avslått",
+  "attendeeMaybe": "kanskje",
+  "attendeeNoReply": "ingen svar",
+  "organizer": "arrangør",
+  "calendarNoAccounts": "Ingen kalender er tilkoblet for dette arbeidsområdet. Koble til én fra skrivebordsappen — innloggingen lagrer tokenet på serveren.",
+  "calendarReauthNeeded": "En kalenderkonto må kobles til på nytt — det du ser under kan være utdatert. Koble den til på nytt fra skrivebordsappen.",
+  "spacesLoadFailed": "Kunne ikke laste områder",
+  "noSpaces": "Ingen områder",
+  "spacesEmptyDescription": "Områder i dette arbeidsområdet vises her.",
+  "thread": "Tråd",
+  "agentWorking": "Agenten jobber",
+  "messagesLoadFailed": "Kunne ikke laste meldinger",
+  "noMessagesYet": "Ingen meldinger ennå",
+  "noMessagesDescription": "Send en melding for å starte samtalen.",
+  "agentResponding": "Agenten svarer",
+  "agentFinished": "Agent ferdig",
+  "attachmentsTooLarge": "{count, plural, =1{{names} er for stor til å sendes herfra.} other{{names} er for store til å sendes herfra.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{{names} er for stor til å sendes over reléen herfra.} other{{names} er for store til å sendes over reléen herfra.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentUploadFailed": "Kunne ikke laste opp vedlegget. Prøv på nytt.",
+  "attachmentsLeftOut": "{count, plural, =1{1 vedlegg kunne ikke lastes opp og ble utelatt.} other{{count} vedlegg kunne ikke lastes opp og ble utelatt.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teammate": "Kollega",
+  "agent": "Agent",
+  "attachFile": "Legg ved en fil",
+  "messageHint": "Melding",
+  "removeAttachment": "Fjern {name}",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "articlesLoadFailed": "Kunne ikke laste artikler",
+  "noArticles": "Ingen artikler",
+  "articlesEmptyDescription": "Nye artikler vises her etter hvert som strømmene oppdateres.",
+  "unread": "Ulest",
+  "allFeeds": "Alle strømmer",
+  "save": "Lagre",
+  "unsave": "Fjern lagring",
+  "readFullArticle": "Les hele artikkelen",
+  "ticketsLoadFailed": "Kunne ikke laste saker",
+  "noTickets": "Ingen saker",
+  "ticketsEmptyDescription": "Saker i dette arbeidsområdet vises her.",
+  "all": "Alle",
+  "ticket": "Sak",
+  "ticketLoadFailed": "Kunne ikke laste saken",
+  "assignedTo": "Tildelt {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openInBrowser": "Åpne i nettleser",
+  "status": "Status",
+  "assign": "Tildel",
+  "reassign": "Tildel på nytt",
+  "noAgents": "Ingen agenter",
+  "noAgentsDescription": "Tildel en agent fra dette arbeidsområdet.",
+  "statusOpen": "Åpen",
+  "statusInProgress": "Pågår",
+  "statusBlocked": "Blokkert",
+  "statusInReview": "Til gjennomgang",
+  "statusDone": "Ferdig",
+  "statusBacklog": "Backlog",
+  "lensNeedsMe": "Trenger meg",
+  "lensMine": "Mine",
+  "prsLoadFailed": "Kunne ikke laste pull requests",
+  "noOpenPullRequests": "Ingen åpne pull requests",
+  "nothingWaitingOnReview": "Ingenting venter på gjennomgangen din",
+  "noOwnOpenPullRequests": "Du har ingen åpne pull requests",
+  "nothingBlocked": "Ingenting er blokkert",
+  "prsEmptyDescription": "Pull requests fra repoene i dette arbeidsområdet vises her.",
+  "refreshPullRequests": "Oppdater pull requests",
+  "noForgeConnected": "Ingen forge er tilkoblet på serveren, så ingen pull requests kan hentes. Koble til én fra skrivebordsappen.",
+  "reposUnreadable": "{count, plural, =1{1 repo kunne ikke leses.} other{{count} repoer kunne ikke leses.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reposNotReadable": "Ikke lesbare: {names}",
+  "installationSuspendedTitle": "GitHub App-installasjonen er suspendert",
+  "installationSuspendedBody": "Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub, eller koble til et token som har tilgang.",
+  "installationSuspendedNotice": "GitHub App-installasjonen er suspendert. Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub, eller koble til et token som har tilgang.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "draft": "Utkast",
+  "merged": "Sammenslått",
+  "closed": "Lukket",
+  "open": "Åpen",
+  "approved": "Godkjent",
+  "changesRequested": "Endringer forespurt",
+  "reviewRequired": "Gjennomgang kreves",
+  "checksPassing": "Sjekker består",
+  "checksFailing": "Sjekker feiler",
+  "checksRunning": "Sjekker kjører",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Kunne ikke laste denne pull requesten",
+  "openOnForge": "Åpne på forge",
+  "requestChangesNeedsComment": "Legg til en kommentar som forklarer hva som må endres.",
+  "conversation": "Samtale",
+  "files": "Filer",
+  "checks": "Sjekker",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 fil} other{{count} filer}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 commit} other{{count} commits}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflicts": "Konflikter",
+  "reviewers": "Reviewere",
+  "noDescriptionNoComments": "Ingen beskrivelse og ingen kommentarer ennå.",
+  "noChangedFiles": "Ingen endrede filer.",
+  "noChecksReported": "Ingen sjekker rapportert for head-commiten.",
+  "reviewCommentHint": "Legg igjen en review-kommentar…",
+  "comment": "Kommentar",
+  "commentPosted": "Kommentar publisert",
+  "request": "Be om",
+  "squashAndMerge": "Squash og slå sammen",
+  "noActionsAvailable": "{status} — ingen handlinger tilgjengelig.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewApproved": "godkjente",
+  "reviewRequestedChanges": "ba om endringer",
+  "reviewCommented": "gjennomgikk",
+  "reviewPending": "ventende",
+  "unknownAuthor": "ukjent",
+  "hideDiffFor": "Skjul diffen for {file}",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "showDiffFor": "Vis diffen for {file}",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "checkRunning": "kjører",
+  "checkPassed": "bestått",
+  "checkFailed": "mislyktes",
+  "checkCancelled": "avbrutt",
+  "checkSkipped": "hoppet over",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "noTextDiff": "Ingen tekst-diff for denne filen — den er binær, eller for stor til at forge kan returnere én.",
+  "showRemainingLines": "{count, plural, =1{Vis den gjenværende linjen} other{Vis de gjenværende {count} linjene}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 uendret linje} other{{count} uendrede linjer}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToLatest": "Hopp til siste",
+  "streaming": "Strømmer",
+  "working": "Jobber",
+  "input": "Inndata",
+  "output": "Utdata",
+  "now": "nå",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "I dag",
+  "tomorrow": "I morgen",
+  "yesterday": "I går",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
+}

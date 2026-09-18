@@ -45,10 +45,11 @@ typedef CcOverlayContentBuilder =
 /// Positioning is collision-aware: the follower is anchored relative to the
 /// target ([targetAnchor]/[followerAnchor] + [offset]), then **flipped** to the
 /// opposite side when the preferred side lacks room and **clamped** so it always
-/// stays fully inside the host [Overlay] (minus [kCcOverlayMargin]). Its size is
-/// also capped to the overlay, so an over-tall panel can scroll instead of
-/// spilling off-screen or under the app chrome. This is what stops a flyout from
-/// being clipped beneath the top bar / sidebar when it opens near an edge.
+/// stays fully inside the host [Overlay] (minus [kCcOverlayMargin]). Its height
+/// is capped to the larger gap beside the trigger (above or below), so a long
+/// dropdown stays attached to the field and scrolls instead of covering it.
+/// The remaining overlay cap still stops a flyout spilling off-screen or under
+/// the app chrome.
 class CcOverlayAnchor extends StatefulWidget {
   /// Creates a [CcOverlayAnchor].
   const CcOverlayAnchor({
@@ -56,8 +57,8 @@ class CcOverlayAnchor extends StatefulWidget {
     required this.controller,
     required this.target,
     required this.overlayBuilder,
-    this.targetAnchor = Alignment.bottomLeft,
-    this.followerAnchor = Alignment.topLeft,
+    this.targetAnchor = AlignmentDirectional.bottomStart,
+    this.followerAnchor = AlignmentDirectional.topStart,
     this.offset = const Offset(0, 4),
     this.matchTargetWidth = false,
     this.barrierDismissible = true,
@@ -76,13 +77,20 @@ class CcOverlayAnchor extends StatefulWidget {
   /// Builds the floating content.
   final CcOverlayContentBuilder overlayBuilder;
 
-  /// Point on the target the follower aligns to.
-  final Alignment targetAnchor;
+  /// Point on the target the follower aligns to. Directional by default, so
+  /// anchored flyouts mirror under RTL; resolved against the ambient
+  /// [Directionality] before the (physical, screen-coordinate) layout runs.
+  final AlignmentGeometry targetAnchor;
 
   /// Point on the follower aligned to [targetAnchor].
-  final Alignment followerAnchor;
+  final AlignmentGeometry followerAnchor;
 
   /// Extra offset applied to the follower.
+  ///
+  /// When either anchor is an [AlignmentDirectional], [offset] is logical too:
+  /// its `dx` points toward the reading direction's end and mirrors under RTL
+  /// (the [MenuAnchor.alignmentOffset] convention). With purely physical
+  /// [Alignment] anchors the offset stays physical.
   final Offset offset;
 
   /// Constrain the follower to the target's width (dropdown-style).
@@ -246,15 +254,27 @@ class _CcOverlayAnchorState extends State<CcOverlayAnchor> {
       content = PointerInterceptor(child: content);
     }
 
+    // The layout delegate works in the overlay's physical screen coordinates,
+    // so directional anchors resolve here, once, against the ambient direction.
+    final direction = Directionality.of(context);
+    // Directional anchors make the offset logical too: dx points toward the
+    // end of the reading direction, so it mirrors under RTL. Callers using
+    // physical Alignment anchors keep a physical dx.
+    final hasDirectionalAnchor =
+        widget.targetAnchor is AlignmentDirectional ||
+        widget.followerAnchor is AlignmentDirectional;
+    final offset = hasDirectionalAnchor && direction == TextDirection.rtl
+        ? Offset(-widget.offset.dx, widget.offset.dy)
+        : widget.offset;
     final Widget positioned = targetRect == null
         // No geometry yet — place by the follower anchor for one frame.
         ? Align(alignment: widget.followerAnchor, child: content)
         : CustomSingleChildLayout(
             delegate: _AnchoredOverlayLayout(
               targetRect: targetRect,
-              targetAnchor: widget.targetAnchor,
-              followerAnchor: widget.followerAnchor,
-              offset: widget.offset,
+              targetAnchor: widget.targetAnchor.resolve(direction),
+              followerAnchor: widget.followerAnchor.resolve(direction),
+              offset: offset,
               margin: kCcOverlayMargin,
               onFlip: widget.onFlip,
               onCaretGeometry: widget.onCaretGeometry,
@@ -317,9 +337,11 @@ class _RenderHitTestHole extends RenderProxyBox {
 
 /// Positions an anchored overlay child relative to [targetRect], flipping to the
 /// opposite side when the preferred side lacks room and clamping so the child is
-/// always fully inside the host overlay (minus [margin]). The child is also
-/// size-capped to the overlay so over-tall content scrolls rather than overflows.
-class _AnchoredOverlayLayout extends SingleChildLayoutDelegate {  _AnchoredOverlayLayout({
+/// always fully inside the host overlay (minus [margin]). Height is capped to
+/// the larger gap beside the trigger so a long list scrolls rather than
+/// covering the field; the overlay itself is a further cap against spill.
+class _AnchoredOverlayLayout extends SingleChildLayoutDelegate {
+  _AnchoredOverlayLayout({
     required this.targetRect,
     required this.targetAnchor,
     required this.followerAnchor,
@@ -342,16 +364,30 @@ class _AnchoredOverlayLayout extends SingleChildLayoutDelegate {  _AnchoredOverl
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
-    // Cap the child to the viewport (minus margins) so a tall/wide panel that
-    // scrolls internally never spills off-screen or under the app chrome.
+    // Cap width to the viewport. Cap height to the larger gap beside the
+    // trigger so a long dropdown stays attached (below, or above on a flip)
+    // and scrolls internally instead of covering the field. The viewport is
+    // a further cap against spilling off-screen or under the app chrome.
     final maxW = (constraints.maxWidth - margin * 2).clamp(
       0.0,
       double.infinity,
     );
-    final maxH = (constraints.maxHeight - margin * 2).clamp(
+    final gap = offset.dy.abs();
+    final spaceBelow =
+        (constraints.maxHeight - margin - targetRect.bottom - gap).clamp(
+          0.0,
+          double.infinity,
+        );
+    final spaceAbove = (targetRect.top - margin - gap).clamp(
       0.0,
       double.infinity,
     );
+    final sideCap = spaceBelow > spaceAbove ? spaceBelow : spaceAbove;
+    final viewportCap = (constraints.maxHeight - margin * 2).clamp(
+      0.0,
+      double.infinity,
+    );
+    final maxH = sideCap < viewportCap ? sideCap : viewportCap;
     return BoxConstraints.loose(Size(maxW, maxH));
   }
 

@@ -2,26 +2,39 @@ import 'package:cc_domain/cc_domain.dart' show ConfirmationRequestDto;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/agent_approval_overlay.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
+import 'package:control_center/features/messaging/providers/visible_conversation_spaces.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-ConfirmationRequestDto _req(int i, {String detail = 'Short detail'}) =>
-    ConfirmationRequestDto(
-      id: 'req-$i',
-      spaceId: 'space-1',
-      title: 'Request $i',
-      detail: detail,
-      severity: 'warning',
-      command: 'rm -rf /tmp/$i',
-      createdAt: '2026-01-0${i + 1}T00:00:00Z',
-    );
+ConfirmationRequestDto _req(
+  int i, {
+  String detail = 'Short detail',
+  String spaceId = 'space-1',
+}) => ConfirmationRequestDto(
+  id: 'req-$i',
+  spaceId: spaceId,
+  title: 'Request $i',
+  detail: detail,
+  severity: 'warning',
+  command: 'rm -rf /tmp/$i',
+  createdAt: '2026-01-0${i + 1}T00:00:00Z',
+);
+
+class _PinnedVisibleSpaces extends VisibleConversationSpaces {
+  _PinnedVisibleSpaces(this.ids);
+  final Set<String> ids;
+
+  @override
+  Set<String> build() => ids;
+}
 
 Future<void> _pumpOverlay(
   WidgetTester tester,
-  List<ConfirmationRequestDto> pending,
-) async {
+  List<ConfirmationRequestDto> pending, {
+  Set<String> visibleSpaces = const {},
+}) async {
   tester.view.physicalSize = const Size(1200, 900);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(() {
@@ -34,6 +47,9 @@ Future<void> _pumpOverlay(
       overrides: [
         pendingConfirmationsProvider.overrideWith(
           (ref) => Stream.value(pending),
+        ),
+        visibleConversationSpacesProvider.overrideWith(
+          () => _PinnedVisibleSpaces(visibleSpaces),
         ),
       ],
       child: MaterialApp(
@@ -138,4 +154,19 @@ void main() {
     expect(approve.bottom, lessThanOrEqualTo(900));
     expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
+
+  testWidgets(
+    'a request for a conversation already on screen stays out of the overlay',
+    (tester) async {
+      await _pumpOverlay(
+        tester,
+        [_req(0, spaceId: 'space-open'), _req(1, spaceId: 'space-other')],
+        visibleSpaces: {'space-open'},
+      );
+
+      expect(find.text('Request 0'), findsNothing);
+      expect(find.text('Request 1'), findsOneWidget);
+      expect(find.text('Approve'), findsOneWidget);
+    },
+  );
 }

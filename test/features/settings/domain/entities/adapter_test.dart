@@ -292,17 +292,16 @@ void main() {
     test('contains expected ids', timeout: const Timeout.factor(2), () {
       final ids = predefinedAdapters.map((a) => a.id).toList();
 
+      expect(ids, ['cc-harness', 'claude-code']);
+    });
+
+    test('Cursor is a harness provider, not a catalog adapter', () {
+      final ids = predefinedAdapters.map((a) => a.id);
+      expect(ids, isNot(contains('cursor')));
+      expect(ids, isNot(contains('cursor-agent')));
       expect(
-        ids,
-        containsAll([
-          'pi-dev',
-          'claude-code',
-          'opencode',
-          'gemini',
-          'goose',
-          'cursor',
-          'codex',
-        ]),
+        predefinedAdapters.map((a) => a.cliName),
+        isNot(contains('cursor-agent')),
       );
     });
 

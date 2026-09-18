@@ -10,6 +10,7 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/utils/syntax_highlighter.dart';
 import 'package:control_center/features/pr_review/presentation/utils/word_diff.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/github_reference_link_builder.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_diff_line.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -19,7 +20,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/grammar_registry.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Suggestion aware markdown.
@@ -50,34 +51,42 @@ class SuggestionAwareMarkdown extends ConsumerWidget {
   /// int?.
   final int? originalStartLine;
 
-  static final RegExp _suggestionFence = RegExp(
-    r'```suggestion\s*\n([\s\S]*?)\n?```',
-    multiLine: true,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final match = _suggestionFence.firstMatch(body);
-    if (match == null) {
+    final blocks = parseSuggestionBlocks(body);
+    if (blocks.isEmpty) {
       return _markdown(context, ref, body);
     }
 
-    final suggested = match.group(1) ?? '';
-    final before = body.substring(0, match.start).trim();
-    final after = body.substring(match.end).trim();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (before.isNotEmpty) _markdown(context, ref, before),
-        if (before.isNotEmpty) const SizedBox(height: 6),
+    final sections = <Widget>[];
+    var cursor = 0;
+    for (final block in blocks) {
+      final markdown = body.substring(cursor, block.start).trim();
+      if (markdown.isNotEmpty) {
+        sections.add(_markdown(context, ref, markdown));
+      }
+      sections.add(
         _SuggestionMiniDiff(
           original: originalCode,
-          suggested: suggested,
+          suggested: block.code,
           filePath: filePath,
           originalStartLine: originalStartLine ?? 1,
         ),
-        if (after.isNotEmpty) const SizedBox(height: 6),
-        if (after.isNotEmpty) _markdown(context, ref, after),
+      );
+      cursor = block.end;
+    }
+    final trailingMarkdown = body.substring(cursor).trim();
+    if (trailingMarkdown.isNotEmpty) {
+      sections.add(_markdown(context, ref, trailingMarkdown));
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < sections.length; i++) ...[
+          if (i > 0) const SizedBox(height: 6),
+          sections[i],
+        ],
       ],
     );
   }
@@ -184,7 +193,7 @@ class _SuggestionMiniDiffState extends ConsumerState<_SuggestionMiniDiff> {
         );
     final originalLines = const LineSplitter().convert(original);
     final suggestedLines = const LineSplitter().convert(suggested);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDark = context.ccTheme?.isDark ?? false;
     final palette = diffSyntaxPalette(isDark: isDark);
     final path = filePath;
     final language = path == null ? null : shikiLangForPath(path);

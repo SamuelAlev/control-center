@@ -12,9 +12,11 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_detail
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Files tab.
@@ -72,7 +74,7 @@ class FilesTab extends ConsumerWidget {
 
   /// Opens a file (repo-relative path) in an editable tab (the file header's
   /// "open in editor" action).
-  final ValueChanged<String>? onOpenFileInEditor;
+  final void Function(String path, {int? line})? onOpenFileInEditor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,6 +160,9 @@ class FilesTab extends ConsumerWidget {
     // keyboard handler fires during a tab/route transition) and `ref.read`
     // from an unmounted element throws.
     final scopeNotifier = ref.read(prDiffScopeProvider.notifier);
+    final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final repoId = prRepoIdFor(ref, pr);
+    final spaceId = ref.watch(prSpaceProvider(pr)).value;
 
     return PrDiffView(
       key: diffKey,
@@ -175,6 +180,9 @@ class FilesTab extends ConsumerWidget {
       onRequestSidebarSearch: onRequestSidebarSearch,
       onShowFileTree: onShowFileTree,
       onOpenFileInEditor: onOpenFileInEditor,
+      workspaceId: workspaceId,
+      repoId: repoId,
+      spaceId: spaceId,
       onToggleViewed: ({required path, required viewed}) {
         if (pr.externalId.isEmpty) {
           return;

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
@@ -12,6 +13,15 @@ const double _kExpandedWidth = 248;
 /// squares on the same x=27 line the expanded rows pin their icon centers
 /// to, so toggling the rail never moves an icon.
 const double _kCollapsedWidth = 54;
+
+/// The sidebar item extent in both expanded and collapsed modes.
+const double kCcSidebarItemExtent = 32;
+
+/// Distance from a [CcSidebarItem]'s leading edge to its 18px icon center:
+/// 1px reserved border + 9px start padding + 9px half-icon. Nested tree
+/// rails ([CcSidebarBranch]) pin to this x so they continue the parent
+/// icon's spine.
+const double kCcSidebarItemIconCenter = 19;
 
 /// The share of the body a pinned block may occupy before it starts scrolling
 /// itself. The cap only binds on a window too short to hold the pinned nav; it
@@ -202,6 +212,45 @@ class _CcSidebarState extends State<CcSidebar> {
     super.dispose();
   }
 
+  Widget _fluidCollection(
+    List<Widget> source,
+    CcFluidHoverLayoutBuilder layoutBuilder,
+  ) {
+    return CcFluidHover(
+      mouseCursor: SystemMouseCursors.click,
+      itemCount: source.length,
+      isItemBoundary: (index) => source[index] is! CcFluidHoverTarget,
+      isItemDisabled: (index) {
+        final child = source[index];
+        if (child case final CcFluidHoverTarget target) {
+          return !target.fluidHoverEnabled;
+        }
+        return true;
+      },
+      itemBuilder: (context, index) {
+        final child = source[index];
+        if (_scopeCollapsed && child is CcFluidHoverTarget) {
+          return Align(
+            child: SizedBox(width: kCcSidebarItemExtent, child: child),
+          );
+        }
+        return child;
+      },
+      layoutBuilder: layoutBuilder,
+    );
+  }
+
+  Widget _fluidList(List<Widget> source, EdgeInsets padding) {
+    return _fluidCollection(
+      source,
+      (context, registered) => ListView.builder(
+        padding: padding,
+        itemCount: registered.length,
+        itemBuilder: (context, index) => registered[index],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.ds;
@@ -217,8 +266,9 @@ class _CcSidebarState extends State<CcSidebar> {
           color: widget.background ?? t.sidebar,
           // Trailing hairline against the neighbouring pane (content or a
           // second sidebar). Same token as the top bar's bottom hairline, so
-          // the app chrome reads as one grid.
-          border: Border(right: BorderSide(color: t.borderPrimary)),
+          // the app chrome reads as one grid. Directional: the sidebar docks
+          // at the start edge, so the hairline sits at its end in RTL too.
+          border: BorderDirectional(end: BorderSide(color: t.borderPrimary)),
         ),
         // Horizontal inset lives on the ListView's own padding (and explicit
         // wrappers around header/footer), NOT on this container: the desktop
@@ -241,10 +291,7 @@ class _CcSidebarState extends State<CcSidebar> {
                 ],
                 Expanded(
                   child: widget.pinnedChildren.isEmpty
-                      ? ListView(
-                          padding: contentPadding,
-                          children: widget.children,
-                        )
+                      ? _fluidList(widget.children, contentPadding)
                       : LayoutBuilder(
                           builder: (context, constraints) => Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -261,18 +308,21 @@ class _CcSidebarState extends State<CcSidebar> {
                                   ).copyWith(scrollbars: false),
                                   child: SingleChildScrollView(
                                     padding: contentPadding,
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: widget.pinnedChildren,
+                                    child: _fluidCollection(
+                                      widget.pinnedChildren,
+                                      (context, registered) => Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: registered,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                               Expanded(
-                                child: ListView(
-                                  padding: contentPadding,
-                                  children: widget.children,
+                                child: _fluidList(
+                                  widget.children,
+                                  contentPadding,
                                 ),
                               ),
                             ],

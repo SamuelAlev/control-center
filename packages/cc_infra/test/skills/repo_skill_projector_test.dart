@@ -91,7 +91,7 @@ void main() {
       'routing',
     ]);
     expect(linkedSlugs('.claude/skills'), ['forms', 'routing']);
-    expect(linkedSlugs('.opencode/skills'), ['forms', 'routing']);
+    expect(linkedSlugs('.opencode/skills'), isEmpty);
   });
 
   test('a swap removes the previous repo entirely', () async {

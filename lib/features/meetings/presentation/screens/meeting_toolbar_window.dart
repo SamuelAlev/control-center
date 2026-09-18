@@ -208,7 +208,7 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
               children: [
                 if (charge > 0)
                   FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
+                    alignment: AlignmentDirectional.centerStart,
                     widthFactor: charge,
                     child: ColoredBox(
                       color: _t.danger.withValues(alpha: 0.20 + 0.18 * charge),
@@ -239,7 +239,7 @@ class _ToolbarViewState extends ConsumerState<_ToolbarView>
                             onPointerUp: (_) => _onPointerUp(),
                             onPointerCancel: (_) => _onPointerUp(),
                             child: Padding(
-                              padding: const EdgeInsets.only(left: 16),
+                              padding: const EdgeInsetsDirectional.only(start: 16),
                               child: Row(
                                 children: [
                                   paused

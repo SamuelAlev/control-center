@@ -284,7 +284,7 @@ class _Header extends ConsumerWidget {
         : DateFormat.yMMMM().format(selectedDate);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 12, 12),
+      padding: const EdgeInsetsDirectional.fromSTEB(20, 12, 12, 12),
       // Two equal Expanded zones flank the period nav so < Today > stays
       // centered in the bar no matter how wide the month label (or the
       // right-hand cluster) is — a plain Spacer lets the label's width push
@@ -531,8 +531,8 @@ class _ViewMenuState extends ConsumerState<_ViewMenu> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      followerAnchor: Alignment.topRight,
-      targetAnchor: Alignment.bottomRight,
+      followerAnchor: AlignmentDirectional.topEnd,
+      targetAnchor: AlignmentDirectional.bottomEnd,
       overlayBuilder: (context, _) => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 180),
         // Flush rows (no panel padding) with a neutral gray selected wash —

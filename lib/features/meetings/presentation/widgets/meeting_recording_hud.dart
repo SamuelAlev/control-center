@@ -10,7 +10,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/live_dot.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -148,72 +148,65 @@ class _HudBody extends StatelessWidget {
 
     return MouseRegion(
       cursor: SystemMouseCursors.grab,
-      child: Material(
-        color: Colors.transparent,
-        child: Container(
-          height: 52,
-          padding: const EdgeInsets.fromLTRB(16, 0, 12, 0),
-          decoration: BoxDecoration(
-            color: ink,
-            borderRadius: AppRadii.brMd,
-            boxShadow: AppShadows.golden,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              paused
-                  ? Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: onInk.withValues(alpha: 0.6),
-                        shape: BoxShape.circle,
-                      ),
-                    )
-                  : LiveDot(color: ds.danger, size: 9),
-              const SizedBox(width: 10),
-              Text(
-                MeetingFormat.clock(elapsed),
-                style: meetingMono(context, fontSize: 14, color: onInk),
+      child: Container(
+        height: 52,
+        padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 12, 0),
+        decoration: BoxDecoration(color: ink, boxShadow: AppShadows.golden),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            paused
+                ? Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: onInk.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                  )
+                : LiveDot(color: ds.danger, size: 9),
+            const SizedBox(width: 10),
+            Text(
+              MeetingFormat.clock(elapsed),
+              style: meetingMono(context, fontSize: 14, color: onInk),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              paused ? l10n.meetingHudPaused : l10n.meetingHudRecording,
+              style: TextStyle(
+                fontSize: 12,
+                color: onInk.withValues(alpha: 0.7),
               ),
-              const SizedBox(width: 8),
-              Text(
-                paused ? l10n.meetingHudPaused : l10n.meetingHudRecording,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: onInk.withValues(alpha: 0.7),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Container(
-                width: 1,
-                height: 18,
-                color: onInk.withValues(alpha: 0.2),
-              ),
-              const SizedBox(width: 8),
-              _HudButton(
-                icon: AppIcons.pictureInPicture2,
-                tooltip: l10n.meetingToolbarPopOut,
-                color: onInk,
-                onTap: onPopOut,
-              ),
-              const SizedBox(width: 4),
-              _HudButton(
-                icon: AppIcons.play,
-                label: l10n.meetingHudOpen,
-                color: onInk,
-                onTap: onOpen,
-              ),
-              const SizedBox(width: 4),
-              _HudButton(
-                icon: AppIcons.square,
-                label: l10n.meetingHudStop,
-                color: onInk,
-                background: ds.danger,
-                onTap: onStop,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              width: 1,
+              height: 18,
+              color: onInk.withValues(alpha: 0.2),
+            ),
+            const SizedBox(width: 8),
+            _HudButton(
+              icon: AppIcons.pictureInPicture2,
+              tooltip: l10n.meetingToolbarPopOut,
+              color: onInk,
+              onTap: onPopOut,
+            ),
+            const SizedBox(width: 4),
+            _HudButton(
+              icon: AppIcons.play,
+              label: l10n.meetingHudOpen,
+              color: onInk,
+              onTap: onOpen,
+            ),
+            const SizedBox(width: 4),
+            _HudButton(
+              icon: AppIcons.square,
+              label: l10n.meetingHudStop,
+              color: onInk,
+              background: ds.danger,
+              onTap: onStop,
+            ),
+          ],
         ),
       ),
     );
@@ -242,35 +235,32 @@ class _HudButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg = background != null ? Colors.white : color;
+    final fg = background != null ? const Color(0xFFFFFFFF) : color;
     final iconOnly = label == null;
     Widget button = CcTappable(
       onPressed: onTap,
       // Icon-only buttons have no text, so the tooltip doubles as the
       // accessible name; labelled buttons read their own text.
       semanticLabel: iconOnly ? tooltip : null,
-      borderRadius: AppRadii.brSm,
-      builder:
-          (context, states) => Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: iconOnly ? 7 : 10,
-              vertical: 6,
-            ),
-            decoration: BoxDecoration(
-              color: background ?? color.withValues(alpha: 0.12),
-              borderRadius: AppRadii.brSm,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 13, color: fg),
-                if (!iconOnly) ...[
-                  const SizedBox(width: 5),
-                  Text(label!, style: TextStyle(fontSize: 12, color: fg)),
-                ],
-              ],
-            ),
-          ),
+      builder: (context, states) => Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: iconOnly ? 7 : 10,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
+          color: background ?? color.withValues(alpha: 0.12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: fg),
+            if (!iconOnly) ...[
+              const SizedBox(width: 5),
+              Text(label!, style: TextStyle(fontSize: 12, color: fg)),
+            ],
+          ],
+        ),
+      ),
     );
     final tip = tooltip;
     if (tip != null) {

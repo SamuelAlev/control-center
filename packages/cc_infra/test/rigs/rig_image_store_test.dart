@@ -24,7 +24,10 @@ void main() {
     // becomes `disk.qcow2`, reports `present`, and fails minutes later inside
     // a boot that says nothing more useful than "timeout".
     payload = [
-      0x51, 0x46, 0x49, 0xFB,
+      0x51,
+      0x46,
+      0x49,
+      0xFB,
       ...List<int>.generate(2 * 1024 * 1024 - 4, (i) => i % 251),
     ];
     payloadHash = sha256.convert(payload).toString();
@@ -111,24 +114,26 @@ void main() {
       );
     });
 
-    test('a mismatched checksum is refused and nothing is left behind',
-        () async {
-      // The whole point of the pin: bytes nobody vouched for never become the
-      // root of trust for what runs inside the boundary.
-      final image = spec(hash: 'f' * 64);
-      final store = storeFor([image]);
+    test(
+      'a mismatched checksum is refused and nothing is left behind',
+      () async {
+        // The whole point of the pin: bytes nobody vouched for never become the
+        // root of trust for what runs inside the boundary.
+        final image = spec(hash: 'f' * 64);
+        final store = storeFor([image]);
 
-      await expectLater(
-        store.download(image).drain<void>(),
-        throwsA(isA<RigImageException>()),
-      );
-      expect(store.isPresent(image), isFalse);
-      expect(
-        File('${store.diskPathFor(image)}.part').existsSync(),
-        isFalse,
-        reason: 'A rejected download must not leave a partial file behind.',
-      );
-    });
+        await expectLater(
+          store.download(image).drain<void>(),
+          throwsA(isA<RigImageException>()),
+        );
+        expect(store.isPresent(image), isFalse);
+        expect(
+          File('${store.diskPathFor(image)}.part').existsSync(),
+          isFalse,
+          reason: 'A rejected download must not leave a partial file behind.',
+        );
+      },
+    );
 
     test('an unpublished image refuses before touching the network', () async {
       const image = RigImageSpec(
@@ -164,36 +169,40 @@ void main() {
       expect(store.isPresent(image), isFalse);
     });
 
-    test('a connection that dies mid-stream leaves neither file behind',
-        () async {
-      // The atomicity that matters: bytes land in a temp file beside the
-      // destination and are renamed into place only after the hash matches, so
-      // an interrupted download can never leave something that looks bootable
-      // at the path a rig would boot from.
-      final image = spec(hash: payloadHash, path: '/truncated');
-      final store = storeFor([image]);
+    test(
+      'a connection that dies mid-stream leaves neither file behind',
+      () async {
+        // The atomicity that matters: bytes land in a temp file beside the
+        // destination and are renamed into place only after the hash matches, so
+        // an interrupted download can never leave something that looks bootable
+        // at the path a rig would boot from.
+        final image = spec(hash: payloadHash, path: '/truncated');
+        final store = storeFor([image]);
 
-      await expectLater(
-        store.download(image).drain<void>(),
-        throwsA(isA<RigImageException>()),
-      );
-      expect(File(store.diskPathFor(image)).existsSync(), isFalse);
-      expect(
-        File('${store.diskPathFor(image)}.part').existsSync(),
-        isFalse,
-        reason:
-            'A surviving .part is reported as download progress, so the next '
-            'run looks like it can resume from bytes nobody verified.',
-      );
-      expect(store.isPresent(image), isFalse);
-    });
+        await expectLater(
+          store.download(image).drain<void>(),
+          throwsA(isA<RigImageException>()),
+        );
+        expect(File(store.diskPathFor(image)).existsSync(), isFalse);
+        expect(
+          File('${store.diskPathFor(image)}.part').existsSync(),
+          isFalse,
+          reason:
+              'A surviving .part is reported as download progress, so the next '
+              'run looks like it can resume from bytes nobody verified.',
+        );
+        expect(store.isPresent(image), isFalse);
+      },
+    );
 
     test('the verified bytes are the installed bytes', () async {
       final image = spec(hash: payloadHash);
       final store = storeFor([image]);
       await store.download(image).drain<void>();
       expect(
-        sha256.convert(File(store.diskPathFor(image)).readAsBytesSync()).toString(),
+        sha256
+            .convert(File(store.diskPathFor(image)).readAsBytesSync())
+            .toString(),
         payloadHash,
       );
     });
@@ -245,10 +254,7 @@ void main() {
       final store = storeFor([image]);
       await store.download(image).drain<void>();
       await store.remove(image);
-      await expectLater(
-        store.remove(image),
-        throwsA(isA<RigImageException>()),
-      );
+      await expectLater(store.remove(image), throwsA(isA<RigImageException>()));
     });
   });
 
@@ -292,32 +298,37 @@ void main() {
       expect(store.isPresent(image), isFalse);
     });
 
-    test('an import abandoned part-way leaves no partial file behind',
-        () async {
-      // The RPC caller going away mid-copy is the ordinary case, and it must
-      // not leave a short file at the path a rig would boot from — nor a
-      // `.part` that `_sizeOrNull` will later report as progress.
-      final image = spec(hash: payloadHash);
-      final store = storeFor([image]);
-      final big = [
-        0x51, 0x46, 0x49, 0xFB,
-        ...List<int>.generate(9 * 1024 * 1024 - 4, (i) => i % 251),
-      ];
-      final source = File(p.join(dataDir.path, 'big.qcow2'))
-        ..writeAsBytesSync(big);
+    test(
+      'an import abandoned part-way leaves no partial file behind',
+      () async {
+        // The RPC caller going away mid-copy is the ordinary case, and it must
+        // not leave a short file at the path a rig would boot from — nor a
+        // `.part` that `_sizeOrNull` will later report as progress.
+        final image = spec(hash: payloadHash);
+        final store = storeFor([image]);
+        final big = [
+          0x51,
+          0x46,
+          0x49,
+          0xFB,
+          ...List<int>.generate(9 * 1024 * 1024 - 4, (i) => i % 251),
+        ];
+        final source = File(p.join(dataDir.path, 'big.qcow2'))
+          ..writeAsBytesSync(big);
 
-      // `take(1)` cancels the subscription after the first progress event,
-      // part-way through the copy.
-      await store.importFrom(image, source.path).take(1).drain<void>();
+        // `take(1)` cancels the subscription after the first progress event,
+        // part-way through the copy.
+        await store.importFrom(image, source.path).take(1).drain<void>();
 
-      expect(File(store.diskPathFor(image)).existsSync(), isFalse);
-      expect(
-        File('${store.diskPathFor(image)}.part').existsSync(),
-        isFalse,
-        reason: 'A half-copied image must not survive an abandoned import.',
-      );
-      expect(store.isPresent(image), isFalse);
-    });
+        expect(File(store.diskPathFor(image)).existsSync(), isFalse);
+        expect(
+          File('${store.diskPathFor(image)}.part').existsSync(),
+          isFalse,
+          reason: 'A half-copied image must not survive an abandoned import.',
+        );
+        expect(store.isPresent(image), isFalse);
+      },
+    );
 
     test('a file that is not a qcow2 is refused', () async {
       // The import path is the PRODUCTION path for the desktop and browser
@@ -352,7 +363,10 @@ void main() {
       final store = storeFor([image]);
       final other = File(p.join(dataDir.path, 'other.qcow2'))
         ..writeAsBytesSync([
-          0x51, 0x46, 0x49, 0xFB,
+          0x51,
+          0x46,
+          0x49,
+          0xFB,
           ...List<int>.generate(2 * 1024 * 1024 - 4, (i) => (i + 7) % 251),
         ]);
 
@@ -391,6 +405,40 @@ void main() {
 
       await store.importFrom(image, source.path).drain<void>();
       expect(store.isPresent(image), isTrue);
+    });
+
+    test('an installed image can be replaced and then deleted', () async {
+      const image = RigImageSpec(
+        id: 'replaceable',
+        surface: RigSurface.computer,
+        description: 'locally built',
+        sizeBytes: 2 * 1024 * 1024,
+        artifacts: {},
+      );
+      final store = storeFor([image]);
+      final first = File(p.join(dataDir.path, 'first.qcow2'))
+        ..writeAsBytesSync(payload);
+      final replacementBytes = [
+        0x51,
+        0x46,
+        0x49,
+        0xFB,
+        ...List<int>.generate(2 * 1024 * 1024 - 4, (i) => (i + 19) % 251),
+      ];
+      final replacement = File(p.join(dataDir.path, 'replacement.qcow2'))
+        ..writeAsBytesSync(replacementBytes);
+
+      await store.importFrom(image, first.path).drain<void>();
+      await store.importFrom(image, replacement.path).drain<void>();
+
+      expect(
+        sha256.convert(File(store.diskPathFor(image)).readAsBytesSync()),
+        sha256.convert(replacementBytes),
+      );
+      expect(File('${store.diskPathFor(image)}.part').existsSync(), isFalse);
+
+      await store.removeById(image.id);
+      expect(store.isPresent(image), isFalse);
     });
   });
 

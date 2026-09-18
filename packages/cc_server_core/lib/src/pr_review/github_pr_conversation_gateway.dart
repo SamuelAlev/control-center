@@ -82,6 +82,18 @@ abstract interface class GitHubPrConversationGateway {
     required int parentCommentId,
     required String body,
   });
+
+  /// Whether every GitHub App installation this server knows about is
+  /// suspended. The poller idles on this (the bot cannot converse) and
+  /// re-checks at its idle cadence so a resume lights the lane back up.
+  /// False when there is no app, or none installed — that is a missing
+  /// identity, not a paused one.
+  Future<bool> allInstallationsSuspended();
+
+  /// Account logins whose GitHub App installation is currently suspended.
+  /// Comment sweeps and searches for those owners are skipped: minting an
+  /// installation token 403s, and a PAT fallback 404s private repos.
+  Future<Set<String>> suspendedOwners();
 }
 
 /// Production gateway over the app identity and the per-owner GitHub clients.
@@ -118,6 +130,21 @@ class AppBackedGitHubPrConversationGateway
   }
 
   @override
+  Future<bool> allInstallationsSuspended() async {
+    final app = await _app();
+    return app != null && await app.allInstallationsSuspended();
+  }
+
+  @override
+  Future<Set<String>> suspendedOwners() async {
+    final app = await _app();
+    if (app == null) {
+      return const {};
+    }
+    return app.suspendedOwners();
+  }
+
+  @override
   Future<
     ({
       List<GitHubViewerPr> mentioned,
@@ -148,17 +175,16 @@ class AppBackedGitHubPrConversationGateway
     final labeled = <String, GitHubViewerPr>{};
     for (final installation in await app.installations()) {
       final owner = installation.account;
-      if (owner.isEmpty) {
+      if (owner.isEmpty || installation.isSuspended) {
         continue;
       }
       try {
-        final result = await _clientForOwner(
-          owner,
-        ).graphql.searchBotConversationCandidates(
-          botLogin: botLogin,
-          label: _reviewLabel,
-          since: since,
-        );
+        final result = await _clientForOwner(owner).graphql
+            .searchBotConversationCandidates(
+              botLogin: botLogin,
+              label: _reviewLabel,
+              since: since,
+            );
         for (final pr in result.mentioned) {
           mentioned[pr.key] = pr;
         }
@@ -194,11 +220,9 @@ class AppBackedGitHubPrConversationGateway
     String owner,
     String repo,
     int prNumber,
-  ) => _clientForOwner(owner).pr.listPullRequestReviewComments(
+  ) => _clientForOwner(
     owner,
-    repo,
-    prNumber,
-  );
+  ).pr.listPullRequestReviewComments(owner, repo, prNumber);
 
   @override
   Future<void> acknowledgeIssueComment(
@@ -235,12 +259,9 @@ class AppBackedGitHubPrConversationGateway
     required int prNumber,
     required String body,
   }) async {
-    await _clientForOwner(owner).pr.createIssueComment(
+    await _clientForOwner(
       owner,
-      repo,
-      prNumber: prNumber,
-      body: body,
-    );
+    ).pr.createIssueComment(owner, repo, prNumber: prNumber, body: body);
   }
 
   @override

@@ -7,7 +7,7 @@ import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 const _kDebounceMs = 400;
 
@@ -190,10 +190,12 @@ class _GifPickerBodyState extends State<_GifPickerBody> {
   }
 
   Widget _buildCard(DesignSystemTokens theme, MediaQueryData mediaQuery) {
-    return Material(
-      elevation: 16,
-      borderRadius: BorderRadius.circular(12),
-      color: theme.bgPrimary,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: theme.bgPrimary,
+        boxShadow: CcElevation.floating,
+      ),
       child: Container(
         width: 440,
         height: 500,

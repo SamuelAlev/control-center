@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Loading placeholder for the newsfeed.
 ///
@@ -110,14 +110,13 @@ class _CardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designSystem;
-    final colors = Theme.of(context).colorScheme;
+    final t = context.designSystem ?? DesignSystemTokens.light();
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens?.bgPrimary ?? colors.surface,
+        color: t.bgPrimary,
         borderRadius: AppRadii.brLg,
         border: Border.all(
-          color: tokens?.borderSecondary ?? colors.outlineVariant,
+          color: t.borderSecondary,
         ),
       ),
       child: const ClipRRect(
@@ -257,11 +256,10 @@ class _ShimmerState extends State<_Shimmer>
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     _syncMotion(reduceMotion: reduceMotion);
 
-    final tokens = context.designSystem;
-    final colors = Theme.of(context).colorScheme;
-    final base = tokens?.bgQuaternary ?? colors.surfaceContainerHighest;
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final base = t.bgQuaternary;
     final highlight =
-        Color.lerp(base, tokens?.bgPrimary ?? colors.surface, 0.55) ?? base;
+        Color.lerp(base, t.bgPrimary, 0.55) ?? base;
 
     return AnimatedBuilder(
       animation: _controller,

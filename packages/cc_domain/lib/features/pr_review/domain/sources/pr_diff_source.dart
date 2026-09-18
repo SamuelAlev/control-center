@@ -99,7 +99,8 @@ enum ClonePhase {
 ///
 /// There are two implementations (in the data layer):
 /// - `GitHubApiPrDiffSource`: GitHub REST API (up to 3 000 files).
-/// - `LocalGitPrDiffSource`: local blobless clone (unlimited files).
+/// - `LocalGitPrDiffSource`: local blobless clone (unlimited files, and
+///   the fallback when the forge refuses a too-large raw diff).
 abstract interface class PrDiffSource {
   /// Stream of file lists with progressive patch loading.
   ///

@@ -50,6 +50,7 @@ import 'package:control_center/features/settings/presentation/screens/workspace_
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
 import 'package:control_center/features/ticketing/presentation/screens/project_overview_screen.dart';
 import 'package:control_center/features/ticketing/presentation/screens/tickets_screen.dart';
+import 'package:control_center/features/user_profiles/presentation/screens/team_profile_screen.dart';
 import 'package:control_center/features/user_profiles/presentation/screens/user_profile_screen.dart';
 import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -57,7 +58,8 @@ import 'package:control_center/router/guards.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/router/splash_screen.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show MaterialRouteTransitionMixin;
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -571,6 +573,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) {
               final login = state.pathParameters['login'] ?? '';
               return buildPage(state, _absorb(UserProfileScreen(login: login)));
+            },
+          ),
+          GoRoute(
+            path: teamProfileRoute(workspaceIdParam, ':organization', ':slug'),
+            pageBuilder: (context, state) {
+              final organization = state.pathParameters['organization'] ?? '';
+              final slug = state.pathParameters['slug'] ?? '';
+              return buildPage(
+                state,
+                _absorb(
+                  TeamProfileScreen(organization: organization, slug: slug),
+                ),
+              );
             },
           ),
           GoRoute(

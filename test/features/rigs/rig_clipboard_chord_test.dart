@@ -1,4 +1,5 @@
 import 'package:control_center/features/rigs/presentation/rig_input_surface.dart';
+import 'package:control_center/features/rigs/presentation/rig_ios_key_translation.dart';
 import 'package:control_center/features/sandboxing/presentation/terminal_file_transfer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -180,6 +181,27 @@ void main() {
     });
   });
 
+  test('clipboard bridge rebinds when a restarted rig replaces the id', () {
+    expect(
+      rigClipboardBridgeIdentityChanged(
+        oldWorkspaceId: 'workspace-a',
+        oldRigId: 'rig-old',
+        newWorkspaceId: 'workspace-a',
+        newRigId: 'rig-new',
+      ),
+      isTrue,
+    );
+    expect(
+      rigClipboardBridgeIdentityChanged(
+        oldWorkspaceId: 'workspace-a',
+        oldRigId: 'rig-a',
+        newWorkspaceId: 'workspace-a',
+        newRigId: 'rig-a',
+      ),
+      isFalse,
+    );
+  });
+
   /// Every path typed at a prompt goes through this, and the names come from
   /// wherever the user dragged them.
   group('shellQuoteForPrompt', () {
@@ -222,5 +244,14 @@ void main() {
         isNot(pastedImageName(DateTime(2026, 3, 7, 9, 4, 6))),
       );
     });
+  });
+  test('iOS forwards admitted copy, cut and paste as Command chords', () {
+    expect(rigIosClipboardKeyAction('c'), {
+      'action': 'key',
+      'key': 'c',
+      'modifiers': ['command'],
+    });
+    expect(rigIosClipboardKeyAction('x')['modifiers'], ['command']);
+    expect(rigIosClipboardKeyAction('v')['modifiers'], ['command']);
   });
 }

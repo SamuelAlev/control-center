@@ -129,7 +129,7 @@ class MeetingTranscriptRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         border: active
-            ? Border(left: BorderSide(color: ds.accent, width: 3))
+            ? BorderDirectional(start: BorderSide(color: ds.accent, width: 3))
             : null,
       ),
       padding: EdgeInsets.symmetric(

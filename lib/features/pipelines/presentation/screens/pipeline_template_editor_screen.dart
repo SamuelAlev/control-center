@@ -18,7 +18,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -273,7 +273,7 @@ class _PipelineTemplateEditorScreenState
           Text(
             l10n.unsavedChanges,
             style: CcTypography.caption.copyWith(
-              color: Theme.of(context).colorScheme.tertiary,
+              color: (context.designSystem ?? DesignSystemTokens.light()).fgBrandSecondary,
             ),
           ),
         CcButton(

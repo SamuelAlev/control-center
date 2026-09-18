@@ -432,6 +432,18 @@ void main() {
       expect(dto.action, 'login');
       expect(UserActivityDto.fromJson({'id': 'i'}).action, '');
     });
+
+    test('round-trips a details snapshot', () {
+      final dto = UserActivityDto.fromJson({
+        'id': 'i',
+        'workspace_id': 'w',
+        'user_id': 'u',
+        'action': 'workspace_settings.set',
+        'details': {'key': 'theme', 'value': 'dark'},
+      });
+      expect(dto.details, {'key': 'theme', 'value': 'dark'});
+      expect(dto.toJson()['details'], {'key': 'theme', 'value': 'dark'});
+    });
   });
 
   group('FeedDto', () {
@@ -489,10 +501,7 @@ void main() {
 
   group('SpaceReadDto', () {
     test('round-trip', () {
-      final dto = SpaceReadDto.fromJson({
-        'space_id': 'c',
-        'last_read_at': 'x',
-      });
+      final dto = SpaceReadDto.fromJson({'space_id': 'c', 'last_read_at': 'x'});
       expect(dto.spaceId, 'c');
       final out = dto.toJson();
       expect(out['last_read_at'], 'x');
@@ -1172,6 +1181,13 @@ void main() {
         'assignees': [
           {'login': 'a1', 'avatar_url': ''},
         ],
+        'labels': [
+          {
+            'name': 'bug',
+            'color': 'd73a4a',
+            'description': 'Something is wrong',
+          },
+        ],
         'reviewed_by_me': true,
         'reactions': [
           {'content': '+1', 'count': 1, 'user_reacted': false, 'usernames': []},
@@ -1187,6 +1203,8 @@ void main() {
       });
       expect(dto.author?.login, 'l');
       expect(dto.requestedReviewers.first.login, 'r1');
+      expect(dto.labels.single.name, 'bug');
+      expect(dto.labels.single.color, 'd73a4a');
       expect(dto.reactions.first.count, 1);
       expect(dto.checksStatus, 'success');
       final out = dto.toJson();

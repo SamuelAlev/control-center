@@ -33,6 +33,7 @@ class CcMarkdown extends StatelessWidget {
     this.onTapImage,
     this.imageBuilder,
     this.codeBuilder,
+    this.onTaskCheckboxChanged,
     this.selectable = false,
     this.useRepaintBoundary = true,
     this.ephemeral = false,
@@ -67,6 +68,10 @@ class CcMarkdown extends StatelessWidget {
   /// Custom fenced-code renderer.
   final CcCodeBuilder? codeBuilder;
 
+  /// Task-list checkbox toggle. [index] is document-order and matches
+  /// [toggleMarkdownTaskListItem]. Null keeps the boxes read-only.
+  final void Function(int index, bool checked)? onTaskCheckboxChanged;
+
   /// Whether the rendered text is selectable.
   final bool selectable;
 
@@ -93,6 +98,10 @@ class CcMarkdown extends StatelessWidget {
         onTapImage: onTapImage,
         imageBuilder: imageBuilder,
         codeBuilder: codeBuilder,
+        onTaskCheckboxChanged: onTaskCheckboxChanged,
+        taskCheckboxCursor: onTaskCheckboxChanged == null
+            ? null
+            : CcTaskCheckboxCursor(),
         selectable: selectable && !ancestorOwnsSelection,
         footnotes: [
           for (final node in nodes)

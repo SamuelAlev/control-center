@@ -1,0 +1,455 @@
+{
+  "@@locale": "ur",
+
+  "appTitle": "Control Center",
+  "back": "واپس",
+  "cancel": "منسوخ",
+  "retry": "دوبارہ کوشش",
+  "tryAgain": "دوبارہ کوشش کریں",
+  "settings": "ترتیبات",
+  "refresh": "تازہ کریں",
+  "approve": "منظور کریں",
+  "deny": "منع کریں",
+  "continueLabel": "جاری رکھیں",
+  "agentQuestionHeader": "آپ کے لیے سوال",
+  "agentQuestionAnsweredLabel": "جواب دیا گیا",
+  "agentQuestionSkip": "چھوڑیں",
+  "agentQuestionSkippedLabel": "چھوڑ دیا گیا",
+  "agentQuestionFreeformHint": "اپنا جواب ٹائپ کریں…",
+  "agentApprovalRequired": "منظوری درکار ہے",
+  "approveAndRemember": "۸ گھنٹے کے لیے منظور کریں",
+  "decline": "مسترد کریں",
+  "confirm": "تصدیق کریں",
+  "send": "بھیجیں",
+  "close": "بند کریں",
+  "expand": "پھیلائیں",
+  "zoomIn": "زوم اِن",
+  "zoomOut": "زوم آؤٹ",
+  "resetZoom": "زوم ری سیٹ",
+
+  "scanQrPrompt": "اس فون کو پیئر کرنے کے لیے اپنے Mac سے QR کوڈ اسکین کریں۔",
+  "scanQrHelp": "کیمرہ کھولیں اور اسے اپنے Mac پر Control Center میں دکھائے گئے QR کی طرف پوائنٹ کریں۔ یہ فون پرائیویٹ لنک پر براہِ راست آپ کے Mac سے جڑتا ہے۔",
+  "connectingToMac": "آپ کے Mac سے منسلک ہو رہا ہے…",
+  "connectingDetail": "محفوظ، براہِ راست لنک قائم ہو رہا ہے۔",
+  "identityChangedTitle": "سرور کی شناخت بدل گئی",
+  "identityChangedBody": "یہ سرور اب اس شناخت سے مماثل نہیں جو پیئرنگ کے وقت محفوظ ہوئی۔ اس کا مطلب ہو سکتا ہے کہ سرور دوبارہ انسٹال ہوا — یا کوئی چیز کنکشن کو روک رہی ہے۔ حفاظت کے لیے یہ ڈیوائس منسلک نہیں ہوگی۔ پیئرنگ ہٹائیں، پھر دوبارہ پیئر کرنے کے لیے اپنے Mac سے تازہ QR کوڈ اسکین کریں۔",
+  "removePairing": "پیئرنگ ہٹائیں",
+  "couldntConnect": "منسلک نہیں ہو سکا",
+  "pendingPairingTitle": "اس سرور سے منسلک ہوں؟",
+  "pendingPairingBody": "ایک لنک نے Control Center سے اس سرور کے ساتھ پیئر کرنے کو کہا۔ صرف تب آگے بڑھیں جب آپ نے خود اسے شروع کیا ہو۔",
+  "connect": "منسلک ہوں",
+
+  "failureNotPaired": "پیئر نہیں — اپنے Mac سے QR کوڈ اسکین کریں",
+  "failureUnreachable": "کسی بھی راستے سے آپ کا سرور نہیں مل سکا — چیک کریں کہ وہ چل رہا ہے، یا وہی نیٹ ورک آزمائیں",
+  "failureIdentityChanged": "سرور کی شناخت بدل گئی — اگر اسے دوبارہ انسٹال کیا گیا ہو تو اس ڈیوائس کو دوبارہ پیئر کریں",
+  "failureAuthRejected": "سرور نے اس ڈیوائس کو مسترد کر دیا — اسے اپنے Mac سے دوبارہ پیئر کریں",
+  "failureUnknown": "منسلک نہیں ہو سکا — دوبارہ کوشش کے لیے ٹیپ کریں",
+
+  "statusConnected": "منسلک",
+  "statusConnecting": "منسلک ہو رہا ہے",
+  "statusOffline": "آف لائن",
+  "statusIdentityMismatch": "شناخت مماثل نہیں",
+  "statusNotPaired": "پیئر نہیں",
+  "statusConfirmPairing": "پیئرنگ کی تصدیق کریں",
+
+  "connectionFailed": "کنکشن ناکام",
+  "identityMismatchBanner": "سرور کی شناخت بدل گئی — کنکشن رک گیا۔ جاری رکھنے کے لیے اس ڈیوائس کو دوبارہ پیئر کریں۔",
+  "tabInbox": "ان باکس",
+  "tabTickets": "ٹکٹس",
+  "tabChat": "چیٹ",
+  "tabPrs": "PRs",
+  "tabCalendar": "کیلنڈر",
+  "tabNews": "نیوز",
+  "tabWaitingCount": "{label}، {count} انتظار میں",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "updateAvailable": "Control Center کا نیا ورژن دستیاب ہے",
+
+  "appearance": "ظاہری شکل",
+  "language": "زبان",
+  "device": "ڈیوائس",
+  "themeSystem": "سسٹم",
+  "themeLight": "روشن",
+  "themeDark": "تاریک",
+  "languageSystem": "سسٹم",
+  "disconnectTapAgain": "اس ڈیوائس کو اپنے Mac سے منقطع کرنے کے لیے دوبارہ ٹیپ کریں",
+  "disconnectDevice": "اس ڈیوائس کو منقطع کریں",
+  "disconnect": "منقطع کریں",
+
+  "chooseWorkspace": "ورک اسپیس چنیں",
+  "workspaces": "ورک اسپیسز",
+  "workspacesLoadFailed": "ورک اسپیسز لوڈ نہیں ہو سکیں",
+  "noWorkspacesYet": "ابھی کوئی ورک اسپیس نہیں",
+  "selectWorkspace": "{name} منتخب کریں",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "inboxLoadFailed": "آپ کا ان باکس لوڈ نہیں ہو سکا",
+  "allCaughtUp": "سب دیکھ لیا",
+  "inboxNoForgeAccount": "سرور پر کوئی forge اکاؤنٹ منسلک نہیں، اس لیے ابھی pull requests آپ سے منسوب نہیں کیے جا سکتے۔",
+  "inboxNothingWaiting": "کچھ بلاک نہیں اور کوئی pull request آپ کے انتظار میں نہیں۔",
+  "blocked": "بلاک",
+  "sectionNeedsYourReview": "آپ کے ریویو کی ضرورت",
+  "sectionReturnedToYou": "آپ کو واپس کیے گئے",
+  "sectionApprovedAndReady": "منظور اور تیار",
+  "sectionYourDrafts": "آپ کے ڈرافٹس",
+  "sectionWaitingForReviewers": "ریویوورز کے انتظار میں",
+  "sectionMergingAndMerged": "مرج ہو رہے اور حال ہی میں مرج شدہ",
+  "sectionWaitingForAuthor": "مصنف کے انتظار میں",
+  "waitingAgo": "{ago} سے انتظار",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": { "type": "String" }
+    }
+  },
+  "openConversation": "گفتگو کھولیں",
+
+  "calendarLoadFailed": "آپ کا کیلنڈر لوڈ نہیں ہو سکا",
+  "nothingScheduled": "کچھ شیڈول نہیں",
+  "calendarEmptyDescription": "آپ کے منسلک کیلنڈرز کے ایونٹس یہاں نظر آتے ہیں۔",
+  "agenda": "ایجنڈا",
+  "syncCalendarsNow": "اب کیلنڈر سنک کریں",
+  "event": "ایونٹ",
+  "eventNotFound": "ایونٹ نہیں ملا",
+  "eventNotFoundDescription": "یہ ایجنڈا ونڈو سے باہر ہو سکتا ہے، یا ماخذ سے ہٹا دیا گیا ہو۔",
+  "joinMeeting": "میٹنگ میں شامل ہوں",
+  "join": "شامل ہوں",
+  "attendeesCount": "حاضرین ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "details": "تفصیلات",
+  "allDay": "پورے دن",
+  "happeningNow": "اب ہو رہا ہے",
+  "inDuration": "{duration} میں",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "attendeeAccepted": "قبول کیا",
+  "attendeeDeclined": "مسترد کیا",
+  "attendeeMaybe": "شاید",
+  "attendeeNoReply": "کوئی جواب نہیں",
+  "organizer": "منظم",
+  "calendarNoAccounts": "اس ورک اسپیس کے لیے کوئی کیلنڈر منسلک نہیں۔ ڈیسک ٹاپ ایپ سے ایک منسلک کریں — سائن اِن اس کا ٹوکن سرور پر محفوظ کرتا ہے۔",
+  "calendarReauthNeeded": "ایک کیلنڈر اکاؤنٹ دوبارہ منسلک کرنا ضروری ہے — نیچے جو نظر آ رہا ہے وہ پرانا ہو سکتا ہے۔ اسے ڈیسک ٹاپ ایپ سے دوبارہ منسلک کریں۔",
+
+  "spacesLoadFailed": "اسپیسز لوڈ نہیں ہو سکیں",
+  "noSpaces": "کوئی اسپیس نہیں",
+  "spacesEmptyDescription": "اس ورک اسپیس کی اسپیسز یہاں نظر آتی ہیں۔",
+  "thread": "تھریڈ",
+  "agentWorking": "ایجنٹ کام کر رہا ہے",
+  "messagesLoadFailed": "پیغامات لوڈ نہیں ہو سکے",
+  "noMessagesYet": "ابھی کوئی پیغام نہیں",
+  "noMessagesDescription": "گفتگو شروع کرنے کے لیے پیغام بھیجیں۔",
+  "agentResponding": "ایجنٹ جواب دے رہا ہے",
+  "agentFinished": "ایجنٹ ختم ہوا",
+  "attachmentsTooLarge": "{count, plural, one{\u2068{names}\u2069 یہاں سے بھیجنے کے لیے بہت بڑی ہے۔} other{\u2068{names}\u2069 یہاں سے بھیجنے کے لیے بہت بڑی ہیں۔}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, one{\u2068{names}\u2069 یہاں سے ریلے پر بھیجنے کے لیے بہت بڑی ہے۔} other{\u2068{names}\u2069 یہاں سے ریلے پر بھیجنے کے لیے بہت بڑی ہیں۔}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentUploadFailed": "منسلکہ اپ لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+  "attachmentsLeftOut": "{count, plural, one{1 منسلکہ اپ لوڈ نہیں ہو سکا اور چھوڑ دیا گیا۔} other{{count} منسلکے اپ لوڈ نہیں ہو سکے اور چھوڑ دیے گئے۔}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teammate": "ساتھی",
+  "agent": "ایجنٹ",
+  "attachFile": "فائل منسلک کریں",
+  "messageHint": "پیغام",
+  "removeAttachment": "\u2068{name}\u2069 ہٹائیں",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "articlesLoadFailed": "مضامین لوڈ نہیں ہو سکے",
+  "noArticles": "کوئی مضمون نہیں",
+  "articlesEmptyDescription": "فیڈز کے اپ ڈیٹ ہونے پر نئے مضامین یہاں نظر آتے ہیں۔",
+  "unread": "ان پڑھے",
+  "allFeeds": "تمام فیڈز",
+  "save": "محفوظ کریں",
+  "unsave": "محفوظ ختم کریں",
+  "readFullArticle": "پورا مضمون پڑھیں",
+
+  "ticketsLoadFailed": "ٹکٹس لوڈ نہیں ہو سکے",
+  "noTickets": "کوئی ٹکٹ نہیں",
+  "ticketsEmptyDescription": "اس ورک اسپیس کے ٹکٹس یہاں نظر آتے ہیں۔",
+  "all": "سب",
+  "ticket": "ٹکٹ",
+  "ticketLoadFailed": "ٹکٹ لوڈ نہیں ہو سکا",
+  "assignedTo": "{name} کو تفویض",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openInBrowser": "براؤزر میں کھولیں",
+  "status": "اسٹیٹس",
+  "assign": "تفویض کریں",
+  "reassign": "دوبارہ تفویض کریں",
+  "noAgents": "کوئی ایجنٹ نہیں",
+  "noAgentsDescription": "اس ورک اسپیس سے ایک ایجنٹ تفویض کریں۔",
+  "statusOpen": "کرنا ہے",
+  "statusInProgress": "جاری",
+  "statusBlocked": "بلاک",
+  "statusInReview": "ریویو میں",
+  "statusDone": "مکمل",
+  "statusBacklog": "بیک لاگ",
+
+  "lensNeedsMe": "مجھے چاہیے",
+  "lensMine": "میرے",
+  "prsLoadFailed": "pull requests لوڈ نہیں ہو سکے",
+  "noOpenPullRequests": "کوئی کھلا pull request نہیں",
+  "nothingWaitingOnReview": "آپ کے ریویو کے انتظار میں کچھ نہیں",
+  "noOwnOpenPullRequests": "آپ کے پاس کوئی کھلا pull request نہیں",
+  "nothingBlocked": "کچھ بلاک نہیں",
+  "prsEmptyDescription": "اس ورک اسپیس کے ریپوز کے pull requests یہاں نظر آتے ہیں۔",
+  "refreshPullRequests": "pull requests تازہ کریں",
+  "noForgeConnected": "سرور پر کوئی forge منسلک نہیں، اس لیے pull requests حاصل نہیں کیے جا سکتے۔ ڈیسک ٹاپ ایپ سے ایک منسلک کریں۔",
+  "reposUnreadable": "{count, plural, one{1 ریپو پڑھا نہیں جا سکا۔} other{{count} ریپوز پڑھے نہیں جا سکے۔}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reposNotReadable": "پڑھے نہیں جا سکے: \u2068{names}\u2069",
+  "installationSuspendedTitle": "GitHub App انسٹالیشن معطل ہے",
+  "installationSuspendedBody": "⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔",
+  "installationSuspendedNotice": "GitHub App انسٹالیشن معطل ہے. ⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+
+  "draft": "ڈرافٹ",
+  "merged": "مرج شدہ",
+  "closed": "بند",
+  "open": "کھلا",
+  "approved": "منظور",
+  "changesRequested": "تبدیلیاں مانگی گئیں",
+  "reviewRequired": "ریویو درکار",
+  "checksPassing": "چیکس پاس",
+  "checksFailing": "چیکس ناکام",
+  "checksRunning": "چیکس چل رہے ہیں",
+  "prSemanticLabel": "{title}، {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+
+  "pullRequest": "Pull request",
+  "prLoadFailed": "یہ pull request لوڈ نہیں ہو سکا",
+  "openOnForge": "forge پر کھولیں",
+  "requestChangesNeedsComment": "تبصرہ لکھیں جس میں بتایا گیا ہو کہ کیا بدلنا ہے۔",
+  "conversation": "گفتگو",
+  "files": "فائلیں",
+  "checks": "چیکس",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "filesCount": "{count, plural, one{1 فائل} other{{count} فائلیں}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commitsCount": "{count, plural, one{1 کمیٹ} other{{count} کمیٹس}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "conflicts": "کنفلکٹس",
+  "reviewers": "ریویوورز",
+  "noDescriptionNoComments": "ابھی کوئی تفصیل اور کوئی تبصرے نہیں۔",
+  "noChangedFiles": "کوئی بدلی ہوئی فائل نہیں۔",
+  "noChecksReported": "ہیڈ کمیٹ کے لیے کوئی چیکس رپورٹ نہیں ہوئے۔",
+  "reviewCommentHint": "ریویو تبصرہ لکھیں…",
+  "comment": "تبصرہ",
+  "commentPosted": "تبصرہ پوسٹ ہو گیا",
+  "request": "مانگیں",
+  "squashAndMerge": "Squash and merge",
+  "noActionsAvailable": "{status} — کوئی کارروائی دستیاب نہیں۔",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "reviewApproved": "منظور کیا",
+  "reviewRequestedChanges": "تبدیلیاں مانگیں",
+  "reviewCommented": "ریویو کیا",
+  "reviewPending": "زیرِ التوا",
+  "unknownAuthor": "نامعلوم",
+  "hideDiffFor": "\u2068{file}\u2069 کا diff چھپائیں",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "showDiffFor": "\u2068{file}\u2069 کا diff دکھائیں",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "checkRunning": "چل رہا ہے",
+  "checkPassed": "پاس",
+  "checkFailed": "ناکام",
+  "checkCancelled": "منسوخ",
+  "checkSkipped": "چھوڑ دیا",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "checkSemanticLabel": "\u2068{name}\u2069، {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+
+  "noTextDiff": "اس فائل کا کوئی متنی diff نہیں — یہ بائنری ہے، یا forge کے لیے اتنی بڑی ہے کہ واپس نہ کرے۔",
+  "showRemainingLines": "{count, plural, one{باقی لائن دکھائیں} other{باقی {count} لائنیں دکھائیں}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "unchangedLines": "{count, plural, one{1 غیر تبدیل شدہ لائن} other{{count} غیر تبدیل شدہ لائنیں}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "jumpToLatest": "تازہ ترین پر جائیں",
+  "streaming": "اسٹریمنگ",
+
+  "working": "کام جاری",
+  "input": "ان پٹ",
+  "output": "آؤٹ پٹ",
+
+  "now": "ابھی",
+  "agoMinutes": "{count}م",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoHours": "{count}گھ",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoDays": "{count}د",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "today": "آج",
+  "tomorrow": "کل",
+  "yesterday": "گزشتہ دن",
+  "durationMinutes": "{count}م",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count}گھ",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours}گھ {minutes}م",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  }
+}

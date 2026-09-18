@@ -7,13 +7,8 @@ enum AdapterTransport {
   /// `AcpBackend` drives every such agent with uniform structured events.
   acp,
 
-  /// Runs a CLI that emits Control Center's NDJSON event stream (e.g.
-  /// `pi --mode json`).
-  structuredCli,
-
   /// Drives Claude Code directly via `claude -p --output-format stream-json`,
-  /// spawned inside the OS sandbox like [structuredCli] but parsed as Claude's
-  /// stream-json schema.
+  /// spawned inside the OS sandbox but parsed as Claude's stream-json schema.
   claudeCli,
 
   /// Control Center's built-in agent loop — talks to an LLM provider directly
@@ -30,7 +25,7 @@ class Adapter {
     required this.name,
     required this.description,
     required this.cliName,
-    this.transport = AdapterTransport.structuredCli,
+    this.transport = AdapterTransport.harness,
     this.acpArgs,
   });
 
@@ -43,7 +38,7 @@ class Adapter {
   /// Brief description of the adapter.
   final String description;
 
-  /// CLI binary name used for detection (e.g. 'opencode').
+  /// CLI binary name used for detection (e.g. 'claude').
   final String cliName;
 
   /// How the dispatch backend drives this adapter's CLI.
@@ -85,7 +80,7 @@ class AdapterCapabilities {
     required this.supportsModelSelection,
   });
 
-  /// Whether the CLI emits structured JSON events (e.g. `pi --mode json`).
+  /// Whether the CLI emits structured JSON events.
   final bool supportsJsonMode;
 
   /// Whether the CLI accepts an explicit `--model`.
@@ -135,13 +130,13 @@ enum AdapterEnforcementCaveat {
 /// ## Why this exists
 ///
 /// `ModeCapabilityProfile` declares that plan and review modes are read-only.
-/// That declaration is only as strong as the transport underneath it and the
-/// four transports differ enormously: one of them has no permission protocol at
-/// all. Nothing used to say so, so the UI presented "plan mode is read-only" as
-/// a uniform fact while three of four transports could only approximate it.
-/// This type is that missing declaration — an honesty matrix, surfaced to the
-/// operator in Settings → Adapters and as a degraded badge next to the mode
-/// selector.
+/// That declaration is only as strong as the transport underneath it: ACP has
+/// no permission protocol at all, Claude Code approximates a mode via
+/// `--permission-mode`, and only the built-in harness fully enforces it.
+/// Nothing used to say so, so the UI presented "plan mode is read-only" as a
+/// uniform fact. This type is that missing declaration — an honesty matrix,
+/// surfaced to the operator in Settings → Adapters and as a degraded badge
+/// next to the mode selector.
 ///
 /// ## Why it is static, not probed
 ///
@@ -337,19 +332,6 @@ const AdapterEnforcement _claudeCliEnforcement = AdapterEnforcement(
       'sandbox, which is the only floor under them.',
 );
 
-const AdapterEnforcement _structuredCliEnforcement = AdapterEnforcement(
-  filtersToolSurface: false,
-  interceptsToolCalls: false,
-  observesCompletionContract: false,
-  nativeToolsInterceptable: false,
-  inProcessToolsSandboxed: true,
-  modeMappingNote:
-      'Prompt and sandbox only: there is no flag or protocol message that tells '
-      'a structured-JSON CLI it is in a read-only mode, so the mode reaches it '
-      'as prompt text. Only its `mcp__*` calls pass a Control Center gate; '
-      'everything else is bounded by the OS sandbox alone.',
-);
-
 const AdapterEnforcement _acpEnforcement = AdapterEnforcement(
   filtersToolSurface: false,
   // The weakest entry in the matrix. ACP defines `session/request_permission`
@@ -376,8 +358,6 @@ AdapterEnforcement enforcementForTransport(AdapterTransport transport) {
       return _harnessEnforcement;
     case AdapterTransport.claudeCli:
       return _claudeCliEnforcement;
-    case AdapterTransport.structuredCli:
-      return _structuredCliEnforcement;
     case AdapterTransport.acp:
       return _acpEnforcement;
   }
@@ -458,10 +438,10 @@ class DetectedAdapter {
 /// Static capability declarations for the built-in adapters.
 ///
 /// `supportsModelSelection` is true for every adapter — all accept a model,
-/// either via ACP `session/new` or `--model`. `supportsJsonMode` is true ONLY
-/// for `pi-dev` (the `--mode json` contract); the other adapters deliver their
-/// structure via ACP or Claude's `stream-json` CLI, not the settings
-/// JSON-mode flag.
+/// either via ACP `session/new` or `--model`. `supportsJsonMode` is true for
+/// the built-in harness (it owns its own structured event stream); Claude
+/// Code delivers its structure via `stream-json`, not the settings JSON-mode
+/// flag.
 AdapterCapabilities? capabilitiesForAdapter(String adapterId) {
   switch (adapterId) {
     case 'cc-harness':
@@ -469,17 +449,7 @@ AdapterCapabilities? capabilitiesForAdapter(String adapterId) {
         supportsJsonMode: true,
         supportsModelSelection: true,
       );
-    case 'pi-dev':
-      return const AdapterCapabilities(
-        supportsJsonMode: true,
-        supportsModelSelection: true,
-      );
     case 'claude-code':
-    case 'opencode':
-    case 'gemini':
-    case 'goose':
-    case 'cursor':
-    case 'codex':
       return const AdapterCapabilities(
         supportsJsonMode: false,
         supportsModelSelection: true,
@@ -515,50 +485,30 @@ const List<ThinkingLevel> claudeThinkingLevels = [
 
 /// Built-in adapter definitions shipped with the app.
 ///
-/// Scope: only adapters that offer an ACP mode or a structured JSON mode are
-/// in the catalog — interactive/unstructured CLIs are excluded (no text-
-/// passthrough backend). Each ACP adapter launches `<cliName> <acpArgs> …` and
-/// speaks JSON-RPC 2.0 over stdio via the shared `AcpBackend`.
+/// The shipped lineup is two runners:
+/// - Control Center's built-in agent loop (`cc-harness`) — always installed,
+///   because it IS the server rather than a binary the host may or may not
+///   have. It is also the fallback for an agent with no adapter set. Cursor
+///   (and Anthropic, OpenAI, …) are LLM *providers* on this runner, not
+///   separate CLIs.
+/// - Claude Code via `claude -p --output-format stream-json` (see
+///   `ClaudeCliBackend` / `ClaudeStreamJsonParser`) — uses the Claude Code
+///   subscription, the same as interactive mode.
 ///
-/// ACP invocation notes (confirmed per agent):
-/// - OpenCode: `opencode acp` (native ACP subcommand).
-/// - Gemini CLI: `gemini --acp`.
-/// - Goose: `goose acp` (native ACP).
-/// - Cursor: `cursor-agent --acp`.
-/// - Codex: spoken via the `acpx` ACP bridge (the launched process is the
-///   bridge, which in turn drives `codex`).
-/// Claude Code is driven directly via `claude -p --output-format stream-json`
-/// (see `ClaudeCliBackend` / `ClaudeStreamJsonParser`) — it uses your Claude
-/// Code subscription, the same as interactive mode.
-/// The built-in agent loop — the one adapter that is always installed, because
-/// it IS the server rather than a binary the host may or may not have.
-///
-/// It is therefore also the fallback for an agent with no adapter set, which is
-/// every seeded specialist until someone picks one. The fallback used to be the
-/// `pi` CLI: a fresh workspace's agents dispatched to a binary almost no host
-/// has, and the run died with "command not found" in a conversation that said
-/// nothing else. Falling back here fails legibly instead — worst case is
-/// "connect a provider in Settings", which is a sentence with a fix in it.
+/// Interactive/unstructured CLIs are excluded (no text-passthrough backend).
 const Adapter builtInAdapter = Adapter(
   id: 'cc-harness',
   name: 'Control Center (built-in)',
   description:
       "Control Center's built-in agent loop — talks to Anthropic, OpenAI, "
-      'or a local model directly and runs tools in-process (no external '
-      'CLI).',
+      'Cursor, or a local model directly and runs tools in-process (no '
+      'external CLI).',
   cliName: 'cc-harness',
   transport: AdapterTransport.harness,
 );
 
 final List<Adapter> predefinedAdapters = [
   builtInAdapter,
-  const Adapter(
-    id: 'pi-dev',
-    name: 'Pi',
-    description: 'pi.dev CLI runner inside the agent container.',
-    cliName: 'pi',
-    transport: AdapterTransport.structuredCli,
-  ),
   const Adapter(
     id: 'claude-code',
     name: 'Claude Code',
@@ -567,44 +517,5 @@ final List<Adapter> predefinedAdapters = [
         '(uses your Claude Code plan, same as interactive mode).',
     cliName: 'claude',
     transport: AdapterTransport.claudeCli,
-  ),
-  const Adapter(
-    id: 'opencode',
-    name: 'OpenCode',
-    description: 'OpenCode CLI over the Agent Client Protocol.',
-    cliName: 'opencode',
-    transport: AdapterTransport.acp,
-    acpArgs: 'acp',
-  ),
-  const Adapter(
-    id: 'gemini',
-    name: 'Gemini CLI',
-    description: 'Gemini CLI over the Agent Client Protocol.',
-    cliName: 'gemini',
-    transport: AdapterTransport.acp,
-    acpArgs: '--acp',
-  ),
-  const Adapter(
-    id: 'goose',
-    name: 'Goose',
-    description: 'Goose over the Agent Client Protocol.',
-    cliName: 'goose',
-    transport: AdapterTransport.acp,
-    acpArgs: 'acp',
-  ),
-  const Adapter(
-    id: 'cursor',
-    name: 'Cursor',
-    description: 'Cursor agent over the Agent Client Protocol.',
-    cliName: 'cursor-agent',
-    transport: AdapterTransport.acp,
-    acpArgs: '--acp',
-  ),
-  const Adapter(
-    id: 'codex',
-    name: 'Codex',
-    description: 'Codex over the Agent Client Protocol (via the acpx bridge).',
-    cliName: 'codex',
-    transport: AdapterTransport.acp,
   ),
 ];

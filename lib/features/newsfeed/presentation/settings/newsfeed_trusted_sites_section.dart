@@ -3,7 +3,7 @@ import 'package:control_center/features/newsfeed/providers/site_allowlist_provid
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Settings → You → Newsfeed: trusted sites exempt from content blocking.
@@ -14,15 +14,14 @@ class NewsfeedTrustedSitesSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final tokens = context.designSystem;
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final allowedAsync = ref.watch(siteAllowlistProvider);
 
     return SectionCard(
       label: l10n.trustedSitesSectionTitle,
       padding: const EdgeInsets.fromLTRB(0, 14, 0, 8),
-      headerPadding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
+      headerPadding: const EdgeInsetsDirectional.fromSTEB(16, 0, 8, 8),
       trailing: CcButton(
         variant: CcButtonVariant.secondary,
         onPressed: () => _showAddTrustedSiteDialog(context, ref),
@@ -38,9 +37,7 @@ class NewsfeedTrustedSitesSection extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Text(
             '$e',
-            style: CcTypography.caption.copyWith(
-              color: theme.colorScheme.error,
-            ),
+            style: CcTypography.caption.copyWith(color: t.textErrorPrimary),
           ),
         ),
         data: (domains) {
@@ -50,11 +47,7 @@ class NewsfeedTrustedSitesSection extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Text(
                 l10n.trustedSitesEmpty,
-                style: CcTypography.caption.copyWith(
-                  color:
-                      tokens?.textTertiary ??
-                      theme.colorScheme.onSurfaceVariant,
-                ),
+                style: CcTypography.caption.copyWith(color: t.textTertiary),
               ),
             );
           }
@@ -78,24 +71,20 @@ class _TrustedSiteRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
+    final t = context.designSystem ?? DesignSystemTokens.light();
     final tokens = context.designSystem;
     final l10n = AppLocalizations.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 8, 10),
       child: Row(
         children: [
-          Icon(
-            AppIcons.shieldOff,
-            size: 18,
-            color: tokens?.fgTertiary ?? theme.colorScheme.onSurfaceVariant,
-          ),
+          Icon(AppIcons.shieldOff, size: 18, color: t.fgTertiary),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               domain,
               style: CcTypography.body.copyWith(
-                color: tokens?.textPrimary ?? theme.colorScheme.onSurface,
+                color: tokens?.textPrimary ?? t.textPrimary,
               ),
             ),
           ),
@@ -171,7 +160,10 @@ Future<void> _showAddTrustedSiteDialog(
                     Text(
                       error!,
                       style: TextStyle(
-                        color: Theme.of(sbContext).colorScheme.error,
+                        color:
+                            (sbContext.designSystem ??
+                                    DesignSystemTokens.light())
+                                .textErrorPrimary,
                         fontSize: 13,
                       ),
                     ),

@@ -79,7 +79,11 @@ class CcChip extends StatelessWidget {
     return selected ? t.accentSoft : t.surface;
   }
 
-  Widget _buildBody(DesignSystemTokens t, Color background) {
+  Widget _buildBody(
+    BuildContext context,
+    DesignSystemTokens t,
+    Color background,
+  ) {
     final fg = disabled
         ? t.textDisabled
         : (selected ? t.accent : t.textSecondary);
@@ -88,9 +92,9 @@ class CcChip extends StatelessWidget {
         : (selected ? t.borderBrand : t.borderSecondary);
 
     return AnimatedContainer(
-      duration: CcMotion.fast,
+      duration: CcMotion.resolveFade(context, CcMotion.fast),
       curve: CcMotion.standard,
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         AppSpacing.sm,
         AppSpacing.xs,
         onDeleted != null ? AppSpacing.xs : AppSpacing.sm,
@@ -140,14 +144,19 @@ class CcChip extends StatelessWidget {
     // Disabled (or non-interactive) chips render a static body; the muted
     // colors come from [disabled] in [_buildBody].
     if (onPressed == null || disabled) {
-      return _buildBody(t, selected && !disabled ? t.accentSoft : t.surface);
+      return _buildBody(
+        context,
+        t,
+        selected && !disabled ? t.accentSoft : t.surface,
+      );
     }
 
     return CcTappable(
       onPressed: onPressed,
       borderRadius: AppRadii.brSm,
       semanticLabel: semanticLabel ?? label,
-      builder: (context, states) => _buildBody(t, _background(t, states)),
+      builder: (context, states) =>
+          _buildBody(context, t, _background(t, states)),
     );
   }
 }

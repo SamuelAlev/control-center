@@ -134,7 +134,8 @@ void main() {
       addTearDown(container.dispose);
 
       final state = container.read(detectedAdaptersProvider);
-      expect(state.any((d) => d.adapter.id == 'pi-dev'), isTrue);
+      expect(state.any((d) => d.adapter.id == 'cc-harness'), isTrue);
+      expect(state.any((d) => d.adapter.id == 'claude-code'), isTrue);
     });
 
     test('all initial adapters are in checking state', () {

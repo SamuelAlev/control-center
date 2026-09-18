@@ -30,6 +30,7 @@ class SearchContentOptions {
     this.wholeWord = false,
     this.include = const [],
     this.exclude = const [],
+    this.paths = const [],
   });
 
   /// Case-sensitive matching. When false (default) `git grep` runs with `-i`.
@@ -49,6 +50,15 @@ class SearchContentOptions {
   /// Comma/space-separated exclude pathspecs (each forwarded as `:!glob`).
   /// Empty (default) → no exclude filter.
   final List<String> exclude;
+
+  /// Exact repo-relative files to grep (a JSON list, never a split string).
+  ///
+  /// When non-empty these replace [include] as the include pathspecs, so a
+  /// PR-scoped search cannot leak into the rest of the tree. [include] then
+  /// filters this list (git-style globs) rather than OR-ing onto the whole
+  /// tree. Empty (default) → whole-tree grep, optionally narrowed by
+  /// [include].
+  final List<String> paths;
 }
 
 /// Result of writing a draft into a conversation worktree.
@@ -645,16 +655,15 @@ class RepoIdeDataService {
     final roots = await _readRoots(workspaceId, spaceId);
     final out = <Map<String, dynamic>>[];
     var total = 0;
-    // Build the `git grep` argv once — it is identical across repos.
-    final grepArgs = _buildGrepArgs(trimmed, options);
     for (final entry in roots) {
       if (total >= _contentMaxMatches) {
         break;
       }
-      final grouped = await _grepRoot(
+      final grouped = await _grepRootWithOptions(
         entry.root,
         entry.repoId,
-        grepArgs,
+        trimmed,
+        options,
         _contentMaxMatches - total,
       );
       for (final group in grouped) {
@@ -691,10 +700,11 @@ class RepoIdeDataService {
     if (worktree == null) {
       return const [];
     }
-    return _grepRoot(
+    return _grepRootWithOptions(
       p.normalize(worktree.path),
       repoId,
-      _buildGrepArgs(trimmed, options),
+      trimmed,
+      options,
       _contentMaxMatches,
     );
   }
@@ -749,6 +759,131 @@ class RepoIdeDataService {
           'repoId': repoId,
         },
     ];
+  }
+
+  /// Resolves [options] into one or more `git grep` invocations against [root].
+  ///
+  /// When [SearchContentOptions.paths] is non-empty the search is restricted
+  /// to those files: missing/deleted paths are dropped (so a deleted PR file
+  /// cannot 128-exit the whole grep) and an empty remainder returns nothing
+  /// rather than widening to the whole tree. Explicit paths are batched in
+  /// chunks of [_contentMaxPathspecs] so a large PR does not overflow argv.
+  Future<List<Map<String, dynamic>>> _grepRootWithOptions(
+    String root,
+    String repoId,
+    String query,
+    SearchContentOptions options,
+    int remaining,
+  ) async {
+    if (remaining <= 0 || !Directory(root).existsSync()) {
+      return const [];
+    }
+    final restricted = options.paths.isNotEmpty;
+    var includes = _includePathspecs(options);
+    if (restricted) {
+      includes = [for (final rel in includes) ?_existingWorktreeRel(root, rel)];
+      if (includes.isEmpty) {
+        return const [];
+      }
+    }
+    final excludeCount = options.exclude
+        .where((raw) => raw.trim().isNotEmpty)
+        .length;
+    final chunkSize = excludeCount >= _contentMaxPathspecs
+        ? 1
+        : _contentMaxPathspecs - excludeCount;
+    if (includes.isEmpty) {
+      return _grepRoot(root, repoId, _buildGrepArgs(query, options), remaining);
+    }
+    final out = <Map<String, dynamic>>[];
+    var total = 0;
+    for (var i = 0; i < includes.length; i += chunkSize) {
+      if (total >= remaining) {
+        break;
+      }
+      final end = i + chunkSize > includes.length
+          ? includes.length
+          : i + chunkSize;
+      final grouped = await _grepRoot(
+        root,
+        repoId,
+        _buildGrepArgs(
+          query,
+          options,
+          includeOverride: includes.sublist(i, end),
+        ),
+        remaining - total,
+      );
+      for (final group in grouped) {
+        out.add(group);
+        total += (group['matches'] as List).length;
+      }
+    }
+    return out;
+  }
+
+  /// Include pathspecs for a grep: exact [SearchContentOptions.paths]
+  /// (optionally filtered by [SearchContentOptions.include] globs) or, when
+  /// paths is empty, the include globs themselves.
+  static List<String> _includePathspecs(SearchContentOptions options) {
+    if (options.paths.isEmpty) {
+      return [
+        for (final raw in options.include)
+          if (raw.trim().isNotEmpty) raw.trim(),
+      ];
+    }
+    final paths = [
+      for (final raw in options.paths)
+        if (raw.trim().isNotEmpty) raw.trim(),
+    ];
+    final globs = [
+      for (final raw in options.include)
+        if (raw.trim().isNotEmpty) raw.trim(),
+    ];
+    if (globs.isEmpty) {
+      return paths;
+    }
+    return [
+      for (final path in paths)
+        if (globs.any((glob) => _pathspecMatches(path, glob))) path,
+    ];
+  }
+
+  /// Git's default pathspec glob: `*` matches across `/`, `?` is one character.
+  static bool _pathspecMatches(String path, String glob) {
+    final buf = StringBuffer('^');
+    for (var i = 0; i < glob.length; i++) {
+      final c = glob[i];
+      switch (c) {
+        case '*':
+          buf.write('.*');
+        case '?':
+          buf.write('.');
+        default:
+          buf.write(RegExp.escape(c));
+      }
+    }
+    buf.write(r'$');
+    return RegExp(buf.toString(), caseSensitive: false).hasMatch(path);
+  }
+
+  /// Repo-relative POSIX path if [raw] names a file inside [root], else null.
+  /// Rejects `..` / absolute escapes so a client-supplied path cannot leave
+  /// the worktree. Missing files (deleted PR paths) return null.
+  static String? _existingWorktreeRel(String root, String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    final joined = p.normalize(p.join(root, trimmed));
+    if (joined == root || !p.isWithin(root, joined)) {
+      return null;
+    }
+    if (!File(joined).existsSync()) {
+      return null;
+    }
+    final rel = p.relative(joined, from: root);
+    return Platform.isWindows ? rel.replaceAll('\\', '/') : rel;
   }
 
   /// Runs the prebuilt `git grep` [grepArgs] in [root] and groups the output
@@ -825,11 +960,13 @@ class RepoIdeDataService {
   /// exclude globs become pathspecs after `--`: a default pathspec already
   /// treats `*` as a wildcard across the whole path (so `*skip.dart` matches
   /// `lib/skip.dart`) and excludes are prefixed with `:(exclude)`. The argv is
-  /// bounded by [_contentMaxPathspecs] defensively.
+  /// bounded by [_contentMaxPathspecs] defensively, except when
+  /// [includeOverride] is a pre-batched chunk of exact paths (already sized).
   static List<String> _buildGrepArgs(
     String query,
-    SearchContentOptions options,
-  ) {
+    SearchContentOptions options, {
+    List<String>? includeOverride,
+  }) {
     final args = <String>[
       'grep',
       '-n',
@@ -842,21 +979,26 @@ class RepoIdeDataService {
       '-e',
       query,
     ];
+    final includes =
+        includeOverride ??
+        [
+          for (final raw in options.include)
+            if (raw.trim().isNotEmpty) raw.trim(),
+        ];
     final pathspecs = <String>[];
     var count = 0;
-    for (final raw in options.include) {
-      if (count >= _contentMaxPathspecs) {
+    final includeCap = includeOverride != null
+        ? includes.length
+        : _contentMaxPathspecs;
+    for (final glob in includes) {
+      if (count >= includeCap) {
         break;
-      }
-      final glob = raw.trim();
-      if (glob.isEmpty) {
-        continue;
       }
       pathspecs.add(glob);
       count++;
     }
     for (final raw in options.exclude) {
-      if (count >= _contentMaxPathspecs) {
+      if (includeOverride == null && count >= _contentMaxPathspecs) {
         break;
       }
       final glob = raw.trim();
@@ -936,12 +1078,23 @@ class RepoIdeDataService {
       return const [];
     }
 
+    // Exact file paths must stay a JSON list — comma-splitting would break
+    // paths with spaces and would OR a joined blob as one glob.
+    List<String> pathsOpt() {
+      final v = options['paths'];
+      if (v is List) {
+        return v.whereType<String>().where((s) => s.isNotEmpty).toList();
+      }
+      return const [];
+    }
+
     return SearchContentOptions(
       caseSensitive: boolOpt('case_sensitive'),
       regex: boolOpt('regex'),
       wholeWord: boolOpt('whole_word'),
       include: listOpt('include'),
       exclude: listOpt('exclude'),
+      paths: pathsOpt(),
     );
   }
 

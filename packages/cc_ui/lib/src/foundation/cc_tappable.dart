@@ -1,3 +1,4 @@
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/primitives/focus_ring.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -152,10 +153,22 @@ class _CcTappableState extends State<CcTappable> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.enabled;
-
+    final fluidControlled = CcFluidHover.controlsTappable(context);
+    final fluidActive = CcFluidHover.isItemActive(context);
+    final fluidPointerInside = CcFluidHover.isPointerInside(context);
     Widget child = ListenableBuilder(
       listenable: _states,
-      builder: (context, _) => widget.builder(context, _states.value),
+      builder: (context, _) {
+        if (!fluidControlled || !fluidPointerInside) {
+          return widget.builder(context, _states.value);
+        }
+        final states = Set<WidgetState>.of(_states.value)
+          ..remove(WidgetState.hovered);
+        if (fluidActive) {
+          states.add(WidgetState.hovered);
+        }
+        return widget.builder(context, states);
+      },
     );
 
     child = GestureDetector(
@@ -208,6 +221,10 @@ class _CcTappableState extends State<CcTappable> {
           : null,
       child: child,
     );
+
+    if (fluidControlled) {
+      child = CcFluidHover.consumeTappable(child);
+    }
 
     return Semantics(
       button: widget.semanticButton,

@@ -326,8 +326,8 @@ class _PrMoreActionsMenuState extends ConsumerState<_PrMoreActionsMenu> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      followerAnchor: Alignment.topRight,
-      targetAnchor: Alignment.bottomRight,
+      followerAnchor: AlignmentDirectional.topEnd,
+      targetAnchor: AlignmentDirectional.bottomEnd,
       overlayBuilder: (context, _) => ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 220),
         child: Padding(

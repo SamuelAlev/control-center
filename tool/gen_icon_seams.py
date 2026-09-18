@@ -199,6 +199,7 @@ MAPPING = {
     'moon': ('moon', 0xe330),
     'moonStar': ('moonStars', 0xe58e),
     'moreHorizontal': ('dotsThree', 0xe1fe),
+    'moreVertical': ('dotsThreeVertical', 0xe208),
     'move': ('arrowsOutCardinal', 0xe0a4),
     'network': ('treeStructure', 0xe67c),
     'newspaper': ('newspaper', 0xe344),
@@ -327,7 +328,7 @@ ROOT_MEMBERS = {
     'logOut', 'mapPin', 'maximize2', 'medal', 'menu', 'messageCircle',
     'messageCircleQuestion', 'messageSquare', 'messageSquareCode', 'messageSquareDashed', 'messageSquarePlus', 'messageSquareText',
     'messagesSquare', 'mic', 'micOff', 'minus', 'minusCircle', 'monitor',
-    'moon', 'moonStar', 'moreHorizontal', 'move', 'network', 'newspaper',
+    'moon', 'moonStar', 'moreHorizontal', 'moreVertical', 'move', 'network', 'newspaper',
     'notebook', 'notebookPen', 'notebookText', 'octagonAlert', 'paintbrushVertical', 'palette',
     'panelLeft',
     'panelLeftClose', 'panelLeftOpen', 'panelRight', 'pause', 'pauseCircle', 'pencil',
@@ -441,6 +442,18 @@ FILES = [
     ('apps/cc_remote/lib/app_icons.dart', 'AppIcons', REMOTE_MEMBERS, REMOTE_DOC),
 ]
 
+# Members whose glyph means "toward/along the reading direction" — navigation
+# chevrons/arrows, reply/send, the enter-key hint, sign-out. These are emitted
+# with `matchTextDirection: true` so the `Icon` widget mirrors them under RTL
+# (see "RTL & directionality" in AGENTS.md). Glyphs that depict a physical
+# thing or follow platform convention (media transport, undo/redo, circular
+# refresh arrows, trend arrows, external-link) stay unmirrored — matching the
+# Material RTL mirroring guidance.
+DIRECTIONAL_MEMBERS = {
+    'arrowLeft', 'arrowRight', 'chevronLeft', 'chevronRight',
+    'cornerDownLeft', 'logOut', 'reply', 'send',
+}
+
 
 def emit(path, class_name, members, doc):
     lines = [HEADER, doc, '@staticIconProvider\n']
@@ -453,6 +466,8 @@ def emit(path, class_name, members, doc):
         lines.append(f'    {codepoint:#x},\n')
         lines.append('    fontFamily: _family,\n')
         lines.append('    fontPackage: _package,\n')
+        if name in DIRECTIONAL_MEMBERS:
+            lines.append('    matchTextDirection: true,\n')
         lines.append('  );\n')
     lines.append('}\n')
     with open(path, 'w') as f:

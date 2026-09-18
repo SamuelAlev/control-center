@@ -1,0 +1,1 @@
+# path  linecount — shrinking allowlist for cc_remote screens/widgets

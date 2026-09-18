@@ -12,7 +12,7 @@ import 'package:control_center/features/pipelines/providers/pipeline_providers.d
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/graph_node_card.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -289,6 +289,8 @@ class _PipelineCanvasState extends ConsumerState<PipelineCanvas> {
 
     final l10n = AppLocalizations.of(context);
 
+    // RTL carve-out: a DAG canvas — node placement is canvas-coordinate math
+    // over the laid-out graph, and diagram canvases stay LTR per policy.
     return Positioned(
       left: position.dx,
       top: position.dy,

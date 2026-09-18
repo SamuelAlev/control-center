@@ -104,7 +104,7 @@ class _CcPanelSearchFieldState extends State<CcPanelSearchField>
           vertical: AppSpacing.sm + AppSpacing.xxs,
         ),
         child: Stack(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           children: [
             // Hint sits behind the editable text while empty.
             if (widget.hintText != null)

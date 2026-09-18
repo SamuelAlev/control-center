@@ -16,15 +16,14 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/artifacts/json_tree_view.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// Side panel describing one selected step's run: status, timing, branch index,
-/// a promoted failure / skip reason and the raw input/output payloads behind a
-/// disclosure. Shared by the run-detail timeline and the graph canvas so a step
-/// always reads the same wherever it is opened.
+/// Side panel for one selected step: status, timing, skip/failure reason and
+/// the raw payloads. Shared by the run-detail timeline and the graph canvas.
 class PipelineStepDetailPanel extends ConsumerWidget {
   /// Creates a [PipelineStepDetailPanel].
   const PipelineStepDetailPanel({
@@ -85,7 +84,7 @@ class PipelineStepDetailPanel extends ConsumerWidget {
         boxShadow: elevated ? AppShadows.golden : null,
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
+        padding: const EdgeInsetsDirectional.fromSTEB(
           AppSpacing.lg,
           AppSpacing.md,
           AppSpacing.sm,

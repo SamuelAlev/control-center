@@ -3,6 +3,7 @@ import 'package:control_center/core/theme/app_text_styles.dart';
 import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/widgets.dart';
+part 'artifact_chart_legend.dart';
 
 /// Draws an [ArtifactChartBlock] — the app's first generic, data-driven chart.
 ///
@@ -224,6 +225,9 @@ class ArtifactChart extends StatelessWidget {
     return FlTitlesData(
       topTitles: const AxisTitles(),
       rightTitles: const AxisTitles(),
+      // RTL carve-out: fl_chart lays its axes out physically (leftTitles is
+      // the left edge in every locale), so the y-axis labels right-align to
+      // hug the plot regardless of reading direction.
       leftTitles: AxisTitles(
         sideTitles: SideTitles(
           showTitles: true,
@@ -272,44 +276,5 @@ class ArtifactChart extends StatelessWidget {
       return v.round().toString();
     }
     return v.toStringAsFixed(1);
-  }
-}
-
-/// Series/category key. Always rendered — the chart never relies on color alone.
-class _Legend extends StatelessWidget {
-  const _Legend({required this.entries});
-
-  final List<({String label, Color color})> entries;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = resolveDesignTokens(context);
-    return Wrap(
-      spacing: 14,
-      runSpacing: 6,
-      children: [
-        for (final e in entries)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 9,
-                height: 9,
-                decoration: BoxDecoration(
-                  color: e.color,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                e.label,
-                style: AppTextStyles.labelSmall(
-                  tokens,
-                ).copyWith(color: tokens.textSecondary),
-              ),
-            ],
-          ),
-      ],
-    );
   }
 }

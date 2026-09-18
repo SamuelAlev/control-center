@@ -30,7 +30,7 @@ class BashTool extends HarnessTool {
   bool get selfGuards => true;
 
   @override
-  Map<String, dynamic> get inputSchema => {
+  Map<String, dynamic> get inputSchema => withRequiredCallDescription({
     'type': 'object',
     'properties': {
       'command': {
@@ -48,7 +48,7 @@ class BashTool extends HarnessTool {
       },
     },
     'required': ['command'],
-  };
+  });
 
   @override
   Future<HarnessToolResult> execute(
@@ -58,6 +58,12 @@ class BashTool extends HarnessTool {
     final command = args['command'];
     if (command is! String || command.trim().isEmpty) {
       return HarnessToolResult.error('Missing or invalid argument: command');
+    }
+    // A bash call has no scannable target; the transcript shows this instead
+    // of an opaque command line, so a call without one is rejected.
+    final missingDescription = missingCallDescription(args);
+    if (missingDescription != null) {
+      return missingDescription;
     }
     // Clamp the model-supplied timeout to a sane range (1s–1h) so a runaway or
     // absurd value can't wedge the run.

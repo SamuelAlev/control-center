@@ -193,7 +193,10 @@ void main() {
     await pumpBell(tester, [_entry(id: 'a', read: false)]);
     await openPanel(tester);
 
-    final trigger = find.byIcon(AppIcons.moreHorizontal);
+    final trigger = find.byWidgetPredicate(
+      (widget) =>
+          widget is CcIconButton && widget.icon == AppIcons.moreHorizontal,
+    );
     // Laid out from the start — revealing it must never reflow the row.
     expect(trigger, findsOneWidget);
 
@@ -211,7 +214,12 @@ void main() {
     await openPanel(tester);
     await hoverRow(tester, find.text('Review requested'));
 
-    await tester.tap(find.byIcon(AppIcons.moreHorizontal));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CcIconButton && widget.icon == AppIcons.moreHorizontal,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Mark as read'));
     await tester.pumpAndSettle();
@@ -224,7 +232,12 @@ void main() {
     await openPanel(tester);
     await hoverRow(tester, find.text('Review requested'));
 
-    await tester.tap(find.byIcon(AppIcons.moreHorizontal));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CcIconButton && widget.icon == AppIcons.moreHorizontal,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Mark as read'), findsNothing);
@@ -239,7 +252,12 @@ void main() {
     await openPanel(tester);
     await hoverRow(tester, find.text('Review requested'));
 
-    await tester.tap(find.byIcon(AppIcons.moreHorizontal));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is CcIconButton && widget.icon == AppIcons.moreHorizontal,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Delete'));
     await tester.pumpAndSettle();

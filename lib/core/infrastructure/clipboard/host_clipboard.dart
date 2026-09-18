@@ -85,7 +85,14 @@ Future<HostClipboardSnapshot> readHostClipboard() async {
   }
   try {
     final reader = await clipboard.read();
-    return await snapshotFromReader(reader.items);
+    return await snapshotFromReader(
+      reader.items,
+      // A copied STRING is exposed by macOS as both `plainText` and a
+      // synthesized `plainTextFile` named "file". Treating that virtual flavor
+      // as a real file turns every text paste into an upload. Real files copied
+      // from Finder still carry `fileUri` and remain files.
+      includeVirtualFiles: false,
+    );
   } on Object catch (e) {
     AppLog.d('rig-clipboard', 'reading the host clipboard failed: $e');
     return HostClipboardSnapshot.empty;
@@ -94,10 +101,14 @@ Future<HostClipboardSnapshot> readHostClipboard() async {
 
 /// Builds a snapshot from clipboard or drop-session readers.
 ///
-/// Shared by the clipboard and by a file drop, because a drop session's items
-/// expose exactly the same reader interface — and treating them the same is
-/// what makes "paste a file" and "drag a file in" one code path.
-Future<HostClipboardSnapshot> snapshotFromReader(List<DataReader> items) async {
+/// [includeVirtualFiles] is true for drag sessions, where byte-backed formats
+/// such as CSV and plain-text files are real dropped files. Clipboard reads set
+/// it false because desktop clipboards synthesize those same formats from
+/// ordinary copied text.
+Future<HostClipboardSnapshot> snapshotFromReader(
+  List<DataReader> items, {
+  bool includeVirtualFiles = true,
+}) async {
   String? text;
   Uint8List? image;
   String? imageType;
@@ -107,7 +118,10 @@ Future<HostClipboardSnapshot> snapshotFromReader(List<DataReader> items) async {
     // FILES FIRST, and the order is load-bearing. A file dragged out of
     // Finder also offers its NAME as plain text; reading text first would
     // turn every file drop into a paste of the string "report.pdf".
-    final asFile = _fileFormatFor(item);
+    final asFile = _fileFormatFor(
+      item,
+      includeVirtualFiles: includeVirtualFiles,
+    );
     if (asFile.isFile) {
       final file = await _readFile(item, asFile.format);
       if (file != null) {
@@ -223,7 +237,10 @@ const List<(SimpleFileFormat, String)> _imageFormats = [
 /// file's name. `isFile` carries the first question; `format` carries the
 /// second, where null legitimately means "ask for the highest-priority file
 /// format on this item".
-({bool isFile, FileFormat? format}) _fileFormatFor(DataReader item) {
+({bool isFile, FileFormat? format}) _fileFormatFor(
+  DataReader item, {
+  bool includeVirtualFiles = true,
+}) {
   // `fileUri` is the desktop signal: a real file dragged or copied out of a
   // file manager. super_clipboard synthesizes a readable file from the URI,
   // so the URI itself is never the payload — a null format asks for that
@@ -235,14 +252,16 @@ const List<(SimpleFileFormat, String)> _imageFormats = [
   // and does not need to be: anything not listed falls through to the image
   // and text branches, which is the right answer for a copied image or a
   // copied string.
-  for (final format in const <FileFormat>[
-    Formats.pdf,
-    Formats.plainTextFile,
-    Formats.csv,
-    Formats.zip,
-  ]) {
-    if (item.canProvide(format)) {
-      return (isFile: true, format: format);
+  if (includeVirtualFiles) {
+    for (final format in const <FileFormat>[
+      Formats.pdf,
+      Formats.plainTextFile,
+      Formats.csv,
+      Formats.zip,
+    ]) {
+      if (item.canProvide(format)) {
+        return (isFile: true, format: format);
+      }
     }
   }
   return (isFile: false, format: null);

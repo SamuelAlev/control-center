@@ -554,7 +554,7 @@ class _JobStepsAccordionState extends ConsumerState<JobStepsAccordion> {
               : section != null
               ? _LogViewer(text: section.body)
               : Padding(
-                  padding: const EdgeInsets.fromLTRB(38, 0, 14, 10),
+                  padding: const EdgeInsetsDirectional.fromSTEB(38, 0, 14, 10),
                   child: Text(
                     l10n.noLogsForStep,
                     style: CcTypography.caption.copyWith(
@@ -601,7 +601,7 @@ class _JobStepsAccordionState extends ConsumerState<JobStepsAccordion> {
 
   Widget _caption(String text, DesignSystemTokens tokens) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(38, 0, 14, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(38, 0, 14, 10),
       child: Text(
         text,
         style: CcTypography.caption.copyWith(color: tokens.textTertiary),
@@ -654,7 +654,7 @@ class _StepItem extends StatelessWidget {
                   ? tokens.bgSecondary
                   : null,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 8),
                 child: Row(
                   children: [
                     _stepGlyph(step),
@@ -760,7 +760,7 @@ class _FullLogItem extends StatelessWidget {
                   ? tokens.bgSecondary
                   : null,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(14, 8, 12, 8),
+                padding: const EdgeInsetsDirectional.fromSTEB(14, 8, 12, 8),
                 child: Row(
                   children: [
                     Expanded(
@@ -774,7 +774,7 @@ class _FullLogItem extends StatelessWidget {
                     ),
                     if (truncated)
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsetsDirectional.only(end: 8),
                         child: Text(
                           l10n.jobLogsTruncated,
                           style: CcTypography.caption.copyWith(
@@ -893,6 +893,7 @@ const double _logGutterWidth = 40;
 const double _logDepthIndent = 14;
 
 /// The right-aligned line-number cell every log row starts with.
+// RTL carve-out: log output with a line-number gutter stays LTR.
 class _LogGutter extends StatelessWidget {
   const _LogGutter({
     required this.number,
@@ -1054,7 +1055,7 @@ class _LogViewer extends ConsumerWidget {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final folds = '\n'.allMatches(text).length <= _maxFoldingLines;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 0, 12, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(14, 0, 12, 10),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(

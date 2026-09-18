@@ -9,6 +9,7 @@
 //   fvm dart run tool/rig_smoke.dart "<dataDir>" firefox    # Firefox (BiDi)
 //   fvm dart run tool/rig_smoke.dart "<dataDir>" webkit     # WebKit (WebDriver)
 //   fvm dart run tool/rig_smoke.dart "<dataDir>" computer   # desktop image
+//   fvm dart run tool/rig_smoke.dart "<dataDir>" ios <App.app> <bundle-id>
 //
 // Exec (a smolvm microVM): exits 0 only when the machine booted, answered
 // `machine exec`, reached an allowlisted host and was refused a
@@ -22,6 +23,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_action_result.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
@@ -32,7 +35,8 @@ Future<void> main(List<String> args) async {
   if (args.isEmpty) {
     stderr.writeln(
       'usage: dart run tool/rig_smoke.dart <dataDir> '
-      '[exec|browser|firefox|webkit|computer]',
+      '[exec|browser|firefox|webkit|computer|ios] '
+      '[path-to-built.app bundle-id]',
     );
     exit(2);
   }
@@ -49,6 +53,15 @@ Future<void> main(List<String> args) async {
       await _smokeBrowser(dataDir, RigBrowserEngine.webkit);
     case 'computer':
       await _smokeDesktop(dataDir);
+    case 'ios':
+      if (args.length != 4) {
+        stderr.writeln(
+          'usage: dart run tool/rig_smoke.dart <dataDir> ios '
+          '<path-to-built.app> <bundle-id>',
+        );
+        exit(2);
+      }
+      await _smokeIos(dataDir, args[2], args[3]);
     default:
       stderr.writeln('unsupported smoke mode: $mode');
       exit(2);
@@ -480,4 +493,101 @@ Future<void> _smokeDesktop(String dataDir) async {
   }
   stdout.writeln(failed ? 'SMOKE TEST FAILED' : 'SMOKE TEST PASSED');
   exit(failed ? 1 : 0);
+}
+
+/// Boots the production CoreSimulator backend and proves the complete agent
+/// lane against a caller-built simulator app.
+Future<void> _smokeIos(String dataDir, String appPath, String bundleId) async {
+  if (!Directory(appPath).existsSync() || !appPath.endsWith('.app')) {
+    throw StateError(
+      'iOS smoke app does not exist or is not an .app: $appPath',
+    );
+  }
+
+  final store = IosAutomationStore(dataDir: dataDir);
+  stdout.writeln('Installing/verifying pinned iOS automation bridge...');
+  await store.install();
+  final backend = IosSimulatorBackend(dataDir: dataDir, automationStore: store);
+  final rigId = 'smoke-$pid-${DateTime.now().microsecondsSinceEpoch}';
+  final session = await backend.launch(
+    rigId: rigId,
+    onProgress: (stage) => stdout.writeln(stage),
+  );
+  final deviceName = session.name;
+  final driver = IosRigDriver(
+    session: session,
+    backend: backend,
+    appRoots: [Directory(appPath).parent.path],
+    onDisplayChanged: (display) =>
+        stdout.writeln('Simulator display changed to $display'),
+  );
+
+  try {
+    Future<void> requireOk(String step, Future<RigActionResult> result) async {
+      final value = await result;
+      if (value.isError) {
+        throw StateError('$step failed: ${value.text}');
+      }
+      stdout.writeln('$step: ${value.text}');
+    }
+
+    await requireOk('install_app', driver.perform(IosInstallApp(appPath)));
+    await requireOk('start_app', driver.perform(IosStartApp(bundleId)));
+
+    final hierarchy = await session.client.source();
+    final hierarchyJson = jsonEncode(hierarchy);
+    if (hierarchyJson.isEmpty || hierarchyJson == 'null') {
+      throw StateError('WDA returned an empty JSON accessibility hierarchy.');
+    }
+    stdout.writeln('ui_dump: ${hierarchyJson.length} JSON bytes');
+    await requireOk('ui_dump', driver.perform(const IosUiDump()));
+
+    final still = await driver.captureForAgent();
+    if (still.isError ||
+        still.imageBase64 == null ||
+        still.imageBase64!.isEmpty) {
+      throw StateError('iOS agent still failed: ${still.text}');
+    }
+    stdout.writeln(
+      'screenshot: ${still.imageBase64!.length} base64 characters '
+      '(${still.imageMediaType})',
+    );
+
+    final frames = await driver.openWatchStream(
+      RigWatchRequest(size: session.display, fps: 2, quality: 60),
+    );
+    if (frames == null) {
+      throw StateError('iOS watch lane returned no stream.');
+    }
+    final frame = await frames.first.timeout(const Duration(seconds: 15));
+    if (frame.isEmpty) {
+      throw StateError('iOS watch lane returned an empty MJPEG frame.');
+    }
+    stdout.writeln('watch: ${frame.length} MJPEG bytes');
+
+    final centerX = session.display.width ~/ 2;
+    final centerY = session.display.height ~/ 2;
+    await requireOk('tap', driver.perform(IosTap(x: centerX, y: centerY)));
+    await requireOk(
+      'type',
+      driver.perform(const IosType('control-center-smoke')),
+    );
+  } finally {
+    await driver.dispose();
+    await backend.close(session);
+  }
+
+  final listed = await Process.run('/usr/bin/xcrun', [
+    'simctl',
+    'list',
+    'devices',
+    '--json',
+  ]);
+  if (listed.exitCode != 0) {
+    throw StateError('Could not verify simulator cleanup: ${listed.stderr}');
+  }
+  if ('${listed.stdout}'.contains(deviceName)) {
+    throw StateError('Owned simulator still exists after close: $deviceName');
+  }
+  stdout.writeln('iOS rig smoke passed; $deviceName was deleted.');
 }

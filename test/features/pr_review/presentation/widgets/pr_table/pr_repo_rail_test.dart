@@ -6,6 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../../helpers/test_wrap.dart';
 
+bool Function(AnimatedContainer) _hasBlendedWash(Color expected) {
+  return (box) {
+    final decoration = box.decoration;
+    return decoration is BoxDecoration && decoration.color == expected;
+  };
+}
+
 Repo _repo({required String id, required String name}) => Repo(
   id: id,
   name: name,
@@ -71,8 +78,16 @@ void main() {
     expect(expected.a, 1.0);
 
     final washes = tester
-        .widgetList<ColoredBox>(find.byType(ColoredBox))
-        .where((box) => box.color == expected);
+        .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+        .where(_hasBlendedWash(expected));
     expect(washes, hasLength(1));
+  });
+
+  testWidgets('hover highlight is a fluid nearest-target group', (
+    tester,
+  ) async {
+    await tester.pumpWidget(testWrap(rail()));
+
+    expect(find.byType(CcFluidHover), findsOneWidget);
   });
 }

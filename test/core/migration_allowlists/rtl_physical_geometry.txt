@@ -1,0 +1,7 @@
+# Enforced by rtl_directionality_ratchet_test.dart. Shrinking allowlist:
+# files still using physical-edge geometry (EdgeInsets.only(left/right:),
+# Alignment.*Left/Right, TextAlign.left/right) that should mirror under
+# RTL. Migrate to the Directional counterparts and REMOVE the entry, or
+# mark a deliberate LTR surface with an "// RTL carve-out:" comment.
+# One repo-relative path per line; blank lines and # comments ignored.
+

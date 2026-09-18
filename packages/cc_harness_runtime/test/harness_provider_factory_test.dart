@@ -2,6 +2,7 @@ import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/src/harness_provider_factory.dart';
 import 'package:cc_harness_runtime/src/oauth/kimi_oauth.dart';
 import 'package:cc_harness_runtime/src/providers/anthropic_provider.dart';
+import 'package:cc_harness_runtime/src/providers/cursor/cursor_provider.dart';
 import 'package:cc_harness_runtime/src/providers/openai_provider.dart';
 import 'package:test/test.dart';
 
@@ -210,5 +211,19 @@ void main() {
       () => factory.create(providerId: 'nope'),
       throwsA(isA<UnsupportedError>()),
     );
+  });
+
+  test('cursor builds CursorProvider on an OAuth token', () {
+    final provider = factory.create(
+      providerId: 'cursor',
+      credential: const ProviderCredential(
+        providerId: 'cursor',
+        method: HarnessAuthMethod.oauth,
+        accessToken: 'cursor-tok',
+      ),
+    );
+    expect(provider, isA<CursorProvider>());
+    expect(provider.displayName, 'Cursor');
+    expect(provider.defaultModel, 'auto');
   });
 }

@@ -33,6 +33,7 @@ import 'package:control_center/features/pr_review/providers/pr_review_providers.
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/sandboxing/presentation/enclosed_terminal_start.dart';
@@ -52,8 +53,9 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/providers/last_checked_provider.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -303,16 +305,18 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   // ── URL tab sync (`?tab=`) ────────────────────────────────────────────────
 
   /// Two-way sync between the focused workbench tab and the URL's `?tab=`
-  /// param: a tab switch navigates (joining the back/forward stack and
-  /// surviving a refresh) and back/forward or a deep-link re-focuses the
-  /// named tab. The state machine lives in [EditorTabUrlTracker]; only the
-  /// focus/write actions are PR-specific.
+  /// param: a tab switch publishes lightweight browser history, while
+  /// back/forward or a deep link re-focuses the named tab. The state machine
+  /// lives in [EditorTabUrlTracker]; only the focus/write actions are PR-specific.
   late final EditorTabUrlTracker _tabUrl;
 
-  /// Navigates to the current location with `?tab=` set to [key].
+  /// Mirrors focus into browser history without routing the active page again.
+  ///
+  /// A tab press is local editor state. Sending it through `context.go` rebuilt
+  /// the whole PR route and every visited workbench body, including the diff.
   void _writeTabKey(String? key) {
     final uri = GoRouterState.of(context).uri;
-    context.go(locationWithEditorTab(uri, key));
+    unawaited(updateEditorTabRoute(uri, key));
   }
 
   /// Focuses the tab of [key] wherever it lives in the split tree. A key that
@@ -358,7 +362,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
     _bodyHost.reconcile(_layout.allTabs());
     _pruneTerminalTitles();
-    setState(() {});
+    // EditorWorkspace already listens to the layout and rebuilds only the
+    // workbench. A host setState here duplicated that rebuild and needlessly
+    // rebuilt the timer banner and every visited body on each selection.
     _persistNow(debounced: true);
     _tabUrl.writeFromLayout(_layout);
   }
@@ -664,6 +670,16 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
   /// Copy path / Copy relative path rows for a code-server (file) tab. The
   /// fixed PR tabs (overview / diff / …) and tool tabs carry no path.
   List<CcMenuItem> _tabContextExtras(EditorTab tab) {
+    if (tab.kind == PrTabKinds.rig) {
+      final surface = tab.args['surface'] as String? ?? RigTabSurfaces.computer;
+      return rigTabAudioMenuItems(
+        context: context,
+        ref: ref,
+        tabKey: tab,
+        supportsOutput: RigTabSurfaces.supportsAudioOutput(surface),
+        supportsMicrophone: RigTabSurfaces.supportsMicrophone(surface),
+      );
+    }
     final relative = tab.args['path'] as String?;
     if (relative == null || relative.isEmpty) {
       return const [];
@@ -847,6 +863,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         // so the machine sits on the prepared PR worktree and the agents in
         // this PR's conversation drive the one the reviewer is watching.
         return PrRigTab(
+          audioTabKey: tab,
           pr: widget.pr,
           surface: tab.args['surface'] as String? ?? RigTabSurfaces.computer,
           engine: RigTabSurfaces.engineFromArgs(tab.args),
@@ -877,6 +894,15 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
             if (b.hostsBrowser) ...b.browserEngines,
         },
         orElse: () => const <RigBrowserEngine>{},
+      );
+
+  Set<String> get _serverRigSurfaces => ref
+      .read(rigCapabilitiesProvider)
+      .maybeWhen(
+        data: (backends) => {
+          for (final backend in backends) ...backend.surfaces,
+        },
+        orElse: () => const <String>{},
       );
 
   /// Whether the connected server can host a terminal inside an enclosed VM
@@ -998,9 +1024,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       scope: '/pull-requests/',
       bindings: {
         'pr.detail-refresh': () => unawaited(
-          ref
-              .read(prDetailPollingProvider(widget.prRef).notifier)
-              .refreshAll(),
+          ref.read(prDetailPollingProvider(widget.prRef).notifier).refreshAll(),
         ),
         'pr.detail-close-tab': () => unawaited(_closeActiveTab()),
       },
@@ -1025,6 +1049,21 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                         color: color,
                       )
                     : null,
+                trailingFor: (tab) {
+                  if (tab.kind != PrTabKinds.rig) {
+                    return null;
+                  }
+                  final surface =
+                      tab.args['surface'] as String? ?? RigTabSurfaces.computer;
+                  return (color) => RigTabAudioIndicators(
+                    tabKey: tab,
+                    color: color,
+                    supportsOutput: RigTabSurfaces.supportsAudioOutput(surface),
+                    supportsMicrophone: RigTabSurfaces.supportsMicrophone(
+                      surface,
+                    ),
+                  );
+                },
                 dirtyFor: _tabDirty,
                 confirmClose: _confirmCloseTab,
                 tabContextMenuExtras: _tabContextExtras,
@@ -1101,7 +1140,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                   // visibly different groups, which is the confusion the
                   // suffix existed to prevent — structurally now, not by
                   // making the reader parse to the end of each line.
-                  CcMenuItem.section(l10n.ideMenuSectionVirtualMachine),
+                  CcMenuItem.section(l10n.ideMenuSectionMachines),
                   // A shell inside the PR conversation's enclosed VM. Only
                   // when the server can actually host one — otherwise the
                   // entry is a button whose sole outcome is a delayed error.
@@ -1128,6 +1167,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                   // for.
                   for (final target in RigTabSurfaces.targets(
                     _serverBrowserEngines,
+                    advertisedSurfaces: _serverRigSurfaces,
                   ))
                     CcMenuItem(
                       label: RigTabSurfaces.menuLabelFor(l10n, target),
@@ -1202,19 +1242,10 @@ class _PrDetailLoadingBodyState extends State<_PrDetailLoadingBody> {
   void initState() {
     super.initState();
     _layout = _PrDetailBodyState._seedLayout();
-    // Tabs stay switchable while the PR loads (each shows its own skeleton).
-    _layout.addListener(_onLayoutChanged);
-  }
-
-  void _onLayoutChanged() {
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override
   void dispose() {
-    _layout.removeListener(_onLayoutChanged);
     _layout.dispose();
     super.dispose();
   }

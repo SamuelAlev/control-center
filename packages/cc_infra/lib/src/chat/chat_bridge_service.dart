@@ -1822,6 +1822,9 @@ class _TurnRelay {
       return null;
     }
     for (final key in const [
+      // The per-call summary script tools are required to send; a status line
+      // reads better as "checking the failing test" than as a raw command.
+      'description',
       'command',
       'file_path',
       'path',

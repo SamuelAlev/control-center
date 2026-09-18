@@ -1,4 +1,5 @@
 import 'package:cc_markdown/cc_markdown.dart';
+import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/media_proxy.dart';
 import 'package:cc_remote/providers.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -19,13 +20,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// four-line snippet inside a PR body.
 class PhoneMarkdown extends ConsumerWidget {
   /// Creates a [PhoneMarkdown] rendering [data].
-  const PhoneMarkdown({super.key, required this.data, this.fontSize = 14});
+  const PhoneMarkdown({
+    super.key,
+    required this.data,
+    this.fontSize = 14,
+    this.onTaskCheckboxChanged,
+  });
 
   /// The markdown source.
   final String data;
 
   /// Base body size; headings scale off it.
   final double fontSize;
+
+  /// Task-list checkbox toggle. Null keeps the boxes read-only.
+  final void Function(int index, bool checked)? onTaskCheckboxChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,6 +46,7 @@ class PhoneMarkdown extends ConsumerWidget {
     return CcMarkdown(
       data: data,
       style: phoneMarkdownStyle(t, fontSize),
+      onTaskCheckboxChanged: onTaskCheckboxChanged,
       imageBuilder: (url, alt, title) =>
           _PhoneMarkdownImage(url: url, alt: alt, endpoint: endpoint),
     );
@@ -61,17 +71,17 @@ class _PhoneMarkdownImage extends StatelessWidget {
   final String? alt;
   final RemoteMediaEndpoint? endpoint;
 
-  static const _labels = CcImageViewerLabels(
-    expand: 'Expand',
-    zoomIn: 'Zoom in',
-    zoomOut: 'Zoom out',
-    resetZoom: 'Reset zoom',
-    close: 'Close',
-  );
-
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final l10n = AppLocalizations.of(context);
+    final labels = CcImageViewerLabels(
+      expand: l10n.expand,
+      zoomIn: l10n.zoomIn,
+      zoomOut: l10n.zoomOut,
+      resetZoom: l10n.resetZoom,
+      close: l10n.close,
+    );
     final endpoint = this.endpoint;
     // A broker-relayed session has no HTTP origin, so there is no proxy to
     // fetch through and the phone must not dial the upstream itself. The alt
@@ -95,7 +105,7 @@ class _PhoneMarkdownImage extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: CcExpandableImage(
-        labels: _labels,
+        labels: labels,
         title: alt?.isNotEmpty == true ? alt : null,
         borderRadius: BorderRadius.circular(6),
         // The viewer asks for a desktop-class raster: the whole point of
@@ -148,9 +158,11 @@ CcMarkdownStyle phoneMarkdownStyle(DesignSystemTokens t, [double base = 14]) {
     tableHead: body.copyWith(fontWeight: FontWeight.w600, color: t.textPrimary),
     tableBody: body,
     blockquoteDecoration: BoxDecoration(
-      border: Border(left: BorderSide(color: t.borderSecondary, width: 3)),
+      border: BorderDirectional(
+        start: BorderSide(color: t.borderSecondary, width: 3),
+      ),
     ),
-    blockquotePadding: const EdgeInsets.only(left: 12),
+    blockquotePadding: const EdgeInsetsDirectional.only(start: 12),
     codeblockDecoration: BoxDecoration(
       color: t.bgTertiary,
       borderRadius: BorderRadius.circular(6),
@@ -161,11 +173,30 @@ CcMarkdownStyle phoneMarkdownStyle(DesignSystemTokens t, [double base = 14]) {
     tableBorder: TableBorder.all(color: t.borderSoft),
     tableCellPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
     horizontalRuleColor: t.borderSoft,
+    checkbox: _phoneMarkdownCheckbox,
     // A phone column is ~44 characters wide. Treating every newline as a hard
     // break is what makes a GitHub PR body wrap the way its author saw it —
     // CommonMark's paragraph-joining reflows their line breaks away.
     softBreakMode: CcSoftBreakMode.newline,
     blockSpacing: 10,
     listIndent: 18,
+  );
+}
+
+Widget _phoneMarkdownCheckbox(bool checked, {ValueChanged<bool>? onChanged}) {
+  // Same 18×22 layout slot as the desktop markdown checkbox so the painted
+  // box sits on the first line (14px at height 1.5 ≈ 21px) rather than a
+  // 32px tap target pulling it off.
+  return SizedBox(
+    width: 18,
+    height: 21,
+    child: OverflowBox(
+      minWidth: 32,
+      minHeight: 32,
+      maxWidth: 32,
+      maxHeight: 32,
+      alignment: Alignment.center,
+      child: CcCheckbox(value: checked, onChanged: onChanged),
+    ),
   );
 }

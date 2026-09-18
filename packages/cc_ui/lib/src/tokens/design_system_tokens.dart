@@ -221,7 +221,7 @@ final class DesignSystemTokens {
     // a11y: brand icons are the accessible burnt accent so they
     // clear the 3:1 non-text floor on canvas/panel with margin (bright
     // brand500/600 are 2.9–3.3:1). Bright #FA500F is reserved for the
-    // bounded brand graphics (logo mosaic, golden-hour horizon).
+    // bounded brand graphics (brand mark, golden-hour horizon).
     fgBrandPrimary: DesignSystemPalette.brand850,
     fgBrandPrimaryAlt: DesignSystemPalette.brand850,
     fgBrandSecondary: DesignSystemPalette.brand850,
@@ -270,7 +270,7 @@ final class DesignSystemTokens {
     // a11y: the functional accent is the brand's accessible
     // burnt orange (#B0370C) — white on it clears 4.5:1 (6.2:1) and it
     // clears 4.5:1 as colored text on the canvas. The bright signal
-    // #FA500F is reserved for the bounded brand graphics (logo mosaic,
+    // #FA500F is reserved for the bounded brand graphics (brand mark,
     // golden-hour horizon), where it is large/decorative.
     accent: DesignSystemPalette.brand850,
     accentOn: DesignSystemPalette.white,

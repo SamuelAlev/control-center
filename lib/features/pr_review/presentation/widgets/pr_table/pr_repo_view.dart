@@ -84,7 +84,7 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
           key: const PageStorageKey('pr-repo-detail'),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.only(right: AppSpacing.md),
+              padding: const EdgeInsetsDirectional.only(end: AppSpacing.md),
               sliver: PrRepoSectionCard(
                 items: selected.items,
                 selectable: widget.selectable,

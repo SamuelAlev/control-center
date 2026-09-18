@@ -46,7 +46,7 @@ class CreateRuntimeProfileTool extends McpTool {
       'command': {'type': 'string', 'description': 'Executable to launch.'},
       'protocol_family': {
         'type': 'string',
-        'enum': ['claude', 'acp', 'pi', 'codex', 'cli'],
+        'enum': ['claude', 'acp', 'cli'],
         'description': 'Protocol family (default cli).',
       },
       'fixed_args': {

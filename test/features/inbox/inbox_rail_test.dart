@@ -6,6 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../../helpers/test_wrap.dart';
 
+bool Function(AnimatedContainer) _hasBlendedWash(Color expected) {
+  return (box) {
+    final decoration = box.decoration;
+    return decoration is BoxDecoration && decoration.color == expected;
+  };
+}
+
 void main() {
   const counts = {
     PrInboxSection.needsYourReview: 3,
@@ -63,9 +70,19 @@ void main() {
     expect(expected.a, 1.0);
 
     final washes = tester
-        .widgetList<ColoredBox>(find.byType(ColoredBox))
-        .where((box) => box.color == expected);
+        .widgetList<AnimatedContainer>(find.byType(AnimatedContainer))
+        .where(_hasBlendedWash(expected));
     expect(washes, hasLength(1));
+  });
+
+  testWidgets('hover highlight is a fluid nearest-target group', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      testWrap(InboxRail(counts: counts, selected: null, onSelect: (_) {})),
+    );
+
+    expect(find.byType(CcFluidHover), findsOneWidget);
   });
 
   testWidgets('selected row is a fixed 32px tall and contains its label', (
@@ -86,7 +103,10 @@ void main() {
 
     final label = find.text('Returned to you');
     expect(label, findsOneWidget);
-    final row = find.ancestor(of: label, matching: find.byType(SizedBox));
+    final row = find.ancestor(
+      of: label,
+      matching: find.byType(AnimatedContainer),
+    );
     expect(tester.getSize(row.first).height, kCcSidebarItemExtent);
   });
 }

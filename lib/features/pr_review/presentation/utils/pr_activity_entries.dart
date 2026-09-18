@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_timeline_event.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
@@ -87,6 +88,33 @@ class PrReviewRequestEntry extends PrActivityEntry {
   final DateTime? timestamp;
 }
 
+/// "{actor} added the X label" / "removed the Y label". Consecutive
+/// labeled/unlabeled forge events by the same actor within a short window
+/// collapse into one row (see [buildPrActivityEntries]). Names are the net of
+/// the burst: a label added then dropped in the same burst lands only in
+/// [removed].
+class PrLabelChangeEntry extends PrActivityEntry {
+  /// PrLabelChangeEntry.
+  const PrLabelChangeEntry({
+    required this.actor,
+    this.added = const [],
+    this.removed = const [],
+    required this.timestamp,
+  });
+
+  /// Who added or removed the labels.
+  final PrUser? actor;
+
+  /// Labels still added at the end of the burst, in first-seen order.
+  final List<PrLabel> added;
+
+  /// Labels still removed at the end of the burst, in first-seen order.
+  final List<PrLabel> removed;
+
+  @override
+  final DateTime? timestamp;
+}
+
 /// A submitted review — a compact verdict row when [PrReviewSubmission.body]
 /// is empty, a comment card with a verdict chip otherwise.
 class PrReviewEntry extends PrActivityEntry {
@@ -142,10 +170,10 @@ class PrCommitGroupEntry extends PrActivityEntry {
 }
 
 /// Merges the PR's conversation streams into one chronological activity feed:
-/// the opened event, grouped review-request/remove events, submitted reviews,
-/// issue comments and commits — ascending by time (nulls first, insertion
-/// order as the tie-break). Inline code comments deliberately stay out: they
-/// render in the diff.
+/// the opened event, grouped review-request/remove events, grouped
+/// labeled/unlabeled events, submitted reviews, issue comments and commits —
+/// ascending by time (nulls first, insertion order as the tie-break). Inline
+/// code comments deliberately stay out: they render in the diff.
 List<PrActivityEntry> buildPrActivityEntries({
   required PullRequest pr,
   required List<PrReviewSubmission> reviews,
@@ -154,9 +182,9 @@ List<PrActivityEntry> buildPrActivityEntries({
   required List<PrTimelineEvent> events,
 }) {
   /// GitHub emits one event per reviewer for a single "request review from
-  /// A, B, C" action and a person tweaking the list (add, drop, add) lands
-  /// as a run of mixed request/remove events. Same-actor events collapse
-  /// while each is within this window of the previous one.
+  /// A, B, C" action (and the same for labels). A person tweaking the list
+  /// lands as a run of mixed add/remove events. Same-actor same-kind events
+  /// collapse while each is within this window of the previous one.
   const requestGroupWindow = Duration(hours: 1);
 
   final entries = <PrActivityEntry>[
@@ -168,13 +196,24 @@ List<PrActivityEntry> buildPrActivityEntries({
   ];
 
   var burstOpen = false;
+  var burstIsLabel = false;
   PrUser? burstActor;
   DateTime? burstStartedAt;
   DateTime? burstLastAt;
   final burstRequested = <PrReviewerMention>[];
-  final burstRemoved = <PrReviewerMention>[];
+  final burstRemovedReviewers = <PrReviewerMention>[];
+  final burstAddedLabels = <PrLabel>[];
+  final burstRemovedLabels = <PrLabel>[];
 
-  void applyToBurst(PrTimelineEvent e) {
+  bool isLabelEvent(PrTimelineEvent e) =>
+      e.kind == PrTimelineEventKind.labeled ||
+      e.kind == PrTimelineEventKind.unlabeled;
+
+  bool isReviewEvent(PrTimelineEvent e) =>
+      e.kind == PrTimelineEventKind.reviewRequested ||
+      e.kind == PrTimelineEventKind.reviewRequestRemoved;
+
+  void applyReview(PrTimelineEvent e) {
     final name = e.reviewerName;
     if (name.isEmpty) {
       return;
@@ -186,13 +225,32 @@ List<PrActivityEntry> buildPrActivityEntries({
     );
     if (e.kind == PrTimelineEventKind.reviewRequestRemoved) {
       burstRequested.removeWhere((m) => m.name == name);
-      if (!burstRemoved.any((m) => m.name == name)) {
-        burstRemoved.add(mention);
+      if (!burstRemovedReviewers.any((m) => m.name == name)) {
+        burstRemovedReviewers.add(mention);
       }
     } else {
-      burstRemoved.removeWhere((m) => m.name == name);
+      burstRemovedReviewers.removeWhere((m) => m.name == name);
       if (!burstRequested.any((m) => m.name == name)) {
         burstRequested.add(mention);
+      }
+    }
+  }
+
+  void applyLabel(PrTimelineEvent e) {
+    final label = e.label;
+    if (label == null || label.name.isEmpty) {
+      return;
+    }
+    final name = label.name;
+    if (e.kind == PrTimelineEventKind.unlabeled) {
+      burstAddedLabels.removeWhere((l) => l.name == name);
+      if (!burstRemovedLabels.any((l) => l.name == name)) {
+        burstRemovedLabels.add(label);
+      }
+    } else {
+      burstRemovedLabels.removeWhere((l) => l.name == name);
+      if (!burstAddedLabels.any((l) => l.name == name)) {
+        burstAddedLabels.add(label);
       }
     }
   }
@@ -201,45 +259,75 @@ List<PrActivityEntry> buildPrActivityEntries({
     if (!burstOpen) {
       return;
     }
-    if (burstRequested.isNotEmpty || burstRemoved.isNotEmpty) {
+    if (burstIsLabel) {
+      if (burstAddedLabels.isNotEmpty || burstRemovedLabels.isNotEmpty) {
+        entries.add(
+          PrLabelChangeEntry(
+            actor: burstActor,
+            added: List<PrLabel>.unmodifiable(List.of(burstAddedLabels)),
+            removed: List<PrLabel>.unmodifiable(List.of(burstRemovedLabels)),
+            timestamp: burstStartedAt,
+          ),
+        );
+      }
+    } else if (burstRequested.isNotEmpty || burstRemovedReviewers.isNotEmpty) {
       entries.add(
         PrReviewRequestEntry(
           actor: burstActor,
           requested: List<PrReviewerMention>.unmodifiable(
             List.of(burstRequested),
           ),
-          removed: List<PrReviewerMention>.unmodifiable(List.of(burstRemoved)),
+          removed: List<PrReviewerMention>.unmodifiable(
+            List.of(burstRemovedReviewers),
+          ),
           timestamp: burstStartedAt,
         ),
       );
     }
     burstOpen = false;
+    burstIsLabel = false;
     burstActor = null;
     burstStartedAt = null;
     burstLastAt = null;
     burstRequested.clear();
-    burstRemoved.clear();
+    burstRemovedReviewers.clear();
+    burstAddedLabels.clear();
+    burstRemovedLabels.clear();
   }
 
   for (final e in events) {
+    final asLabel = isLabelEvent(e);
+    if (!asLabel && !isReviewEvent(e)) {
+      continue;
+    }
     final prev = burstLastAt;
     final at = e.createdAt;
     final sameBurst =
         burstOpen &&
+        burstIsLabel == asLabel &&
         burstActor?.login == e.actor?.login &&
         prev != null &&
         at != null &&
         at.difference(prev).abs() <= requestGroupWindow;
     if (sameBurst) {
-      applyToBurst(e);
+      if (asLabel) {
+        applyLabel(e);
+      } else {
+        applyReview(e);
+      }
       burstLastAt = at;
     } else {
       flushBurst();
       burstOpen = true;
+      burstIsLabel = asLabel;
       burstActor = e.actor;
       burstStartedAt = e.createdAt;
       burstLastAt = e.createdAt;
-      applyToBurst(e);
+      if (asLabel) {
+        applyLabel(e);
+      } else {
+        applyReview(e);
+      }
     }
   }
   flushBurst();

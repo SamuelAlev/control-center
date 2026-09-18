@@ -344,7 +344,7 @@ class _MintedCard extends StatelessWidget {
             ),
           const SizedBox(height: AppSpacing.sm),
           Align(
-            alignment: Alignment.centerRight,
+            alignment: AlignmentDirectional.centerEnd,
             child: CcButton(
               onPressed: onDismiss,
               variant: CcButtonVariant.ghost,

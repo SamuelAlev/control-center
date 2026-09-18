@@ -50,6 +50,15 @@ void main() {
       expect(await store.activeCredential('zai'), isNull);
     });
 
+    test('Cursor reads CURSOR_API_KEY', () async {
+      final store = EnvProviderCredentialStore(
+        environment: const {'CURSOR_API_KEY': 'cur-tok'},
+      );
+      final cred = await store.activeCredential('cursor');
+      expect(cred!.secret, 'cur-tok');
+      expect(cred.accountLabel, 'env:CURSOR_API_KEY');
+    });
+
     test('Kimi Code has no env var — the plan issues no API key', () async {
       // It is reachable only through the OAuth device login, so there must be
       // nothing an env var could switch on.

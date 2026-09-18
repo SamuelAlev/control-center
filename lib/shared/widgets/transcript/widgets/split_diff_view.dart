@@ -180,51 +180,56 @@ class _SplitDiffViewState extends State<SplitDiffView> {
       constraints: BoxConstraints(maxHeight: widget.maxHeight),
       // No explicit scrollbar: the app-wide [CcScrollBehavior] injects the
       // design-system one, wired to this scrollable's controller.
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        // The design system's selection island (cc_markdown owns the one
-        // Material dependency selection needs), so this file stays widgets-only.
-        child: CcSelectionRegion(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              for (final row in rows)
-                _SplitRow(
-                  row: row,
-                  oldLines: oldLines,
-                  newLines: newLines,
-                  baseStyle: baseStyle,
-                  colors: colors,
-                  fillerColor: tokens.bgSecondary,
-                  dividerColor: tokens.borderSecondary,
-                  gutterColor: tokens.textQuaternary,
-                ),
-              if (truncated)
-                Padding(
-                  padding: const EdgeInsets.only(left: 6, top: 4),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: CcTappable(
-                      onPressed: () => setState(() => _showAll = true),
-                      borderRadius: AppRadii.brSm,
-                      builder: (context, states) => Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 2,
-                        ),
-                        child: Text(
-                          AppLocalizations.of(
-                            context,
-                          ).transcriptShowAllLines(allRows.length),
-                          style: CcTypography.caption.copyWith(
-                            color: tokens.accent,
+      // Pinned per the carve-out below: the old|new halves and their gutters
+      // keep their left/right meaning whatever the app locale.
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          // The design system's selection island (cc_markdown owns the one
+          // Material dependency selection needs), so this file stays widgets-only.
+          child: CcSelectionRegion(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final row in rows)
+                  _SplitRow(
+                    row: row,
+                    oldLines: oldLines,
+                    newLines: newLines,
+                    baseStyle: baseStyle,
+                    colors: colors,
+                    fillerColor: tokens.bgSecondary,
+                    dividerColor: tokens.borderSecondary,
+                    gutterColor: tokens.textQuaternary,
+                  ),
+                if (truncated)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 6, top: 4),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: CcTappable(
+                        onPressed: () => setState(() => _showAll = true),
+                        borderRadius: AppRadii.brSm,
+                        builder: (context, states) => Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            AppLocalizations.of(
+                              context,
+                            ).transcriptShowAllLines(allRows.length),
+                            style: CcTypography.caption.copyWith(
+                              color: tokens.accent,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -289,6 +294,7 @@ class _SplitRow extends StatelessWidget {
   }
 }
 
+// RTL carve-out: diff cells render source code, which stays LTR by policy.
 class _Cell extends StatelessWidget {
   const _Cell({
     required this.cell,

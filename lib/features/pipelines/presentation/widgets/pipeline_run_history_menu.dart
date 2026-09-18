@@ -53,8 +53,8 @@ class PipelineRunHistoryMenu extends ConsumerWidget {
       semanticLabel: l10n.pipelineRunHistory,
       minWidth: 240,
       maxWidth: 340,
-      targetAnchor: Alignment.bottomRight,
-      followerAnchor: Alignment.topRight,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       items: [
         if (siblings.isEmpty)
           CcMenuItem(

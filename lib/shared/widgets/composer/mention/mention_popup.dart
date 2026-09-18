@@ -4,7 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 
 /// A single visual row entry — either a section header or a suggestion.
@@ -354,32 +354,28 @@ class _MentionPopupState extends State<MentionPopup> {
     if (_flat.isEmpty && !_showSearching) {
       return const SizedBox.shrink();
     }
-    return Material(
-      color: Colors.transparent,
-      child: Container(
-        constraints: const BoxConstraints(maxHeight: _maxHeight),
-        decoration: BoxDecoration(
-          color: ds.bgPrimary,
-          borderRadius: AppRadii.brMd,
-          border: Border.all(color: ds.borderSecondary),
-          boxShadow: AppShadows.golden,
-        ),
-        child: _flat.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(
-                  l10n.searching,
-                  style: CcTypography.body.copyWith(color: ds.textTertiary),
-                ),
-              )
-            : ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                shrinkWrap: true,
-                itemCount: _rows.length,
-                itemBuilder: _buildRow,
-              ),
+    return Container(
+      constraints: const BoxConstraints(maxHeight: _maxHeight),
+      decoration: BoxDecoration(
+        color: ds.bgPrimary,
+        border: Border.all(color: ds.borderSecondary),
+        boxShadow: AppShadows.golden,
       ),
+      child: _flat.isEmpty
+          ? Padding(
+              padding: const EdgeInsets.all(12),
+              child: Text(
+                l10n.searching,
+                style: CcTypography.body.copyWith(color: ds.textTertiary),
+              ),
+            )
+          : ListView.builder(
+              controller: _scroll,
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              shrinkWrap: true,
+              itemCount: _rows.length,
+              itemBuilder: _buildRow,
+            ),
     );
   }
 
@@ -392,7 +388,7 @@ class _MentionPopupState extends State<MentionPopup> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 6, 14, 2),
           child: Align(
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: Text(
               row.header!.toUpperCase(),
               style: CcTypography.caption.copyWith(
@@ -442,7 +438,7 @@ class _SuggestionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    final bg = selected ? ds.bgSecondary : Colors.transparent;
+    final bg = selected ? ds.bgSecondary : const Color(0x00000000);
     return ConstrainedBox(
       constraints: const BoxConstraints(
         minHeight: _MentionPopupState._rowHeight,
@@ -494,7 +490,7 @@ class _SuggestionRow extends StatelessWidget {
                 // description is the skill's own words and would push it out.
                 if (suggestion.badge != null && suggestion.badge!.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsetsDirectional.only(start: 8),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 120),
                       child: Container(
@@ -504,7 +500,6 @@ class _SuggestionRow extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: ds.bgTertiary,
-                          borderRadius: AppRadii.brSm,
                           border: Border.all(color: ds.borderSecondary),
                         ),
                         child: Text(

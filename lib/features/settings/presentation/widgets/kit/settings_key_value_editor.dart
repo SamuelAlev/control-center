@@ -160,7 +160,7 @@ class _SettingsKeyValueEditorState extends State<SettingsKeyValueEditor> {
             child: _buildRow(context, i, tokens, l10n),
           ),
         Align(
-          alignment: Alignment.centerLeft,
+          alignment: AlignmentDirectional.centerStart,
           child: CcButton(
             variant: CcButtonVariant.secondary,
             size: CcButtonSize.sm,

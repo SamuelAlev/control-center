@@ -1,5 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/github_mention_avatar_scope.dart';
+import 'package:control_center/shared/widgets/github_team_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_mention.dart';
@@ -90,6 +91,42 @@ void main() {
       );
 
       expect(find.byType(GitHubUserAvatar), findsOneWidget);
+    });
+
+    testWidgets('qualified team mentions expose a hover card and navigate', (
+      tester,
+    ) async {
+      final router = GoRouter(
+        initialLocation: '/workspaces/ws-1/inbox',
+        routes: [
+          GoRoute(
+            path: '/workspaces/:workspaceId/inbox',
+            builder: (_, _) =>
+                const GitHubUserMention(login: 'acme/eng', isTeam: true),
+          ),
+          GoRoute(
+            path: '/workspaces/:workspaceId/teams/:organization/:slug',
+            builder: (_, state) => Text(
+              'team:${state.pathParameters['organization']}/${state.pathParameters['slug']}',
+            ),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        CcTheme(
+          data: CcThemeData.light(),
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GitHubTeamHoverTarget), findsOneWidget);
+      expect(find.byType(CcTappable), findsOneWidget);
+      await tester.tap(find.text('acme/eng'));
+      await tester.pumpAndSettle();
+      expect(find.text('team:acme/eng'), findsOneWidget);
     });
 
     testWidgets('bots are not wrapped as a profile link', (tester) async {

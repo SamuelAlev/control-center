@@ -14,7 +14,7 @@ import 'package:control_center/features/pipelines/presentation/widgets/node_fiel
 import 'package:control_center/features/pipelines/presentation/widgets/node_repo_scope_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Right-hand side panel for editing the selected node.
 class NodeConfigEditor extends StatefulWidget {

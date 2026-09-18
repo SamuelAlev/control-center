@@ -8,6 +8,73 @@ void main() {
       expect(token.text, 'hello');
       expect(token.colorValue, 0xFFFF0000);
       expect(token.backgroundColorValue, isNull);
+      expect(token.kind, DiffTokenKind.none);
+    });
+
+    test('classifies TextMate regexp scopes', () {
+      expect(diffTokenKindFromScopes(null), DiffTokenKind.none);
+      expect(diffTokenKindFromScopes(const ['source.js']), DiffTokenKind.none);
+      expect(
+        diffTokenKindFromScopes(const ['string.regexp.js', 'source.js']),
+        DiffTokenKind.regexp,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['string.regexp.ts']),
+        DiffTokenKind.regexp,
+      );
+      expect(
+        diffTokenKindFromScopes(const [
+          'entity.name.function.dart',
+          'meta.definition.function',
+          'source.dart',
+        ]),
+        DiffTokenKind.symbol,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['support.class.dart', 'source.dart']),
+        DiffTokenKind.symbol,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['support.function.ts', 'source.ts']),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['support.type.primitive.ts']),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['support.variable.dom.js']),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const [
+          'support.type.property-name.json',
+          'source.json',
+        ]),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['source.json']),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const ['keyword.control.dart', 'source.dart']),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const [
+          'string.quoted.double.dart',
+          'source.dart',
+        ]),
+        DiffTokenKind.none,
+      );
+      expect(
+        diffTokenKindFromScopes(const [
+          'comment.line.double-slash.dart',
+          'source.dart',
+        ]),
+        DiffTokenKind.none,
+      );
     });
 
     test('creates with background color', () {

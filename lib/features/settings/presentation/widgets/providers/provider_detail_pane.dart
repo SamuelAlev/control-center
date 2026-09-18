@@ -158,7 +158,7 @@ class _ProviderDetailPaneState extends ConsumerState<ProviderDetailPane> {
             const CcDivider(),
             const SizedBox(height: AppSpacing.md),
             Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: CcButton(
                 variant: CcButtonVariant.ghost,
                 size: CcButtonSize.sm,

@@ -50,7 +50,7 @@ class CalendarOverflowButton extends StatelessWidget {
     // short for a CcButton, so the ghost treatment is applied to a CcTappable
     // directly at the tile scale.
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: AlignmentDirectional.centerStart,
       heightFactor: 1,
       child: CcTappable(
         onPressed: portalController.show,
@@ -67,7 +67,7 @@ class CalendarOverflowButton extends StatelessWidget {
               : tokens.bg;
           return Container(
             height: rowHeight,
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             padding: const EdgeInsets.symmetric(horizontal: 5),
             decoration: BoxDecoration(color: bg, borderRadius: AppRadii.brSm),
             child: Text(
@@ -204,7 +204,12 @@ class CalendarOverflowFlyout extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+                        padding: const EdgeInsetsDirectional.fromSTEB(
+                          12,
+                          6,
+                          6,
+                          6,
+                        ),
                         child: Row(
                           children: [
                             Expanded(

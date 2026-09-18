@@ -2,15 +2,17 @@ import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig_action_log_entry.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/computer_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/mobile_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 
 /// The wire form of a [Rig] for the `rig.*` ops.
 ///
-/// Deliberately does NOT carry the spec's egress allowlist or the worktree
-/// path: the client renders status and identity, and a rig's reachability
-/// policy is not something a viewer needs to know to draw a canvas.
+/// Deliberately does NOT carry the spec's host allowlist or the worktree path:
+/// the client renders status and identity. It does carry whether the live
+/// machine bypasses that policy, because the tab must keep the exception
+/// visible and must not offer the bypass twice.
 Map<String, dynamic> rigToWire(Rig rig) => {
   'id': rig.id,
   'workspace_id': rig.workspaceId,
@@ -27,6 +29,8 @@ Map<String, dynamic> rigToWire(Rig rig) => {
   'backend': rig.backend.wire,
   'backend_label': rig.backend.label,
   'accelerated': rig.backend.isAccelerated,
+  'egress_enforced': rig.backend.hasEnforcedEgress,
+  'unrestricted_network': rig.spec.unrestrictedNetwork,
   'phase': rig.status.phase.wire,
   if (rig.status.detail != null) 'detail': rig.status.detail,
   if (rig.status.closeReason != null)
@@ -73,4 +77,5 @@ RigActionParse parseRigAction(
   RigSurface.computer => ComputerAction.parse(arguments),
   RigSurface.browser => BrowserAction.parse(arguments),
   RigSurface.mobile => MobileAction.parse(arguments),
+  RigSurface.ios => IosAction.parse(arguments),
 };

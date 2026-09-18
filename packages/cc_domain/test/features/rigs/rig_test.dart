@@ -81,9 +81,9 @@ void main() {
     });
 
     test('releasing clears the hold and its timestamp', () {
-      final held = rig(controller: const UserPrincipal('u1')).copyWith(
-        controlHeldSince: epoch,
-      );
+      final held = rig(
+        controller: const UserPrincipal('u1'),
+      ).copyWith(controlHeldSince: epoch);
       final released = held.releaseControl();
       expect(released.controller, isNull);
       expect(released.controlHeldSince, isNull);
@@ -176,14 +176,36 @@ void main() {
       expect(RigSpec(surface: RigSurface.computer).memoryMb, greaterThan(1024));
     });
 
+    test('an iOS simulator uses the mobile resident budget and display', () {
+      final ios = RigSpec(surface: RigSurface.ios);
+      final android = RigSpec(surface: RigSurface.mobile);
+      expect(ios.memoryMb, android.memoryMb);
+      expect(ios.cpuCount, android.cpuCount);
+      expect(ios.toJson()['surface'], 'ios');
+
+      final restored = RigSpec.fromJson(
+        RigSpec(
+          surface: RigSurface.ios,
+          backend: EnclosureBackend.iosSimulator,
+        ).toJson(),
+      );
+      expect(restored.surface, RigSurface.ios);
+      expect(restored.backend, EnclosureBackend.iosSimulator);
+    });
+
     test('an empty egress allowlist means nothing, not everything', () {
       expect(RigSpec(surface: RigSurface.computer).egressAllowlist, isEmpty);
+      expect(
+        RigSpec(surface: RigSurface.computer).unrestrictedNetwork,
+        isFalse,
+      );
     });
 
     test('a spec round-trips through JSON', () {
       final spec = RigSpec(
         surface: RigSurface.browser,
         egressAllowlist: const ['example.com', '*.github.com'],
+        unrestrictedNetwork: true,
         memoryMb: 3072,
         cpuCount: 4,
         ttl: const Duration(hours: 3),
@@ -192,6 +214,7 @@ void main() {
       final restored = RigSpec.fromJson(spec.toJson());
       expect(restored.surface, spec.surface);
       expect(restored.egressAllowlist, spec.egressAllowlist);
+      expect(restored.unrestrictedNetwork, isTrue);
       expect(restored.memoryMb, spec.memoryMb);
       expect(restored.cpuCount, spec.cpuCount);
       expect(restored.ttl, spec.ttl);
@@ -312,6 +335,13 @@ void main() {
             egressAllowlist: const ['b.test'],
           ),
         ),
+      );
+    });
+
+    test('an unrestricted network is NOT equal to the secure default', () {
+      expect(
+        RigSpec(surface: RigSurface.browser, unrestrictedNetwork: true),
+        isNot(RigSpec(surface: RigSurface.browser)),
       );
     });
 

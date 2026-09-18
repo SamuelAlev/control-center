@@ -7,12 +7,6 @@ enum ProtocolFamily {
   /// Agent Client Protocol.
   acp('ACP'),
 
-  /// The Pi agent CLI protocol.
-  pi('Pi'),
-
-  /// The Codex agent CLI protocol.
-  codex('Codex'),
-
   /// A generic CLI invoked directly with no managed protocol.
   cli('CLI');
 

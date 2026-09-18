@@ -1,5 +1,6 @@
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_label.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_review_submission.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_reviewer.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
@@ -33,6 +34,7 @@ PullRequest _pr({
   int number = 1,
   List<PrUser> requestedReviewers = const <PrUser>[],
   List<PrUser> assignees = const <PrUser>[],
+  List<PrLabel> labels = const <PrLabel>[],
 }) {
   return PullRequest(
     id: number,
@@ -48,6 +50,7 @@ PullRequest _pr({
     htmlUrl: '',
     requestedReviewers: requestedReviewers,
     assignees: assignees,
+    labels: labels,
   );
 }
 
@@ -60,9 +63,9 @@ List<Override> _overrides(PrSidebar sidebar, List<PrReviewer> reviewers) {
     prReviewRepositoryProvider.overrideWith(
       (ref) => const EmptyPrReviewRepository(),
     ),
-    prReviewersProvider(_prRef).overrideWith(
-      (ref) => Stream<List<PrReviewer>>.value(reviewers),
-    ),
+    prReviewersProvider(
+      _prRef,
+    ).overrideWith((ref) => Stream<List<PrReviewer>>.value(reviewers)),
   ];
 }
 
@@ -108,16 +111,68 @@ void main() {
     expect(find.text('ASSIGNEES'), findsOneWidget);
     expect(find.text('No reviewers assigned'), findsOneWidget);
     expect(find.text('No assignees'), findsOneWidget);
+    expect(find.text('LABELS'), findsOneWidget);
+    expect(find.text('No labels yet'), findsOneWidget);
+  });
+
+  testWidgets('shows forge label chips with their names', (tester) async {
+    final pr = _pr(
+      labels: const [
+        PrLabel(name: 'bug', color: 'd73a4a'),
+        PrLabel(name: 'dependencies', color: '0366d6'),
+      ],
+    );
+    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef)));
+    await tester.pump();
+    expect(find.text('LABELS'), findsOneWidget);
+    expect(find.text('bug'), findsOneWidget);
+    expect(find.text('dependencies'), findsOneWidget);
+    expect(find.text('No labels yet'), findsNothing);
   });
 
   testWidgets('shows requested reviewers with pending state', (tester) async {
     final reviewer = _user('reviewer1');
     final pr = _pr(requestedReviewers: [reviewer]);
     final reviewers = [_reviewer(reviewer)];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.text('reviewer1'), findsOneWidget);
   });
+
+  testWidgets(
+    'last reviewer row matches empty-section gap before the next header',
+    (tester) async {
+      final reviewer = _user('kilo-code-bot');
+      final pr = _pr(requestedReviewers: [reviewer]);
+      await tester.pumpWidget(
+        _wrap(
+          PrSidebar(pr: pr, prRef: _prRef),
+          reviewers: [
+            _reviewer(reviewer, state: PrReviewSubmissionState.commented),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Populated reviewer rows used to pad the last item, so the gap under
+      // the avatar was 8px larger than the empty assignees/labels sections.
+      final avatarBottom = tester
+          .getBottomLeft(find.byType(GitHubUserAvatar))
+          .dy;
+      final assigneesTop = tester.getTopLeft(find.text('ASSIGNEES')).dy;
+      final emptyBottom = tester.getBottomLeft(find.text('No assignees')).dy;
+      final labelsTop = tester.getTopLeft(find.text('LABELS')).dy;
+      expect(
+        assigneesTop - avatarBottom,
+        closeTo(labelsTop - emptyBottom, 0.5),
+      );
+    },
+  );
 
   testWidgets('shows approved reviewer', (tester) async {
     final reviewer = _user('approver');
@@ -125,7 +180,12 @@ void main() {
     final reviewers = [
       _reviewer(reviewer, state: PrReviewSubmissionState.approved),
     ];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.text('approver'), findsOneWidget);
   });
@@ -136,7 +196,12 @@ void main() {
     final reviewers = [
       _reviewer(reviewer, state: PrReviewSubmissionState.changesRequested),
     ];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.text('strict-reviewer'), findsOneWidget);
   });
@@ -158,7 +223,12 @@ void main() {
       _reviewer(r2, state: PrReviewSubmissionState.pending),
       _reviewer(r3, state: PrReviewSubmissionState.changesRequested),
     ];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.text('approved'), findsOneWidget);
     expect(find.text('pending'), findsOneWidget);
@@ -171,7 +241,12 @@ void main() {
     final reviewers = [
       _reviewer(reviewer, state: PrReviewSubmissionState.approved),
     ];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.byIcon(AppIcons.checkCircle2), findsOneWidget);
   });
@@ -184,7 +259,12 @@ void main() {
     final reviewers = [
       _reviewer(reviewer, state: PrReviewSubmissionState.changesRequested),
     ];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.byIcon(AppIcons.xCircle), findsOneWidget);
   });
@@ -195,7 +275,12 @@ void main() {
     final reviewer = _user('commenter');
     final pr = _pr(requestedReviewers: [reviewer]);
     final reviewers = [_reviewer(reviewer)];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.byIcon(AppIcons.clock), findsOneWidget);
   });
@@ -218,7 +303,12 @@ void main() {
     );
     final pr = _pr(requestedReviewers: [reviewer]);
     final reviewers = [_reviewer(reviewer)];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.byType(GitHubUserAvatar), findsOneWidget);
   });
@@ -227,7 +317,12 @@ void main() {
     const reviewer = PrUser(login: 'noavatar', avatarUrl: '');
     final pr = _pr(requestedReviewers: [reviewer]);
     final reviewers = [_reviewer(reviewer)];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.text('N'), findsOneWidget);
   });
@@ -236,7 +331,12 @@ void main() {
     const reviewer = PrUser(login: '', avatarUrl: '');
     final pr = _pr(requestedReviewers: [reviewer]);
     final reviewers = [_reviewer(reviewer)];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.text('?'), findsOneWidget);
   });
@@ -249,7 +349,12 @@ void main() {
       isCodeOwner: false,
       state: PrReviewSubmissionState.pending,
     );
-    await tester.pumpWidget(_wrap(PrSidebar(pr: _pr(), prRef: _prRef), reviewers: [team]));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: _pr(), prRef: _prRef),
+        reviewers: [team],
+      ),
+    );
     await tester.pump();
     expect(find.text('Eng'), findsOneWidget);
     expect(find.byType(GitHubUserAvatar), findsOneWidget);
@@ -261,7 +366,12 @@ void main() {
     final reviewers = [
       _reviewer(reviewer, state: PrReviewSubmissionState.approved),
     ];
-    await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef), reviewers: reviewers));
+    await tester.pumpWidget(
+      _wrap(
+        PrSidebar(pr: pr, prRef: _prRef),
+        reviewers: reviewers,
+      ),
+    );
     await tester.pump();
     expect(find.byType(CcTooltip), findsOneWidget);
   });
@@ -269,7 +379,9 @@ void main() {
   group('PrSidebar checks section', () {
     testWidgets('shows no checks message when empty', (tester) async {
       final pr = _pr();
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: const [])));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: const [])),
+      );
       expect(find.text('CHECKS'), findsOneWidget);
       expect(find.text('No checks have run yet'), findsOneWidget);
     });
@@ -285,7 +397,9 @@ void main() {
           completedAt: DateTime(2024, 1, 1, 12, 0),
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('Passed'), findsOneWidget);
     });
 
@@ -300,7 +414,9 @@ void main() {
           completedAt: DateTime(2024, 1, 1, 12, 0),
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('1 failing'), findsOneWidget);
     });
 
@@ -326,7 +442,9 @@ void main() {
           htmlUrl: '',
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('2 failing'), findsOneWidget);
     });
 
@@ -340,7 +458,9 @@ void main() {
           htmlUrl: '',
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('Running'), findsOneWidget);
     });
 
@@ -354,7 +474,9 @@ void main() {
           htmlUrl: '',
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('Running'), findsOneWidget);
     });
 
@@ -375,7 +497,9 @@ void main() {
           htmlUrl: '',
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('1 failing'), findsOneWidget);
     });
 
@@ -389,7 +513,9 @@ void main() {
           htmlUrl: '',
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('Neutral'), findsOneWidget);
     });
 
@@ -403,7 +529,9 @@ void main() {
           htmlUrl: '',
         ),
       ];
-      await tester.pumpWidget(_wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)));
+      await tester.pumpWidget(
+        _wrap(PrSidebar(pr: pr, prRef: _prRef, checks: checks)),
+      );
       expect(find.text('CHECKS'), findsOneWidget);
       expect(find.text('Neutral'), findsOneWidget);
       expect(find.byIcon(AppIcons.chevronRight), findsOneWidget);
@@ -555,18 +683,16 @@ void main() {
         ProviderScope(
           overrides: [
             currentUserLoginProvider.overrideWith((ref) => ''),
-    currentUserLoginForPrProvider(_prRef).overrideWith((ref) => ''),
+            currentUserLoginForPrProvider(_prRef).overrideWith((ref) => ''),
             activeWorkspaceProvider.overrideWith((ref) => null),
             activeRepoProvider.overrideWith((ref) => null),
             prReviewRepositoryProvider.overrideWith(
               (ref) => const EmptyPrReviewRepository(),
             ),
-            prReviewersProvider(_prRef).overrideWith(
-              (ref) => Stream.value(const <PrReviewer>[]),
-            ),
-            prFilesProvider(_prRef).overrideWith(
-              (ref) => Stream.value(files),
-            ),
+            prReviewersProvider(
+              _prRef,
+            ).overrideWith((ref) => Stream.value(const <PrReviewer>[])),
+            prFilesProvider(_prRef).overrideWith((ref) => Stream.value(files)),
           ],
           child: MaterialApp(
             localizationsDelegates: [
@@ -580,7 +706,11 @@ void main() {
             home: CcTheme(
               data: CcThemeData.light(),
               child: Scaffold(
-                body: PrSidebar(pr: pr, prRef: _prRef, onOpenFileInDiff: tapped.add),
+                body: PrSidebar(
+                  pr: pr,
+                  prRef: _prRef,
+                  onOpenFileInDiff: tapped.add,
+                ),
               ),
             ),
           ),

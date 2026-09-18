@@ -79,9 +79,9 @@ class _SteeringQueueListState extends ConsumerState<SteeringQueueList> {
         // rather than sitting on a different vertical. The top gap separates
         // the queue from the trail above it; there is deliberately no bottom
         // one — that edge belongs to the composer.
-        padding: const EdgeInsets.only(
-          left: composerHorizontalMargin,
-          right: composerHorizontalMargin,
+        padding: const EdgeInsetsDirectional.only(
+          start: composerHorizontalMargin,
+          end: composerHorizontalMargin,
           top: AppSpacing.sm,
         ),
         child: ReorderableListView.builder(

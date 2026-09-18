@@ -10,6 +10,7 @@ import 'package:control_center/di/notification_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
+import 'package:control_center/l10n/app_locales.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -120,7 +121,9 @@ final notificationCenterProvider = Provider<List<NotificationEntry>>((ref) {
       ref.watch(notificationItemStatesProvider).value ??
       const <String, NotificationItemState>{};
   final l10n = lookupAppLocalizations(
-    ref.watch(localeProvider) ?? PlatformDispatcher.instance.locale,
+    remapTranslationLocale(
+      ref.watch(localeProvider) ?? PlatformDispatcher.instance.locale,
+    ),
   );
   final me = ref.watch(currentUserIdProvider);
   // Muted repositories are filtered on RENDER, not on record: the server feed

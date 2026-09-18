@@ -6,8 +6,8 @@ import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/widgets.dart';
 
 /// Renders the images a tool returned — a `browser_use` / `computer_use` /
-/// `mobile_use` screenshot, a rendered chart — as a row of thumbnails that
-/// open in the shared lightbox.
+/// `mobile_use` / `ios_use` screenshot, a rendered chart — as a row of
+/// thumbnails that open in the shared lightbox.
 ///
 /// **Why this exists.** The harness has carried tool-result images to the model
 /// since it was written, and both providers put them on the wire. The

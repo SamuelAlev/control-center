@@ -218,8 +218,8 @@ class _CommitSplitButton extends StatelessWidget {
         const SizedBox(width: 2),
         CcMenu(
           semanticLabel: l10n.moreCommitActions,
-          targetAnchor: Alignment.bottomRight,
-          followerAnchor: Alignment.topRight,
+          targetAnchor: AlignmentDirectional.bottomEnd,
+          followerAnchor: AlignmentDirectional.topEnd,
           minWidth: 200,
           items: [
             for (final item in items)

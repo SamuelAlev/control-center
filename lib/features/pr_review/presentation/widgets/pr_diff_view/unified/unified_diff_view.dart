@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_port.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_inline_thread.dart';
@@ -9,28 +10,38 @@ import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
+import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_keyboard_handler.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/diff_search_controller.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_goto.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_regex_tester_popover.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_structure_store.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_symbol_popover.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/measured_inline_thread.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_config.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_gap_row.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_gutter_pill.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_hscrollbar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_measurement.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_preview.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_thread_widget.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/suggestion_blocks.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/sticky_header.dart';
 import 'package:control_center/features/pr_review/providers/diff_view_settings_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -61,6 +72,9 @@ class UnifiedDiffView extends ConsumerStatefulWidget {
     this.onRequestSidebarSearch,
     this.onShowFileTree,
     this.onOpenFileInEditor,
+    this.workspaceId,
+    this.repoId,
+    this.spaceId,
   });
 
   /// Files in display (tree) order.
@@ -101,7 +115,17 @@ class UnifiedDiffView extends ConsumerStatefulWidget {
 
   /// Opens a file (repo-relative path) in an editable tab — wired to the file
   /// header's "open in editor" action. Null hides that action.
-  final ValueChanged<String>? onOpenFileInEditor;
+  final void Function(String path, {int? line})? onOpenFileInEditor;
+
+  /// Active workspace id, for code-graph symbol lookup.
+  final String? workspaceId;
+
+  /// Linked workspace repo id for this PR, or null when the PR is unlinked.
+  /// Symbol lookup is hidden when this is null.
+  final String? repoId;
+
+  /// PR/space id used to pick the worktree code-graph partition.
+  final String? spaceId;
 
   @override
   ConsumerState<UnifiedDiffView> createState() => UnifiedDiffViewState();
@@ -191,7 +215,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// The open inline comment/suggestion composer (anchored under a selection or
   /// a row range), or null when nothing is being composed. Hosted as a
   /// `composer` slot so it reserves exact height like a thread block.
-  _ComposerRequest? _activeComposer;
+  ComposerRequest? _activeComposer;
 
   /// Thread whose conversation is currently focused (its highlight is drawn in
   /// the active colour and its popover is shown).
@@ -206,6 +230,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// separate from the review overlay so it shows regardless of the inline-
   /// comments controller and in split view.
   OverlayEntry? _hScrollbarOverlay;
+  DiffInteractiveSpan? _openGotoSpan;
+  CodeGraphLookupResult? _openGotoLookup;
+  final ValueNotifier<DiffInteractiveSpan?> _gotoSpan = ValueNotifier(null);
+  Offset? _lastHoverGlobal;
   ValueNotifier<int>? _geometry;
   void _markReviewOverlayDirty() => _reviewOverlay?.markNeedsBuild();
 
@@ -756,6 +784,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       onClearSelection: _clearSelection,
     );
     HardwareKeyboard.instance.addHandler(_keyboard.handleGlobalKey);
+    HardwareKeyboard.instance.addHandler(_handleGotoModifierKey);
   }
 
   ScrollPosition? _activeScrollPosition() {
@@ -965,6 +994,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       _activeComposer = null;
       _hoverRow.value = null;
       _pillDrag = null;
+      _setGotoSpan(null);
+      _closeGotoPopover();
+      _gotoLandingFade?.cancel();
+      _sliver?.gotoLanding = null;
       // Per-thread UI state is keyed by thread id, and a DRAFT id (`thread-1`)
       // is only unique within one PR's controller — so carrying it across a PR
       // switch would collapse an unrelated conversation on the new one.
@@ -978,12 +1011,16 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   @override
   void dispose() {
     _threadHighlightFade?.cancel();
+    _gotoLandingFade?.cancel();
     HardwareKeyboard.instance.removeHandler(_keyboard.handleGlobalKey);
+    HardwareKeyboard.instance.removeHandler(_handleGotoModifierKey);
     _geometry?.removeListener(_onGeometryTick);
     _reviewOverlay?.remove();
     _reviewOverlay = null;
     _hScrollbarOverlay?.remove();
     _hScrollbarOverlay = null;
+    _closeGotoPopover();
+    _gotoSpan.dispose();
     _hoverRow.dispose();
     _pinnedHeaderFile.dispose();
     _search.dispose();
@@ -1036,22 +1073,26 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// Parses structure for every initially expanded file up front so the scroll
   /// extent is exact from the first frame (no estimate→exact drift) and the
   /// painter never meets an unparsed visible file. Collapsed dependency
-  /// lockfiles are skipped until the user expands them. On very large PRs (past
-  /// [_eagerParseLineBudget]) the up-front parse is skipped entirely: the sliver
-  /// parses lazily for the viewport + cache window during layout and the
-  /// Fenwick line estimates (newline counts, near-exact) carry the scroll extent
-  /// until each file is reached.
+  /// lockfiles are skipped until the user expands them.
+  ///
+  /// The budget is checked in a separate pass. The old incremental check parsed
+  /// almost 20k lines before discovering that a large PR exceeded the budget,
+  /// doing the expensive work that the large-PR lazy path exists to avoid.
   void _ensureExpandedStructures() {
-    var budget = _eagerParseLineBudget;
+    var total = 0;
     for (var i = 0; i < _document.fileCount; i++) {
       if (!_document.isExpanded(i)) {
         continue;
       }
-      budget -= _document.lineCountOf(i);
-      if (budget < 0) {
+      total += _document.lineCountOf(i);
+      if (total > _eagerParseLineBudget) {
         return;
       }
-      _store.ensureStructure(i);
+    }
+    for (var i = 0; i < _document.fileCount; i++) {
+      if (_document.isExpanded(i)) {
+        _store.ensureStructure(i);
+      }
     }
   }
 
@@ -1176,7 +1217,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       return;
     }
     setState(() {
-      _activeComposer = _ComposerRequest(
+      _activeComposer = ComposerRequest(
         fileIndex: file,
         anchorDisplayLine: hi,
         startDisplayLine: lo,
@@ -1194,8 +1235,29 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     });
   }
 
+  void _switchComposerToSuggestion(ComposerRequest req, String comment) {
+    setState(() {
+      _activeComposer = ComposerRequest(
+        fileIndex: req.fileIndex,
+        anchorDisplayLine: req.anchorDisplayLine,
+        startDisplayLine: req.startDisplayLine,
+        endDisplayLine: req.endDisplayLine,
+        startCol: req.startCol,
+        endCol: req.endCol,
+        side: req.side,
+        lineNoStart: req.lineNoStart,
+        lineNoEnd: req.lineNoEnd,
+        originalCode: req.originalCode,
+        kind: PrInlineThreadKind.suggestion,
+        initialComment: comment,
+      );
+      _commentHeights.remove('composer');
+      _revision++;
+    });
+  }
+
   void _submitComment(
-    _ComposerRequest req,
+    ComposerRequest req,
     String body, {
     required bool batched,
   }) {
@@ -1216,21 +1278,12 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   }
 
   void _submitSuggestion(
-    _ComposerRequest req,
-    String suggested,
+    ComposerRequest req,
+    List<String> suggestions,
     String comment, {
     required bool batched,
   }) {
-    final body = StringBuffer();
-    if (comment.trim().isNotEmpty) {
-      body
-        ..write(comment.trim())
-        ..write('\n\n');
-    }
-    body
-      ..write('```suggestion\n')
-      ..write(suggested)
-      ..write('\n```');
+    final body = buildSuggestionBody(comment, suggestions);
     widget.inlineCommentsController?.create(
       filePath: _document.files[req.fileIndex].filename,
       line: req.lineNoStart,
@@ -1240,8 +1293,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       side: req.side,
       kind: PrInlineThreadKind.suggestion,
       originalCode: req.originalCode,
-      suggestedCode: suggested,
-      authorBody: body.toString(),
+      suggestedCode: suggestions.isEmpty ? '' : suggestions.first,
+      authorBody: body,
       batched: batched,
     );
     _cancelComposer();
@@ -1428,6 +1481,321 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     _markReviewOverlayDirty();
   }
 
+  void _setGotoSpan(DiffInteractiveSpan? span) {
+    if (_gotoSpan.value == span) {
+      return;
+    }
+    _gotoSpan.value = span;
+    _sliver?.gotoUnderline = span;
+  }
+
+  bool _handleGotoModifierKey(KeyEvent event) {
+    if (!mounted || widget.splitView) {
+      return false;
+    }
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape &&
+        _openGotoSpan != null) {
+      _closeGotoPopover();
+      return true;
+    }
+    if (!isDiffGotoModifierHeld()) {
+      _setGotoSpan(null);
+      return false;
+    }
+    final last = _lastHoverGlobal;
+    if (last != null) {
+      _recomputeGotoFromGlobal(last);
+    }
+    return false;
+  }
+
+  void _recomputeGotoFromGlobal(Offset global) {
+    final ro = _sliver;
+    final scrollable = Scrollable.maybeOf(context);
+    final pos = _activeScrollPosition();
+    final box = scrollable?.context.findRenderObject();
+    if (ro == null || pos == null || box is! RenderBox || !box.attached) {
+      return;
+    }
+    final vpTopLeft = box.localToGlobal(Offset.zero);
+    final preceding = ro.precedingScrollExtent;
+    final diffLeft =
+        vpTopLeft.dx + math.max(0, box.size.width - ro.contentCrossAxisExtent);
+    final cell = ro.cellAt(
+      global.dy -
+          vpTopLeft.dy -
+          preceding +
+          pos.pixels -
+          ro.constraints.scrollOffset,
+      global.dx - diffLeft,
+    );
+    if (cell == null) {
+      _setGotoSpan(null);
+      return;
+    }
+    final f = cell.$1;
+    final line = cell.$2;
+    final col = cell.$3;
+    final raw = _document.structureOf(f);
+    if (raw == null) {
+      _setGotoSpan(null);
+      return;
+    }
+    final rawIndex = _document.rawIndexOf(f, line);
+    _setGotoSpan(
+      _gatedGotoSpan(
+        interactiveSpanAt(
+          lineText: raw.contents[rawIndex],
+          displayCol: col,
+          fileIndex: f,
+          displayLine: line,
+          tokens: _store.tokensOf(f)?[rawIndex],
+        ),
+      ),
+    );
+  }
+
+  DiffInteractiveSpan? _gatedGotoSpan(DiffInteractiveSpan? span) {
+    if (span == null) {
+      return null;
+    }
+    if (span.kind == DiffGotoKind.regexp) {
+      return span;
+    }
+    if (span.kind == DiffGotoKind.identifier &&
+        widget.workspaceId != null &&
+        widget.repoId != null) {
+      return span;
+    }
+    return null;
+  }
+
+  void _closeGotoPopover() {
+    if (_openGotoSpan == null && _openGotoLookup == null) {
+      return;
+    }
+    _openGotoSpan = null;
+    _openGotoLookup = null;
+    _markReviewOverlayDirty();
+  }
+
+  Future<void> _activateGoto(DiffInteractiveSpan span) async {
+    if (span.kind == DiffGotoKind.regexp) {
+      _openGotoPopover(span);
+      return;
+    }
+    final workspaceId = widget.workspaceId;
+    final repoId = widget.repoId;
+    if (workspaceId == null || repoId == null) {
+      return;
+    }
+    CodeGraphLookupResult? graph;
+    try {
+      graph = await ref
+          .read(codeGraphLookupProvider)
+          .lookup(
+            workspaceId: workspaceId,
+            repoId: repoId,
+            name: span.text,
+            spaceId: widget.spaceId,
+          );
+    } on Object {
+      graph = null;
+    }
+    if (!mounted) {
+      return;
+    }
+    if (graph != null && graph.definitions.isNotEmpty) {
+      if (graph.definitions.length == 1) {
+        if (await _goToCandidate(graph.definitions.first)) {
+          return;
+        }
+      }
+      _openGotoPopover(span, lookup: graph);
+      return;
+    }
+    final hits = diffDefinitionsNamed(
+      name: span.text,
+      document: _document,
+      ensureStructure: _store.ensureStructure,
+    );
+    if (hits.length == 1) {
+      await jumpToPath(
+        hits.first.filePath,
+        line: hits.first.startLine,
+        highlightName: span.text,
+      );
+      return;
+    }
+    if (hits.isNotEmpty) {
+      _openGotoPopover(span, lookup: lookupResultFromDiffHits(span.text, hits));
+      return;
+    }
+    _openGotoPopover(
+      span,
+      lookup: graph ?? const CodeGraphLookupResult.empty(),
+    );
+  }
+
+  Future<bool> _goToCandidate(CodeGraphLookupCandidate candidate) async {
+    final index = _document.indexOfFile(candidate.filePath);
+    if (index >= 0) {
+      await jumpToPath(
+        candidate.filePath,
+        line: candidate.startLine,
+        highlightName: candidate.name,
+      );
+      return true;
+    }
+    if (widget.onOpenFileInEditor == null) {
+      return false;
+    }
+    widget.onOpenFileInEditor!(candidate.filePath, line: candidate.startLine);
+    return true;
+  }
+
+  void _openGotoPopover(
+    DiffInteractiveSpan span, {
+    CodeGraphLookupResult? lookup,
+  }) {
+    _openGotoSpan = span;
+    _openGotoLookup = lookup;
+    _markReviewOverlayDirty();
+  }
+
+  Widget _gotoPopoverPanel(DiffInteractiveSpan span) {
+    if (span.kind == DiffGotoKind.regexp) {
+      return DiffRegexTesterPopover(literal: span.text);
+    }
+    return DiffSymbolPopover(
+      name: span.text,
+      workspaceId: widget.workspaceId!,
+      repoId: widget.repoId!,
+      spaceId: widget.spaceId,
+      prFilePaths: {for (final f in _document.files) f.filename},
+      initialResult: _openGotoLookup,
+      onJumpToDiff: (path, startLine) {
+        _closeGotoPopover();
+        unawaited(jumpToPath(path, line: startLine, highlightName: span.text));
+      },
+      onOpenInEditor: widget.onOpenFileInEditor == null
+          ? null
+          : (path, {int? line}) {
+              _closeGotoPopover();
+              widget.onOpenFileInEditor!(path, line: line);
+            },
+    );
+  }
+
+  /// Scrolls to [path] in the current diff (expanding a collapsed/preview
+  /// file and mapping a 1-based HEAD [line] onto a display row). Files that
+  /// are not in the current document fall through to
+  /// [UnifiedDiffView.onOpenFileInEditor].
+  Future<void> jumpToPath(
+    String path, {
+    int? line,
+    String? highlightName,
+  }) async {
+    final index = _document.indexOfFile(path);
+    if (index < 0) {
+      widget.onOpenFileInEditor?.call(path, line: line);
+      return;
+    }
+    var needsLayout = false;
+    if (_document.isPreviewing(index)) {
+      _document.setPreviewing(index, previewing: false);
+      needsLayout = true;
+    }
+    if (!_document.isExpanded(index)) {
+      _document.setExpanded(index, expanded: true);
+      needsLayout = true;
+    }
+    _store.ensureStructure(index);
+    if (needsLayout) {
+      setState(() => _revision++);
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return;
+      }
+    }
+    final displayLine = _displayLineForFileLine(index, line);
+    await jumpToFile(index, line: displayLine);
+    if (!mounted ||
+        highlightName == null ||
+        highlightName.isEmpty ||
+        displayLine == null) {
+      return;
+    }
+    _flashGotoLanding(
+      fileIndex: index,
+      displayLine: displayLine,
+      name: highlightName,
+    );
+  }
+
+  Timer? _gotoLandingFade;
+  int _gotoLandingEpoch = 0;
+
+  /// Flashes the identifier on [displayLine] so the jump is findable after
+  /// the scroll. Fades on the same beat as a comment permalink.
+  void _flashGotoLanding({
+    required int fileIndex,
+    required int displayLine,
+    required String name,
+  }) {
+    final raw = _document.structureOf(fileIndex);
+    if (raw == null) {
+      return;
+    }
+    if (displayLine < 0 || displayLine >= _document.lineCountOf(fileIndex)) {
+      return;
+    }
+    final rawIndex = _document.rawIndexOf(fileIndex, displayLine);
+    final lineText = raw.contents[rawIndex];
+    final tokens = _store.tokensOf(fileIndex)?[rawIndex];
+    final range = diffGotoNameDisplayRange(lineText, name, tokens: tokens);
+    final landing = DiffGotoLanding(
+      fileIndex: fileIndex,
+      displayLine: displayLine,
+      startCol: range?.$1 ?? 0,
+      endCol: range?.$2,
+    );
+    final epoch = ++_gotoLandingEpoch;
+    _gotoLandingFade?.cancel();
+    _sliver?.gotoLanding = landing;
+    _gotoLandingFade = Timer(kGotoLandingFade, () {
+      if (!mounted || epoch != _gotoLandingEpoch) {
+        return;
+      }
+      _sliver?.gotoLanding = null;
+    });
+  }
+
+  int? _displayLineForFileLine(int fileIndex, int? fileLine) {
+    if (fileLine == null) {
+      return null;
+    }
+    final raw = _document.structureOf(fileIndex);
+    if (raw == null) {
+      return null;
+    }
+    final displayCount = _document.lineCountOf(fileIndex);
+    for (var displayLine = 0; displayLine < displayCount; displayLine++) {
+      final rawIndex = _document.rawIndexOf(fileIndex, displayLine);
+      if (raw.newLines[rawIndex] == fileLine) {
+        return displayLine;
+      }
+    }
+    for (var displayLine = 0; displayLine < displayCount; displayLine++) {
+      final rawIndex = _document.rawIndexOf(fileIndex, displayLine);
+      if (raw.oldLines[rawIndex] == fileLine) {
+        return displayLine;
+      }
+    }
+    return null;
+  }
+
   void _focusThread(String id) {
     setState(() => _focusedThreadId = _focusedThreadId == id ? null : id);
   }
@@ -1559,6 +1927,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       if (!_tabVisible) {
         _pillDrag = null;
         _hoverRow.value = null;
+        _setGotoSpan(null);
+        _closeGotoPopover();
       }
       _reviewOverlay?.markNeedsBuild();
       _hScrollbarOverlay?.markNeedsBuild();
@@ -1566,9 +1936,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     });
   }
 
-  /// Inserts the root-overlay review layer once the controller is present.
+  /// Inserts the root-overlay review layer (comments + Cmd/Ctrl+hover).
   void _ensureReviewOverlay() {
-    if (_reviewOverlay != null || widget.inlineCommentsController == null) {
+    if (_reviewOverlay != null) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -1642,7 +2012,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             width: trackWidth,
             top: vpTopLeft.dy + vpSize.height - 12,
             height: 12,
-            child: _DiffHScrollbar(
+            child: DiffHScrollbar(
               offset: ro.horizontalScrollOffset,
               maxOffset: maxScrollX,
               viewportWidth: trackWidth,
@@ -1662,7 +2032,6 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     final box = scrollable?.context.findRenderObject();
     if (!_tabVisible ||
         ro == null ||
-        ctl == null ||
         pos == null ||
         box is! RenderBox ||
         !box.attached ||
@@ -1720,6 +2089,27 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         hScroll;
     bool visible(double y) =>
         y + kDiffLineHeight > affordanceTop && y < rect.bottom;
+    Rect spanScreenRect(DiffInteractiveSpan span) {
+      final y = screenYOfLine(span.fileIndex, span.displayLine);
+      final left = screenXOfCol(span.fileIndex, span.startCol);
+      final right = screenXOfCol(span.fileIndex, span.endCol);
+      return Rect.fromLTWH(
+        math.min(left, right),
+        y,
+        math.max(8.0, (right - left).abs()),
+        _document.visualRowsOf(span.fileIndex, span.displayLine) *
+            kDiffLineHeight,
+      );
+    }
+
+    Rect? gotoHitRect(DiffInteractiveSpan span) {
+      final hit = spanScreenRect(span);
+      if (!visible(hit.top)) {
+        return null;
+      }
+      return hit;
+    }
+
     (int, int)? rowAtGlobalY(double gy) {
       final double docOffset = (gy - vpTopLeft.dy) + pixels - preceding;
       if (docOffset < 0 || docOffset >= _document.totalExtent) {
@@ -1835,7 +2225,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             final (int, int)? pillRow = pillDrag != null
                 ? (pillDrag.$1, pillDrag.$3)
                 : hover;
-            if (pillRow != null && _activeComposer == null) {
+            if (pillRow != null && _activeComposer == null && ctl != null) {
               final y = screenYOfLine(pillRow.$1, pillRow.$2);
               if (visible(y)) {
                 items.add(
@@ -1846,8 +2236,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
                     // in-flight drag.
                     key: const ValueKey('diff-gutter-add-pill'),
                     left: rect.left + 1,
-                    top: y + (kDiffLineHeight - 20) / 2,
-                    child: _GutterAddPill(
+                    top: y + (kDiffLineHeight - kGutterAddPillSize) / 2,
+                    child: GutterAddPill(
                       dragging: pillDrag != null,
                       onTap: () => _openComposerForRange(
                         pillRow.$1,
@@ -1902,7 +2292,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             // or pill on a partially scrolled-out row would bleed past the
             // edge that already cuts the row's text (pinned header/viewport).
             return ClipRect(
-              clipper: _FixedRectClipper(
+              clipper: FixedRectClipper(
                 Rect.fromLTRB(
                   rect.left,
                   affordanceTop,
@@ -1915,12 +2305,13 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
           },
         ),
       ),
-      // Pass-through hover tracker, painted ABOVE the pill so the opaque pill
-      // never knocks it out of the mouse-tracker's hit path (translucent →
-      // taps/drags/scroll still fall through to the pill and diff beneath). If
-      // it sat below the pill, reaching the pill would hit-test the pill first,
-      // drop this region from the path, fire onExit, clear _hoverRow and remove
-      // the pill — flicker and any in-flight drag would be cancelled with it.
+      // Pass-through hover tracker, painted ABOVE the pill and the Cmd/Ctrl
+      // hit target so those opaque widgets never knock it out of the
+      // mouse-tracker's hit path (translucent → taps/drags/scroll still fall
+      // through to the pill, the goto target, and the diff beneath). If it sat
+      // below them, reaching either would hit-test first, drop this region
+      // from the path, fire onExit, clear _hoverRow/_gotoSpan and remove the
+      // widget — flicker, and any in-flight drag would be cancelled with it.
       // It updates a ValueNotifier rather than setState, so the region is never
       // itself rebuilt on hover (a rebuild would re-fire enter/exit too).
       Positioned.fromRect(
@@ -1947,6 +2338,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             if (_pillDrag != null) {
               return; // keep the pill anchored at the drag origin
             }
+            _lastHoverGlobal = e.position;
 
             // This region floats in the ROOT overlay, so it receives hover
             // even when an opaque barrier (an open dropdown/popover, a
@@ -1960,9 +2352,34 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
               e.position,
               View.of(overlayContext).viewId,
             );
-            final reachesDiff = hit.path.any(
-              (entry) => identical(entry.target, ro),
-            );
+            // The interactive pill lives in this root overlay and is opaque
+            // so its tap/drag recognizers win. While the pointer is over that
+            // pill, the global hit test stops there before it can reach [ro].
+            // Count only the pill's exact current bounds as part of the diff;
+            // every other opaque overlay still suppresses row hover.
+            final hovered = _hoverRow.value;
+            final pillY = hovered == null
+                ? null
+                : screenYOfLine(hovered.$1, hovered.$2);
+            final reachesOwnPill =
+                _activeComposer == null &&
+                hovered != null &&
+                pillY != null &&
+                visible(pillY) &&
+                Rect.fromLTWH(
+                  rect.left + 1,
+                  pillY + (kDiffLineHeight - kGutterAddPillSize) / 2,
+                  kGutterAddPillSize,
+                  kGutterAddPillSize,
+                ).contains(e.position);
+            final goto = _gotoSpan.value;
+            final gotoRect = goto == null ? null : gotoHitRect(goto);
+            final reachesOwnGoto =
+                gotoRect != null && gotoRect.contains(e.position);
+            final reachesDiff =
+                reachesOwnPill ||
+                reachesOwnGoto ||
+                hit.path.any((entry) => identical(entry.target, ro));
             final row = reachesDiff ? rowAtGlobalY(e.position.dy) : null;
             if (row != _hoverRow.value) {
               _hoverRow.value = row;
@@ -1973,6 +2390,36 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             _setHoveredCommentGroup(
               row == null ? null : ro.commentGroupAt(row.$1, row.$2),
             );
+            if (!isDiffGotoModifierHeld()) {
+              _setGotoSpan(null);
+            } else if (row != null) {
+              final f = row.$1;
+              final line = row.$2;
+              final raw = _document.structureOf(f);
+              final rawIndex = _document.rawIndexOf(f, line);
+              final yLine = screenYOfLine(f, line);
+              final subRow = ((e.position.dy - yLine) / kDiffLineHeight)
+                  .floor()
+                  .clamp(0, 1 << 20);
+              final col = ro.columnAt(
+                e.position.dx - diffLeft,
+                f,
+                line,
+                subRow,
+              );
+              final span = raw == null
+                  ? null
+                  : interactiveSpanAt(
+                      lineText: raw.contents[rawIndex],
+                      displayCol: col,
+                      fileIndex: f,
+                      displayLine: line,
+                      tokens: _store.tokensOf(f)?[rawIndex],
+                    );
+              _setGotoSpan(_gatedGotoSpan(span));
+            } else if (!reachesOwnGoto) {
+              _setGotoSpan(null);
+            }
           },
           onExit: (_) {
             // Same window as onHover, and here it is not even a race: removing
@@ -1984,6 +2431,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             if (_pillDrag == null) {
               _hoverRow.value = null;
               _setHoveredCommentGroup(null);
+              _lastHoverGlobal = null;
+              _setGotoSpan(null);
             }
           },
         ),
@@ -1993,7 +2442,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     // Floating selection toolbar (comment / suggest / react), anchored below
     // the selection's last line.
     final sel = ro.selectionRange();
-    if (sel != null && _activeComposer == null) {
+    if (sel != null && _activeComposer == null && ctl != null) {
       final single = sel.startLine == sel.endLine;
       // Anchor below the last wrapped sub-row of the selection's end line.
       final int endRows = _document.visualRowsOf(sel.file, sel.endLine);
@@ -2026,6 +2475,61 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
           ),
         );
       }
+    }
+
+    // Below the hover tracker (index 1: after pills, before the tracker) so
+    // the opaque click target cannot fire the tracker's onExit.
+    children.insert(
+      1,
+      Positioned.fill(
+        child: ValueListenableBuilder<DiffInteractiveSpan?>(
+          valueListenable: _gotoSpan,
+          builder: (_, span, _) {
+            if (span == null || !isDiffGotoModifierHeld()) {
+              return const SizedBox.shrink();
+            }
+            final hitRect = gotoHitRect(span);
+            if (hitRect == null) {
+              return const SizedBox.shrink();
+            }
+            return Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fromRect(
+                  rect: hitRect,
+                  child: DiffGotoHitTarget(
+                    onActivate: () => unawaited(_activateGoto(span)),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+
+    final open = _openGotoSpan;
+    if (open != null &&
+        open.fileIndex >= 0 &&
+        open.fileIndex < _document.fileCount &&
+        open.displayLine >= 0 &&
+        open.displayLine < _document.lineCountOf(open.fileIndex)) {
+      final anchor = spanScreenRect(open);
+      children.add(
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: _closeGotoPopover,
+          ),
+        ),
+      );
+      children.add(
+        CustomSingleChildLayout(
+          delegate: GotoPopoverLayout(anchor: anchor),
+          child: GestureDetector(onTap: () {}, child: _gotoPopoverPanel(open)),
+        ),
+      );
     }
 
     return Positioned.fill(
@@ -2336,8 +2840,9 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   /// does not have the first one's timer clear ITS highlight.
   Timer? _threadHighlightFade;
 
-  /// Scrolls the host scrollable so file [index]'s header sits at the top.
-  Future<void> jumpToFile(int index) async {
+  /// Scrolls the host scrollable so file [index]'s header (or [line]) sits
+  /// at the top.
+  Future<void> jumpToFile(int index, {int? line}) async {
     if (index < 0 || index >= _document.fileCount) {
       return;
     }
@@ -2348,9 +2853,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
         !controller.hasClients) {
       return;
     }
-    final target = renderObject
-        .revealOffsetForFile(index)
-        .clamp(0.0, controller.position.maxScrollExtent);
+    final rawTarget = line == null
+        ? renderObject.revealOffsetForFile(index)
+        : renderObject.revealOffsetForLine(index, line);
+    final target = rawTarget.clamp(0.0, controller.position.maxScrollExtent);
     await controller.animateTo(
       target,
       duration: const Duration(milliseconds: 240),
@@ -2440,6 +2946,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       commentHighlightActiveColor: commentYellow.withValues(
         alpha: isDark ? 0.32 : 0.46,
       ),
+      gotoUnderlineColor: tokens.accent,
       revision: _revision,
       topInset: StickyHeaderInset.of(context),
       overflowMode: overflowMode,
@@ -2499,7 +3006,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             // doubled-thickness line.
             final int gapLine = slot.anchorDisplayLine;
             final int lastLine = _document.lineCountOf(slot.fileIndex) - 1;
-            return _GapRow(
+            return GapRow(
               key: ValueKey(slot.key),
               label: _gapLabel(slot.fileIndex, slot.rawIndex),
               icon: _gapIcon(slot.fileIndex, slot.rawIndex),
@@ -2537,18 +3044,19 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             if (req == null || ctl == null || req.fileIndex != slot.fileIndex) {
               return const SizedBox.shrink();
             }
-            // No ambient Material here — wrap so the composer's
-            // TextField, ink and buttons have one. Height is measured and fed
-            // back so the document reserves the exact gap (same path as a
-            // thread block).
+            // No ambient Material here. The height reporter stays live because
+            // adding or removing suggestion blocks changes the composer after
+            // its first layout.
             return Material(
               key: ValueKey(slot.key),
               type: MaterialType.transparency,
-              child: _MeasuredHeight(
+              child: HeightReporter(
                 onMeasured: (h) => _onCommentMeasured(slot.key, h),
                 child: req.kind == PrInlineThreadKind.suggestion
                     ? SuggestionComposer(
                         originalCode: req.originalCode,
+                        filePath: _document.files[req.fileIndex].filename,
+                        initialComment: req.initialComment,
                         baseStyle: _baseStyle(
                           codeFont,
                           ligatures: codeLigatures,
@@ -2573,6 +3081,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
                     : PrCommentComposer(
                         prRef: widget.inlineCommentsController?.pr,
                         reviewInProgress: reviewInProgress,
+                        onSuggest: (comment) =>
+                            _switchComposerToSuggestion(req, comment),
                         onSubmit: (body) =>
                             _submitComment(req, body, batched: false),
                         onSubmitBatched: canBatch
@@ -2591,15 +3101,15 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
             // No ambient Material here — wrap so the rendered
             // markdown's links / code-copy ink have one. The preview loads its
             // content asynchronously and grows after the first frame, so its
-            // height is reported on EVERY layout (via _HeightReporter) — a
+            // height is reported on EVERY layout (via HeightReporter) — a
             // one-shot post-frame measure would miss the async growth and leave
             // the reserved body too short (content would overlap the next file).
             return Material(
               key: ValueKey(slot.key),
               type: MaterialType.transparency,
-              child: _HeightReporter(
+              child: HeightReporter(
                 onMeasured: (h) => _onPreviewMeasured(file.filename, h),
-                child: _MarkdownPreviewBody(
+                child: MarkdownPreviewBody(
                   key: ValueKey(slot.key),
                   path: file.filename,
                   fetch: fetch,
@@ -2691,524 +3201,4 @@ class _ServerThreadSpan {
   /// Whether this conversation covers [line] on [s].
   bool covers(String s, int line) =>
       s == side && line >= startLine && line <= endLine;
-}
-
-/// A clickable "Show N lines" / "Show end of file" expand affordance, rendered
-/// as a real widget so it gets native hover + cursor feedback.
-class _GapRow extends StatefulWidget {
-  const _GapRow({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.onTap,
-    required this.enabled,
-    this.showTopBorder = true,
-    this.showBottomBorder = true,
-  });
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  /// Drop the top/bottom hairline when this gap abuts a file header, whose own
-  /// 1px border already separates them — otherwise the gap's 0.5px line stacks
-  /// with it and reads as a doubled border.
-  final bool showTopBorder;
-  final bool showBottomBorder;
-
-  @override
-  State<_GapRow> createState() => _GapRowState();
-}
-
-class _GapRowState extends State<_GapRow> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final tokens =
-        context.designSystem ??
-        (theme.brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
-    final hoverBg = tokens.bgPrimaryHover;
-    final surface = tokens.bgPrimary;
-    return MouseRegion(
-      cursor: widget.enabled ? SystemMouseCursors.click : MouseCursor.defer,
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: widget.enabled ? widget.onTap : null,
-        child: Container(
-          height: kDiffLineHeight,
-          padding: const EdgeInsets.only(left: 16),
-          alignment: Alignment.centerLeft,
-          decoration: BoxDecoration(
-            color: _hovered ? hoverBg : surface,
-            border: Border(
-              top: widget.showTopBorder
-                  ? BorderSide(color: tokens.borderSecondary, width: 0.5)
-                  : BorderSide.none,
-              bottom: widget.showBottomBorder
-                  ? BorderSide(color: tokens.borderSecondary, width: 0.5)
-                  : BorderSide.none,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                widget.icon,
-                size: 12,
-                color: _hovered ? tokens.fgSecondaryHover : tokens.fgTertiary,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                widget.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: CcTypography.caption.copyWith(
-                  color: _hovered
-                      ? tokens.textSecondaryHover
-                      : tokens.textTertiary,
-                  height: 1,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// GitHub renders a Markdown file's leading YAML front matter as a metadata
-/// table; a raw render collapses those `key: value` lines into one run-on
-/// paragraph. Detect a front-matter block (`---` on the first line, closed by a
-/// later `---`) and re-wrap it as a fenced YAML block so it reads as structured
-/// metadata. Anything else is returned unchanged.
-String _withRenderableFrontmatter(String content) {
-  final lines = content.split('\n');
-  if (lines.isEmpty || lines.first.trim() != '---') {
-    return content;
-  }
-  for (var i = 1; i < lines.length; i++) {
-    if (lines[i].trim() == '---') {
-      final frontMatter = lines.sublist(1, i).join('\n').trim();
-      final rest = lines.sublist(i + 1).join('\n').trimLeft();
-      if (frontMatter.isEmpty) {
-        return rest;
-      }
-      return '```yaml\n$frontMatter\n```\n\n$rest';
-    }
-  }
-  return content;
-}
-
-/// Renders a Markdown file's HEAD content as a rich preview inside the diff, in
-/// place of its source diff (the per-file "rich diff" toggle).
-///
-/// Content is fetched lazily but seeded from [cachedContent] (the view's
-/// per-file cache) when available, so a recycled preview re-renders
-/// synchronously — no loader frame, no re-fetch — which keeps the
-/// [_HeightReporter]-measured height stable as you scroll near it. On a refresh
-/// that invalidates the cache, the previously-rendered content stays visible
-/// until the new fetch resolves, so the body never collapses to the loader and
-/// the diff doesn't jump.
-class _MarkdownPreviewBody extends StatefulWidget {
-  const _MarkdownPreviewBody({
-    super.key,
-    required this.path,
-    required this.fetch,
-    required this.cachedContent,
-    required this.onLoaded,
-  });
-
-  /// File path to render (the new/HEAD side).
-  final String path;
-
-  /// Fetches the file's full HEAD content.
-  final Future<String> Function(String path) fetch;
-
-  /// Already-resolved content from the view's cache, or null to fetch.
-  final String? cachedContent;
-
-  /// Called with freshly-fetched content so the view can cache it.
-  final ValueChanged<String> onLoaded;
-
-  @override
-  State<_MarkdownPreviewBody> createState() => _MarkdownPreviewBodyState();
-}
-
-class _MarkdownPreviewBodyState extends State<_MarkdownPreviewBody> {
-  String? _content;
-  Object? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _content = widget.cachedContent;
-    if (_content == null) {
-      _load();
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _MarkdownPreviewBody oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.path != widget.path) {
-      _content = widget.cachedContent;
-      _error = null;
-      if (_content == null) {
-        _load();
-      }
-    } else if (widget.cachedContent == null && _content != null) {
-      // The view invalidated this file's cache (e.g. a diff refresh) — re-fetch
-      // while keeping the current content on screen so the body doesn't fall
-      // back to the loader and shrink.
-      _load();
-    } else if (widget.cachedContent != null && _content == null) {
-      // Another instance populated the cache while this one was loading.
-      _content = widget.cachedContent;
-    }
-  }
-
-  Future<void> _load() async {
-    try {
-      final content = await widget.fetch(widget.path);
-      if (!mounted) {
-        return;
-      }
-      widget.onLoaded(content);
-      setState(() {
-        _content = content;
-        _error = null;
-      });
-    } catch (e) {
-      if (!mounted) {
-        return;
-      }
-      setState(() => _error = e);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
-    final surface = tokens.bgPrimary;
-    final content = _content;
-    final Widget child;
-    if (content != null) {
-      // Render content even while a refresh is in flight (stale-but-stable).
-      child = Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: StyledMarkdownBody(
-              data: _withRenderableFrontmatter(content),
-            ),
-          ),
-        ),
-      );
-    } else if (_error != null) {
-      child = Padding(
-        padding: const EdgeInsets.all(24),
-        child: Center(
-          child: Text(
-            AppLocalizations.of(context).failedToLoad,
-            style: CcTypography.caption.copyWith(color: tokens.textTertiary),
-          ),
-        ),
-      );
-    } else {
-      child = const SizedBox(
-        height: 120,
-        child: Center(child: CcSpinner(size: 20)),
-      );
-    }
-    return Container(width: double.infinity, color: surface, child: child);
-  }
-}
-
-/// An open inline composer request, anchored under display rows
-/// `[startDisplayLine, endDisplayLine]` of [fileIndex].
-@immutable
-class _ComposerRequest {
-  const _ComposerRequest({
-    required this.fileIndex,
-    required this.anchorDisplayLine,
-    required this.startDisplayLine,
-    required this.endDisplayLine,
-    required this.startCol,
-    required this.endCol,
-    required this.side,
-    required this.lineNoStart,
-    required this.lineNoEnd,
-    required this.originalCode,
-    required this.kind,
-  });
-
-  final int fileIndex;
-  final int anchorDisplayLine;
-  final int startDisplayLine;
-  final int endDisplayLine;
-  final int? startCol;
-  final int? endCol;
-  final String side;
-  final int lineNoStart;
-  final int lineNoEnd;
-  final String originalCode;
-  final PrInlineThreadKind kind;
-}
-
-/// Reports its child's laid-out height once per frame via [onMeasured], so the
-/// document can reserve an exact gap for an inline composer (mirrors
-/// [MeasuredInlineThread] for non-thread children).
-class _MeasuredHeight extends StatefulWidget {
-  const _MeasuredHeight({required this.child, required this.onMeasured});
-  final Widget child;
-  final ValueChanged<double> onMeasured;
-
-  @override
-  State<_MeasuredHeight> createState() => _MeasuredHeightState();
-}
-
-class _MeasuredHeightState extends State<_MeasuredHeight> {
-  final _key = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-    _schedule();
-  }
-
-  @override
-  void didUpdateWidget(covariant _MeasuredHeight oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    _schedule();
-  }
-
-  void _schedule() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final box = _key.currentContext?.findRenderObject() as RenderBox?;
-      if (box != null && box.hasSize) {
-        widget.onMeasured(box.size.height);
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) =>
-      KeyedSubtree(key: _key, child: widget.child);
-}
-
-/// Reports its child's height after EVERY layout (not just once), so a child
-/// that grows after the first frame — the Markdown preview, which starts as a
-/// loader then lays out the fetched content — keeps the document's reserved
-/// body height exact. A one-shot post-frame measure ([_MeasuredHeight]) misses
-/// that async growth and leaves the body too short.
-class _HeightReporter extends SingleChildRenderObjectWidget {
-  const _HeightReporter({required super.child, required this.onMeasured});
-
-  final ValueChanged<double> onMeasured;
-
-  @override
-  _RenderHeightReporter createRenderObject(BuildContext context) =>
-      _RenderHeightReporter(onMeasured);
-
-  @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderHeightReporter renderObject,
-  ) {
-    renderObject.onMeasured = onMeasured;
-  }
-}
-
-class _RenderHeightReporter extends RenderProxyBox {
-  _RenderHeightReporter(this.onMeasured);
-
-  ValueChanged<double> onMeasured;
-  double _lastReported = -1;
-
-  @override
-  void performLayout() {
-    super.performLayout();
-    final h = size.height;
-    if ((h - _lastReported).abs() >= 0.5) {
-      _lastReported = h;
-      // onMeasured only stashes the height and schedules a post-frame setState;
-      // it never mutates layout synchronously, so calling it here is safe.
-      onMeasured(h);
-    }
-  }
-}
-
-/// A thin draggable horizontal scrollbar for the diff's code area (scroll
-/// mode). Stateless about the offset — it reads [offset] each build (the
-/// overlay rebuilds after every paint) and reports pans via [onPan]; drag delta
-/// is accumulated from the drag's start offset to avoid stale-value jitter.
-class _DiffHScrollbar extends StatefulWidget {
-  const _DiffHScrollbar({
-    required this.offset,
-    required this.maxOffset,
-    required this.viewportWidth,
-    required this.onPan,
-  });
-
-  /// Current horizontal offset.
-  final double offset;
-
-  /// Maximum horizontal offset (content width − viewport width).
-  final double maxOffset;
-
-  /// Visible code width (the scrollbar track width).
-  final double viewportWidth;
-
-  /// Called with the new absolute offset as the thumb is dragged.
-  final ValueChanged<double> onPan;
-
-  @override
-  State<_DiffHScrollbar> createState() => _DiffHScrollbarState();
-}
-
-class _DiffHScrollbarState extends State<_DiffHScrollbar> {
-  double _dragStartOffset = 0;
-  double _dragAccum = 0;
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
-    final double content = widget.viewportWidth + widget.maxOffset;
-    final double thumbW = content <= 0
-        ? widget.viewportWidth
-        : (widget.viewportWidth / content * widget.viewportWidth).clamp(
-            28.0,
-            widget.viewportWidth,
-          );
-    final double travel = widget.viewportWidth - thumbW;
-    final double thumbLeft = widget.maxOffset <= 0
-        ? 0
-        : (widget.offset / widget.maxOffset).clamp(0.0, 1.0) * travel;
-    final double gain = travel <= 0 ? 0 : widget.maxOffset / travel;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: (_) {
-          _dragStartOffset = widget.offset;
-          _dragAccum = 0;
-        },
-        onHorizontalDragUpdate: (d) {
-          _dragAccum += d.delta.dx;
-          widget.onPan(_dragStartOffset + _dragAccum * gain);
-        },
-        child: Align(
-          alignment: Alignment.bottomLeft,
-          child: Padding(
-            padding: EdgeInsets.only(left: thumbLeft),
-            child: Container(
-              width: thumbW,
-              height: _hovered ? 8 : 6,
-              // Square corners: zero radius is the design system's geometry.
-              color: tokens.textTertiary.withValues(
-                alpha: _hovered ? 0.6 : 0.4,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The circular "+" affordance painted in the gutter rail on row hover. Tapping
-/// starts a single-line comment; dragging vertically selects a row range. The
-/// cursor reads as an open hand (grab) on hover and a closed hand (grabbing)
-/// while a range drag is in progress.
-class _GutterAddPill extends StatelessWidget {
-  const _GutterAddPill({
-    required this.dragging,
-    required this.onTap,
-    required this.onDragStart,
-    required this.onDragUpdate,
-    required this.onDragEnd,
-  });
-
-  final bool dragging;
-  final VoidCallback onTap;
-  final VoidCallback onDragStart;
-  final ValueChanged<double> onDragUpdate;
-  final VoidCallback onDragEnd;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens =
-        context.designSystem ??
-        (Theme.of(context).brightness == Brightness.dark
-            ? DesignSystemTokens.dark()
-            : DesignSystemTokens.light());
-    // a11y: fill with the accessible solid brand token (not `textPrimary`,
-    // which flips to near-white in dark mode and rendered the white "+" glyph
-    // invisible — 1.0:1). `bgBrandSolid` carries white in both themes (>=5:1)
-    // and reads as an on-brand "add comment" affordance against either gutter.
-    final primary = tokens.bgBrandSolid;
-    // The hover-tracker MouseRegion is painted above this pill (translucent), so
-    // a MouseRegion here can no longer steal hover from it or flicker the pill —
-    // it's free to set the grab/grabbing cursor. opaque hit-testing makes the
-    // whole 20×20 pill — not just the icon glyph — catch taps and the vertical
-    // drag-to-select-range; a bare Container defers hit testing to its child (a
-    // DecoratedBox doesn't hit-test itself), so without it the pill is barely
-    // grabbable and a drag can't start.
-    return MouseRegion(
-      cursor: dragging ? SystemMouseCursors.grabbing : SystemMouseCursors.grab,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        onVerticalDragStart: (_) => onDragStart(),
-        onVerticalDragUpdate: (d) => onDragUpdate(d.globalPosition.dy),
-        onVerticalDragEnd: (_) => onDragEnd(),
-        child: Container(
-          width: 20,
-          height: 20,
-          decoration: BoxDecoration(
-            color: primary,
-            borderRadius: BorderRadius.circular(6),
-            boxShadow: AppShadows.soft,
-          ),
-          child: Icon(AppIcons.plus, size: 14, color: tokens.textWhite),
-        ),
-      ),
-    );
-  }
-}
-
-/// Clips to a fixed rect expressed in the clipped widget's own coordinate
-/// space — here the diff column's visible area in root-overlay (= screen)
-/// coordinates, so overlay affordances cut at the same edges as the sliver's
-/// text.
-class _FixedRectClipper extends CustomClipper<Rect> {
-  const _FixedRectClipper(this.rect);
-
-  /// The visible area to clip to.
-  final Rect rect;
-
-  @override
-  Rect getClip(Size size) => rect;
-
-  @override
-  bool shouldReclip(_FixedRectClipper oldClipper) => oldClipper.rect != rect;
 }

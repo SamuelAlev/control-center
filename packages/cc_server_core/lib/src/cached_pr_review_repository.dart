@@ -79,6 +79,12 @@ class _Kind {
 // fall back to the local-git source.
 const _githubFilesApiLimit = 3000;
 
+// GitHub refuses `Accept: application/vnd.github.diff` once the unified
+// diff exceeds 20 000 lines (HTTP 406, `too_large`). Changed-line churn is
+// a lower bound (context lines also count), so crossing this means the
+// raw-diff backfill cannot succeed and we clone locally instead.
+const _githubDiffLineLimit = 20000;
+
 /// Cross-pass state for a long-lived SWR stream: the fingerprint of the last
 /// emission (so a re-validation that changes nothing emits nothing) and
 /// whether the stream was cancelled mid-pass (so the outer signal loop stops
@@ -1091,19 +1097,22 @@ class CachedPrReviewRepository implements PrReviewRepository {
     // so the file arrives with real +/- counts and an empty body — the viewer
     // then renders an expanded accordion with nothing inside it. The PR's raw
     // unified diff carries no such per-file cap, so fetch it once and splice
-    // the withheld sections back in. Done last so the file tree and every
-    // normal patch have already reached the UI; the oversized bodies fill in
-    // a beat later. Pure renames carry no patch legitimately and are skipped,
-    // which is also what keeps the extra request off the common path.
+    // the withheld sections back in. When that diff itself is over GitHub's
+    // 20 000-line cap the call 406s, and we fill from a local clone of the
+    // PR ref instead — the same pipeline used for >3 000-file PRs. Done last
+    // so the file tree and every normal patch have already reached the UI;
+    // the oversized bodies fill in a beat later. Pure renames carry no patch
+    // legitimately and are skipped, which is also what keeps the extra
+    // request off the common path.
     if (!useLocalGit && lastFiles.any(_isPatchWithheld)) {
-      final backfilled = await _backfillWithheldPatches(
-        prNumber,
-        lastFiles,
-        cancelToken,
-      );
-      if (backfilled != null) {
-        lastFiles = backfilled;
-        yield PrFilesLoad(files: lastFiles, isComplete: true);
+      await for (final load in _fillWithheldPatches(
+        prNumber: prNumber,
+        req: req,
+        files: lastFiles,
+        cancelToken: cancelToken,
+      )) {
+        lastFiles = load.files;
+        yield load;
       }
     }
 
@@ -1121,6 +1130,126 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// pure rename (no changed lines) has no patch to withhold.
   static bool _isPatchWithheld(PrFile f) =>
       f.patch.isEmpty && (f.additions + f.deletions) > 0;
+
+  static int _totalChurn(List<PrFile> files) =>
+      files.fold(0, (n, f) => n + f.additions + f.deletions);
+
+  /// Splices [sections] onto files whose patch the forge withheld.
+  ///
+  /// Returns null when nothing could be filled so the caller keeps the list
+  /// it already has instead of re-emitting it unchanged.
+  static List<PrFile>? _applyWithheldPatches(
+    List<PrFile> files,
+    Map<String, String> sections,
+  ) {
+    var filled = 0;
+    final out = <PrFile>[];
+    for (final f in files) {
+      final patch = _isPatchWithheld(f)
+          ? (sections[f.filename] ?? sections[f.previousFilename ?? ''])
+          : null;
+      if (patch == null || patch.isEmpty) {
+        out.add(f);
+        continue;
+      }
+      filled++;
+      out.add(f.copyWith(patch: patch));
+    }
+    if (filled == 0) {
+      return null;
+    }
+    return List<PrFile>.unmodifiable(out);
+  }
+
+  /// Fills withheld patches from the PR's raw unified diff, then from a
+  /// local clone of the PR ref when that diff is unavailable (GitHub 406s
+  /// past 20 000 lines). Keeps the API file tree on screen while the clone
+  /// runs so the UI does not flash empty.
+  Stream<PrFilesLoad> _fillWithheldPatches({
+    required int prNumber,
+    required PrSourceRequest req,
+    required List<PrFile> files,
+    required CancelToken cancelToken,
+  }) async* {
+    var current = files;
+    List<PrFile>? backfilled;
+    final churn = _totalChurn(current);
+    if (churn <= _githubDiffLineLimit) {
+      backfilled = await _backfillWithheldPatches(
+        prNumber,
+        current,
+        cancelToken,
+      );
+    } else {
+      CcInfraLog.info(
+        'PR Files: skipping raw-diff backfill for #$prNumber '
+        '($churn changed lines exceed the forge '
+        '$_githubDiffLineLimit-line cap)',
+      );
+    }
+    if (backfilled != null) {
+      yield PrFilesLoad(files: backfilled, isComplete: true);
+      return;
+    }
+
+    CcInfraLog.info(
+      'PR Files: filling withheld patches for #$prNumber from a local clone',
+    );
+    try {
+      await for (final load in _localDiffSource.watchFiles(req)) {
+        if (load.error != null) {
+          CcInfraLog.error(
+            'PR Files: local-git fallback failed for #$prNumber: '
+            '${load.error}',
+            load.error,
+          );
+          yield PrFilesLoad(files: current, isComplete: true);
+          return;
+        }
+        final spliced = _spliceWithheldPatches(current, load.files);
+        if (spliced != null) {
+          current = spliced;
+          yield PrFilesLoad(
+            files: current,
+            isComplete: load.isComplete,
+            clonePhase: load.clonePhase,
+            cloneMessage: load.cloneMessage,
+          );
+        } else if (load.isCloning) {
+          yield PrFilesLoad(
+            files: current,
+            clonePhase: load.clonePhase,
+            cloneMessage: load.cloneMessage,
+          );
+        }
+      }
+    } on Object catch (e) {
+      if (_isCancellation(e)) {
+        return;
+      }
+      CcInfraLog.error(
+        'PR Files: local-git fallback failed for #$prNumber: $e',
+        e,
+      );
+    }
+  }
+
+  static List<PrFile>? _spliceWithheldPatches(
+    List<PrFile> files,
+    List<PrFile> localFiles,
+  ) {
+    if (localFiles.isEmpty) {
+      return null;
+    }
+    final patches = <String, String>{
+      for (final f in localFiles)
+        if (f.patch.isNotEmpty) f.filename: f.patch,
+    };
+    if (patches.isEmpty) {
+      return null;
+    }
+    return _applyWithheldPatches(files, patches);
+  }
 
   /// Refills the patches the forge withheld from [files], reading them out of
   /// the PR's raw unified diff.
@@ -1141,9 +1270,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
       );
     } on Object catch (e) {
       if (!_isCancellation(e)) {
-        CcInfraLog.error(
+        CcInfraLog.warning(
           'PR Files: raw-diff backfill failed for #$prNumber: $e',
-          e,
         );
       }
       return null;
@@ -1154,26 +1282,18 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
     // One pass over the raw diff rather than a scan per withheld file — the
     // diff is large by definition here, so N scans would be O(N × diffLength).
-    final sections = extractAllFilePatches(fullDiff);
-    var filled = 0;
-    final out = <PrFile>[];
-    for (final f in files) {
-      final patch = _isPatchWithheld(f) ? sections[f.filename] : null;
-      if (patch == null || patch.isEmpty) {
-        out.add(f);
-        continue;
-      }
-      filled++;
-      out.add(f.copyWith(patch: patch));
-    }
-    if (filled == 0) {
+    final filled = _applyWithheldPatches(
+      files,
+      extractAllFilePatches(fullDiff),
+    );
+    if (filled == null) {
       return null;
     }
     CcInfraLog.info(
-      'PR Files: backfilled $filled withheld patch(es) for #$prNumber from '
+      'PR Files: backfilled withheld patch(es) for #$prNumber from '
       'the raw diff',
     );
-    return List<PrFile>.unmodifiable(out);
+    return filled;
   }
 
   /// Watches the raw content of a file at a given ref, served from cache with
@@ -2278,6 +2398,21 @@ class CachedPrReviewRepository implements PrReviewRepository {
     // Targeted: only the PR detail changed — don't nuke the (expensive) diff/
     // files/commits caches the way the full invalidatePullRequest would.
     await _invalidatePrKinds(prNumber, const [_Kind.prDetail]);
+  }
+
+  /// Replaces a top-level conversation comment's markdown body.
+  @override
+  Future<void> updateIssueComment({
+    required int prNumber,
+    required int commentId,
+    required String body,
+  }) async {
+    await _client.updateIssueComment(
+      prNumber: prNumber,
+      commentId: '$commentId',
+      body: body,
+    );
+    await _invalidatePrKinds(prNumber, const [_Kind.prIssueComments]);
   }
 
   /// Adds assignees to a pull request.

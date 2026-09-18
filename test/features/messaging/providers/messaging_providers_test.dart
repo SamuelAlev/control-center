@@ -839,6 +839,98 @@ void main() {
       expect(container.read(spaceMeteredAgentIdProvider('ch-1')), 'a-1');
     });
   });
+
+  group('conversationUnreadProvider', () {
+    const ws = 'ws-1';
+    const spaceId = 'ch-1';
+    final cursor = DateTime(2024, 6, 1, 12);
+    final before = DateTime(2024, 6, 1, 11);
+    final after = DateTime(2024, 6, 1, 13);
+
+    ProviderContainer containerWith({
+      required DateTime? lastReadAt,
+      required Map<String, DateTime> lastAgentByConversation,
+    }) {
+      final container = ProviderContainer(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(_StubActiveWorkspaceId.new),
+          workspaceSpacesProvider(ws).overrideWithValue(
+            AsyncData([
+              Space(
+                id: spaceId,
+                name: spaceId,
+                workspaceId: ws,
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+              ),
+            ]),
+          ),
+          spaceUserLastReadAtProvider(
+            spaceId,
+          ).overrideWithValue(AsyncData(lastReadAt)),
+          workspaceSpaceActivityProvider(ws).overrideWithValue(
+            AsyncData({
+              spaceId: SpaceActivity(
+                spaceId: spaceId,
+                lastAgentMessageAt: lastAgentByConversation.values
+                    .fold<DateTime?>(
+                      null,
+                      (best, at) =>
+                          best == null || at.isAfter(best) ? at : best,
+                    ),
+                lastAgentMessageAtByConversation: lastAgentByConversation,
+              ),
+            }),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('is true only for conversations with agent mail after the cursor', () {
+      final container = containerWith(
+        lastReadAt: cursor,
+        lastAgentByConversation: {'c-new': after, 'c-old': before},
+      );
+
+      expect(
+        container.read(
+          conversationUnreadProvider((
+            spaceId: spaceId,
+            conversationId: 'c-new',
+          )),
+        ),
+        isTrue,
+      );
+      expect(
+        container.read(
+          conversationUnreadProvider((
+            spaceId: spaceId,
+            conversationId: 'c-old',
+          )),
+        ),
+        isFalse,
+      );
+    });
+
+    test('is false when the space has never been opened', () {
+      final container = containerWith(
+        lastReadAt: null,
+        lastAgentByConversation: {'c-new': after},
+      );
+
+      expect(
+        container.read(
+          conversationUnreadProvider((
+            spaceId: spaceId,
+            conversationId: 'c-new',
+          )),
+        ),
+        isFalse,
+      );
+    });
+  });
 }
 
 /// Pins the active workspace to `ws-1` without touching preferences/database.

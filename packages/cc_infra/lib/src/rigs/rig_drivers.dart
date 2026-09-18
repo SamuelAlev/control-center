@@ -76,6 +76,17 @@ abstract interface class RigDriver {
   /// has none.
   Future<Stream<List<int>>?> openAudioStream();
 
+  /// Sends one PCM16 microphone chunk into the guest, or returns false when
+  /// this surface has no microphone lane.
+  Future<bool> sendAudioInput(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  });
+
   /// The guest's current display size.
   RigDisplaySize get display;
 
@@ -363,6 +374,26 @@ class ComputerRigDriver implements RigDriver {
   Future<Stream<List<int>>?> openAudioStream() => _agent.openAudio();
 
   @override
+  Future<bool> sendAudioInput(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async {
+    await _agent.sendMicrophone(
+      bytes,
+      sessionId: sessionId,
+      sampleRate: sampleRate,
+      channels: channels,
+      start: start,
+      end: end,
+    );
+    return true;
+  }
+
+  @override
   Future<void> dispose() async {
     // The QMP client and the agent belong to the machine, which the backend
     // tears down. Nothing driver-owned to release.
@@ -455,6 +486,23 @@ RigActionResult rigDriverFailure(String verb, Object error) {
   return RigActionResult.error('$verb failed — $error. $hint');
 }
 
+/// Opens one encoded browser-audio stream from the guest.
+typedef BrowserAudioStreamOpener = Future<Stream<List<int>>?> Function();
+
+/// Forwards one browser microphone session message into the guest.
+typedef BrowserAudioInputSender =
+    Future<bool> Function(
+      Uint8List bytes, {
+      required String sessionId,
+      required int sampleRate,
+      required int channels,
+      bool start,
+      bool end,
+    });
+
+/// Releases the browser guest's microphone forwarding process.
+typedef BrowserAudioInputCloser = Future<void> Function();
+
 /// Drives the browser surface over CDP.
 class BrowserRigDriver implements RigDriver {
   /// Creates a [BrowserRigDriver].
@@ -462,6 +510,9 @@ class BrowserRigDriver implements RigDriver {
     required this.client,
     required RigDisplaySize viewport,
     this.onUrlChanged,
+    this.audioStreamOpener,
+    this.audioInputSender,
+    this.audioInputCloser,
   }) : _viewport = viewport {
     _bindNavigationTracking();
   }
@@ -483,6 +534,15 @@ class BrowserRigDriver implements RigDriver {
   /// service persists it onto the rig row, so watchers (the address bar) see
   /// navigations as they happen without polling.
   final void Function(String url)? onUrlChanged;
+
+  /// Opens the browser guest's PulseAudio monitor stream.
+  final BrowserAudioStreamOpener? audioStreamOpener;
+
+  /// Forwards host microphone PCM into the browser guest's default source.
+  final BrowserAudioInputSender? audioInputSender;
+
+  /// Closes the guest microphone lane when this driver is disposed.
+  final BrowserAudioInputCloser? audioInputCloser;
 
   RigDisplaySize _viewport;
 
@@ -1196,9 +1256,26 @@ class BrowserRigDriver implements RigDriver {
 
   @override
   Future<Stream<List<int>>?> openAudioStream() async =>
-      // Headless Chromium plays into nothing; page audio arrives with the
-      // roadmap's audio-capable browser lane, not this surface revision.
-      null;
+      audioStreamOpener?.call();
+
+  @override
+  Future<bool> sendAudioInput(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async =>
+      await audioInputSender?.call(
+        bytes,
+        sessionId: sessionId,
+        sampleRate: sampleRate,
+        channels: channels,
+        start: start,
+        end: end,
+      ) ??
+      false;
 
   Future<void> _move(int x, int y) async {
     await client.moveMouse(x, y, dragging: _leftHeld);
@@ -1231,6 +1308,7 @@ class BrowserRigDriver implements RigDriver {
   Future<void> dispose() async {
     await _navSub?.cancel();
     _navSub = null;
+    await audioInputCloser?.call();
     await client.close();
   }
 }
@@ -1362,6 +1440,33 @@ class MobileRigDriver implements RigDriver {
         case MobileStartApp(:final package, :final activity):
           await adb.startApp(package, activity: activity);
           return RigActionResult.ok('${action.summary}.');
+
+        case MobileStopApp(:final package):
+          await adb.stopApp(package);
+          return RigActionResult.ok('${action.summary}.');
+
+        case MobileClearAppData(:final package):
+          await adb.clearAppData(package);
+          return RigActionResult.ok('${action.summary}.');
+
+        case MobileUninstallApp(:final package):
+          await adb.uninstallApp(package);
+          return RigActionResult.ok('${action.summary}.');
+
+        case MobileOpenUrl(:final url):
+          await adb.openUrl(url);
+          return RigActionResult.ok('${action.summary}.');
+
+        case MobileShell(:final argv):
+          final output = await adb.shell(argv);
+          return RigActionResult.ok(
+            output.isEmpty
+                ? '${action.summary}; the command produced no output.'
+                : wrapUntrustedRigContent(
+                    output,
+                    source: 'android device command',
+                  ),
+          );
       }
     } on Object catch (e) {
       return rigDriverFailure(action.verb, e);
@@ -1380,7 +1485,13 @@ class MobileRigDriver implements RigDriver {
       final target = _size.fitInside(RigDisplaySize.agentCeiling);
       final ffmpeg = await _ffmpeg();
       if (ffmpeg != null) {
-        final jpeg = await _stillToJpeg(ffmpeg, png, target);
+        final jpeg = await transcodePngStillToJpeg(
+          ffmpeg,
+          png,
+          target.width,
+          target.height,
+          logContext: 'rig/mobile',
+        );
         if (jpeg != null) {
           return RigActionResult(
             // Same shape as the computer surface's wording, and for the same
@@ -1416,66 +1527,6 @@ class MobileRigDriver implements RigDriver {
       return RigActionResult.error('Screenshot failed: $e');
     }
   }
-
-  /// Downscales one PNG still to [target] and re-encodes it as JPEG, or null
-  /// when ffmpeg could not do it (the caller then ships the PNG and says so).
-  Future<Uint8List?> _stillToJpeg(
-    HostFfmpeg ffmpeg,
-    Uint8List png,
-    RigDisplaySize target,
-  ) async {
-    HostProcess? process;
-    try {
-      process = await ffmpeg.start([
-        '-loglevel',
-        'error',
-        '-f',
-        'png_pipe',
-        '-i',
-        'pipe:0',
-        '-vf',
-        ffmpegFitFilter(target.width, target.height),
-        '-frames:v',
-        '1',
-        '-q:v',
-        '${mjpegQualityFlag(_stillQuality)}',
-        '-f',
-        'mjpeg',
-        'pipe:1',
-      ]);
-      final out = BytesBuilder(copy: false);
-      // Drained BEFORE stdin is fed: a child whose stdout nobody reads blocks
-      // on its first flush and then never drains its stdin either.
-      final collected = process.stdout.forEach(out.add);
-      // Caught here and not at the await: on the success path nothing awaits
-      // this future, and an un-awaited stream error becomes an unhandled
-      // async error that takes the isolate with it.
-      final diagnostics = process.stderr
-          .transform(utf8.decoder)
-          .join()
-          .catchError((Object _) => '');
-      process.stdin.add(png);
-      await process.stdin.close();
-      await collected.timeout(const Duration(seconds: 20));
-      final code = await process.exitCode.timeout(const Duration(seconds: 5));
-      if (code != 0 || out.isEmpty) {
-        CcInfraLog.warning(
-          'rig/mobile: ffmpeg could not transcode the still (exit $code): '
-          '${(await diagnostics).trim()}',
-        );
-        return null;
-      }
-      return out.takeBytes();
-    } on Object catch (e) {
-      CcInfraLog.warning('rig/mobile: still transcode failed: $e');
-      process?.kill();
-      return null;
-    }
-  }
-
-  /// JPEG quality for an agent still. High enough that small text survives
-  /// the downscale, which is the whole point of showing a phone to a model.
-  static const int _stillQuality = 80;
 
   @override
   Future<Stream<List<int>>?> openWatchStream(RigWatchRequest request) async {
@@ -1659,6 +1710,16 @@ class MobileRigDriver implements RigDriver {
   Future<Stream<List<int>>?> openAudioStream() async =>
       // Emulator audio needs an adb capture lane that does not exist yet.
       null;
+
+  @override
+  Future<bool> sendAudioInput(
+    Uint8List bytes, {
+    required String sessionId,
+    required int sampleRate,
+    required int channels,
+    bool start = false,
+    bool end = false,
+  }) async => false;
 
   @override
   Future<void> dispose() async {

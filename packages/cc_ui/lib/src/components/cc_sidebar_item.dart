@@ -1,5 +1,6 @@
 import 'package:cc_ui/src/components/cc_sidebar.dart';
 import 'package:cc_ui/src/components/cc_tooltip.dart';
+import 'package:cc_ui/src/foundation/cc_fluid_hover.dart';
 import 'package:cc_ui/src/foundation/cc_motion.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
 import 'package:cc_ui/src/foundation/cc_typography.dart';
@@ -8,11 +9,6 @@ import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:cc_ui/src/tokens/app_spacing.dart';
 import 'package:cc_ui/src/tokens/design_system_tokens.dart';
 import 'package:flutter/widgets.dart';
-
-/// The sidebar item extent: expanded rows are 32px tall, collapsed (rail)
-/// items are 32×32 squares — a design-system invariant, not a call-site
-/// choice.
-const double kCcSidebarItemExtent = 32;
 
 /// A navigation row for [CcSidebar].
 ///
@@ -36,7 +32,7 @@ const double kCcSidebarItemExtent = 32;
 /// (count included) straddling the square's top-right corner — never degraded
 /// to a bare dot. The collapsed state is sourced from the nearest
 /// [CcSidebarScope] when present, falling back to the local [collapsed] flag.
-class CcSidebarItem extends StatelessWidget {
+class CcSidebarItem extends StatelessWidget implements CcFluidHoverTarget {
   /// Creates a [CcSidebarItem].
   const CcSidebarItem({
     super.key,
@@ -86,7 +82,14 @@ class CcSidebarItem extends StatelessWidget {
   /// Icon-only rail mode fallback when there is no [CcSidebarScope] ancestor.
   final bool collapsed;
 
-  Color _background(DesignSystemTokens t, Set<WidgetState> states) {
+  @override
+  bool get fluidHoverEnabled => onPressed != null;
+
+  Color _background(
+    DesignSystemTokens t,
+    Set<WidgetState> states, {
+    required bool fluidActive,
+  }) {
     if (selected) {
       return t.bgBrandSolid;
     }
@@ -94,7 +97,7 @@ class CcSidebarItem extends StatelessWidget {
       return t.hoverStrong;
     }
     if (states.contains(WidgetState.hovered)) {
-      return t.hover;
+      return fluidActive ? t.hover.withValues(alpha: 0) : t.hover;
     }
     // Alpha-0 hover colour (not transparent-black) so AnimatedContainer lerps
     // only alpha on hover↔idle, avoiding a dark-gray flash.
@@ -106,6 +109,7 @@ class CcSidebarItem extends StatelessWidget {
     Color background, {
     required bool collapsed,
     required bool transitioning,
+    required Duration duration,
   }) {
     final fg = selected ? t.accentOn : t.textSecondary;
     const iconSize = 18.0;
@@ -115,7 +119,7 @@ class CcSidebarItem extends StatelessWidget {
     // deselect reverse as dark-ink-on-orange). Same duration and curve, so
     // fill and ink stay in lockstep.
     return TweenAnimationBuilder<Color?>(
-      duration: CcMotion.fast,
+      duration: duration,
       curve: CcMotion.standard,
       tween: ColorTween(end: fg),
       builder: (context, animatedFg, _) {
@@ -125,7 +129,7 @@ class CcSidebarItem extends StatelessWidget {
             Icon(icon, size: iconSize, color: contentColor);
 
         final Widget container = AnimatedContainer(
-          duration: CcMotion.fast,
+          duration: duration,
           curve: CcMotion.standard,
           // The expanded row height is fixed at 32px (design rule); the 18px
           // icon and label center vertically inside it.
@@ -139,8 +143,8 @@ class CcSidebarItem extends StatelessWidget {
           // half-icon = 10).
           padding: collapsed
               ? EdgeInsets.zero
-              // Left 9 + the 1px reserved border (which insets the child) =
-              // the visual 10px inset: the icon's left edge lands exactly
+              // Start 9 + the 1px reserved border (which insets the child) =
+              // the visual 10px inset: the icon's leading edge lands exactly
               // where CcSidebarGroup's header padding (10) starts the section
               // title, and its center on the x=27 line the collapsed rail's
               // squares center on, so toggling the rail never moves the icon.
@@ -148,7 +152,10 @@ class CcSidebarItem extends StatelessWidget {
               // row keeps its expanded geometry (labels fading) down to the
               // rail's 38px content width without the fixed icon + gap +
               // padding overflowing it (18 + 8 + 9 + 2 borders = 37 ≤ 38).
-              : EdgeInsets.only(left: 9, right: transitioning ? 0 : 10),
+              : EdgeInsetsDirectional.only(
+                  start: 9,
+                  end: transitioning ? 0 : 10,
+                ),
           decoration: BoxDecoration(
             color: background,
             borderRadius: AppRadii.brSm,
@@ -186,11 +193,10 @@ class CcSidebarItem extends StatelessWidget {
                       fit: FlexFit.tight,
                       child: AnimatedOpacity(
                         opacity: transitioning ? 0 : 1,
-                        duration: CcMotion.fast,
+                        duration: duration,
                         curve: CcMotion.standard,
                         child:
-                            badgeBesideLabel &&
-                                badge != null && !transitioning
+                            badgeBesideLabel && badge != null && !transitioning
                             // The badge rides the text's own layout as a
                             // trailing WidgetSpan: a short label leaves the
                             // rest of the row empty (the badge hugs the words
@@ -213,9 +219,10 @@ class CcSidebarItem extends StatelessWidget {
                                     WidgetSpan(
                                       alignment: PlaceholderAlignment.middle,
                                       child: Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: AppSpacing.sm,
-                                        ),
+                                        padding:
+                                            const EdgeInsetsDirectional.only(
+                                              start: AppSpacing.sm,
+                                            ),
                                         child: badge!,
                                       ),
                                     ),
@@ -244,8 +251,9 @@ class CcSidebarItem extends StatelessWidget {
                     // stays pinned to the row's right edge. Both badge flavors
                     // leave the layout entirely during the width animation: as
                     // the row narrows they would overflow otherwise.
-                    if (!badgeBesideLabel && badge != null && !transitioning)
-                      ...[
+                    if (!badgeBesideLabel &&
+                        badge != null &&
+                        !transitioning) ...[
                       const SizedBox(width: AppSpacing.sm),
                       badge!,
                     ],
@@ -259,7 +267,7 @@ class CcSidebarItem extends StatelessWidget {
         // Rail mode: the button is a fixed 32×32 square centered in the rail
         // content width. The badge — the same [badge] the expanded row shows
         // trailing, count and all, never a bare dot — straddles the square's
-        // top-right corner like a notification badge.
+        // top-trailing corner like a notification badge.
         return Center(
           child: SizedBox.square(
             dimension: kCcSidebarItemExtent,
@@ -268,9 +276,9 @@ class CcSidebarItem extends StatelessWidget {
               children: [
                 Positioned.fill(child: container),
                 if (badge != null)
-                  Positioned(
+                  PositionedDirectional(
                     top: -AppSpacing.xs,
-                    right: -AppSpacing.sm,
+                    end: -AppSpacing.sm,
                     child: badge!,
                   ),
               ],
@@ -286,6 +294,7 @@ class CcSidebarItem extends StatelessWidget {
     final t = context.ds;
     final collapsed = CcSidebarScope.collapsedOf(context) ?? this.collapsed;
     final transitioning = CcSidebarScope.transitioningOf(context) ?? false;
+    final duration = CcMotion.resolveFade(context, CcMotion.fast);
 
     final Widget result;
     if (onPressed == null) {
@@ -294,6 +303,7 @@ class CcSidebarItem extends StatelessWidget {
         selected ? t.bgBrandSolid : t.hover.withValues(alpha: 0),
         collapsed: collapsed,
         transitioning: transitioning,
+        duration: duration,
       );
     } else {
       result = CcTappable(
@@ -305,9 +315,14 @@ class CcSidebarItem extends StatelessWidget {
         focusRingColor: selected ? t.accentOn : null,
         builder: (context, states) => _buildBody(
           t,
-          _background(t, states),
+          _background(
+            t,
+            states,
+            fluidActive: CcFluidHover.isItemActive(context),
+          ),
           collapsed: collapsed,
           transitioning: transitioning,
+          duration: duration,
         ),
       );
     }
@@ -319,7 +334,7 @@ class CcSidebarItem extends StatelessWidget {
     // it.
     if (collapsed) {
       return CcTooltip(
-        placement: CcTooltipPlacement.right,
+        placement: CcTooltipPlacement.end,
         message: label,
         child: result,
       );

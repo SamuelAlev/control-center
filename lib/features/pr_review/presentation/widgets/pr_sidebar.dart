@@ -12,6 +12,7 @@ import 'package:control_center/features/pr_review/presentation/utils/review_stat
 import 'package:control_center/features/pr_review/presentation/widgets/assignee_picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_complexity_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_detail_skeleton.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_label_wrap.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_status_badge.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/reviewer_picker_flyout.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/ship_show_ask_badge.dart';
@@ -19,13 +20,16 @@ import 'package:control_center/features/pr_review/providers/pr_filter_providers.
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/pr_review/providers/ship_show_ask_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
 import 'package:control_center/shared/widgets/github_team_avatar.dart';
+import 'package:control_center/shared/widgets/github_team_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Tab index of the Actions tab inside the PR detail body. Kept here so the
 /// sidebar can request a switch via the [prChecksUiProvider] without taking
@@ -111,8 +115,7 @@ class PrSidebar extends ConsumerWidget {
     final files = filesAsync.value ?? const <PrFile>[];
     final sortedFiles = sortFilesByTreeOrder(files);
     final hasComplexity = files.isNotEmpty;
-    final hasShipShowAsk =
-        ref.watch(shipShowAskProvider(prRef)).value != null;
+    final hasShipShowAsk = ref.watch(shipShowAskProvider(prRef)).value != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -160,10 +163,13 @@ class PrSidebar extends ConsumerWidget {
                       : _SidebarEmpty(label: l10n.noReviewersAssigned))
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: AppSpacing.sm,
                     children: [
                       for (final r in displayReviewers)
                         _ReviewerRow(
                           reviewer: r,
+                          organization: prRef.repoFullName.split('/').first,
                           pending:
                               editState?.pendingReviewers.contains(
                                 r.identity,
@@ -194,6 +200,8 @@ class PrSidebar extends ConsumerWidget {
                       : _SidebarEmpty(label: l10n.noAssignees))
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: AppSpacing.sm,
                     children: [
                       for (final u in pr.assignees)
                         _AssigneeRow(
@@ -211,6 +219,16 @@ class PrSidebar extends ConsumerWidget {
                         ),
                     ],
                   ),
+          ),
+        ),
+        CollapsibleSidebarSection(
+          icon: AppIcons.tag,
+          label: l10n.labels,
+          count: pr.labels.isEmpty ? null : '${pr.labels.length}',
+          child: _sectionBody(
+            child: pr.labels.isEmpty
+                ? _SidebarEmpty(label: l10n.noLabelsYet)
+                : PrLabelWrap(labels: pr.labels),
           ),
         ),
         CollapsibleSidebarSection(
@@ -429,11 +447,13 @@ class _ReviewerRow extends StatefulWidget {
   const _ReviewerRow({
     required this.reviewer,
     required this.pending,
+    required this.organization,
     this.onRemove,
   });
 
   final PrReviewer reviewer;
   final bool pending;
+  final String organization;
   final VoidCallback? onRemove;
 
   @override
@@ -453,61 +473,74 @@ class _ReviewerRowState extends State<_ReviewerRow> {
     final Widget content = MouseRegion(
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Row(
-          children: [
-            if (r.isCodeOwner) ...[
-              CcTooltip(
-                message: l10n.requiredByCodeOwners,
-                child: Icon(AppIcons.shield, size: 14, color: t.fgBrandPrimary),
-              ),
-              const SizedBox(width: 6),
-            ],
-            _ReviewerAvatar(reviewer: r),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
+      child: Row(
+        children: [
+          if (r.isCodeOwner) ...[
+            CcTooltip(
+              message: l10n.requiredByCodeOwners,
+              child: Icon(AppIcons.shield, size: 14, color: t.fgBrandPrimary),
+            ),
+            const SizedBox(width: 6),
+          ],
+          _ReviewerAvatar(reviewer: r),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _label(r),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: CcTypography.caption.copyWith(color: t.textPrimary),
+                ),
+                if (reviewedBy != null)
                   Text(
-                    _label(r),
+                    l10n.reviewedOnBehalfOf(reviewedBy.login),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(color: t.textPrimary),
-                  ),
-                  if (reviewedBy != null)
-                    Text(
-                      l10n.reviewedOnBehalfOf(reviewedBy.login),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: CcTypography.caption.copyWith(
-                        color: t.textTertiary,
-                      ),
+                    style: CcTypography.caption.copyWith(
+                      color: t.textTertiary,
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
-            if (widget.pending)
-              const CcSpinner(size: 14)
-            else if (_hovered && widget.onRemove != null)
-              CcTappable(
-                onPressed: widget.onRemove,
-                builder: (context, states) =>
-                    Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
-              )
-            else
-              _ReviewerStateDot(state: r.state),
-          ],
-        ),
+          ),
+          if (widget.pending)
+            const CcSpinner(size: 14)
+          else if (_hovered && widget.onRemove != null)
+            CcTappable(
+              onPressed: widget.onRemove,
+              builder: (context, states) =>
+                  Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
+            )
+          else
+            _ReviewerStateDot(state: r.state),
+        ],
       ),
     );
 
     if (r is PrUserReviewer) {
       return GitHubUserHoverTarget(login: r.user.login, child: content);
     }
-    return content;
+    final team = r as PrTeamReviewer;
+    return GitHubTeamHoverTarget(
+      organization: widget.organization,
+      slug: team.slug,
+      child: CcTappable(
+        onPressed: () => context.go(
+          teamProfileRoute(
+            context.currentWorkspaceId!,
+            widget.organization,
+            team.slug,
+          ),
+        ),
+        semanticLabel: team.name,
+        borderRadius: AppRadii.brSm,
+        builder: (_, _) => content,
+      ),
+    );
   }
 
   String _label(PrReviewer r) => switch (r) {
@@ -606,33 +639,30 @@ class _AssigneeRowState extends State<_AssigneeRow> {
         onExit: (_) => setState(() => _hovered = false),
         child: Opacity(
           opacity: widget.pending ? 0.5 : 1,
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                GitHubUserAvatar(
-                  login: widget.user.login,
-                  avatarUrl: widget.user.avatarUrl,
-                  size: 24,
+          child: Row(
+            children: [
+              GitHubUserAvatar(
+                login: widget.user.login,
+                avatarUrl: widget.user.avatarUrl,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  widget.user.login,
+                  style: CcTypography.caption.copyWith(color: t.textPrimary),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.user.login,
-                    style: CcTypography.caption.copyWith(color: t.textPrimary),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+              ),
+              if (widget.pending)
+                const CcSpinner(size: 14)
+              else if (_hovered && widget.onRemove != null)
+                CcTappable(
+                  onPressed: widget.onRemove,
+                  builder: (context, states) =>
+                      Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
                 ),
-                if (widget.pending)
-                  const CcSpinner(size: 14)
-                else if (_hovered && widget.onRemove != null)
-                  CcTappable(
-                    onPressed: widget.onRemove,
-                    builder: (context, states) =>
-                        Icon(AppIcons.x, size: 14, color: t.fgQuaternary),
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
       ),

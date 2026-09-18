@@ -17,4 +17,5 @@ export 'package:cc_markdown/src/codec/markdown_ast_codec.dart';
 export 'package:cc_markdown/src/parser/emoji_shortcodes.dart';
 export 'package:cc_markdown/src/parser/parse_options.dart';
 export 'package:cc_markdown/src/parser/parser.dart';
+export 'package:cc_markdown/src/parser/task_list.dart';
 export 'package:cc_markdown/src/plugins/plugin.dart';

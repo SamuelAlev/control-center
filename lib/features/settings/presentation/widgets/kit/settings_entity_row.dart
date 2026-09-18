@@ -205,7 +205,7 @@ class SettingsEntityRow extends StatelessWidget {
     final open = onExpandedChanged == null || expanded;
     final body = open
         ? Padding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: const EdgeInsetsDirectional.fromSTEB(
               AppSpacing.lg + 28 + AppSpacing.md,
               0,
               AppSpacing.lg,

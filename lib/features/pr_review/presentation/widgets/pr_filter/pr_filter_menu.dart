@@ -148,8 +148,12 @@ class PrFilterMenuAnchor extends StatelessWidget {
   Widget build(BuildContext context) {
     return CcOverlayAnchor(
       controller: controller,
-      targetAnchor: alignRight ? Alignment.bottomRight : Alignment.bottomLeft,
-      followerAnchor: alignRight ? Alignment.topRight : Alignment.topLeft,
+      targetAnchor: alignRight
+          ? AlignmentDirectional.bottomEnd
+          : AlignmentDirectional.bottomStart,
+      followerAnchor: alignRight
+          ? AlignmentDirectional.topEnd
+          : AlignmentDirectional.topStart,
       offset: const Offset(0, 6),
       interceptPointer: true,
       target: target,

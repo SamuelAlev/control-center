@@ -473,13 +473,14 @@ class DebugTool extends HarnessTool {
     DebugSession session,
     Map<String, dynamic> args,
   ) async {
-    var threadId = _threadId(args, session);
-    if (threadId == null) {
+    final pausedThread = _threadId(args, session);
+    if (pausedThread == null) {
       return HarnessToolResult.error(
         'Not stopped anywhere — nothing has a stack. Pass `thread_id`, or wait '
         'for a breakpoint.',
       );
     }
+    var threadId = pausedThread;
     // A `stackTrace` that FAILS is the same race as one that comes back empty,
     // so it feeds the same recovery instead of aborting the op. The adapter
     // answers with a `Collected` sentinel when the isolate id it is holding has
@@ -504,6 +505,23 @@ class DebugTool extends HarnessTool {
     // stopped-at-a-breakpoint thread doesn't read as "nowhere".
     for (var attempt = 0; attempt < 10 && frames.isEmpty; attempt++) {
       await Future<void>.delayed(const Duration(milliseconds: 200));
+      if (session.isTerminated) {
+        break;
+      }
+      // An entry-release continue can land AFTER the breakpoint stop we
+      // already reported, clearing the pause. Wait for the current one.
+      if (session.lastStop == null) {
+        try {
+          final next = await session.stops.first.timeout(
+            const Duration(milliseconds: 800),
+          );
+          threadId = next.threadId ?? threadId;
+        } on TimeoutException {
+          // Still running; the empty-frame retry stands.
+        }
+      } else {
+        threadId = session.lastStop?.threadId ?? threadId;
+      }
       frames = await framesOrEmpty(threadId);
     }
     // Still nothing: the stop's thread may simply never answer with frames
@@ -653,19 +671,37 @@ class DebugTool extends HarnessTool {
     if (session.isTerminated) {
       return 'The program exited.';
     }
+    // Listen BEFORE reading lastStop: a broadcast event that lands in that
+    // gap would otherwise be lost, and launch would wait 30s for a stop that
+    // already happened.
+    final incoming = StreamIterator(session.stops);
     try {
-      final stop = await session.stops.first.timeout(
+      final existing = session.lastStop;
+      if (existing != null) {
+        return _describeStop(existing);
+      }
+      if (session.isTerminated) {
+        return 'The program exited.';
+      }
+      final hasStop = await incoming.moveNext().timeout(
         const Duration(seconds: 30),
+        onTimeout: () => false,
       );
-      return 'Stopped: ${stop.reason}'
-          '${stop.description == null ? '' : ' (${stop.description})'}'
-          '${stop.text == null ? '' : ' — ${stop.text}'}. '
-          'Use `stack` to see where.';
-    } on TimeoutException {
-      return session.isTerminated
-          ? 'The program exited.'
-          : 'Still running — it has not hit a breakpoint. Use `pause` to stop '
-                'it where it is.';
+      if (!hasStop) {
+        return session.isTerminated
+            ? 'The program exited.'
+            : 'Still running — it has not hit a breakpoint. Use `pause` to stop '
+                  'it where it is.';
+      }
+      return _describeStop(incoming.current);
+    } finally {
+      await incoming.cancel();
     }
   }
+
+  String _describeStop(DebugStop stop) =>
+      'Stopped: ${stop.reason}'
+      '${stop.description == null ? '' : ' (${stop.description})'}'
+      '${stop.text == null ? '' : ' — ${stop.text}'}. '
+      'Use `stack` to see where.';
 }

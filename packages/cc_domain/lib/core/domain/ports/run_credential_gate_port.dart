@@ -15,7 +15,7 @@
 /// Two lanes are gated today and the reason is what Control Center OWNS: it
 /// holds the Claude Code account directories and the harness provider
 /// credentials, so it can state, before a spawn, whether either can serve a
-/// run. The other CLIs (codex, opencode, gemini, cursor, goose, pi) own their
+/// run. The Cursor CLI owns its
 /// own login and expose no status probe, so a pre-flight for them would be a
 /// guess; they are a later, additive lane rather than a wrong one now.
 library;

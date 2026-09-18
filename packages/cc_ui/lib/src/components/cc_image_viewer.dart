@@ -653,7 +653,7 @@ class _CcExpandableImageState extends State<CcExpandableImage> {
                         constraints.maxWidth < 150 ||
                         constraints.maxHeight < 56;
                     return Align(
-                      alignment: Alignment.topRight,
+                      alignment: AlignmentDirectional.topEnd,
                       child: Padding(
                         padding: EdgeInsets.all(
                           tight ? AppSpacing.xs : AppSpacing.sm,

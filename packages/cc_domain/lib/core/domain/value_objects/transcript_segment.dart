@@ -275,7 +275,8 @@ class ToolSegment extends TranscriptSegment {
   final DateTime? prunedAt;
 
   /// Images this tool returned alongside [outputs] — a `browser_use` /
-  /// `computer_use` / `mobile_use` screenshot, a rendered chart, a visual diff.
+  /// `computer_use` / `mobile_use` / `ios_use` screenshot, a rendered chart,
+  /// or a visual diff.
   ///
   /// Stored as blob REFERENCES, never inline bytes: the model already received
   /// the image, and putting its base64 in the transcript would drag megabytes

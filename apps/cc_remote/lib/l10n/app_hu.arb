@@ -1,0 +1,519 @@
+{
+  "@@locale": "hu",
+  "appTitle": "Control Center",
+  "back": "Vissza",
+  "cancel": "Mégse",
+  "retry": "Újrapróbálás",
+  "tryAgain": "Próbálja újra",
+  "settings": "Beállítások",
+  "refresh": "Frissítés",
+  "approve": "Jóváhagyás",
+  "deny": "Tiltás",
+  "continueLabel": "Folytatás",
+  "agentQuestionHeader": "Kérdés Önhöz",
+  "agentQuestionAnsweredLabel": "Megválaszolva",
+  "agentQuestionSkip": "Kihagyás",
+  "agentQuestionSkippedLabel": "Kihagyva",
+  "agentQuestionFreeformHint": "Írja be a válaszát…",
+  "agentApprovalRequired": "Jóváhagyás szükséges",
+  "approveAndRemember": "Jóváhagyás 8 órára",
+  "decline": "Elutasítás",
+  "confirm": "Megerősítés",
+  "send": "Küldés",
+  "close": "Bezárás",
+  "expand": "Kinyitás",
+  "zoomIn": "Nagyítás",
+  "zoomOut": "Kicsinyítés",
+  "resetZoom": "Nagyítás visszaállítása",
+  "scanQrPrompt": "Olvassa be a QR-kódot a Macről, hogy párosítsa ezt a telefont.",
+  "scanQrHelp": "Nyissa meg a kamerát, és irányítsa a Control Centerben a Macen megjelenő QR-kódra. Ez a telefon közvetlenül, privát kapcsolaton csatlakozik a Machez.",
+  "connectingToMac": "Csatlakozás a Machez…",
+  "connectingDetail": "Biztonságos, közvetlen kapcsolat létrehozása.",
+  "identityChangedTitle": "A szerver identitása megváltozott",
+  "identityChangedBody": "Ez a szerver már nem egyezik a párosításkor mentett identitással. Ez azt jelentheti, hogy a szervert újratelepítették — vagy hogy valami közbeékelődik a kapcsolatba. Biztonságból ez az eszköz nem csatlakozik. Távolítsa el a párosítást, majd olvasson be egy új QR-kódot a Macről az újbóli párosításhoz.",
+  "removePairing": "Párosítás eltávolítása",
+  "couldntConnect": "Nem sikerült csatlakozni",
+  "pendingPairingTitle": "Csatlakozik ehhez a szerverhez?",
+  "pendingPairingBody": "Egy link azt kérte a Control Centertől, hogy párosodjon ezzel a szerverrel. Csak akkor folytassa, ha Ön indította.",
+  "connect": "Csatlakozás",
+  "failureNotPaired": "Nincs párosítva — olvassa be a QR-kódot a Macről",
+  "failureUnreachable": "A szerver egyik úton sem érhető el — ellenőrizze, hogy fut-e, vagy próbálja ugyanazon a hálózaton",
+  "failureIdentityChanged": "A szerver identitása megváltozott — ha újratelepítették, párosítsa újra ezt az eszközt",
+  "failureAuthRejected": "A szerver elutasította ezt az eszközt — párosítsa újra a Macről",
+  "failureUnknown": "Nem sikerült csatlakozni — koppintson az újrapróbáláshoz",
+  "statusConnected": "Csatlakoztatva",
+  "statusConnecting": "Csatlakozás",
+  "statusOffline": "Offline",
+  "statusIdentityMismatch": "Identitáseltérés",
+  "statusNotPaired": "Nincs párosítva",
+  "statusConfirmPairing": "Párosítás megerősítése",
+  "connectionFailed": "A kapcsolat sikertelen",
+  "identityMismatchBanner": "A szerver identitása megváltozott — a kapcsolat leállt. Párosítsa újra ezt az eszközt a folytatáshoz.",
+  "tabInbox": "Beérkezett",
+  "tabTickets": "Jegyek",
+  "tabChat": "Csevegés",
+  "tabPrs": "PRs",
+  "tabCalendar": "Naptár",
+  "tabNews": "Hírek",
+  "tabWaitingCount": "{label}, {count} várakozik",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateAvailable": "Új Control Center érhető el",
+  "appearance": "Megjelenés",
+  "language": "Nyelv",
+  "device": "Eszköz",
+  "themeSystem": "Rendszer",
+  "themeLight": "Világos",
+  "themeDark": "Sötét",
+  "languageSystem": "Rendszer",
+  "disconnectTapAgain": "Koppintson újra, hogy leválassza ezt az eszközt a Macről",
+  "disconnectDevice": "Eszköz leválasztása",
+  "disconnect": "Leválasztás",
+  "chooseWorkspace": "Munkaterület kiválasztása",
+  "workspaces": "Munkaterületek",
+  "workspacesLoadFailed": "Nem sikerült betölteni a munkaterületeket",
+  "noWorkspacesYet": "Még nincsenek munkaterületek",
+  "selectWorkspace": "{name} kiválasztása",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "inboxLoadFailed": "Nem sikerült betölteni a beérkezettet",
+  "allCaughtUp": "Minden elolvasva",
+  "inboxNoForgeAccount": "A szerveren nincs csatlakoztatott forge-fiók, ezért a pull requestek még nem rendelhetők Önhöz.",
+  "inboxNothingWaiting": "Semmi sincs blokkolva, és egyetlen pull request sem vár Önre.",
+  "blocked": "Blokkolva",
+  "sectionNeedsYourReview": "Az Ön átnézésére van szükség",
+  "sectionReturnedToYou": "Visszaküldve Önnek",
+  "sectionApprovedAndReady": "Jóváhagyva és kész",
+  "sectionYourDrafts": "Az Ön piszkozatai",
+  "sectionWaitingForReviewers": "Átnézőkre vár",
+  "sectionMergingAndMerged": "Összefésülés és nemrég összefésülve",
+  "sectionWaitingForAuthor": "Szerzőre vár",
+  "waitingAgo": "vár {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "openConversation": "Beszélgetés megnyitása",
+  "calendarLoadFailed": "Nem sikerült betölteni a naptárat",
+  "nothingScheduled": "Nincs ütemezve semmi",
+  "calendarEmptyDescription": "A csatlakoztatott naptárak eseményei itt jelennek meg.",
+  "agenda": "Napirend",
+  "syncCalendarsNow": "Naptárak szinkronizálása most",
+  "event": "Esemény",
+  "eventNotFound": "Az esemény nem található",
+  "eventNotFoundDescription": "Lehet, hogy a napirend ablakán kívül esik, vagy forrásoldalon törölték.",
+  "joinMeeting": "Csatlakozás a megbeszéléshez",
+  "join": "Csatlakozás",
+  "attendeesCount": "Résztvevők ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "details": "Részletek",
+  "allDay": "Egész nap",
+  "happeningNow": "Most zajlik",
+  "inDuration": "{duration} múlva",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": {
+        "type": "String"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "attendeeAccepted": "elfogadva",
+  "attendeeDeclined": "elutasítva",
+  "attendeeMaybe": "talán",
+  "attendeeNoReply": "nincs válasz",
+  "organizer": "szervező",
+  "calendarNoAccounts": "Ehhez a munkaterülethez nincs csatlakoztatott naptár. Csatlakoztasson egyet az asztali alkalmazásból — a bejelentkezés a tokent a szerveren tárolja.",
+  "calendarReauthNeeded": "Egy naptárfiókot újra kell csatlakoztatni — a lentiek elavultak lehetnek. Csatlakoztassa újra az asztali alkalmazásból.",
+  "spacesLoadFailed": "Nem sikerült betölteni a tereket",
+  "noSpaces": "Nincsenek terek",
+  "spacesEmptyDescription": "A munkaterület terei itt jelennek meg.",
+  "thread": "Szál",
+  "agentWorking": "Az ügynök dolgozik",
+  "messagesLoadFailed": "Nem sikerült betölteni az üzeneteket",
+  "noMessagesYet": "Még nincsenek üzenetek",
+  "noMessagesDescription": "Küldjön üzenetet a beszélgetés indításához.",
+  "agentResponding": "Az ügynök válaszol",
+  "agentFinished": "Az ügynök befejezte",
+  "attachmentsTooLarge": "{count, plural, =1{{names} túl nagy ahhoz, hogy innen küldje.} other{{names} túl nagy ahhoz, hogy innen küldje.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, =1{{names} túl nagy ahhoz, hogy innen a relén keresztül küldje.} other{{names} túl nagy ahhoz, hogy innen a relén keresztül küldje.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "attachmentUploadFailed": "Nem sikerült feltölteni a mellékletet. Próbálja újra.",
+  "attachmentsLeftOut": "{count, plural, =1{1 mellékletet nem sikerült feltölteni, ezért kimaradt.} other{{count} mellékletet nem sikerült feltölteni, ezért kimaradt.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "teammate": "Csapattárs",
+  "agent": "Ügynök",
+  "attachFile": "Fájl csatolása",
+  "messageHint": "Üzenet",
+  "removeAttachment": "{name} eltávolítása",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "articlesLoadFailed": "Nem sikerült betölteni a cikkeket",
+  "noArticles": "Nincsenek cikkek",
+  "articlesEmptyDescription": "Az új cikkek a hírfolyamok frissülésekor jelennek meg itt.",
+  "unread": "Olvasatlan",
+  "allFeeds": "Minden hírfolyam",
+  "save": "Mentés",
+  "unsave": "Mentés visszavonása",
+  "readFullArticle": "Teljes cikk olvasása",
+  "ticketsLoadFailed": "Nem sikerült betölteni a jegyeket",
+  "noTickets": "Nincsenek jegyek",
+  "ticketsEmptyDescription": "A munkaterület jegyei itt jelennek meg.",
+  "all": "Mind",
+  "ticket": "Jegy",
+  "ticketLoadFailed": "Nem sikerült betölteni a jegyet",
+  "assignedTo": "Hozzárendelve: {name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "openInBrowser": "Megnyitás böngészőben",
+  "status": "Állapot",
+  "assign": "Hozzárendelés",
+  "reassign": "Újra-hozzárendelés",
+  "noAgents": "Nincsenek ügynökök",
+  "noAgentsDescription": "Rendeljen hozzá egy ügynököt ebből a munkaterületből.",
+  "statusOpen": "Nyitott",
+  "statusInProgress": "Folyamatban",
+  "statusBlocked": "Blokkolva",
+  "statusInReview": "Átnézés alatt",
+  "statusDone": "Kész",
+  "statusBacklog": "Backlog",
+  "lensNeedsMe": "Rám vár",
+  "lensMine": "Saját",
+  "prsLoadFailed": "Nem sikerült betölteni a pull requesteket",
+  "noOpenPullRequests": "Nincsenek nyitott pull requestek",
+  "nothingWaitingOnReview": "Semmi sem vár az átnézésére",
+  "noOwnOpenPullRequests": "Nincs nyitott pull requestje",
+  "nothingBlocked": "Semmi sincs blokkolva",
+  "prsEmptyDescription": "A munkaterület repóinak pull requestjei itt jelennek meg.",
+  "refreshPullRequests": "Pull requestek frissítése",
+  "noForgeConnected": "A szerveren nincs csatlakoztatott forge, ezért nem lehet pull requesteket lekérni. Csatlakoztasson egyet az asztali alkalmazásból.",
+  "reposUnreadable": "{count, plural, =1{1 repót nem sikerült olvasni.} other{{count} repót nem sikerült olvasni.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reposNotReadable": "Nem olvasható: {names}",
+  "installationSuspendedTitle": "A GitHub App telepítése fel van függesztve",
+  "installationSuspendedBody": "A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.",
+  "installationSuspendedNotice": "A GitHub App telepítése fel van függesztve. A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "draft": "Piszkozat",
+  "merged": "Összefésülve",
+  "closed": "Lezárva",
+  "open": "Nyitott",
+  "approved": "Jóváhagyva",
+  "changesRequested": "Módosítást kértek",
+  "reviewRequired": "Átnézés szükséges",
+  "checksPassing": "Ellenőrzések rendben",
+  "checksFailing": "Ellenőrzések sikertelenek",
+  "checksRunning": "Ellenőrzések futnak",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "pullRequest": "Pull request",
+  "prLoadFailed": "Nem sikerült betölteni ezt a pull requestet",
+  "openOnForge": "Megnyitás a forge-on",
+  "requestChangesNeedsComment": "Adjon megjegyzést, amely elmagyarázza, mit kell változtatni.",
+  "conversation": "Beszélgetés",
+  "files": "Fájlok",
+  "checks": "Ellenőrzések",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "filesCount": "{count, plural, =1{1 fájl} other{{count} fájl}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commitsCount": "{count, plural, =1{1 commit} other{{count} commit}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflicts": "Ütközések",
+  "reviewers": "Átnézők",
+  "noDescriptionNoComments": "Még nincs leírás és nincsenek megjegyzések.",
+  "noChangedFiles": "Nincsenek módosított fájlok.",
+  "noChecksReported": "A head commithoz nem jelentettek ellenőrzéseket.",
+  "reviewCommentHint": "Hagyjon átnézési megjegyzést…",
+  "comment": "Megjegyzés",
+  "commentPosted": "Megjegyzés közzétéve",
+  "request": "Kérés",
+  "squashAndMerge": "Squash és összefésülés",
+  "noActionsAvailable": "{status} — nincs elérhető művelet.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reviewApproved": "jóváhagyta",
+  "reviewRequestedChanges": "módosítást kért",
+  "reviewCommented": "átnézte",
+  "reviewPending": "függőben",
+  "unknownAuthor": "ismeretlen",
+  "hideDiffFor": "{file} diffjének elrejtése",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "showDiffFor": "{file} diffjének megjelenítése",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "checkRunning": "fut",
+  "checkPassed": "sikeres",
+  "checkFailed": "sikertelen",
+  "checkCancelled": "törölve",
+  "checkSkipped": "kihagyva",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "checkSemanticLabel": "{name}, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "noTextDiff": "Ehhez a fájlhoz nincs szöveges diff — bináris, vagy túl nagy ahhoz, hogy a forge visszaadja.",
+  "showRemainingLines": "{count, plural, =1{A maradék sor megjelenítése} other{A maradék {count} sor megjelenítése}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "unchangedLines": "{count, plural, =1{1 változatlan sor} other{{count} változatlan sor}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "jumpToLatest": "Ugrás a legújabbra",
+  "streaming": "Streamelés",
+  "working": "Dolgozik",
+  "input": "Bemenet",
+  "output": "Kimenet",
+  "now": "most",
+  "agoMinutes": "{count}m",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{count}h",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{count}d",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "today": "Ma",
+  "tomorrow": "Holnap",
+  "yesterday": "Tegnap",
+  "durationMinutes": "{count}m",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHours": "{count}h",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "durationHoursMinutes": "{hours}h {minutes}m",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
+}

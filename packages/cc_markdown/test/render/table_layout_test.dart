@@ -40,9 +40,10 @@ void main() {
       final table = findTable(tester);
       // Column 0 (the short "Name" labels) hugs its content.
       expect(table.columnWidths?[0], isA<IntrinsicColumnWidth>());
-      // Column 1 (long URLs) is left to the flexible default so it absorbs the
-      // remaining width and wraps rather than forcing the table wide.
-      expect(table.columnWidths?[1], isNull);
+      // Column 1 (long URLs) is flexible so it absorbs the remaining width
+      // and wraps rather than forcing the table wide. Weight is the URL
+      // length; a single flex column still takes all leftover space.
+      expect(table.columnWidths?[1], isA<FlexColumnWidth>());
       expect(table.defaultColumnWidth, isA<FlexColumnWidth>());
     });
 
@@ -117,6 +118,48 @@ void main() {
         expect(table.columnWidths?[1], isA<IntrinsicColumnWidth>());
         expect(table.columnWidths?[2], isA<IntrinsicColumnWidth>());
         expect(tester.getSize(find.byType(Table)).width, lessThan(400.0));
+      },
+    );
+
+    testWidgets(
+      'a long media column gets more flex than a short media sibling',
+      (tester) async {
+        // Renovate-style: Package holds a badge + a long name, Age holds a
+        // badge. Equal flex squeezed the name ~30px past the cell (yellow
+        // "RIGHT OVERFLOWED BY N PIXELS" stripe). Weights follow content
+        // length so Package outranks Age.
+        const md = '''
+| Package | Age | Confidence |
+| --- | --- | --- |
+| ![n](img) internationalized-date (source) | ![a](img) | ![c](img) |
+''';
+        Widget badge(String url, String? alt, String? title) =>
+            const SizedBox(width: 20, height: 16);
+
+        await tester.pumpWidget(
+          _host(
+            CcMarkdown(data: md, style: style, imageBuilder: badge),
+            width: 600,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final table = findTable(tester);
+        final package = table.columnWidths?[0];
+        final age = table.columnWidths?[1];
+        final confidence = table.columnWidths?[2];
+        expect(package, isA<FlexColumnWidth>());
+        expect(age, isA<FlexColumnWidth>());
+        expect(confidence, isA<FlexColumnWidth>());
+        expect(
+          (package! as FlexColumnWidth).value,
+          greaterThan((age! as FlexColumnWidth).value),
+        );
+        expect(
+          tester.getSize(find.byType(Table)).width,
+          lessThanOrEqualTo(600),
+        );
+        expect(tester.takeException(), isNull);
       },
     );
   });

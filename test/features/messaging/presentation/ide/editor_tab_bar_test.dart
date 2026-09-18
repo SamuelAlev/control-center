@@ -36,6 +36,7 @@ Widget _harness({
   bool disableAnimations = false,
   List<EditorTab> tabs = _tabs,
   List<Widget Function(Color color)?>? leadings,
+  List<Widget Function(Color color)?>? trailings,
   String? fontFamily,
 }) {
   final labels = [for (final t in tabs) t.label];
@@ -57,6 +58,7 @@ Widget _harness({
                   tabs: tabs,
                   labels: labels,
                   leadings: leadings,
+                  trailings: trailings,
                   selectedIndex: selectedIndex,
                   onTabSelected: onTabSelected,
                   onReorderDrop: onReorderDrop,
@@ -141,6 +143,34 @@ void main() {
     );
 
     expect(find.byKey(const Key('custom-leading')), findsOneWidget);
+  });
+
+  testWidgets('tapping a trailing status control does not select its tab', (
+    tester,
+  ) async {
+    int? selected;
+    var pressed = false;
+    await tester.pumpWidget(
+      _harness(
+        onTabSelected: (i) => selected = i,
+        onReorderDrop: (_, _) {},
+        trailings: [
+          null,
+          (_) => GestureDetector(
+            key: const Key('tab-status'),
+            behavior: HitTestBehavior.opaque,
+            onTap: () => pressed = true,
+            child: const SizedBox(width: 18, height: 18),
+          ),
+          null,
+        ],
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('tab-status')));
+
+    expect(pressed, isTrue);
+    expect(selected, isNull);
   });
 
   testWidgets('dragging a tab past the others reports an end insertion', (

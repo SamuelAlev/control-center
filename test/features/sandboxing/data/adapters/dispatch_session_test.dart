@@ -21,7 +21,6 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
-import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -276,7 +275,7 @@ SandboxDispatchDeps _makeDeps({
 DispatchSession _makeSession({
   SandboxDispatchDeps? deps,
   String dispatchId = 'test-dispatch-1',
-  String cliName = 'pi',
+  String cliName = 'claude',
   String prompt = 'Hello, world',
   Mode mode = Mode.chat,
 }) {
@@ -356,7 +355,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'disp-1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'test prompt',
         agentDirHostPath: '/tmp/agent',
         modelId: 'gpt-4',
@@ -372,7 +371,7 @@ void main() {
 
       expect(session.deps, same(deps));
       expect(session.dispatchId, 'disp-1');
-      expect(session.cliName, 'pi');
+      expect(session.cliName, 'claude');
       expect(session.prompt, 'test prompt');
       expect(session.agentDirHostPath, '/tmp/agent');
       expect(session.modelId, 'gpt-4');
@@ -397,7 +396,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'disp-1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: '',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -453,46 +452,6 @@ void main() {
 
     test('agentSessionPrefix is "agent-"', () {
       expect(DispatchSession.agentSessionPrefix, 'agent-');
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // buildArgv
-  // -----------------------------------------------------------------------
-  group('StructuredCliBackend.buildArgs', () {
-    const backend = StructuredCliBackend(cliName: 'pi');
-    test('builds pi argv without model', () {
-      final argv = backend.buildArgs();
-      expect(argv, [
-        '--mode',
-        'json',
-        '--append-system-prompt',
-        'Output structured JSON events. Each line must be a valid JSON object.',
-      ]);
-    });
-
-    test('builds pi argv with model', () {
-      final argv = backend.buildArgs(modelId: 'gpt-4');
-      expect(argv[0], '--mode');
-      expect(argv[1], 'json');
-      expect(argv[2], '--model');
-      expect(argv[3], 'gpt-4');
-      expect(argv.sublist(4), [
-        '--append-system-prompt',
-        'Output structured JSON events. Each line must be a valid JSON object.',
-      ]);
-    });
-
-    test('appends --thinking when an effort level is set', () {
-      final argv = backend.buildArgs(modelId: 'gpt-4', effortLevel: 'xhigh');
-      expect(argv, contains('--thinking'));
-      expect(argv.indexOf('--thinking') + 1 < argv.length, isTrue);
-      expect(argv[argv.indexOf('--thinking') + 1], 'xhigh');
-    });
-
-    test('empty model string omits --model', () {
-      final argv = backend.buildArgs(modelId: '');
-      expect(argv.contains('--model'), isFalse);
     });
   });
 
@@ -860,7 +819,7 @@ void main() {
             },
         onScheduleCooldown: (_) {},
         dispatchId: 'd1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: '',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -901,7 +860,7 @@ void main() {
           cooled = id;
         },
         dispatchId: 'd1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: '',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -939,7 +898,7 @@ void main() {
               },
           onScheduleCooldown: (_) {},
           dispatchId: 'd1',
-          cliName: 'pi',
+          cliName: 'claude',
           prompt: '',
           agentDirHostPath: '/tmp/agent',
           modelId: null,
@@ -997,7 +956,7 @@ void main() {
                 },
             onScheduleCooldown: (_) {},
             dispatchId: 'd1',
-            cliName: 'pi',
+            cliName: 'claude',
             prompt: '',
             agentDirHostPath: cwd,
             agentConfigDir: agentConfigDir,
@@ -1117,31 +1076,6 @@ void main() {
     test('UsageEvent has usage type', () {
       final event = UsageEvent(usage: const RunUsage());
       expect(event.type, AgentProcessEventType.usage);
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // buildArgv edge cases
-  // -----------------------------------------------------------------------
-  group('StructuredCliBackend.buildArgs edge cases', () {
-    const backend = StructuredCliBackend(cliName: 'pi');
-    test('pi argv with null model omits --model flag', () {
-      final argv = backend.buildArgs();
-      expect(argv.contains('--model'), isFalse);
-    });
-
-    test('pi argv preserves exact model string', () {
-      const model = 'claude-sonnet-4-20250514';
-      final argv = backend.buildArgs(modelId: model);
-      expect(argv[argv.indexOf('--model') + 1], model);
-    });
-
-    test('constraint is always appended', () {
-      final argv = backend.buildArgs(modelId: 'gpt-4', effortLevel: 'high');
-      expect(
-        argv.last,
-        'Output structured JSON events. Each line must be a valid JSON object.',
-      );
     });
   });
 
@@ -1473,7 +1407,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'd1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'hello',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -1505,7 +1439,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'd1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'hello',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -1741,177 +1675,6 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // _handlePiEvent — structured JSON output parsing
-  // -----------------------------------------------------------------------
-  group('handlePiEvent', () {
-    test('message_update with text_delta → TextEvent', () async {
-      final sandbox = ControllableSandboxPort();
-      final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
-      final events = <AgentProcessEvent>[];
-      session.controller.stream.listen(events.add);
-
-      unawaited(session.run());
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      sandbox.addSandboxEvent(
-        const SandboxEvent(
-          type: SandboxEventType.stdout,
-          content:
-              '{"type":"message_update","assistantMessageEvent":{"type":"text_delta","delta":"Hello, world"}}',
-        ),
-      );
-
-      await Future<void>.delayed(Duration.zero);
-      sandbox.completeExec(0);
-      await Future<void>.delayed(Duration.zero);
-
-      final textEvents = events.whereType<TextEvent>().toList();
-      expect(textEvents.any((e) => e.content == 'Hello, world'), isTrue);
-    });
-
-    test('message_update with thinking_delta → ThinkingEvent', () async {
-      final sandbox = ControllableSandboxPort();
-      final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
-      final events = <AgentProcessEvent>[];
-      session.controller.stream.listen(events.add);
-
-      unawaited(session.run());
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      sandbox.addSandboxEvent(
-        const SandboxEvent(
-          type: SandboxEventType.stdout,
-          content:
-              '{"type":"message_update","assistantMessageEvent":{"type":"thinking_delta","delta":"Let me think..."}}',
-        ),
-      );
-
-      await Future<void>.delayed(Duration.zero);
-      sandbox.completeExec(0);
-      await Future<void>.delayed(Duration.zero);
-
-      final thinkingEvents = events.whereType<ThinkingEvent>().toList();
-      expect(thinkingEvents.any((e) => e.content == 'Let me think...'), isTrue);
-    });
-
-    test('tool_execution_start → ToolCallEvent', () async {
-      final sandbox = ControllableSandboxPort();
-      final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
-      final events = <AgentProcessEvent>[];
-      session.controller.stream.listen(events.add);
-
-      unawaited(session.run());
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      sandbox.addSandboxEvent(
-        const SandboxEvent(
-          type: SandboxEventType.stdout,
-          content:
-              '{"type":"tool_execution_start","toolName":"Bash","toolCallId":"call_1","args":{"command":"ls"}}',
-        ),
-      );
-
-      await Future<void>.delayed(Duration.zero);
-      sandbox.completeExec(0);
-      await Future<void>.delayed(Duration.zero);
-
-      final toolCalls = events.whereType<ToolCallEvent>().toList();
-      expect(toolCalls.any((t) => t.toolName == 'Bash'), isTrue);
-      final bashCall = toolCalls.firstWhere((t) => t.toolName == 'Bash');
-      expect(bashCall.toolCallId, 'call_1');
-      expect(bashCall.inputs, {'command': 'ls'});
-    });
-
-    test('tool_execution_end → ToolResultEvent', () async {
-      final sandbox = ControllableSandboxPort();
-      final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
-      final events = <AgentProcessEvent>[];
-      session.controller.stream.listen(events.add);
-
-      unawaited(session.run());
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      sandbox.addSandboxEvent(
-        const SandboxEvent(
-          type: SandboxEventType.stdout,
-          content:
-              '{"type":"tool_execution_end","toolCallId":"call_1","toolName":"Bash","result":"file1\\nfile2","isError":false}',
-        ),
-      );
-
-      await Future<void>.delayed(Duration.zero);
-      sandbox.completeExec(0);
-      await Future<void>.delayed(Duration.zero);
-
-      final results = events.whereType<ToolResultEvent>().toList();
-      expect(results, isNotEmpty);
-      final r = results.first;
-      expect(r.toolCallId, 'call_1');
-      expect(r.isError, isFalse);
-    });
-
-    test(
-      'tool_execution_end with error → ToolResultEvent with isError',
-      () async {
-        final sandbox = ControllableSandboxPort();
-        final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
-        final events = <AgentProcessEvent>[];
-        session.controller.stream.listen(events.add);
-
-        unawaited(session.run());
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
-
-        sandbox.addSandboxEvent(
-          const SandboxEvent(
-            type: SandboxEventType.stdout,
-            content:
-                '{"type":"tool_execution_end","toolCallId":"call_1","toolName":"Bash","result":"command not found","isError":true}',
-          ),
-        );
-
-        await Future<void>.delayed(Duration.zero);
-        sandbox.completeExec(0);
-        await Future<void>.delayed(Duration.zero);
-
-        final results = events.whereType<ToolResultEvent>().toList();
-        expect(
-          results.any((r) => r.isError && r.toolCallId == 'call_1'),
-          isTrue,
-        );
-      },
-    );
-
-    test('agent_end → DoneEvent', () async {
-      final sandbox = ControllableSandboxPort();
-      final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
-      final events = <AgentProcessEvent>[];
-      session.controller.stream.listen(events.add);
-
-      unawaited(session.run());
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-
-      sandbox.addSandboxEvent(
-        const SandboxEvent(
-          type: SandboxEventType.stdout,
-          content: '{"type":"agent_end"}',
-        ),
-      );
-
-      await Future<void>.delayed(Duration.zero);
-      sandbox.completeExec(0);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(events.whereType<DoneEvent>(), isNotEmpty);
-    });
-  });
-
-  // -----------------------------------------------------------------------
   // run() — exec args, env and lifecycle
   // -----------------------------------------------------------------------
   group('run exec arguments', () {
@@ -2123,7 +1886,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'disp-1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: '',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -2166,7 +1929,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'disp-1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: '',
         agentDirHostPath: '/tmp',
         modelId: null,
@@ -2206,7 +1969,7 @@ void main() {
                   ),
           onScheduleCooldown: (_) {},
           dispatchId: 'disp-1',
-          cliName: 'pi',
+          cliName: 'claude',
           prompt: '',
           agentDirHostPath: '/tmp',
           modelId: null,
@@ -2250,7 +2013,7 @@ void main() {
                 ),
         onScheduleCooldown: (_) {},
         dispatchId: 'disp-1',
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: '',
         agentDirHostPath: '/tmp',
         modelId: null,

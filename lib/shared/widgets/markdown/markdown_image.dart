@@ -888,7 +888,11 @@ class _MarkdownImageState extends State<MarkdownImage> {
           width: targetWidth,
           height: targetHeight,
           fit: BoxFit.contain,
-          alignment: Alignment.centerLeft,
+          // ImageFade.alignment is a plain Alignment; resolve so the tight
+          // badge box still hugs the reading direction's start under RTL.
+          alignment: AlignmentDirectional.centerStart.resolve(
+            Directionality.of(context),
+          ),
           syncDuration: Duration.zero,
           errorBuilder: (context, error) => MarkdownAttachmentCard(
             uri: widget.uri,

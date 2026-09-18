@@ -78,7 +78,7 @@ class _ActiveGoalView extends ConsumerWidget {
 
     final children = <Widget>[
       Align(
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
         child: CcBadge(
           label: _statusLabel(l10n, goal.status),
           variant: _statusVariant(goal.status),
@@ -122,7 +122,7 @@ class _ActiveGoalView extends ConsumerWidget {
     children.add(const SizedBox(height: AppSpacing.lg));
     children.add(
       Align(
-        alignment: Alignment.centerLeft,
+        alignment: AlignmentDirectional.centerStart,
         child: CcButton(
           variant: CcButtonVariant.secondary,
           icon: AppIcons.ban,

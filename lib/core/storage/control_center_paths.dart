@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cc_infra/cc_infra_web.dart';
+import 'package:cc_infra/cc_paths.dart';
 import 'package:control_center/core/storage/app_support_path_provider.dart';
 
 /// Single root for everything Control Center persists on disk.
@@ -10,9 +10,9 @@ import 'package:control_center/core/storage/app_support_path_provider.dart';
 /// device-resolved app-support base via [AppSupportPathProvider] and re-exposes
 /// the legacy free-function API below so existing call sites are unchanged.
 ///
-/// Layout under the root (see [CcPaths]): `control_center.db`, `mcp.json`,
-/// `rift.sqlite`, `models/`, `grammars/`, `pipelines/<runId>/`,
-/// `meetings/<id>/`, plus per-workspace agent/skill dirs.
+/// Layout under the root (see [CcPaths]): `global.db`, per-workspace
+/// `<workspaceId>/workspace.db`, `mcp.json`, `rift.sqlite`, `models/`,
+/// `grammars/`, `pipelines/<runId>/`, `meetings/<id>/`.
 CcPaths get _paths => CcPaths(AppSupportPathProvider.realAppSupportDir.path);
 
 /// The app's [CcPaths] resolver, rooted at the device app-support dir. Inject
@@ -41,7 +41,7 @@ Future<Directory> meetingAudioDir(String meetingId) =>
 @Deprecated('Use modelsRootDir()')
 Future<Directory> voiceModelsRootDir() => modelsRootDir();
 
-/// Path to the SQLite database file used by drift.
+/// Path to the server-global SQLite database (`global.db`).
 Future<File> controlCenterDatabaseFile() => _paths.databaseFile();
 
 /// Path to the rift copy-on-write registry database shared by managed worktrees.

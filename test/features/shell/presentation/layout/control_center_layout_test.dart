@@ -280,6 +280,7 @@ void main() {
     expect(find.text('YOU'), findsWidgets);
     expect(find.text('WORKSPACE'), findsWidgets);
     expect(find.text('SERVER'), findsWidgets);
+    expect(find.text('Filter settings'), findsNothing);
   });
 
   testWidgets('renders newsfeed content without an inner sidebar', (

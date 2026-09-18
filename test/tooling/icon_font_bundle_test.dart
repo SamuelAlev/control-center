@@ -66,6 +66,40 @@ void main() {
     );
   });
 
+  test('cc_ui FontManifest stays Manrope, Fira Code, PhosphorRegular', () {
+    // Script companions (Sarabun, Rubik, IBM Plex Sans Arabic) MUST NOT
+    // appear here: Flutter web downloads every FontManifest family at boot.
+    final pubspec = File(
+      '$root/packages/cc_ui/pubspec.yaml',
+    ).readAsStringSync();
+    final families = RegExp(
+      r'^\s+- family:\s*(.+)\s*$',
+      multiLine: true,
+    ).allMatches(pubspec).map((m) => m.group(1)!.trim()).toList();
+    expect(families, ['Manrope', 'Fira Code', 'PhosphorRegular']);
+  });
+
+  test('script companions are assets, not FontManifest families', () {
+    final pubspec = File(
+      '$root/packages/cc_ui/pubspec.yaml',
+    ).readAsStringSync();
+    const assets = [
+      'fonts/scripts/Sarabun-Regular.ttf',
+      'fonts/scripts/Sarabun-SemiBold.ttf',
+      'fonts/scripts/Rubik-Variable.ttf',
+      'fonts/scripts/IBMPlexSansArabic-Regular.ttf',
+      'fonts/scripts/IBMPlexSansArabic-SemiBold.ttf',
+    ];
+    for (final asset in assets) {
+      expect(pubspec, contains(asset));
+      expect(
+        File('$root/packages/cc_ui/$asset').existsSync(),
+        isTrue,
+        reason: '$asset must be vendored next to its LICENSE',
+      );
+    }
+  });
+
   test('every icon seam resolves against the cc_ui-owned font', () {
     const seams = [
       'lib/shared/icons/app_icons.dart',

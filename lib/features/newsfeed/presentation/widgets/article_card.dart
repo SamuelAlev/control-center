@@ -101,7 +101,10 @@ class ArticleCard extends StatelessWidget {
                         children: [
                           if (!read) ...[
                             Padding(
-                              padding: const EdgeInsets.only(top: 6, right: 7),
+                              padding: const EdgeInsetsDirectional.only(
+                                top: 6,
+                                end: 7,
+                              ),
                               child: Container(
                                 width: 7,
                                 height: 7,
@@ -260,8 +263,8 @@ class _PlaceholderThumbnail extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
           colors: [
             tokens?.bgSecondary ?? colors.surfaceContainerHighest,
             tokens?.bgTertiary ?? colors.surfaceContainerHighest,

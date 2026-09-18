@@ -3,7 +3,6 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/ide_editor.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/ports/editor_launcher_port.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -66,37 +65,19 @@ const _notInstalledEditor = IdeEditor(
 
 // ── Fake ports (capture calls for verification) ────────────────────────────
 
-class _FakeEditorLauncher implements EditorLauncherPort {
+class _FakeIdeRepository implements RemoteIdeRepository {
   String? lastOpenedEditorId;
-  String? lastOpenedPath;
+  int openCalls = 0;
   bool shouldThrow = false;
+  Object throwError = const EditorLaunchException('Launch failed');
 
-  @override
-  Future<List<IdeEditor>> detectEditors() async {
-    return const [];
-  }
-
-  @override
-  Future<void> openDirectory({
-    required String editorId,
-    required String directoryPath,
-  }) async {
-    lastOpenedEditorId = editorId;
-    lastOpenedPath = directoryPath;
-    if (shouldThrow) {
-      throw const EditorLaunchException('Launch failed');
-    }
-  }
-}
-
-class _FakePrWorktreePort implements RemoteIdeRepository {
-  bool shouldThrow = false;
-  int ensureWorktreeCalls = 0;
-
-  /// When non-null, [ensureWorktree] returns this future instead of completing
+  /// When non-null, [openPrInEditor] awaits this future instead of completing
   /// synchronously. Set to a [Completer] to hold the async operation open long
   /// enough for the test to observe the loading state.
-  Future<String>? _pendingWorktree;
+  Future<void>? pendingOpen;
+
+  @override
+  Future<List<IdeEditor>> detectEditors() async => const [];
 
   @override
   Future<String> ensureWorktree({
@@ -106,18 +87,8 @@ class _FakePrWorktreePort implements RemoteIdeRepository {
     String? repoId,
     String title = '',
   }) async {
-    ensureWorktreeCalls++;
-    if (shouldThrow) {
-      throw const PrWorktreeException('Worktree failed');
-    }
-    if (_pendingWorktree != null) {
-      return _pendingWorktree!;
-    }
-    return '/tmp/worktrees/pr-$prNumber';
+    throw UnimplementedError('desktop OpenInIde uses openPrInEditor');
   }
-
-  @override
-  Future<List<IdeEditor>> detectEditors() async => const [];
 
   @override
   Future<void> openPrInEditor({
@@ -128,7 +99,14 @@ class _FakePrWorktreePort implements RemoteIdeRepository {
     String? repoId,
     String title = '',
   }) async {
-    // No-op for tests.
+    openCalls++;
+    lastOpenedEditorId = editorId;
+    if (shouldThrow) {
+      throw throwError;
+    }
+    if (pendingOpen != null) {
+      await pendingOpen;
+    }
   }
 }
 
@@ -152,13 +130,11 @@ class _FixedSelectedIdeNotifier extends SelectedIdeNotifier {
 /// Wraps the button with overrides for the IDE providers and fake ports.
 ///
 /// [editors] drives `installedEditorsProvider`; [selectedId] drives
-/// `selectedIdeProvider`; the fake launcher and worktree ports are exposed
-/// for assertion.
+/// `selectedIdeProvider`; [fakeIde] records `openPrInEditor` calls.
 Widget _wrapWithEditors({
   required List<IdeEditor> editors,
   String? selectedId,
-  required _FakeEditorLauncher fakeLauncher,
-  required _FakePrWorktreePort fakeWorktree,
+  required _FakeIdeRepository fakeIde,
   PullRequest? pr,
   Repo? repo,
   String workspaceId = 'ws-1',
@@ -174,8 +150,7 @@ Widget _wrapWithEditors({
       overrides: [
         installedEditorsProvider.overrideWith((ref) => editors),
         ideLogoAssetsProvider.overrideWith((ref) => const <String>{}),
-        editorLauncherProvider.overrideWithValue(fakeLauncher),
-        prWorktreeRpcProvider.overrideWithValue(fakeWorktree),
+        prWorktreeRpcProvider.overrideWithValue(fakeIde),
         selectedIdeProvider.overrideWith(
           () => _FixedSelectedIdeNotifier(selectedId),
         ),
@@ -202,11 +177,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        _wrapWithEditors(
-          editors: const [],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
-        ),
+        _wrapWithEditors(editors: const [], fakeIde: _FakeIdeRepository()),
       );
       await _settleTimers(tester);
       // When no editors are installed, the build returns SizedBox.shrink() —
@@ -220,8 +191,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -235,8 +205,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_notInstalledEditor, _installedEditor1],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -250,8 +219,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -270,8 +238,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _installedEditor2],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -292,8 +259,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _notInstalledEditor],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -316,8 +282,7 @@ void main() {
         _wrapWithEditors(
           editors: const [_installedEditor1, _installedEditor2],
           selectedId: 'cursor',
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -333,8 +298,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -356,8 +320,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _installedEditor2],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -377,13 +340,12 @@ void main() {
 
   group('effective editor', () {
     testWidgets('selects selectedId when installed', (tester) async {
-      final fakeLauncher = _FakeEditorLauncher();
+      final fakeIde = _FakeIdeRepository();
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _installedEditor2],
           selectedId: 'cursor',
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: fakeIde,
         ),
       );
       await _settleTimers(tester);
@@ -397,19 +359,18 @@ void main() {
       await tester.pump();
       await _settleTimers(tester);
 
-      expect(fakeLauncher.lastOpenedEditorId, 'cursor');
+      expect(fakeIde.lastOpenedEditorId, 'cursor');
     });
 
     testWidgets('falls back to priority when selectedId is not installed', (
       tester,
     ) async {
-      final fakeLauncher = _FakeEditorLauncher();
+      final fakeIde = _FakeIdeRepository();
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1], // only VS Code
           selectedId: 'cursor', // not installed
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: fakeIde,
         ),
       );
       await _settleTimers(tester);
@@ -422,13 +383,13 @@ void main() {
       await tester.pump();
       await _settleTimers(tester);
 
-      expect(fakeLauncher.lastOpenedEditorId, 'vscode');
+      expect(fakeIde.lastOpenedEditorId, 'vscode');
     });
 
     testWidgets('falls back to first installed when no priority match', (
       tester,
     ) async {
-      final fakeLauncher = _FakeEditorLauncher();
+      final fakeIde = _FakeIdeRepository();
       const unknownEditor = IdeEditor(
         id: 'unknown-editor',
         displayName: 'Unknown',
@@ -436,11 +397,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        _wrapWithEditors(
-          editors: const [unknownEditor],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: _FakePrWorktreePort(),
-        ),
+        _wrapWithEditors(editors: const [unknownEditor], fakeIde: fakeIde),
       );
       await _settleTimers(tester);
       // The widget renders — the unknown editor is used as fallback.
@@ -454,15 +411,10 @@ void main() {
     testWidgets('tapping main button opens worktree then launches editor', (
       tester,
     ) async {
-      final fakeLauncher = _FakeEditorLauncher();
-      final fakeWorktree = _FakePrWorktreePort();
+      final fakeIde = _FakeIdeRepository();
 
       await tester.pumpWidget(
-        _wrapWithEditors(
-          editors: const [_installedEditor1],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: fakeWorktree,
-        ),
+        _wrapWithEditors(editors: const [_installedEditor1], fakeIde: fakeIde),
       );
       await _settleTimers(tester);
 
@@ -479,22 +431,19 @@ void main() {
       await tester.pump();
       await _settleTimers(tester);
 
-      expect(fakeWorktree.ensureWorktreeCalls, 1);
-      expect(fakeLauncher.lastOpenedEditorId, 'vscode');
-      expect(fakeLauncher.lastOpenedPath, '/tmp/worktrees/pr-42');
+      expect(fakeIde.openCalls, 1);
+      expect(fakeIde.lastOpenedEditorId, 'vscode');
     });
 
     testWidgets('tapping installed menu item selects and opens editor', (
       tester,
     ) async {
-      final fakeLauncher = _FakeEditorLauncher();
-      final fakeWorktree = _FakePrWorktreePort();
+      final fakeIde = _FakeIdeRepository();
 
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _installedEditor2],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: fakeWorktree,
+          fakeIde: fakeIde,
         ),
       );
       await _settleTimers(tester);
@@ -508,20 +457,17 @@ void main() {
       await tester.pump();
       await _settleTimers(tester);
 
-      expect(fakeWorktree.ensureWorktreeCalls, 1);
-      expect(fakeLauncher.lastOpenedEditorId, 'cursor');
-      expect(fakeLauncher.lastOpenedPath, '/tmp/worktrees/pr-42');
+      expect(fakeIde.openCalls, 1);
+      expect(fakeIde.lastOpenedEditorId, 'cursor');
     });
 
     testWidgets('tapping not-installed menu item does nothing', (tester) async {
-      final fakeLauncher = _FakeEditorLauncher();
-      final fakeWorktree = _FakePrWorktreePort();
+      final fakeIde = _FakeIdeRepository();
 
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _notInstalledEditor],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: fakeWorktree,
+          fakeIde: fakeIde,
         ),
       );
       await _settleTimers(tester);
@@ -535,24 +481,19 @@ void main() {
       await _settleTimers(tester);
 
       // Worktree should NOT have been called.
-      expect(fakeWorktree.ensureWorktreeCalls, 0);
-      expect(fakeLauncher.lastOpenedEditorId, isNull);
+      expect(fakeIde.openCalls, 0);
+      expect(fakeIde.lastOpenedEditorId, isNull);
     });
 
     testWidgets('shows CcSpinner while preparing', (tester) async {
-      final fakeLauncher = _FakeEditorLauncher();
-      final fakeWorktree = _FakePrWorktreePort();
+      final fakeIde = _FakeIdeRepository();
 
       // Hold the worktree operation open so _preparing stays true.
-      final completer = Completer<String>();
-      fakeWorktree._pendingWorktree = completer.future;
+      final completer = Completer<void>();
+      fakeIde.pendingOpen = completer.future;
 
       await tester.pumpWidget(
-        _wrapWithEditors(
-          editors: const [_installedEditor1],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: fakeWorktree,
-        ),
+        _wrapWithEditors(editors: const [_installedEditor1], fakeIde: fakeIde),
       );
       await _settleTimers(tester);
 
@@ -567,22 +508,17 @@ void main() {
       expect(find.byType(CcSpinner), findsOneWidget);
 
       // Complete the worktree, let async ops finish.
-      completer.complete('/tmp/worktrees/pr-42');
+      completer.complete();
       await tester.pump();
       await _settleTimers(tester);
       expect(find.byType(CcSpinner), findsNothing);
     });
 
     testWidgets('shows error snackbar on launch failure', (tester) async {
-      final fakeLauncher = _FakeEditorLauncher()..shouldThrow = true;
-      final fakeWorktree = _FakePrWorktreePort();
+      final fakeIde = _FakeIdeRepository()..shouldThrow = true;
 
       await tester.pumpWidget(
-        _wrapWithEditors(
-          editors: const [_installedEditor1],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: fakeWorktree,
-        ),
+        _wrapWithEditors(editors: const [_installedEditor1], fakeIde: fakeIde),
       );
       await _settleTimers(tester);
 
@@ -599,15 +535,12 @@ void main() {
     });
 
     testWidgets('shows error snackbar on worktree failure', (tester) async {
-      final fakeLauncher = _FakeEditorLauncher();
-      final fakeWorktree = _FakePrWorktreePort()..shouldThrow = true;
+      final fakeIde = _FakeIdeRepository()
+        ..shouldThrow = true
+        ..throwError = const PrWorktreeException('Worktree failed');
 
       await tester.pumpWidget(
-        _wrapWithEditors(
-          editors: const [_installedEditor1],
-          fakeLauncher: fakeLauncher,
-          fakeWorktree: fakeWorktree,
-        ),
+        _wrapWithEditors(editors: const [_installedEditor1], fakeIde: fakeIde),
       );
       await _settleTimers(tester);
 
@@ -620,8 +553,6 @@ void main() {
       // Toast should appear with error message.
       expect(find.textContaining("Couldn't open"), findsOneWidget);
       expect(find.byType(CcSpinner), findsNothing);
-      // Editor should NOT have been opened after worktree failure.
-      expect(fakeLauncher.lastOpenedEditorId, isNull);
     });
   });
 
@@ -638,8 +569,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1, _installedEditor2, extraEditor],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -659,7 +589,7 @@ void main() {
     testWidgets(
       'effective selects first installed when no priority match and no selectedId',
       (tester) async {
-        final fakeLauncher = _FakeEditorLauncher();
+        final fakeIde = _FakeIdeRepository();
         const unknownEditor = IdeEditor(
           id: 'unknown-editor',
           displayName: 'Unknown',
@@ -667,11 +597,7 @@ void main() {
         );
 
         await tester.pumpWidget(
-          _wrapWithEditors(
-            editors: const [unknownEditor],
-            fakeLauncher: fakeLauncher,
-            fakeWorktree: _FakePrWorktreePort(),
-          ),
+          _wrapWithEditors(editors: const [unknownEditor], fakeIde: fakeIde),
         );
         await _settleTimers(tester);
 
@@ -683,7 +609,7 @@ void main() {
         await tester.pump();
         await _settleTimers(tester);
 
-        expect(fakeLauncher.lastOpenedEditorId, 'unknown-editor');
+        expect(fakeIde.lastOpenedEditorId, 'unknown-editor');
       },
     );
   });
@@ -697,8 +623,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -716,8 +641,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor1],
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);
@@ -733,8 +657,7 @@ void main() {
       await tester.pumpWidget(
         _wrapWithEditors(
           editors: const [_installedEditor2], // cursor
-          fakeLauncher: _FakeEditorLauncher(),
-          fakeWorktree: _FakePrWorktreePort(),
+          fakeIde: _FakeIdeRepository(),
         ),
       );
       await _settleTimers(tester);

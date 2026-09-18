@@ -26,7 +26,7 @@ class RpcAgentRepository implements AgentRepository {
 
   /// Rebuilds an [Agent] from its wire DTO. Enum fields are encoded as `.name`;
   /// a missing `createdAt` falls back to the epoch so the entity stays valid.
-  static Agent _fromDto(AgentDto d) => Agent(
+  static Agent fromDto(AgentDto d) => Agent(
     id: d.id,
     name: d.name,
     title: d.title,
@@ -86,17 +86,17 @@ class RpcAgentRepository implements AgentRepository {
 
   @override
   Stream<List<Agent>> watchAll() =>
-      _remote.watchAll().map((dtos) => dtos.map(_fromDto).toList());
+      _remote.watchAll().map((dtos) => dtos.map(fromDto).toList());
 
   @override
   Stream<List<Agent>> watchByWorkspace(String workspaceId) =>
-      _remote.watch(workspaceId).map((dtos) => dtos.map(_fromDto).toList());
+      _remote.watch(workspaceId).map((dtos) => dtos.map(fromDto).toList());
 
   @override
   Future<Agent?> getById(String workspaceId, String id) async {
     try {
       final dto = await _remote.get(workspaceId, id);
-      return dto == null ? null : _fromDto(dto);
+      return dto == null ? null : fromDto(dto);
     } on RemoteRpcException catch (e) {
       if (e.code == RpcErrorCodes.notFound) {
         return null;
@@ -108,7 +108,23 @@ class RpcAgentRepository implements AgentRepository {
   @override
   Future<Agent?> findByWorkspaceAndName(String workspaceId, String name) async {
     final dto = await _remote.findByName(workspaceId, name);
-    return dto == null ? null : _fromDto(dto);
+    return dto == null ? null : fromDto(dto);
+  }
+
+  /// Creates an agent on the host (`agents.create`).
+  Future<Agent> create({
+    required String workspaceId,
+    required String name,
+    required String title,
+    List<String> skills = const [],
+  }) async {
+    final dto = await _remote.create(
+      workspaceId: workspaceId,
+      name: name,
+      title: title,
+      skills: skills,
+    );
+    return fromDto(dto);
   }
 
   @override

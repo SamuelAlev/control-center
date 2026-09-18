@@ -271,9 +271,9 @@ class _FindingRow extends StatelessWidget {
             child: SizedBox(
               height: kCcSidebarItemExtent,
               child: Padding(
-                padding: const EdgeInsets.only(
-                  left: AppSpacing.lg,
-                  right: AppSpacing.md,
+                padding: const EdgeInsetsDirectional.only(
+                  start: AppSpacing.lg,
+                  end: AppSpacing.md,
                 ),
                 child: Row(
                   children: [

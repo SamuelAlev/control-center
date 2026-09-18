@@ -132,6 +132,7 @@ class RepoOp {
     this.preview,
     this.actionClasses = const {},
     this.audited = true,
+    this.auditWhen,
     this.timeout,
   }) : assert(
          repoAccessVia == null || repoAccess != null,
@@ -222,6 +223,14 @@ class RepoOp {
   /// internal `cache.write` scratch store); declaring it is a deliberate act
   /// visible on the op itself.
   final bool audited;
+
+  /// Extra gate on top of [audited]: when set, consulted after a successful
+  /// handler with the call args and the result. Return false to skip the
+  /// trail for this particular call (e.g. `terminal.write` of a keystroke
+  /// that did not submit a command — writing without sending does nothing).
+  /// Null (default) = every successful call of an audited op is recorded.
+  final bool Function(Map<String, dynamic> args, Map<String, dynamic> result)?
+  auditWhen;
 
   /// The wall-clock budget the SESSION gives this op's handler before it
   /// answers with [RpcErrorCodes.handlerTimeout] and frees the request's

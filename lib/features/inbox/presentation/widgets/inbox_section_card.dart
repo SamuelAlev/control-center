@@ -9,7 +9,7 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/pinned_header_bleed_guard.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The display label of an inbox [section].
@@ -390,7 +390,7 @@ class _ColumnHeaderRow extends ConsumerWidget {
           ],
           Expanded(
             child: Align(
-              alignment: Alignment.centerLeft,
+              alignment: AlignmentDirectional.centerStart,
               child: _SortHeader(
                 label: l10n.inboxColumnTitle,
                 column: InboxSortColumn.title,
@@ -405,7 +405,7 @@ class _ColumnHeaderRow extends ConsumerWidget {
             SizedBox(
               width: InboxRowMetrics.changes,
               child: Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: _SortHeader(
                   label: l10n.inboxColumnChanges,
                   column: InboxSortColumn.changes,
@@ -419,7 +419,7 @@ class _ColumnHeaderRow extends ConsumerWidget {
             SizedBox(
               width: InboxRowMetrics.updated,
               child: Align(
-                alignment: Alignment.centerRight,
+                alignment: AlignmentDirectional.centerEnd,
                 child: _SortHeader(
                   label: l10n.inboxColumnUpdated,
                   column: InboxSortColumn.updated,

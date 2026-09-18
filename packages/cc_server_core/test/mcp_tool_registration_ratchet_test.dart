@@ -122,11 +122,11 @@ void main() {
 /// its filename.
 ///
 /// Subclassing is resolved TRANSITIVELY. Matching only classes whose supertype
-/// is spelled `…McpTool` looks equivalent and is not: the rig tools
-/// (`computer_use` / `browser_use` / `mobile_use`) extend an abstract
-/// `RigUseTool`, so a name-shaped regex dropped three agent-facing tools out of
-/// the ratchet without failing anything. Any shared base added later would have
-/// gone the same way.
+/// is spelled `…McpTool` looks equivalent and is not: the four surface tools
+/// (`computer_use` / `browser_use` / `mobile_use` / `ios_use`) extend an
+/// abstract `RigUseTool`, so a name-shaped regex would drop agent-facing tools
+/// out of the ratchet without failing anything. Any shared base added later
+/// would have gone the same way.
 ///
 /// Abstract classes are excluded — a base cannot be registered, so demanding it
 /// appear in the wiring would fail on the one class that legitimately does not.

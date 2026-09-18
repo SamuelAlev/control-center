@@ -1,39 +1,23 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/ide_editor.dart';
-import 'package:cc_domain/core/domain/ports/editor_launcher_port.dart';
 import 'package:control_center/core/constants/app_constants.dart';
-import 'package:control_center/core/infrastructure/ide/native_editor_launcher.dart';
-import 'package:control_center/core/infrastructure/ide/reveal_in_file_manager.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Materializes a PR's branch into a worktree on the connected `cc_server` over
-/// RPC (`ide.ensureWorktree`) and returns its path; the desktop then launches
-/// that path in a LOCAL editor via [editorLauncherProvider] (the headless host
-/// can't pop a GUI editor). Replaces the old DB-backed in-process worktree port
-/// now that the desktop is a thin client. In the self-serve setup the host is
-/// the same machine, so the returned path is local and openable directly.
+/// Materializes a PR's branch into a worktree on the connected `cc_server` and
+/// opens it in an editor on the host (`ide.ensureWorktree` /
+/// `ide.openPrInEditor` / `ide.detectEditors`). The server owns the checkout
+/// and the process launch; the thin client only names the editor.
 final prWorktreeRpcProvider = Provider<RemoteIdeRepository>((ref) {
   return RemoteIdeRepository(ref.watch(rpcClientProvider));
-});
-
-/// Binds the [EditorLauncherPort] to its native, `dart:io`-backed adapter.
-final editorLauncherProvider = Provider<EditorLauncherPort>((ref) {
-  return NativeEditorLauncher();
-});
-
-/// Reveals an on-device path in the OS file manager. Client-side by nature
-/// (the path is local); shared so presentation code doesn't shell out inline.
-final revealInFileManagerProvider = Provider<RevealInFileManager>((ref) {
-  return RevealInFileManager();
 });
 
 /// The full editor catalog for the current platform, each flagged
 /// [IdeEditor.installed]. Detection runs once and is cached by Riverpod.
 final installedEditorsProvider = FutureProvider<List<IdeEditor>>((ref) async {
-  return ref.watch(editorLauncherProvider).detectEditors();
+  return ref.watch(prWorktreeRpcProvider).detectEditors();
 });
 
 /// The bundled IDE brand-logo asset paths under `assets/ide_logos/`, read from

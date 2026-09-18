@@ -1,12 +1,13 @@
 ---
 title: Rigs and enclosures
-description: Why agents get disposable VMs instead of your machine — the isolation model, the two display lanes, credentials, ports and the machine lifecycle.
+description: Why agents get disposable machines instead of your computer — the isolation boundaries, display lanes, credentials, ports and lifecycle.
 ---
 
-A **rig** is a disposable virtual machine an agent drives in real time — a
-browser, a Linux desktop, an Android device, or the machine behind an enclosed
-terminal. This page explains the model: what the boundary actually is, why the
-pieces are shaped the way they are, and what that buys you. To open one, see
+A **rig** is a disposable machine an agent drives in real time — a browser,
+a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind
+an enclosed terminal. Most rigs are VMs; host-managed mobile simulators are
+the explicit exceptions. This page explains each boundary and why the pieces
+are shaped the way they are. To open one, see
 [Give an agent a machine to test on](/manual/guides/use-rigs/); for the exact
 verbs, ports and defaults, see the [rigs reference](/manual/reference/rigs/).
 
@@ -19,20 +20,23 @@ desktop app, render a page in a real browser, or run `rm -rf` experiments you
 would rather not think about, the honest boundary is a machine: its own
 kernel, its own disk, its own network stack.
 
-So rigs are VMs, of two kinds:
+The enclosed surfaces use two VM backends:
 
-- **microVMs** for the terminal and the browser — sub-second hypervisor boot,
-  machines defined by digest-pinned container images. These are the everyday
-  surfaces, so they are the fast ones.
+- **microVMs** for the terminal and browser — sub-second hypervisor boot from
+  digest-pinned container images.
 - **QEMU** for the full Linux desktop, which needs a display device the
   microVM does not have.
-- The **phone** is the honest exception: it drives Google's Android emulator,
-  a VM we did not define and do not network-isolate the same way. The
-  capability report says so instead of implying parity.
 
-Every rig writes to a throwaway overlay. The base image is read-only, so one
-rig can never change what the next boots from, and closing a rig discards
-everything it wrote.
+Mobile surfaces are host-managed and state the weaker boundary directly:
+
+- **Android** drives Google's emulator through ADB.
+- **iOS** creates and owns a CoreSimulator device on a Mac host and drives it
+  through WebDriverAgent. The device and its data are deleted when the rig
+  closes, but its network follows the host Mac.
+
+Enclosed rigs write to a throwaway overlay over a read-only base image, so one
+rig cannot change what the next boots from. Mobile rigs instead own disposable
+emulator devices that are deleted when the rig closes.
 
 ## Deny-by-default egress
 
@@ -41,6 +45,10 @@ gate the guest cannot route around: the machine's only paths out are the ones
 the launch configuration created. An enclosed terminal gets the developer
 baseline (package registries, forges, the apt mirrors); a browser rig gets its
 home page's host; everything else is refused at connect time.
+
+Android and iOS are not covered by this gate. Their host emulators use the
+server host's networking, so the UI and capability report mark egress as not
+enforced and never offer a misleading “restart unrestricted” control.
 
 Egress and credentials are one policy seen from two sides — the credential
 broker (below) will not mint a token for a host the guest cannot reach.

@@ -19,7 +19,7 @@ import 'package:control_center/shared/widgets/composer/composer.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/composer_text_controller.dart';
 import 'package:control_center/shared/widgets/composer/file_reference.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // The mention-source factory and its `#` token helper moved out so this file

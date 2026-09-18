@@ -376,8 +376,8 @@ class _JobRowState extends State<_JobRow> {
             alignment: Alignment.topCenter,
             child: _expanded
                 ? Padding(
-                    padding: const EdgeInsets.only(
-                      left: 24,
+                    padding: const EdgeInsetsDirectional.only(
+                      start: 24,
                       top: AppSpacing.sm,
                     ),
                     child: _Placements(jobId: job.id),

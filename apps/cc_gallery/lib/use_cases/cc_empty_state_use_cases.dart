@@ -20,6 +20,18 @@ Widget ccEmptyStateMessageOnlyUseCase(BuildContext context) {
   return const CcEmptyState(icon: CcIcons.inbox, message: 'No pull requests');
 }
 
+/// Nested-card density — body-sized copy, small icon.
+@widgetbook.UseCase(name: 'Compact', type: CcEmptyState, path: _path)
+Widget ccEmptyStateCompactUseCase(BuildContext context) {
+  return const CcEmptyState(
+    icon: CcIcons.lock,
+    size: CcEmptyStateSize.sm,
+    message:
+        'No decisions recorded yet. You\'ll be asked the first time an agent '
+        'needs to run a program from its working copy.',
+  );
+}
+
 /// Icon, message and a teaching description line.
 @widgetbook.UseCase(name: 'With description', type: CcEmptyState, path: _path)
 Widget ccEmptyStateWithDescriptionUseCase(BuildContext context) {
@@ -67,6 +79,11 @@ Widget ccEmptyStatePlaygroundUseCase(BuildContext context) {
     initialValue: true,
   );
   final withAction = context.knobs.boolean(label: 'Show action');
+  final size = context.knobs.object.dropdown(
+    label: 'Size',
+    options: CcEmptyStateSize.values,
+    labelBuilder: (value) => value.name,
+  );
   final iconSize = context.knobs.double.slider(
     label: 'Icon size',
     initialValue: 48,
@@ -81,6 +98,7 @@ Widget ccEmptyStatePlaygroundUseCase(BuildContext context) {
   );
   return CcEmptyState(
     icon: CcIcons.workflow,
+    size: size,
     message: message,
     description: withDescription ? description : null,
     iconSize: iconSize,

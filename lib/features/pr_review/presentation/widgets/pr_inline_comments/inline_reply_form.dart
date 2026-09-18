@@ -9,7 +9,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Pr inline thread dot.
@@ -121,7 +121,6 @@ class _InboxViewState extends ConsumerState<_InboxView> {
       constraints: const BoxConstraints(maxHeight: 480),
       decoration: BoxDecoration(
         color: tokens.bgPrimary,
-        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: tokens.borderSecondary),
         boxShadow: AppShadows.golden,
       ),
@@ -351,7 +350,7 @@ class _InboxViewState extends ConsumerState<_InboxView> {
     PrInlineThread t,
   ) {
     final last = t.entries.last;
-    return InkWell(
+    return GestureDetector(
       onTap: widget.onJumpTo == null
           ? null
           : () {

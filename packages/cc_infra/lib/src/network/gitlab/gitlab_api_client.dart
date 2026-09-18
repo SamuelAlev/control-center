@@ -182,6 +182,7 @@ class GitLabApiClient {
       final response = await _dio.get<dynamic>(
         '/projects/$projectId/merge_requests/$iid',
         queryParameters: <String, dynamic>{
+          'with_labels_details': true,
           if (includeRebaseInProgress) 'include_rebase_in_progress': true,
         },
         cancelToken: cancelToken,
@@ -223,6 +224,7 @@ class GitLabApiClient {
         'sort': sort,
         'per_page': size,
         'page': page,
+        'with_labels_details': true,
         if (authorUsername != null && authorUsername.isNotEmpty)
           'author_username': authorUsername,
       },
@@ -540,6 +542,23 @@ class GitLabApiClient {
   }) async {
     final response = await _dio.post<dynamic>(
       '/projects/$projectId/merge_requests/$iid/notes',
+      data: <String, dynamic>{'body': body},
+      cancelToken: cancelToken,
+    );
+    final data = _asMap(response.data);
+    return data == null ? null : GitLabNote.fromJson(data);
+  }
+
+  /// Replaces the body of note [noteId] on merge request [iid].
+  Future<GitLabNote?> updateMergeRequestNote(
+    String projectId,
+    int iid, {
+    required int noteId,
+    required String body,
+    CancelToken? cancelToken,
+  }) async {
+    final response = await _dio.put<dynamic>(
+      '/projects/$projectId/merge_requests/$iid/notes/$noteId',
       data: <String, dynamic>{'body': body},
       cancelToken: cancelToken,
     );

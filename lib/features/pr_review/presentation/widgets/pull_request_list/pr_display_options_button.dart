@@ -43,8 +43,8 @@ class _PrDisplayOptionsButtonState extends State<PrDisplayOptionsButton> {
     return CcPopover(
       controller: _controller,
       toggleOnTargetTap: false,
-      targetAnchor: Alignment.bottomRight,
-      followerAnchor: Alignment.topRight,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       target: CcIconButton(
         icon: AppIcons.slidersHorizontal,
         tooltip: l10n.prDisplayOptions,

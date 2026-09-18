@@ -30,11 +30,13 @@ abstract final class AppIcons {
     0xe058,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData arrowRight = IconData(
     0xe06c,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData bookmark = IconData(
     0xe0ea,
@@ -75,6 +77,7 @@ abstract final class AppIcons {
     0xe13a,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData chevronsDown = IconData(
     0xe126,
@@ -205,6 +208,7 @@ abstract final class AppIcons {
     0xe42a,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData mapPin = IconData(
     0xe316,
@@ -265,6 +269,7 @@ abstract final class AppIcons {
     0xe396,
     fontFamily: _family,
     fontPackage: _package,
+    matchTextDirection: true,
   );
   static const IconData settings = IconData(
     0xe270,

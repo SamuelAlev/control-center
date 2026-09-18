@@ -25,4 +25,27 @@ class MessagePage {
 
   /// An empty page.
   static const MessagePage empty = MessagePage(messages: [], hasMore: false);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MessagePage &&
+          hasMore == other.hasMore &&
+          nextCursor == other.nextCursor &&
+          _messageListEq(messages, other.messages);
+
+  @override
+  int get hashCode => Object.hash(hasMore, nextCursor, messages.length);
+}
+
+bool _messageListEq(List<Message> a, List<Message> b) {
+  if (a.length != b.length) {
+    return false;
+  }
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] != b[i]) {
+      return false;
+    }
+  }
+  return true;
 }

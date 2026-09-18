@@ -134,13 +134,13 @@ class _PipelineEditorCanvasState extends ConsumerState<PipelineEditorCanvas> {
                     ),
                     for (final step in renderable)
                       _buildNode(step, tokens, translate),
-                    Positioned(
-                      right: 12,
+                    PositionedDirectional(
+                      end: 12,
                       bottom: 12,
                       child: _Legend(l10n: l10n, tokens: tokens),
                     ),
-                    Positioned(
-                      left: 12,
+                    PositionedDirectional(
+                      start: 12,
                       bottom: 12,
                       child: _ResetView(
                         onTap: () => setState(() => _panOffset = Offset.zero),
@@ -165,6 +165,8 @@ class _PipelineEditorCanvasState extends ConsumerState<PipelineEditorCanvas> {
     final position = Offset(step.x ?? 0, step.y ?? 0) + translate;
     final fill = _fillFor(step.kind, tokens);
     final border = selected ? tokens.textPrimary : tokens.borderSecondary;
+    // RTL carve-out: a DAG canvas — node placement is canvas-coordinate math
+    // over the laid-out graph, and diagram canvases stay LTR per policy.
     return Positioned(
       left: position.dx,
       top: position.dy,

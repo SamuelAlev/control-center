@@ -4,7 +4,7 @@ import 'package:control_center/features/pr_review/presentation/screens/pull_requ
 import 'package:control_center/features/pr_review/presentation/widgets/pr_commits_card.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
 /// Commits tab.
 class CommitsTab extends StatelessWidget {

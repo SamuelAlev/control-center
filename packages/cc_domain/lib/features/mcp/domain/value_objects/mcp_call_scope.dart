@@ -79,4 +79,17 @@ class McpCallScope {
     fillIfEmpty('space_id', spaceId);
     return scoped;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is McpCallScope &&
+          workspaceId == other.workspaceId &&
+          agentId == other.agentId &&
+          conversationId == other.conversationId &&
+          spaceId == other.spaceId;
+
+  @override
+  int get hashCode =>
+      Object.hash(workspaceId, agentId, conversationId, spaceId);
 }

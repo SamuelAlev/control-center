@@ -1,0 +1,456 @@
+{
+  "@@locale": "he",
+
+  "appTitle": "Control Center",
+
+  "back": "חזרה",
+  "cancel": "ביטול",
+  "retry": "ניסיון חוזר",
+  "tryAgain": "נסו שוב",
+  "settings": "הגדרות",
+  "refresh": "רענון",
+  "approve": "אישור",
+  "deny": "דחייה",
+  "continueLabel": "המשך",
+  "agentQuestionHeader": "שאלה אליכם",
+  "agentQuestionAnsweredLabel": "נענתה",
+  "agentQuestionSkip": "דילוג",
+  "agentQuestionSkippedLabel": "דולגה",
+  "agentQuestionFreeformHint": "הקלידו את תשובתכם…",
+  "agentApprovalRequired": "נדרש אישור",
+  "approveAndRemember": "אישור ל־8 שעות",
+  "decline": "סירוב",
+  "confirm": "אישור",
+  "send": "שליחה",
+  "close": "סגירה",
+  "expand": "הרחבה",
+  "zoomIn": "הגדלה",
+  "zoomOut": "הקטנה",
+  "resetZoom": "איפוס זום",
+
+  "scanQrPrompt": "סרקו את קוד ה-QR מה-Mac כדי לצמד את הטלפון הזה.",
+  "scanQrHelp": "פתחו את המצלמה וכוונו אותה אל קוד ה-QR שמוצג ב-Control Center ב-Mac. הטלפון הזה מתחבר ישירות ל-Mac שלכם בקישור פרטי.",
+  "connectingToMac": "מתחבר ל-Mac…",
+  "connectingDetail": "יוצר חיבור ישיר ומאובטח.",
+  "identityChangedTitle": "זהות השרת השתנתה",
+  "identityChangedBody": "השרת הזה כבר לא תואם את הזהות שנשמרה בעת הצימוד. ייתכן שהשרת הותקן מחדש — או שמשהו מיירט את החיבור. ליתר ביטחון, המכשיר הזה לא יתחבר. הסירו את הצימוד, ואז סרקו קוד QR חדש מה-Mac כדי לצמד מחדש.",
+  "removePairing": "הסרת הצימוד",
+  "couldntConnect": "לא ניתן להתחבר",
+  "pendingPairingTitle": "להתחבר לשרת הזה?",
+  "pendingPairingBody": "קישור ביקש מ-Control Center לבצע צימוד לשרת הזה. המשיכו רק אם יזמתם זאת בעצמכם.",
+  "connect": "התחברות",
+
+  "failureNotPaired": "אין צימוד — סרקו את קוד ה-QR מה-Mac",
+  "failureUnreachable": "לא ניתן להגיע לשרת בשום נתיב — ודאו שהוא פועל, או נסו מאותה רשת",
+  "failureIdentityChanged": "זהות השרת השתנתה — אם הוא הותקן מחדש, צמדו את המכשיר מחדש",
+  "failureAuthRejected": "השרת דחה את המכשיר הזה — צמדו אותו מחדש מה-Mac",
+  "failureUnknown": "לא ניתן להתחבר — הקישו כדי לנסות שוב",
+
+  "statusConnected": "מחובר",
+  "statusConnecting": "מתחבר",
+  "statusOffline": "לא מקוון",
+  "statusIdentityMismatch": "אי-התאמת זהות",
+  "statusNotPaired": "אין צימוד",
+  "statusConfirmPairing": "אישור צימוד",
+
+  "connectionFailed": "החיבור נכשל",
+  "identityMismatchBanner": "זהות השרת השתנתה — החיבור הופסק. צמדו את המכשיר מחדש כדי להמשיך.",
+  "tabInbox": "דואר נכנס",
+  "tabTickets": "כרטיסים",
+  "tabChat": "צ'אט",
+  "tabPrs": "PRs",
+  "tabCalendar": "יומן",
+  "tabNews": "חדשות",
+  "tabWaitingCount": "{label}, {count} בהמתנה",
+  "@tabWaitingCount": {
+    "description": "Accessible name of a tab whose badge shows items waiting, e.g. 'Inbox, 3 waiting'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+
+  "updateAvailable": "גרסה חדשה של Control Center זמינה",
+
+  "appearance": "מראה",
+  "language": "שפה",
+  "device": "מכשיר",
+  "themeSystem": "מערכת",
+  "themeLight": "בהיר",
+  "themeDark": "כהה",
+  "languageSystem": "מערכת",
+  "disconnectTapAgain": "הקישו שוב כדי לנתק את המכשיר הזה מה-Mac",
+  "disconnectDevice": "ניתוק המכשיר הזה",
+  "disconnect": "ניתוק",
+
+  "chooseWorkspace": "בחירת סביבת עבודה",
+  "workspaces": "סביבות עבודה",
+  "workspacesLoadFailed": "לא ניתן לטעון את סביבות העבודה",
+  "noWorkspacesYet": "עדיין אין סביבות עבודה",
+  "selectWorkspace": "בחירת {name}",
+  "@selectWorkspace": {
+    "description": "Accessible name of a workspace row in the picker.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "inboxLoadFailed": "לא ניתן לטעון את הדואר הנכנס",
+  "allCaughtUp": "התעדכנתם בהכול",
+  "inboxNoForgeAccount": "לא מחובר חשבון forge בשרת, ולכן עדיין לא ניתן לשייך אליכם בקשות משיכה.",
+  "inboxNothingWaiting": "שום דבר לא חסום ואף בקשת משיכה לא ממתינה לכם.",
+  "blocked": "חסומים",
+  "sectionNeedsYourReview": "ממתינים לסקירה שלכם",
+  "sectionReturnedToYou": "הוחזרו אליכם",
+  "sectionApprovedAndReady": "מאושרים ומוכנים",
+  "sectionYourDrafts": "הטיוטות שלכם",
+  "sectionWaitingForReviewers": "ממתינים לסוקרים",
+  "sectionMergingAndMerged": "במיזוג ומוזגו לאחרונה",
+  "sectionWaitingForAuthor": "ממתינים למחבר",
+  "waitingAgo": "ממתין {ago}",
+  "@waitingAgo": {
+    "description": "How long an approval request has been waiting, e.g. 'waiting 4m'. {ago} is a compact time-since label.",
+    "placeholders": {
+      "ago": { "type": "String" }
+    }
+  },
+  "openConversation": "פתיחת השיחה",
+
+  "calendarLoadFailed": "לא ניתן לטעון את היומן",
+  "nothingScheduled": "אין אירועים מתוכננים",
+  "calendarEmptyDescription": "אירועים מהיומנים המחוברים שלכם יופיעו כאן.",
+  "agenda": "סדר יום",
+  "syncCalendarsNow": "סנכרון היומנים עכשיו",
+  "event": "אירוע",
+  "eventNotFound": "האירוע לא נמצא",
+  "eventNotFoundDescription": "ייתכן שהוא מחוץ לחלון סדר היום, או שהוסר במקור.",
+  "joinMeeting": "הצטרפות לפגישה",
+  "join": "הצטרפות",
+  "attendeesCount": "משתתפים ({count})",
+  "@attendeesCount": {
+    "description": "Event detail: attendees section header with count.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "details": "פרטים",
+  "allDay": "כל היום",
+  "happeningNow": "מתרחש עכשיו",
+  "inDuration": "בעוד {duration}",
+  "@inDuration": {
+    "description": "Up-next card lead: countdown to the next meeting, e.g. 'In 45m'. {duration} is a compact duration.",
+    "placeholders": {
+      "duration": { "type": "String" }
+    }
+  },
+  "eventTimeRange": "{start} – {end} · {duration}",
+  "@eventTimeRange": {
+    "description": "Event detail: time range with duration, e.g. '14:00 – 15:00 · 1h'.",
+    "placeholders": {
+      "start": { "type": "String" },
+      "end": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "upNextSemantic": "{lead}: {title}",
+  "@upNextSemantic": {
+    "description": "Accessible name of the up-next card, e.g. 'In 45m: design sync'.",
+    "placeholders": {
+      "lead": { "type": "String" },
+      "title": { "type": "String" }
+    }
+  },
+  "attendeeAccepted": "אישרו",
+  "attendeeDeclined": "סירבו",
+  "attendeeMaybe": "אולי",
+  "attendeeNoReply": "ללא מענה",
+  "organizer": "מארגן",
+  "calendarNoAccounts": "לא מחובר יומן לסביבת העבודה הזו. חברו יומן מאפליקציית שולחן העבודה — ההתחברות שומרת את הטוקן שלה בשרת.",
+  "calendarReauthNeeded": "חשבון יומן דורש חיבור מחדש — מה שמוצג למטה עשוי להיות לא מעודכן. חברו אותו מחדש מאפליקציית שולחן העבודה.",
+
+  "spacesLoadFailed": "לא ניתן לטעון את המרחבים",
+  "noSpaces": "אין מרחבים",
+  "spacesEmptyDescription": "מרחבים בסביבת העבודה הזו יופיעו כאן.",
+  "thread": "שרשור",
+  "agentWorking": "הסוכן עובד",
+  "messagesLoadFailed": "לא ניתן לטעון את ההודעות",
+  "noMessagesYet": "עדיין אין הודעות",
+  "noMessagesDescription": "שלחו הודעה כדי להתחיל את השיחה.",
+  "agentResponding": "הסוכן מגיב",
+  "agentFinished": "הסוכן סיים",
+  "attachmentsTooLarge": "{count, plural, one{\u2068{names}\u2069 גדול מדי לשליחה מכאן.} two{\u2068{names}\u2069 גדולים מדי לשליחה מכאן.} many{\u2068{names}\u2069 גדולים מדי לשליחה מכאן.} other{\u2068{names}\u2069 גדולים מדי לשליחה מכאן.}}",
+  "@attachmentsTooLarge": {
+    "description": "Composer error: the named files exceed the upload ceiling of this connection.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentsTooLargeRelay": "{count, plural, one{\u2068{names}\u2069 גדול מדי לשליחה דרך הממסר מכאן.} two{\u2068{names}\u2069 גדולים מדי לשליחה דרך הממסר מכאן.} many{\u2068{names}\u2069 גדולים מדי לשליחה דרך הממסר מכאן.} other{\u2068{names}\u2069 גדולים מדי לשליחה דרך הממסר מכאן.}}",
+  "@attachmentsTooLargeRelay": {
+    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
+    "placeholders": {
+      "count": { "type": "int" },
+      "names": { "type": "String" }
+    }
+  },
+  "attachmentUploadFailed": "לא ניתן להעלות את הקובץ המצורף. נסו שוב.",
+  "attachmentsLeftOut": "{count, plural, one{קובץ מצורף אחד לא הועלה ולא נכלל.} two{שני קבצים מצורפים לא הועלו ולא נכללו.} many{{count} קבצים מצורפים לא הועלו ולא נכללו.} other{{count} קבצים מצורפים לא הועלו ולא נכללו.}}",
+  "@attachmentsLeftOut": {
+    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "teammate": "חבר צוות",
+  "agent": "סוכן",
+  "attachFile": "צירוף קובץ",
+  "messageHint": "הודעה",
+  "removeAttachment": "הסרת \u2068{name}\u2069",
+  "@removeAttachment": {
+    "description": "Semantic label of the remove button on a pending attachment chip.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "articlesLoadFailed": "לא ניתן לטעון כתבות",
+  "noArticles": "אין כתבות",
+  "articlesEmptyDescription": "כתבות חדשות יופיעו כאן כשהפידים יתעדכנו.",
+  "unread": "לא נקראו",
+  "allFeeds": "כל הפידים",
+  "save": "שמירה",
+  "unsave": "ביטול שמירה",
+  "readFullArticle": "קריאת הכתבה המלאה",
+
+  "ticketsLoadFailed": "לא ניתן לטעון כרטיסים",
+  "noTickets": "אין כרטיסים",
+  "ticketsEmptyDescription": "כרטיסים בסביבת העבודה הזו יופיעו כאן.",
+  "all": "הכול",
+  "ticket": "כרטיס",
+  "ticketLoadFailed": "לא ניתן לטעון את הכרטיס",
+  "assignedTo": "הוקצה ל-{name}",
+  "@assignedTo": {
+    "description": "Badge naming the ticket's assignee.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "openInBrowser": "פתיחה בדפדפן",
+  "status": "סטטוס",
+  "assign": "הקצאה",
+  "reassign": "הקצאה מחדש",
+  "noAgents": "אין סוכנים",
+  "noAgentsDescription": "הקצו סוכן מסביבת העבודה הזו.",
+  "statusOpen": "פתוח",
+  "statusInProgress": "בתהליך",
+  "statusBlocked": "חסום",
+  "statusInReview": "בסקירה",
+  "statusDone": "הושלם",
+  "statusBacklog": "בקלוג",
+
+  "lensNeedsMe": "ממתינים לי",
+  "lensMine": "שלי",
+  "prsLoadFailed": "לא ניתן לטעון בקשות משיכה",
+  "noOpenPullRequests": "אין בקשות משיכה פתוחות",
+  "nothingWaitingOnReview": "שום דבר לא ממתין לסקירה שלכם",
+  "noOwnOpenPullRequests": "אין לכם בקשות משיכה פתוחות",
+  "nothingBlocked": "שום דבר לא חסום",
+  "prsEmptyDescription": "בקשות משיכה מהמאגרים של סביבת העבודה הזו יופיעו כאן.",
+  "refreshPullRequests": "רענון בקשות משיכה",
+  "noForgeConnected": "לא מחובר forge בשרת, ולכן לא ניתן להביא בקשות משיכה. חברו אחד מאפליקציית שולחן העבודה.",
+  "reposUnreadable": "{count, plural, one{לא ניתן לקרוא מאגר אחד.} two{לא ניתן לקרוא שני מאגרים.} many{לא ניתן לקרוא {count} מאגרים.} other{לא ניתן לקרוא {count} מאגרים.}}",
+  "@reposUnreadable": {
+    "description": "Notice when repos were unreadable and their names are unknown.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "reposNotReadable": "לא ניתנים לקריאה: \u2068{names}\u2069",
+  "installationSuspendedTitle": "התקנת GitHub App הושעתה",
+  "installationSuspendedBody": "מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub, או חבר אסימון עם גישה.",
+  "installationSuspendedNotice": "התקנת GitHub App הושעתה. מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub, או חבר אסימון עם גישה.",
+  "@reposNotReadable": {
+    "description": "Notice naming the repos the poller could not read.",
+    "placeholders": {
+      "names": { "type": "String" }
+    }
+  },
+
+  "draft": "טיוטה",
+  "merged": "מוזג",
+  "closed": "נסגר",
+  "open": "פתוח",
+  "approved": "אושר",
+  "changesRequested": "התבקשו שינויים",
+  "reviewRequired": "נדרשת סקירה",
+  "checksPassing": "הבדיקות עוברות",
+  "checksFailing": "הבדיקות נכשלות",
+  "checksRunning": "הבדיקות פועלות",
+  "prSemanticLabel": "{title}, {status}",
+  "@prSemanticLabel": {
+    "description": "Accessible name of a PR row: its title and lifecycle word.",
+    "placeholders": {
+      "title": { "type": "String" },
+      "status": { "type": "String" }
+    }
+  },
+
+  "pullRequest": "בקשת משיכה",
+  "prLoadFailed": "לא ניתן לטעון את בקשת המשיכה הזו",
+  "openOnForge": "פתיחה ב-forge",
+  "requestChangesNeedsComment": "הוסיפו תגובה שמסבירה מה צריך לשנות.",
+  "conversation": "שיחה",
+  "files": "קבצים",
+  "checks": "בדיקות",
+  "labelWithCount": "{label} ({count})",
+  "@labelWithCount": {
+    "description": "A tab label with its item count, e.g. 'Files (12)'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "filesCount": "{count, plural, one{קובץ אחד} two{שני קבצים} many{{count} קבצים} other{{count} קבצים}}",
+  "@filesCount": {
+    "description": "Badge: how many files the PR changes.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "commitsCount": "{count, plural, one{קומיט אחד} two{שני קומיטים} many{{count} קומיטים} other{{count} קומיטים}}",
+  "@commitsCount": {
+    "description": "Badge: how many commits the PR carries.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "conflicts": "קונפליקטים",
+  "reviewers": "סוקרים",
+  "noDescriptionNoComments": "עדיין אין תיאור ואין תגובות.",
+  "noChangedFiles": "אין קבצים ששונו.",
+  "noChecksReported": "לא דווחו בדיקות לקומיט העדכני.",
+  "reviewCommentHint": "כתבו תגובת סקירה…",
+  "comment": "תגובה",
+  "commentPosted": "התגובה פורסמה",
+  "request": "בקשת שינויים",
+  "squashAndMerge": "Squash ומיזוג",
+  "noActionsAvailable": "{status} — אין פעולות זמינות.",
+  "@noActionsAvailable": {
+    "description": "Footer when the PR is not open, e.g. 'Merged — no actions available.'.",
+    "placeholders": {
+      "status": { "type": "String" }
+    }
+  },
+  "reviewApproved": "אישר",
+  "reviewRequestedChanges": "ביקש שינויים",
+  "reviewCommented": "הגיב",
+  "reviewPending": "בהמתנה",
+  "unknownAuthor": "לא ידוע",
+  "hideDiffFor": "הסתרת ה-diff של \u2068{file}\u2069",
+  "@hideDiffFor": {
+    "description": "Accessible name of an expanded file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "showDiffFor": "הצגת ה-diff של \u2068{file}\u2069",
+  "@showDiffFor": {
+    "description": "Accessible name of a collapsed file tile.",
+    "placeholders": {
+      "file": { "type": "String" }
+    }
+  },
+  "checkRunning": "פועלת",
+  "checkPassed": "עברה",
+  "checkFailed": "נכשלה",
+  "checkCancelled": "בוטלה",
+  "checkSkipped": "דולגה",
+  "labelWithDuration": "{label} · {duration}",
+  "@labelWithDuration": {
+    "description": "A check state with its elapsed time, e.g. 'passed · 4m'.",
+    "placeholders": {
+      "label": { "type": "String" },
+      "duration": { "type": "String" }
+    }
+  },
+  "checkSemanticLabel": "\u2068{name}\u2069, {state}",
+  "@checkSemanticLabel": {
+    "description": "Accessible name of a check row: its name and state word.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "state": { "type": "String" }
+    }
+  },
+
+  "noTextDiff": "אין diff טקסטואלי לקובץ הזה — הוא בינארי, או גדול מכדי שה-forge יחזיר אותו.",
+  "showRemainingLines": "{count, plural, one{הצגת השורה הנותרת} two{הצגת שתי השורות הנותרות} many{הצגת {count} השורות הנותרות} other{הצגת {count} השורות הנותרות}}",
+  "@showRemainingLines": {
+    "description": "Button lifting the diff row budget.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "unchangedLines": "{count, plural, one{שורה אחת ללא שינוי} two{שתי שורות ללא שינוי} many{{count} שורות ללא שינוי} other{{count} שורות ללא שינוי}}",
+  "@unchangedLines": {
+    "description": "Marker for the elided stretch between two diff hunks.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "jumpToLatest": "מעבר להודעה האחרונה",
+  "streaming": "סטרימינג",
+
+  "working": "עובד",
+  "input": "קלט",
+  "output": "פלט",
+
+  "now": "עכשיו",
+  "agoMinutes": "{count} דק׳",
+  "@agoMinutes": {
+    "description": "Compact time-since label in minutes, e.g. '4m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoHours": "{count} שע׳",
+  "@agoHours": {
+    "description": "Compact time-since label in hours, e.g. '3h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "agoDays": "{count} ימ׳",
+  "@agoDays": {
+    "description": "Compact time-since label in days, e.g. '6d'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "today": "היום",
+  "tomorrow": "מחר",
+  "yesterday": "אתמול",
+  "durationMinutes": "{count} דק׳",
+  "@durationMinutes": {
+    "description": "Compact duration in minutes, e.g. '45m'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHours": "{count} שע׳",
+  "@durationHours": {
+    "description": "Compact duration in whole hours, e.g. '2h'.",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours} שע׳ {minutes} דק׳",
+  "@durationHoursMinutes": {
+    "description": "Compact duration in hours and minutes, e.g. '1h 30m'.",
+    "placeholders": {
+      "hours": { "type": "int" },
+      "minutes": { "type": "int" }
+    }
+  }
+}

@@ -37,7 +37,7 @@ the team delivers high-quality work efficiently.
 ## Guidelines
 
 - Always think before acting. Consider the broader impact of every decision.
-- When in doubt, ask clarifying questions rather than guessing.
+- When in doubt, call `ask_user` rather than guessing.
 - Prefer incremental, reversible changes over large, risky ones.
 - Document your reasoning so other agents and users can follow your logic.
 - Coordinate agents in parallel where possible to maximize throughput.

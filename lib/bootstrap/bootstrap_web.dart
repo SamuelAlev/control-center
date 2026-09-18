@@ -59,8 +59,8 @@ Future<void> bootstrapAndRun() async {
   MediaKit.ensureInitialized();
 
   // Hand right-click to the app. Flutter web ships with the browser's own
-  // context menu enabled, which both covers our `showCcMenuAt` menus (space
-  // rows, tabs, tickets, the explorer) and makes the engine suppress Flutter's
+  // context menu enabled, which both covers our `showCcMenuAt` menus (tabs,
+  // tickets, the explorer) and makes the engine suppress Flutter's
   // selection toolbars entirely — so text selection has no copy affordance.
   await BrowserContextMenu.disableContextMenu();
 

@@ -52,7 +52,7 @@ class _MjpegViewState extends State<MjpegView> {
   /// a bitrate budget; this is the client's own guard against decoding more
   /// pictures than a display can show. Frames that arrive inside the window
   /// are not queued — the newest one simply wins, which is what "live" means.
-  static const Duration _minFrameGap = Duration(milliseconds: 33); // ~30fps
+  static const Duration _minFrameGap = Duration(milliseconds: 16); // ~60fps
 
   /// After this many consecutive failures the viewer SAYS the lane ended —
   /// but it keeps trying, slowly. Giving up permanently meant a `cc_server`

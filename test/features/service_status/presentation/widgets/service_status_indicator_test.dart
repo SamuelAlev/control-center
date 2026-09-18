@@ -146,6 +146,12 @@ class _StatusRpcClientFake implements RemoteRpcClient {
 }
 
 void main() {
+  test('ServiceStatusSidebarEntry is a sidebar fluid-hover target', () {
+    const entry = ServiceStatusSidebarEntry();
+    expect(entry, isA<CcFluidHoverTarget>());
+    expect(entry.fluidHoverEnabled, isTrue);
+  });
+
   group('ServiceStatusSidebarEntry row', () {
     testWidgets('always renders, even when every provider is healthy', (
       tester,
@@ -276,6 +282,8 @@ void main() {
         expect(find.text('Claude'), findsOneWidget);
         expect(find.text('Codex'), findsOneWidget);
         expect(find.text('Kimi'), findsOneWidget);
+        // Freshness sits once next to the title, not under every provider.
+        expect(find.textContaining('Updated'), findsOneWidget);
         // No status-page button anywhere: the incident tile IS the link, and
         // a degraded provider no longer stacks a second one under it.
         expect(find.text('Elevated API errors'), findsOneWidget);
@@ -391,9 +399,10 @@ void main() {
       await tester.tap(serviceStatusLabel());
       await tester.pumpAndSettle();
 
-      // The shared ghost refresh control with the AppTimestamp freshness card,
-      // same as every other remote-data surface.
+      // The shared ghost refresh control, same as every other remote-data
+      // surface; visible freshness sits next to the title, not on the button.
       expect(find.byType(RefreshControl), findsOneWidget);
+      expect(find.textContaining('Updated'), findsOneWidget);
       // Opening the flyout already refreshed once.
       expect(notifier.refreshCalls, 1);
 

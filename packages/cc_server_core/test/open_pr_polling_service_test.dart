@@ -210,32 +210,32 @@ PullRequest _pr(
   List<String> requestedReviewers = const [],
   List<String> requestedTeamSlugs = const [],
 }) => PullRequest(
-      id: number,
-      number: number,
-      title: '$title $number',
-      body: '',
-      state: PrState.open,
-      isDraft: isDraft,
-      author: PrUser(login: author, avatarUrl: ''),
-      createdAt: DateTime(2025),
-      updatedAt: DateTime(2025),
-      repoFullName: 'o/r1',
-      htmlUrl: '',
-      externalId: 'n$number',
-      headSha: headSha ?? 's$number',
-      baseRef: 'main',
-      headRef: 'f$number',
-      requestedReviewers: [
-        for (final r in requestedReviewers) PrUser(login: r, avatarUrl: ''),
-      ],
-      requestedTeamSlugs: requestedTeamSlugs,
-      reviewDecision: reviewDecision,
-      mergeableState: mergeableState,
-      checksStatus: PrChecksStatus.values.firstWhere(
-        (c) => c.name == checks,
-        orElse: () => PrChecksStatus.none,
-      ),
-    );
+  id: number,
+  number: number,
+  title: '$title $number',
+  body: '',
+  state: PrState.open,
+  isDraft: isDraft,
+  author: PrUser(login: author, avatarUrl: ''),
+  createdAt: DateTime(2025),
+  updatedAt: DateTime(2025),
+  repoFullName: 'o/r1',
+  htmlUrl: '',
+  externalId: 'n$number',
+  headSha: headSha ?? 's$number',
+  baseRef: 'main',
+  headRef: 'f$number',
+  requestedReviewers: [
+    for (final r in requestedReviewers) PrUser(login: r, avatarUrl: ''),
+  ],
+  requestedTeamSlugs: requestedTeamSlugs,
+  reviewDecision: reviewDecision,
+  mergeableState: mergeableState,
+  checksStatus: PrChecksStatus.values.firstWhere(
+    (c) => c.name == checks,
+    orElse: () => PrChecksStatus.none,
+  ),
+);
 
 /// A tiny wire mapper sufficient for snapshot diffing in tests (the real one
 /// lives in the RPC catalog; the poller only relies on `number`, `title`,
@@ -407,8 +407,11 @@ void main() {
       String title = 'PR',
     }) async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1, title: title, headSha: firstSha)],
-         hasMore: false),
+        (
+          repo: repo1,
+          prs: [_pr(1, title: title, headSha: firstSha)],
+          hasMore: false,
+        ),
       ];
       await poller.refreshNow('ws1');
 
@@ -417,8 +420,11 @@ void main() {
 
       now = now.add(const Duration(minutes: 5));
       port.groups = [
-        (repo: repo1, prs: [_pr(1, title: title, headSha: secondSha)],
-         hasMore: false),
+        (
+          repo: repo1,
+          prs: [_pr(1, title: title, headSha: secondSha)],
+          hasMore: false,
+        ),
       ];
       await poller.refreshNow('ws1');
       await pump();
@@ -475,7 +481,10 @@ void main() {
       port.groups = [
         (
           repo: repo1,
-          prs: [_pr(1, headSha: 'aaa1111'), _pr(2, headSha: 'ccc3333')],
+          prs: [
+            _pr(1, headSha: 'aaa1111'),
+            _pr(2, headSha: 'ccc3333'),
+          ],
           hasMore: false,
         ),
       ];
@@ -769,40 +778,42 @@ void main() {
   // that wiped the snapshot, emptied every client's inbox and published a
   // merged/closed event per PR — the outage bug these two tests pin.
   group('a GitHub that answers for nothing', () {
-    test('keeps the previous snapshot instead of persisting an empty one', () async {
-      port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
-      ];
-      await poller.refreshNow('ws1');
+    test(
+      'keeps the previous snapshot instead of persisting an empty one',
+      () async {
+        port.groups = [
+          (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+        ];
+        await poller.refreshNow('ws1');
 
-      final events = <PullRequestStatusChanged>[];
-      final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+        final events = <PullRequestStatusChanged>[];
+        final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
 
-      now = now.add(const Duration(minutes: 5));
-      port.unresolvedRepoIds = {repo1.id};
-      port.groups = [];
-      await poller.refreshNow('ws1');
-      await pump();
+        now = now.add(const Duration(minutes: 5));
+        port.unresolvedRepoIds = {repo1.id};
+        port.groups = [];
+        await poller.refreshNow('ws1');
+        await pump();
 
-      final snapshot = await _readSnapshot(db);
-      expect(
-        snapshot['repos'] as List,
-        hasLength(1),
-        reason: 'the repo must survive a sweep GitHub never answered',
-      );
-      expect(
-        _numbersOf(snapshot, 'o/r1'),
-        [1, 2],
-        reason: 'both PRs are still open — nothing was observed to change',
-      );
-      expect(
-        events,
-        isEmpty,
-        reason: 'an unanswered repo must not read as merged/closed',
-      );
+        final snapshot = await _readSnapshot(db);
+        expect(
+          snapshot['repos'] as List,
+          hasLength(1),
+          reason: 'the repo must survive a sweep GitHub never answered',
+        );
+        expect(_numbersOf(snapshot, 'o/r1'), [
+          1,
+          2,
+        ], reason: 'both PRs are still open — nothing was observed to change');
+        expect(
+          events,
+          isEmpty,
+          reason: 'an unanswered repo must not read as merged/closed',
+        );
 
-      await sub.cancel();
-    });
+        await sub.cancel();
+      },
+    );
 
     test('a partial answer keeps the repos it did not cover', () async {
       final repo2 = _repo('r2');
@@ -842,16 +853,13 @@ void main() {
       await pump();
 
       final snapshot = await _readSnapshot(db);
-      expect(
-        _numbersOf(snapshot, 'o/r1'),
-        [1, 3],
-        reason: 'the answered repo takes the fresh page',
-      );
-      expect(
-        _numbersOf(snapshot, 'o/r2'),
-        [2],
-        reason: 'the unanswered repo keeps its previous entry',
-      );
+      expect(_numbersOf(snapshot, 'o/r1'), [
+        1,
+        3,
+      ], reason: 'the answered repo takes the fresh page');
+      expect(_numbersOf(snapshot, 'o/r2'), [
+        2,
+      ], reason: 'the unanswered repo keeps its previous entry');
       expect(
         events,
         isEmpty,
@@ -937,11 +945,9 @@ void main() {
       expect(parked.single['repo_id'], repo1.id);
       expect(parked.single['reason'], 'not_found');
       expect(parked.single['since'], isNotNull);
-      expect(
-        _numbersOf(snapshot, 'o/r1'),
-        [1],
-        reason: 'the parked repo keeps its previous entries',
-      );
+      expect(_numbersOf(snapshot, 'o/r1'), [
+        1,
+      ], reason: 'the parked repo keeps its previous entries');
       expect(
         events,
         isEmpty,
@@ -957,11 +963,10 @@ void main() {
 
       port.probedRepoIds.clear();
       await sweeps(2);
-      expect(
-        port.probedRepoIds,
-        [repo2.id, repo2.id],
-        reason: 'inside the retry interval only the healthy repo is probed',
-      );
+      expect(port.probedRepoIds, [
+        repo2.id,
+        repo2.id,
+      ], reason: 'inside the retry interval only the healthy repo is probed');
 
       port.probedRepoIds.clear();
       now = now.add(const Duration(minutes: 11));
@@ -1011,34 +1016,51 @@ void main() {
       );
     });
 
-    test('a restart keeps the repo parked (seeded from the snapshot)', () async {
-      await baselineThenFail(notFound);
-      await sweeps(3);
-      accessPoller.dispose();
-
-      // A fresh service over the same database: in-memory counters are gone,
-      // but the persisted snapshot re-arms the parked state.
-      final restarted = OpenPrPollingService(
-        fetchPort: port,
-        workspaceRepository: twoRepos,
-        workspaceDbs: dbs,
-        changeSignals: signals,
-        prToWire: _prToWire,
-        eventBus: bus,
-        now: () => now,
+    test('a suspended installation parks on the first denied probe', () async {
+      await baselineThenFail(
+        const NetworkException(
+          'GitHub App installation is suspended',
+          code: 'installation_suspended',
+        ),
       );
-      addTearDown(restarted.dispose);
+      await sweeps(1);
 
-      now = now.add(const Duration(minutes: 1));
-      await restarted.pollSoon('ws1');
       final snapshot = await _readSnapshot(db);
       final parked = (snapshot['inaccessible_repos'] as List).cast<Map>();
-      expect(
-        parked.map((e) => e['repo_id']),
-        [repo1.id],
-        reason: 'the parked state survives the restart',
-      );
+      expect(parked, hasLength(1));
+      expect(parked.single['repo_id'], repo1.id);
+      expect(parked.single['reason'], 'installation_suspended');
     });
+
+    test(
+      'a restart keeps the repo parked (seeded from the snapshot)',
+      () async {
+        await baselineThenFail(notFound);
+        await sweeps(3);
+        accessPoller.dispose();
+
+        // A fresh service over the same database: in-memory counters are gone,
+        // but the persisted snapshot re-arms the parked state.
+        final restarted = OpenPrPollingService(
+          fetchPort: port,
+          workspaceRepository: twoRepos,
+          workspaceDbs: dbs,
+          changeSignals: signals,
+          prToWire: _prToWire,
+          eventBus: bus,
+          now: () => now,
+        );
+        addTearDown(restarted.dispose);
+
+        now = now.add(const Duration(minutes: 1));
+        await restarted.pollSoon('ws1');
+        final snapshot = await _readSnapshot(db);
+        final parked = (snapshot['inaccessible_repos'] as List).cast<Map>();
+        expect(parked.map((e) => e['repo_id']), [
+          repo1.id,
+        ], reason: 'the parked state survives the restart');
+      },
+    );
 
     test('watchRepoAccessForWorkspace streams the parked list', () async {
       await baselineThenFail(notFound);
@@ -1174,23 +1196,25 @@ void main() {
       expect(events, isEmpty);
     });
 
-    test('checks going red fires once, and not again on a no-op sweep',
-        () async {
-      await sweep([_pr(1, checks: 'passing')]);
-      await sweep([_pr(1, checks: 'failing')]);
-      expect(events.whereType<PrChecksStatusChanged>(), hasLength(1));
-      expect(
-        events.whereType<PrChecksStatusChanged>().single.failing,
-        isTrue,
-      );
+    test(
+      'checks going red fires once, and not again on a no-op sweep',
+      () async {
+        await sweep([_pr(1, checks: 'passing')]);
+        await sweep([_pr(1, checks: 'failing')]);
+        expect(events.whereType<PrChecksStatusChanged>(), hasLength(1));
+        expect(
+          events.whereType<PrChecksStatusChanged>().single.failing,
+          isTrue,
+        );
 
-      await sweep([_pr(1, checks: 'failing')]);
-      expect(
-        events.whereType<PrChecksStatusChanged>(),
-        hasLength(1),
-        reason: 'the snapshot IS the dedupe',
-      );
-    });
+        await sweep([_pr(1, checks: 'failing')]);
+        expect(
+          events.whereType<PrChecksStatusChanged>(),
+          hasLength(1),
+          reason: 'the snapshot IS the dedupe',
+        );
+      },
+    );
 
     test('a failure names the check from one targeted lookup', () async {
       port.failingChecks[1] = (name: 'build', url: 'https://ci/1');
@@ -1244,45 +1268,49 @@ void main() {
       );
     });
 
-    test('an unattributable approval falls back to one targeted lookup',
-        () async {
-      port.approvers[1] = 'someone-else';
-      await sweep([
-        _pr(
-          1,
-          checks: 'passing',
-          reviewDecision: PrReviewDecision.reviewRequired,
-        ),
-      ]);
-      await sweep([
-        _pr(1, checks: 'passing', reviewDecision: PrReviewDecision.approved),
-      ]);
+    test(
+      'an unattributable approval falls back to one targeted lookup',
+      () async {
+        port.approvers[1] = 'someone-else';
+        await sweep([
+          _pr(
+            1,
+            checks: 'passing',
+            reviewDecision: PrReviewDecision.reviewRequired,
+          ),
+        ]);
+        await sweep([
+          _pr(1, checks: 'passing', reviewDecision: PrReviewDecision.approved),
+        ]);
 
-      final event = events.whereType<PrReviewDecisionChanged>().single;
-      expect(event.approverLogin, 'someone-else');
-      expect(port.latestApproverCalls, 1);
-    });
+        final event = events.whereType<PrReviewDecisionChanged>().single;
+        expect(event.approverLogin, 'someone-else');
+        expect(port.latestApproverCalls, 1);
+      },
+    );
 
-    test('becoming ready is confirmed with the forge before announcing',
-        () async {
-      port.mergeStates[1] = PrMergeableState.clean;
-      await sweep([
-        _pr(
-          1,
-          checks: 'passing',
-          reviewDecision: PrReviewDecision.reviewRequired,
-        ),
-      ]);
-      await sweep([
-        _pr(1, checks: 'passing', reviewDecision: PrReviewDecision.approved),
-      ]);
+    test(
+      'becoming ready is confirmed with the forge before announcing',
+      () async {
+        port.mergeStates[1] = PrMergeableState.clean;
+        await sweep([
+          _pr(
+            1,
+            checks: 'passing',
+            reviewDecision: PrReviewDecision.reviewRequired,
+          ),
+        ]);
+        await sweep([
+          _pr(1, checks: 'passing', reviewDecision: PrReviewDecision.approved),
+        ]);
 
-      final ready = events
-          .whereType<PrMergeReadinessChanged>()
-          .where((e) => e.ready);
-      expect(ready, hasLength(1));
-      expect(port.mergeStateCalls, 1);
-    });
+        final ready = events.whereType<PrMergeReadinessChanged>().where(
+          (e) => e.ready,
+        );
+        expect(ready, hasLength(1));
+        expect(port.mergeStateCalls, 1);
+      },
+    );
 
     test('a forge that will not confirm suppresses the ready edge', () async {
       // `mergeStates` unset → the fake answers `unknown` → not confirmed.
@@ -1372,11 +1400,7 @@ void main() {
           ),
         ]);
         await sweep([
-          _pr(
-            1,
-            checks: 'failing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'failing', reviewDecision: PrReviewDecision.approved),
         ]);
         expect(events.whereType<PrReviewDecisionChanged>(), hasLength(1));
         expect(events.whereType<PrChecksStatusChanged>(), hasLength(1));
@@ -1385,11 +1409,7 @@ void main() {
         // one approval every few minutes for as long as GitHub kept 504ing.
         await sweep([unread(1)]);
         await sweep([
-          _pr(
-            1,
-            checks: 'failing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'failing', reviewDecision: PrReviewDecision.approved),
         ]);
 
         expect(
@@ -1406,36 +1426,26 @@ void main() {
 
       test('keeps the last known state in the snapshot', () async {
         await sweep([
-          _pr(
-            1,
-            checks: 'failing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'failing', reviewDecision: PrReviewDecision.approved),
         ]);
         await sweep([unread(1)]);
 
-        final pr = ((await _readSnapshot(db))['repos'] as List)
-            .cast<Map<String, dynamic>>()
-            .single['prs'] as List;
+        final pr =
+            ((await _readSnapshot(db))['repos'] as List)
+                    .cast<Map<String, dynamic>>()
+                    .single['prs']
+                as List;
         expect((pr.single as Map)['checks_status'], 'failing');
         expect((pr.single as Map)['review_decision'], 'approved');
       });
 
       test('still lets the next real transition through', () async {
         await sweep([
-          _pr(
-            1,
-            checks: 'failing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'failing', reviewDecision: PrReviewDecision.approved),
         ]);
         await sweep([unread(1)]);
         await sweep([
-          _pr(
-            1,
-            checks: 'passing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'passing', reviewDecision: PrReviewDecision.approved),
         ]);
 
         final recovery = events.whereType<PrChecksStatusChanged>().where(
@@ -1465,19 +1475,11 @@ void main() {
           ),
         ]);
         await sweep([
-          _pr(
-            1,
-            checks: 'failing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'failing', reviewDecision: PrReviewDecision.approved),
         ]);
         await sweep([unread(1)]);
         await sweep([
-          _pr(
-            1,
-            checks: 'failing',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, checks: 'failing', reviewDecision: PrReviewDecision.approved),
         ]);
 
         expect(
@@ -1511,19 +1513,11 @@ void main() {
           ),
         ]);
         await sweep([
-          _pr(
-            1,
-            headSha: 'sha-1',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, headSha: 'sha-1', reviewDecision: PrReviewDecision.approved),
         ]);
         await sweep([unread(1, headSha: 'sha-2')]);
         await sweep([
-          _pr(
-            1,
-            headSha: 'sha-2',
-            reviewDecision: PrReviewDecision.approved,
-          ),
+          _pr(1, headSha: 'sha-2', reviewDecision: PrReviewDecision.approved),
         ]);
 
         expect(

@@ -1,10 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cc_domain/core/domain/ports/key_value_store.dart';
+import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
 import 'package:cc_infra/src/newsfeed/abp_parser.dart';
 import 'package:cc_infra/src/newsfeed/filter_list_service.dart';
-import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:dio/dio.dart';
 import 'package:test/test.dart';
 
@@ -34,31 +34,8 @@ class _FakeAdapter implements HttpClientAdapter {
   void close({bool force = false}) {}
 }
 
-class _MemoryPrefs implements KeyValueStore {
-  final Map<String, String> _strings = {};
-  final Map<String, int> _ints = {};
-
-  @override
-  String? getString(String key) => _strings[key];
-
-  @override
-  Future<bool> setString(String key, String value) async {
-    _strings[key] = value;
-    return true;
-  }
-
-  @override
-  int? getInt(String key) => _ints[key];
-
-  @override
-  Future<bool> setInt(String key, int value) async {
-    _ints[key] = value;
-    return true;
-  }
-}
-
-/// Isolated per-test temp dir so `manualRefresh`'s cache writes never touch
-/// the host's real app-support root and clean up after the run.
+/// Isolated per-test temp dir so refresh cache writes never touch a real
+/// data dir and clean up after the run.
 String _newTempRoot() {
   final dir = Directory.systemTemp.createTempSync('cc_filter_test_');
   addTearDown(() {
@@ -69,14 +46,57 @@ String _newTempRoot() {
   return dir.path;
 }
 
+({FilterListService svc, _FakeAdapter adapter}) _build(
+  Handler handler, {
+  bool allowNetwork = true,
+  String? cacheDir,
+}) {
+  final adapter = _FakeAdapter(handler);
+  final dio = Dio()..httpClientAdapter = adapter;
+  return (
+    svc: FilterListService(
+      cacheDir: cacheDir ?? _newTempRoot(),
+      dio: dio,
+      allowNetwork: allowNetwork,
+    ),
+    adapter: adapter,
+  );
+}
+
 FilterListService buildService(
   Handler handler, {
-  required KeyValueStore prefs,
+  bool allowNetwork = true,
+  String? cacheDir,
+}) => _build(handler, allowNetwork: allowNetwork, cacheDir: cacheDir).svc;
+
+void _seedState(
+  String cacheDir, {
+  required FilterListUpdateState state,
+  Set<String> removeParams = const {},
 }) {
-  final fake = _FakeAdapter(handler);
-  final dio = Dio()..httpClientAdapter = fake;
-  return FilterListService(dio, prefs, CcPaths(_newTempRoot()));
+  Directory(cacheDir).createSync(recursive: true);
+  File('$cacheDir/state.json').writeAsStringSync(
+    jsonEncode({...state.toJson(), 'removeParams': removeParams.toList()}),
+  );
 }
+
+FilterListUpdateState _meta({
+  DateTime? lastCheck,
+  DateTime? lastSuccess,
+  int adHidingRules = 0,
+  int cookieHidingRules = 0,
+  int networkBlockRules = 0,
+  int removeParamsCount = 0,
+}) => FilterListUpdateState(
+  lastCheck: lastCheck,
+  lastSuccess: lastSuccess,
+  isUpdating: false,
+  errors: const [],
+  cookieHidingRules: cookieHidingRules,
+  adHidingRules: adHidingRules,
+  networkBlockRules: networkBlockRules,
+  removeParamsCount: removeParamsCount,
+);
 
 typedef Handler = ResponseBody Function(RequestOptions o);
 
@@ -173,7 +193,7 @@ void main() {
     late FilterListService svc;
 
     setUp(() {
-      svc = buildService((_) => _textBody(''), prefs: _MemoryPrefs());
+      svc = buildService((_) => _textBody(''));
     });
 
     test('extracts removeparam= names, lowercased', () {
@@ -214,30 +234,36 @@ void main() {
 
   group('FilterListService.readRemoveParams / readState', () {
     test('readRemoveParams falls back to defaults when unset', () {
-      final svc = buildService((_) => _textBody(''), prefs: _MemoryPrefs());
+      final svc = buildService((_) => _textBody(''));
       final params = svc.readRemoveParams();
-      expect(params, isNotEmpty); // defaults exist
+      expect(params, isNotEmpty);
       expect(params, contains('utm_source'));
     });
 
-    test('readRemoveParams parses a stored CSV', () {
-      final prefs = _MemoryPrefs();
-      prefs.setString('newsfeed.removeParams.list', 'foo,bar,,baz');
-      final svc = buildService((_) => _textBody(''), prefs: prefs);
+    test('readRemoveParams returns a stored list', () {
+      final cacheDir = _newTempRoot();
+      _seedState(
+        cacheDir,
+        state: _meta(removeParamsCount: 3),
+        removeParams: {'foo', 'bar', 'baz'},
+      );
+      final svc = buildService((_) => _textBody(''), cacheDir: cacheDir);
       expect(svc.readRemoveParams(), {'foo', 'bar', 'baz'});
     });
 
     test('readState surfaces persisted counts', () {
-      final prefs = _MemoryPrefs();
-      prefs.setInt('newsfeed.filterLists.adHidingCount', 12);
-      prefs.setInt('newsfeed.filterLists.networkBlockCount', 3);
-      prefs.setInt('newsfeed.removeParams.count', 7);
-      prefs.setString('newsfeed.filterLists.lastCheck', '2026-01-01T00:00:00');
-      prefs.setString(
-        'newsfeed.filterLists.lastSuccess',
-        '2026-01-02T00:00:00',
+      final cacheDir = _newTempRoot();
+      _seedState(
+        cacheDir,
+        state: _meta(
+          lastCheck: DateTime.parse('2026-01-01T00:00:00'),
+          lastSuccess: DateTime.parse('2026-01-02T00:00:00'),
+          adHidingRules: 12,
+          networkBlockRules: 3,
+          removeParamsCount: 7,
+        ),
       );
-      final svc = buildService((_) => _textBody(''), prefs: prefs);
+      final svc = buildService((_) => _textBody(''), cacheDir: cacheDir);
       final state = svc.readState();
       expect(state.adHidingRules, 12);
       expect(state.networkBlockRules, 3);
@@ -250,30 +276,30 @@ void main() {
 
   group('FilterListService.autoUpdate cooldown', () {
     test('skips the refresh when the last check was < 24h ago', () async {
-      final prefs = _MemoryPrefs();
-      await prefs.setString(
-        'newsfeed.filterLists.lastCheck',
-        DateTime.now().toIso8601String(),
-      );
-      final svc = buildService((_) => _textBody(''), prefs: prefs);
+      final cacheDir = _newTempRoot();
+      _seedState(cacheDir, state: _meta(lastCheck: DateTime.now()));
+      var calls = 0;
+      final svc = buildService((_) {
+        calls++;
+        return _textBody('! empty\n');
+      }, cacheDir: cacheDir);
       await svc.autoUpdate();
-      // No refresh means no requests fired.
-      // (readState returns with empty errors — the call is a no-op.)
-      expect(svc.readState().lastCheck, isNotNull);
+      expect(calls, 0);
     });
 
     test('refreshes when the last check is older than 24h', () async {
-      final prefs = _MemoryPrefs();
-      await prefs.setString(
-        'newsfeed.filterLists.lastCheck',
-        DateTime.now().subtract(const Duration(hours: 25)).toIso8601String(),
+      final cacheDir = _newTempRoot();
+      _seedState(
+        cacheDir,
+        state: _meta(
+          lastCheck: DateTime.now().subtract(const Duration(hours: 25)),
+        ),
       );
       var calls = 0;
       final svc = buildService((_) {
         calls++;
-        // Return a minimal valid filter list (empty body) for every source.
         return _textBody('! empty\n');
-      }, prefs: prefs);
+      }, cacheDir: cacheDir);
       await svc.autoUpdate();
       expect(calls, greaterThan(0));
     });
@@ -281,19 +307,70 @@ void main() {
 
   group('FilterListService.readBlocklist', () {
     test('returns [] when no cache exists', () async {
-      final svc = buildService((_) => _textBody(''), prefs: _MemoryPrefs());
-      // No cache directory created → readBlocklist returns [].
+      final svc = buildService((_) => _textBody(''));
       expect(await svc.readBlocklist(), isEmpty);
     });
+  });
+
+  group('FilterListService.refresh cache', () {
+    test('writes blocklist and state under the cache dir', () async {
+      final cacheDir = _newTempRoot();
+      final svc = buildService(
+        (_) => _textBody('! empty\n'),
+        cacheDir: cacheDir,
+      );
+      await svc.refresh(force: true);
+      expect(File('$cacheDir/blocklist_cached.json').existsSync(), isTrue);
+      expect(File('$cacheDir/state.json').existsSync(), isTrue);
+      expect(svc.readState().lastSuccess, isNotNull);
+    });
+
+    test('allowNetwork: false never dials out', () async {
+      var calls = 0;
+      final svc = buildService((_) {
+        calls++;
+        return _textBody('! empty\n');
+      }, allowNetwork: false);
+      await svc.refresh(force: true);
+      expect(calls, 0);
+    });
+
+    test(
+      'stores ETags keyed by source name, not a literal \$etagKey',
+      () async {
+        final cacheDir = _newTempRoot();
+        final built = _build(
+          (_) => _textBody('! empty\n', etag: '"abc"'),
+          cacheDir: cacheDir,
+        );
+        await built.svc.refresh(force: true);
+        final raw = File('$cacheDir/etags.json').readAsStringSync();
+        final etags = jsonDecode(raw) as Map<String, dynamic>;
+        expect(etags.keys, contains('easylist'));
+        expect(etags.keys, isNot(contains(r'$etagKey')));
+        expect(etags['easylist'], '"abc"');
+
+        built.adapter.requests.clear();
+        await built.svc.refresh(force: true);
+        expect(built.adapter.requests, isNotEmpty);
+        expect(
+          built.adapter.requests.every(
+            (r) => r.headers['If-None-Match'] == '"abc"',
+          ),
+          isTrue,
+        );
+      },
+    );
   });
 }
 
 // Helpers -----------------------------------------------------------------
 
-ResponseBody _textBody(String text) => ResponseBody.fromString(
+ResponseBody _textBody(String text, {String? etag}) => ResponseBody.fromString(
   text,
   200,
   headers: {
     Headers.contentTypeHeader: ['text/plain'],
+    if (etag != null) 'etag': [etag],
   },
 );
