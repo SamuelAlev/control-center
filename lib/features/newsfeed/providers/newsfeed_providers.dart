@@ -382,14 +382,3 @@ final filterListUpdateProvider =
       FilterListUpdateController.new,
     );
 
-/// Non-blocking auto-update scheduler. Call once at app startup after
-/// the provider scope is ready.
-void scheduleFilterListAutoUpdate(WidgetRef ref) {
-  Future.delayed(const Duration(seconds: 15), () async {
-    try {
-      await ref.read(filterListUpdateProvider.notifier).autoUpdate();
-    } on Object {
-      // Silently ignore — the user can trigger a manual refresh later.
-    }
-  });
-}

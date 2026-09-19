@@ -62,12 +62,6 @@ class ModelCatalog {
     for (final e in _providers.values) e.provider,
   ];
 
-  /// Only enabled providers.
-  List<ModelProvider> providerAvailable() => [
-    for (final e in _providers.values)
-      if (e.provider.isEnabled) e.provider,
-  ];
-
   // ---- model queries ---------------------------------------------------------
 
   /// Returns the model `providerId/modelId`, or null.

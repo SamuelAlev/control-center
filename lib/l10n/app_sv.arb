@@ -761,8 +761,6 @@
   "copyRelativePath": "Kopiera relativ sökväg",
   "nameRequired": "Namn krävs",
   "import": "Importera",
-  "sortByStatus": "Status",
-  "sortByName": "Namn",
   "noMatchingAgents": "Inga agenter matchar ditt filter",
   "watchVideoOn": "Titta på video på {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Fråga AI",
   "askAiReviewDescription": "Be AI granska den här PR:en",
   "assignees": "Tilldelade",
-  "attachFiles": "Bifoga filer",
   "attachImage": "Bifoga bild",
   "attachedAgents": "Bifogade agenter",
   "audioInput": "Ljudingång",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Klicka för att försöka igen",
   "close": "Stäng",
   "closeEsc": "Stäng (Esc)",
-  "closeKeyboardHint": "Stäng",
   "closeReader": "Stäng läsaren",
   "closed": "Stängd",
   "codeFont": "Kodteckensnitt",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Installation av inbyggd sandlåda krävs",
   "navObservability": "Observability",
   "navSettings": "Inställningar",
-  "navigateLabel": "Navigera",
   "networkBlockCount": "{count} nätverksblockeringar",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Neutral",
   "newCommitsPushed": "Nya commits pushades – klicka för att läsa in diffen igen",
   "newFact": "Ny fakta",
-  "newLabel": "Ny",
   "newPolicy": "Ny policy",
   "newsfeed": "Nyhetsflöde",
   "newsfeedLabel": "Nyhetsflöde",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Ingen (alla roller)",
   "notAvailable": "Inte tillgänglig",
   "notConfiguredLabel": "Inte konfigurerad.",
-  "notDetected": "Inte upptäckt",
   "notFoundLabel": "Hittades inte",
   "notes": "Anteckningar",
   "notificationAgentFinished": "Agenten är klar",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Tysta det här arkivet",
-  "notificationsUnmuteRepo": "Sluta tysta det här arkivet",
   "onboardingLinuxDescription": "Control Center kan använda Linux-containrar för att isolera agentkörning.",
   "onboardingMacosDescription": "Control Center använder inbyggd sandlåda på macOS för att isolera agentkörning.",
   "onboardingUnsupportedDescription": "Sandlåda saknas på den här plattformen. Agentkörning sker utan isolering.",
-  "openApplicationSettings": "Öppna appinställningar",
   "openArticlesInApp": "Öppna artiklar i appen",
   "openInBrowser": "Öppna i webbläsaren",
   "openedInYourBrowser": "Öppnad i din webbläsare.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Egna miljövariabler som skickas till den här adaptern (t.ex. API-nycklar). Lagras i nyckelringen.",
   "variableKey": "Nyckel",
   "variableValue": "Värde",
-  "savingChanges": "Sparar ändringar…",
   "savingEllipsis": "Sparar…",
   "scopeDiffToCommits": "Begränsa diff till commits – Shift-klick för intervall",
   "noPrsMatchSearch": "Inga matchande pull requests",
-  "noPrsMatchSearchHint": "Inga öppna PR:ar matchar din sökning. Prova andra termer eller rensa sökningen.",
   "searchFactsHint": "Sök fakta...",
   "searchFonts": "Sök teckensnitt…",
   "searchGifs": "Sök GIF:ar",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Välj agent att rapportera till…",
   "selectAnAgent": "Välj en agent",
   "selectConversation": "Välj ett samtal",
-  "selectEffortLevel": "Välj insatsnivå",
   "selectLabel": "Välj",
   "selectRunner": "Välj en körare",
   "semanticSearch": "Semantisk sökning",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Färdighetsredigerare",
   "skillNameRequired": "Färdighetsnamn krävs.",
   "skillSaved": "Färdigheten \"{name}\" sparades.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Dra-och-släpp-redigerare för pipelines som orkestrerar dina agenter.",
   "pipelineTemplatesNew": "Ny mall",
   "pipelineTemplatesEmpty": "Inga pipelinemallar ännu. Skapa en för att komma igång.",
-  "pipelineTemplateIdLabel": "Mall-ID",
   "pipelineTemplateBuiltInBadge": "Inbyggd",
   "pipelineTemplateDeleteConfirmTitle": "Ta bort mall?",
   "pipelineTemplateDeleteConfirmBody": "Ta bort pipelinemallen {name}? Det går inte att ångra.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Redigera pipeline",
   "pipelineTemplateEditorSubtitle": "Dra nodtyper från sidofältet till duken och koppla sedan ihop dem.",
   "unsavedChanges": "Osparade ändringar",
   "nodeLibraryTitle": "Nodbibliotek",
   "nodeLibraryHint": "Dra en post till duken för att lägga till en nod.",
-  "editorDragHint": "Dra från biblioteket, klicka på en nod för att redigera",
   "editorEmptyCanvas": "Dra en nod från biblioteket för att börja.",
   "pipelineWhenThisHappens": "När detta händer",
   "pipelineDoThis": "Gör detta",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Använd dubbelklammerplatshållare för att hämta värden från tillståndet vid körning.",
   "nodeConfigScript": "Bash-skript",
   "nodeConfigScriptHelp": "Körs med bash -c. GITHUB_TOKEN är satt. Platshållare ersätts före körning.",
-  "nodeConfigTriggers": "Triggrar från",
-  "nodeConfigNoUpstream": "Inga andra noder att koppla från.",
   "nodeConfigRouteKeys": "Ruttnycklar",
   "nodeConfigRouteKeyFrom": "Ruttnyckel från {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Fall (kommaseparerade)",
   "conditionCasesHelp": "Ruttnycklar att matcha mot värdet, i ordning.",
   "conditionDefaultCase": "Standardfall",
-  "triggerPanelTitle": "Triggrar",
-  "triggerPanelHelp": "Vad som startar den här pipelinen.",
   "triggerManualHelp": "Visa på körningssidan och starta för hand.",
-  "triggerSectionAutomatic": "Automatiska triggrar",
-  "triggerAddButton": "Lägg till trigger",
-  "triggerNoneYet": "Inga automatiska triggrar ännu.",
-  "triggerAddDialogTitle": "Lägg till trigger",
-  "triggerKindLabel": "Triggertyp",
-  "triggerKindEvent": "Vid en händelse",
   "triggerKindSchedule": "Enligt schema",
-  "triggerKindWebhook": "Via en webhook",
   "triggerScheduleExprLabel": "Schema (cron eller every:seconds)",
   "triggerTimezoneLabel": "Tidszon (valfritt)",
   "triggerCatchUpLabel": "Vid missade körningar",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "En signerad webhook-URL genereras. Externa system skickar POST till den för att starta den här pipelinen.",
   "triggerWebhookPathLabel": "Webhook-sökväg",
-  "triggerEventFieldLabel": "Händelse",
-  "triggerNoMoreEvents": "Alla tillgängliga händelser är redan kopplade.",
   "triggerMatchStatusLabel": "Bara när statusen är",
   "triggerSummaryNone": "Inga triggrar",
   "triggerEverySeconds": "Var {seconds} s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Ta bort annonser, spårare och cookie-rutor från artiklar du öppnar i läsaren.",
   "agentQuestionHeader": "Fråga till dig",
   "agentQuestionAnsweredLabel": "Besvarad",
-  "agentQuestionSubmit": "Skicka svar",
   "agentQuestionFreeformHint": "Skriv ditt svar…",
-  "agentQuestionAnswerLabel": "Ditt svar",
   "agentQuestionProgress": "Fråga {index} av {count}",
   "agentQuestionSkip": "Hoppa över",
   "agentQuestionSkippedLabel": "Överhoppad",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Öppna redigerare",
   "ideNewTabMenu": "Ny flik",
   "ideReviewCode": "Granska kod",
-  "ideRevert": "Ångra",
   "ideRevertConfirmTitle": "Ångra ändringar",
-  "ideRevertConfirmMessage": "Återställ {count, plural, one{1 fil} other{{count} filer}} till HEAD? Det kastar worktree-ändringar.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Ångra",
-  "ideRevertConfirmCancel": "Avbryt",
   "ideRevertUntracked": "Ospårade filer kan inte återställas",
   "ideRevertFailed": "Kunde inte återställa filerna. Samtalets worktree kan saknas.",
   "ideRevertSomeSkipped": "{count, plural, one{1 fil} other{{count} filer}} kunde inte återställas (ospårade).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Visa källa",
   "ideSearchMatchCase": "Matcha skiftläge",
   "ideSearchWholeWord": "Helt ord",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Bas-URL (valfritt)",
-  "customProvidersDescription": "Valfri OpenAI- eller Anthropic-kompatibel endpoint – Ollama, LM Studio, vLLM eller en privat installation – med en valfri API-nyckel.",
   "addProvider": "Lägg till leverantör",
   "noCustomProviders": "Inga egna leverantörer ännu.",
   "providerNameLabel": "Namn",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "t.ex. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Senaste körningar",
   "repoScriptsNoRuns": "Inga körningar ännu",
-  "repoScriptsOutput": "Utdata",
   "repoScriptsSaved": "Skripten sparades",
   "repoScriptsRunKindSetup": "Setup",
   "repoScriptsRunKindArchive": "Arkiv",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Ingen leverantör är ansluten, så den inbyggda agentruntimen har inget att köra på. Lägg till en API-nyckel eller logga in på en nedan.",
   "providersFilterHint": "Filtrera leverantörer",
-  "providersFacetNeedsSetup": "Behöver konfigureras",
-  "providersFacetCustom": "Egna",
   "providersNoneMatch": "Inget matchar det här filtret",
   "providerDeniedHereTitle": "Nekad i den här arbetsytan",
   "providerDeniedHereBody": "Agenter här kan inte använda den här leverantören, även om den är ansluten. Andra arbetsytor påverkas inte.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Filtrera modeller",
   "adaptersNoneReadyNote": "Ingen av de katalogiserade körar-CLI:erna hittades på den här maskinen. Installera en och uppdatera sedan.",
   "adaptersFilterHint": "Filtrera körare",
-  "adaptersFacetReady": "Redo",
-  "adaptersFacetMissing": "Saknas",
   "adaptersLaunchGroup": "Start",
   "adaptersLaunchGroupDescription": "Vad den här köraren får när en agent startar den. Sätt de här innan du installerar CLI:t om du vill.",
   "adaptersEnvNone": "Inga satta",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Fyra ställen som visar vad appen faktiskt gör.",
   "demoTourSkip": "Hoppa över",
   "demoTourStarRepo": "Stjärnmärk på GitHub",
-  "demoTourDone": "Klar",
   "demoTourOpen": "Öppna",
   "demoTourSpacesTitle": "Prata med en agent",
   "demoTourSpacesBody": "Skicka ett meddelande i en yta och se en körning strömma in – tänkande, verktygsanrop och kostnad, precis som en riktig körning ritas.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Ärenden, att-göra och planer är länkade till samma samtal som agenterna har.",
   "demoTourInboxTitle": "Se hela operationen",
   "demoTourInboxBody": "Varje avisering från varje pelare landar i en inkorg – granskningar, ärenden, körningar och möten.",
-  "demoSessionEndingSoon": "Den här demosessionen tar slut om {minutes} minuter.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Den här demosessionen har tagit slut. Läs in sidan igen för att starta en ny.",
   "demoUnavailableTitle": "Inte tillgängligt i demon",
   "demoUnavailableTerminal": "En terminal kör ett riktigt skal på servervärden. Demon har ingen körningsyta alls – det är det som gör den säker att öppna för allmänheten.",
   "demoUnavailableRig": "En avskild miljö är en tillfällig virtuell maskin som en agent kör. Demon startar inga: en publik endpoint som kan starta en VM är inte en demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Arbetsytans databasfil",
   "backupImportSourceDescription": "En .db-fil servern kan läsa. Sökvägar löses på servervärden, inte på den här enheten.",
-  "backupImportChooseFile": "Välj fil",
   "backupImportDone": "Importerad till {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

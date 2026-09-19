@@ -9,19 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 String googleAccountId(String workspaceId, String email) =>
     'google:$workspaceId:$email';
 
-/// Recovers the workspace id embedded in a [googleAccountId], or null if
-/// [accountId] is not a well-formed Google account id. Safe to split on `:`:
-/// workspace ids are UUIDs and an email's local-part/domain contain no `:`, so
-/// the workspace id is always the second `:`-separated segment. Fails closed
-/// (returns null) rather than throwing so a future id-format change is caught.
-String? googleAccountWorkspaceId(String accountId) {
-  final parts = accountId.split(':');
-  if (parts.length < 3 || parts[0] != 'google' || parts[1].isEmpty) {
-    return null;
-  }
-  return parts[1];
-}
-
 /// The connected Google accounts for the active workspace (empty when none).
 /// Backed by the DB, so connecting/disconnecting updates it reactively.
 final googleAccountsProvider = StreamProvider<List<CalendarAccount>>((ref) {

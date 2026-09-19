@@ -1658,12 +1658,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get import => 'استيراد';
 
   @override
-  String get sortByStatus => 'الحالة';
-
-  @override
-  String get sortByName => 'الاسم';
-
-  @override
   String get noMatchingAgents => 'لا وكلاء يطابقون عامل التصفية';
 
   @override
@@ -2713,9 +2707,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get assignees => 'المُسند إليهم';
 
   @override
-  String get attachFiles => 'إرفاق ملفات';
-
-  @override
   String get attachImage => 'إرفاق صورة';
 
   @override
@@ -2832,9 +2823,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get closeEsc => 'إغلاق (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'إغلاق';
 
   @override
   String get closeReader => 'إغلاق القارئ';
@@ -3970,9 +3958,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navSettings => 'الإعدادات';
 
   @override
-  String get navigateLabel => 'التنقل';
-
-  @override
   String networkBlockCount(int count) {
     return '$count من عمليات حظر الشبكة';
   }
@@ -3986,9 +3971,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get newFact => 'حقيقة جديدة';
-
-  @override
-  String get newLabel => 'جديد';
 
   @override
   String get newPolicy => 'سياسة جديدة';
@@ -4106,9 +4088,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'غير مكوّن.';
-
-  @override
-  String get notDetected => 'لم يُكتشف';
 
   @override
   String get notFoundLabel => 'غير موجود';
@@ -4363,9 +4342,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationsMuteRepo => 'كتم هذا المستودع';
 
   @override
-  String get notificationsUnmuteRepo => 'إلغاء كتم هذا المستودع';
-
-  @override
   String get onboardingLinuxDescription =>
       'يمكن لـ Control Center استخدام حاويات Linux لعزل تنفيذ الوكلاء.';
 
@@ -4376,9 +4352,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'البيئة المعزولة غير متوفرة على هذا النظام الأساسي. سيعمل تنفيذ الوكلاء دون عزل.';
-
-  @override
-  String get openApplicationSettings => 'فتح إعدادات التطبيق';
 
   @override
   String get openArticlesInApp => 'فتح المقالات داخل التطبيق';
@@ -4813,9 +4786,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get variableValue => 'القيمة';
 
   @override
-  String get savingChanges => 'جارٍ حفظ التغييرات…';
-
-  @override
   String get savingEllipsis => 'جارٍ الحفظ…';
 
   @override
@@ -4824,10 +4794,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'لا توجد طلبات سحب مطابقة';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'لا توجد PRs مفتوحة تطابق بحثك. جرّب مصطلحات مختلفة أو امسح البحث.';
 
   @override
   String get searchFactsHint => 'البحث في الحقائق...';
@@ -4890,9 +4856,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get selectConversation => 'حدد محادثة';
 
   @override
-  String get selectEffortLevel => 'حدد مستوى الجهد';
-
-  @override
   String get selectLabel => 'تحديد';
 
   @override
@@ -4951,9 +4914,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String signedInAs(String username) {
     return 'تم تسجيل الدخول باسم ⁨$username⁩.';
   }
-
-  @override
-  String get skillEditor => 'محرر المهارات';
 
   @override
   String get skillNameRequired => 'اسم المهارة مطلوب.';
@@ -6269,9 +6229,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا قوالب خطوط أنابيب بعد. أنشئ واحدًا للبدء.';
 
   @override
-  String get pipelineTemplateIdLabel => 'معرّف القالب';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'مدمج';
 
   @override
@@ -6281,9 +6238,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'هل تريد حذف قالب خط الأنابيب ⁨$name⁩؟ لا يمكن التراجع عن هذا.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'تعديل خط الأنابيب';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6297,9 +6251,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => 'اسحب أي عنصر إلى اللوحة لإضافة عقدة.';
-
-  @override
-  String get editorDragHint => 'اسحب من المكتبة، وانقر على عقدة لتعديلها';
 
   @override
   String get editorEmptyCanvas => 'اسحب عقدة من المكتبة للبدء.';
@@ -6433,12 +6384,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يعمل عبر ⁨bash -c⁩. المتغير GITHUB_TOKEN مضبوط. تُستبدل العناصر النائبة قبل التنفيذ.';
 
   @override
-  String get nodeConfigTriggers => 'يُشغَّل من';
-
-  @override
-  String get nodeConfigNoUpstream => 'لا عقد أخرى يمكن الربط منها.';
-
-  @override
   String get nodeConfigRouteKeys => 'مفاتيح التوجيه';
 
   @override
@@ -6511,37 +6456,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get conditionDefaultCase => 'الحالة الافتراضية';
 
   @override
-  String get triggerPanelTitle => 'المشغّلات';
-
-  @override
-  String get triggerPanelHelp => 'ما الذي يبدأ خط الأنابيب هذا.';
-
-  @override
   String get triggerManualHelp => 'الإظهار في صفحة التشغيل والبدء يدويًا.';
 
   @override
-  String get triggerSectionAutomatic => 'المشغّلات التلقائية';
-
-  @override
-  String get triggerAddButton => 'إضافة مشغّل';
-
-  @override
-  String get triggerNoneYet => 'لا مشغّلات تلقائية بعد.';
-
-  @override
-  String get triggerAddDialogTitle => 'إضافة مشغّل';
-
-  @override
-  String get triggerKindLabel => 'نوع المشغّل';
-
-  @override
-  String get triggerKindEvent => 'عند حدث';
-
-  @override
   String get triggerKindSchedule => 'وفق جدول';
-
-  @override
-  String get triggerKindWebhook => 'عبر ويب هوك';
 
   @override
   String get triggerScheduleExprLabel => 'الجدولة (cron أو ⁨every:seconds⁩)';
@@ -6587,12 +6505,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'مسار الويب هوك';
-
-  @override
-  String get triggerEventFieldLabel => 'الحدث';
-
-  @override
-  String get triggerNoMoreEvents => 'كل الأحداث المتاحة موصولة بالفعل.';
 
   @override
   String get triggerMatchStatusLabel => 'فقط عندما تكون الحالة';
@@ -7066,13 +6978,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'تمت الإجابة';
 
   @override
-  String get agentQuestionSubmit => 'إرسال الإجابة';
-
-  @override
   String get agentQuestionFreeformHint => 'اكتب إجابتك…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'إجابتك';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8694,31 +8600,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get ideReviewCode => 'مراجعة الكود';
 
   @override
-  String get ideRevert => 'إرجاع';
-
-  @override
   String get ideRevertConfirmTitle => 'إرجاع التغييرات';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ملف',
-      many: '$count ملفًا',
-      few: '$count ملفات',
-      two: 'ملفين',
-      one: 'ملف واحد',
-      zero: '0 ملفات',
-    );
-    return 'هل تريد إرجاع $_temp0 إلى HEAD؟ هذا يتجاهل تغييرات شجرة العمل.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'إرجاع';
-
-  @override
-  String get ideRevertConfirmCancel => 'إلغاء';
 
   @override
   String get ideRevertUntracked => 'لا يمكن إرجاع الملفات غير المتتبعة';
@@ -8741,9 +8623,6 @@ class AppLocalizationsAr extends AppLocalizations {
     );
     return 'تعذر إرجاع $_temp0 (غير متتبعة).';
   }
-
-  @override
-  String get ideViewSource => 'عرض المصدر';
 
   @override
   String get ideSearchMatchCase => 'مطابقة حالة الأحرف';
@@ -9268,10 +9147,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get providerBaseUrlHint => 'عنوان URL الأساسي (اختياري)';
 
   @override
-  String get customProvidersDescription =>
-      'أي نقطة نهاية متوافقة مع OpenAI أو Anthropic — مثل Ollama أو LM Studio أو vLLM أو نشر خاص — مع مفتاح API اختياري.';
-
-  @override
   String get addProvider => 'إضافة مزود';
 
   @override
@@ -9387,9 +9262,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'لا توجد عمليات تشغيل بعد';
-
-  @override
-  String get repoScriptsOutput => 'المخرجات';
 
   @override
   String get repoScriptsSaved => 'تم حفظ السكربتات';
@@ -13306,12 +13178,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get providersFilterHint => 'تصفية الموفّرين';
 
   @override
-  String get providersFacetNeedsSetup => 'يحتاج إلى إعداد';
-
-  @override
-  String get providersFacetCustom => 'مخصص';
-
-  @override
   String get providersNoneMatch => 'لا شيء يطابق هذه التصفية';
 
   @override
@@ -13346,12 +13212,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'تصفية المشغّلات';
-
-  @override
-  String get adaptersFacetReady => 'جاهز';
-
-  @override
-  String get adaptersFacetMissing => 'مفقود';
 
   @override
   String get adaptersLaunchGroup => 'الإطلاق';
@@ -14263,9 +14123,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get demoTourStarRepo => 'ضع نجمة على GitHub';
 
   @override
-  String get demoTourDone => 'تم';
-
-  @override
   String get demoTourOpen => 'فتح';
 
   @override
@@ -14295,15 +14152,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'كل تنبيه من كل ركن يصل إلى وارد واحد — المراجعات والتذاكر وعمليات التشغيل والاجتماعات.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'تنتهي جلسة العرض التجريبي هذه خلال $minutes دقيقة.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'انتهت جلسة العرض التجريبي هذه. أعد تحميل الصفحة لبدء جلسة جديدة.';
 
   @override
   String get demoUnavailableTitle => 'غير متاح في النسخة التجريبية';
@@ -14481,9 +14329,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'ملف ⁨.db⁩ يمكن للخادم قراءته. تُحل المسارات على مضيف الخادم، لا على هذا الجهاز.';
-
-  @override
-  String get backupImportChooseFile => 'اختيار ملف';
 
   @override
   String backupImportDone(String name) {

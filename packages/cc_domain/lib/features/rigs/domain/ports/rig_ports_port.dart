@@ -13,13 +13,6 @@
 /// Every method takes a required `workspaceId`, and a rig in another
 /// workspace reads as absent (null / false), never as forbidden.
 abstract interface class RigPortsPort {
-  /// The forwarded-ports snapshot for [rigId], or null when it is not a live
-  /// exec (terminal) rig in [workspaceId].
-  ///
-  /// Shape: `{rig_id, auto_forward, ports: [{guest_port, host_port,
-  /// lan_port?, origin, domain?, process?, active}]}`.
-  Map<String, dynamic>? portsFor(String workspaceId, String rigId);
-
   /// Live snapshots for [rigId], current value first.
   Stream<Map<String, dynamic>> watchPorts(String workspaceId, String rigId);
 

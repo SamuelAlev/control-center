@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/src/providers/cursor/cursor_history.dart';
-import 'package:cc_harness_runtime/src/providers/cursor/cursor_proto.dart';
 import 'package:cc_harness_runtime/src/providers/cursor/cursor_provider.dart';
 import 'package:cc_harness_runtime/src/providers/cursor/cursor_transport.dart';
 import 'package:cc_harness_runtime/src/providers/cursor/protobuf.dart';

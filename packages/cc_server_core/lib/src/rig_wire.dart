@@ -1,5 +1,4 @@
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
-import 'package:cc_domain/features/rigs/domain/entities/rig_action_log_entry.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/computer_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
@@ -60,9 +59,6 @@ Map<String, dynamic> rigToWire(Rig rig) => {
   'memory_mb': rig.spec.memoryMb,
   'cpu_count': rig.spec.cpuCount,
 };
-
-/// The wire form of one action-log entry.
-Map<String, dynamic> rigActionToWire(RigActionLogEntry entry) => entry.toJson();
 
 /// Parses an action payload for [surface].
 ///

@@ -24,9 +24,6 @@ class _TestFocusModeNotifier extends FocusModeNotifier {
 
   @override
   Future<void> deactivate() async {}
-
-  @override
-  Future<void> exitCompactMode() async {}
 }
 
 Widget _wrap(Widget child) {

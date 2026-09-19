@@ -41,7 +41,7 @@ void main() {
         RepoAccessBanner(
           repos: [
             _repo(
-              'Frontify/web-app',
+              'SuspendedOrg/suspended-repo',
               reason: InaccessibleRepo.installationSuspended,
             ),
           ],
@@ -51,7 +51,7 @@ void main() {
     expect(find.text('GitHub App installation suspended'), findsOneWidget);
     expect(
       find.text(
-        'Showing last known data for Frontify/web-app. Resume the '
+        'Showing last known data for SuspendedOrg/suspended-repo. Resume the '
         'installation on GitHub, or connect a token that has access.',
       ),
       findsOneWidget,
@@ -64,7 +64,7 @@ void main() {
         RepoAccessBanner(
           repos: [
             _repo(
-              'Frontify/web-app',
+              'SuspendedOrg/suspended-repo',
               reason: InaccessibleRepo.installationSuspended,
             ),
             _repo('acme/app', reason: 'not_found'),

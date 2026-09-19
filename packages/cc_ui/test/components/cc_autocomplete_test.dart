@@ -190,10 +190,10 @@ void main() {
     });
 
     testWidgets(
-      'clicking a filled field opens the list prefiltered by its text',
+      'clicking a filled field opens the full list, not a prefilter',
       (tester) async {
-        // A seeded (non-empty) field has no hint to tap; opening still
-        // filters by the current value so the user continues from it.
+        // A seeded (non-empty) field has no hint to tap; the displayed
+        // selection is not a query, so opening lists every option.
         final controller = TextEditingController(text: 'Apple');
         addTearDown(controller.dispose);
         await tester.pumpWidget(
@@ -212,9 +212,73 @@ void main() {
         await tester.tap(find.byType(EditableText));
         await tester.pumpAndSettle();
 
-        // 'Apple' matches twice: the field's own text and its panel row.
         expect(find.text('Apple'), findsWidgets);
+        expect(find.text('Banana'), findsOneWidget);
+        expect(find.text('Cherry'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'reopening after a selection still lists every option',
+      (tester) async {
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: CcAutocomplete<String>(
+                options: _options,
+                hintText: 'Search',
+                onSelected: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Search'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(EditableText), 'ch');
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Cherry'));
+        await tester.pumpAndSettle();
+
         expect(find.text('Banana'), findsNothing);
+
+        await tester.tap(find.byType(EditableText));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Apple'), findsOneWidget);
+        expect(find.text('Banana'), findsOneWidget);
+        expect(find.text('Cherry'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'a live typed query still filters when the field is clicked again',
+      (tester) async {
+        await tester.pumpWidget(
+          ccTestApp(
+            Center(
+              child: CcAutocomplete<String>(
+                options: _options,
+                hintText: 'Search',
+                onSelected: (_) {},
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Search'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(EditableText), 'an');
+        await tester.pumpAndSettle();
+
+        expect(find.text('Banana'), findsOneWidget);
+        expect(find.text('Cherry'), findsNothing);
+
+        await tester.tap(find.byType(EditableText));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Banana'), findsOneWidget);
+        expect(find.text('Apple'), findsNothing);
         expect(find.text('Cherry'), findsNothing);
       },
     );

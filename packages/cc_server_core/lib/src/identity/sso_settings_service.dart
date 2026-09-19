@@ -320,12 +320,6 @@ class SsoSettingsService {
     return token;
   }
 
-  /// Whether a SCIM bearer token has been generated.
-  Future<bool> scimTokenPresent() async {
-    final token = await _secrets.readPsk(scimTokenSecretKey);
-    return token != null && token.isNotEmpty;
-  }
-
   /// Constant-time check of a presented SCIM bearer token.
   Future<bool> verifyScimToken(String presented) async {
     final stored = await _secrets.readPsk(scimTokenSecretKey);

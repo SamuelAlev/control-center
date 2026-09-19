@@ -20,7 +20,6 @@
 # descriptors, sealed action unions). Comparable value objects were given
 # `==` / `hashCode` in the 2026-09-18 QUALITY pass.
 packages/cc_domain/lib/core/domain/value_objects/embedding_model_paths.dart
-packages/cc_domain/lib/core/domain/value_objects/forge_git_conventions.dart
 packages/cc_domain/lib/core/domain/value_objects/forge_urls.dart
 packages/cc_domain/lib/core/domain/value_objects/transcript_update_codec.dart
 packages/cc_domain/lib/features/governance/domain/value_objects/runtime_health.dart

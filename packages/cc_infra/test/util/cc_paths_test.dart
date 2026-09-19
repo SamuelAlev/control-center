@@ -66,14 +66,6 @@ void main() {
   });
 
   group('file paths', () {
-    test(
-      'databaseFile points at global.db and ensures the root',
-      () async {
-        final f = await paths.databaseFile();
-        expect(f.path, p.join(sandbox.path, 'global.db'));
-      },
-    );
-
     test('mcpConfigFile points at mcp.json and ensures the root', () async {
       final f = await paths.mcpConfigFile();
       expect(f.path, p.join(sandbox.path, 'mcp.json'));

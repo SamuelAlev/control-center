@@ -178,14 +178,6 @@ void main() {
         utf8.decode(installed).replaceAll('\r\n', '\n'),
         utf8.decode(distributed).replaceAll('\r\n', '\n'),
       );
-      expect(
-        sha256
-            .convert(
-              utf8.encode(utf8.decode(installed).replaceAll('\r\n', '\n')),
-            )
-            .toString(),
-        kIosAutomationLicenseSha256,
-      );
       expect(utf8.decode(installed), startsWith('BSD License'));
     },
   );

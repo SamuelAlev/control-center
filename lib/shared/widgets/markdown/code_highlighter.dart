@@ -81,14 +81,6 @@ final _HighlightLru<List<List<InlineSpan>>> _lineCache = _HighlightLru();
 /// to prove caching works; mirrors `CachedMarkdown.debugParseCount`.
 int debugHighlightParseCount = 0;
 
-/// Clears the process-global highlight caches (both the span cache and the
-/// per-line cache). Called on theme-revision changes and (on web) after a
-/// deferred grammar pack loads; also useful in tests.
-void clearHighlightCache() {
-  _spanCache.clear();
-  _lineCache.clear();
-}
-
 /// Whether a surface may tokenize [lineCount] lines of [languageId]
 /// synchronously inside `build()` without risking a dropped frame. Callers
 /// above the budget should render plain and swap colors in via

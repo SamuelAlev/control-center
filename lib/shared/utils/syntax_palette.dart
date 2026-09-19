@@ -1,5 +1,3 @@
-import 'dart:ui' show Brightness;
-
 /// The canonical GitHub-style syntax color values, by semantic role
 /// (`keyword`, `string`, `comment`, …). The values mirror GitHub's light/dark
 /// code themes.
@@ -72,6 +70,3 @@ const Map<String, int> darkSyntaxPalette = {
   'deletion': 0xFFFF7B72,
 };
 
-/// Returns the syntax palette matching [brightness].
-Map<String, int> syntaxPaletteFor(Brightness brightness) =>
-    brightness == Brightness.dark ? darkSyntaxPalette : lightSyntaxPalette;

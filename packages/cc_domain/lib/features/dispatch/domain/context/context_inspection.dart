@@ -157,9 +157,6 @@ class ContextSegment {
     'parts': [for (final p in parts) p.toJson()],
   };
 
-  /// A copy with [parts] replaced.
-  ContextSegment withParts(List<ContextPart> parts) =>
-      ContextSegment(kind: kind, tokens: tokens, chars: chars, parts: parts);
 }
 
 /// Everything the server knows about what fills a conversation's context window

@@ -47,7 +47,6 @@ class _TestAdapterDetectionNotifier extends AdapterDetectionNotifier {
 /// still overridden individually where a test exercises the Logs tab.
 List _derivedAgentStateOverrides() => [
   agentLiveStateProvider.overrideWith((ref, key) => AgentLiveState.idle),
-  agentLastActiveProvider.overrideWith((ref, key) => null),
 ];
 
 List _agentContentOverrides(
@@ -300,14 +299,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a2',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -344,10 +335,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -384,10 +371,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -427,10 +410,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -477,10 +456,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -528,10 +503,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -579,10 +550,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -630,10 +597,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -678,10 +641,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => true),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -729,10 +688,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -771,10 +726,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -816,10 +767,6 @@ void main() {
       ProviderScope(
         overrides: [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -863,14 +810,6 @@ void main() {
         ProviderScope(
           overrides: [
             ..._agentContentOverrides(prefs, agents),
-            agentIsRunningProvider((
-              workspaceId: 'ws-1',
-              agentId: 'a1',
-            )).overrideWith((ref) => false),
-            agentIsRunningProvider((
-              workspaceId: 'ws-1',
-              agentId: 'a2',
-            )).overrideWith((ref) => false),
             agentRunLogsProvider((
               workspaceId: 'ws-1',
               agentId: 'a1',
@@ -917,10 +856,6 @@ void main() {
         ProviderScope(
           overrides: [
             ..._agentContentOverrides(prefs, agents),
-            agentIsRunningProvider((
-              workspaceId: 'ws-1',
-              agentId: 'a1',
-            )).overrideWith((ref) => false),
             agentRunLogsProvider((
               workspaceId: 'ws-1',
               agentId: 'a1',
@@ -967,10 +902,6 @@ void main() {
         ProviderScope(
           overrides: [
             ..._agentContentOverrides(prefs, agents),
-            agentIsRunningProvider((
-              workspaceId: 'ws-1',
-              agentId: 'a1',
-            )).overrideWith((ref) => false),
             agentRunLogsProvider((
               workspaceId: 'ws-1',
               agentId: 'a1',
@@ -1015,10 +946,6 @@ void main() {
         ProviderScope(
           overrides: [
             ..._agentContentOverrides(prefs, agents),
-            agentIsRunningProvider((
-              workspaceId: 'ws-1',
-              agentId: 'a1',
-            )).overrideWith((ref) => true),
             agentRunLogsProvider((
               workspaceId: 'ws-1',
               agentId: 'a1',
@@ -1058,10 +985,6 @@ void main() {
         ProviderScope(
           overrides: [
             ..._agentContentOverrides(prefs, agents),
-            agentIsRunningProvider((
-              workspaceId: 'ws-1',
-              agentId: 'a1',
-            )).overrideWith((ref) => false),
             agentRunLogsProvider((
               workspaceId: 'ws-1',
               agentId: 'a1',
@@ -1224,14 +1147,6 @@ void main() {
 
       await _pumpAgentsSettings(tester, [
         ..._agentContentOverrides(prefs, agents),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a1',
-        )).overrideWith((ref) => false),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a2',
-        )).overrideWith((ref) => false),
         agentRunLogsProvider((
           workspaceId: 'ws-1',
           agentId: 'a1',
@@ -1260,18 +1175,6 @@ void main() {
 
       await _pumpAgentsSettings(tester, [
         ..._agentContentOverrides(prefs, agents),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a1',
-        )).overrideWith((ref) => false),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a2',
-        )).overrideWith((ref) => false),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a3',
-        )).overrideWith((ref) => false),
         agentRunLogsProvider((
           workspaceId: 'ws-1',
           agentId: 'a1',
@@ -1305,14 +1208,6 @@ void main() {
 
       await _pumpAgentsSettings(tester, [
         ..._agentContentOverrides(prefs, agents),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a1',
-        )).overrideWith((ref) => false),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a2',
-        )).overrideWith((ref) => false),
         agentRunLogsProvider((
           workspaceId: 'ws-1',
           agentId: 'a1',
@@ -1403,10 +1298,6 @@ void main() {
 
       await _pumpAgentsSettings(tester, [
         ..._agentContentOverrides(prefs, agents),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a1',
-        )).overrideWith((ref) => false),
         agentRunLogsProvider((
           workspaceId: 'ws-1',
           agentId: 'a1',
@@ -1685,10 +1576,6 @@ void main() {
 
       await _pumpAgentsSettings(tester, [
         ..._agentContentOverrides(prefs, agents),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a1',
-        )).overrideWith((ref) => false),
         agentRunLogsProvider((
           workspaceId: 'ws-1',
           agentId: 'a1',
@@ -1719,10 +1606,6 @@ void main() {
 
       await _pumpAgentsSettings(tester, [
         ..._agentContentOverrides(prefs, agents),
-        agentIsRunningProvider((
-          workspaceId: 'ws-1',
-          agentId: 'a1',
-        )).overrideWith((ref) => false),
         agentRunLogsProvider((
           workspaceId: 'ws-1',
           agentId: 'a1',
@@ -1754,10 +1637,6 @@ void main() {
 
         await _pumpAgentsSettings(tester, [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',
@@ -1787,14 +1666,6 @@ void main() {
 
         await _pumpAgentsSettings(tester, [
           ..._agentContentOverrides(prefs, agents),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a1',
-          )).overrideWith((ref) => false),
-          agentIsRunningProvider((
-            workspaceId: 'ws-1',
-            agentId: 'a2',
-          )).overrideWith((ref) => false),
           agentRunLogsProvider((
             workspaceId: 'ws-1',
             agentId: 'a1',

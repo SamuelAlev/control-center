@@ -44,7 +44,6 @@ final class CcDelimiterRun {
   String get literal => String.fromCharCode(char) * count;
 }
 
-const int _star = 0x2A; // *
 const int _underscore = 0x5F; // _
 const int _tilde = 0x7E; // ~
 
@@ -229,7 +228,3 @@ List<CcInlineNode> flattenInlineItems(List<Object> items) {
   flushBuffer();
   return out;
 }
-
-/// Marker export so `_star`/`_underscore` stay private; the parser passes raw
-/// code units.
-const List<int> ccEmphasisDelimiters = [_star, _underscore, _tilde];

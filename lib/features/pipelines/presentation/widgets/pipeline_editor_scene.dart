@@ -12,7 +12,6 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
 /// The InteractiveViewer child: edges, tiles, midpoint handles.
-///
 /// Each [PipelineTrigger] row owns a [StepKind.trigger] graph node. The tile
 /// is that node — not a proxy of a hidden shared entry — so a wire leaving
 /// Schedule belongs only to Schedule.

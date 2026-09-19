@@ -78,7 +78,7 @@ void _seedTerminalLayout(Map<String, String?> cacheStore, String spaceId) {
       args: {'termSessionId': 'term-$spaceId'},
     ),
   );
-  cacheStore['$editorLayoutCacheKind/$spaceId'] = encodeEditorLayout(
+  cacheStore['$editorLayoutCacheKind/$spaceId'] = messagingLayoutCodec.encode(
     EditorLayoutController.single(controller: tabs),
   );
 }

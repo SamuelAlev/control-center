@@ -187,23 +187,6 @@ final spaceActiveRunsProvider = StreamProvider.autoDispose
           .watchActiveBySpace(key.workspaceId, key.spaceId);
     });
 
-/// Whether any agent is currently running in the conversation. Drives the
-/// composer's stop/queue affordance.
-final conversationBusyProvider = Provider.autoDispose
-    .family<bool, ConversationRunsKey>((ref, key) {
-      final runs = ref.watch(conversationActiveRunsProvider(key)).asData?.value;
-      return runs != null && runs.isNotEmpty;
-    });
-
-/// Whether the agent has any run logs that are currently running.
-final agentIsRunningProvider = Provider.family<bool, AgentRunsKey>((ref, key) {
-  final logsAsync = ref.watch(agentRunLogsProvider(key));
-  return logsAsync.whenOrNull(
-        data: (logs) => logs.any((log) => log.isRunning),
-      ) ??
-      false;
-});
-
 /// The derived [AgentLiveState] for an agent, computed from its run logs.
 ///
 /// Drives the roster's per-row presence indicator and status sort. While the
@@ -218,16 +201,4 @@ final agentLiveStateProvider = Provider.family<AgentLiveState, AgentRunsKey>((
     return AgentLiveState.idle;
   }
   return deriveAgentLiveState(logs);
-});
-
-/// The moment an agent last showed activity, or null if it has never run.
-final agentLastActiveProvider = Provider.family<DateTime?, AgentRunsKey>((
-  ref,
-  key,
-) {
-  final logs = ref.watch(agentRunLogsProvider(key)).asData?.value;
-  if (logs == null) {
-    return null;
-  }
-  return agentLastActive(logs);
 });

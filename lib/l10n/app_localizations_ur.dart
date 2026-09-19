@@ -1627,12 +1627,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get import => 'درآمد';
 
   @override
-  String get sortByStatus => 'اسٹیٹس';
-
-  @override
-  String get sortByName => 'نام';
-
-  @override
   String get noMatchingAgents => 'آپ کے فلٹر سے کوئی ایجنٹ میل نہیں کھاتا';
 
   @override
@@ -2669,9 +2663,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get assignees => 'تفویض شدہ';
 
   @override
-  String get attachFiles => 'فائلیں منسلک کریں';
-
-  @override
   String get attachImage => 'تصویر منسلک کریں';
 
   @override
@@ -2787,9 +2778,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get closeEsc => 'بند کریں (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'بند کریں';
 
   @override
   String get closeReader => 'ریڈر بند کریں';
@@ -3911,9 +3899,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get navSettings => 'ترتیبات';
 
   @override
-  String get navigateLabel => 'نیویگیٹ';
-
-  @override
   String networkBlockCount(int count) {
     return '$count نیٹ ورک بلاکس';
   }
@@ -3927,9 +3912,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get newFact => 'نیا فیکٹ';
-
-  @override
-  String get newLabel => 'نیا';
 
   @override
   String get newPolicy => 'نئی پالیسی';
@@ -4050,9 +4032,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'کنفیگر نہیں۔';
-
-  @override
-  String get notDetected => 'دریافت نہیں ہوا';
 
   @override
   String get notFoundLabel => 'نہیں ملا';
@@ -4304,9 +4283,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get notificationsMuteRepo => 'اس ریپوزٹری کو خاموش کریں';
 
   @override
-  String get notificationsUnmuteRepo => 'اس ریپوزٹری کی خاموشی ہٹائیں';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center ایجنٹ عمل درآمد الگ کرنے کے لیے Linux کنٹینرز استعمال کر سکتا ہے۔';
 
@@ -4317,9 +4293,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'اس پلیٹ فارم پر سینڈ باکس دستیاب نہیں۔ ایجنٹ عمل درآمد بغیر علیحدگی کے ہو گا۔';
-
-  @override
-  String get openApplicationSettings => 'ایپلیکیشن ترتیبات کھولیں';
 
   @override
   String get openArticlesInApp => 'مضامین ایپ میں کھولیں';
@@ -4742,9 +4715,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get variableValue => 'ویلیو';
 
   @override
-  String get savingChanges => 'تبدیلیاں محفوظ ہو رہی ہیں…';
-
-  @override
   String get savingEllipsis => 'محفوظ ہو رہا ہے…';
 
   @override
@@ -4753,10 +4723,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'کوئی مماثل pull request نہیں';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'آپ کی تلاش سے کوئی کھلا PR میل نہیں کھاتا۔ دوسرے الفاظ آزمائیں یا تلاش صاف کریں۔';
 
   @override
   String get searchFactsHint => 'فیکٹس تلاش کریں...';
@@ -4813,9 +4779,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get selectConversation => 'گفتگو منتخب کریں';
-
-  @override
-  String get selectEffortLevel => 'زور کی سطح منتخب کریں';
 
   @override
   String get selectLabel => 'منتخب کریں';
@@ -4877,9 +4840,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String signedInAs(String username) {
     return '⁨$username⁩ کے طور پر سائن اِن۔';
   }
-
-  @override
-  String get skillEditor => 'مہارت ایڈیٹر';
 
   @override
   String get skillNameRequired => 'مہارت کا نام ضروری ہے۔';
@@ -6173,9 +6133,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'ابھی کوئی پائپ لائن ٹیمپلیٹ نہیں۔ شروع کرنے کے لیے ایک بنائیں۔';
 
   @override
-  String get pipelineTemplateIdLabel => 'Template ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'بلٹ اِن';
 
   @override
@@ -6185,9 +6142,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'پائپ لائن ٹیمپلیٹ ⁨$name⁩ حذف کریں؟ یہ واپس نہیں ہو سکتا۔';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'پائپ لائن میں ترمیم';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6202,10 +6156,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'نوڈ شامل کرنے کے لیے کوئی اندراج کینوس پر گھسیٹیں۔';
-
-  @override
-  String get editorDragHint =>
-      'لائبریری سے گھسیٹیں، ترمیم کے لیے نوڈ پر کلک کریں';
 
   @override
   String get editorEmptyCanvas => 'شروع کرنے کے لیے لائبریری سے نوڈ گھسیٹیں۔';
@@ -6340,12 +6290,6 @@ class AppLocalizationsUr extends AppLocalizations {
       '⁨bash -c⁩ سے چلتا ہے۔ ⁨GITHUB_TOKEN⁩ سیٹ ہوتا ہے۔ عمل سے پہلے پلیس ہولڈرز بدل جاتے ہیں۔';
 
   @override
-  String get nodeConfigTriggers => 'ٹرگرز از';
-
-  @override
-  String get nodeConfigNoUpstream => 'جوڑنے کے لیے کوئی اور نوڈ نہیں۔';
-
-  @override
   String get nodeConfigRouteKeys => 'روٹ کلیدیں';
 
   @override
@@ -6418,37 +6362,10 @@ class AppLocalizationsUr extends AppLocalizations {
   String get conditionDefaultCase => 'ڈیفالٹ کیس';
 
   @override
-  String get triggerPanelTitle => 'ٹرگرز';
-
-  @override
-  String get triggerPanelHelp => 'اس پائپ لائن کو کیا شروع کرتا ہے۔';
-
-  @override
   String get triggerManualHelp => 'رن صفحے پر دکھائیں اور ہاتھ سے شروع کریں۔';
 
   @override
-  String get triggerSectionAutomatic => 'خودکار ٹرگرز';
-
-  @override
-  String get triggerAddButton => 'ٹرگر شامل کریں';
-
-  @override
-  String get triggerNoneYet => 'ابھی کوئی خودکار ٹرگر نہیں۔';
-
-  @override
-  String get triggerAddDialogTitle => 'ٹرگر شامل کریں';
-
-  @override
-  String get triggerKindLabel => 'ٹرگر کی قسم';
-
-  @override
-  String get triggerKindEvent => 'ایونٹ پر';
-
-  @override
   String get triggerKindSchedule => 'شیڈول پر';
-
-  @override
-  String get triggerKindWebhook => 'ویب ہک سے';
 
   @override
   String get triggerScheduleExprLabel => 'شیڈول (cron یا ⁨every:seconds⁩)';
@@ -6494,12 +6411,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'ویب ہُک کا راستہ';
-
-  @override
-  String get triggerEventFieldLabel => 'ایونٹ';
-
-  @override
-  String get triggerNoMoreEvents => 'تمام دستیاب ایونٹس پہلے سے جڑے ہیں۔';
 
   @override
   String get triggerMatchStatusLabel => 'صرف جب اسٹیٹس ہو';
@@ -6975,13 +6886,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'جواب دیا گیا';
 
   @override
-  String get agentQuestionSubmit => 'جواب جمع کریں';
-
-  @override
   String get agentQuestionFreeformHint => 'اپنا جواب ٹائپ کریں…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'آپ کا جواب';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8557,27 +8462,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get ideReviewCode => 'کوڈ ریویو';
 
   @override
-  String get ideRevert => 'واپس کریں';
-
-  @override
   String get ideRevertConfirmTitle => 'تبدیلیاں واپس کریں';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count فائلیں',
-      one: '1 فائل',
-    );
-    return '$_temp0 HEAD پر واپس کریں؟ اس سے worktree تبدیلیاں ضائع ہوتی ہیں۔';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'واپس کریں';
-
-  @override
-  String get ideRevertConfirmCancel => 'منسوخ';
 
   @override
   String get ideRevertUntracked => 'ان ٹریکڈ فائلیں واپس نہیں ہو سکتیں';
@@ -8596,9 +8481,6 @@ class AppLocalizationsUr extends AppLocalizations {
     );
     return '$_temp0 واپس نہیں ہو سکیں (ان ٹریکڈ)۔';
   }
-
-  @override
-  String get ideViewSource => 'سورس دیکھیں';
 
   @override
   String get ideSearchMatchCase => 'کیس میل';
@@ -9125,10 +9007,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get providerBaseUrlHint => 'بیس URL (اختیاری)';
 
   @override
-  String get customProvidersDescription =>
-      'کوئی OpenAI- یا Anthropic-موافق اینڈ پوائنٹ — Ollama، LM Studio، vLLM، یا نجی ڈیپلائمنٹ — اختیاری API کلید کے ساتھ۔';
-
-  @override
   String get addProvider => 'فراہم کنندہ شامل کریں';
 
   @override
@@ -9244,9 +9122,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'ابھی کوئی رن نہیں';
-
-  @override
-  String get repoScriptsOutput => 'آؤٹ پٹ';
 
   @override
   String get repoScriptsSaved => 'اسکرپٹس محفوظ ہو گئیں';
@@ -13059,12 +12934,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get providersFilterHint => 'فراہم کنندگان فلٹر کریں';
 
   @override
-  String get providersFacetNeedsSetup => 'سیٹ اپ درکار';
-
-  @override
-  String get providersFacetCustom => 'حسبِ ضرورت';
-
-  @override
   String get providersNoneMatch => 'اس فلٹر سے کچھ میل نہیں کھاتا';
 
   @override
@@ -13099,12 +12968,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'رنرز فلٹر کریں';
-
-  @override
-  String get adaptersFacetReady => 'تیار';
-
-  @override
-  String get adaptersFacetMissing => 'غائب';
 
   @override
   String get adaptersLaunchGroup => 'لانچ';
@@ -13993,9 +13856,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get demoTourStarRepo => 'GitHub پر اسٹار';
 
   @override
-  String get demoTourDone => 'مکمل';
-
-  @override
   String get demoTourOpen => 'کھولیں';
 
   @override
@@ -14025,15 +13885,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'ہر ستون کی ہر الرٹ ایک ان باکس میں آتی ہے — ریویوز، ٹکٹس، رنز اور میٹنگز۔';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'یہ ڈیمو سیشن $minutes منٹ میں ختم ہوتا ہے۔';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'یہ ڈیمو سیشن ختم ہو گیا۔ نیا شروع کرنے کے لیے صفحہ دوبارہ لوڈ کریں۔';
 
   @override
   String get demoUnavailableTitle => 'ڈیمو میں دستیاب نہیں';
@@ -14204,9 +14055,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'ایک .db فائل جو سرور پڑھ سکے۔ پاتھ اس ڈیوائس پر نہیں، سرور ہوسٹ پر حل ہوتے ہیں۔';
-
-  @override
-  String get backupImportChooseFile => 'فائل منتخب کریں';
 
   @override
   String backupImportDone(String name) {

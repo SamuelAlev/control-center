@@ -80,8 +80,4 @@ class ReviewSpaceDao extends DatabaseAccessor<WorkspaceDatabase>
           updatedAt: Value(DateTime.now()),
         ),
       );
-
-  /// Deletes an association by [id].
-  Future<void> deleteAssociation(String id) =>
-      (delete(reviewSpacesTable)..where((t) => t.id.equals(id))).go();
 }

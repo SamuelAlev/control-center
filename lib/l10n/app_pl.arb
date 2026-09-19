@@ -761,8 +761,6 @@
   "copyRelativePath": "Kopiuj ścieżkę względną",
   "nameRequired": "Nazwa jest wymagana",
   "import": "Importuj",
-  "sortByStatus": "Status",
-  "sortByName": "Nazwa",
   "noMatchingAgents": "Żaden agent nie spełnia kryteriów filtra",
   "watchVideoOn": "Zobacz film na {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Zapytaj AI",
   "askAiReviewDescription": "Poproś AI o zrecenzowanie tego PR",
   "assignees": "Osoby przypisane",
-  "attachFiles": "Załącz pliki",
   "attachImage": "Załącz obraz",
   "attachedAgents": "Dołączeni agenci",
   "audioInput": "Wejście audio",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Kliknij, aby ponowić",
   "close": "Zamknij",
   "closeEsc": "Zamknij (Esc)",
-  "closeKeyboardHint": "Zamknij",
   "closeReader": "Zamknij czytnik",
   "closed": "Zamknięte",
   "codeFont": "Czcionka kodu",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Wymagana instalacja natywnego sandboxa",
   "navObservability": "Obserwowalność",
   "navSettings": "Ustawienia",
-  "navigateLabel": "Nawigacja",
   "networkBlockCount": "{count} blokad sieci",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Neutralny",
   "newCommitsPushed": "Wypchnięto nowe commity — kliknij, aby ponownie wczytać diffa",
   "newFact": "Nowy fakt",
-  "newLabel": "Nowy",
   "newPolicy": "Nowa polityka",
   "newsfeed": "Newsfeed",
   "newsfeedLabel": "Newsfeed",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Brak (wszystkie role)",
   "notAvailable": "Niedostępne",
   "notConfiguredLabel": "Nieskonfigurowane.",
-  "notDetected": "Niewykryty",
   "notFoundLabel": "Nie znaleziono",
   "notes": "Notatki",
   "notificationAgentFinished": "Agent ukończył pracę",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Wycisz to repozytorium",
-  "notificationsUnmuteRepo": "Włącz powiadomienia dla tego repozytorium",
   "onboardingLinuxDescription": "Control Center może używać kontenerów Linuksa do odizolowania wykonywania agentów.",
   "onboardingMacosDescription": "Control Center używa natywnego sandboxa w systemie macOS do odizolowania wykonywania agentów.",
   "onboardingUnsupportedDescription": "Sandbox jest niedostępny na tej platformie. Wykonywanie agentów będzie bez izolacji.",
-  "openApplicationSettings": "Otwórz ustawienia aplikacji",
   "openArticlesInApp": "Otwieraj artykuły w aplikacji",
   "openInBrowser": "Otwórz w przeglądarce",
   "openedInYourBrowser": "Otwarto w przeglądarce.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Niestandardowe zmienne środowiskowe przekazywane do tego adaptera (np. klucze API). Przechowywane w pęku kluczy.",
   "variableKey": "Klucz",
   "variableValue": "Wartość",
-  "savingChanges": "Zapisywanie zmian…",
   "savingEllipsis": "Zapisywanie…",
   "scopeDiffToCommits": "Ogranicz diff do commitów — Shift+klik dla zakresu",
   "noPrsMatchSearch": "Brak pasujących pull requestów",
-  "noPrsMatchSearchHint": "Żadne otwarte PR nie pasują do wyszukiwania. Spróbuj innych haseł lub wyczyść wyszukiwanie.",
   "searchFactsHint": "Szukaj faktów...",
   "searchFonts": "Szukaj czcionek…",
   "searchGifs": "Szukaj GIF-ów",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Wybierz agenta, któremu zgłosić…",
   "selectAnAgent": "Wybierz agenta",
   "selectConversation": "Wybierz rozmowę",
-  "selectEffortLevel": "Wybierz poziom wysiłku",
   "selectLabel": "Wybierz",
   "selectRunner": "Wybierz runner",
   "semanticSearch": "Wyszukiwanie semantyczne",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Edytor skilli",
   "skillNameRequired": "Nazwa skillu jest wymagana.",
   "skillSaved": "Zapisano skill „{name}”.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Edytor przeciągnij i upuść do potoków orkiestrujących agentów.",
   "pipelineTemplatesNew": "Nowy szablon",
   "pipelineTemplatesEmpty": "Nie ma jeszcze szablonów potoków. Utwórz pierwszy, aby zacząć.",
-  "pipelineTemplateIdLabel": "ID szablonu",
   "pipelineTemplateBuiltInBadge": "Wbudowany",
   "pipelineTemplateDeleteConfirmTitle": "Usunąć szablon?",
   "pipelineTemplateDeleteConfirmBody": "Usunąć szablon potoku {name}? Tej operacji nie można cofnąć.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Edytuj potok",
   "pipelineTemplateEditorSubtitle": "Przeciągnij typy węzłów z paska bocznego na kanwę i połącz je ze sobą.",
   "unsavedChanges": "Niezapisane zmiany",
   "nodeLibraryTitle": "Biblioteka węzłów",
   "nodeLibraryHint": "Przeciągnij dowolny element na kanwę, aby dodać węzeł.",
-  "editorDragHint": "Przeciągnij z biblioteki, kliknij węzeł, aby edytować",
   "editorEmptyCanvas": "Przeciągnij węzeł z biblioteki, aby zacząć.",
   "pipelineWhenThisHappens": "Gdy to się zdarzy",
   "pipelineDoThis": "Zrób to",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Użyj placeholderów w podwójnych nawiasach klamrowych, aby w czasie wykonania pobrać wartości ze stanu.",
   "nodeConfigScript": "Skrypt bash",
   "nodeConfigScriptHelp": "Uruchamiany przez bash -c. GITHUB_TOKEN jest ustawiony. Placeholdery są podstawiane przed wykonaniem.",
-  "nodeConfigTriggers": "Wyzwalane z",
-  "nodeConfigNoUpstream": "Brak innych węzłów, z których można połączyć.",
   "nodeConfigRouteKeys": "Klucze routingu",
   "nodeConfigRouteKeyFrom": "Klucz routingu z {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Przypadki (oddzielone przecinkami)",
   "conditionCasesHelp": "Klucze tras do dopasowania do wartości, w kolejności.",
   "conditionDefaultCase": "Przypadek domyślny",
-  "triggerPanelTitle": "Wyzwalacze",
-  "triggerPanelHelp": "Co uruchamia ten potok.",
   "triggerManualHelp": "Pokaż na stronie uruchomienia i startuj ręcznie.",
-  "triggerSectionAutomatic": "Wyzwalacze automatyczne",
-  "triggerAddButton": "Dodaj wyzwalacz",
-  "triggerNoneYet": "Brak automatycznych wyzwalaczy.",
-  "triggerAddDialogTitle": "Dodaj wyzwalacz",
-  "triggerKindLabel": "Typ wyzwalacza",
-  "triggerKindEvent": "Przy zdarzeniu",
   "triggerKindSchedule": "Według harmonogramu",
-  "triggerKindWebhook": "Przez webhook",
   "triggerScheduleExprLabel": "Harmonogram (cron lub every:seconds)",
   "triggerTimezoneLabel": "Strefa czasowa (opcjonalnie)",
   "triggerCatchUpLabel": "Przy pominiętych uruchomieniach",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Generowany jest podpisany adres URL webhooka. Systemy zewnętrzne wysyłają do niego POST, aby uruchomić ten potok.",
   "triggerWebhookPathLabel": "Ścieżka webhooka",
-  "triggerEventFieldLabel": "Zdarzenie",
-  "triggerNoMoreEvents": "Wszystkie dostępne zdarzenia są już podłączone.",
   "triggerMatchStatusLabel": "Tylko gdy status to",
   "triggerSummaryNone": "Brak wyzwalaczy",
   "triggerEverySeconds": "Co {seconds} s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Usuwaj reklamy, trackery i banery cookies z artykułów otwieranych w czytniku.",
   "agentQuestionHeader": "Pytanie do ciebie",
   "agentQuestionAnsweredLabel": "Odpowiedziano",
-  "agentQuestionSubmit": "Wyślij odpowiedź",
   "agentQuestionFreeformHint": "Wpisz odpowiedź…",
-  "agentQuestionAnswerLabel": "Twoja odpowiedź",
   "agentQuestionProgress": "Pytanie {index} z {count}",
   "agentQuestionSkip": "Pomiń",
   "agentQuestionSkippedLabel": "Pominięto",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Otwórz edytor",
   "ideNewTabMenu": "Nowa karta",
   "ideReviewCode": "Przejrzyj kod",
-  "ideRevert": "Przywróć",
   "ideRevertConfirmTitle": "Przywróć zmiany",
-  "ideRevertConfirmMessage": "Przywrócić {count, plural, one{1 plik} few{{count} pliki} many{{count} plików} other{{count} plików}} do HEAD? Spowoduje to odrzucenie zmian w drzewie roboczym.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Przywróć",
-  "ideRevertConfirmCancel": "Anuluj",
   "ideRevertUntracked": "Nieśledzonych plików nie można przywrócić",
   "ideRevertFailed": "Nie udało się przywrócić plików. Drzewo robocze rozmowy może być niedostępne.",
   "ideRevertSomeSkipped": "{count, plural, one{1 plik nie mógł zostać przywrócony} few{{count} pliki nie mogły zostać przywrócone} many{{count} plików nie mogło zostać przywróconych} other{{count} plików nie mogło zostać przywróconych}} (nieśledzone).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Pokaż źródło",
   "ideSearchMatchCase": "Uwzględnij wielkość liter",
   "ideSearchWholeWord": "Całe słowo",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Bazowy URL (opcjonalnie)",
-  "customProvidersDescription": "Dowolny punkt końcowy zgodny z OpenAI lub Anthropic — Ollama, LM Studio, vLLM lub prywatne wdrożenie — z opcjonalnym kluczem API.",
   "addProvider": "Dodaj dostawcę",
   "noCustomProviders": "Brak niestandardowych dostawców.",
   "providerNameLabel": "Nazwa",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "np. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Ostatnie uruchomienia",
   "repoScriptsNoRuns": "Brak uruchomień",
-  "repoScriptsOutput": "Wyjście",
   "repoScriptsSaved": "Zapisano skrypty",
   "repoScriptsRunKindSetup": "Przygotowanie",
   "repoScriptsRunKindArchive": "Archiwizacja",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Żaden dostawca nie jest połączony, więc wbudowany runtime agentów nie ma na czym działać. Dodaj klucz API albo zaloguj się do jednego z poniższych.",
   "providersFilterHint": "Filtruj dostawców",
-  "providersFacetNeedsSetup": "Wymaga konfiguracji",
-  "providersFacetCustom": "Własny",
   "providersNoneMatch": "Nic nie pasuje do tego filtru",
   "providerDeniedHereTitle": "Zablokowany w tym obszarze roboczym",
   "providerDeniedHereBody": "Agenci nie mogą tu używać tego dostawcy, choć jest połączony. Inne obszary robocze nie są dotknięte.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Filtruj modele",
   "adaptersNoneReadyNote": "Na tej maszynie nie znaleziono żadnego skatalogowanego CLI runnera. Zainstaluj jeden, a potem odśwież.",
   "adaptersFilterHint": "Filtruj runnery",
-  "adaptersFacetReady": "Gotowy",
-  "adaptersFacetMissing": "Brak",
   "adaptersLaunchGroup": "Uruchamianie",
   "adaptersLaunchGroupDescription": "Co dostaje ten runner, gdy agent go uruchamia. Możesz ustawić to przed instalacją CLI.",
   "adaptersEnvNone": "Brak",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Cztery miejsca, które pokazują, co aplikacja naprawdę robi.",
   "demoTourSkip": "Pomiń",
   "demoTourStarRepo": "Daj gwiazdkę na GitHubie",
-  "demoTourDone": "Gotowe",
   "demoTourOpen": "Otwórz",
   "demoTourSpacesTitle": "Porozmawiaj z agentem",
   "demoTourSpacesBody": "Wyślij wiadomość w przestrzeni i patrz, jak napływa uruchomienie — myślenie, wywołania narzędzi i koszt, dokładnie tak jak renderuje się prawdziwe.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Zgłoszenia, zadania i plany są powiązane z tymi samymi rozmowami, które toczą agenci.",
   "demoTourInboxTitle": "Zobacz całą operację",
   "demoTourInboxBody": "Każdy alarm z każdego filaru ląduje w jednej skrzynce — recenzje, zgłoszenia, uruchomienia i spotkania.",
-  "demoSessionEndingSoon": "Ta sesja demo zakończy się za {minutes} min.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Ta sesja demo się zakończyła. Przeładuj stronę, aby rozpocząć nową.",
   "demoUnavailableTitle": "Niedostępne w demo",
   "demoUnavailableTerminal": "Terminal uruchamia prawdziwą powłokę na hoście serwera. Demo nie ma w ogóle powierzchni wykonania — właśnie dlatego można je bezpiecznie udostępnić publicznie.",
   "demoUnavailableRig": "Klatka to jednorazowa maszyna wirtualna, którą prowadzi agent. Demo nie uruchamia żadnej: publiczny punkt końcowy, który potrafi wystartować VM, to nie demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Plik bazy danych obszaru roboczego",
   "backupImportSourceDescription": "Plik .db, który serwer potrafi odczytać. Ścieżki rozwiązywane są na hoście serwera, nie na tym urządzeniu.",
-  "backupImportChooseFile": "Wybierz plik",
   "backupImportDone": "Zaimportowano do {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

@@ -60,15 +60,4 @@ void main() {
       );
     });
   });
-
-  group('decodeRow', () {
-    test('returns null for an undecodable payload', () {
-      expect(decodeRow(row(''), decodeName, what: 'thing'), isNull);
-      expect(decodeRow(null, decodeName, what: 'thing'), isNull);
-    });
-
-    test('returns the value for a good one', () {
-      expect(decodeRow(row('a'), decodeName, what: 'thing'), 'a');
-    });
-  });
 }

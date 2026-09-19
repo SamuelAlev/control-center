@@ -35,10 +35,7 @@ Widget _app(Widget child) => MaterialApp(
 );
 
 void main() {
-  setUp(() {
-    MarkdownMediaMetrics.reset();
-    resetMarkdownMediaPayloadCache();
-  });
+  setUp(MarkdownMediaMetrics.reset);
 
   testWidgets('a pending attachment reserves the box its image will fill', (
     tester,

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_host/src/log/cc_host_log.dart';
@@ -681,6 +680,3 @@ class RemoteRpcSession {
     await space.close();
   }
 }
-
-/// Encodes a [Map] frame to a JSON string for transports that need it.
-String encodeFrame(Map<String, dynamic> frame) => jsonEncode(frame);

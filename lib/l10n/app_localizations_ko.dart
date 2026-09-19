@@ -1605,12 +1605,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get import => '가져오기';
 
   @override
-  String get sortByStatus => '상태';
-
-  @override
-  String get sortByName => '이름';
-
-  @override
   String get noMatchingAgents => '필터와 일치하는 에이전트가 없습니다';
 
   @override
@@ -2639,9 +2633,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get assignees => '담당자';
 
   @override
-  String get attachFiles => '파일 첨부';
-
-  @override
   String get attachImage => '이미지 첨부';
 
   @override
@@ -2756,9 +2747,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get closeEsc => '닫기 (Esc)';
-
-  @override
-  String get closeKeyboardHint => '닫기';
 
   @override
   String get closeReader => '리더 닫기';
@@ -3853,9 +3841,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get navSettings => '설정';
 
   @override
-  String get navigateLabel => '탐색';
-
-  @override
   String networkBlockCount(int count) {
     return '네트워크 차단 $count개';
   }
@@ -3868,9 +3853,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get newFact => '새 팩트';
-
-  @override
-  String get newLabel => '신규';
 
   @override
   String get newPolicy => '새 정책';
@@ -3984,9 +3966,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => '구성되지 않았습니다.';
-
-  @override
-  String get notDetected => '감지되지 않음';
 
   @override
   String get notFoundLabel => '찾을 수 없음';
@@ -4229,9 +4208,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get notificationsMuteRepo => '이 리포지토리 음소거';
 
   @override
-  String get notificationsUnmuteRepo => '이 리포지토리 음소거 해제';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center는 Linux 컨테이너를 사용해 에이전트 실행을 격리할 수 있습니다.';
 
@@ -4242,9 +4218,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       '이 플랫폼에서는 샌드박스를 사용할 수 없습니다. 에이전트 실행은 격리 없이 이루어집니다.';
-
-  @override
-  String get openApplicationSettings => '애플리케이션 설정 열기';
 
   @override
   String get openArticlesInApp => '앱에서 아티클 열기';
@@ -4663,9 +4636,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get variableValue => '값';
 
   @override
-  String get savingChanges => '변경 사항 저장 중…';
-
-  @override
   String get savingEllipsis => '저장 중…';
 
   @override
@@ -4673,10 +4643,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => '일치하는 풀 리퀘스트가 없습니다';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      '열려 있는 PR 중 검색과 일치하는 항목이 없습니다. 다른 검색어를 사용하거나 검색을 지우세요.';
 
   @override
   String get searchFactsHint => '팩트 검색...';
@@ -4733,9 +4699,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get selectConversation => '대화 선택';
-
-  @override
-  String get selectEffortLevel => '노력 수준 선택';
 
   @override
   String get selectLabel => '선택';
@@ -4796,9 +4759,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String signedInAs(String username) {
     return '$username(으)로 로그인했습니다.';
   }
-
-  @override
-  String get skillEditor => '스킬 편집기';
 
   @override
   String get skillNameRequired => '스킬 이름은 필수입니다.';
@@ -6064,9 +6024,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get pipelineTemplatesEmpty => '파이프라인 템플릿이 없습니다. 새로 만들어 시작하세요.';
 
   @override
-  String get pipelineTemplateIdLabel => '템플릿 ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => '기본 제공';
 
   @override
@@ -6076,9 +6033,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return '파이프라인 템플릿 $name을 삭제할까요? 이 작업은 되돌릴 수 없습니다.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => '파이프라인 편집';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6092,9 +6046,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => '항목을 캔버스로 끌어다 놓으면 노드가 추가됩니다.';
-
-  @override
-  String get editorDragHint => '라이브러리에서 끌어다 놓고, 노드를 클릭해 편집하세요';
 
   @override
   String get editorEmptyCanvas => '라이브러리에서 노드를 끌어다 놓아 시작하세요.';
@@ -6227,12 +6178,6 @@ class AppLocalizationsKo extends AppLocalizations {
       'bash -c로 실행됩니다. GITHUB_TOKEN이 설정됩니다. 플레이스홀더는 실행 전에 치환됩니다.';
 
   @override
-  String get nodeConfigTriggers => '트리거 출처';
-
-  @override
-  String get nodeConfigNoUpstream => '연결할 다른 노드가 없습니다.';
-
-  @override
   String get nodeConfigRouteKeys => '라우트 키';
 
   @override
@@ -6304,37 +6249,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get conditionDefaultCase => '기본 케이스';
 
   @override
-  String get triggerPanelTitle => '트리거';
-
-  @override
-  String get triggerPanelHelp => '이 파이프라인을 시작하는 조건입니다.';
-
-  @override
   String get triggerManualHelp => '실행 페이지에 표시하고 직접 시작합니다.';
 
   @override
-  String get triggerSectionAutomatic => '자동 트리거';
-
-  @override
-  String get triggerAddButton => '트리거 추가';
-
-  @override
-  String get triggerNoneYet => '자동 트리거가 아직 없습니다.';
-
-  @override
-  String get triggerAddDialogTitle => '트리거 추가';
-
-  @override
-  String get triggerKindLabel => '트리거 유형';
-
-  @override
-  String get triggerKindEvent => '이벤트 발생 시';
-
-  @override
   String get triggerKindSchedule => '일정에 따라';
-
-  @override
-  String get triggerKindWebhook => '웹훅으로';
 
   @override
   String get triggerScheduleExprLabel => '일정 (cron 또는 every:seconds)';
@@ -6380,12 +6298,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => '웹훅 경로';
-
-  @override
-  String get triggerEventFieldLabel => '이벤트';
-
-  @override
-  String get triggerNoMoreEvents => '사용 가능한 이벤트가 모두 연결되어 있습니다.';
 
   @override
   String get triggerMatchStatusLabel => '상태가 다음일 때만';
@@ -6848,13 +6760,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get agentQuestionAnsweredLabel => '답변 완료';
 
   @override
-  String get agentQuestionSubmit => '답변 제출';
-
-  @override
   String get agentQuestionFreeformHint => '답변을 입력하세요…';
-
-  @override
-  String get agentQuestionAnswerLabel => '내 답변';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8409,27 +8315,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get ideReviewCode => '코드 검토';
 
   @override
-  String get ideRevert => '되돌리기';
-
-  @override
   String get ideRevertConfirmTitle => '변경 사항 되돌리기';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '파일 $count개',
-      one: '파일 1개',
-    );
-    return '$_temp0를 HEAD로 되돌릴까요? 워크트리 변경 사항은 버려집니다.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => '되돌리기';
-
-  @override
-  String get ideRevertConfirmCancel => '취소';
 
   @override
   String get ideRevertUntracked => '추적되지 않은 파일은 되돌릴 수 없습니다';
@@ -8447,9 +8333,6 @@ class AppLocalizationsKo extends AppLocalizations {
     );
     return '$_temp0를 되돌리지 못했습니다(추적되지 않음).';
   }
-
-  @override
-  String get ideViewSource => '소스 보기';
 
   @override
   String get ideSearchMatchCase => '대/소문자 구분';
@@ -8962,10 +8845,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providerBaseUrlHint => 'Base URL (선택)';
 
   @override
-  String get customProvidersDescription =>
-      'OpenAI 또는 Anthropic 호환 엔드포인트 — Ollama, LM Studio, vLLM, 프라이빗 배포 — 에 선택적으로 API 키를 사용할 수 있습니다.';
-
-  @override
   String get addProvider => '프로바이더 추가';
 
   @override
@@ -9081,9 +8960,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => '아직 실행 기록이 없습니다';
-
-  @override
-  String get repoScriptsOutput => '출력';
 
   @override
   String get repoScriptsSaved => '스크립트를 저장했습니다';
@@ -12823,12 +12699,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get providersFilterHint => '제공자 필터';
 
   @override
-  String get providersFacetNeedsSetup => '설정 필요';
-
-  @override
-  String get providersFacetCustom => '사용자 지정';
-
-  @override
   String get providersNoneMatch => '이 필터와 일치하는 항목이 없습니다';
 
   @override
@@ -12862,12 +12732,6 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => '러너 필터';
-
-  @override
-  String get adaptersFacetReady => '준비됨';
-
-  @override
-  String get adaptersFacetMissing => '없음';
 
   @override
   String get adaptersLaunchGroup => '실행';
@@ -13742,9 +13606,6 @@ class AppLocalizationsKo extends AppLocalizations {
   String get demoTourStarRepo => 'GitHub에서 스타';
 
   @override
-  String get demoTourDone => '완료';
-
-  @override
   String get demoTourOpen => '열기';
 
   @override
@@ -13773,14 +13634,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       '모든 영역의 알림이 하나의 받은편지함에 모입니다. 리뷰, 티켓, 실행, 미팅입니다.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return '이 데모 세션은 $minutes분 후에 종료됩니다.';
-  }
-
-  @override
-  String get demoSessionEnded => '이 데모 세션이 종료되었습니다. 페이지를 새로고침하면 새 세션이 시작됩니다.';
 
   @override
   String get demoUnavailableTitle => '데모에서 사용할 수 없음';
@@ -13949,9 +13802,6 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       '서버가 읽을 수 있는 .db 파일입니다. 경로는 이 기기가 아니라 서버 호스트에서 해석됩니다.';
-
-  @override
-  String get backupImportChooseFile => '파일 선택';
 
   @override
   String backupImportDone(String name) {

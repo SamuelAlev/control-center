@@ -1655,12 +1655,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get import => 'Імпортувати';
 
   @override
-  String get sortByStatus => 'Статус';
-
-  @override
-  String get sortByName => 'Назва';
-
-  @override
   String get noMatchingAgents => 'Немає агентів, які відповідають фільтру';
 
   @override
@@ -2710,9 +2704,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get assignees => 'Призначені';
 
   @override
-  String get attachFiles => 'Прикріпити файли';
-
-  @override
   String get attachImage => 'Прикріпити зображення';
 
   @override
@@ -2828,9 +2819,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get closeEsc => 'Закрити (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Закрити';
 
   @override
   String get closeReader => 'Закрити читач';
@@ -3971,9 +3959,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get navSettings => 'Налаштування';
 
   @override
-  String get navigateLabel => 'Перейти';
-
-  @override
   String networkBlockCount(int count) {
     return '$count мережевих блокувань';
   }
@@ -3987,9 +3972,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get newFact => 'Новий факт';
-
-  @override
-  String get newLabel => 'Нове';
 
   @override
   String get newPolicy => 'Нова політика';
@@ -4110,9 +4092,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Не налаштовано.';
-
-  @override
-  String get notDetected => 'Не виявлено';
 
   @override
   String get notFoundLabel => 'Не знайдено';
@@ -4369,9 +4348,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get notificationsMuteRepo => 'Вимкнути цей репозиторій';
 
   @override
-  String get notificationsUnmuteRepo => 'Увімкнути цей репозиторій';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center може використовувати контейнери Linux, щоб ізолювати виконання агентів.';
 
@@ -4382,9 +4358,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Пісочниця недоступна на цій платформі. Агенти виконуватимуться без ізоляції.';
-
-  @override
-  String get openApplicationSettings => 'Відкрити налаштування застосунку';
 
   @override
   String get openArticlesInApp => 'Відкривати статті в застосунку';
@@ -4817,9 +4790,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get variableValue => 'Значення';
 
   @override
-  String get savingChanges => 'Збереження змін…';
-
-  @override
   String get savingEllipsis => 'Збереження…';
 
   @override
@@ -4828,10 +4798,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Немає відповідних pull request';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Жоден відкритий PR не відповідає пошуку. Спробуйте інші слова або скиньте пошук.';
 
   @override
   String get searchFactsHint => 'Шукати факти...';
@@ -4890,9 +4856,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get selectConversation => 'Вибрати розмову';
-
-  @override
-  String get selectEffortLevel => 'Вибрати рівень зусиль';
 
   @override
   String get selectLabel => 'Вибрати';
@@ -4954,9 +4917,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String signedInAs(String username) {
     return 'Ви увійшли як $username.';
   }
-
-  @override
-  String get skillEditor => 'Редактор скілів';
 
   @override
   String get skillNameRequired => 'Потрібна назва скіла.';
@@ -6265,9 +6225,6 @@ class AppLocalizationsUk extends AppLocalizations {
       'Ще немає шаблонів конвеєрів. Створіть перший, щоб почати.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID шаблону';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Вбудований';
 
   @override
@@ -6277,9 +6234,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Видалити шаблон конвеєра $name? Цю дію не можна скасувати.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Редагувати конвеєр';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6294,10 +6248,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Перетягніть елемент на полотно, щоб додати вузол.';
-
-  @override
-  String get editorDragHint =>
-      'Перетягуйте з бібліотеки, клацніть вузол, щоб редагувати';
 
   @override
   String get editorEmptyCanvas =>
@@ -6433,12 +6383,6 @@ class AppLocalizationsUk extends AppLocalizations {
       'Запускається через bash -c. GITHUB_TOKEN задано. Плейсхолдери підставляються перед виконанням.';
 
   @override
-  String get nodeConfigTriggers => 'Тригери від';
-
-  @override
-  String get nodeConfigNoUpstream => 'Немає інших вузлів для з’єднання.';
-
-  @override
   String get nodeConfigRouteKeys => 'Ключі маршруту';
 
   @override
@@ -6511,38 +6455,11 @@ class AppLocalizationsUk extends AppLocalizations {
   String get conditionDefaultCase => 'Варіант за замовчуванням';
 
   @override
-  String get triggerPanelTitle => 'Тригери';
-
-  @override
-  String get triggerPanelHelp => 'Що запускає цей конвеєр.';
-
-  @override
   String get triggerManualHelp =>
       'Показати на сторінці запуску й запускати вручну.';
 
   @override
-  String get triggerSectionAutomatic => 'Автоматичні тригери';
-
-  @override
-  String get triggerAddButton => 'Додати тригер';
-
-  @override
-  String get triggerNoneYet => 'Автоматичних тригерів ще немає.';
-
-  @override
-  String get triggerAddDialogTitle => 'Додати тригер';
-
-  @override
-  String get triggerKindLabel => 'Тип тригера';
-
-  @override
-  String get triggerKindEvent => 'За подією';
-
-  @override
   String get triggerKindSchedule => 'За розкладом';
-
-  @override
-  String get triggerKindWebhook => 'Через webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Розклад (cron або every:seconds)';
@@ -6588,12 +6505,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Шлях вебхука';
-
-  @override
-  String get triggerEventFieldLabel => 'Подія';
-
-  @override
-  String get triggerNoMoreEvents => 'Усі доступні події вже підключені.';
 
   @override
   String get triggerMatchStatusLabel => 'Лише коли статус';
@@ -7076,13 +6987,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Відповідь надано';
 
   @override
-  String get agentQuestionSubmit => 'Надіслати відповідь';
-
-  @override
   String get agentQuestionFreeformHint => 'Введіть відповідь…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Ваша відповідь';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8690,29 +8595,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get ideReviewCode => 'Рев\'ю коду';
 
   @override
-  String get ideRevert => 'Відкотити';
-
-  @override
   String get ideRevertConfirmTitle => 'Відкотити зміни';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count файлу',
-      many: '$count файлів',
-      few: '$count файли',
-      one: '$count файл',
-    );
-    return 'Відкотити $_temp0 до HEAD? Це скасує зміни в робочому дереві.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Відкотити';
-
-  @override
-  String get ideRevertConfirmCancel => 'Скасувати';
 
   @override
   String get ideRevertUntracked => 'Невідстежувані файли не можна відкотити';
@@ -8733,9 +8616,6 @@ class AppLocalizationsUk extends AppLocalizations {
     );
     return '$_temp0 не вдалося відкотити (невідстежувані).';
   }
-
-  @override
-  String get ideViewSource => 'Переглянути вихідний код';
 
   @override
   String get ideSearchMatchCase => 'Зважати на регістр';
@@ -9270,10 +9150,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get providerBaseUrlHint => 'Базовий URL (необов’язково)';
 
   @override
-  String get customProvidersDescription =>
-      'Будь-яка сумісна з OpenAI або Anthropic кінцева точка — Ollama, LM Studio, vLLM чи приватне розгортання — з необов’язковим API-ключем.';
-
-  @override
   String get addProvider => 'Додати провайдера';
 
   @override
@@ -9389,9 +9265,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Запусків ще не було';
-
-  @override
-  String get repoScriptsOutput => 'Вивід';
 
   @override
   String get repoScriptsSaved => 'Скрипти збережено';
@@ -13275,12 +13148,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get providersFilterHint => 'Фільтрувати провайдерів';
 
   @override
-  String get providersFacetNeedsSetup => 'Потребує налаштування';
-
-  @override
-  String get providersFacetCustom => 'Власні';
-
-  @override
   String get providersNoneMatch => 'Нічого не відповідає цьому фільтру';
 
   @override
@@ -13317,12 +13184,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Фільтрувати раннери';
-
-  @override
-  String get adaptersFacetReady => 'Готові';
-
-  @override
-  String get adaptersFacetMissing => 'Відсутні';
 
   @override
   String get adaptersLaunchGroup => 'Запуск';
@@ -14230,9 +14091,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get demoTourStarRepo => 'Поставити зірку на GitHub';
 
   @override
-  String get demoTourDone => 'Готово';
-
-  @override
   String get demoTourOpen => 'Відкрити';
 
   @override
@@ -14262,15 +14120,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Усі сповіщення з кожного стовпа збираються в одну скриньку — рев’ю, тікети, запуски й зустрічі.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Ця демосесія завершиться за $minutes хв.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Ця демосесія завершилася. Перезавантажте сторінку, щоб почати нову.';
 
   @override
   String get demoUnavailableTitle => 'У демо недоступно';
@@ -14445,9 +14294,6 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Файл .db, який сервер може прочитати. Шляхи вказують на хост сервера, а не на цей пристрій.';
-
-  @override
-  String get backupImportChooseFile => 'Вибрати файл';
 
   @override
   String backupImportDone(String name) {

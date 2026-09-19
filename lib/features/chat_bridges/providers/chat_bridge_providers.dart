@@ -1,7 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_app_creation.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bot_profile.dart';
-import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_connection.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -273,15 +272,3 @@ final chatConnectionControllerProvider =
     NotifierProvider<ChatConnectionController, AsyncValue<void>>(
       ChatConnectionController.new,
     );
-
-/// A provider's status without waiting on the whole list, for a dialog that was
-/// opened from a card that already had it.
-ChatConnectionStatus chatStatusFor(
-  List<ChatProviderView> views,
-  ChatProvider provider,
-) =>
-    views
-        .where((v) => v.provider == provider)
-        .map((v) => v.status)
-        .firstOrNull ??
-    ChatConnectionStatus.none(provider);

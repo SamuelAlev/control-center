@@ -6,7 +6,7 @@ import 'package:cc_infra/src/meetings/meeting_echo_filter.dart';
 import 'package:test/test.dart';
 
 /// Exercises [MeetingEchoFilter] plus its top-level pure helpers
-/// (`echoTokens`, `echoSimilarity`, `isEchoMatch`). The filter is pure Dart —
+/// (`echoTokens`, `echoSimilarity`). The filter is pure Dart —
 /// persistence is injected via [OnAccepted] — so the full match/drop/hold
 /// matrix is exercised without touching any I/O. Uses a fake clock: the
 /// filter keys on emit-timestamps it is fed, never on real wall time, so
@@ -60,19 +60,6 @@ void main() {
         echoSimilarity(fragment, longer),
         echoSimilarity(longer, fragment),
       );
-    });
-  });
-
-  group('isEchoMatch', () {
-    test('true at or above threshold, false below', () {
-      final a = {'a', 'b', 'c', 'd'};
-      final b = {'a', 'b', 'x', 'y'}; // similarity = 2/4 = 0.5
-      expect(isEchoMatch(a, b, threshold: 0.5), isTrue);
-      expect(isEchoMatch(a, b, threshold: 0.6), isFalse);
-    });
-
-    test('false when either set is empty', () {
-      expect(isEchoMatch(<String>{}, {'a'}), isFalse);
     });
   });
 

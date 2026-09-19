@@ -15,8 +15,6 @@
 /// than spending a second model's tokens on it via the `Advisor` watchdog.
 library;
 
-import 'dart:convert';
-
 /// Status values the checklist tool accepts, in its own wire spelling.
 const String _pending = 'pending';
 const String _inProgress = 'in_progress';
@@ -194,29 +192,4 @@ class ChecklistSupervisor {
     final idx = lower.lastIndexOf('__');
     return idx >= 0 ? lower.substring(idx + 2) : lower;
   }
-}
-
-/// Decodes a tool call's arguments for [ChecklistSupervisor.observeTurn].
-///
-/// The loop holds args as a decoded map already; adapters that carry them as a
-/// JSON string use this so a malformed payload degrades to an empty map instead
-/// of throwing inside the supervisor.
-Map<String, dynamic> decodeChecklistArgs(Object? args) {
-  if (args is Map<String, dynamic>) {
-    return args;
-  }
-  if (args is Map) {
-    return args.cast<String, dynamic>();
-  }
-  if (args is String && args.trim().isNotEmpty) {
-    try {
-      final decoded = jsonDecode(args);
-      if (decoded is Map) {
-        return decoded.cast<String, dynamic>();
-      }
-    } on FormatException {
-      return const {};
-    }
-  }
-  return const {};
 }

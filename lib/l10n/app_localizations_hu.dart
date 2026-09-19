@@ -1644,12 +1644,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get import => 'Importálás';
 
   @override
-  String get sortByStatus => 'Állapot';
-
-  @override
-  String get sortByName => 'Név';
-
-  @override
   String get noMatchingAgents => 'Nincs a szűrőre illeszkedő ügynök';
 
   @override
@@ -2689,9 +2683,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get assignees => 'Hozzárendeltek';
 
   @override
-  String get attachFiles => 'Fájlok csatolása';
-
-  @override
   String get attachImage => 'Kép csatolása';
 
   @override
@@ -2808,9 +2799,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get closeEsc => 'Bezárás (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Bezárás';
 
   @override
   String get closeReader => 'Olvasó bezárása';
@@ -3945,9 +3933,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get navSettings => 'Beállítások';
 
   @override
-  String get navigateLabel => 'Navigáció';
-
-  @override
   String networkBlockCount(int count) {
     return '$count hálózati blokk';
   }
@@ -3961,9 +3946,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get newFact => 'Új tény';
-
-  @override
-  String get newLabel => 'Új';
 
   @override
   String get newPolicy => 'Új szabályzat';
@@ -4085,9 +4067,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Nincs beállítva.';
-
-  @override
-  String get notDetected => 'Nem felismerve';
 
   @override
   String get notFoundLabel => 'Nem található';
@@ -4340,9 +4319,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get notificationsMuteRepo => 'Tároló némítása';
 
   @override
-  String get notificationsUnmuteRepo => 'Tároló némításának feloldása';
-
-  @override
   String get onboardingLinuxDescription =>
       'A Control Center Linux-konténereket használhat az ügynökfuttatás elszigeteléséhez.';
 
@@ -4353,9 +4329,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'A homokozó nem érhető el ezen a platformon. Az ügynökfuttatás elszigetelés nélkül történik.';
-
-  @override
-  String get openApplicationSettings => 'Alkalmazásbeállítások megnyitása';
 
   @override
   String get openArticlesInApp => 'Cikkek megnyitása az alkalmazásban';
@@ -4782,9 +4755,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get variableValue => 'Érték';
 
   @override
-  String get savingChanges => 'Módosítások mentése…';
-
-  @override
   String get savingEllipsis => 'Mentés…';
 
   @override
@@ -4793,10 +4763,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Nincs illeszkedő pull request';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Nincs a keresésre illeszkedő nyitott PR. Próbáljon más kifejezéseket, vagy törölje a keresést.';
 
   @override
   String get searchFactsHint => 'Tények keresése...';
@@ -4853,9 +4819,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get selectConversation => 'Beszélgetés kiválasztása';
-
-  @override
-  String get selectEffortLevel => 'Erőfeszítési szint kiválasztása';
 
   @override
   String get selectLabel => 'Kiválasztás';
@@ -4918,9 +4881,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String signedInAs(String username) {
     return 'Bejelentkezve mint $username.';
   }
-
-  @override
-  String get skillEditor => 'Készségszerkesztő';
 
   @override
   String get skillNameRequired => 'A készség neve kötelező.';
@@ -6223,9 +6183,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'Még nincsenek pipeline-sablonok. Hozzon létre egyet a kezdéshez.';
 
   @override
-  String get pipelineTemplateIdLabel => 'Sablon-ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Beépített';
 
   @override
@@ -6235,9 +6192,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Törli a(z) $name pipeline-sablont? Ezt nem lehet visszavonni.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Pipeline szerkesztése';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6252,10 +6206,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Húzzon bármely elemet a vászonra egy csomópont hozzáadásához.';
-
-  @override
-  String get editorDragHint =>
-      'Húzza a könyvtárból, kattintson a csomópontra a szerkesztéshez';
 
   @override
   String get editorEmptyCanvas =>
@@ -6391,13 +6341,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'bash -c-vel fut. A GITHUB_TOKEN be van állítva. A helyőrzők a végrehajtás előtt helyettesítődnek.';
 
   @override
-  String get nodeConfigTriggers => 'Triggerek innen';
-
-  @override
-  String get nodeConfigNoUpstream =>
-      'Nincs más csomópont, ahonnan csatlakozni lehetne.';
-
-  @override
   String get nodeConfigRouteKeys => 'Útvonalkulcsok';
 
   @override
@@ -6470,38 +6413,11 @@ class AppLocalizationsHu extends AppLocalizations {
   String get conditionDefaultCase => 'Alapértelmezett eset';
 
   @override
-  String get triggerPanelTitle => 'Triggerek';
-
-  @override
-  String get triggerPanelHelp => 'Mi indítja ezt a pipeline-t.';
-
-  @override
   String get triggerManualHelp =>
       'Megjelenítés a futtatási oldalon, és kézi indítás.';
 
   @override
-  String get triggerSectionAutomatic => 'Automatikus triggerek';
-
-  @override
-  String get triggerAddButton => 'Trigger hozzáadása';
-
-  @override
-  String get triggerNoneYet => 'Még nincsenek automatikus triggerek.';
-
-  @override
-  String get triggerAddDialogTitle => 'Trigger hozzáadása';
-
-  @override
-  String get triggerKindLabel => 'Trigger típusa';
-
-  @override
-  String get triggerKindEvent => 'Eseményre';
-
-  @override
   String get triggerKindSchedule => 'Ütemezésre';
-
-  @override
-  String get triggerKindWebhook => 'Webhookon keresztül';
 
   @override
   String get triggerScheduleExprLabel => 'Ütemezés (cron vagy every:seconds)';
@@ -6547,12 +6463,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook útvonal';
-
-  @override
-  String get triggerEventFieldLabel => 'Esemény';
-
-  @override
-  String get triggerNoMoreEvents => 'Minden elérhető esemény már be van kötve.';
 
   @override
   String get triggerMatchStatusLabel => 'Csak ha az állapot';
@@ -7036,13 +6946,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Megválaszolva';
 
   @override
-  String get agentQuestionSubmit => 'Válasz küldése';
-
-  @override
   String get agentQuestionFreeformHint => 'Írja be a válaszát…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Az Ön válasza';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8627,27 +8531,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get ideReviewCode => 'Kód átnézése';
 
   @override
-  String get ideRevert => 'Visszavonás';
-
-  @override
   String get ideRevertConfirmTitle => 'Módosítások visszavonása';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# fájl',
-      one: '# fájl',
-    );
-    return '$_temp0 visszaállítása HEAD-re? Ez elveti a worktree módosításait.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Visszavonás';
-
-  @override
-  String get ideRevertConfirmCancel => 'Mégse';
 
   @override
   String get ideRevertUntracked => 'A nem követett fájlok nem vonhatók vissza';
@@ -8666,9 +8550,6 @@ class AppLocalizationsHu extends AppLocalizations {
     );
     return '$_temp0 nem sikerült visszaállítani (nem követett).';
   }
-
-  @override
-  String get ideViewSource => 'Forrás megtekintése';
 
   @override
   String get ideSearchMatchCase => 'Kis- és nagybetű';
@@ -9205,10 +9086,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get providerBaseUrlHint => 'Alap-URL (nem kötelező)';
 
   @override
-  String get customProvidersDescription =>
-      'Bármely OpenAI- vagy Anthropic-kompatibilis végpont — Ollama, LM Studio, vLLM vagy privát telepítés — opcionális API-kulccsal.';
-
-  @override
   String get addProvider => 'Szolgáltató hozzáadása';
 
   @override
@@ -9326,9 +9203,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Még nincs futtatás';
-
-  @override
-  String get repoScriptsOutput => 'Kimenet';
 
   @override
   String get repoScriptsSaved => 'Szkriptek mentve';
@@ -13160,12 +13034,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get providersFilterHint => 'Szolgáltatók szűrése';
 
   @override
-  String get providersFacetNeedsSetup => 'Beállítás szükséges';
-
-  @override
-  String get providersFacetCustom => 'Egyéni';
-
-  @override
   String get providersNoneMatch => 'Semmi sem illeszkedik erre a szűrőre';
 
   @override
@@ -13202,12 +13070,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Futtatók szűrése';
-
-  @override
-  String get adaptersFacetReady => 'Kész';
-
-  @override
-  String get adaptersFacetMissing => 'Hiányzik';
 
   @override
   String get adaptersLaunchGroup => 'Indítás';
@@ -14103,9 +13965,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get demoTourStarRepo => 'Csillagozás a GitHubon';
 
   @override
-  String get demoTourDone => 'Kész';
-
-  @override
   String get demoTourOpen => 'Megnyitás';
 
   @override
@@ -14135,15 +13994,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Minden riasztás minden pillérből egy beérkezettbe kerül — átnézések, jegyek, futtatások és megbeszélések.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Ez a demó munkamenet $minutes perc múlva véget ér.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Ez a demó munkamenet véget ért. Töltse újra az oldalt egy új indításához.';
 
   @override
   String get demoUnavailableTitle => 'Nem érhető el a demóban';
@@ -14314,9 +14164,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Egy .db fájl, amelyet a szerver olvashat. Az útvonalak a szervergépen oldódnak fel, nem ezen az eszközön.';
-
-  @override
-  String get backupImportChooseFile => 'Fájl választása';
 
   @override
   String backupImportDone(String name) {

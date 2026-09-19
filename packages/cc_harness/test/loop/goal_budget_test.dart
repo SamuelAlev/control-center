@@ -123,20 +123,6 @@ void main() {
   });
 
   group('prompts', () {
-    test('the budget steer refuses to equate exhaustion with completion', () {
-      final steer = goalBudgetLimitSteer(
-        objective: 'make the tests pass',
-        budgetLine: '500 / 500 tokens',
-      );
-      expect(steer, contains('make the tests pass'));
-      expect(
-        steer,
-        contains('Budget exhaustion is not completion'),
-        reason: 'a goal that reports success because it ran out of money is a '
-            'lie the user acts on',
-      );
-    });
-
     test('the completion audit demands current-state evidence', () {
       expect(goalCompletionAudit, contains('CURRENT state'));
       expect(
@@ -146,21 +132,6 @@ void main() {
       );
       expect(goalCompletionAudit, contains('Treat uncertainty as not-yet-done'));
       expect(goalCompletionAudit, contains('scope to claim scope'));
-    });
-
-    test('the continuation carries the objective and the audit', () {
-      final steer = goalContinuationSteer(
-        objective: 'ship the migration',
-        budgetLine: '10 / 100 tokens',
-      );
-      expect(steer, contains('ship the migration'));
-      expect(steer, contains('10 / 100 tokens'));
-      expect(steer, contains('never redefine success'));
-      expect(
-        steer,
-        contains('Do not narrate'),
-        reason: 'a continuation that announces itself burns a turn on nothing',
-      );
     });
   });
 }

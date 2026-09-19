@@ -4,7 +4,6 @@ library;
 
 export 'src/context/compaction_config.dart';
 export 'src/context/compaction_prompt.dart';
-export 'src/context/context_breakdown.dart';
 export 'src/context/harness_compaction.dart';
 export 'src/context/harness_token_accounting.dart';
 export 'src/context/provider_image_budget.dart';

@@ -152,13 +152,11 @@ void main() {
       for (final e in ReasoningEffort.values) {
         expect(anthropicEffort(e), isNotNull);
         expect(openAiEffort(e), isNotNull);
-        expect(googleThinkingLevel(e), isNotNull);
       }
       expect(anthropicEffort(ReasoningEffort.minimal), 'low');
       expect(anthropicEffort(ReasoningEffort.xhigh), 'xhigh');
       expect(openAiEffort(ReasoningEffort.xhigh), 'high');
       expect(openAiEffort(ReasoningEffort.minimal), 'minimal');
-      expect(googleThinkingLevel(ReasoningEffort.xhigh), 'high');
     });
   });
 

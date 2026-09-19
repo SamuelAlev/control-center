@@ -761,8 +761,6 @@
   "copyRelativePath": "Copiază calea relativă",
   "nameRequired": "Numele este obligatoriu",
   "import": "Importă",
-  "sortByStatus": "Stare",
-  "sortByName": "Nume",
   "noMatchingAgents": "Niciun agent nu se potrivește filtrului tău",
   "watchVideoOn": "Urmărește videoclipul pe {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Întreabă AI",
   "askAiReviewDescription": "Cere AI să revizuiască acest PR",
   "assignees": "Asignați",
-  "attachFiles": "Atașează fișiere",
   "attachImage": "Atașează imagine",
   "attachedAgents": "Agenți atașați",
   "audioInput": "Intrare audio",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Apasă pentru a reîncerca",
   "close": "Închide",
   "closeEsc": "Închide (Esc)",
-  "closeKeyboardHint": "Închide",
   "closeReader": "Închide cititorul",
   "closed": "Închis",
   "codeFont": "Font de cod",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Este necesară instalarea sandbox-ului nativ",
   "navObservability": "Observabilitate",
   "navSettings": "Setări",
-  "navigateLabel": "Navighează",
   "networkBlockCount": "{count} blocări de rețea",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Neutru",
   "newCommitsPushed": "S-au făcut push de commit-uri noi — apasă pentru a reîncărca diff-ul",
   "newFact": "Fapt nou",
-  "newLabel": "Nou",
   "newPolicy": "Politică nouă",
   "newsfeed": "Flux de știri",
   "newsfeedLabel": "Flux de știri",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Niciunul (toate rolurile)",
   "notAvailable": "Indisponibil",
   "notConfiguredLabel": "Neconfigurat.",
-  "notDetected": "Nedetectat",
   "notFoundLabel": "Negăsit",
   "notes": "Note",
   "notificationAgentFinished": "Agentul a terminat",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Dezactivează acest depozit",
-  "notificationsUnmuteRepo": "Reactivează acest depozit",
   "onboardingLinuxDescription": "Control Center poate folosi containere Linux pentru a izola execuția agenților.",
   "onboardingMacosDescription": "Control Center folosește sandbox-ul nativ pe macOS pentru a izola execuția agenților.",
   "onboardingUnsupportedDescription": "Sandbox-ul nu este disponibil pe această platformă. Execuția agenților va fi fără izolare.",
-  "openApplicationSettings": "Deschide setările aplicației",
   "openArticlesInApp": "Deschide articolele în aplicație",
   "openInBrowser": "Deschide în browser",
   "openedInYourBrowser": "Deschis în browser.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Variabile de mediu personalizate transmise acestui adaptor (de ex. chei API). Stocate în keychain.",
   "variableKey": "Cheie",
   "variableValue": "Valoare",
-  "savingChanges": "Se salvează modificările…",
   "savingEllipsis": "Se salvează…",
   "scopeDiffToCommits": "Limitează diff-ul la commit-uri — Shift-click pentru interval",
   "noPrsMatchSearch": "Niciun pull request potrivit",
-  "noPrsMatchSearchHint": "Niciun PR deschis nu se potrivește căutării. Încearcă alți termeni sau golește căutarea.",
   "searchFactsHint": "Caută fapte...",
   "searchFonts": "Caută fonturi…",
   "searchGifs": "Caută GIF-uri",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Selectează agentul către care raportează…",
   "selectAnAgent": "Selectează un agent",
   "selectConversation": "Selectează o conversație",
-  "selectEffortLevel": "Selectează nivelul de efort",
   "selectLabel": "Selectează",
   "selectRunner": "Selectează un runner",
   "semanticSearch": "Căutare semantică",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Editor de abilități",
   "skillNameRequired": "Numele abilității este obligatoriu.",
   "skillSaved": "Abilitatea \"{name}\" a fost salvată.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Editor drag-and-drop pentru pipeline-urile care orchestrează agenții.",
   "pipelineTemplatesNew": "Șablon nou",
   "pipelineTemplatesEmpty": "Niciun șablon pipeline încă. Creează unul ca să începi.",
-  "pipelineTemplateIdLabel": "ID șablon",
   "pipelineTemplateBuiltInBadge": "Încorporat",
   "pipelineTemplateDeleteConfirmTitle": "Ștergi șablonul?",
   "pipelineTemplateDeleteConfirmBody": "Ștergi șablonul pipeline {name}? Acțiunea nu poate fi anulată.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Editează pipeline-ul",
   "pipelineTemplateEditorSubtitle": "Trage tipuri de noduri din bara laterală pe pânză, apoi leagă-le.",
   "unsavedChanges": "Modificări nesalvate",
   "nodeLibraryTitle": "Bibliotecă de noduri",
   "nodeLibraryHint": "Trage orice element pe pânză ca să adaugi un nod.",
-  "editorDragHint": "Trage din bibliotecă, apasă un nod ca să-l editezi",
   "editorEmptyCanvas": "Trage un nod din bibliotecă ca să începi.",
   "pipelineWhenThisHappens": "Când se întâmplă asta",
   "pipelineDoThis": "Fă asta",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Folosește placeholdere cu acolade duble ca să extragi valori din stare la runtime.",
   "nodeConfigScript": "Script Bash",
   "nodeConfigScriptHelp": "Rulează cu bash -c. GITHUB_TOKEN este setat. Placeholderele sunt înlocuite înainte de execuție.",
-  "nodeConfigTriggers": "Declanșatori de la",
-  "nodeConfigNoUpstream": "Niciun alt nod de conectat.",
   "nodeConfigRouteKeys": "Chei de rută",
   "nodeConfigRouteKeyFrom": "Cheie de rută de la {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Cazuri (separate prin virgulă)",
   "conditionCasesHelp": "Chei de rută de potrivit cu valoarea, în ordine.",
   "conditionDefaultCase": "Caz implicit",
-  "triggerPanelTitle": "Declanșatori",
-  "triggerPanelHelp": "Ce pornește acest pipeline.",
   "triggerManualHelp": "Afișează pe pagina de rulare și pornește manual.",
-  "triggerSectionAutomatic": "Declanșatori automat",
-  "triggerAddButton": "Adaugă declanșator",
-  "triggerNoneYet": "Niciun declanșator automat încă.",
-  "triggerAddDialogTitle": "Adaugă declanșator",
-  "triggerKindLabel": "Tip declanșator",
-  "triggerKindEvent": "La un eveniment",
   "triggerKindSchedule": "După un program",
-  "triggerKindWebhook": "Prin webhook",
   "triggerScheduleExprLabel": "Program (cron sau every:seconds)",
   "triggerTimezoneLabel": "Fus orar (opțional)",
   "triggerCatchUpLabel": "La rulări ratate",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Se generează un URL de webhook semnat. Sistemele externe fac POST către el ca să pornească acest pipeline.",
   "triggerWebhookPathLabel": "Calea webhook-ului",
-  "triggerEventFieldLabel": "Eveniment",
-  "triggerNoMoreEvents": "Toate evenimentele disponibile sunt deja conectate.",
   "triggerMatchStatusLabel": "Doar când starea este",
   "triggerSummaryNone": "Fără declanșatori",
   "triggerEverySeconds": "La fiecare {seconds}s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Elimină reclamele, trackerele și bannerele de cookie-uri din articolele deschise în cititor.",
   "agentQuestionHeader": "Întrebare pentru tine",
   "agentQuestionAnsweredLabel": "Răspuns",
-  "agentQuestionSubmit": "Trimite răspunsul",
   "agentQuestionFreeformHint": "Tastează răspunsul…",
-  "agentQuestionAnswerLabel": "Răspunsul tău",
   "agentQuestionProgress": "Întrebarea {index} din {count}",
   "agentQuestionSkip": "Omite",
   "agentQuestionSkippedLabel": "Omisă",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Deschide editorul",
   "ideNewTabMenu": "Filă nouă",
   "ideReviewCode": "Revizuiește codul",
-  "ideRevert": "Revino",
   "ideRevertConfirmTitle": "Revino asupra modificărilor",
-  "ideRevertConfirmMessage": "Revii {count, plural, one{1 fișier} few{# fișiere} other{# de fișiere}} la HEAD? Se renunță la modificările din worktree.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Revino",
-  "ideRevertConfirmCancel": "Anulează",
   "ideRevertUntracked": "Fișierele untracked nu pot fi revertate",
   "ideRevertFailed": "Nu s-au putut reveni asupra fișierelor. Worktree-ul conversației poate fi indisponibil.",
   "ideRevertSomeSkipped": "{count, plural, one{1 fișier} few{# fișiere} other{# de fișiere}} nu au putut fi revertate (untracked).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Vezi sursa",
   "ideSearchMatchCase": "Potrivește majusculele",
   "ideSearchWholeWord": "Cuvânt întreg",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "URL de bază (opțional)",
-  "customProvidersDescription": "Orice endpoint compatibil OpenAI sau Anthropic — Ollama, LM Studio, vLLM sau o implementare privată — cu o cheie API opțională.",
   "addProvider": "Adaugă provider",
   "noCustomProviders": "Niciun provider personalizat încă.",
   "providerNameLabel": "Nume",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "de ex. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Rulări recente",
   "repoScriptsNoRuns": "Nicio rulare încă",
-  "repoScriptsOutput": "Ieșire",
   "repoScriptsSaved": "Scripturi salvate",
   "repoScriptsRunKindSetup": "Setup",
   "repoScriptsRunKindArchive": "Arhivare",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Niciun provider nu e conectat, deci runtime-ul încorporat al agentului nu are pe ce să ruleze. Adaugă o cheie API sau autentifică-te la unul mai jos.",
   "providersFilterHint": "Filtrează providerii",
-  "providersFacetNeedsSetup": "Necesită configurare",
-  "providersFacetCustom": "Personalizat",
   "providersNoneMatch": "Nimic nu se potrivește acestui filtru",
   "providerDeniedHereTitle": "Refuzat în acest spațiu de lucru",
   "providerDeniedHereBody": "Agenții de aici nu pot folosi acest provider, deși e conectat. Celelalte spații de lucru nu sunt afectate.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Filtrează modelele",
   "adaptersNoneReadyNote": "Niciunul dintre CLI-urile de runner din catalog nu a fost găsit pe această mașină. Instalează unul, apoi reîmprospătează.",
   "adaptersFilterHint": "Filtrează runnerele",
-  "adaptersFacetReady": "Gata",
-  "adaptersFacetMissing": "Lipsă",
   "adaptersLaunchGroup": "Lansare",
   "adaptersLaunchGroupDescription": "Ce i se dă acestui runner când un agent îl pornește. Setează-le înainte de a instala CLI-ul, dacă vrei.",
   "adaptersEnvNone": "Niciuna setată",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Patru locuri care arată ce face de fapt aplicația.",
   "demoTourSkip": "Sari",
   "demoTourStarRepo": "Star pe GitHub",
-  "demoTourDone": "Gata",
   "demoTourOpen": "Deschide",
   "demoTourSpacesTitle": "Vorbește cu un agent",
   "demoTourSpacesBody": "Trimite un mesaj într-un spațiu și urmărește o rulare care streamează — gândire, apeluri de instrumente și cost, exact cum se randă o rulare reală.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Tichetele, todo-urile și planurile sunt legate de aceleași conversații pe care le au agenții.",
   "demoTourInboxTitle": "Vezi toată operațiunea",
   "demoTourInboxBody": "Fiecare alertă din fiecare pilon ajunge într-un singur inbox — revizuiri, tichete, rulări și întâlniri.",
-  "demoSessionEndingSoon": "Această sesiune demo se încheie în {minutes} minute.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Această sesiune demo s-a încheiat. Reîncarcă pagina ca să pornești una nouă.",
   "demoUnavailableTitle": "Indisponibil în demo",
   "demoUnavailableTerminal": "Un terminal rulează un shell real pe gazda serverului. Demo-ul nu are nicio suprafață de execuție — asta îl face sigur de deschis publicului.",
   "demoUnavailableRig": "Un mediu izolat este o mașină virtuală de unică folosință pe care o conduce un agent. Demo-ul nu pornește nicio VM: un endpoint public care poate porni o VM nu e un demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Fișier bază de date a spațiului de lucru",
   "backupImportSourceDescription": "Un fișier .db pe care serverul îl poate citi. Căile se rezolvă pe gazda serverului, nu pe acest dispozitiv.",
-  "backupImportChooseFile": "Alege fișierul",
   "backupImportDone": "Importat în {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

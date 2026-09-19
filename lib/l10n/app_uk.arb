@@ -761,8 +761,6 @@
   "copyRelativePath": "Копіювати відносний шлях",
   "nameRequired": "Потрібна назва",
   "import": "Імпортувати",
-  "sortByStatus": "Статус",
-  "sortByName": "Назва",
   "noMatchingAgents": "Немає агентів, які відповідають фільтру",
   "watchVideoOn": "Дивитися відео на {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Запитати AI",
   "askAiReviewDescription": "Попросити AI зробити рев'ю цього PR",
   "assignees": "Призначені",
-  "attachFiles": "Прикріпити файли",
   "attachImage": "Прикріпити зображення",
   "attachedAgents": "Прикріплені агенти",
   "audioInput": "Аудіовхід",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Натисніть, щоб повторити",
   "close": "Закрити",
   "closeEsc": "Закрити (Esc)",
-  "closeKeyboardHint": "Закрити",
   "closeReader": "Закрити читач",
   "closed": "Закрито",
   "codeFont": "Шрифт коду",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Потрібне встановлення нативної пісочниці",
   "navObservability": "Спостережуваність",
   "navSettings": "Налаштування",
-  "navigateLabel": "Перейти",
   "networkBlockCount": "{count} мережевих блокувань",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Нейтральний",
   "newCommitsPushed": "Надіслано нові коміти — натисніть, щоб оновити diff",
   "newFact": "Новий факт",
-  "newLabel": "Нове",
   "newPolicy": "Нова політика",
   "newsfeed": "Стрічка новин",
   "newsfeedLabel": "Стрічка новин",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Немає (усі ролі)",
   "notAvailable": "Недоступно",
   "notConfiguredLabel": "Не налаштовано.",
-  "notDetected": "Не виявлено",
   "notFoundLabel": "Не знайдено",
   "notes": "Нотатки",
   "notificationAgentFinished": "Агент завершив роботу",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Вимкнути цей репозиторій",
-  "notificationsUnmuteRepo": "Увімкнути цей репозиторій",
   "onboardingLinuxDescription": "Control Center може використовувати контейнери Linux, щоб ізолювати виконання агентів.",
   "onboardingMacosDescription": "Control Center використовує нативну пісочницю на macOS, щоб ізолювати виконання агентів.",
   "onboardingUnsupportedDescription": "Пісочниця недоступна на цій платформі. Агенти виконуватимуться без ізоляції.",
-  "openApplicationSettings": "Відкрити налаштування застосунку",
   "openArticlesInApp": "Відкривати статті в застосунку",
   "openInBrowser": "Відкрити в браузері",
   "openedInYourBrowser": "Відкрито у браузері.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Користувацькі змінні середовища для цього адаптера (напр. ключі API). Зберігаються у зв’язці ключів.",
   "variableKey": "Ключ",
   "variableValue": "Значення",
-  "savingChanges": "Збереження змін…",
   "savingEllipsis": "Збереження…",
   "scopeDiffToCommits": "Обмежити diff комітами — Shift-клік для діапазону",
   "noPrsMatchSearch": "Немає відповідних pull request",
-  "noPrsMatchSearchHint": "Жоден відкритий PR не відповідає пошуку. Спробуйте інші слова або скиньте пошук.",
   "searchFactsHint": "Шукати факти...",
   "searchFonts": "Шукати шрифти…",
   "searchGifs": "Шукати GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Вибрати агента для звіту…",
   "selectAnAgent": "Вибрати агента",
   "selectConversation": "Вибрати розмову",
-  "selectEffortLevel": "Вибрати рівень зусиль",
   "selectLabel": "Вибрати",
   "selectRunner": "Вибрати runner",
   "semanticSearch": "Семантичний пошук",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Редактор скілів",
   "skillNameRequired": "Потрібна назва скіла.",
   "skillSaved": "Скіл «{name}» збережено.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Редактор із перетягуванням для конвеєрів, які оркеструють ваших агентів.",
   "pipelineTemplatesNew": "Новий шаблон",
   "pipelineTemplatesEmpty": "Ще немає шаблонів конвеєрів. Створіть перший, щоб почати.",
-  "pipelineTemplateIdLabel": "ID шаблону",
   "pipelineTemplateBuiltInBadge": "Вбудований",
   "pipelineTemplateDeleteConfirmTitle": "Видалити шаблон?",
   "pipelineTemplateDeleteConfirmBody": "Видалити шаблон конвеєра {name}? Цю дію не можна скасувати.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Редагувати конвеєр",
   "pipelineTemplateEditorSubtitle": "Перетягніть типи вузлів із бічної панелі на полотно, потім з’єднайте їх.",
   "unsavedChanges": "Незбережені зміни",
   "nodeLibraryTitle": "Бібліотека вузлів",
   "nodeLibraryHint": "Перетягніть елемент на полотно, щоб додати вузол.",
-  "editorDragHint": "Перетягуйте з бібліотеки, клацніть вузол, щоб редагувати",
   "editorEmptyCanvas": "Перетягніть вузол із бібліотеки, щоб почати.",
   "pipelineWhenThisHappens": "Коли це відбувається",
   "pipelineDoThis": "Зробити це",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Використовуйте плейсхолдери з подвійними дужками, щоб підставляти значення зі стану під час виконання.",
   "nodeConfigScript": "Bash-скрипт",
   "nodeConfigScriptHelp": "Запускається через bash -c. GITHUB_TOKEN задано. Плейсхолдери підставляються перед виконанням.",
-  "nodeConfigTriggers": "Тригери від",
-  "nodeConfigNoUpstream": "Немає інших вузлів для з’єднання.",
   "nodeConfigRouteKeys": "Ключі маршруту",
   "nodeConfigRouteKeyFrom": "Ключ маршруту від {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Варіанти (через кому)",
   "conditionCasesHelp": "Ключі маршрутів для зіставлення зі значенням, у заданому порядку.",
   "conditionDefaultCase": "Варіант за замовчуванням",
-  "triggerPanelTitle": "Тригери",
-  "triggerPanelHelp": "Що запускає цей конвеєр.",
   "triggerManualHelp": "Показати на сторінці запуску й запускати вручну.",
-  "triggerSectionAutomatic": "Автоматичні тригери",
-  "triggerAddButton": "Додати тригер",
-  "triggerNoneYet": "Автоматичних тригерів ще немає.",
-  "triggerAddDialogTitle": "Додати тригер",
-  "triggerKindLabel": "Тип тригера",
-  "triggerKindEvent": "За подією",
   "triggerKindSchedule": "За розкладом",
-  "triggerKindWebhook": "Через webhook",
   "triggerScheduleExprLabel": "Розклад (cron або every:seconds)",
   "triggerTimezoneLabel": "Часовий пояс (необов’язково)",
   "triggerCatchUpLabel": "Пропущені запуски",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Генерується підписаний URL webhook. Зовнішні системи надсилають POST, щоб запустити цей конвеєр.",
   "triggerWebhookPathLabel": "Шлях вебхука",
-  "triggerEventFieldLabel": "Подія",
-  "triggerNoMoreEvents": "Усі доступні події вже підключені.",
   "triggerMatchStatusLabel": "Лише коли статус",
   "triggerSummaryNone": "Немає тригерів",
   "triggerEverySeconds": "Кожні {seconds} с",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Прибирати рекламу, трекери та банери cookies зі статей, відкритих у читачі.",
   "agentQuestionHeader": "Питання до вас",
   "agentQuestionAnsweredLabel": "Відповідь надано",
-  "agentQuestionSubmit": "Надіслати відповідь",
   "agentQuestionFreeformHint": "Введіть відповідь…",
-  "agentQuestionAnswerLabel": "Ваша відповідь",
   "agentQuestionProgress": "Питання {index} з {count}",
   "agentQuestionSkip": "Пропустити",
   "agentQuestionSkippedLabel": "Пропущено",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Відкрити редактор",
   "ideNewTabMenu": "Нова вкладка",
   "ideReviewCode": "Рев'ю коду",
-  "ideRevert": "Відкотити",
   "ideRevertConfirmTitle": "Відкотити зміни",
-  "ideRevertConfirmMessage": "Відкотити {count, plural, one{{count} файл} few{{count} файли} many{{count} файлів} other{{count} файлу}} до HEAD? Це скасує зміни в робочому дереві.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Відкотити",
-  "ideRevertConfirmCancel": "Скасувати",
   "ideRevertUntracked": "Невідстежувані файли не можна відкотити",
   "ideRevertFailed": "Не вдалося відкотити файли. Робоче дерево розмови може бути недоступне.",
   "ideRevertSomeSkipped": "{count, plural, one{{count} файл} few{{count} файли} many{{count} файлів} other{{count} файлу}} не вдалося відкотити (невідстежувані).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Переглянути вихідний код",
   "ideSearchMatchCase": "Зважати на регістр",
   "ideSearchWholeWord": "Ціле слово",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Базовий URL (необов’язково)",
-  "customProvidersDescription": "Будь-яка сумісна з OpenAI або Anthropic кінцева точка — Ollama, LM Studio, vLLM чи приватне розгортання — з необов’язковим API-ключем.",
   "addProvider": "Додати провайдера",
   "noCustomProviders": "Ще немає власних провайдерів.",
   "providerNameLabel": "Назва",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "напр. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Останні запуски",
   "repoScriptsNoRuns": "Запусків ще не було",
-  "repoScriptsOutput": "Вивід",
   "repoScriptsSaved": "Скрипти збережено",
   "repoScriptsRunKindSetup": "Налаштування",
   "repoScriptsRunKindArchive": "Архівування",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Не підключено жодного провайдера, тож вбудованому середовищу виконання агентів немає на чому працювати. Додайте API-ключ або увійдіть у провайдера нижче.",
   "providersFilterHint": "Фільтрувати провайдерів",
-  "providersFacetNeedsSetup": "Потребує налаштування",
-  "providersFacetCustom": "Власні",
   "providersNoneMatch": "Нічого не відповідає цьому фільтру",
   "providerDeniedHereTitle": "Заборонено в цьому робочому просторі",
   "providerDeniedHereBody": "Агенти тут не можуть використовувати цей провайдер, хоч він і підключений. Інших робочих просторів це не стосується.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Фільтрувати моделі",
   "adaptersNoneReadyNote": "Жодного з CLI раннерів з каталогу не знайдено на цій машині. Встановіть один, потім оновіть.",
   "adaptersFilterHint": "Фільтрувати раннери",
-  "adaptersFacetReady": "Готові",
-  "adaptersFacetMissing": "Відсутні",
   "adaptersLaunchGroup": "Запуск",
   "adaptersLaunchGroupDescription": "Що отримує цей раннер, коли агент його запускає. Можете задати це ще до встановлення CLI.",
   "adaptersEnvNone": "Не задано",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Чотири місця, що показують, що робить програма.",
   "demoTourSkip": "Пропустити",
   "demoTourStarRepo": "Поставити зірку на GitHub",
-  "demoTourDone": "Готово",
   "demoTourOpen": "Відкрити",
   "demoTourSpacesTitle": "Поговоріть з агентом",
   "demoTourSpacesBody": "Надішліть повідомлення в просторі й дивіться стрім запуску — міркування, виклики інструментів і вартість, як у справжньому запуску.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Тікети, todo й плани прив’язані до тих самих розмов, які ведуть агенти.",
   "demoTourInboxTitle": "Бачити всю операцію",
   "demoTourInboxBody": "Усі сповіщення з кожного стовпа збираються в одну скриньку — рев’ю, тікети, запуски й зустрічі.",
-  "demoSessionEndingSoon": "Ця демосесія завершиться за {minutes} хв.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Ця демосесія завершилася. Перезавантажте сторінку, щоб почати нову.",
   "demoUnavailableTitle": "У демо недоступно",
   "demoUnavailableTerminal": "Термінал запускає справжню оболонку на хості сервера. У демо немає жодної поверхні виконання — саме тому його безпечно відкривати публічно.",
   "demoUnavailableRig": "Enclosure — одноразова віртуальна машина, якою керує агент. Демо не запускає жодної: публічна кінцева точка, яка може стартувати VM, — це вже не демо.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Файл бази даних робочого простору",
   "backupImportSourceDescription": "Файл .db, який сервер може прочитати. Шляхи вказують на хост сервера, а не на цей пристрій.",
-  "backupImportChooseFile": "Вибрати файл",
   "backupImportDone": "Імпортовано в {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

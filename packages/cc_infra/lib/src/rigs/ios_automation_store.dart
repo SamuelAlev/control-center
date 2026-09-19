@@ -14,10 +14,6 @@ const String kIosAutomationVersion = 'v16.12.8';
 const String kIosAutomationCommit =
     '3e8aa7de81f254dbb0876baa9e9173c16b55b3a0';
 
-/// SHA-256 of the pinned WebDriverAgent BSD-3-Clause notice.
-const String kIosAutomationLicenseSha256 =
-    'd9910c6ba5e4c29ae415ee3ce875c9e18a60d8bc4d7fe2c2d104db2a718b1bb4';
-
 /// A byte source used to test installation without network access.
 typedef IosAutomationSource = Future<Stream<List<int>>> Function(Uri uri);
 

@@ -187,12 +187,6 @@ void main() {
     });
   });
 
-  group('fontsReadyProvider', () {
-    test('is a valid FutureProvider', () {
-      expect(fontsReadyProvider, isA<FutureProvider>());
-    });
-  });
-
   group('FontSettingsNotifier', () {
     test('build returns default settings', () async {
       final prefs = AppPreferences.inMemory({});

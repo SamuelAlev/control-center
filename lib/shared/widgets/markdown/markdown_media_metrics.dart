@@ -127,12 +127,6 @@ bool hasExpiredAttachmentJwt(Uri uri, {DateTime? now}) {
 /// this margin, make every token look dead on arrival.
 const Duration kAttachmentClockSkewAllowance = Duration(minutes: 2);
 
-/// True when fetching [uri] cannot succeed until the host re-fetches
-/// `body_html` — either because the URL was never spliced, or because the JWT
-/// the splice produced has since expired.
-bool needsAttachmentCredentials(Uri uri, {DateTime? now}) =>
-    isUnsplicedUserAttachment(uri) || hasExpiredAttachmentJwt(uri, now: now);
-
 /// A stable identity for a piece of remote markdown media.
 ///
 /// **Not the URL.** A pre-signed attachment URL carries a JWT that expires

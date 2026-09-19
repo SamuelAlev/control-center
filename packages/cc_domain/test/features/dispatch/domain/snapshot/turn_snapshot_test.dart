@@ -42,19 +42,4 @@ void main() {
       expect(a, isNot(const TurnSnapshot(start: 's')));
     });
   });
-
-  group('buildForkHandoffReminder', () {
-    test('mentions retained context and no directory by default', () {
-      final text = buildForkHandoffReminder();
-      expect(text, contains('<system-reminder>'));
-      expect(text, contains('retained intentionally'));
-      expect(text, isNot(contains('current working directory')));
-    });
-
-    test('includes the new working directory when forking a worktree', () {
-      final text = buildForkHandoffReminder(directory: '/tmp/fork-wt');
-      expect(text, contains('/tmp/fork-wt'));
-      expect(text, contains('supersedes'));
-    });
-  });
 }

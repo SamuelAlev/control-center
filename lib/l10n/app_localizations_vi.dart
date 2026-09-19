@@ -1633,12 +1633,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get import => 'Nhập';
 
   @override
-  String get sortByStatus => 'Trạng thái';
-
-  @override
-  String get sortByName => 'Tên';
-
-  @override
   String get noMatchingAgents => 'Không có agent nào khớp bộ lọc của bạn';
 
   @override
@@ -2680,9 +2674,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get assignees => 'Người được giao';
 
   @override
-  String get attachFiles => 'Đính kèm tệp';
-
-  @override
   String get attachImage => 'Đính kèm ảnh';
 
   @override
@@ -2799,9 +2790,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get closeEsc => 'Đóng (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Đóng';
 
   @override
   String get closeReader => 'Đóng trình đọc';
@@ -3924,9 +3912,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get navSettings => 'Cài đặt';
 
   @override
-  String get navigateLabel => 'Điều hướng';
-
-  @override
   String networkBlockCount(int count) {
     return '$count chặn mạng';
   }
@@ -3939,9 +3924,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get newFact => 'Thông tin mới';
-
-  @override
-  String get newLabel => 'Mới';
 
   @override
   String get newPolicy => 'Chính sách mới';
@@ -4063,9 +4045,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Chưa cấu hình.';
-
-  @override
-  String get notDetected => 'Không phát hiện';
 
   @override
   String get notFoundLabel => 'Không tìm thấy';
@@ -4318,9 +4297,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get notificationsMuteRepo => 'Tắt thông báo kho lưu trữ này';
 
   @override
-  String get notificationsUnmuteRepo => 'Bật lại thông báo kho lưu trữ này';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center có thể dùng container Linux để cô lập việc chạy agent.';
 
@@ -4331,9 +4307,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox không khả dụng trên nền tảng này. Agent sẽ chạy mà không có cô lập.';
-
-  @override
-  String get openApplicationSettings => 'Mở cài đặt ứng dụng';
 
   @override
   String get openArticlesInApp => 'Mở bài viết trong ứng dụng';
@@ -4760,9 +4733,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get variableValue => 'Giá trị';
 
   @override
-  String get savingChanges => 'Đang lưu thay đổi…';
-
-  @override
   String get savingEllipsis => 'Đang lưu…';
 
   @override
@@ -4771,10 +4741,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Không có pull request khớp';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Không có PR đang mở khớp tìm kiếm. Thử từ khác hoặc xóa tìm kiếm.';
 
   @override
   String get searchFactsHint => 'Tìm fact...';
@@ -4831,9 +4797,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get selectConversation => 'Chọn cuộc hội thoại';
-
-  @override
-  String get selectEffortLevel => 'Chọn mức effort';
 
   @override
   String get selectLabel => 'Chọn';
@@ -4894,9 +4857,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String signedInAs(String username) {
     return 'Đã đăng nhập với tên $username.';
   }
-
-  @override
-  String get skillEditor => 'Trình chỉnh sửa skill';
 
   @override
   String get skillNameRequired => 'Tên skill là bắt buộc.';
@@ -6191,9 +6151,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chưa có mẫu quy trình. Tạo một mẫu để bắt đầu.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID mẫu';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Có sẵn';
 
   @override
@@ -6203,9 +6160,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Xóa mẫu quy trình $name? Không thể hoàn tác.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Sửa quy trình';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6219,9 +6173,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => 'Kéo bất kỳ mục nào vào canvas để thêm nút.';
-
-  @override
-  String get editorDragHint => 'Kéo từ thư viện, nhấp nút để chỉnh sửa';
 
   @override
   String get editorEmptyCanvas => 'Kéo một nút từ thư viện để bắt đầu.';
@@ -6356,12 +6307,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Chạy bằng bash -c. GITHUB_TOKEN được thiết lập. Placeholder được thay thế trước khi thực thi.';
 
   @override
-  String get nodeConfigTriggers => 'Kích hoạt từ';
-
-  @override
-  String get nodeConfigNoUpstream => 'Không có nút nào khác để nối từ.';
-
-  @override
   String get nodeConfigRouteKeys => 'Khóa định tuyến';
 
   @override
@@ -6434,37 +6379,10 @@ class AppLocalizationsVi extends AppLocalizations {
   String get conditionDefaultCase => 'Nhánh mặc định';
 
   @override
-  String get triggerPanelTitle => 'Bộ kích hoạt';
-
-  @override
-  String get triggerPanelHelp => 'Điều khởi chạy quy trình này.';
-
-  @override
   String get triggerManualHelp => 'Hiện trên trang chạy và khởi chạy thủ công.';
 
   @override
-  String get triggerSectionAutomatic => 'Bộ kích hoạt tự động';
-
-  @override
-  String get triggerAddButton => 'Thêm bộ kích hoạt';
-
-  @override
-  String get triggerNoneYet => 'Chưa có bộ kích hoạt tự động.';
-
-  @override
-  String get triggerAddDialogTitle => 'Thêm bộ kích hoạt';
-
-  @override
-  String get triggerKindLabel => 'Loại bộ kích hoạt';
-
-  @override
-  String get triggerKindEvent => 'Khi có sự kiện';
-
-  @override
   String get triggerKindSchedule => 'Theo lịch';
-
-  @override
-  String get triggerKindWebhook => 'Qua webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Lịch (cron hoặc every:seconds)';
@@ -6510,12 +6428,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Đường dẫn webhook';
-
-  @override
-  String get triggerEventFieldLabel => 'Sự kiện';
-
-  @override
-  String get triggerNoMoreEvents => 'Tất cả sự kiện có sẵn đã được gắn.';
 
   @override
   String get triggerMatchStatusLabel => 'Chỉ khi trạng thái là';
@@ -6994,13 +6906,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Đã trả lời';
 
   @override
-  String get agentQuestionSubmit => 'Gửi câu trả lời';
-
-  @override
   String get agentQuestionFreeformHint => 'Nhập câu trả lời…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Câu trả lời của bạn';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8574,27 +8480,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get ideReviewCode => 'Review mã';
 
   @override
-  String get ideRevert => 'Hoàn nguyên';
-
-  @override
   String get ideRevertConfirmTitle => 'Hoàn nguyên thay đổi';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tệp',
-      one: '1 tệp',
-    );
-    return 'Hoàn nguyên $_temp0 về HEAD? Thao tác này sẽ hủy thay đổi trên cây làm việc.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Hoàn nguyên';
-
-  @override
-  String get ideRevertConfirmCancel => 'Hủy';
 
   @override
   String get ideRevertUntracked => 'Không thể hoàn nguyên tệp chưa theo dõi';
@@ -8613,9 +8499,6 @@ class AppLocalizationsVi extends AppLocalizations {
     );
     return '$_temp0 không hoàn nguyên được (chưa theo dõi).';
   }
-
-  @override
-  String get ideViewSource => 'Xem nguồn';
 
   @override
   String get ideSearchMatchCase => 'Phân biệt hoa/thường';
@@ -9144,10 +9027,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get providerBaseUrlHint => 'URL gốc (tùy chọn)';
 
   @override
-  String get customProvidersDescription =>
-      'Mọi endpoint tương thích OpenAI hoặc Anthropic — Ollama, LM Studio, vLLM, hoặc triển khai riêng — kèm khóa API tùy chọn.';
-
-  @override
   String get addProvider => 'Thêm nhà cung cấp';
 
   @override
@@ -9264,9 +9143,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Chưa có lần chạy nào';
-
-  @override
-  String get repoScriptsOutput => 'Kết quả';
 
   @override
   String get repoScriptsSaved => 'Đã lưu script';
@@ -13083,12 +12959,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get providersFilterHint => 'Lọc nhà cung cấp';
 
   @override
-  String get providersFacetNeedsSetup => 'Cần thiết lập';
-
-  @override
-  String get providersFacetCustom => 'Tùy chỉnh';
-
-  @override
   String get providersNoneMatch => 'Không có mục nào khớp bộ lọc này';
 
   @override
@@ -13124,12 +12994,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Lọc runner';
-
-  @override
-  String get adaptersFacetReady => 'Sẵn sàng';
-
-  @override
-  String get adaptersFacetMissing => 'Thiếu';
 
   @override
   String get adaptersLaunchGroup => 'Khởi chạy';
@@ -14020,9 +13884,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get demoTourStarRepo => 'Gắn sao trên GitHub';
 
   @override
-  String get demoTourDone => 'Xong';
-
-  @override
   String get demoTourOpen => 'Mở';
 
   @override
@@ -14052,15 +13913,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Mọi cảnh báo từ mọi trụ cột vào một hộp thư đến — đánh giá, phiếu, run và cuộc họp.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Phiên demo này kết thúc sau $minutes phút.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Phiên demo này đã kết thúc. Tải lại trang để bắt đầu phiên mới.';
 
   @override
   String get demoUnavailableTitle => 'Không có trong bản demo';
@@ -14231,9 +14083,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Tệp .db mà máy chủ đọc được. Đường dẫn được phân giải trên máy chủ, không trên thiết bị này.';
-
-  @override
-  String get backupImportChooseFile => 'Chọn tệp';
 
   @override
   String backupImportDone(String name) {

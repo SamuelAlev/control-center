@@ -761,8 +761,6 @@
   "copyRelativePath": "相対パスをコピー",
   "nameRequired": "名前は必須です",
   "import": "インポート",
-  "sortByStatus": "ステータス",
-  "sortByName": "名前",
   "noMatchingAgents": "フィルターに一致するエージェントはありません",
   "watchVideoOn": "{provider}で動画を見る",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "AIに質問",
   "askAiReviewDescription": "このPRのレビューをAIに依頼",
   "assignees": "担当者",
-  "attachFiles": "ファイルを添付",
   "attachImage": "画像を添付",
   "attachedAgents": "添付エージェント",
   "audioInput": "音声入力",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "クリックして再試行",
   "close": "閉じる",
   "closeEsc": "閉じる（Esc）",
-  "closeKeyboardHint": "閉じる",
   "closeReader": "リーダーを閉じる",
   "closed": "クローズ",
   "codeFont": "コードフォント",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "ネイティブサンドボックスのインストールが必要です",
   "navObservability": "オブザーバビリティ",
   "navSettings": "設定",
-  "navigateLabel": "移動",
   "networkBlockCount": "{count}件のネットワークブロック",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "中立",
   "newCommitsPushed": "新しいコミットがプッシュされました — クリックして差分を再読み込み",
   "newFact": "新しいファクト",
-  "newLabel": "新規",
   "newPolicy": "新しいポリシー",
   "newsfeed": "ニュースフィード",
   "newsfeedLabel": "ニュースフィード",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "なし（すべてのロール）",
   "notAvailable": "利用不可",
   "notConfiguredLabel": "未設定です。",
-  "notDetected": "未検出",
   "notFoundLabel": "見つかりません",
   "notes": "メモ",
   "notificationAgentFinished": "エージェント完了",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "このリポジトリをミュート",
-  "notificationsUnmuteRepo": "このリポジトリのミュートを解除",
   "onboardingLinuxDescription": "Control Center は Linux コンテナでエージェントの実行を分離できます。",
   "onboardingMacosDescription": "Control Center は macOS のネイティブサンドボックスでエージェントの実行を分離します。",
   "onboardingUnsupportedDescription": "このプラットフォームではサンドボックスを利用できません。エージェントは分離なしで実行されます。",
-  "openApplicationSettings": "アプリの設定を開く",
   "openArticlesInApp": "アプリで記事を開く",
   "openInBrowser": "ブラウザで開く",
   "openedInYourBrowser": "ブラウザで開きました。",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "このアダプターに渡すカスタム環境変数です（例: APIキー）。キーチェーンに保存されます。",
   "variableKey": "キー",
   "variableValue": "値",
-  "savingChanges": "変更を保存しています…",
   "savingEllipsis": "保存中…",
   "scopeDiffToCommits": "コミットでdiffの範囲を指定 — Shiftクリックで範囲選択",
   "noPrsMatchSearch": "一致するプルリクエストはありません",
-  "noPrsMatchSearchHint": "検索に一致するオープンなPRはありません。別のキーワードを試すか、検索をクリアしてください。",
   "searchFactsHint": "ファクトを検索...",
   "searchFonts": "フォントを検索…",
   "searchGifs": "GIFを検索",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "報告先のエージェントを選択…",
   "selectAnAgent": "エージェントを選択",
   "selectConversation": "会話を選択",
-  "selectEffortLevel": "エフォートレベルを選択",
   "selectLabel": "選択",
   "selectRunner": "ランナーを選択",
   "semanticSearch": "セマンティック検索",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "スキルエディター",
   "skillNameRequired": "スキル名は必須です。",
   "skillSaved": "スキル「{name}」を保存しました。",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "エージェントを編成するパイプライン用のドラッグ＆ドロップエディターです。",
   "pipelineTemplatesNew": "新しいテンプレート",
   "pipelineTemplatesEmpty": "パイプラインテンプレートはまだありません。作成して始めましょう。",
-  "pipelineTemplateIdLabel": "テンプレートID",
   "pipelineTemplateBuiltInBadge": "組み込み",
   "pipelineTemplateDeleteConfirmTitle": "テンプレートを削除しますか？",
   "pipelineTemplateDeleteConfirmBody": "パイプラインテンプレート {name} を削除しますか？この操作は取り消せません。",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "パイプラインを編集",
   "pipelineTemplateEditorSubtitle": "サイドバーからノード種別をキャンバスにドラッグし、接続してください。",
   "unsavedChanges": "未保存の変更",
   "nodeLibraryTitle": "ノードライブラリ",
   "nodeLibraryHint": "項目をキャンバスにドラッグするとノードが追加されます。",
-  "editorDragHint": "ライブラリからドラッグし、ノードをクリックして編集",
   "editorEmptyCanvas": "ライブラリからノードをドラッグして開始してください。",
   "pipelineWhenThisHappens": "これが起きたとき",
   "pipelineDoThis": "これを実行",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "二重波括弧のプレースホルダーで、実行時に状態から値を取り込めます。",
   "nodeConfigScript": "Bash スクリプト",
   "nodeConfigScriptHelp": "bash -c で実行します。GITHUB_TOKEN が設定されます。プレースホルダーは実行前に置換されます。",
-  "nodeConfigTriggers": "トリガー元",
-  "nodeConfigNoUpstream": "接続元にできる他のノードはありません。",
   "nodeConfigRouteKeys": "ルートキー",
   "nodeConfigRouteKeyFrom": "{source} からのルートキー",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "ケース（カンマ区切り）",
   "conditionCasesHelp": "値と照合するルートキーです。順に評価します。",
   "conditionDefaultCase": "デフォルトケース",
-  "triggerPanelTitle": "トリガー",
-  "triggerPanelHelp": "このパイプラインを開始する条件です。",
   "triggerManualHelp": "実行ページに表示し、手動で開始します。",
-  "triggerSectionAutomatic": "自動トリガー",
-  "triggerAddButton": "トリガーを追加",
-  "triggerNoneYet": "自動トリガーはまだありません。",
-  "triggerAddDialogTitle": "トリガーを追加",
-  "triggerKindLabel": "トリガーの種類",
-  "triggerKindEvent": "イベント時",
   "triggerKindSchedule": "スケジュール時",
-  "triggerKindWebhook": "webhook 経由",
   "triggerScheduleExprLabel": "スケジュール（cron または every:seconds）",
   "triggerTimezoneLabel": "タイムゾーン（任意）",
   "triggerCatchUpLabel": "取りこぼした実行",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "署名付きの Webhook URL が生成されます。外部システムが POST すると、このパイプラインが開始されます。",
   "triggerWebhookPathLabel": "Webhook のパス",
-  "triggerEventFieldLabel": "イベント",
-  "triggerNoMoreEvents": "利用できるイベントはすべて接続済みです。",
   "triggerMatchStatusLabel": "ステータスが次のときのみ",
   "triggerSummaryNone": "トリガーなし",
   "triggerEverySeconds": "{seconds} 秒ごと",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "リーダーで開く記事から広告、トラッカー、Cookie バナーを除去します。",
   "agentQuestionHeader": "質問があります",
   "agentQuestionAnsweredLabel": "回答済み",
-  "agentQuestionSubmit": "回答を送信",
   "agentQuestionFreeformHint": "回答を入力…",
-  "agentQuestionAnswerLabel": "あなたの回答",
   "agentQuestionProgress": "質問 {index} / {count}",
   "agentQuestionSkip": "スキップ",
   "agentQuestionSkippedLabel": "スキップ済み",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "エディターを開く",
   "ideNewTabMenu": "新しいタブ",
   "ideReviewCode": "コードをレビュー",
-  "ideRevert": "元に戻す",
   "ideRevertConfirmTitle": "変更を元に戻す",
-  "ideRevertConfirmMessage": "{count, plural, =1{1件のファイル} other{{count}件のファイル}}をHEADに戻しますか？ワークツリーの変更は破棄されます。",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "元に戻す",
-  "ideRevertConfirmCancel": "キャンセル",
   "ideRevertUntracked": "未追跡ファイルは元に戻せません",
   "ideRevertFailed": "ファイルを元に戻せませんでした。会話のワークツリーが利用できない可能性があります。",
   "ideRevertSomeSkipped": "{count, plural, =1{1件のファイル} other{{count}件のファイル}}を元に戻せませんでした（未追跡）。",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "ソースを表示",
   "ideSearchMatchCase": "大文字と小文字を区別",
   "ideSearchWholeWord": "単語単位",
   "ideSearchRegex": "正規表現",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "ベースURL（任意）",
-  "customProvidersDescription": "OpenAI または Anthropic 互換のエンドポイント（Ollama、LM Studio、vLLM、プライベート環境など）を、任意の API キー付きで追加できます。",
   "addProvider": "プロバイダーを追加",
   "noCustomProviders": "カスタムプロバイダーはまだありません。",
   "providerNameLabel": "名前",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "例: docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "最近の実行",
   "repoScriptsNoRuns": "まだ実行はありません",
-  "repoScriptsOutput": "出力",
   "repoScriptsSaved": "スクリプトを保存しました",
   "repoScriptsRunKindSetup": "セットアップ",
   "repoScriptsRunKindArchive": "アーカイブ",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "どのプロバイダーも接続されていないため、内蔵エージェントランタイムが実行できません。下でAPIキーを追加するか、サインインしてください。",
   "providersFilterHint": "プロバイダーを絞り込み",
-  "providersFacetNeedsSetup": "要セットアップ",
-  "providersFacetCustom": "カスタム",
   "providersNoneMatch": "このフィルターに一致するものはありません",
   "providerDeniedHereTitle": "このワークスペースで拒否されています",
   "providerDeniedHereBody": "このプロバイダーは接続されていても、このワークスペースのエージェントは使用できません。他のワークスペースには影響しません。",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "モデルを絞り込み",
   "adaptersNoneReadyNote": "カタログされたランナーCLIはどれもこのマシンで見つかりませんでした。1つインストールしてから更新してください。",
   "adaptersFilterHint": "ランナーを絞り込み",
-  "adaptersFacetReady": "準備完了",
-  "adaptersFacetMissing": "未インストール",
   "adaptersLaunchGroup": "起動",
   "adaptersLaunchGroupDescription": "エージェントがこのランナーを起動するときに渡されるものです。CLIのインストール前に設定しておくこともできます。",
   "adaptersEnvNone": "未設定",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "アプリが実際に何をするかがわかる4つの場所。",
   "demoTourSkip": "スキップ",
   "demoTourStarRepo": "GitHubでスター",
-  "demoTourDone": "完了",
   "demoTourOpen": "開く",
   "demoTourSpacesTitle": "エージェントに話しかける",
   "demoTourSpacesBody": "スペースでメッセージを送ると、実行のストリーミングが見られます — 思考、ツール呼び出し、コストが、実際の実行とまったく同じように描画されます。",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "チケット、todo、プランは、エージェントが交わしているのと同じ会話に紐付いています。",
   "demoTourInboxTitle": "運用全体を見る",
   "demoTourInboxBody": "すべての機能からのあらゆる通知が1つの受信トレイに届きます — レビュー、チケット、実行、会議。",
-  "demoSessionEndingSoon": "このデモセッションはあと{minutes}分で終了します。",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "このデモセッションは終了しました。ページを再読み込みすると、新しいセッションが始まります。",
   "demoUnavailableTitle": "デモでは利用できません",
   "demoUnavailableTerminal": "ターミナルは、サーバーホスト上で本物のシェルを動かします。デモには実行面がまったくありません — だからこそ、一般公開しても安全なのです。",
   "demoUnavailableRig": "エンクロージャは、エージェントが操作する使い捨ての仮想マシンです。デモは1台も起動しません。VMを起動できる公開エンドポイントはデモではありません。",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "ワークスペースのデータベースファイル",
   "backupImportSourceDescription": "サーバーが読み取れる.dbファイル。パスはこのデバイスではなく、サーバーホスト上で解決されます。",
-  "backupImportChooseFile": "ファイルを選択",
   "backupImportDone": "{name}にインポートしました。",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

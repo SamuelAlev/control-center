@@ -2,9 +2,6 @@ import 'dart:math' as math;
 
 import 'package:cc_domain/features/memory/domain/value_objects/memory_type.dart';
 
-/// Default half-life (hours) used when no per-type Weibull params apply.
-const double defaultHalflifeHours = 168;
-
 /// Per-type Weibull temporal-decay boost in `(0,1]`.
 ///
 /// Returns `exp(-((ageHours/eta)^k))` where `k`/`eta` come from [memoryType].

@@ -68,19 +68,6 @@ Map<String, dynamic> goldenToWire(GoldenSession g) => {
   'blessedAt': g.blessedAt.toIso8601String(),
 };
 
-/// Serializes an [AgentConfigVersion] to the wire.
-Map<String, dynamic> configVersionToWire(AgentConfigVersion v) => {
-  'id': v.id,
-  'agentId': v.agentId,
-  'configHash': v.configHash,
-  'hashVersion': v.hashVersion,
-  'status': v.status,
-  'scorecardJson': v.scorecardJson,
-  'promotedBy': v.promotedBy,
-  'promotedAt': v.promotedAt?.toIso8601String(),
-  'createdAt': v.createdAt.toIso8601String(),
-};
-
 /// Builds the eval RPC ops (PRD 21). `runSuite` executes a batch via the
 /// injected runner factory, which the runtime constructs with a dispatch-backed
 /// task executor; when none is wired the op returns a clear error, never a fake

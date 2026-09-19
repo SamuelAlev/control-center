@@ -30,7 +30,6 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -620,9 +619,3 @@ class BidiClient extends ScriptedBrowserEngineClient {
     _onDone();
   }
 }
-
-/// Decodes a base64 screenshot into frame bytes.
-///
-/// Shared with the polled watch lane, which needs the same decode per tick and
-/// must not build an intermediate string per frame beyond this one.
-Uint8List decodeBrowserStill(String base64Data) => base64Decode(base64Data);

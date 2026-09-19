@@ -34,11 +34,6 @@ List<PipelineStepDefinition> pipelineTriggerSteps(PipelineDefinition def) => [
     if (step.kind == StepKind.trigger) step,
 ];
 
-/// Ids of every [StepKind.trigger] node.
-Set<String> pipelineTriggerStepIds(PipelineDefinition def) => {
-  for (final step in pipelineTriggerSteps(def)) step.id,
-};
-
 /// The graph node a run with [triggerEventType] should enter.
 ///
 /// A template with one trigger step (built-ins, unexpanded drafts) always

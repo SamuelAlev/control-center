@@ -83,16 +83,6 @@ class CcPaths {
   String _safeSegment(String raw) =>
       raw.replaceAll(RegExp(r'[^A-Za-z0-9_.-]'), '_');
 
-  /// Path to the server-global SQLite database (`global.db`).
-  ///
-  /// Workspace rows live in `<workspaceId>/workspace.db`, opened by
-  /// `cc_persistence`, not this helper. The historical single-file name
-  /// `control_center.db` is no longer written.
-  Future<File> databaseFile() async {
-    await root();
-    return File(p.join(appSupportRoot, 'global.db'));
-  }
-
   /// Path to the MCP client config file at the app data root.
   Future<File> mcpConfigFile() async {
     await root();

@@ -761,8 +761,6 @@
   "copyRelativePath": "העתק נתיב יחסי",
   "nameRequired": "נדרש שם",
   "import": "ייבא",
-  "sortByStatus": "סטטוס",
-  "sortByName": "שם",
   "noMatchingAgents": "אין סוכנים התואמים למסנן שלך",
   "watchVideoOn": "צפה בסרטון ב-⁨{provider}⁩",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "שאל את ה־AI",
   "askAiReviewDescription": "בקשו מה־AI לסקור את ה־PR הזה",
   "assignees": "אחראים",
-  "attachFiles": "צירוף קבצים",
   "attachImage": "צירוף תמונה",
   "attachedAgents": "סוכנים מצורפים",
   "audioInput": "כניסת שמע",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "לחצו כדי לנסות שוב",
   "close": "סגירה",
   "closeEsc": "סגירה (Esc)",
-  "closeKeyboardHint": "סגירה",
   "closeReader": "סגירת תצוגת הקריאה",
   "closed": "סגור",
   "codeFont": "גופן קוד",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "נדרשת התקנת ארגז חול מקורי",
   "navObservability": "ניטור",
   "navSettings": "הגדרות",
-  "navigateLabel": "ניווט",
   "networkBlockCount": "{count} חסימות רשת",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "ניטרלי",
   "newCommitsPushed": "נדחפו קומיטים חדשים — לחץ כדי לטעון מחדש את ה־diff",
   "newFact": "עובדה חדשה",
-  "newLabel": "חדש",
   "newPolicy": "מדיניות חדשה",
   "newsfeed": "עדכוני חדשות",
   "newsfeedLabel": "עדכוני חדשות",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "ללא (כל התפקידים)",
   "notAvailable": "לא זמין",
   "notConfiguredLabel": "לא מוגדר.",
-  "notDetected": "לא זוהה",
   "notFoundLabel": "לא נמצא",
   "notes": "הערות",
   "notificationAgentFinished": "הסוכן סיים",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "השתק מאגר זה",
-  "notificationsUnmuteRepo": "בטל השתקת מאגר זה",
   "onboardingLinuxDescription": "Control Center יכול להשתמש בקונטיינרים של Linux כדי לבודד הרצת סוכנים.",
   "onboardingMacosDescription": "Control Center משתמש בארגז חול מקורי ב־macOS כדי לבודד הרצת סוכנים.",
   "onboardingUnsupportedDescription": "ארגז חול אינו זמין בפלטפורמה זו. הרצת סוכנים תתבצע ללא בידוד.",
-  "openApplicationSettings": "פתח את הגדרות היישום",
   "openArticlesInApp": "פתח כתבות בתוך היישום",
   "openInBrowser": "פתח בדפדפן",
   "openedInYourBrowser": "נפתח בדפדפן שלך.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "משתני סביבה מותאמים אישית המועברים למתאם זה (למשל מפתחות API). נשמרים ב־keychain.",
   "variableKey": "מפתח",
   "variableValue": "ערך",
-  "savingChanges": "שומר שינויים…",
   "savingEllipsis": "שומר…",
   "scopeDiffToCommits": "הגבל את ה־diff לקומיטים — לחיצה עם Shift לבחירת טווח",
   "noPrsMatchSearch": "אין בקשות משיכה תואמות",
-  "noPrsMatchSearchHint": "אין PRs פתוחים שתואמים לחיפוש שלך. נסה מונחים אחרים או נקה את החיפוש.",
   "searchFactsHint": "חיפוש עובדות...",
   "searchFonts": "חיפוש גופנים…",
   "searchGifs": "חיפוש GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "בחר סוכן לדווח אליו…",
   "selectAnAgent": "בחר סוכן",
   "selectConversation": "בחר שיחה",
-  "selectEffortLevel": "בחר רמת מאמץ",
   "selectLabel": "בחר",
   "selectRunner": "בחר מריץ",
   "semanticSearch": "חיפוש סמנטי",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "עורך מיומנויות",
   "skillNameRequired": "נדרש שם מיומנות.",
   "skillSaved": "המיומנות \"⁨{name}⁩\" נשמרה.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "עורך גרירה ושחרור לפייפליינים שמתזמרים את הסוכנים שלכם.",
   "pipelineTemplatesNew": "תבנית חדשה",
   "pipelineTemplatesEmpty": "אין עדיין תבניות פייפליין. צרו אחת כדי להתחיל.",
-  "pipelineTemplateIdLabel": "ה-ID של התבנית",
   "pipelineTemplateBuiltInBadge": "מובנה",
   "pipelineTemplateDeleteConfirmTitle": "למחוק את התבנית?",
   "pipelineTemplateDeleteConfirmBody": "למחוק את תבנית הפייפליין {name}? לא ניתן לבטל פעולה זו.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "עריכת פייפליין",
   "pipelineTemplateEditorSubtitle": "גררו סוגי צמתים מסרגל הצד אל הקנבס, ואז חברו אותם זה לזה.",
   "unsavedChanges": "שינויים שלא נשמרו",
   "nodeLibraryTitle": "ספריית צמתים",
   "nodeLibraryHint": "גררו פריט אל הקנבס כדי להוסיף צומת.",
-  "editorDragHint": "גררו מהספרייה ולחצו על צומת כדי לערוך",
   "editorEmptyCanvas": "גררו צומת מהספרייה כדי להתחיל.",
   "pipelineWhenThisHappens": "כשזה קורה",
   "pipelineDoThis": "עשה זאת",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "השתמשו במצייני מקום בסוגריים מסולסלים כפולים כדי למשוך ערכים מהמצב בזמן ריצה.",
   "nodeConfigScript": "סקריפט Bash",
   "nodeConfigScriptHelp": "רץ עם ⁨bash -c⁩. המשתנה ⁨GITHUB_TOKEN⁩ מוגדר. מצייני מקום מוחלפים לפני הביצוע.",
-  "nodeConfigTriggers": "מופעל על ידי",
-  "nodeConfigNoUpstream": "אין צמתים אחרים להתחבר מהם.",
   "nodeConfigRouteKeys": "מפתחות ניתוב",
   "nodeConfigRouteKeyFrom": "מפתח ניתוב מ-{source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "מקרים (מופרדים בפסיקים)",
   "conditionCasesHelp": "מפתחות ניתוב להשוואה מול הערך, לפי הסדר.",
   "conditionDefaultCase": "מקרה ברירת מחדל",
-  "triggerPanelTitle": "טריגרים",
-  "triggerPanelHelp": "מה מתחיל את הפייפליין הזה.",
   "triggerManualHelp": "הצגה בדף ההרצה והתחלה ידנית.",
-  "triggerSectionAutomatic": "טריגרים אוטומטיים",
-  "triggerAddButton": "הוספת טריגר",
-  "triggerNoneYet": "אין עדיין טריגרים אוטומטיים.",
-  "triggerAddDialogTitle": "הוספת טריגר",
-  "triggerKindLabel": "סוג טריגר",
-  "triggerKindEvent": "באירוע",
   "triggerKindSchedule": "לפי לוח זמנים",
-  "triggerKindWebhook": "דרך webhook",
   "triggerScheduleExprLabel": "לוח זמנים (cron או ⁨every:seconds⁩)",
   "triggerTimezoneLabel": "אזור זמן (אופציונלי)",
   "triggerCatchUpLabel": "הרצות שהוחמצו",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "נוצר URL חתום של webhook. מערכות חיצוניות שולחות אליו POST כדי להתחיל את הפייפליין הזה.",
   "triggerWebhookPathLabel": "נתיב ה-webhook",
-  "triggerEventFieldLabel": "אירוע",
-  "triggerNoMoreEvents": "כל האירועים הזמינים כבר מחוברים.",
   "triggerMatchStatusLabel": "רק כשהסטטוס הוא",
   "triggerSummaryNone": "ללא טריגרים",
   "triggerEverySeconds": "כל {seconds} שניות",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "הסרת פרסומות, רכיבי מעקב ובאנרים של עוגיות מכתבות שנפתחות בקורא.",
   "agentQuestionHeader": "שאלה אליכם",
   "agentQuestionAnsweredLabel": "נענתה",
-  "agentQuestionSubmit": "שליחת תשובה",
   "agentQuestionFreeformHint": "הקלידו את תשובתכם…",
-  "agentQuestionAnswerLabel": "התשובה שלכם",
   "agentQuestionProgress": "שאלה {index} מתוך {count}",
   "agentQuestionSkip": "דילוג",
   "agentQuestionSkippedLabel": "דולגה",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "פתיחת עורך",
   "ideNewTabMenu": "כרטיסייה חדשה",
   "ideReviewCode": "סקירת קוד",
-  "ideRevert": "שחזור",
   "ideRevertConfirmTitle": "שחזור שינויים",
-  "ideRevertConfirmMessage": "לשחזר {count, plural, one{קובץ אחד} two{שני קבצים} many{{count} קבצים} other{{count} קבצים}} ל-⁨HEAD⁩? פעולה זו מוחקת את השינויים בעץ העבודה.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "שחזור",
-  "ideRevertConfirmCancel": "ביטול",
   "ideRevertUntracked": "לא ניתן לשחזר קבצים שאינם במעקב",
   "ideRevertFailed": "לא ניתן לשחזר את הקבצים. ייתכן שעץ העבודה של השיחה אינו זמין.",
   "ideRevertSomeSkipped": "לא ניתן היה לשחזר {count, plural, one{קובץ אחד} two{שני קבצים} many{{count} קבצים} other{{count} קבצים}} (לא במעקב).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "הצגת המקור",
   "ideSearchMatchCase": "התאמת רישיות",
   "ideSearchWholeWord": "מילה שלמה",
   "ideSearchRegex": "ביטוי רגולרי",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "כתובת בסיס (אופציונלי)",
-  "customProvidersDescription": "כל נקודת קצה תואמת OpenAI או Anthropic — Ollama‏, LM Studio‏, vLLM או פריסה פרטית — עם מפתח API אופציונלי.",
   "addProvider": "הוספת ספק",
   "noCustomProviders": "אין ספקים מותאמים אישית עדיין.",
   "providerNameLabel": "שם",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "לדוגמה: ⁨docker compose -p $CC_SPACE_ID down⁩",
   "repoScriptsRecentRuns": "הרצות אחרונות",
   "repoScriptsNoRuns": "אין הרצות עדיין",
-  "repoScriptsOutput": "פלט",
   "repoScriptsSaved": "הסקריפטים נשמרו",
   "repoScriptsRunKindSetup": "הקמה",
   "repoScriptsRunKindArchive": "ארכוב",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "אף ספק אינו מחובר, ולכן לסביבת הריצה המובנית של הסוכנים אין על מה לרוץ. הוסיפו מפתח API או היכנסו לאחד מהספקים למטה.",
   "providersFilterHint": "סינון ספקים",
-  "providersFacetNeedsSetup": "דורש הגדרה",
-  "providersFacetCustom": "מותאם אישית",
   "providersNoneMatch": "אין התאמות למסנן הזה",
   "providerDeniedHereTitle": "נדחה בסביבת עבודה זו",
   "providerDeniedHereBody": "סוכנים כאן אינם יכולים להשתמש בספק הזה, אף שהוא מחובר. סביבות עבודה אחרות אינן מושפעות.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "סינון מודלים",
   "adaptersNoneReadyNote": "אף אחד מכלי ה-CLI של המריצים שבקטלוג לא נמצא במחשב הזה. התקינו אחד ואז רעננו.",
   "adaptersFilterHint": "סינון מריצים",
-  "adaptersFacetReady": "מוכן",
-  "adaptersFacetMissing": "חסר",
   "adaptersLaunchGroup": "הפעלה",
   "adaptersLaunchGroupDescription": "מה המריץ הזה מקבל כשסוכן מפעיל אותו. אפשר להגדיר את אלה עוד לפני התקנת ה-CLI.",
   "adaptersEnvNone": "לא הוגדר דבר",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "ארבעה מקומות שמראים מה האפליקציה באמת עושה.",
   "demoTourSkip": "דילוג",
   "demoTourStarRepo": "כוכב ב-GitHub",
-  "demoTourDone": "סיום",
   "demoTourOpen": "פתיחה",
   "demoTourSpacesTitle": "דברו עם סוכן",
   "demoTourSpacesBody": "שלחו הודעה במרחב וצפו בהרצה זורמת פנימה — חשיבה, קריאות כלים ועלות, בדיוק כפי שהרצה אמיתית נראית.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "כרטיסים, מטלות ותוכניות מקושרים לאותן שיחות שהסוכנים מנהלים.",
   "demoTourInboxTitle": "ראו את התמונה המלאה",
   "demoTourInboxBody": "כל התראה מכל תחום נוחתת בדואר נכנס אחד — סקירות, כרטיסים, הרצות ופגישות.",
-  "demoSessionEndingSoon": "הפעלת הדמו הזו מסתיימת בעוד {minutes} דקות.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "הפעלת הדמו הזו הסתיימה. רעננו את הדף כדי להתחיל חדשה.",
   "demoUnavailableTitle": "לא זמין בדמו",
   "demoUnavailableTerminal": "טרמינל מריץ מעטפת אמיתית על מארח השרת. לדמו אין שום משטח הרצה — זה מה שהופך אותו לבטוח לפתיחה לציבור.",
   "demoUnavailableRig": "מתחם מבודד הוא מכונה וירטואלית חד-פעמית שסוכן מפעיל. הדמו לא מאתחל אף אחת: נקודת קצה ציבורית שיכולה להפעיל VM אינה דמו.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "קובץ מסד הנתונים של סביבת העבודה",
   "backupImportSourceDescription": "קובץ ⁨.db⁩ שהשרת יכול לקרוא. נתיבים נפתרים על מארח השרת, לא במכשיר הזה.",
-  "backupImportChooseFile": "בחירת קובץ",
   "backupImportDone": "יובא אל {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

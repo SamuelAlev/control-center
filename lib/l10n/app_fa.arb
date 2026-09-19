@@ -761,8 +761,6 @@
   "copyRelativePath": "کپی مسیر نسبی",
   "nameRequired": "نام لازم است",
   "import": "وارد کردن",
-  "sortByStatus": "وضعیت",
-  "sortByName": "نام",
   "noMatchingAgents": "عاملی با فیلتر شما جور نیست",
   "watchVideoOn": "تماشای ویدیو در ⁨{provider}⁩",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "پرسش از AI",
   "askAiReviewDescription": "از AI بخواهید این PR را بازبینی کند",
   "assignees": "تخصیص‌یافته‌ها",
-  "attachFiles": "پیوست فایل",
   "attachImage": "پیوست تصویر",
   "attachedAgents": "عامل‌های پیوست‌شده",
   "audioInput": "ورودی صدا",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "برای تلاش مجدد کلیک کنید",
   "close": "بستن",
   "closeEsc": "بستن (Esc)",
-  "closeKeyboardHint": "بستن",
   "closeReader": "بستن خواننده",
   "closed": "بسته",
   "codeFont": "فونت کد",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "نصب سندباکس بومی لازم است",
   "navObservability": "مشاهده‌پذیری",
   "navSettings": "تنظیمات",
-  "navigateLabel": "ناوبری",
   "networkBlockCount": "{count} مسدودسازی شبکه",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "خنثی",
   "newCommitsPushed": "کامیت‌های جدید پوش شد — برای بارگذاری دوبارهٔ دیف کلیک کنید",
   "newFact": "واقعیت جدید",
-  "newLabel": "جدید",
   "newPolicy": "سیاست جدید",
   "newsfeed": "خوراک خبری",
   "newsfeedLabel": "خوراک خبری",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "هیچ (همهٔ نقش‌ها)",
   "notAvailable": "در دسترس نیست",
   "notConfiguredLabel": "پیکربندی نشده.",
-  "notDetected": "تشخیص داده نشد",
   "notFoundLabel": "یافت نشد",
   "notes": "یادداشت‌ها",
   "notificationAgentFinished": "عامل تمام کرد",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "بی‌صدا کردن این مخزن",
-  "notificationsUnmuteRepo": "باصدا کردن این مخزن",
   "onboardingLinuxDescription": "Control Center می‌تواند از کانتینرهای Linux برای جداسازی اجرای عامل استفاده کند.",
   "onboardingMacosDescription": "Control Center روی macOS از سندباکس بومی برای جداسازی اجرای عامل استفاده می‌کند.",
   "onboardingUnsupportedDescription": "سندباکس روی این سکو در دسترس نیست. اجرای عامل بدون جداسازی خواهد بود.",
-  "openApplicationSettings": "باز کردن تنظیمات برنامه",
   "openArticlesInApp": "باز کردن مقاله‌ها در برنامه",
   "openInBrowser": "باز کردن در مرورگر",
   "openedInYourBrowser": "در مرورگر شما باز شد.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "متغیرهای محیطی سفارشی که به این آداپتور پاس می‌شوند (مثلاً کلیدهای API). در keychain ذخیره می‌شوند.",
   "variableKey": "کلید",
   "variableValue": "مقدار",
-  "savingChanges": "در حال ذخیرهٔ تغییرات…",
   "savingEllipsis": "در حال ذخیره…",
   "scopeDiffToCommits": "محدود کردن دیف به کامیت‌ها — Shift-کلیک برای بازه",
   "noPrsMatchSearch": "pull request مطابقی نیست",
-  "noPrsMatchSearchHint": "هیچ PR بازی با جستجوی شما جور نیست. عبارت دیگری امتحان کنید یا جستجو را پاک کنید.",
   "searchFactsHint": "جستجوی واقعیت‌ها…",
   "searchFonts": "جستجوی فونت‌ها…",
   "searchGifs": "جستجوی GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "عاملی را برای گزارش انتخاب کنید…",
   "selectAnAgent": "یک عامل انتخاب کنید",
   "selectConversation": "یک گفتگو انتخاب کنید",
-  "selectEffortLevel": "سطح تلاش را انتخاب کنید",
   "selectLabel": "انتخاب",
   "selectRunner": "یک اجراکننده انتخاب کنید",
   "semanticSearch": "جستجوی معنایی",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "ویرایشگر مهارت",
   "skillNameRequired": "نام مهارت لازم است.",
   "skillSaved": "مهارت «⁨{name}⁩» ذخیره شد.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "ویرایشگر کشیدن‌ورها کردن برای پایپ‌لاین‌هایی که عامل‌ها را ارکستر می‌کنند.",
   "pipelineTemplatesNew": "قالب جدید",
   "pipelineTemplatesEmpty": "هنوز قالب پایپ‌لاینی نیست. یکی بسازید تا شروع کنید.",
-  "pipelineTemplateIdLabel": "شناسهٔ قالب",
   "pipelineTemplateBuiltInBadge": "داخلی",
   "pipelineTemplateDeleteConfirmTitle": "قالب حذف شود؟",
   "pipelineTemplateDeleteConfirmBody": "قالب پایپ‌لاین ⁨{name}⁩ حذف شود؟ این کار برگشت‌ناپذیر است.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "ویرایش پایپ‌لاین",
   "pipelineTemplateEditorSubtitle": "انواع گره را از نوار کناری به بوم بکشید، سپس به هم وصل کنید.",
   "unsavedChanges": "تغییرات ذخیره‌نشده",
   "nodeLibraryTitle": "کتابخانهٔ گره",
   "nodeLibraryHint": "هر مورد را به بوم بکشید تا گره اضافه شود.",
-  "editorDragHint": "از کتابخانه بکشید، روی گره کلیک کنید تا ویرایش شود",
   "editorEmptyCanvas": "گرهی از کتابخانه بکشید تا شروع کنید.",
   "pipelineWhenThisHappens": "وقتی این رخ می‌دهد",
   "pipelineDoThis": "این کار را بکن",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "از نگه‌دارهای دوقلاب برای کشیدن مقدار از حالت در زمان اجرا استفاده کنید.",
   "nodeConfigScript": "اسکریپت Bash",
   "nodeConfigScriptHelp": "با ⁨bash -c⁩ اجرا می‌شود. ⁨GITHUB_TOKEN⁩ تنظیم است. نگه‌دارها پیش از اجرا جایگزین می‌شوند.",
-  "nodeConfigTriggers": "تریگر از",
-  "nodeConfigNoUpstream": "گره دیگری برای اتصال از آن نیست.",
   "nodeConfigRouteKeys": "کلیدهای مسیر",
   "nodeConfigRouteKeyFrom": "کلید مسیر از ⁨{source}⁩",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "موارد (جدا با ویرگول)",
   "conditionCasesHelp": "کلیدهای مسیر برای تطبیق با مقدار، به ترتیب.",
   "conditionDefaultCase": "مورد پیش‌فرض",
-  "triggerPanelTitle": "تریگرها",
-  "triggerPanelHelp": "چه چیزی این پایپ‌لاین را شروع می‌کند.",
   "triggerManualHelp": "در صفحهٔ اجرا نشان بده و دستی شروع کن.",
-  "triggerSectionAutomatic": "تریگرهای خودکار",
-  "triggerAddButton": "افزودن تریگر",
-  "triggerNoneYet": "هنوز تریگر خودکاری نیست.",
-  "triggerAddDialogTitle": "افزودن تریگر",
-  "triggerKindLabel": "نوع تریگر",
-  "triggerKindEvent": "روی یک رویداد",
   "triggerKindSchedule": "روی یک زمان‌بندی",
-  "triggerKindWebhook": "از طریق webhook",
   "triggerScheduleExprLabel": "زمان‌بندی (⁨cron⁩ یا ⁨every:seconds⁩)",
   "triggerTimezoneLabel": "منطقهٔ زمانی (اختیاری)",
   "triggerCatchUpLabel": "روی اجراهای ازدست‌رفته",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "یک URL وب‌هوک امضاشده ساخته می‌شود. سیستم‌های خارجی با POST به آن این پایپ‌لاین را شروع می‌کنند.",
   "triggerWebhookPathLabel": "مسیر وب‌هوک",
-  "triggerEventFieldLabel": "رویداد",
-  "triggerNoMoreEvents": "همهٔ رویدادهای موجود از قبل وصل شده‌اند.",
   "triggerMatchStatusLabel": "فقط وقتی وضعیت برابر است با",
   "triggerSummaryNone": "بدون تریگر",
   "triggerEverySeconds": "هر {seconds}ث",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "تبلیغات، ردیاب‌ها و بنرهای کوکی را از مقاله‌هایی که در خواننده باز می‌کنید حذف کنید.",
   "agentQuestionHeader": "پرسش برای شما",
   "agentQuestionAnsweredLabel": "پاسخ‌داده‌شده",
-  "agentQuestionSubmit": "ارسال پاسخ",
   "agentQuestionFreeformHint": "پاسختان را بنویسید…",
-  "agentQuestionAnswerLabel": "پاسخ شما",
   "agentQuestionProgress": "پرسش {index} از {count}",
   "agentQuestionSkip": "رد شدن",
   "agentQuestionSkippedLabel": "رد شد",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "باز کردن ویرایشگر",
   "ideNewTabMenu": "زبانهٔ جدید",
   "ideReviewCode": "بازبینی کد",
-  "ideRevert": "بازگردانی",
   "ideRevertConfirmTitle": "بازگردانی تغییرات",
-  "ideRevertConfirmMessage": "{count, plural, =1{1 فایل} other{{count} فایل}} به HEAD بازگردانده شود؟ تغییرات worktree دور ریخته می‌شود.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "بازگردانی",
-  "ideRevertConfirmCancel": "لغو",
   "ideRevertUntracked": "فایل‌های ردیابی‌نشده قابل بازگردانی نیستند",
   "ideRevertFailed": "بازگردانی فایل‌ها ممکن نشد. worktree گفتگو ممکن است در دسترس نباشد.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 فایل} other{{count} فایل}} بازگردانده نشد (ردیابی‌نشده).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "نمایش منبع",
   "ideSearchMatchCase": "تطبیق بزرگ‌کوچک",
   "ideSearchWholeWord": "کلمهٔ کامل",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "URL پایه (اختیاری)",
-  "customProvidersDescription": "هر نقطهٔ سازگار با OpenAI یا Anthropic — Ollama، LM Studio، vLLM یا استقرار خصوصی — با کلید API اختیاری.",
   "addProvider": "افزودن ارائه‌دهنده",
   "noCustomProviders": "هنوز ارائه‌دهندهٔ سفارشی نیست.",
   "providerNameLabel": "نام",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "مثلاً ⁨docker compose -p $CC_SPACE_ID down⁩",
   "repoScriptsRecentRuns": "اجراهای اخیر",
   "repoScriptsNoRuns": "هنوز اجرایی نیست",
-  "repoScriptsOutput": "خروجی",
   "repoScriptsSaved": "اسکریپت‌ها ذخیره شد",
   "repoScriptsRunKindSetup": "راه‌اندازی",
   "repoScriptsRunKindArchive": "بایگانی",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "هیچ ارائه‌دهنده‌ای وصل نیست، پس زمان اجرای عامل داخلی چیزی برای اجرا ندارد. کلید API اضافه کنید یا به یکی زیر وارد شوید.",
   "providersFilterHint": "فیلتر ارائه‌دهندگان",
-  "providersFacetNeedsSetup": "نیاز به راه‌اندازی",
-  "providersFacetCustom": "سفارشی",
   "providersNoneMatch": "چیزی با این فیلتر جور نیست",
   "providerDeniedHereTitle": "در این فضای کاری رد شده",
   "providerDeniedHereBody": "عامل‌ها اینجا نمی‌توانند از این ارائه‌دهنده استفاده کنند، حتی اگر وصل باشد. فضاهای کاری دیگر بی‌تأثیرند.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "فیلتر مدل‌ها",
   "adaptersNoneReadyNote": "هیچ‌کدام از CLIهای کاتالوگ اجراکننده روی این ماشین یافت نشد. یکی نصب کنید، سپس تازه‌سازی کنید.",
   "adaptersFilterHint": "فیلتر اجراکننده‌ها",
-  "adaptersFacetReady": "آماده",
-  "adaptersFacetMissing": "غایب",
   "adaptersLaunchGroup": "راه‌اندازی",
   "adaptersLaunchGroupDescription": "وقتی عاملی این اجراکننده را شروع می‌کند چه چیزی به آن داده می‌شود. اگر بخواهید پیش از نصب CLI تنظیم کنید.",
   "adaptersEnvNone": "هیچ‌کدام تنظیم نشده",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "چهار جا که نشان می‌دهد برنامه واقعاً چه می‌کند.",
   "demoTourSkip": "رد کردن",
   "demoTourStarRepo": "ستاره در GitHub",
-  "demoTourDone": "تمام",
   "demoTourOpen": "باز کردن",
   "demoTourSpacesTitle": "با عامل حرف بزنید",
   "demoTourSpacesBody": "در فضا پیام بفرستید و استریم اجرا را ببینید — فکر، فراخوانی ابزار و هزینه، دقیقاً مثل اجرای واقعی.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "تیکت‌ها، کارها و برنامه‌ها به همان گفتگوهایی که عامل‌ها دارند پیوند شده‌اند.",
   "demoTourInboxTitle": "کل عملیات را ببینید",
   "demoTourInboxBody": "هر هشدار از هر ستون در یک صندوق ورودی می‌آید — بازبینی‌ها، تیکت‌ها، اجراها و جلسات.",
-  "demoSessionEndingSoon": "این نشست دمو تا {minutes} دقیقه دیگر تمام می‌شود.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "این نشست دمو تمام شده. صفحه را دوباره بارگذاری کنید تا یکی جدید شروع شود.",
   "demoUnavailableTitle": "در دمو در دسترس نیست",
   "demoUnavailableTerminal": "ترمینال شل واقعی روی میزبان سرور اجرا می‌کند. دمو هیچ سطح اجرایی ندارد — همان چیزی که باز کردنش برای عموم را امن می‌کند.",
   "demoUnavailableRig": "محفظه یک ماشین مجازی دورریختنی است که عامل می‌راند. دمو هیچ‌کدام را بوت نمی‌کند: نقطهٔ پایانی عمومی که بتواند VM شروع کند دمو نیست.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "فایل پایگاه دادهٔ فضای کاری",
   "backupImportSourceDescription": "فایل ⁨.db⁩ که سرور بتواند بخواند. مسیرها روی میزبان سرور حل می‌شوند، نه این دستگاه.",
-  "backupImportChooseFile": "انتخاب فایل",
   "backupImportDone": "به ⁨{name}⁩ وارد شد.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

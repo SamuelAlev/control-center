@@ -1622,12 +1622,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get import => 'นำเข้า';
 
   @override
-  String get sortByStatus => 'สถานะ';
-
-  @override
-  String get sortByName => 'ชื่อ';
-
-  @override
   String get noMatchingAgents => 'ไม่มีเอเจนต์ที่ตรงกับตัวกรอง';
 
   @override
@@ -2664,9 +2658,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get assignees => 'ผู้รับมอบหมาย';
 
   @override
-  String get attachFiles => 'แนบไฟล์';
-
-  @override
   String get attachImage => 'แนบภาพ';
 
   @override
@@ -2782,9 +2773,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get closeEsc => 'ปิด (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'ปิด';
 
   @override
   String get closeReader => 'ปิดตัวอ่าน';
@@ -3897,9 +3885,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get navSettings => 'การตั้งค่า';
 
   @override
-  String get navigateLabel => 'นำทาง';
-
-  @override
   String networkBlockCount(int count) {
     return 'บล็อกเครือข่าย $count รายการ';
   }
@@ -3912,9 +3897,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get newFact => 'ข้อเท็จจริงใหม่';
-
-  @override
-  String get newLabel => 'ใหม่';
 
   @override
   String get newPolicy => 'นโยบายใหม่';
@@ -4032,9 +4014,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'ยังไม่ได้ตั้งค่า';
-
-  @override
-  String get notDetected => 'ไม่พบ';
 
   @override
   String get notFoundLabel => 'ไม่พบ';
@@ -4284,9 +4263,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get notificationsMuteRepo => 'ปิดเสียงรีโพสิทอรีนี้';
 
   @override
-  String get notificationsUnmuteRepo => 'เปิดเสียงรีโพสิทอรีนี้';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center สามารถใช้คอนเทนเนอร์ Linux เพื่อแยกการรันของเอเจนต์';
 
@@ -4297,9 +4273,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'แซนด์บ็อกซ์ใช้ไม่ได้บนแพลตฟอร์มนี้ การรันของเอเจนต์จะไม่ถูกแยก';
-
-  @override
-  String get openApplicationSettings => 'เปิดการตั้งค่าแอป';
 
   @override
   String get openArticlesInApp => 'เปิดบทความในแอป';
@@ -4722,9 +4695,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get variableValue => 'ค่า';
 
   @override
-  String get savingChanges => 'กำลังบันทึกการเปลี่ยนแปลง…';
-
-  @override
   String get savingEllipsis => 'กำลังบันทึก…';
 
   @override
@@ -4733,10 +4703,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'ไม่มี pull request ที่ตรง';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'ไม่มี PR ที่เปิดอยู่ตรงกับการค้นหา ลองคำอื่นหรือล้างการค้นหา';
 
   @override
   String get searchFactsHint => 'ค้นหาข้อเท็จจริง...';
@@ -4793,9 +4759,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get selectConversation => 'เลือกการสนทนา';
-
-  @override
-  String get selectEffortLevel => 'เลือกระดับความพยายาม';
 
   @override
   String get selectLabel => 'เลือก';
@@ -4857,9 +4820,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String signedInAs(String username) {
     return 'ลงชื่อเข้าใช้เป็น $username';
   }
-
-  @override
-  String get skillEditor => 'ตัวแก้ไขสกิล';
 
   @override
   String get skillNameRequired => 'ต้องระบุชื่อสกิล';
@@ -6144,9 +6104,6 @@ class AppLocalizationsTh extends AppLocalizations {
       'ยังไม่มีเทมเพลตไปป์ไลน์ สร้างหนึ่งรายการเพื่อเริ่มต้น';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID เทมเพลต';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'ในตัว';
 
   @override
@@ -6156,9 +6113,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'ลบเทมเพลตไปป์ไลน์ $name หรือไม่? เลิกทำไม่ได้';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'แก้ไขไปป์ไลน์';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6172,9 +6126,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => 'ลากรายการใดก็ได้ลงบนแคนวาสเพื่อเพิ่มโหนด';
-
-  @override
-  String get editorDragHint => 'ลากจากคลัง คลิกโหนดเพื่อแก้ไข';
 
   @override
   String get editorEmptyCanvas => 'ลากโหนดจากคลังเพื่อเริ่ม';
@@ -6309,12 +6260,6 @@ class AppLocalizationsTh extends AppLocalizations {
       'รันด้วย bash -c มีการตั้ง GITHUB_TOKEN ตัวยึดถูกแทนที่ก่อนรัน';
 
   @override
-  String get nodeConfigTriggers => 'ทริกเกอร์จาก';
-
-  @override
-  String get nodeConfigNoUpstream => 'ไม่มีโหนดอื่นให้ต่อจาก';
-
-  @override
   String get nodeConfigRouteKeys => 'คีย์เส้นทาง';
 
   @override
@@ -6386,37 +6331,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get conditionDefaultCase => 'กรณีเริ่มต้น';
 
   @override
-  String get triggerPanelTitle => 'ทริกเกอร์';
-
-  @override
-  String get triggerPanelHelp => 'สิ่งที่เริ่มไปป์ไลน์นี้';
-
-  @override
   String get triggerManualHelp => 'แสดงในหน้ารันและเริ่มด้วยตนเอง';
 
   @override
-  String get triggerSectionAutomatic => 'ทริกเกอร์อัตโนมัติ';
-
-  @override
-  String get triggerAddButton => 'เพิ่มทริกเกอร์';
-
-  @override
-  String get triggerNoneYet => 'ยังไม่มีทริกเกอร์อัตโนมัติ';
-
-  @override
-  String get triggerAddDialogTitle => 'เพิ่มทริกเกอร์';
-
-  @override
-  String get triggerKindLabel => 'ชนิดทริกเกอร์';
-
-  @override
-  String get triggerKindEvent => 'เมื่อเกิดเหตุการณ์';
-
-  @override
   String get triggerKindSchedule => 'ตามตารางเวลา';
-
-  @override
-  String get triggerKindWebhook => 'ผ่าน webhook';
 
   @override
   String get triggerScheduleExprLabel => 'ตารางเวลา (cron หรือ every:seconds)';
@@ -6462,12 +6380,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'เส้นทางเว็บฮุค';
-
-  @override
-  String get triggerEventFieldLabel => 'เหตุการณ์';
-
-  @override
-  String get triggerNoMoreEvents => 'เหตุการณ์ที่ใช้ได้ถูกต่อไว้หมดแล้ว';
 
   @override
   String get triggerMatchStatusLabel => 'เฉพาะเมื่อสถานะคือ';
@@ -6938,13 +6850,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'ตอบแล้ว';
 
   @override
-  String get agentQuestionSubmit => 'ส่งคำตอบ';
-
-  @override
   String get agentQuestionFreeformHint => 'พิมพ์คำตอบของคุณ…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'คำตอบของคุณ';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8512,27 +8418,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get ideReviewCode => 'รีวิวโค้ด';
 
   @override
-  String get ideRevert => 'ย้อนกลับ';
-
-  @override
   String get ideRevertConfirmTitle => 'ย้อนการเปลี่ยนแปลง';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ไฟล์',
-      one: '1 ไฟล์',
-    );
-    return 'ย้อน $_temp0 ไปที่ HEAD หรือไม่? การเปลี่ยนแปลงใน worktree จะถูกทิ้ง';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'ย้อนกลับ';
-
-  @override
-  String get ideRevertConfirmCancel => 'ยกเลิก';
 
   @override
   String get ideRevertUntracked => 'ไฟล์ที่ยังไม่ติดตามย้อนกลับไม่ได้';
@@ -8551,9 +8437,6 @@ class AppLocalizationsTh extends AppLocalizations {
     );
     return '$_temp0 ย้อนกลับไม่ได้ (ยังไม่ติดตาม)';
   }
-
-  @override
-  String get ideViewSource => 'ดูซอร์ส';
 
   @override
   String get ideSearchMatchCase => 'ตรงตัวพิมพ์';
@@ -9077,10 +8960,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get providerBaseUrlHint => 'Base URL (ไม่บังคับ)';
 
   @override
-  String get customProvidersDescription =>
-      'เอนด์พอยต์ที่เข้ากันได้กับ OpenAI หรือ Anthropic — Ollama, LM Studio, vLLM หรือการติดตั้งส่วนตัว — พร้อมคีย์ API ไม่บังคับ';
-
-  @override
   String get addProvider => 'เพิ่มผู้ให้บริการ';
 
   @override
@@ -9196,9 +9075,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'ยังไม่มีรัน';
-
-  @override
-  String get repoScriptsOutput => 'เอาต์พุต';
 
   @override
   String get repoScriptsSaved => 'บันทึกสคริปต์แล้ว';
@@ -12994,12 +12870,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get providersFilterHint => 'กรองผู้ให้บริการ';
 
   @override
-  String get providersFacetNeedsSetup => 'ต้องตั้งค่า';
-
-  @override
-  String get providersFacetCustom => 'กำหนดเอง';
-
-  @override
   String get providersNoneMatch => 'ไม่มีอะไรตรงกับตัวกรองนี้';
 
   @override
@@ -13034,12 +12904,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'กรองตัวรัน';
-
-  @override
-  String get adaptersFacetReady => 'พร้อม';
-
-  @override
-  String get adaptersFacetMissing => 'ขาด';
 
   @override
   String get adaptersLaunchGroup => 'เปิดใช้';
@@ -13923,9 +13787,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get demoTourStarRepo => 'Star บน GitHub';
 
   @override
-  String get demoTourDone => 'เสร็จแล้ว';
-
-  @override
   String get demoTourOpen => 'เปิด';
 
   @override
@@ -13955,15 +13816,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'ทุกการแจ้งจากทุกเสาลงในกล่องขาเข้าเดียว — รีวิว ตั๋วงาน รัน และการประชุม';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'เซสชันเดโมนี้จบใน $minutes นาที';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'เซสชันเดโมนี้จบแล้ว โหลดหน้าใหม่เพื่อเริ่มอันใหม่';
 
   @override
   String get demoUnavailableTitle => 'ใช้ไม่ได้ในเดโม';
@@ -14134,9 +13986,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'ไฟล์ .db ที่เซิร์ฟเวอร์อ่านได้ พาธแก้บนโฮสต์เซิร์ฟเวอร์ ไม่ใช่บนอุปกรณ์นี้';
-
-  @override
-  String get backupImportChooseFile => 'เลือกไฟล์';
 
   @override
   String backupImportDone(String name) {

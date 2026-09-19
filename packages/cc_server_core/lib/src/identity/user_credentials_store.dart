@@ -95,10 +95,6 @@ class UserCredentialsStore {
     ProviderToken(accessToken: token),
   );
 
-  /// Removes [userId]'s stored GitHub token, if any.
-  Future<void> deleteGitHubToken(String userId) =>
-      clearForgeToken(userId, ForgeHost.github);
-
   /// Whether [userId] has a GitHub token configured.
   Future<bool> hasGitHubToken(String userId) =>
       hasForgeToken(userId, ForgeHost.github);

@@ -761,8 +761,6 @@
   "copyRelativePath": "Kopírovat relativní cestu",
   "nameRequired": "Název je povinný",
   "import": "Importovat",
-  "sortByStatus": "Stav",
-  "sortByName": "Název",
   "noMatchingAgents": "Žádní agenti neodpovídají filtru",
   "watchVideoOn": "Sledovat video na {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Zeptat se AI",
   "askAiReviewDescription": "Požádat AI o kontrolu tohoto PR",
   "assignees": "Přiřazení",
-  "attachFiles": "Přiložit soubory",
   "attachImage": "Přiložit obrázek",
   "attachedAgents": "Připojení agenti",
   "audioInput": "Zvukový vstup",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Klikněte pro opakování",
   "close": "Zavřít",
   "closeEsc": "Zavřít (Esc)",
-  "closeKeyboardHint": "Zavřít",
   "closeReader": "Zavřít čtečku",
   "closed": "Zavřeno",
   "codeFont": "Písmo kódu",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Vyžadována instalace nativního sandboxu",
   "navObservability": "Observabilita",
   "navSettings": "Nastavení",
-  "navigateLabel": "Navigovat",
   "networkBlockCount": "{count} síťových bloků",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Neutrální",
   "newCommitsPushed": "Byly odeslány nové commity — klikněte pro znovunačtení diffu",
   "newFact": "Nový fakt",
-  "newLabel": "Nové",
   "newPolicy": "Nová politika",
   "newsfeed": "Kanál novinek",
   "newsfeedLabel": "Kanál novinek",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Žádná (všechny role)",
   "notAvailable": "Není k dispozici",
   "notConfiguredLabel": "Nenastaveno.",
-  "notDetected": "Nezjištěno",
   "notFoundLabel": "Nenalezeno",
   "notes": "Poznámky",
   "notificationAgentFinished": "Agent dokončil",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Ztlumit tento repozitář",
-  "notificationsUnmuteRepo": "Zrušit ztlumení tohoto repozitáře",
   "onboardingLinuxDescription": "Control Center může k izolaci spouštění agentů použít Linux kontejnery.",
   "onboardingMacosDescription": "Control Center na macOS používá nativní sandbox k izolaci spouštění agentů.",
   "onboardingUnsupportedDescription": "Sandbox na této platformě není k dispozici. Agenti poběží bez izolace.",
-  "openApplicationSettings": "Otevřít nastavení aplikace",
   "openArticlesInApp": "Otevírat články v aplikaci",
   "openInBrowser": "Otevřít v prohlížeči",
   "openedInYourBrowser": "Otevřeno v prohlížeči.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Vlastní proměnné prostředí předané tomuto adaptéru (např. API klíče). Uloženy v keychainu.",
   "variableKey": "Klíč",
   "variableValue": "Hodnota",
-  "savingChanges": "Ukládání změn…",
   "savingEllipsis": "Ukládání…",
   "scopeDiffToCommits": "Omezit diff na commity — Shift-klik pro rozsah",
   "noPrsMatchSearch": "Žádné odpovídající pull requesty",
-  "noPrsMatchSearchHint": "Žádné otevřené PR neodpovídají hledání. Zkuste jiná slova nebo hledání vymažte.",
   "searchFactsHint": "Hledat fakta…",
   "searchFonts": "Hledat písma…",
   "searchGifs": "Hledat GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Vyberte agenta, kterému hlásit…",
   "selectAnAgent": "Vyberte agenta",
   "selectConversation": "Vyberte konverzaci",
-  "selectEffortLevel": "Vyberte úroveň úsilí",
   "selectLabel": "Vybrat",
   "selectRunner": "Vyberte runner",
   "semanticSearch": "Sémantické vyhledávání",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Editor dovedností",
   "skillNameRequired": "Název dovednosti je povinný.",
   "skillSaved": "Dovednost „{name}“ uložena.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Editor přetahováním pro pipeline, které orchestrují vaše agenty.",
   "pipelineTemplatesNew": "Nová šablona",
   "pipelineTemplatesEmpty": "Zatím žádné šablony pipeline. Vytvořte jednu a začněte.",
-  "pipelineTemplateIdLabel": "ID šablony",
   "pipelineTemplateBuiltInBadge": "Vestavěná",
   "pipelineTemplateDeleteConfirmTitle": "Smazat šablonu?",
   "pipelineTemplateDeleteConfirmBody": "Smazat šablonu pipeline {name}? Tuto akci nelze vrátit zpět.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Upravit pipeline",
   "pipelineTemplateEditorSubtitle": "Přetáhněte typy uzlů z postranního panelu na plátno a propojte je.",
   "unsavedChanges": "Neuložené změny",
   "nodeLibraryTitle": "Knihovna uzlů",
   "nodeLibraryHint": "Přetáhněte libovolnou položku na plátno a přidejte uzel.",
-  "editorDragHint": "Přetáhněte z knihovny, uzly upravíte kliknutím",
   "editorEmptyCanvas": "Začněte přetažením uzlu z knihovny.",
   "pipelineWhenThisHappens": "Když se to stane",
   "pipelineDoThis": "Proveďte toto",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Použijte zástupné znaky ve dvojitých složených závorkách a za běhu vytáhněte hodnoty ze stavu.",
   "nodeConfigScript": "Bash skript",
   "nodeConfigScriptHelp": "Běží přes bash -c. GITHUB_TOKEN je nastaven. Zástupné znaky se nahradí před spuštěním.",
-  "nodeConfigTriggers": "Spouštěče z",
-  "nodeConfigNoUpstream": "Žádné jiné uzly k připojení.",
   "nodeConfigRouteKeys": "Klíče trasy",
   "nodeConfigRouteKeyFrom": "Klíč trasy z {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Případy (oddělené čárkou)",
   "conditionCasesHelp": "Klíče trasy k porovnání s hodnotou, v pořadí.",
   "conditionDefaultCase": "Výchozí případ",
-  "triggerPanelTitle": "Spouštěče",
-  "triggerPanelHelp": "Co tuto pipeline spustí.",
   "triggerManualHelp": "Zobrazit na stránce běhů a spustit ručně.",
-  "triggerSectionAutomatic": "Automatické spouštěče",
-  "triggerAddButton": "Přidat spouštěč",
-  "triggerNoneYet": "Zatím žádné automatické spouštěče.",
-  "triggerAddDialogTitle": "Přidat spouštěč",
-  "triggerKindLabel": "Typ spouštěče",
-  "triggerKindEvent": "Při události",
   "triggerKindSchedule": "Podle plánu",
-  "triggerKindWebhook": "Přes webhook",
   "triggerScheduleExprLabel": "Plán (cron nebo every:seconds)",
   "triggerTimezoneLabel": "Časové pásmo (volitelné)",
   "triggerCatchUpLabel": "Při zmeškaných bězích",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Vygeneruje se podepsané URL webhooku. Externí systémy na něj POSTují a spustí tuto pipeline.",
   "triggerWebhookPathLabel": "Cesta webhooku",
-  "triggerEventFieldLabel": "Událost",
-  "triggerNoMoreEvents": "Všechny dostupné události už jsou zapojené.",
   "triggerMatchStatusLabel": "Jen když stav je",
   "triggerSummaryNone": "Žádné spouštěče",
   "triggerEverySeconds": "Každých {seconds} s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Odstraňovat reklamy, trackery a cookie bannery z článků otevřených ve čtečce.",
   "agentQuestionHeader": "Otázka pro vás",
   "agentQuestionAnsweredLabel": "Zodpovězeno",
-  "agentQuestionSubmit": "Odeslat odpověď",
   "agentQuestionFreeformHint": "Napište odpověď…",
-  "agentQuestionAnswerLabel": "Vaše odpověď",
   "agentQuestionProgress": "Otázka {index} z {count}",
   "agentQuestionSkip": "Přeskočit",
   "agentQuestionSkippedLabel": "Přeskočeno",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Otevřít editor",
   "ideNewTabMenu": "Nová karta",
   "ideReviewCode": "Zkontrolovat kód",
-  "ideRevert": "Vrátit",
   "ideRevertConfirmTitle": "Vrátit změny",
-  "ideRevertConfirmMessage": "Vrátit {count, plural, one{1 soubor} few{{count} soubory} many{{count} souborů} other{{count} souborů}} na HEAD? Tím se zahodí změny ve worktree.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Vrátit",
-  "ideRevertConfirmCancel": "Zrušit",
   "ideRevertUntracked": "Nesledované soubory nelze vrátit",
   "ideRevertFailed": "Soubory se nepodařilo vrátit. Worktree konverzace může být nedostupný.",
   "ideRevertSomeSkipped": "{count, plural, one{1 soubor} few{{count} soubory} many{{count} souborů} other{{count} souborů}} se nepodařilo vrátit (nesledované).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Zobrazit zdroj",
   "ideSearchMatchCase": "Rozlišovat velikost",
   "ideSearchWholeWord": "Celé slovo",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Základní URL (volitelné)",
-  "customProvidersDescription": "Libovolný endpoint kompatibilní s OpenAI nebo Anthropic — Ollama, LM Studio, vLLM nebo soukromé nasazení — s volitelným API klíčem.",
   "addProvider": "Přidat poskytovatele",
   "noCustomProviders": "Zatím žádní vlastní poskytovatelé.",
   "providerNameLabel": "Název",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "např. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Nedávné běhy",
   "repoScriptsNoRuns": "Zatím žádné běhy",
-  "repoScriptsOutput": "Výstup",
   "repoScriptsSaved": "Skripty uloženy",
   "repoScriptsRunKindSetup": "Setup",
   "repoScriptsRunKindArchive": "Archive",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Žádný poskytovatel není připojen, takže vestavěný runtime agenta nemá na čem běžet. Přidejte API klíč nebo se k jednomu níže přihlaste.",
   "providersFilterHint": "Filtrovat poskytovatele",
-  "providersFacetNeedsSetup": "Vyžaduje nastavení",
-  "providersFacetCustom": "Vlastní",
   "providersNoneMatch": "Nic neodpovídá tomuto filtru",
   "providerDeniedHereTitle": "V tomto pracovním prostoru zakázáno",
   "providerDeniedHereBody": "Agenti tady tohoto poskytovatele nemůžou použít, i když je připojen. Ostatní pracovní prostory zůstanou nedotčené.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Filtrovat modely",
   "adaptersNoneReadyNote": "Na tomto stroji nebyl nalezen žádný katalogový CLI runner. Nainstalujte jeden a obnovte.",
   "adaptersFilterHint": "Filtrovat runnery",
-  "adaptersFacetReady": "Připraveno",
-  "adaptersFacetMissing": "Chybí",
   "adaptersLaunchGroup": "Spuštění",
   "adaptersLaunchGroupDescription": "Co tento runner dostane, když ho agent spustí. Můžete to nastavit ještě před instalací CLI.",
   "adaptersEnvNone": "Nic nastaveno",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Čtyři místa, která ukazují, co aplikace skutečně dělá.",
   "demoTourSkip": "Přeskočit",
   "demoTourStarRepo": "Označit hvězdou na GitHub",
-  "demoTourDone": "Hotovo",
   "demoTourOpen": "Otevřít",
   "demoTourSpacesTitle": "Mluvit s agentem",
   "demoTourSpacesBody": "Pošlete zprávu v prostoru a sledujte stream běhu — přemýšlení, volání nástrojů a náklady, přesně jak se vykresluje skutečný běh.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Tickety, úkoly a plány jsou propojené se stejnými konverzacemi, které agenti vedou.",
   "demoTourInboxTitle": "Vidět celý provoz",
   "demoTourInboxBody": "Každé upozornění z každého pilíře skončí v jedné doručené poště — kontroly, tickety, běhy a schůzky.",
-  "demoSessionEndingSoon": "Tato demo relace skončí za {minutes} min.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Tato demo relace skončila. Načtěte stránku znovu a začněte novou.",
   "demoUnavailableTitle": "V demu není k dispozici",
   "demoUnavailableTerminal": "Terminál spouští skutečný shell na hostiteli serveru. Demo nemá žádný povrch spouštění — proto je bezpečné ho otevřít veřejnosti.",
   "demoUnavailableRig": "Izolované prostředí je jednorázový virtuální stroj, který agent řídí. Demo žádný nespustí: veřejný endpoint, který umí startovat VM, není demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Soubor databáze pracovního prostoru",
   "backupImportSourceDescription": "Soubor .db, který server umí číst. Cesty se řeší na hostiteli serveru, ne na tomto zařízení.",
-  "backupImportChooseFile": "Vybrat soubor",
   "backupImportDone": "Importováno do {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

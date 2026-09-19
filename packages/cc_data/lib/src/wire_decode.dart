@@ -55,20 +55,3 @@ List<T> decodeRows<T>(
   }
   return out;
 }
-
-/// Decodes one [row], returning null when it will not decode.
-///
-/// For the single-object reads (`getById`, a `watch` of one entity) where the
-/// honest answer to an undecodable payload is "not found" rather than a throw
-/// that reaches a widget.
-T? decodeRow<T>(
-  Map<String, dynamic>? row,
-  T Function(Map<String, dynamic> row) decode, {
-  required String what,
-}) {
-  if (row == null) {
-    return null;
-  }
-  final decoded = decodeRows<T>([row], decode, what: what);
-  return decoded.isEmpty ? null : decoded.first;
-}

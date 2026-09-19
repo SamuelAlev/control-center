@@ -8,7 +8,6 @@ import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update_codec.dart';
 import 'package:control_center/di/providers.dart';
-import 'package:control_center/features/agents/providers/conversation_run_tree_provider.dart';
 import 'package:control_center/features/agents/providers/run_activity_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -85,7 +84,6 @@ class _ScriptedRelay implements RunTranscriptRelayPort {
 }
 
 void main() {
-  const convKey = (workspaceId: 'ws-1', conversationId: 'c-1');
   const runKey = (workspaceId: 'ws-1', runId: 'run-1');
 
   ProviderContainer container({
@@ -182,24 +180,6 @@ void main() {
         expect(state.value, isNull);
       },
     );
-  });
-
-  group('shared conversation subscription', () {
-    test('the tree and a run row ride ONE run-log subscription', () async {
-      final ctl = StreamController<List<AgentRunLog>>.broadcast();
-      addTearDown(ctl.close);
-      final repo = _ScriptedRunLogRepo(ctl);
-      final c = container(repo: repo);
-      const runRowKey = (workspaceId: 'ws-1', spaceId: 'c-1', runId: 'run-1');
-
-      final a = c.listen(conversationRunTreeProvider(convKey), (_, _) {});
-      final b = c.listen(runInConversationProvider(runRowKey), (_, _) {});
-      addTearDown(a.close);
-      addTearDown(b.close);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(repo.subscriptions, 1);
-    });
   });
 
   group('runTranscriptProvider', () {

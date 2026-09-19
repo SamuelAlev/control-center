@@ -216,26 +216,6 @@ class RigCapabilities {
   /// Whether any backend at all is usable.
   bool get anyAvailable => backends.any((b) => b.available);
 
-  /// The backend to use for [surface] — the first available one that supports
-  /// it, preferring hardware acceleration.
-  ///
-  /// Returns null when nothing can host it. The caller must NOT fall back to
-  /// "some other surface" on null: an agent that asked for a browser and got a
-  /// bare desktop has been lied to.
-  RigBackendCapabilities? preferredFor(RigSurface surface) {
-    RigBackendCapabilities? slowFallback;
-    for (final b in backends) {
-      if (!b.supports(surface)) {
-        continue;
-      }
-      if (b.backend.isAccelerated) {
-        return b;
-      }
-      slowFallback ??= b;
-    }
-    return slowFallback;
-  }
-
   /// JSON form for `rig.detect`.
   Map<String, dynamic> toJson() => {
     'backends': [for (final b in backends) b.toJson()],

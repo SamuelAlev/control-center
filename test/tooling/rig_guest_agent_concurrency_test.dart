@@ -226,15 +226,13 @@ threading.Thread.start = real_start
     final cloudInit = loadYaml(rendered);
     expect(cloudInit, isA<YamlMap>());
     final document = cloudInit as YamlMap;
-    final packages = document['packages'];
-    expect(packages, isA<YamlList>());
-    expect(packages as YamlList, contains('iputils-ping'));
-    final writeFiles = document['write_files'];
-    expect(writeFiles, isA<YamlList>());
-    for (final entry in writeFiles as YamlList) {
+    final packages = document['packages'] as YamlList;
+    expect(packages, contains('iputils-ping'));
+    final writeFiles = document['write_files'] as YamlList;
+    for (final entry in writeFiles) {
       expect(entry, isA<YamlMap>());
     }
-    final seedService = (writeFiles as YamlList)
+    final seedService = writeFiles
         .whereType<YamlMap>()
         .singleWhere((entry) => entry['path'] == '/usr/local/bin/cc-rig-seed');
     final seedScript = seedService['content'];

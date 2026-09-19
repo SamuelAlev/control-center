@@ -208,15 +208,4 @@ void main() {
       );
     });
   });
-
-  group('doomLoopSteerNotice', () {
-    test('mentions the tool, the count and steering guidance', () {
-      final notice = doomLoopSteerNotice('read', 3);
-      expect(notice, contains('[loop notice]'));
-      expect(notice, contains('`read`'));
-      expect(notice, contains('3'));
-      expect(notice, contains('Stop repeating it'));
-      expect(notice, contains('change approach'));
-    });
-  });
 }

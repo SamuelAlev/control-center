@@ -212,38 +212,4 @@ void main() {
       expect(overlays.keys, ['web']);
     });
   });
-
-  group('compareByMergedAtDesc', () {
-    PullRequest merged(int n, DateTime? at) => PullRequest(
-      id: n,
-      number: n,
-      title: 'PR $n',
-      body: '',
-      state: PrState.merged,
-      isDraft: false,
-      author: null,
-      createdAt: null,
-      updatedAt: null,
-      repoFullName: 'o/r',
-      htmlUrl: '',
-      mergedAt: at,
-    );
-
-    test('orders newest first across forges', () {
-      final list = [
-        merged(1, DateTime.utc(2025)),
-        merged(2, DateTime.utc(2025, 6)),
-        merged(3, DateTime.utc(2025, 3)),
-      ]..sort(compareByMergedAtDesc);
-      expect(list.map((p) => p.number), [2, 3, 1]);
-    });
-
-    test('a forge that omits the timestamp sorts last, never first', () {
-      final list = [
-        merged(1, null),
-        merged(2, DateTime.utc(2025)),
-      ]..sort(compareByMergedAtDesc);
-      expect(list.map((p) => p.number), [2, 1]);
-    });
-  });
 }

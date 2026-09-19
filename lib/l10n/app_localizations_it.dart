@@ -1645,12 +1645,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get import => 'Importa';
 
   @override
-  String get sortByStatus => 'Stato';
-
-  @override
-  String get sortByName => 'Nome';
-
-  @override
   String get noMatchingAgents => 'Nessun agente corrisponde al filtro';
 
   @override
@@ -2707,9 +2701,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get assignees => 'ASSEGNATARI';
 
   @override
-  String get attachFiles => 'Allega file';
-
-  @override
   String get attachImage => 'Allega immagine';
 
   @override
@@ -2826,9 +2817,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get closeEsc => 'Chiudi (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Chiudi tasti rapidi';
 
   @override
   String get closeReader => 'Chiudi lettore';
@@ -3968,9 +3956,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get navSettings => 'Impostazioni';
 
   @override
-  String get navigateLabel => 'Naviga';
-
-  @override
   String networkBlockCount(int count) {
     return '$count blocchi di rete';
   }
@@ -3984,9 +3969,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get newFact => 'Nuovo fatto';
-
-  @override
-  String get newLabel => 'Nuovo';
 
   @override
   String get newPolicy => 'Nuova politica';
@@ -4110,9 +4092,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Non configurato.';
-
-  @override
-  String get notDetected => 'Non rilevato';
 
   @override
   String get notFoundLabel => 'Non trovato';
@@ -4365,9 +4344,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get notificationsMuteRepo => 'Silenzia questo repository';
 
   @override
-  String get notificationsUnmuteRepo => 'Riattiva questo repository';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center può utilizzare container Linux per isolare l\'esecuzione degli agenti.';
 
@@ -4378,9 +4354,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox non disponibile su questa piattaforma. L\'esecuzione degli agenti avverrà senza isolamento.';
-
-  @override
-  String get openApplicationSettings => 'Apri impostazioni applicazione';
 
   @override
   String get openArticlesInApp => 'Apri articoli nell\'app';
@@ -4808,9 +4781,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get variableValue => 'Valore';
 
   @override
-  String get savingChanges => 'Salvataggio modifiche in corso...';
-
-  @override
   String get savingEllipsis => 'Salvataggio…';
 
   @override
@@ -4819,10 +4789,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Nessuna pull request corrispondente';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Nessuna PR aperta corrisponde alla ricerca. Prova altri termini o cancella la ricerca.';
 
   @override
   String get searchFactsHint => 'Cerca fatti...';
@@ -4879,9 +4845,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get selectConversation => 'Seleziona una conversazione';
-
-  @override
-  String get selectEffortLevel => 'Seleziona il livello di impegno';
 
   @override
   String get selectLabel => 'Seleziona';
@@ -4943,9 +4906,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String signedInAs(String username) {
     return 'Autenticato come $username.';
   }
-
-  @override
-  String get skillEditor => 'Editor competenze';
 
   @override
   String get skillNameRequired => 'Il nome della competenza è obbligatorio.';
@@ -6247,9 +6207,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Nessun modello di pipeline. Creane uno per iniziare.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID modello';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Integrato';
 
   @override
@@ -6259,9 +6216,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Eliminare il modello di pipeline $name? Non è possibile annullare.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Modifica pipeline';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6276,10 +6230,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Trascina una voce sul canvas per aggiungere un nodo.';
-
-  @override
-  String get editorDragHint =>
-      'Trascina dalla libreria, clicca un nodo per modificarlo';
 
   @override
   String get editorEmptyCanvas =>
@@ -6416,12 +6366,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Eseguito con bash -c. GITHUB_TOKEN è impostato. I segnaposto sono sostituiti prima dell\'esecuzione.';
 
   @override
-  String get nodeConfigTriggers => 'Attivato da';
-
-  @override
-  String get nodeConfigNoUpstream => 'Non ci sono altri nodi a monte.';
-
-  @override
   String get nodeConfigRouteKeys => 'Chiavi di route';
 
   @override
@@ -6494,38 +6438,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get conditionDefaultCase => 'Caso predefinito';
 
   @override
-  String get triggerPanelTitle => 'Trigger';
-
-  @override
-  String get triggerPanelHelp => 'Cosa avvia questa pipeline.';
-
-  @override
   String get triggerManualHelp =>
       'Mostra nella pagina di esecuzione e avvia manualmente.';
 
   @override
-  String get triggerSectionAutomatic => 'Trigger automatici';
-
-  @override
-  String get triggerAddButton => 'Aggiungi trigger';
-
-  @override
-  String get triggerNoneYet => 'Ancora nessun trigger automatico.';
-
-  @override
-  String get triggerAddDialogTitle => 'Aggiungi trigger';
-
-  @override
-  String get triggerKindLabel => 'Tipo di trigger';
-
-  @override
-  String get triggerKindEvent => 'Su un evento';
-
-  @override
   String get triggerKindSchedule => 'Su pianificazione';
-
-  @override
-  String get triggerKindWebhook => 'Tramite un webhook';
 
   @override
   String get triggerScheduleExprLabel =>
@@ -6572,13 +6489,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Percorso webhook';
-
-  @override
-  String get triggerEventFieldLabel => 'Evento';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Tutti gli eventi disponibili sono già configurati.';
 
   @override
   String get triggerMatchStatusLabel => 'Solo quando lo stato è';
@@ -7062,13 +6972,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Risposto';
 
   @override
-  String get agentQuestionSubmit => 'Invia risposta';
-
-  @override
   String get agentQuestionFreeformHint => 'Scrivi la tua risposta…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'La tua risposta';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8657,27 +8561,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get ideReviewCode => 'Rivedi codice';
 
   @override
-  String get ideRevert => 'Ripristina';
-
-  @override
   String get ideRevertConfirmTitle => 'Ripristina modifiche';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count file',
-      one: '1 file',
-    );
-    return 'Ripristinare $_temp0 a HEAD? Questo elimina le modifiche del worktree.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Ripristina';
-
-  @override
-  String get ideRevertConfirmCancel => 'Annulla';
 
   @override
   String get ideRevertUntracked =>
@@ -8697,9 +8581,6 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0 non sono stati ripristinati (non tracciati).';
   }
-
-  @override
-  String get ideViewSource => 'Vedi sorgente';
 
   @override
   String get ideSearchMatchCase => 'Maiuscole/minuscole';
@@ -9235,10 +9116,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get providerBaseUrlHint => 'URL di base (facoltativo)';
 
   @override
-  String get customProvidersDescription =>
-      'Qualsiasi endpoint compatibile con OpenAI o Anthropic — Ollama, LM Studio, vLLM o un deployment privato — con una chiave API facoltativa.';
-
-  @override
   String get addProvider => 'Aggiungi provider';
 
   @override
@@ -9355,9 +9232,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Nessuna esecuzione';
-
-  @override
-  String get repoScriptsOutput => 'Output';
 
   @override
   String get repoScriptsSaved => 'Script salvati';
@@ -13193,12 +13067,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get providersFilterHint => 'Filtra i provider';
 
   @override
-  String get providersFacetNeedsSetup => 'Da configurare';
-
-  @override
-  String get providersFacetCustom => 'Personalizzati';
-
-  @override
   String get providersNoneMatch => 'Nessun risultato per questo filtro';
 
   @override
@@ -13234,12 +13102,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Filtra i runner';
-
-  @override
-  String get adaptersFacetReady => 'Pronti';
-
-  @override
-  String get adaptersFacetMissing => 'Mancanti';
 
   @override
   String get adaptersLaunchGroup => 'Avvio';
@@ -14136,9 +13998,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get demoTourStarRepo => 'Aggiungi una stella su GitHub';
 
   @override
-  String get demoTourDone => 'Fatto';
-
-  @override
   String get demoTourOpen => 'Apri';
 
   @override
@@ -14168,15 +14027,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Ogni avviso di ogni pilastro arriva in un\'unica casella — revisioni, ticket, esecuzioni e riunioni.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Questa sessione demo termina tra $minutes minuti.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Questa sessione demo è terminata. Ricarica la pagina per iniziarne una nuova.';
 
   @override
   String get demoUnavailableTitle => 'Non disponibile nella demo';
@@ -14348,9 +14198,6 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Un file .db leggibile dal server. I percorsi vengono risolti sull\'host del server, non su questo dispositivo.';
-
-  @override
-  String get backupImportChooseFile => 'Scegli file';
 
   @override
   String backupImportDone(String name) {

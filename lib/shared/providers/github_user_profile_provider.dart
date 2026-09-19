@@ -3,7 +3,6 @@ import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 
 import 'package:control_center/di/demo_providers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Fetches a GitHub user's full profile (name, bio, contributions).
@@ -86,6 +85,3 @@ void _rememberProfile(String login, GitHubUserProfile? profile) {
 GitHubUserProfile? cachedGitHubUserProfile(String login) =>
     _profileMemo[login.toLowerCase()];
 
-/// Drops every memoized profile.
-@visibleForTesting
-void resetGitHubUserProfileMemo() => _profileMemo.clear();

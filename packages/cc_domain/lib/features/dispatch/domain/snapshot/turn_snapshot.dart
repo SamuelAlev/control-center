@@ -42,34 +42,3 @@ class TurnSnapshot {
   @override
   int get hashCode => Object.hash(start, end);
 }
-
-/// Builds the synthetic `<system-reminder>` injected into a forked session so
-/// the agent understands that prior context was retained intentionally and,
-/// when forking into a fresh worktree, which directory now supersedes the old one.
-String buildForkHandoffReminder({String? directory}) {
-  const forkedFrom =
-      'This session was forked from an existing session in the current '
-      'repository or worktree.';
-  const supersedes =
-      'For this fork, this location supersedes any earlier repository or '
-      'worktree location retained in the copied context.';
-  const retained = 'The prior conversation context was retained intentionally.';
-  const mayContinue =
-      'The user may continue the same task, explore an alternative approach, or '
-      'provide new instructions.';
-  const followNext =
-      "Follow the user's next instruction as the direction for this fork, "
-      'using retained context when relevant.';
-  return [
-    '<system-reminder>',
-    forkedFrom,
-    if (directory != null) ...[
-      'Use this as the current working directory: $directory',
-      supersedes,
-    ],
-    retained,
-    mayContinue,
-    followNext,
-    '</system-reminder>',
-  ].join('\n');
-}

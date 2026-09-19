@@ -1,7 +1,5 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
-import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
-import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 
 /// A fetch port that answers nothing, because a demo container dials nothing.
@@ -77,9 +75,3 @@ class DemoOpenPrPoller extends OpenPrPollingService {
     // seeded snapshot with an empty one the moment anyone opened the PR list.
   }
 }
-
-/// Type alias kept for readability at the wiring site.
-typedef DemoWorkspaceDbs = WorkspaceDatabaseManager;
-
-/// Type alias kept for readability at the wiring site.
-typedef DemoPrChangeSignals = PrChangeSignals;

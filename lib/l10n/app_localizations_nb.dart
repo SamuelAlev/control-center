@@ -1639,12 +1639,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get import => 'Importer';
 
   @override
-  String get sortByStatus => 'Status';
-
-  @override
-  String get sortByName => 'Navn';
-
-  @override
   String get noMatchingAgents => 'Ingen agenter matcher filteret ditt';
 
   @override
@@ -2685,9 +2679,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get assignees => 'Tildelte';
 
   @override
-  String get attachFiles => 'Legg ved filer';
-
-  @override
   String get attachImage => 'Legg ved bilde';
 
   @override
@@ -2803,9 +2794,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get closeEsc => 'Lukk (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Lukk';
 
   @override
   String get closeReader => 'Lukk leser';
@@ -3933,9 +3921,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get navSettings => 'Innstillinger';
 
   @override
-  String get navigateLabel => 'Naviger';
-
-  @override
   String networkBlockCount(int count) {
     return '$count nettverksblokker';
   }
@@ -3949,9 +3934,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get newFact => 'Nytt faktum';
-
-  @override
-  String get newLabel => 'Ny';
 
   @override
   String get newPolicy => 'Ny policy';
@@ -4072,9 +4054,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Ikke konfigurert.';
-
-  @override
-  String get notDetected => 'Ikke oppdaget';
 
   @override
   String get notFoundLabel => 'Ikke funnet';
@@ -4326,9 +4305,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get notificationsMuteRepo => 'Demp dette arkivet';
 
   @override
-  String get notificationsUnmuteRepo => 'Opphev demping av dette arkivet';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center kan bruke Linux-containere for å isolere agentkjøring.';
 
@@ -4339,9 +4315,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandkasse er ikke tilgjengelig på denne plattformen. Agentkjøring skjer uten isolasjon.';
-
-  @override
-  String get openApplicationSettings => 'Åpne appinnstillinger';
 
   @override
   String get openArticlesInApp => 'Åpne artikler i appen';
@@ -4767,9 +4740,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get variableValue => 'Verdi';
 
   @override
-  String get savingChanges => 'Lagrer endringer…';
-
-  @override
   String get savingEllipsis => 'Lagrer…';
 
   @override
@@ -4778,10 +4748,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Ingen matchende pull requests';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Ingen åpne PR-er matcher søket ditt. Prøv andre termer eller tøm søket.';
 
   @override
   String get searchFactsHint => 'Søk i fakta…';
@@ -4838,9 +4804,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get selectConversation => 'Velg en samtale';
-
-  @override
-  String get selectEffortLevel => 'Velg innsatsnivå';
 
   @override
   String get selectLabel => 'Velg';
@@ -4902,9 +4865,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String signedInAs(String username) {
     return 'Logget inn som $username.';
   }
-
-  @override
-  String get skillEditor => 'Ferdighetsredigerer';
 
   @override
   String get skillNameRequired => 'Ferdighetsnavn er påkrevd.';
@@ -6204,9 +6164,6 @@ class AppLocalizationsNb extends AppLocalizations {
       'Ingen pipeline-maler ennå. Opprett én for å komme i gang.';
 
   @override
-  String get pipelineTemplateIdLabel => 'Mal-ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Innebygd';
 
   @override
@@ -6216,9 +6173,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Slette pipeline-malen $name? Dette kan ikke angres.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Rediger pipeline';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6233,10 +6187,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Dra en oppføring til lerretet for å legge til en node.';
-
-  @override
-  String get editorDragHint =>
-      'Dra fra biblioteket, klikk en node for å redigere';
 
   @override
   String get editorEmptyCanvas => 'Dra en node fra biblioteket for å starte.';
@@ -6371,12 +6321,6 @@ class AppLocalizationsNb extends AppLocalizations {
       'Kjører med bash -c. GITHUB_TOKEN er satt. Plassholdere erstattes før kjøring.';
 
   @override
-  String get nodeConfigTriggers => 'Utløses fra';
-
-  @override
-  String get nodeConfigNoUpstream => 'Ingen andre noder å koble fra.';
-
-  @override
   String get nodeConfigRouteKeys => 'Rutenøkler';
 
   @override
@@ -6449,37 +6393,10 @@ class AppLocalizationsNb extends AppLocalizations {
   String get conditionDefaultCase => 'Standardtilfelle';
 
   @override
-  String get triggerPanelTitle => 'Utløsere';
-
-  @override
-  String get triggerPanelHelp => 'Hva som starter denne pipelinen.';
-
-  @override
   String get triggerManualHelp => 'Vis på kjøringssiden og start for hånd.';
 
   @override
-  String get triggerSectionAutomatic => 'Automatiske utløsere';
-
-  @override
-  String get triggerAddButton => 'Legg til utløser';
-
-  @override
-  String get triggerNoneYet => 'Ingen automatiske utløsere ennå.';
-
-  @override
-  String get triggerAddDialogTitle => 'Legg til utløser';
-
-  @override
-  String get triggerKindLabel => 'Utløsertype';
-
-  @override
-  String get triggerKindEvent => 'Ved en hendelse';
-
-  @override
   String get triggerKindSchedule => 'Etter en tidsplan';
-
-  @override
-  String get triggerKindWebhook => 'Via en webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Tidsplan (cron eller every:seconds)';
@@ -6525,13 +6442,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook-sti';
-
-  @override
-  String get triggerEventFieldLabel => 'Hendelse';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Alle tilgjengelige hendelser er allerede koblet.';
 
   @override
   String get triggerMatchStatusLabel => 'Bare når statusen er';
@@ -7007,13 +6917,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Besvart';
 
   @override
-  String get agentQuestionSubmit => 'Send svar';
-
-  @override
   String get agentQuestionFreeformHint => 'Skriv svaret ditt…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Ditt svar';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8592,27 +8496,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get ideReviewCode => 'Gjennomgå kode';
 
   @override
-  String get ideRevert => 'Tilbakestill';
-
-  @override
   String get ideRevertConfirmTitle => 'Tilbakestill endringer';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filer',
-      one: '1 fil',
-    );
-    return 'Tilbakestille $_temp0 til HEAD? Dette forkaster worktree-endringer.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Tilbakestill';
-
-  @override
-  String get ideRevertConfirmCancel => 'Avbryt';
 
   @override
   String get ideRevertUntracked => 'Usporede filer kan ikke tilbakestilles';
@@ -8631,9 +8515,6 @@ class AppLocalizationsNb extends AppLocalizations {
     );
     return '$_temp0 kunne ikke tilbakestilles (usporet).';
   }
-
-  @override
-  String get ideViewSource => 'Vis kilde';
 
   @override
   String get ideSearchMatchCase => 'Skill mellom store og små bokstaver';
@@ -9165,10 +9046,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get providerBaseUrlHint => 'Base-URL (valgfritt)';
 
   @override
-  String get customProvidersDescription =>
-      'Ethvert OpenAI- eller Anthropic-kompatibelt endepunkt — Ollama, LM Studio, vLLM eller en privat utplassering — med en valgfri API-nøkkel.';
-
-  @override
   String get addProvider => 'Legg til leverandør';
 
   @override
@@ -9285,9 +9162,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Ingen kjøringer ennå';
-
-  @override
-  String get repoScriptsOutput => 'Utdata';
 
   @override
   String get repoScriptsSaved => 'Skript lagret';
@@ -13114,12 +12988,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get providersFilterHint => 'Filtrer leverandører';
 
   @override
-  String get providersFacetNeedsSetup => 'Trenger oppsett';
-
-  @override
-  String get providersFacetCustom => 'Egendefinert';
-
-  @override
   String get providersNoneMatch => 'Ingenting matcher dette filteret';
 
   @override
@@ -13155,12 +13023,6 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Filtrer kjørere';
-
-  @override
-  String get adaptersFacetReady => 'Klar';
-
-  @override
-  String get adaptersFacetMissing => 'Mangler';
 
   @override
   String get adaptersLaunchGroup => 'Start';
@@ -14054,9 +13916,6 @@ class AppLocalizationsNb extends AppLocalizations {
   String get demoTourStarRepo => 'Stjerne på GitHub';
 
   @override
-  String get demoTourDone => 'Ferdig';
-
-  @override
   String get demoTourOpen => 'Åpne';
 
   @override
@@ -14086,15 +13945,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Hvert varsel fra hver søyle lander i én innboks — gjennomganger, saker, kjøringer og møter.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Denne demoøkten slutter om $minutes minutter.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Denne demoøkten er over. Last siden på nytt for å starte en ny.';
 
   @override
   String get demoUnavailableTitle => 'Ikke tilgjengelig i demoen';
@@ -14265,9 +14115,6 @@ class AppLocalizationsNb extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'En .db-fil serveren kan lese. Stier løses på serververten, ikke på denne enheten.';
-
-  @override
-  String get backupImportChooseFile => 'Velg fil';
 
   @override
   String backupImportDone(String name) {

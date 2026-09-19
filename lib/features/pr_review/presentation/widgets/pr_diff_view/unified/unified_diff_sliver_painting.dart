@@ -1,5 +1,10 @@
 part of 'unified_diff_sliver.dart';
 
+// These methods belong on RenderUnifiedDiffSliver (a RenderSliverMultiBoxAdaptor
+// subclass). They live in an extension only to keep the part file split; Dart
+// still treats extension members as outside the subclass for @protected.
+// ignore_for_file: invalid_use_of_protected_member
+
 /// Layout slot management, sticky-header computation and code-row painting
 /// for the unified diff sliver render object.
 extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {

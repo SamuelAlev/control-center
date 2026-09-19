@@ -6,7 +6,6 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
-import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -69,14 +68,6 @@ class FakeSandboxPort implements SandboxPort {
 
   @override
   Future<void> destroy(SandboxHandle handle) async {}
-}
-
-class FakeProcessControlPort implements ProcessControlPort {
-  @override
-  Future<void> kill(int pid) async {}
-
-  @override
-  bool isPidAlive(int pid) => true;
 }
 
 class FakeCredentialBrokerPort implements CredentialBrokerPort {

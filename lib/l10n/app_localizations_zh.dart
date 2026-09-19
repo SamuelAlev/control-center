@@ -1574,12 +1574,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get import => '导入';
 
   @override
-  String get sortByStatus => '状态';
-
-  @override
-  String get sortByName => '名称';
-
-  @override
   String get noMatchingAgents => '没有符合筛选条件的智能体';
 
   @override
@@ -2603,9 +2597,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get assignees => '受理人';
 
   @override
-  String get attachFiles => '附加文件';
-
-  @override
   String get attachImage => '附加图片';
 
   @override
@@ -2720,9 +2711,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get closeEsc => '关闭（Esc）';
-
-  @override
-  String get closeKeyboardHint => '关闭';
 
   @override
   String get closeReader => '关闭阅读器';
@@ -3800,9 +3788,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get navSettings => '设置';
 
   @override
-  String get navigateLabel => '导航';
-
-  @override
   String networkBlockCount(int count) {
     return '$count 条网络拦截规则';
   }
@@ -3815,9 +3800,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get newFact => '新事实';
-
-  @override
-  String get newLabel => '新建';
 
   @override
   String get newPolicy => '新策略';
@@ -3931,9 +3913,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => '未配置。';
-
-  @override
-  String get notDetected => '未检测到';
 
   @override
   String get notFoundLabel => '未找到';
@@ -4176,9 +4155,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notificationsMuteRepo => '静音此仓库';
 
   @override
-  String get notificationsUnmuteRepo => '取消静音此仓库';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center 可以使用 Linux 容器来隔离智能体执行。';
 
@@ -4188,9 +4164,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get onboardingUnsupportedDescription => '此平台不支持沙盒。智能体执行将不进行隔离。';
-
-  @override
-  String get openApplicationSettings => '打开应用设置';
 
   @override
   String get openArticlesInApp => '在应用内打开文章';
@@ -4607,9 +4580,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get variableValue => '值';
 
   @override
-  String get savingChanges => '正在保存更改…';
-
-  @override
   String get savingEllipsis => '正在保存…';
 
   @override
@@ -4617,9 +4587,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => '没有匹配的 pull request';
-
-  @override
-  String get noPrsMatchSearchHint => '没有与搜索匹配的打开的 PR。请尝试其他关键词或清除搜索。';
 
   @override
   String get searchFactsHint => '搜索事实...';
@@ -4676,9 +4643,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get selectConversation => '选择对话';
-
-  @override
-  String get selectEffortLevel => '选择努力程度';
 
   @override
   String get selectLabel => '选择';
@@ -4739,9 +4703,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String signedInAs(String username) {
     return '已以 $username 身份登录。';
   }
-
-  @override
-  String get skillEditor => '技能编辑器';
 
   @override
   String get skillNameRequired => '技能名称为必填项。';
@@ -5993,9 +5954,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get pipelineTemplatesEmpty => '暂无流水线模板。创建一个以开始使用。';
 
   @override
-  String get pipelineTemplateIdLabel => '模板 ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => '内置';
 
   @override
@@ -6005,9 +5963,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return '删除流水线模板 $name？此操作无法撤销。';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => '编辑流水线';
 
   @override
   String get pipelineTemplateEditorSubtitle => '从侧边栏将节点类型拖到画布上，再将它们连线。';
@@ -6020,9 +5975,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => '将任意条目拖到画布上即可添加节点。';
-
-  @override
-  String get editorDragHint => '从库中拖入，点击节点进行编辑';
 
   @override
   String get editorEmptyCanvas => '从库中拖入节点以开始。';
@@ -6153,12 +6105,6 @@ class AppLocalizationsZh extends AppLocalizations {
       '通过 bash -c 运行。已设置 GITHUB_TOKEN。执行前会替换占位符。';
 
   @override
-  String get nodeConfigTriggers => '触发来源';
-
-  @override
-  String get nodeConfigNoUpstream => '没有可连接的上游节点。';
-
-  @override
   String get nodeConfigRouteKeys => '路由键';
 
   @override
@@ -6227,37 +6173,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get conditionDefaultCase => '默认分支';
 
   @override
-  String get triggerPanelTitle => '触发器';
-
-  @override
-  String get triggerPanelHelp => '启动此流水线的方式。';
-
-  @override
   String get triggerManualHelp => '显示在运行页，可手动启动。';
 
   @override
-  String get triggerSectionAutomatic => '自动触发器';
-
-  @override
-  String get triggerAddButton => '添加触发器';
-
-  @override
-  String get triggerNoneYet => '尚未添加自动触发器。';
-
-  @override
-  String get triggerAddDialogTitle => '添加触发器';
-
-  @override
-  String get triggerKindLabel => '触发器类型';
-
-  @override
-  String get triggerKindEvent => '按事件';
-
-  @override
   String get triggerKindSchedule => '按计划';
-
-  @override
-  String get triggerKindWebhook => '通过 webhook';
 
   @override
   String get triggerScheduleExprLabel => '计划（cron 或 every:seconds）';
@@ -6303,12 +6222,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook 路径';
-
-  @override
-  String get triggerEventFieldLabel => '事件';
-
-  @override
-  String get triggerNoMoreEvents => '所有可用事件均已接入。';
 
   @override
   String get triggerMatchStatusLabel => '仅当状态为';
@@ -6768,13 +6681,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentQuestionAnsweredLabel => '已回答';
 
   @override
-  String get agentQuestionSubmit => '提交回答';
-
-  @override
   String get agentQuestionFreeformHint => '输入你的回答…';
-
-  @override
-  String get agentQuestionAnswerLabel => '你的回答';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8316,27 +8223,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get ideReviewCode => '审查代码';
 
   @override
-  String get ideRevert => '还原';
-
-  @override
   String get ideRevertConfirmTitle => '还原更改';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 个文件',
-      one: '1 个文件',
-    );
-    return '将 $_temp0 还原到 HEAD？这将丢弃工作树中的更改。';
-  }
-
-  @override
-  String get ideRevertConfirmAction => '还原';
-
-  @override
-  String get ideRevertConfirmCancel => '取消';
 
   @override
   String get ideRevertUntracked => '未跟踪的文件无法还原';
@@ -8354,9 +8241,6 @@ class AppLocalizationsZh extends AppLocalizations {
     );
     return '$_temp0 无法还原（未跟踪）。';
   }
-
-  @override
-  String get ideViewSource => '查看源码';
 
   @override
   String get ideSearchMatchCase => '区分大小写';
@@ -8866,10 +8750,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerBaseUrlHint => '基础 URL（可选）';
 
   @override
-  String get customProvidersDescription =>
-      '任意兼容 OpenAI 或 Anthropic 的端点 — Ollama、LM Studio、vLLM 或私有部署 — 可选用 API 密钥。';
-
-  @override
   String get addProvider => '添加提供商';
 
   @override
@@ -8984,9 +8864,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => '暂无运行记录';
-
-  @override
-  String get repoScriptsOutput => '输出';
 
   @override
   String get repoScriptsSaved => '脚本已保存';
@@ -12686,12 +12563,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providersFilterHint => '筛选提供商';
 
   @override
-  String get providersFacetNeedsSetup => '需要设置';
-
-  @override
-  String get providersFacetCustom => '自定义';
-
-  @override
   String get providersNoneMatch => '没有符合此筛选条件的内容';
 
   @override
@@ -12723,12 +12594,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => '筛选运行器';
-
-  @override
-  String get adaptersFacetReady => '就绪';
-
-  @override
-  String get adaptersFacetMissing => '缺失';
 
   @override
   String get adaptersLaunchGroup => '启动';
@@ -13586,9 +13451,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get demoTourStarRepo => '在 GitHub 上加星标';
 
   @override
-  String get demoTourDone => '完成';
-
-  @override
   String get demoTourOpen => '打开';
 
   @override
@@ -13615,14 +13477,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get demoTourInboxBody => '各板块的所有提醒都汇入同一个收件箱——审查、工单、运行和会议。';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return '此演示会话将在 $minutes 分钟后结束。';
-  }
-
-  @override
-  String get demoSessionEnded => '此演示会话已结束。重新加载页面即可开始新的会话。';
 
   @override
   String get demoUnavailableTitle => '演示中不可用';
@@ -13787,9 +13641,6 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       '服务器可读取的 .db 文件。路径在服务器主机上解析，而不是在此设备上。';
-
-  @override
-  String get backupImportChooseFile => '选择文件';
 
   @override
   String backupImportDone(String name) {
@@ -15804,12 +15655,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get import => '匯入';
 
   @override
-  String get sortByStatus => '狀態';
-
-  @override
-  String get sortByName => '名稱';
-
-  @override
   String get noMatchingAgents => '沒有符合篩選條件的代理';
 
   @override
@@ -16833,9 +16678,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get assignees => '指派對象';
 
   @override
-  String get attachFiles => '附加檔案';
-
-  @override
   String get attachImage => '附加圖片';
 
   @override
@@ -16950,9 +16792,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get closeEsc => '關閉 (Esc)';
-
-  @override
-  String get closeKeyboardHint => '關閉';
 
   @override
   String get closeReader => '關閉閱讀器';
@@ -18030,9 +17869,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get navSettings => '設定';
 
   @override
-  String get navigateLabel => '導覽';
-
-  @override
   String networkBlockCount(int count) {
     return '$count 個網路封鎖';
   }
@@ -18045,9 +17881,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get newFact => '新事實';
-
-  @override
-  String get newLabel => '新增';
 
   @override
   String get newPolicy => '新政策';
@@ -18161,9 +17994,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get notConfiguredLabel => '尚未設定。';
-
-  @override
-  String get notDetected => '未偵測到';
 
   @override
   String get notFoundLabel => '找不到';
@@ -18406,9 +18236,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get notificationsMuteRepo => '靜音此存放庫';
 
   @override
-  String get notificationsUnmuteRepo => '取消靜音此存放庫';
-
-  @override
   String get onboardingLinuxDescription => 'Control Center 可使用 Linux 容器隔離代理執行。';
 
   @override
@@ -18417,9 +18244,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get onboardingUnsupportedDescription => '此平台無法使用沙盒。代理執行將沒有隔離。';
-
-  @override
-  String get openApplicationSettings => '開啟應用程式設定';
 
   @override
   String get openArticlesInApp => '在應用程式中開啟文章';
@@ -18836,9 +18660,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get variableValue => '值';
 
   @override
-  String get savingChanges => '正在儲存變更…';
-
-  @override
   String get savingEllipsis => '儲存中…';
 
   @override
@@ -18846,9 +18667,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get noPrsMatchSearch => '沒有符合的 pull request';
-
-  @override
-  String get noPrsMatchSearchHint => '沒有符合你搜尋條件的開啟中 PR。請嘗試其他字詞或清除搜尋。';
 
   @override
   String get searchFactsHint => '搜尋事實…';
@@ -18905,9 +18723,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get selectConversation => '選擇對話';
-
-  @override
-  String get selectEffortLevel => '選擇投入程度';
 
   @override
   String get selectLabel => '選擇';
@@ -18968,9 +18783,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String signedInAs(String username) {
     return '已登入為 $username。';
   }
-
-  @override
-  String get skillEditor => '技能編輯器';
 
   @override
   String get skillNameRequired => '技能名稱為必填。';
@@ -20223,9 +20035,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pipelineTemplatesEmpty => '尚無管線範本。建立一個來開始吧。';
 
   @override
-  String get pipelineTemplateIdLabel => '範本 ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => '內建';
 
   @override
@@ -20235,9 +20044,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return '要刪除管線範本 $name 嗎？此操作無法復原。';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => '編輯管線';
 
   @override
   String get pipelineTemplateEditorSubtitle => '從側邊欄將節點類型拖放到畫布上，再將它們連接起來。';
@@ -20250,9 +20056,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get nodeLibraryHint => '將任一項目拖放到畫布即可新增節點。';
-
-  @override
-  String get editorDragHint => '從節點庫拖放，點擊節點以編輯';
 
   @override
   String get editorEmptyCanvas => '從節點庫拖放一個節點開始。';
@@ -20382,12 +20185,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '以 bash -c 執行。會設定 GITHUB_TOKEN。預留位置會在執行前替換。';
 
   @override
-  String get nodeConfigTriggers => '觸發來源';
-
-  @override
-  String get nodeConfigNoUpstream => '沒有其他可連接的節點。';
-
-  @override
   String get nodeConfigRouteKeys => '路由鍵';
 
   @override
@@ -20456,37 +20253,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get conditionDefaultCase => '預設案例';
 
   @override
-  String get triggerPanelTitle => '觸發器';
-
-  @override
-  String get triggerPanelHelp => '什麼會啟動此管線。';
-
-  @override
   String get triggerManualHelp => '顯示在執行頁面並可手動啟動。';
 
   @override
-  String get triggerSectionAutomatic => '自動觸發器';
-
-  @override
-  String get triggerAddButton => '新增觸發器';
-
-  @override
-  String get triggerNoneYet => '尚無自動觸發器。';
-
-  @override
-  String get triggerAddDialogTitle => '新增觸發器';
-
-  @override
-  String get triggerKindLabel => '觸發器類型';
-
-  @override
-  String get triggerKindEvent => '於事件發生時';
-
-  @override
   String get triggerKindSchedule => '依排程';
-
-  @override
-  String get triggerKindWebhook => '透過 webhook';
 
   @override
   String get triggerScheduleExprLabel => '排程（cron 或 every:seconds）';
@@ -20531,12 +20301,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook 路徑';
-
-  @override
-  String get triggerEventFieldLabel => '事件';
-
-  @override
-  String get triggerNoMoreEvents => '所有可用的事件都已接上了。';
 
   @override
   String get triggerMatchStatusLabel => '僅當狀態為';
@@ -20997,13 +20761,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get agentQuestionAnsweredLabel => '已回答';
 
   @override
-  String get agentQuestionSubmit => '送出答案';
-
-  @override
   String get agentQuestionFreeformHint => '輸入你的答案…';
-
-  @override
-  String get agentQuestionAnswerLabel => '你的答案';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -22545,27 +22303,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get ideReviewCode => '審查程式碼';
 
   @override
-  String get ideRevert => '還原';
-
-  @override
   String get ideRevertConfirmTitle => '還原變更';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count 個檔案',
-      one: '1 個檔案',
-    );
-    return '要將 $_temp0 還原至 HEAD 嗎？這會捨棄工作樹中的變更。';
-  }
-
-  @override
-  String get ideRevertConfirmAction => '還原';
-
-  @override
-  String get ideRevertConfirmCancel => '取消';
 
   @override
   String get ideRevertUntracked => '未追蹤的檔案無法還原';
@@ -22583,9 +22321,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
     );
     return '$_temp0 無法還原（未追蹤）。';
   }
-
-  @override
-  String get ideViewSource => '檢視原始碼';
 
   @override
   String get ideSearchMatchCase => '區分大小寫';
@@ -23096,10 +22831,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get providerBaseUrlHint => 'Base URL（選填）';
 
   @override
-  String get customProvidersDescription =>
-      '任何與 OpenAI 或 Anthropic 相容的端點—Ollama、LM Studio、vLLM 或私人部署—可搭配選填的 API 金鑰。';
-
-  @override
   String get addProvider => '新增供應商';
 
   @override
@@ -23214,9 +22945,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get repoScriptsNoRuns => '尚無執行記錄';
-
-  @override
-  String get repoScriptsOutput => '輸出';
 
   @override
   String get repoScriptsSaved => '指令碼已儲存';
@@ -26919,12 +26647,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get providersFilterHint => '篩選供應商';
 
   @override
-  String get providersFacetNeedsSetup => '需要設定';
-
-  @override
-  String get providersFacetCustom => '自訂';
-
-  @override
   String get providersNoneMatch => '沒有項目符合此篩選條件';
 
   @override
@@ -26956,12 +26678,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get adaptersFilterHint => '篩選執行器';
-
-  @override
-  String get adaptersFacetReady => '就緒';
-
-  @override
-  String get adaptersFacetMissing => '缺少';
 
   @override
   String get adaptersLaunchGroup => '啟動';
@@ -27818,9 +27534,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get demoTourStarRepo => '在 GitHub 上加星';
 
   @override
-  String get demoTourDone => '完成';
-
-  @override
   String get demoTourOpen => '開啟';
 
   @override
@@ -27847,14 +27560,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get demoTourInboxBody => '來自各個支柱的所有警示都會匯入同一個收件匣——檢閱、工單、執行與會議。';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return '此示範工作階段將於 $minutes 分鐘後結束。';
-  }
-
-  @override
-  String get demoSessionEnded => '此示範工作階段已結束。重新載入頁面即可開始新的。';
 
   @override
   String get demoUnavailableTitle => '示範中不提供';
@@ -28020,9 +27725,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get backupImportSourceDescription =>
       '伺服器可讀取的 .db 檔案。路徑是在伺服器主機上解析，不是在這部裝置上。';
-
-  @override
-  String get backupImportChooseFile => '選擇檔案';
 
   @override
   String backupImportDone(String name) {

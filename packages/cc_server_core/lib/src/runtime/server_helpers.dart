@@ -166,9 +166,6 @@ Future<AccountPool> _readClaudeAccountPool(
 /// harness provider's stored credentials.
 const String claudeAccountLane = 'claude-code';
 
-/// The `harness:<providerId>` lane string for [providerId].
-String harnessAccountLane(String providerId) => 'harness:$providerId';
-
 /// The workspace-settings key a [lane] + [agentId] pool is stored under, or
 /// null when the lane is not one we recognize.
 ///

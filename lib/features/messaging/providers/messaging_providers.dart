@@ -325,15 +325,6 @@ List<String> userHistoryFromMessages(List<Message> messages, String? userId) {
   return history;
 }
 
-/// One message by id (one-shot). Used for out-of-window lookups (a message
-/// scrolled past the feed window); returns the FULL wire shape, segments
-/// included.
-final messageByIdProvider = FutureProvider.autoDispose.family<Message?, String>(
-  (ref, messageId) => ref
-      .watch(messagingRepositoryProvider)
-      .getMessageById(ref.requireWorkspaceId(), messageId),
-);
-
 /// Per-space attention status for the conversation list (the fleet-monitor
 /// signal: surface running/needs-input state in the nav, not buried a level
 /// deep).
@@ -673,20 +664,6 @@ final conversationUnreadProvider = Provider.autoDispose
       return lastAgentAt != null && lastAgentAt.isAfter(lastReadAt);
     });
 
-/// Count of workspace spaces awaiting the user (unanswered agent question) —
-/// the "needs attention" badge on the sidebar Conversations entry. One sum
-/// over the server-computed activity aggregate.
-final workspaceNeedsAttentionCountProvider = Provider.autoDispose
-    .family<int, String>((ref, workspaceId) {
-      final activity = ref
-          .watch(workspaceSpaceActivityProvider(workspaceId))
-          .value;
-      if (activity == null) {
-        return 0;
-      }
-      return activity.values.where((a) => a.needsInput).length;
-    });
-
 /// Initial number of messages shown in a space feed window.
 const int kSpaceFeedInitialWindow = 60;
 
@@ -915,19 +892,3 @@ final spaceThreadSummariesProvider = StreamProvider.autoDispose
           .map((list) => {for (final t in list) t.anchorMessageId: t});
     });
 
-/// The conversation currently shown in a space's chat pane. Null defers to the
-/// space's standing conversation. Keyed by space id; the messaging IDE / PR
-/// page set it when the user switches conversations.
-class SelectedConversationNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  /// Selects [conversationId] (null defers to the standing conversation).
-  void select(String? conversationId) => state = conversationId;
-}
-
-/// Per-space selected conversation id (null = the standing conversation).
-final selectedConversationIdProvider =
-    NotifierProvider<SelectedConversationNotifier, String?>(
-      SelectedConversationNotifier.new,
-    );

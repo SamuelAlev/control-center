@@ -21,10 +21,6 @@ class HarnessModelOverrideCache {
   /// providerId → (bare model id → override).
   final Map<String, Map<String, ProviderModelOverride>> _byProvider = {};
 
-  /// The overrides stored for [providerId] (empty when none).
-  Map<String, ProviderModelOverride> forProvider(String providerId) =>
-      _byProvider[providerId] ?? const {};
-
   /// Reloads one provider's overrides from the store.
   Future<void> refreshProvider(String providerId) async {
     _byProvider[providerId] = await load(_credentials, providerId);

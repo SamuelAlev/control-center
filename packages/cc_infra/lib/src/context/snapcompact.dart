@@ -52,9 +52,6 @@ class SnapFrameShape {
 /// The glyph cell width the shapes are computed against.
 const int kSnapGlyphWidth = 5;
 
-/// The glyph cell height.
-const int kSnapGlyphHeight = 9;
-
 /// Picks the page shape for [modelId].
 ///
 /// **Priced for the API that carries the request, not the weights.** A Claude

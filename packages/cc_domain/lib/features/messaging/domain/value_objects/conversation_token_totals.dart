@@ -1,7 +1,3 @@
-import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/features/dispatch/domain/context/conversation_token_estimator.dart';
-import 'package:cc_harness/context.dart';
-
 /// The size of a conversation's live (non-compacted, non-reverted) region,
 /// as two integers.
 ///
@@ -46,26 +42,4 @@ class ConversationTokenTotals {
 
   @override
   String toString() => 'ConversationTokenTotals(tokens: $tokens, chars: $chars)';
-}
-
-/// Folds [messages] into their [ConversationTokenTotals], skipping compacted
-/// rows (folded context, not live).
-///
-/// The reference definition of the numbers: an implementation that computes
-/// them from a database aggregate has to agree with this, so a fallback and a
-/// fast path can never quietly disagree about how full a window is.
-ConversationTokenTotals conversationTokenTotals(
-  Iterable<Message> messages, {
-  TokenEstimator estimator = TokenEstimator.instance,
-}) {
-  var tokens = 0;
-  var chars = 0;
-  for (final message in messages) {
-    if (message.compacted) {
-      continue;
-    }
-    tokens += estimator.estimateMessage(message);
-    chars += message.content.length;
-  }
-  return ConversationTokenTotals(tokens: tokens, chars: chars);
 }

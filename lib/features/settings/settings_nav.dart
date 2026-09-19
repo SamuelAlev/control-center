@@ -284,22 +284,6 @@ List<SettingsNavItem> get kSettingsNavItems => [
   for (final group in kSettingsNav) ...group.items,
 ];
 
-/// The scope of the page at [location], or null when it is not a settings page.
-///
-/// Matches on the scope segment rather than a lookup table so a page added to
-/// the router but forgotten here still reports the right scope.
-SettingScope? settingScopeForLocation(String location) {
-  if (location.startsWith('/settings/you/')) {
-    return SettingScope.user;
-  }
-  if (location.startsWith('/settings/workspace/')) {
-    return SettingScope.workspace;
-  }
-  if (location.startsWith('/settings/server/')) {
-    return SettingScope.server;
-  }
-  return null;
-}
 
 // Tear-offs, so the nav model stays a `const` list. A closure would make each
 // entry non-const and the whole structure rebuild per frame.

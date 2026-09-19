@@ -34,19 +34,6 @@ String openAiEffort(ReasoningEffort effort) => switch (effort) {
   ReasoningEffort.xhigh => 'high',
 };
 
-/// Google Gemini `thinkingConfig.thinkingLevel` token for [effort].
-///
-/// Only used by a native Gemini transport; the OpenAI-compatible Gemini path
-/// leaves reasoning to the endpoint. Gemini's public levels are coarse, so the
-/// harness scale is bucketed. verify: current Gemini thinkingLevel vocabulary.
-String googleThinkingLevel(ReasoningEffort effort) => switch (effort) {
-  ReasoningEffort.minimal => 'low',
-  ReasoningEffort.low => 'low',
-  ReasoningEffort.medium => 'medium',
-  ReasoningEffort.high => 'high',
-  ReasoningEffort.xhigh => 'high',
-};
-
 /// The effort vocabulary to assume for a reasoning model whose catalog entry
 /// documents none, keyed by the models.dev provider id.
 ///

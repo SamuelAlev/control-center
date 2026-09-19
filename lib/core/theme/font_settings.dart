@@ -114,14 +114,6 @@ final codeFontLigaturesProvider = Provider<bool>((ref) {
   return ref.watch(fontSettingsProvider).codeFontLigatures;
 });
 
-/// Resolves when all selected system fonts have been loaded via FontLoader.
-final fontsReadyProvider = FutureProvider<void>((ref) async {
-  final settings = ref.watch(fontSettingsProvider);
-  final notifier = ref.read(fontSettingsProvider.notifier);
-  await notifier.loadSystemFont(settings.appFontSelection);
-  await notifier.loadSystemFont(settings.codeFontSelection);
-});
-
 /// Manages loading and updating font preferences from persistent storage.
 class FontSettingsNotifier extends Notifier<FontSettings> {
   late AppPreferences _prefs;

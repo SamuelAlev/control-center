@@ -7,7 +7,6 @@
 library;
 
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:cc_markdown/src/mermaid/layout/scene.dart';
 import 'package:cc_markdown/src/mermaid/mermaid_style.dart';
@@ -592,21 +591,4 @@ Path roundedPolyline(List<Offset> points, double radius) {
   }
   path.lineTo(points.last.dx, points.last.dy);
   return path;
-}
-
-/// Rasterizes [scene] to a picture — used by hosts that want to hand a diagram
-/// to an image pipeline (share sheet, export) rather than a widget tree.
-ui.Picture recordMermaidScene({
-  required CcMermaidScene scene,
-  required CcMermaidStyle style,
-  required CcMermaidTextPainterRuler ruler,
-}) {
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  CcMermaidScenePainter(
-    scene: scene,
-    style: style,
-    ruler: ruler,
-  ).paint(canvas, scene.size);
-  return recorder.endRecording();
 }

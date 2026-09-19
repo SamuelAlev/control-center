@@ -1493,8 +1493,7 @@ An in-process broadcast publish/subscribe bus for cross-feature decoupling. Feat
 
 - **ActivityLogger**, builds and publishes `ActivityLogged` observability events.
 - **MemoryAccessPolicy**, resolves and enforces an agent role's memory permission on a domain, throwing on write denial.
-- **AgentMentionParser / MentionResolver**, parse/strip @-mention tokens and resolve them to a unique `Agent`.
-- **AgentLoopGuard**, suppresses agent→agent dispatch loops (self-trigger + recent-participant guards); gated into `MessagingService.sendAndDispatch`.
+- **AgentMentionParser**, parses/strips @-mention tokens naming a unique `Agent`.
 - **cosineSimilarity / slugify**, pure helpers for embedding similarity and filesystem-safe slugs.
 
 ### Notable feature services
@@ -1515,8 +1514,7 @@ An in-process broadcast publish/subscribe bus for cross-feature decoupling. Feat
 - **DispatchReviewersService** (pr_review), `DispatchReviewersPort` impl that fans out PR review to matched reviewer agents.
 - **ReviewerMatchingService** (pr_review), picks the best `Agent` for a desired specialist role label.
 - **PrPollingService** (pr_review), polls GitHub for new external PRs and emits `ExternalPrDetected`.
-- **TicketSyncService / TicketRemoteSyncHandler** (ticketing), pull remote tickets into the local mirror and mirror local state back, keeping the workflow service free of infrastructure.
-- **CalendarSyncService / MeetingAlertScheduler** (calendar), `CalendarSyncService` periodically pulls each connected account's events into the local store (no `CalendarEventsRefreshed` event — clients re-read) and lazily loads on-demand ranges; `MeetingAlertScheduler` scans per-minute for events inside the lead window and publishes `MeetingStartingSoon`, persisting `alertedAt` so an alert never fires twice.
+- **CalendarSyncService** (calendar), periodically pulls each connected account's events into the local store (no `CalendarEventsRefreshed` event — clients re-read) and lazily loads on-demand ranges.
 - **MeetingTranscriptionService / MeetingDiarizationService** (meetings), `MeetingTranscriptionService` decodes rolling Whisper windows off the UI thread (silent-window skip); `MeetingDiarizationService` clusters the recording into individual speakers offline (sherpa-onnx) after the recording stops.
 - **MeetingSummaryReconciler** (meetings), listens for the `meeting_summary` pipeline's terminal events and finalizes the meeting `processing → done`, falling back to the raw transcript when the agent produced no structured notes.
 

@@ -721,16 +721,6 @@ class ClaudeAccountStore {
     ]);
   }
 
-  /// Clears a cooldown early (the operator says it is wrong, or a run
-  /// succeeded on it).
-  Future<void> clearRateLimit(String accountId) async {
-    final accounts = await list();
-    await _writeRegistry([
-      for (final a in accounts)
-        if (a.id == accountId) a.copyWith(clearRateLimitedUntil: true) else a,
-    ]);
-  }
-
   /// How long an account is parked after a rate-limit response with no
   /// reported reset time.
   static const Duration defaultCooldown = Duration(minutes: 30);

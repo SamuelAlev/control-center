@@ -18,8 +18,6 @@ calendar. The only writes are to the server's store.
   calendar (`CalendarSyncService`, every 7 min + once at boot / on connect).
 - **Month / week / agenda UI** (`CalendarScreen`; month & week use the
   `kalender` package, agenda is a custom list).
-- **"Meeting starting soon" alerts** (`MeetingAlertScheduler`, per-minute scan,
-  configurable lead time, dedup persisted so an alert never fires twice).
 - **Record & link**: start a local meeting recording from a calendar event and
   store a `meeting ↔ event` link (`CalendarRecordAndLinkUseCase`). See the
   [meetings feature](../meetings/) for the recording/transcription side.
@@ -237,7 +235,6 @@ thin-client RPC repository) and is slated for removal. Don't build on it.
 Under `test/features/calendar/` and `test/core/`:
 
 - `data/calendar_sync_service_test.dart` — sync → upsert → event publish.
-- `data/meeting_alert_scheduler_test.dart` — lead window + alert dedup.
 - `data/calendar_event_mapper_test.dart`, `presentation/record_and_link_use_case_test.dart`,
   and the UI tests (`agenda_panel`, `calendar_format`, `calendar_ui_providers`,
   `calendar_view_mode`).

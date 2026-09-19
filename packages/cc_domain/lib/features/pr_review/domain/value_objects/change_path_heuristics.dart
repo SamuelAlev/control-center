@@ -37,22 +37,3 @@ bool isCriticalPath(String path) {
   final lower = path.toLowerCase();
   return kCriticalPathFragments.any(lower.contains);
 }
-
-/// The critical-path fragments [path] matches, in declaration order. Empty when
-/// the path is not on a critical path.
-List<String> criticalPathHits(String path) {
-  final lower = path.toLowerCase();
-  return [
-    for (final frag in kCriticalPathFragments)
-      if (lower.contains(frag)) frag,
-  ];
-}
-
-/// Whether [path] is documentation-only by extension.
-bool isDocPath(String path) {
-  final i = path.lastIndexOf('.');
-  if (i < 0 || i == path.length - 1) {
-    return false;
-  }
-  return kDocExtensions.contains(path.substring(i + 1).toLowerCase());
-}

@@ -204,12 +204,6 @@ class ConversationDao extends DatabaseAccessor<WorkspaceDatabase>
           ))
           .getSingleOrNull();
 
-  /// Raw row by id without a workspace filter — for the sync-feed loader only.
-  Future<ConversationsTableData?> getByIdUnscoped(String conversationId) =>
-      (select(
-        conversationsTable,
-      )..where((t) => t.id.equals(conversationId))).getSingleOrNull();
-
   /// Inserts a conversation (ignoring conflicts on the primary key).
   Future<void> insertConversation(ConversationsTableCompanion entry) =>
       into(conversationsTable).insert(entry, mode: InsertMode.insertOrIgnore);

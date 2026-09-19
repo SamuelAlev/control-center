@@ -236,14 +236,3 @@ Future<void> clearForgeToken(WidgetRef ref, ForgeHost forge) async {
   ref.invalidate(forgeConnectionsProvider);
 }
 
-/// Re-probes [forge] and returns its refreshed connection state.
-Future<ForgeConnection> testForgeConnection(
-  WidgetRef ref,
-  ForgeHost forge,
-) async {
-  final data = await ref.read(rpcClientProvider).call('forge.testConnection', {
-    'forge': forge.wire,
-  });
-  ref.invalidate(forgeConnectionsProvider);
-  return ForgeConnection.fromJson(data);
-}

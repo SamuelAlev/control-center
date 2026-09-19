@@ -31,9 +31,6 @@ abstract final class McpProtocol {
   /// List resources.
   static const String resourcesList = 'resources/list';
 
-  /// List resource templates.
-  static const String resourceTemplatesList = 'resources/templates/list';
-
   /// Read a resource.
   static const String resourcesRead = 'resources/read';
 

@@ -10,7 +10,6 @@ lib/core/theme/theme_provider.dart
 lib/features/auth/presentation/screens/api_keys_screen.dart
 lib/features/auth/presentation/screens/onboarding_chrome.dart
 lib/features/calendar/presentation/providers/calendar_ui_providers.dart
-lib/features/calendar/presentation/widgets/calendar_kalender_host.dart
 lib/features/focus_mode/presentation/screens/focus_pill_window.dart
 lib/features/meetings/presentation/screens/meeting_toolbar_window.dart
 lib/features/memory/presentation/widgets/knowledge_graph.dart

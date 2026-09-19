@@ -61,35 +61,4 @@ void main() {
       expect(echoSimilarity(toks('anything at all'), <String>{}), 0);
     });
   });
-
-  group('isEchoMatch', () {
-    Set<String> toks(String s) => echoTokens(s).toSet();
-
-    test('matches a fragment at the default threshold', () {
-      expect(
-        isEchoMatch(
-          toks("I've been looking into that"),
-          toks("I've been looking into that too seems like a token management"),
-        ),
-        isTrue,
-      );
-    });
-
-    test('does not match unrelated text', () {
-      expect(
-        isEchoMatch(
-          toks('lets discuss the budget'),
-          toks('the deployment finished successfully'),
-        ),
-        isFalse,
-      );
-    });
-
-    test('respects a custom threshold', () {
-      final a = toks('alpha beta gamma delta');
-      final b = toks('alpha beta epsilon zeta'); // 2/4 = 0.5 overlap
-      expect(isEchoMatch(a, b, threshold: 0.6), isFalse);
-      expect(isEchoMatch(a, b, threshold: 0.5), isTrue);
-    });
-  });
 }

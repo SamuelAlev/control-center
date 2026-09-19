@@ -382,3 +382,4 @@ extension WorkspaceRouteContext on BuildContext {
   String? get currentWorkspaceId =>
       GoRouterState.of(this).pathParameters['workspaceId'];
 }
+

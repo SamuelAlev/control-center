@@ -194,20 +194,6 @@ class _RenderStickyHeader extends RenderBox
     return _headerBox.getMaxIntrinsicHeight(width) +
         _contentBox.getMaxIntrinsicHeight(width);
   }
-
-  @override
-  Size computeDryLayout(BoxConstraints constraints) {
-    final cs = constraints.loosen();
-    final headerSize = _headerBox.getDryLayout(cs);
-    final contentSize = _contentBox.getDryLayout(cs);
-    return constraints.constrain(
-      Size(
-        math.max(headerSize.width, contentSize.width),
-        headerSize.height + contentSize.height,
-      ),
-    );
-  }
-
   @override
   void performLayout() {
     final cs = constraints.loosen();

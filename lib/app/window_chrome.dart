@@ -4,7 +4,7 @@ import 'package:control_center/app/window_geometry_watcher.dart';
 import 'package:control_center/app/window_placement.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:flutter/widgets.dart'
-    show Color, Offset, Rect, Size, visibleForTesting;
+    show Color, Offset, Rect, Size;
 import 'package:nativeapi/nativeapi.dart'
     show DisplayManager, TitleBarStyle, Window, WindowManager;
 
@@ -81,11 +81,6 @@ const String _soundscapeYKey = 'soundscape_hud_y';
 /// re-created (its provider flipped off and on) is a NEW window and correctly
 /// restores its position again.
 final Set<int> _geometryRestoredWindowIds = <int>{};
-
-/// Forgets which windows have had their geometry restored, so a test can drive
-/// [styleWindowOnShow] more than once.
-@visibleForTesting
-void resetWindowGeometryRestoreLatch() => _geometryRestoredWindowIds.clear();
 
 /// Whether [title] names a window that IS the app, as opposed to a floating
 /// HUD: the primary window, the transient pre-app setup window, or the

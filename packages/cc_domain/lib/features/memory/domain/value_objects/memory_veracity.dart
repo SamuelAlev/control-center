@@ -43,10 +43,6 @@ enum MemoryVeracity {
   }
 }
 
-/// Base confidence for a brand-new memory of the given [veracity]: `weight*0.5`.
-/// Mirrors mnemopi's `baseConfidence = weight * 0.5`.
-double baseConfidenceFor(MemoryVeracity veracity) => veracity.weight * 0.5;
-
 /// Bayesian confidence update applied on each corroborating re-mention:
 ///
 ///     increment = (1 - current) * weight * 0.3

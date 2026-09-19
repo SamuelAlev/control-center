@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/settings/user_preference_sync.dart';
@@ -215,18 +214,3 @@ final ownDevicesProvider = StreamProvider<List<Map<String, dynamic>>>(
       ),
 );
 
-/// Resolves a display name for a principal id of the given type. Falls back
-/// to a shortened id while the directory is still loading.
-String principalDisplayName(
-  Ref ref, {
-  required String principalId,
-  required PrincipalType type,
-  String? agentName,
-}) {
-  if (type == PrincipalType.agent) {
-    return agentName ?? principalId;
-  }
-  final users = ref.read(usersByIdProvider).value;
-  return users?[principalId]?.displayName ??
-      (principalId.length > 8 ? principalId.substring(0, 8) : principalId);
-}

@@ -73,9 +73,6 @@ class AudioCaptureSource {
   final AudioCaptureSourceKind kind;
 }
 
-/// The output sample rate of every backend, in Hz.
-const int kCaptureSampleRate = 16000;
-
 /// Captures system output audio as 16 kHz mono PCM16.
 ///
 /// One instance owns at most one in-flight capture. Call [capture] to start

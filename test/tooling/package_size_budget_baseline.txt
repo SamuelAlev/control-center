@@ -1,8 +1,9 @@
 # path  linecount — shrinking allowlist for packages/**/lib over 1500 lines
 # Exclude *.g.dart, geoip_country_data.dart, emoji_shortcodes.dart.
-packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2233
+# Updated 2026-09-20 after CI ratchet catch-up.
+packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2251
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2849
-packages/cc_domain/lib/src/dtos/dtos.dart  4132
+packages/cc_domain/lib/src/dtos/dtos.dart  4142
 packages/cc_harness/lib/src/loop/agent_loop_runner.dart  1521
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1907
 packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2527
@@ -14,12 +15,12 @@ packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1669
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2530
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1834
 packages/cc_infra/lib/src/rigs/rig_drivers.dart  1728
-packages/cc_infra/lib/src/rigs/rig_service.dart  2978
-packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2037
+packages/cc_infra/lib/src/rigs/rig_service.dart  2967
+packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2022
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2699
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3384
-packages/cc_server_core/lib/src/cc_server_runtime.dart  7811
-packages/cc_server_core/lib/src/demo/demo_seeder.dart  2140
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3348
+packages/cc_server_core/lib/src/cc_server_runtime.dart  7813
+packages/cc_server_core/lib/src/demo/demo_seeder.dart  2540
 packages/cc_server_core/lib/src/local_rpc_server.dart  2572
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16113
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16118
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  1722

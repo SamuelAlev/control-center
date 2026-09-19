@@ -1655,12 +1655,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get import => 'Εισαγωγή';
 
   @override
-  String get sortByStatus => 'Κατάσταση';
-
-  @override
-  String get sortByName => 'Όνομα';
-
-  @override
   String get noMatchingAgents => 'Κανένας πράκτορας δεν ταιριάζει με το φίλτρο';
 
   @override
@@ -2709,9 +2703,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get assignees => 'Ανατεθειμένοι';
 
   @override
-  String get attachFiles => 'Επισύναψη αρχείων';
-
-  @override
   String get attachImage => 'Επισύναψη εικόνας';
 
   @override
@@ -2828,9 +2819,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get closeEsc => 'Κλείσιμο (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Κλείσιμο';
 
   @override
   String get closeReader => 'Κλείσιμο αναγνώστη';
@@ -3966,9 +3954,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get navSettings => 'Ρυθμίσεις';
 
   @override
-  String get navigateLabel => 'Πλοήγηση';
-
-  @override
   String networkBlockCount(int count) {
     return '$count αποκλεισμοί δικτύου';
   }
@@ -3982,9 +3967,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get newFact => 'Νέο γεγονός';
-
-  @override
-  String get newLabel => 'Νέο';
 
   @override
   String get newPolicy => 'Νέα πολιτική';
@@ -4113,9 +4095,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Δεν έχει ρυθμιστεί.';
-
-  @override
-  String get notDetected => 'Δεν ανιχνεύθηκε';
 
   @override
   String get notFoundLabel => 'Δεν βρέθηκε';
@@ -4368,9 +4347,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get notificationsMuteRepo => 'Σίγαση αυτού του αποθετηρίου';
 
   @override
-  String get notificationsUnmuteRepo => 'Άρση σίγασης αυτού του αποθετηρίου';
-
-  @override
   String get onboardingLinuxDescription =>
       'Το Control Center μπορεί να χρησιμοποιεί κοντέινερ Linux για απομόνωση της εκτέλεσης πρακτόρων.';
 
@@ -4381,9 +4357,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Το sandbox δεν είναι διαθέσιμο σε αυτή την πλατφόρμα. Η εκτέλεση πρακτόρων θα γίνει χωρίς απομόνωση.';
-
-  @override
-  String get openApplicationSettings => 'Άνοιγμα ρυθμίσεων εφαρμογής';
 
   @override
   String get openArticlesInApp => 'Άνοιγμα άρθρων στην εφαρμογή';
@@ -4810,9 +4783,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get variableValue => 'Τιμή';
 
   @override
-  String get savingChanges => 'Αποθήκευση αλλαγών…';
-
-  @override
   String get savingEllipsis => 'Αποθήκευση…';
 
   @override
@@ -4821,10 +4791,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Κανένα αντίστοιχο pull request';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Κανένα ανοιχτό PR δεν ταιριάζει με την αναζήτησή σας. Δοκιμάστε άλλους όρους ή καθαρίστε την αναζήτηση.';
 
   @override
   String get searchFactsHint => 'Αναζήτηση γεγονότων...';
@@ -4886,9 +4852,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get selectConversation => 'Επιλέξτε συνομιλία';
 
   @override
-  String get selectEffortLevel => 'Επιλέξτε επίπεδο προσπάθειας';
-
-  @override
   String get selectLabel => 'Επιλογή';
 
   @override
@@ -4948,9 +4911,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String signedInAs(String username) {
     return 'Συνδεθήκατε ως ⁨$username⁩.';
   }
-
-  @override
-  String get skillEditor => 'Επεξεργαστής δεξιοτήτων';
 
   @override
   String get skillNameRequired => 'Το όνομα δεξιότητας είναι υποχρεωτικό.';
@@ -6260,9 +6220,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Δεν υπάρχουν ακόμη πρότυπα pipeline. Δημιουργήστε ένα για να ξεκινήσετε.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID προτύπου';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Ενσωματωμένο';
 
   @override
@@ -6272,9 +6229,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Διαγραφή του προτύπου pipeline $name; Αυτή η ενέργεια δεν αναιρείται.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Επεξεργασία pipeline';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6289,10 +6243,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Σύρετε οποιαδήποτε καταχώριση στον καμβά για να προσθέσετε κόμβο.';
-
-  @override
-  String get editorDragHint =>
-      'Σύρετε από τη βιβλιοθήκη, κάντε κλικ σε κόμβο για επεξεργασία';
 
   @override
   String get editorEmptyCanvas =>
@@ -6428,13 +6378,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Εκτελείται με bash -c. Το GITHUB_TOKEN ορίζεται. Τα υποκατάστατα αντικαθίστανται πριν την εκτέλεση.';
 
   @override
-  String get nodeConfigTriggers => 'Ενεργοποιείται από';
-
-  @override
-  String get nodeConfigNoUpstream =>
-      'Δεν υπάρχουν άλλοι κόμβοι για σύνδεση από.';
-
-  @override
   String get nodeConfigRouteKeys => 'Κλειδιά δρομολόγησης';
 
   @override
@@ -6507,38 +6450,11 @@ class AppLocalizationsEl extends AppLocalizations {
   String get conditionDefaultCase => 'Προεπιλεγμένη περίπτωση';
 
   @override
-  String get triggerPanelTitle => 'Εναύσματα';
-
-  @override
-  String get triggerPanelHelp => 'Τι ξεκινά αυτό το pipeline.';
-
-  @override
   String get triggerManualHelp =>
       'Εμφάνιση στη σελίδα εκτέλεσης και έναρξη χειροκίνητα.';
 
   @override
-  String get triggerSectionAutomatic => 'Αυτόματα εναύσματα';
-
-  @override
-  String get triggerAddButton => 'Προσθήκη εναύσματος';
-
-  @override
-  String get triggerNoneYet => 'Δεν υπάρχουν ακόμη αυτόματα εναύσματα.';
-
-  @override
-  String get triggerAddDialogTitle => 'Προσθήκη εναύσματος';
-
-  @override
-  String get triggerKindLabel => 'Τύπος εναύσματος';
-
-  @override
-  String get triggerKindEvent => 'Σε γεγονός';
-
-  @override
   String get triggerKindSchedule => 'Σε χρονοδιάγραμμα';
-
-  @override
-  String get triggerKindWebhook => 'Μέσω webhook';
 
   @override
   String get triggerScheduleExprLabel =>
@@ -6585,13 +6501,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Διαδρομή webhook';
-
-  @override
-  String get triggerEventFieldLabel => 'Γεγονός';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Όλα τα διαθέσιμα γεγονότα είναι ήδη συνδεδεμένα.';
 
   @override
   String get triggerMatchStatusLabel => 'Μόνο όταν η κατάσταση είναι';
@@ -7077,13 +6986,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Απαντήθηκε';
 
   @override
-  String get agentQuestionSubmit => 'Υποβολή απάντησης';
-
-  @override
   String get agentQuestionFreeformHint => 'Πληκτρολογήστε την απάντησή σας…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Η απάντησή σας';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8675,27 +8578,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get ideReviewCode => 'Ανασκόπηση κώδικα';
 
   @override
-  String get ideRevert => 'Επαναφορά';
-
-  @override
   String get ideRevertConfirmTitle => 'Επαναφορά αλλαγών';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count αρχείων',
-      one: '1 αρχείου',
-    );
-    return 'Επαναφορά $_temp0 στο HEAD; Αυτό απορρίπτει τις αλλαγές του worktree.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Επαναφορά';
-
-  @override
-  String get ideRevertConfirmCancel => 'Ακύρωση';
 
   @override
   String get ideRevertUntracked =>
@@ -8715,9 +8598,6 @@ class AppLocalizationsEl extends AppLocalizations {
     );
     return '$_temp0 δεν μπόρεσαν να επαναφερθούν (μη παρακολουθούμενα).';
   }
-
-  @override
-  String get ideViewSource => 'Προβολή πηγής';
 
   @override
   String get ideSearchMatchCase => 'Διάκριση πεζών/κεφαλαίων';
@@ -9257,10 +9137,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get providerBaseUrlHint => 'Base URL (προαιρετικά)';
 
   @override
-  String get customProvidersDescription =>
-      'Οποιοδήποτε συμβατό με OpenAI ή Anthropic endpoint — Ollama, LM Studio, vLLM ή ιδιωτική εγκατάσταση — με προαιρετικό κλειδί API.';
-
-  @override
   String get addProvider => 'Προσθήκη παρόχου';
 
   @override
@@ -9378,9 +9254,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Δεν υπάρχουν ακόμη εκτελέσεις';
-
-  @override
-  String get repoScriptsOutput => 'Έξοδος';
 
   @override
   String get repoScriptsSaved => 'Τα σενάρια αποθηκεύτηκαν';
@@ -13228,12 +13101,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get providersFilterHint => 'Φιλτράρισμα παρόχων';
 
   @override
-  String get providersFacetNeedsSetup => 'Χρειάζεται ρύθμιση';
-
-  @override
-  String get providersFacetCustom => 'Προσαρμοσμένο';
-
-  @override
   String get providersNoneMatch => 'Τίποτα δεν ταιριάζει με αυτό το φίλτρο';
 
   @override
@@ -13271,12 +13138,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Φιλτράρισμα εκτελεστών';
-
-  @override
-  String get adaptersFacetReady => 'Έτοιμο';
-
-  @override
-  String get adaptersFacetMissing => 'Λείπει';
 
   @override
   String get adaptersLaunchGroup => 'Εκκίνηση';
@@ -14176,9 +14037,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get demoTourStarRepo => 'Αστέρι στο GitHub';
 
   @override
-  String get demoTourDone => 'Τέλος';
-
-  @override
   String get demoTourOpen => 'Άνοιγμα';
 
   @override
@@ -14208,15 +14066,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Κάθε ειδοποίηση από κάθε πυλώνα καταλήγει σε ένα εισερχόμενα — ανασκοπήσεις, εισιτήρια, εκτελέσεις και συσκέψεις.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Αυτή η συνεδρία demo τελειώνει σε $minutes λεπτά.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Αυτή η συνεδρία demo έχει τελειώσει. Επαναφορτώστε τη σελίδα για να ξεκινήσετε νέα.';
 
   @override
   String get demoUnavailableTitle => 'Δεν είναι διαθέσιμο στο demo';
@@ -14388,9 +14237,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Ένα αρχείο .db που μπορεί να διαβάσει ο διακομιστής. Οι διαδρομές επιλύονται στον κεντρικό υπολογιστή του διακομιστή, όχι σε αυτή τη συσκευή.';
-
-  @override
-  String get backupImportChooseFile => 'Επιλογή αρχείου';
 
   @override
   String backupImportDone(String name) {

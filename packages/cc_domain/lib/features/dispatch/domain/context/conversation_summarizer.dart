@@ -37,37 +37,6 @@ abstract interface class ConversationSummarizerPort {
   Future<String> summarize(CompactionInput input);
 }
 
-/// Builds the user-turn prompt for an LLM summarizer: the serialized history,
-/// with the prior summary wrapped in a `<previous-summary>` anchor when present.
-String buildCompactionUserPrompt(CompactionInput input) {
-  final buf = StringBuffer();
-  if (input.previousSummary != null &&
-      input.previousSummary!.trim().isNotEmpty) {
-    buf
-      ..writeln('<previous-summary>')
-      ..writeln(input.previousSummary!.trim())
-      ..writeln('</previous-summary>')
-      ..writeln()
-      ..writeln(
-        'Update the anchored summary above using the conversation history '
-        'below. Preserve still-true details, remove stale details, merge in '
-        'new facts.',
-      )
-      ..writeln();
-  } else {
-    buf
-      ..writeln(
-        'Create an anchored summary from the conversation history below.',
-      )
-      ..writeln();
-  }
-  buf
-    ..writeln('<conversation-history>')
-    ..writeln(serializeCompactionHistory(input.messages, input.selfAgentName))
-    ..writeln('</conversation-history>');
-  return buf.toString();
-}
-
 /// Renders a span of messages into a compact, summarizer-friendly transcript:
 /// user messages verbatim, agent answer text plus a thin trail of tool actions,
 /// with reasoning and fat tool outputs dropped.

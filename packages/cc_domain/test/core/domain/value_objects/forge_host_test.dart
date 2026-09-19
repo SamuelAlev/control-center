@@ -1,4 +1,3 @@
-import 'package:cc_domain/core/domain/value_objects/forge_git_conventions.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_urls.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
@@ -109,57 +108,6 @@ void main() {
       for (final name in ForgeCapabilities.allNames) {
         expect(caps.byName(name), isFalse, reason: name);
       }
-    });
-
-    test('serverSidePrHeadRef agrees with the git conventions', () {
-      // Two places encode the same fact; if they disagree, a checkout silently
-      // tries a ref that does not exist.
-      for (final forge in ForgeHost.values) {
-        expect(
-          capabilitiesOf(forge).serverSidePrHeadRef,
-          ForgeGitConventions.of(forge).hasServerSidePrHeadRef,
-          reason: forge.name,
-        );
-      }
-    });
-  });
-
-  group('ForgeGitConventions', () {
-    test('each forge addresses a PR head its own way', () {
-      expect(
-        ForgeGitConventions.of(ForgeHost.github).prHeadRef(7),
-        'refs/pull/7/head',
-      );
-      expect(
-        ForgeGitConventions.of(ForgeHost.gitlab).prHeadRef(7),
-        'refs/merge-requests/7/head',
-      );
-      // Bitbucket publishes none — callers must fetch the source branch.
-      expect(ForgeGitConventions.of(ForgeHost.bitbucket).prHeadRef(7), isNull);
-    });
-
-    test('authenticated clone URLs use each forge’s expected username', () {
-      expect(
-        ForgeGitConventions.of(
-          ForgeHost.github,
-        ).authenticatedCloneUrl('o', 'r', 'tok'),
-        'https://x-access-token:tok@github.com/o/r.git',
-      );
-      expect(
-        ForgeGitConventions.of(
-          ForgeHost.gitlab,
-        ).authenticatedCloneUrl('o', 'r', 'tok'),
-        'https://oauth2:tok@gitlab.com/o/r.git',
-      );
-      expect(
-        ForgeGitConventions.of(ForgeHost.bitbucket).authenticatedCloneUrl(
-          'o',
-          'r',
-          'tok',
-          username: 'me@example.com',
-        ),
-        'https://me@example.com:tok@bitbucket.org/o/r.git',
-      );
     });
   });
 

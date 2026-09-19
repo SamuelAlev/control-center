@@ -761,8 +761,6 @@
   "copyRelativePath": "Relatív útvonal másolása",
   "nameRequired": "A név kötelező",
   "import": "Importálás",
-  "sortByStatus": "Állapot",
-  "sortByName": "Név",
   "noMatchingAgents": "Nincs a szűrőre illeszkedő ügynök",
   "watchVideoOn": "Videó megtekintése itt: {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Kérdezze az AI-t",
   "askAiReviewDescription": "Kérje meg az AI-t, hogy nézze át ezt a PR-t",
   "assignees": "Hozzárendeltek",
-  "attachFiles": "Fájlok csatolása",
   "attachImage": "Kép csatolása",
   "attachedAgents": "Csatolt ügynökök",
   "audioInput": "Hangbemenet",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Kattintson az újrapróbáláshoz",
   "close": "Bezárás",
   "closeEsc": "Bezárás (Esc)",
-  "closeKeyboardHint": "Bezárás",
   "closeReader": "Olvasó bezárása",
   "closed": "Lezárva",
   "codeFont": "Kódbetűtípus",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Natív homokozó telepítése szükséges",
   "navObservability": "Megfigyelhetőség",
   "navSettings": "Beállítások",
-  "navigateLabel": "Navigáció",
   "networkBlockCount": "{count} hálózati blokk",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Semleges",
   "newCommitsPushed": "Új commitok érkeztek — kattintson a diff újratöltéséhez",
   "newFact": "Új tény",
-  "newLabel": "Új",
   "newPolicy": "Új szabályzat",
   "newsfeed": "Hírfolyam",
   "newsfeedLabel": "Hírfolyam",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Nincs (minden szerep)",
   "notAvailable": "Nem elérhető",
   "notConfiguredLabel": "Nincs beállítva.",
-  "notDetected": "Nem felismerve",
   "notFoundLabel": "Nem található",
   "notes": "Jegyzetek",
   "notificationAgentFinished": "Ügynök befejezte",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Tároló némítása",
-  "notificationsUnmuteRepo": "Tároló némításának feloldása",
   "onboardingLinuxDescription": "A Control Center Linux-konténereket használhat az ügynökfuttatás elszigeteléséhez.",
   "onboardingMacosDescription": "A Control Center natív homokozót használ macOS-en az ügynökfuttatás elszigeteléséhez.",
   "onboardingUnsupportedDescription": "A homokozó nem érhető el ezen a platformon. Az ügynökfuttatás elszigetelés nélkül történik.",
-  "openApplicationSettings": "Alkalmazásbeállítások megnyitása",
   "openArticlesInApp": "Cikkek megnyitása az alkalmazásban",
   "openInBrowser": "Megnyitás böngészőben",
   "openedInYourBrowser": "Megnyitva a böngészőben.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Egyéni környezeti változók, amelyeket ez az adapter kap (pl. API-kulcsok). A kulcstartóban tárolódnak.",
   "variableKey": "Kulcs",
   "variableValue": "Érték",
-  "savingChanges": "Módosítások mentése…",
   "savingEllipsis": "Mentés…",
   "scopeDiffToCommits": "Diff hatóköre commitokra — Shift-kattintás tartományhoz",
   "noPrsMatchSearch": "Nincs illeszkedő pull request",
-  "noPrsMatchSearchHint": "Nincs a keresésre illeszkedő nyitott PR. Próbáljon más kifejezéseket, vagy törölje a keresést.",
   "searchFactsHint": "Tények keresése...",
   "searchFonts": "Betűtípusok keresése…",
   "searchGifs": "GIF-ek keresése",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Felettes ügynök kiválasztása…",
   "selectAnAgent": "Ügynök kiválasztása",
   "selectConversation": "Beszélgetés kiválasztása",
-  "selectEffortLevel": "Erőfeszítési szint kiválasztása",
   "selectLabel": "Kiválasztás",
   "selectRunner": "Futtató kiválasztása",
   "semanticSearch": "Szemantikus keresés",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Készségszerkesztő",
   "skillNameRequired": "A készség neve kötelező.",
   "skillSaved": "A(z) „{name}” készség mentve.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Húzd-és-ejtsd szerkesztő a pipeline-okhoz, amelyek az ügynökeit orchestrálják.",
   "pipelineTemplatesNew": "Új sablon",
   "pipelineTemplatesEmpty": "Még nincsenek pipeline-sablonok. Hozzon létre egyet a kezdéshez.",
-  "pipelineTemplateIdLabel": "Sablon-ID",
   "pipelineTemplateBuiltInBadge": "Beépített",
   "pipelineTemplateDeleteConfirmTitle": "Törli a sablont?",
   "pipelineTemplateDeleteConfirmBody": "Törli a(z) {name} pipeline-sablont? Ezt nem lehet visszavonni.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Pipeline szerkesztése",
   "pipelineTemplateEditorSubtitle": "Húzza a csomóponttípusokat az oldalsávból a vászonra, majd kösse össze őket.",
   "unsavedChanges": "Mentetlen módosítások",
   "nodeLibraryTitle": "Csomópontkönyvtár",
   "nodeLibraryHint": "Húzzon bármely elemet a vászonra egy csomópont hozzáadásához.",
-  "editorDragHint": "Húzza a könyvtárból, kattintson a csomópontra a szerkesztéshez",
   "editorEmptyCanvas": "Húzzon egy csomópontot a könyvtárból a kezdéshez.",
   "pipelineWhenThisHappens": "Amikor ez történik",
   "pipelineDoThis": "Tegye ezt",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Használjon dupla kapcsos helyőrzőket az állapotértékek futásidejű beemeléséhez.",
   "nodeConfigScript": "Bash szkript",
   "nodeConfigScriptHelp": "bash -c-vel fut. A GITHUB_TOKEN be van állítva. A helyőrzők a végrehajtás előtt helyettesítődnek.",
-  "nodeConfigTriggers": "Triggerek innen",
-  "nodeConfigNoUpstream": "Nincs más csomópont, ahonnan csatlakozni lehetne.",
   "nodeConfigRouteKeys": "Útvonalkulcsok",
   "nodeConfigRouteKeyFrom": "Útvonalkulcs innen: {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Esetek (vesszővel elválasztva)",
   "conditionCasesHelp": "Útvonalkulcsok, amelyeket sorrendben az értékhez illeszt.",
   "conditionDefaultCase": "Alapértelmezett eset",
-  "triggerPanelTitle": "Triggerek",
-  "triggerPanelHelp": "Mi indítja ezt a pipeline-t.",
   "triggerManualHelp": "Megjelenítés a futtatási oldalon, és kézi indítás.",
-  "triggerSectionAutomatic": "Automatikus triggerek",
-  "triggerAddButton": "Trigger hozzáadása",
-  "triggerNoneYet": "Még nincsenek automatikus triggerek.",
-  "triggerAddDialogTitle": "Trigger hozzáadása",
-  "triggerKindLabel": "Trigger típusa",
-  "triggerKindEvent": "Eseményre",
   "triggerKindSchedule": "Ütemezésre",
-  "triggerKindWebhook": "Webhookon keresztül",
   "triggerScheduleExprLabel": "Ütemezés (cron vagy every:seconds)",
   "triggerTimezoneLabel": "Időzóna (nem kötelező)",
   "triggerCatchUpLabel": "Elmulasztott futtatásoknál",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Aláírt webhook-URL jön létre. Külső rendszerek POST-olnak rá a pipeline indításához.",
   "triggerWebhookPathLabel": "Webhook útvonal",
-  "triggerEventFieldLabel": "Esemény",
-  "triggerNoMoreEvents": "Minden elérhető esemény már be van kötve.",
   "triggerMatchStatusLabel": "Csak ha az állapot",
   "triggerSummaryNone": "Nincsenek triggerek",
   "triggerEverySeconds": "Minden {seconds} mp",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Hirdetések, követők és cookie-sávok eltávolítása az olvasóban megnyitott cikkekből.",
   "agentQuestionHeader": "Kérdés Önhöz",
   "agentQuestionAnsweredLabel": "Megválaszolva",
-  "agentQuestionSubmit": "Válasz küldése",
   "agentQuestionFreeformHint": "Írja be a válaszát…",
-  "agentQuestionAnswerLabel": "Az Ön válasza",
   "agentQuestionProgress": "Kérdés: {index} / {count}",
   "agentQuestionSkip": "Kihagyás",
   "agentQuestionSkippedLabel": "Kihagyva",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Szerkesztő megnyitása",
   "ideNewTabMenu": "Új lap",
   "ideReviewCode": "Kód átnézése",
-  "ideRevert": "Visszavonás",
   "ideRevertConfirmTitle": "Módosítások visszavonása",
-  "ideRevertConfirmMessage": "{count, plural, one{# fájl} other{# fájl}} visszaállítása HEAD-re? Ez elveti a worktree módosításait.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Visszavonás",
-  "ideRevertConfirmCancel": "Mégse",
   "ideRevertUntracked": "A nem követett fájlok nem vonhatók vissza",
   "ideRevertFailed": "Nem sikerült visszaállítani a fájlokat. A beszélgetés worktree-je lehet, hogy nem elérhető.",
   "ideRevertSomeSkipped": "{count, plural, one{# fájlt} other{# fájlt}} nem sikerült visszaállítani (nem követett).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Forrás megtekintése",
   "ideSearchMatchCase": "Kis- és nagybetű",
   "ideSearchWholeWord": "Teljes szó",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Alap-URL (nem kötelező)",
-  "customProvidersDescription": "Bármely OpenAI- vagy Anthropic-kompatibilis végpont — Ollama, LM Studio, vLLM vagy privát telepítés — opcionális API-kulccsal.",
   "addProvider": "Szolgáltató hozzáadása",
   "noCustomProviders": "Még nincsenek egyéni szolgáltatók.",
   "providerNameLabel": "Név",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "pl. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Legutóbbi futtatások",
   "repoScriptsNoRuns": "Még nincs futtatás",
-  "repoScriptsOutput": "Kimenet",
   "repoScriptsSaved": "Szkriptek mentve",
   "repoScriptsRunKindSetup": "Telepítés",
   "repoScriptsRunKindArchive": "Archiválás",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Nincs csatlakoztatott szolgáltató, így a beépített ügynök-futtatókörnyezetnek nincs mire futnia. Adjon hozzá API-kulcsot, vagy jelentkezzen be egyikhez lent.",
   "providersFilterHint": "Szolgáltatók szűrése",
-  "providersFacetNeedsSetup": "Beállítás szükséges",
-  "providersFacetCustom": "Egyéni",
   "providersNoneMatch": "Semmi sem illeszkedik erre a szűrőre",
   "providerDeniedHereTitle": "Tiltva ebben a munkaterületben",
   "providerDeniedHereBody": "Az itteni ügynökök nem használhatják ezt a szolgáltatót, még ha csatlakoztatva is van. A többi munkaterületet nem érinti.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Modellek szűrése",
   "adaptersNoneReadyNote": "A katalógusban szereplő futtató-CLI-k egyike sem található ezen a gépen. Telepítsen egyet, majd frissítsen.",
   "adaptersFilterHint": "Futtatók szűrése",
-  "adaptersFacetReady": "Kész",
-  "adaptersFacetMissing": "Hiányzik",
   "adaptersLaunchGroup": "Indítás",
   "adaptersLaunchGroupDescription": "Mit kap ez a futtató, amikor egy ügynök elindítja. Ezeket a CLI telepítése előtt is beállíthatja.",
   "adaptersEnvNone": "Nincs beállítva",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Négy hely, amely megmutatja, mit csinál az alkalmazás valójában.",
   "demoTourSkip": "Kihagyás",
   "demoTourStarRepo": "Csillagozás a GitHubon",
-  "demoTourDone": "Kész",
   "demoTourOpen": "Megnyitás",
   "demoTourSpacesTitle": "Beszéljen egy ügynökkel",
   "demoTourSpacesBody": "Küldjön üzenetet egy térben, és nézze, ahogy a futtatás beáramlik — gondolkodás, eszközhívások és költség, pontosan ahogy egy valódi futtatás jelenik meg.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "A jegyek, teendők és tervek ugyanazokhoz a beszélgetésekhez kapcsolódnak, amelyeket az ügynökök folytatnak.",
   "demoTourInboxTitle": "Lássa a teljes működést",
   "demoTourInboxBody": "Minden riasztás minden pillérből egy beérkezettbe kerül — átnézések, jegyek, futtatások és megbeszélések.",
-  "demoSessionEndingSoon": "Ez a demó munkamenet {minutes} perc múlva véget ér.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Ez a demó munkamenet véget ért. Töltse újra az oldalt egy új indításához.",
   "demoUnavailableTitle": "Nem érhető el a demóban",
   "demoUnavailableTerminal": "A terminál valódi shellt futtat a szervergépen. A demónak egyáltalán nincs végrehajtási felülete — ez teszi biztonságossá a nyilvános megnyitást.",
   "demoUnavailableRig": "Az elszigetelt környezet egy eldobható virtuális gép, amelyet egy ügynök irányít. A demo egyet sem indít: egy nyilvános végpont, amely VM-et indíthat, nem demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Munkaterület-adatbázisfájl",
   "backupImportSourceDescription": "Egy .db fájl, amelyet a szerver olvashat. Az útvonalak a szervergépen oldódnak fel, nem ezen az eszközön.",
-  "backupImportChooseFile": "Fájl választása",
   "backupImportDone": "Importálva ide: {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

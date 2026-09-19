@@ -2994,18 +2994,6 @@ abstract class AppLocalizations {
   /// **'Import'**
   String get import;
 
-  /// No description provided for @sortByStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Status'**
-  String get sortByStatus;
-
-  /// No description provided for @sortByName.
-  ///
-  /// In en, this message translates to:
-  /// **'Name'**
-  String get sortByName;
-
   /// No description provided for @noMatchingAgents.
   ///
   /// In en, this message translates to:
@@ -4716,12 +4704,6 @@ abstract class AppLocalizations {
   /// **'Assignees'**
   String get assignees;
 
-  /// Attach files
-  ///
-  /// In en, this message translates to:
-  /// **'Attach files'**
-  String get attachFiles;
-
   /// Attach image
   ///
   /// In en, this message translates to:
@@ -4949,12 +4931,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Close (Esc)'**
   String get closeEsc;
-
-  /// Locale string for closeKeyboardHint
-  ///
-  /// In en, this message translates to:
-  /// **'Close'**
-  String get closeKeyboardHint;
 
   /// Close reader
   ///
@@ -6865,12 +6841,6 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get navSettings;
 
-  /// Locale string for navigateLabel
-  ///
-  /// In en, this message translates to:
-  /// **'Navigate'**
-  String get navigateLabel;
-
   /// Locale string for networkBlockCount
   ///
   /// In en, this message translates to:
@@ -6894,12 +6864,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New fact'**
   String get newFact;
-
-  /// No description provided for @newLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'New'**
-  String get newLabel;
 
   /// Dialog title for creating a new policy
   ///
@@ -7122,12 +7086,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not configured.'**
   String get notConfiguredLabel;
-
-  /// Not detected status label
-  ///
-  /// In en, this message translates to:
-  /// **'Not detected'**
-  String get notDetected;
 
   /// Not found status label
   ///
@@ -7501,12 +7459,6 @@ abstract class AppLocalizations {
   /// **'Mute this repository'**
   String get notificationsMuteRepo;
 
-  /// No description provided for @notificationsUnmuteRepo.
-  ///
-  /// In en, this message translates to:
-  /// **'Unmute this repository'**
-  String get notificationsUnmuteRepo;
-
   /// Locale string for onboardingLinuxDescription
   ///
   /// In en, this message translates to:
@@ -7524,12 +7476,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sandbox is not available on this platform. Agent execution will be without isolation.'**
   String get onboardingUnsupportedDescription;
-
-  /// No description provided for @openApplicationSettings.
-  ///
-  /// In en, this message translates to:
-  /// **'Open application settings'**
-  String get openApplicationSettings;
 
   /// No description provided for @openArticlesInApp.
   ///
@@ -8275,12 +8221,6 @@ abstract class AppLocalizations {
   /// **'Value'**
   String get variableValue;
 
-  /// Locale string for savingChanges
-  ///
-  /// In en, this message translates to:
-  /// **'Saving changes…'**
-  String get savingChanges;
-
   /// No description provided for @savingEllipsis.
   ///
   /// In en, this message translates to:
@@ -8298,12 +8238,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No matching pull requests'**
   String get noPrsMatchSearch;
-
-  /// PR queue search field / empty-search state
-  ///
-  /// In en, this message translates to:
-  /// **'No open PRs match your search. Try different terms or clear the search.'**
-  String get noPrsMatchSearchHint;
 
   /// Search field hint in facts tab
   ///
@@ -8400,12 +8334,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select a conversation'**
   String get selectConversation;
-
-  /// No description provided for @selectEffortLevel.
-  ///
-  /// In en, this message translates to:
-  /// **'Select effort level'**
-  String get selectEffortLevel;
 
   /// Select
   ///
@@ -8514,12 +8442,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Signed in as {username}.'**
   String signedInAs(String username);
-
-  /// Skill editor
-  ///
-  /// In en, this message translates to:
-  /// **'Skill editor'**
-  String get skillEditor;
 
   /// Skill name is required.
   ///
@@ -10729,12 +10651,6 @@ abstract class AppLocalizations {
   /// **'No pipeline templates yet. Create one to get started.'**
   String get pipelineTemplatesEmpty;
 
-  /// Field label for entering a new template ID
-  ///
-  /// In en, this message translates to:
-  /// **'Template ID'**
-  String get pipelineTemplateIdLabel;
-
   /// Badge shown next to built-in templates
   ///
   /// In en, this message translates to:
@@ -10752,12 +10668,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete pipeline template {name}? This cannot be undone.'**
   String pipelineTemplateDeleteConfirmBody(String name);
-
-  /// Title of the pipeline template editor screen
-  ///
-  /// In en, this message translates to:
-  /// **'Edit pipeline'**
-  String get pipelineTemplateEditorTitle;
 
   /// Subtitle of the editor screen
   ///
@@ -10782,12 +10692,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Drag any entry onto the canvas to add a node.'**
   String get nodeLibraryHint;
-
-  /// Legend hint shown on the editor canvas
-  ///
-  /// In en, this message translates to:
-  /// **'Drag from the library, click a node to edit'**
-  String get editorDragHint;
 
   /// Empty state for the editor canvas
   ///
@@ -11029,18 +10933,6 @@ abstract class AppLocalizations {
   /// **'Runs with bash -c. GITHUB_TOKEN is set. Placeholders are substituted before execution.'**
   String get nodeConfigScriptHelp;
 
-  /// Section header for selecting upstream triggers
-  ///
-  /// In en, this message translates to:
-  /// **'Triggers from'**
-  String get nodeConfigTriggers;
-
-  /// Shown when there are no candidate upstream nodes
-  ///
-  /// In en, this message translates to:
-  /// **'No other nodes to connect from.'**
-  String get nodeConfigNoUpstream;
-
   /// Header for the per-edge route-key fields below the trigger chips
   ///
   /// In en, this message translates to:
@@ -11173,71 +11065,17 @@ abstract class AppLocalizations {
   /// **'Default case'**
   String get conditionDefaultCase;
 
-  /// No description provided for @triggerPanelTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Triggers'**
-  String get triggerPanelTitle;
-
-  /// No description provided for @triggerPanelHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'What starts this pipeline.'**
-  String get triggerPanelHelp;
-
   /// No description provided for @triggerManualHelp.
   ///
   /// In en, this message translates to:
   /// **'Show on the run page and start by hand.'**
   String get triggerManualHelp;
 
-  /// No description provided for @triggerSectionAutomatic.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatic triggers'**
-  String get triggerSectionAutomatic;
-
-  /// No description provided for @triggerAddButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Add trigger'**
-  String get triggerAddButton;
-
-  /// No description provided for @triggerNoneYet.
-  ///
-  /// In en, this message translates to:
-  /// **'No automatic triggers yet.'**
-  String get triggerNoneYet;
-
-  /// No description provided for @triggerAddDialogTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Add trigger'**
-  String get triggerAddDialogTitle;
-
-  /// No description provided for @triggerKindLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Trigger type'**
-  String get triggerKindLabel;
-
-  /// No description provided for @triggerKindEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'On an event'**
-  String get triggerKindEvent;
-
   /// No description provided for @triggerKindSchedule.
   ///
   /// In en, this message translates to:
   /// **'On a schedule'**
   String get triggerKindSchedule;
-
-  /// No description provided for @triggerKindWebhook.
-  ///
-  /// In en, this message translates to:
-  /// **'Via a webhook'**
-  String get triggerKindWebhook;
 
   /// No description provided for @triggerScheduleExprLabel.
   ///
@@ -11322,18 +11160,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Webhook path'**
   String get triggerWebhookPathLabel;
-
-  /// No description provided for @triggerEventFieldLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Event'**
-  String get triggerEventFieldLabel;
-
-  /// No description provided for @triggerNoMoreEvents.
-  ///
-  /// In en, this message translates to:
-  /// **'All available events are already wired.'**
-  String get triggerNoMoreEvents;
 
   /// No description provided for @triggerMatchStatusLabel.
   ///
@@ -12211,23 +12037,11 @@ abstract class AppLocalizations {
   /// **'Answered'**
   String get agentQuestionAnsweredLabel;
 
-  /// No description provided for @agentQuestionSubmit.
-  ///
-  /// In en, this message translates to:
-  /// **'Submit answer'**
-  String get agentQuestionSubmit;
-
   /// No description provided for @agentQuestionFreeformHint.
   ///
   /// In en, this message translates to:
   /// **'Type your answer…'**
   String get agentQuestionFreeformHint;
-
-  /// No description provided for @agentQuestionAnswerLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Your answer'**
-  String get agentQuestionAnswerLabel;
 
   /// Caption on an ask-user card locating this question in a batch
   ///
@@ -14813,35 +14627,11 @@ abstract class AppLocalizations {
   /// **'Review code'**
   String get ideReviewCode;
 
-  /// No description provided for @ideRevert.
-  ///
-  /// In en, this message translates to:
-  /// **'Revert'**
-  String get ideRevert;
-
   /// No description provided for @ideRevertConfirmTitle.
   ///
   /// In en, this message translates to:
   /// **'Revert changes'**
   String get ideRevertConfirmTitle;
-
-  /// No description provided for @ideRevertConfirmMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'Revert {count, plural, =1{1 file} other{{count} files}} to HEAD? This discards working-tree changes.'**
-  String ideRevertConfirmMessage(int count);
-
-  /// No description provided for @ideRevertConfirmAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Revert'**
-  String get ideRevertConfirmAction;
-
-  /// No description provided for @ideRevertConfirmCancel.
-  ///
-  /// In en, this message translates to:
-  /// **'Cancel'**
-  String get ideRevertConfirmCancel;
 
   /// No description provided for @ideRevertUntracked.
   ///
@@ -14860,12 +14650,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 file} other{{count} files}} couldn\'t be reverted (untracked).'**
   String ideRevertSomeSkipped(int count);
-
-  /// No description provided for @ideViewSource.
-  ///
-  /// In en, this message translates to:
-  /// **'View source'**
-  String get ideViewSource;
 
   /// No description provided for @ideSearchMatchCase.
   ///
@@ -15815,12 +15599,6 @@ abstract class AppLocalizations {
   /// **'Base URL (optional)'**
   String get providerBaseUrlHint;
 
-  /// No description provided for @customProvidersDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Any OpenAI- or Anthropic-compatible endpoint — Ollama, LM Studio, vLLM, or a private deployment — with an optional API key.'**
-  String get customProvidersDescription;
-
   /// No description provided for @addProvider.
   ///
   /// In en, this message translates to:
@@ -16030,12 +15808,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No runs yet'**
   String get repoScriptsNoRuns;
-
-  /// No description provided for @repoScriptsOutput.
-  ///
-  /// In en, this message translates to:
-  /// **'Output'**
-  String get repoScriptsOutput;
 
   /// No description provided for @repoScriptsSaved.
   ///
@@ -22348,18 +22120,6 @@ abstract class AppLocalizations {
   /// **'Filter providers'**
   String get providersFilterHint;
 
-  /// No description provided for @providersFacetNeedsSetup.
-  ///
-  /// In en, this message translates to:
-  /// **'Needs setup'**
-  String get providersFacetNeedsSetup;
-
-  /// No description provided for @providersFacetCustom.
-  ///
-  /// In en, this message translates to:
-  /// **'Custom'**
-  String get providersFacetCustom;
-
   /// No description provided for @providersNoneMatch.
   ///
   /// In en, this message translates to:
@@ -22425,18 +22185,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filter runners'**
   String get adaptersFilterHint;
-
-  /// No description provided for @adaptersFacetReady.
-  ///
-  /// In en, this message translates to:
-  /// **'Ready'**
-  String get adaptersFacetReady;
-
-  /// No description provided for @adaptersFacetMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'Missing'**
-  String get adaptersFacetMissing;
 
   /// No description provided for @adaptersLaunchGroup.
   ///
@@ -23902,12 +23650,6 @@ abstract class AppLocalizations {
   /// **'Star on GitHub'**
   String get demoTourStarRepo;
 
-  /// Button that closes the demo tour on the last step
-  ///
-  /// In en, this message translates to:
-  /// **'Done'**
-  String get demoTourDone;
-
   /// Button on a demo tour step that navigates to that pillar
   ///
   /// In en, this message translates to:
@@ -23961,18 +23703,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Every alert from every pillar lands in one inbox — reviews, tickets, runs and meetings.'**
   String get demoTourInboxBody;
-
-  /// Warning shown as a demo visitor's TTL approaches
-  ///
-  /// In en, this message translates to:
-  /// **'This demo session ends in {minutes} minutes.'**
-  String demoSessionEndingSoon(int minutes);
-
-  /// Shown when a demo visitor's session has been reaped
-  ///
-  /// In en, this message translates to:
-  /// **'This demo session has ended. Reload the page to start a new one.'**
-  String get demoSessionEnded;
 
   /// Heading of the notice shown where a demo server has removed a capability
   ///
@@ -24219,12 +23949,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A .db file the server can read. Paths resolve on the server host, not on this device.'**
   String get backupImportSourceDescription;
-
-  /// Button that opens the native file picker for an import
-  ///
-  /// In en, this message translates to:
-  /// **'Choose file'**
-  String get backupImportChooseFile;
 
   /// Toast after a workspace database is imported
   ///

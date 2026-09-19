@@ -1656,12 +1656,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get import => 'Importovat';
 
   @override
-  String get sortByStatus => 'Stav';
-
-  @override
-  String get sortByName => 'Název';
-
-  @override
   String get noMatchingAgents => 'Žádní agenti neodpovídají filtru';
 
   @override
@@ -2707,9 +2701,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get assignees => 'Přiřazení';
 
   @override
-  String get attachFiles => 'Přiložit soubory';
-
-  @override
   String get attachImage => 'Přiložit obrázek';
 
   @override
@@ -2825,9 +2816,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get closeEsc => 'Zavřít (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Zavřít';
 
   @override
   String get closeReader => 'Zavřít čtečku';
@@ -3967,9 +3955,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get navSettings => 'Nastavení';
 
   @override
-  String get navigateLabel => 'Navigovat';
-
-  @override
   String networkBlockCount(int count) {
     return '$count síťových bloků';
   }
@@ -3983,9 +3968,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get newFact => 'Nový fakt';
-
-  @override
-  String get newLabel => 'Nové';
 
   @override
   String get newPolicy => 'Nová politika';
@@ -4107,9 +4089,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Nenastaveno.';
-
-  @override
-  String get notDetected => 'Nezjištěno';
 
   @override
   String get notFoundLabel => 'Nenalezeno';
@@ -4365,9 +4344,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get notificationsMuteRepo => 'Ztlumit tento repozitář';
 
   @override
-  String get notificationsUnmuteRepo => 'Zrušit ztlumení tohoto repozitáře';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center může k izolaci spouštění agentů použít Linux kontejnery.';
 
@@ -4378,9 +4354,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox na této platformě není k dispozici. Agenti poběží bez izolace.';
-
-  @override
-  String get openApplicationSettings => 'Otevřít nastavení aplikace';
 
   @override
   String get openArticlesInApp => 'Otevírat články v aplikaci';
@@ -4812,9 +4785,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get variableValue => 'Hodnota';
 
   @override
-  String get savingChanges => 'Ukládání změn…';
-
-  @override
   String get savingEllipsis => 'Ukládání…';
 
   @override
@@ -4823,10 +4793,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Žádné odpovídající pull requesty';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Žádné otevřené PR neodpovídají hledání. Zkuste jiná slova nebo hledání vymažte.';
 
   @override
   String get searchFactsHint => 'Hledat fakta…';
@@ -4885,9 +4851,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get selectConversation => 'Vyberte konverzaci';
-
-  @override
-  String get selectEffortLevel => 'Vyberte úroveň úsilí';
 
   @override
   String get selectLabel => 'Vybrat';
@@ -4949,9 +4912,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String signedInAs(String username) {
     return 'Přihlášeno jako $username.';
   }
-
-  @override
-  String get skillEditor => 'Editor dovedností';
 
   @override
   String get skillNameRequired => 'Název dovednosti je povinný.';
@@ -6265,9 +6225,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádné šablony pipeline. Vytvořte jednu a začněte.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID šablony';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Vestavěná';
 
   @override
@@ -6277,9 +6234,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Smazat šablonu pipeline $name? Tuto akci nelze vrátit zpět.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Upravit pipeline';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6294,9 +6248,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Přetáhněte libovolnou položku na plátno a přidejte uzel.';
-
-  @override
-  String get editorDragHint => 'Přetáhněte z knihovny, uzly upravíte kliknutím';
 
   @override
   String get editorEmptyCanvas => 'Začněte přetažením uzlu z knihovny.';
@@ -6431,12 +6382,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Běží přes bash -c. GITHUB_TOKEN je nastaven. Zástupné znaky se nahradí před spuštěním.';
 
   @override
-  String get nodeConfigTriggers => 'Spouštěče z';
-
-  @override
-  String get nodeConfigNoUpstream => 'Žádné jiné uzly k připojení.';
-
-  @override
   String get nodeConfigRouteKeys => 'Klíče trasy';
 
   @override
@@ -6509,37 +6454,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conditionDefaultCase => 'Výchozí případ';
 
   @override
-  String get triggerPanelTitle => 'Spouštěče';
-
-  @override
-  String get triggerPanelHelp => 'Co tuto pipeline spustí.';
-
-  @override
   String get triggerManualHelp => 'Zobrazit na stránce běhů a spustit ručně.';
 
   @override
-  String get triggerSectionAutomatic => 'Automatické spouštěče';
-
-  @override
-  String get triggerAddButton => 'Přidat spouštěč';
-
-  @override
-  String get triggerNoneYet => 'Zatím žádné automatické spouštěče.';
-
-  @override
-  String get triggerAddDialogTitle => 'Přidat spouštěč';
-
-  @override
-  String get triggerKindLabel => 'Typ spouštěče';
-
-  @override
-  String get triggerKindEvent => 'Při události';
-
-  @override
   String get triggerKindSchedule => 'Podle plánu';
-
-  @override
-  String get triggerKindWebhook => 'Přes webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Plán (cron nebo every:seconds)';
@@ -6585,13 +6503,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Cesta webhooku';
-
-  @override
-  String get triggerEventFieldLabel => 'Událost';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Všechny dostupné události už jsou zapojené.';
 
   @override
   String get triggerMatchStatusLabel => 'Jen když stav je';
@@ -7071,13 +6982,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Zodpovězeno';
 
   @override
-  String get agentQuestionSubmit => 'Odeslat odpověď';
-
-  @override
   String get agentQuestionFreeformHint => 'Napište odpověď…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Vaše odpověď';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8686,29 +8591,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get ideReviewCode => 'Zkontrolovat kód';
 
   @override
-  String get ideRevert => 'Vrátit';
-
-  @override
   String get ideRevertConfirmTitle => 'Vrátit změny';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count souborů',
-      many: '$count souborů',
-      few: '$count soubory',
-      one: '1 soubor',
-    );
-    return 'Vrátit $_temp0 na HEAD? Tím se zahodí změny ve worktree.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Vrátit';
-
-  @override
-  String get ideRevertConfirmCancel => 'Zrušit';
 
   @override
   String get ideRevertUntracked => 'Nesledované soubory nelze vrátit';
@@ -8729,9 +8612,6 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0 se nepodařilo vrátit (nesledované).';
   }
-
-  @override
-  String get ideViewSource => 'Zobrazit zdroj';
 
   @override
   String get ideSearchMatchCase => 'Rozlišovat velikost';
@@ -9261,10 +9141,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get providerBaseUrlHint => 'Základní URL (volitelné)';
 
   @override
-  String get customProvidersDescription =>
-      'Libovolný endpoint kompatibilní s OpenAI nebo Anthropic — Ollama, LM Studio, vLLM nebo soukromé nasazení — s volitelným API klíčem.';
-
-  @override
   String get addProvider => 'Přidat poskytovatele';
 
   @override
@@ -9380,9 +9256,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Zatím žádné běhy';
-
-  @override
-  String get repoScriptsOutput => 'Výstup';
 
   @override
   String get repoScriptsSaved => 'Skripty uloženy';
@@ -13261,12 +13134,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get providersFilterHint => 'Filtrovat poskytovatele';
 
   @override
-  String get providersFacetNeedsSetup => 'Vyžaduje nastavení';
-
-  @override
-  String get providersFacetCustom => 'Vlastní';
-
-  @override
   String get providersNoneMatch => 'Nic neodpovídá tomuto filtru';
 
   @override
@@ -13303,12 +13170,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Filtrovat runnery';
-
-  @override
-  String get adaptersFacetReady => 'Připraveno';
-
-  @override
-  String get adaptersFacetMissing => 'Chybí';
 
   @override
   String get adaptersLaunchGroup => 'Spuštění';
@@ -14211,9 +14072,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get demoTourStarRepo => 'Označit hvězdou na GitHub';
 
   @override
-  String get demoTourDone => 'Hotovo';
-
-  @override
   String get demoTourOpen => 'Otevřít';
 
   @override
@@ -14243,15 +14101,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Každé upozornění z každého pilíře skončí v jedné doručené poště — kontroly, tickety, běhy a schůzky.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Tato demo relace skončí za $minutes min.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Tato demo relace skončila. Načtěte stránku znovu a začněte novou.';
 
   @override
   String get demoUnavailableTitle => 'V demu není k dispozici';
@@ -14426,9 +14275,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Soubor .db, který server umí číst. Cesty se řeší na hostiteli serveru, ne na tomto zařízení.';
-
-  @override
-  String get backupImportChooseFile => 'Vybrat soubor';
 
   @override
   String backupImportDone(String name) {

@@ -114,20 +114,3 @@ class AppLog {
   }
 }
 
-/// Adapts [AppLog] to the `NativeLog` sink expected by `package:cc_natives`.
-///
-/// Routes error-bearing calls to [AppLog.e] and info-only calls to [AppLog.i],
-/// so the natives' diagnostics flow through the app logger without
-/// `cc_natives` depending on it.
-void ccNativesLog(
-  String tag,
-  String message, [
-  Object? error,
-  StackTrace? stackTrace,
-]) {
-  if (error != null) {
-    AppLog.e(tag, message, error, stackTrace);
-  } else {
-    AppLog.i(tag, message);
-  }
-}

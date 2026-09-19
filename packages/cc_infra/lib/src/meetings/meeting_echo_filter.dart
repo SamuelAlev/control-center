@@ -308,12 +308,3 @@ double echoSimilarity(Set<String> a, Set<String> b) {
   final denom = math.min(a.length, b.length);
   return denom == 0 ? 0 : inter / denom;
 }
-
-/// Whether [a] and [b] are similar enough (by [echoSimilarity]) to be the same
-/// utterance, at or above [threshold].
-bool isEchoMatch(Set<String> a, Set<String> b, {double threshold = 0.6}) {
-  if (a.isEmpty || b.isEmpty) {
-    return false;
-  }
-  return echoSimilarity(a, b) >= threshold;
-}

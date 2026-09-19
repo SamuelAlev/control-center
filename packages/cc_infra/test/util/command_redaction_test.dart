@@ -133,42 +133,4 @@ void main() {
       },
     );
   });
-
-  group('redactSecretsFromJson', () {
-    test('redacts string values under secret-shaped keys', () {
-      final out = redactSecretsFromJson('{"token": "ghp_x", "name": "sam"}');
-      // jsonEncode emits compact JSON (no space after the colon).
-      expect(out, contains('"token":"***REDACTED***"'));
-      expect(out, contains('"sam"'));
-    });
-
-    test('recurses into nested maps', () {
-      final out = redactSecretsFromJson('{"outer": {"api_key": "v", "ok": 1}}');
-      expect(out, contains('"api_key":"***REDACTED***"'));
-      expect(out, contains('"ok":1'));
-    });
-
-    test(
-      'redacts a value that looks like a secret even under a benign key',
-      () {
-        final out = redactSecretsFromJson('{"random": "$ghp36"}');
-        expect(out, contains('"***REDACTED***"'));
-      },
-    );
-
-    test('leaves short non-secret values alone', () {
-      final out = redactSecretsFromJson('{"title": "hi"}');
-      expect(out, contains('"hi"'));
-    });
-
-    test('falls back to redactSecrets on invalid JSON', () {
-      const line = 'not-json --token=$ghp36';
-      expect(redactSecretsFromJson(line), 'not-json ***REDACTED***');
-    });
-
-    test('preserves list values (passed through)', () {
-      final out = redactSecretsFromJson('{"tags": ["a", "b"]}');
-      expect(out, contains('["a","b"]'));
-    });
-  });
 }

@@ -18,15 +18,6 @@ final claudeAccountsProvider = FutureProvider<List<ClaudeAccountView>>(
   (ref) => ref.watch(claudeAccountsRepositoryProvider).list(),
 );
 
-/// Whether this install manages any Claude Code accounts at all.
-///
-/// The composer's picker hides itself when this is false, so an install that
-/// never configured one (or a non-macOS host happily using `~/.claude`) sees no
-/// new chrome.
-final hasClaudeAccountsProvider = Provider<bool>(
-  (ref) => ref.watch(claudeAccountsProvider).asData?.value.isNotEmpty ?? false,
-);
-
 /// How many Claude Code accounts this install manages.
 ///
 /// Zero while the probe is still in flight, which is the right way round for

@@ -110,14 +110,6 @@ ReviewItemDecor reviewItemDecor(
   };
 }
 
-/// Icon glyph that visually represents a [ReviewNodePriority].
-IconData reviewPriorityIcon(ReviewNodePriority p) => switch (p) {
-  ReviewNodePriority.p0 => AppIcons.octagonAlert,
-  ReviewNodePriority.p1 => AppIcons.triangleAlert,
-  ReviewNodePriority.p2 => AppIcons.info,
-  ReviewNodePriority.p3 => AppIcons.sparkles,
-};
-
 /// Color that visually represents a [ReviewNodePriority] using the design-system tokens.
 Color reviewPriorityColor(ReviewNodePriority priority, BuildContext context) {
   final tokens = context.designSystem!;

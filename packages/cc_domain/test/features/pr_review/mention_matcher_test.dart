@@ -81,16 +81,6 @@ void main() {
     });
   });
 
-  group('bodyMentionsAny', () {
-    test('true when any login matches', () {
-      expect(bodyMentionsAny('@hubot hi', ['octocat', 'hubot']), isTrue);
-    });
-
-    test('false when none do', () {
-      expect(bodyMentionsAny('nobody', ['octocat', 'hubot']), isFalse);
-    });
-  });
-
   group('stripMention', () {
     test('the full login is stripped before the slug', () {
       expect(

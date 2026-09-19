@@ -42,18 +42,9 @@ void main() {
     });
   });
 
-  group('Default status constants', () {
-    test('defaultConversationStatus is active', () {
-      expect(defaultConversationStatus, 'active');
-    });
-  });
-
   group('API constants', () {
     // githubApiBaseUrl / googleCalendarApiBaseUrl moved to cc_infra's
     // network_constants (covered by packages/cc_infra/test/network_constants_test.dart).
-    test('defaultMcpHost is localhost', () {
-      expect(defaultMcpHost, '127.0.0.1');
-    });
   });
 
   group('Constants are compile-time', () {
@@ -67,19 +58,12 @@ void main() {
       expect(codeFontFamilyKey, isNotEmpty);
       expect(codeFontSourceKey, isNotEmpty);
       expect(codeFontPathKey, isNotEmpty);
-      expect(defaultConversationStatus, isNotEmpty);
-      expect(defaultMcpHost, isNotEmpty);
     });
 
     test('storage keys are snake_case', () {
       expect(githubTokenKey, contains('_'));
       expect(ticketingApiKeyKey, contains('_'));
       expect(themeModeKey, contains('_'));
-    });
-
-    test('route-related constants do not start with /', () {
-      // Verify constants are just values, not routes
-      expect(defaultMcpHost, isNot(startsWith('/')));
     });
 
     test('font keys are distinct', () {

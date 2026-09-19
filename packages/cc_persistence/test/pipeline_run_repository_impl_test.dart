@@ -141,29 +141,32 @@ void main() {
       expect(fetched, isNull);
     });
 
-    test('a rerun records its attempt without losing the original start', () async {
-      final run = _makeRun(startedAt: DateTime(2025, 6, 1, 9));
-      await repo.insertRun(run);
-      expect(
-        (await repo.getRun('run-1'))!.attemptStartedAt,
-        isNull,
-        reason: 'a run on its first attempt has nothing to disambiguate',
-      );
+    test(
+      'a rerun records its attempt without losing the original start',
+      () async {
+        final run = _makeRun(startedAt: DateTime(2025, 6, 1, 9));
+        await repo.insertRun(run);
+        expect(
+          (await repo.getRun('run-1'))!.attemptStartedAt,
+          isNull,
+          reason: 'a run on its first attempt has nothing to disambiguate',
+        );
 
-      final rerunAt = DateTime(2025, 6, 1, 17, 45);
-      await repo.updateRun(
-        run.copyWith(
-          status: PipelineRunStatus.running,
-          attemptStartedAt: rerunAt,
-        ),
-      );
+        final rerunAt = DateTime(2025, 6, 1, 17, 45);
+        await repo.updateRun(
+          run.copyWith(
+            status: PipelineRunStatus.running,
+            attemptStartedAt: rerunAt,
+          ),
+        );
 
-      final fetched = await repo.getRun('run-1');
-      expect(fetched!.startedAt, DateTime(2025, 6, 1, 9));
-      expect(fetched.attemptStartedAt, rerunAt);
-      expect(fetched.currentAttemptStartedAt, rerunAt);
-      expect(fetched.wasRestarted, isTrue);
-    });
+        final fetched = await repo.getRun('run-1');
+        expect(fetched!.startedAt, DateTime(2025, 6, 1, 9));
+        expect(fetched.attemptStartedAt, rerunAt);
+        expect(fetched.currentAttemptStartedAt, rerunAt);
+        expect(fetched.wasRestarted, isTrue);
+      },
+    );
 
     test('updateRun changes the lifecycle fields', () async {
       final run = _makeRun(status: PipelineRunStatus.pending);
@@ -552,45 +555,48 @@ void main() {
       expect(fetched.errorMessage, 'original error');
     });
 
-    test('restartStepRun re-opens the row and clears the last attempt', () async {
-      await repo.insertRun(_makeRun(id: 'run-1'));
-      await repo.insertStepRun(
-        _makeStepRun(
-          id: 'step-1',
-          pipelineRunId: 'run-1',
-          status: PipelineStepStatus.running,
-        ),
-      );
-      await repo.updateStepRun(
-        'ws-1',
-        'step-1',
-        status: PipelineStepStatus.failed,
-        outputJson: '{"partial": true}',
-        spaceId: 'space-9',
-        errorMessage: 'boom',
-        errorStackTrace: 'at foo.dart:1',
-        finishedAt: DateTime(2025, 6, 2),
-      );
+    test(
+      'restartStepRun re-opens the row and clears the last attempt',
+      () async {
+        await repo.insertRun(_makeRun(id: 'run-1'));
+        await repo.insertStepRun(
+          _makeStepRun(
+            id: 'step-1',
+            pipelineRunId: 'run-1',
+            status: PipelineStepStatus.running,
+          ),
+        );
+        await repo.updateStepRun(
+          'ws-1',
+          'step-1',
+          status: PipelineStepStatus.failed,
+          outputJson: '{"partial": true}',
+          spaceId: 'space-9',
+          errorMessage: 'boom',
+          errorStackTrace: 'at foo.dart:1',
+          finishedAt: DateTime(2025, 6, 2),
+        );
 
-      final restartedAt = DateTime(2025, 6, 3, 10, 30);
-      await repo.restartStepRun('ws-1', 'step-1', startedAt: restartedAt);
+        final restartedAt = DateTime(2025, 6, 3, 10, 30);
+        await repo.restartStepRun('ws-1', 'step-1', startedAt: restartedAt);
 
-      final fetched = await repo.getStepRunById('ws-1', 'step-1');
-      expect(fetched!.status, PipelineStepStatus.running);
-      expect(
-        fetched.startedAt,
-        restartedAt,
-        reason: 'the step must report the attempt now in flight',
-      );
-      expect(fetched.finishedAt, isNull);
-      expect(fetched.errorMessage, isNull);
-      expect(fetched.outputJson, isNull);
-      expect(
-        fetched.spaceId,
-        'space-9',
-        reason: 'the next attempt continues in the room this one opened',
-      );
-    });
+        final fetched = await repo.getStepRunById('ws-1', 'step-1');
+        expect(fetched!.status, PipelineStepStatus.running);
+        expect(
+          fetched.startedAt,
+          restartedAt,
+          reason: 'the step must report the attempt now in flight',
+        );
+        expect(fetched.finishedAt, isNull);
+        expect(fetched.errorMessage, isNull);
+        expect(fetched.outputJson, isNull);
+        expect(
+          fetched.spaceId,
+          'space-9',
+          reason: 'the next attempt continues in the room this one opened',
+        );
+      },
+    );
 
     test('restartStepRun archives the superseded attempt', () async {
       // The Retry button re-opens the same row; the failure it is retrying
@@ -657,97 +663,105 @@ void main() {
 
       final fetched = await repo.getStepRunById('ws-1', 'step-1');
       expect(fetched!.priorAttempts, hasLength(2));
-      expect(
-        fetched.priorAttempts.map((a) => a.errorMessage).toList(),
-        ['failure #0', 'failure #1'],
-        reason: 'oldest first, so attempt numbers stay stable across retries',
-      );
+      expect(fetched.priorAttempts.map((a) => a.errorMessage).toList(), [
+        'failure #0',
+        'failure #1',
+      ], reason: 'oldest first, so attempt numbers stay stable across retries');
     });
 
-    test('restartStepRun archives an interrupted attempt as unsettled', () async {
-      // Crash-resume re-fires a step whose row still reads `running`: the
-      // archived try keeps that open state (no finishedAt) so the UI can call
-      // it interrupted rather than inventing an outcome.
-      await repo.insertRun(_makeRun(id: 'run-1'));
-      await repo.insertStepRun(
-        _makeStepRun(
-          id: 'step-1',
-          pipelineRunId: 'run-1',
-          status: PipelineStepStatus.running,
-          startedAt: DateTime(2025, 6, 1, 9),
-        ),
-      );
-
-      await repo.restartStepRun(
-        'ws-1',
-        'step-1',
-        startedAt: DateTime(2025, 6, 1, 10),
-      );
-
-      final fetched = await repo.getStepRunById('ws-1', 'step-1');
-      expect(fetched!.priorAttempts, hasLength(1));
-      expect(fetched.priorAttempts.single.status, PipelineStepStatus.running);
-      expect(fetched.priorAttempts.single.finishedAt, isNull);
-      expect(fetched.priorAttempts.single.wasInterrupted, isTrue);
-    });
-
-    test('restartStepRun archives nothing for a row that never fired', () async {
-      // A `pending` row re-fired by a resume has no attempt to remember —
-      // archiving it would invent a try that only ever waited in queue.
-      await repo.insertRun(_makeRun(id: 'run-1'));
-      await repo.insertStepRun(
-        _makeStepRun(
-          id: 'step-1',
-          pipelineRunId: 'run-1',
-          status: PipelineStepStatus.pending,
-        ),
-      );
-
-      await repo.restartStepRun(
-        'ws-1',
-        'step-1',
-        startedAt: DateTime(2025, 6, 1, 10),
-      );
-
-      final fetched = await repo.getStepRunById('ws-1', 'step-1');
-      expect(fetched!.priorAttempts, isEmpty);
-    });
-
-    test('restartStepRun caps the archive, dropping the oldest tries', () async {
-      await repo.insertRun(_makeRun(id: 'run-1'));
-      await repo.insertStepRun(
-        _makeStepRun(
-          id: 'step-1',
-          pipelineRunId: 'run-1',
-          status: PipelineStepStatus.running,
-          startedAt: DateTime(2025, 6, 1, 9),
-        ),
-      );
-
-      for (var i = 0; i < 21; i++) {
-        await repo.updateStepRun(
-          'ws-1',
-          'step-1',
-          status: PipelineStepStatus.failed,
-          errorMessage: 'failure #$i',
-          finishedAt: DateTime(2025, 6, 1, 10, i),
+    test(
+      'restartStepRun archives an interrupted attempt as unsettled',
+      () async {
+        // Crash-resume re-fires a step whose row still reads `running`: the
+        // archived try keeps that open state (no finishedAt) so the UI can call
+        // it interrupted rather than inventing an outcome.
+        await repo.insertRun(_makeRun(id: 'run-1'));
+        await repo.insertStepRun(
+          _makeStepRun(
+            id: 'step-1',
+            pipelineRunId: 'run-1',
+            status: PipelineStepStatus.running,
+            startedAt: DateTime(2025, 6, 1, 9),
+          ),
         );
+
         await repo.restartStepRun(
           'ws-1',
           'step-1',
-          startedAt: DateTime(2025, 6, 1, 11, i),
+          startedAt: DateTime(2025, 6, 1, 10),
         );
-      }
 
-      final fetched = await repo.getStepRunById('ws-1', 'step-1');
-      expect(fetched!.priorAttempts, hasLength(20));
-      expect(
-        fetched.priorAttempts.first.errorMessage,
-        'failure #1',
-        reason: 'a flake retried forever must not grow the row without limit',
-      );
-      expect(fetched.priorAttempts.last.errorMessage, 'failure #20');
-    });
+        final fetched = await repo.getStepRunById('ws-1', 'step-1');
+        expect(fetched!.priorAttempts, hasLength(1));
+        expect(fetched.priorAttempts.single.status, PipelineStepStatus.running);
+        expect(fetched.priorAttempts.single.finishedAt, isNull);
+        expect(fetched.priorAttempts.single.wasInterrupted, isTrue);
+      },
+    );
+
+    test(
+      'restartStepRun archives nothing for a row that never fired',
+      () async {
+        // A `pending` row re-fired by a resume has no attempt to remember —
+        // archiving it would invent a try that only ever waited in queue.
+        await repo.insertRun(_makeRun(id: 'run-1'));
+        await repo.insertStepRun(
+          _makeStepRun(
+            id: 'step-1',
+            pipelineRunId: 'run-1',
+            status: PipelineStepStatus.pending,
+          ),
+        );
+
+        await repo.restartStepRun(
+          'ws-1',
+          'step-1',
+          startedAt: DateTime(2025, 6, 1, 10),
+        );
+
+        final fetched = await repo.getStepRunById('ws-1', 'step-1');
+        expect(fetched!.priorAttempts, isEmpty);
+      },
+    );
+
+    test(
+      'restartStepRun caps the archive, dropping the oldest tries',
+      () async {
+        await repo.insertRun(_makeRun(id: 'run-1'));
+        await repo.insertStepRun(
+          _makeStepRun(
+            id: 'step-1',
+            pipelineRunId: 'run-1',
+            status: PipelineStepStatus.running,
+            startedAt: DateTime(2025, 6, 1, 9),
+          ),
+        );
+
+        for (var i = 0; i < 21; i++) {
+          await repo.updateStepRun(
+            'ws-1',
+            'step-1',
+            status: PipelineStepStatus.failed,
+            errorMessage: 'failure #$i',
+            finishedAt: DateTime(2025, 6, 1, 10, i),
+          );
+          await repo.restartStepRun(
+            'ws-1',
+            'step-1',
+            startedAt: DateTime(2025, 6, 1, 11, i),
+          );
+        }
+
+        final fetched = await repo.getStepRunById('ws-1', 'step-1');
+        expect(fetched!.priorAttempts, hasLength(20));
+        expect(
+          fetched.priorAttempts.first.errorMessage,
+          'failure #1',
+          reason: 'a flake retried forever must not grow the row without limit',
+        );
+        expect(fetched.priorAttempts.last.errorMessage, 'failure #20');
+      },
+    );
 
     test('watchStepRunsForPipeline emits step runs', () async {
       await repo.insertRun(_makeRun(id: 'run-1'));
@@ -858,9 +872,7 @@ void main() {
     });
 
     test('nonTerminalRuns includes queued runs', () async {
-      await repo.insertRun(
-        _makeRun(id: 'q', status: PipelineRunStatus.queued),
-      );
+      await repo.insertRun(_makeRun(id: 'q', status: PipelineRunStatus.queued));
       await repo.insertRun(
         _makeRun(id: 'done', status: PipelineRunStatus.completed),
       );
@@ -1009,7 +1021,7 @@ void main() {
       // still has to drain in the order the runs arrived.
       test('drains a same-second burst in insert order', () async {
         final stamp = DateTime(2025, 6, 1, 12, 30, 45);
-        final added = ['auto-ci', 'brand-sdk', 'ffy-cli', 'fondue', 'web-app'];
+        final added = ['repo-a', 'repo-b', 'repo-c', 'repo-d', 'repo-e'];
         for (final id in added) {
           await repo.insertRun(
             _makeRun(
@@ -1044,7 +1056,7 @@ void main() {
 
       test('same-second burst lists newest first, next-to-run last', () async {
         final stamp = DateTime(2025, 6, 1, 12, 30, 45);
-        final added = ['auto-ci', 'brand-sdk', 'ffy-cli'];
+        final added = ['repo-a', 'repo-b', 'repo-c'];
         for (final id in added) {
           await repo.insertRun(
             _makeRun(

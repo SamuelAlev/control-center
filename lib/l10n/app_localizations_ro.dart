@@ -1655,12 +1655,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get import => 'Importă';
 
   @override
-  String get sortByStatus => 'Stare';
-
-  @override
-  String get sortByName => 'Nume';
-
-  @override
   String get noMatchingAgents => 'Niciun agent nu se potrivește filtrului tău';
 
   @override
@@ -2710,9 +2704,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get assignees => 'Asignați';
 
   @override
-  String get attachFiles => 'Atașează fișiere';
-
-  @override
   String get attachImage => 'Atașează imagine';
 
   @override
@@ -2829,9 +2820,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get closeEsc => 'Închide (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Închide';
 
   @override
   String get closeReader => 'Închide cititorul';
@@ -3968,9 +3956,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get navSettings => 'Setări';
 
   @override
-  String get navigateLabel => 'Navighează';
-
-  @override
   String networkBlockCount(int count) {
     return '$count blocări de rețea';
   }
@@ -3984,9 +3969,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get newFact => 'Fapt nou';
-
-  @override
-  String get newLabel => 'Nou';
 
   @override
   String get newPolicy => 'Politică nouă';
@@ -4110,9 +4092,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Neconfigurat.';
-
-  @override
-  String get notDetected => 'Nedetectat';
 
   @override
   String get notFoundLabel => 'Negăsit';
@@ -4367,9 +4346,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get notificationsMuteRepo => 'Dezactivează acest depozit';
 
   @override
-  String get notificationsUnmuteRepo => 'Reactivează acest depozit';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center poate folosi containere Linux pentru a izola execuția agenților.';
 
@@ -4380,9 +4356,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox-ul nu este disponibil pe această platformă. Execuția agenților va fi fără izolare.';
-
-  @override
-  String get openApplicationSettings => 'Deschide setările aplicației';
 
   @override
   String get openArticlesInApp => 'Deschide articolele în aplicație';
@@ -4812,9 +4785,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get variableValue => 'Valoare';
 
   @override
-  String get savingChanges => 'Se salvează modificările…';
-
-  @override
   String get savingEllipsis => 'Se salvează…';
 
   @override
@@ -4823,10 +4793,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Niciun pull request potrivit';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Niciun PR deschis nu se potrivește căutării. Încearcă alți termeni sau golește căutarea.';
 
   @override
   String get searchFactsHint => 'Caută fapte...';
@@ -4885,9 +4851,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get selectConversation => 'Selectează o conversație';
-
-  @override
-  String get selectEffortLevel => 'Selectează nivelul de efort';
 
   @override
   String get selectLabel => 'Selectează';
@@ -4949,9 +4912,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String signedInAs(String username) {
     return 'Autentificat ca $username.';
   }
-
-  @override
-  String get skillEditor => 'Editor de abilități';
 
   @override
   String get skillNameRequired => 'Numele abilității este obligatoriu.';
@@ -6259,9 +6219,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Niciun șablon pipeline încă. Creează unul ca să începi.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID șablon';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Încorporat';
 
   @override
@@ -6271,9 +6228,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Ștergi șablonul pipeline $name? Acțiunea nu poate fi anulată.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Editează pipeline-ul';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6288,10 +6242,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Trage orice element pe pânză ca să adaugi un nod.';
-
-  @override
-  String get editorDragHint =>
-      'Trage din bibliotecă, apasă un nod ca să-l editezi';
 
   @override
   String get editorEmptyCanvas => 'Trage un nod din bibliotecă ca să începi.';
@@ -6426,12 +6376,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Rulează cu bash -c. GITHUB_TOKEN este setat. Placeholderele sunt înlocuite înainte de execuție.';
 
   @override
-  String get nodeConfigTriggers => 'Declanșatori de la';
-
-  @override
-  String get nodeConfigNoUpstream => 'Niciun alt nod de conectat.';
-
-  @override
   String get nodeConfigRouteKeys => 'Chei de rută';
 
   @override
@@ -6504,38 +6448,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conditionDefaultCase => 'Caz implicit';
 
   @override
-  String get triggerPanelTitle => 'Declanșatori';
-
-  @override
-  String get triggerPanelHelp => 'Ce pornește acest pipeline.';
-
-  @override
   String get triggerManualHelp =>
       'Afișează pe pagina de rulare și pornește manual.';
 
   @override
-  String get triggerSectionAutomatic => 'Declanșatori automat';
-
-  @override
-  String get triggerAddButton => 'Adaugă declanșator';
-
-  @override
-  String get triggerNoneYet => 'Niciun declanșator automat încă.';
-
-  @override
-  String get triggerAddDialogTitle => 'Adaugă declanșator';
-
-  @override
-  String get triggerKindLabel => 'Tip declanșator';
-
-  @override
-  String get triggerKindEvent => 'La un eveniment';
-
-  @override
   String get triggerKindSchedule => 'După un program';
-
-  @override
-  String get triggerKindWebhook => 'Prin webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Program (cron sau every:seconds)';
@@ -6581,13 +6498,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Calea webhook-ului';
-
-  @override
-  String get triggerEventFieldLabel => 'Eveniment';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Toate evenimentele disponibile sunt deja conectate.';
 
   @override
   String get triggerMatchStatusLabel => 'Doar când starea este';
@@ -7072,13 +6982,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Răspuns';
 
   @override
-  String get agentQuestionSubmit => 'Trimite răspunsul';
-
-  @override
   String get agentQuestionFreeformHint => 'Tastează răspunsul…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Răspunsul tău';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8678,28 +8582,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get ideReviewCode => 'Revizuiește codul';
 
   @override
-  String get ideRevert => 'Revino';
-
-  @override
   String get ideRevertConfirmTitle => 'Revino asupra modificărilor';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# de fișiere',
-      few: '# fișiere',
-      one: '1 fișier',
-    );
-    return 'Revii $_temp0 la HEAD? Se renunță la modificările din worktree.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Revino';
-
-  @override
-  String get ideRevertConfirmCancel => 'Anulează';
 
   @override
   String get ideRevertUntracked => 'Fișierele untracked nu pot fi revertate';
@@ -8719,9 +8602,6 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0 nu au putut fi revertate (untracked).';
   }
-
-  @override
-  String get ideViewSource => 'Vezi sursa';
 
   @override
   String get ideSearchMatchCase => 'Potrivește majusculele';
@@ -9258,10 +9138,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get providerBaseUrlHint => 'URL de bază (opțional)';
 
   @override
-  String get customProvidersDescription =>
-      'Orice endpoint compatibil OpenAI sau Anthropic — Ollama, LM Studio, vLLM sau o implementare privată — cu o cheie API opțională.';
-
-  @override
   String get addProvider => 'Adaugă provider';
 
   @override
@@ -9379,9 +9255,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Nicio rulare încă';
-
-  @override
-  String get repoScriptsOutput => 'Ieșire';
 
   @override
   String get repoScriptsSaved => 'Scripturi salvate';
@@ -13248,12 +13121,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get providersFilterHint => 'Filtrează providerii';
 
   @override
-  String get providersFacetNeedsSetup => 'Necesită configurare';
-
-  @override
-  String get providersFacetCustom => 'Personalizat';
-
-  @override
   String get providersNoneMatch => 'Nimic nu se potrivește acestui filtru';
 
   @override
@@ -13290,12 +13157,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Filtrează runnerele';
-
-  @override
-  String get adaptersFacetReady => 'Gata';
-
-  @override
-  String get adaptersFacetMissing => 'Lipsă';
 
   @override
   String get adaptersLaunchGroup => 'Lansare';
@@ -14197,9 +14058,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get demoTourStarRepo => 'Star pe GitHub';
 
   @override
-  String get demoTourDone => 'Gata';
-
-  @override
   String get demoTourOpen => 'Deschide';
 
   @override
@@ -14229,15 +14087,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Fiecare alertă din fiecare pilon ajunge într-un singur inbox — revizuiri, tichete, rulări și întâlniri.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Această sesiune demo se încheie în $minutes minute.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Această sesiune demo s-a încheiat. Reîncarcă pagina ca să pornești una nouă.';
 
   @override
   String get demoUnavailableTitle => 'Indisponibil în demo';
@@ -14411,9 +14260,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Un fișier .db pe care serverul îl poate citi. Căile se rezolvă pe gazda serverului, nu pe acest dispozitiv.';
-
-  @override
-  String get backupImportChooseFile => 'Alege fișierul';
 
   @override
   String backupImportDone(String name) {

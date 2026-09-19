@@ -9,10 +9,6 @@ import 'package:control_center/features/pr_review/presentation/utils/review_item
 import 'package:control_center/features/pr_review/providers/review_studio_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Identifies a review artifact: the studio target plus the PR space the
-/// findings stream from (null before the space exists).
-typedef ReviewArtifactTarget = ({ReviewStudioTarget studio, String? spaceId});
-
 /// The findings of a space, parsed and sorted (empty while loading). The
 /// single findings source every part of the artifact reads.
 ///

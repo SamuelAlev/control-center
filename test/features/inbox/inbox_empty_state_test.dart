@@ -244,7 +244,7 @@ void main() {
           inaccessible: const [
             InaccessibleRepo(
               repoId: 'r1',
-              repoFullName: 'Frontify/web-app',
+              repoFullName: 'SuspendedOrg/suspended-repo',
               reason: InaccessibleRepo.installationSuspended,
             ),
           ],
@@ -256,7 +256,7 @@ void main() {
       expect(find.text('GitHub App installation suspended'), findsOneWidget);
       expect(
         find.text(
-          'Showing last known data for Frontify/web-app. Resume the '
+          'Showing last known data for SuspendedOrg/suspended-repo. Resume the '
           'installation on GitHub, or connect a token that has access.',
         ),
         findsOneWidget,

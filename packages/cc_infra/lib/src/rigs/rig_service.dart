@@ -1720,10 +1720,6 @@ class RigService implements RigPort, RigPortsPort {
   // ── Ports (RigPortsPort; mechanism in rig_port_service.dart) ─────────────
 
   @override
-  Map<String, dynamic>? portsFor(String workspaceId, String rigId) =>
-      _ports.snapshotFor(workspaceId, rigId)?.toWire();
-
-  @override
   Stream<Map<String, dynamic>> watchPorts(String workspaceId, String rigId) =>
       _ports.watch(workspaceId, rigId).map((s) => s.toWire());
 
@@ -2909,13 +2905,6 @@ class RigService implements RigPort, RigPortsPort {
       // the log says why.
       CcInfraLog.warning('rig/images: download of $imageId failed: $e');
     }
-  }
-
-  /// Waits for an in-flight [downloadImage] to finish. Tests only — production
-  /// callers observe progress through `rig.images`.
-  @visibleForTesting
-  Future<void> debugAwaitDownload(String imageId) async {
-    await _downloads[imageId];
   }
 
   @override

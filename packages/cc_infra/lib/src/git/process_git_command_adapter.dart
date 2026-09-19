@@ -415,11 +415,3 @@ class _RollingTail {
   @override
   String toString() => _chunks.join();
 }
-
-/// Test seam for [_isIndexLockContention].
-///
-/// A detector that quietly stopped matching would turn the retry into dead
-/// code and nothing else would notice — the command would simply fail the way
-/// it used to.
-bool isIndexLockContentionForTesting(String stderr) =>
-    _isIndexLockContention(stderr);

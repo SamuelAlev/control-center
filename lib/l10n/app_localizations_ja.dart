@@ -1603,12 +1603,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get import => 'インポート';
 
   @override
-  String get sortByStatus => 'ステータス';
-
-  @override
-  String get sortByName => '名前';
-
-  @override
   String get noMatchingAgents => 'フィルターに一致するエージェントはありません';
 
   @override
@@ -2637,9 +2631,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get assignees => '担当者';
 
   @override
-  String get attachFiles => 'ファイルを添付';
-
-  @override
   String get attachImage => '画像を添付';
 
   @override
@@ -2754,9 +2745,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get closeEsc => '閉じる（Esc）';
-
-  @override
-  String get closeKeyboardHint => '閉じる';
 
   @override
   String get closeReader => 'リーダーを閉じる';
@@ -3851,9 +3839,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get navSettings => '設定';
 
   @override
-  String get navigateLabel => '移動';
-
-  @override
   String networkBlockCount(int count) {
     return '$count件のネットワークブロック';
   }
@@ -3866,9 +3851,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get newFact => '新しいファクト';
-
-  @override
-  String get newLabel => '新規';
 
   @override
   String get newPolicy => '新しいポリシー';
@@ -3982,9 +3964,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => '未設定です。';
-
-  @override
-  String get notDetected => '未検出';
 
   @override
   String get notFoundLabel => '見つかりません';
@@ -4229,9 +4208,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get notificationsMuteRepo => 'このリポジトリをミュート';
 
   @override
-  String get notificationsUnmuteRepo => 'このリポジトリのミュートを解除';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center は Linux コンテナでエージェントの実行を分離できます。';
 
@@ -4242,9 +4218,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'このプラットフォームではサンドボックスを利用できません。エージェントは分離なしで実行されます。';
-
-  @override
-  String get openApplicationSettings => 'アプリの設定を開く';
 
   @override
   String get openArticlesInApp => 'アプリで記事を開く';
@@ -4663,9 +4636,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get variableValue => '値';
 
   @override
-  String get savingChanges => '変更を保存しています…';
-
-  @override
   String get savingEllipsis => '保存中…';
 
   @override
@@ -4673,10 +4643,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => '一致するプルリクエストはありません';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      '検索に一致するオープンなPRはありません。別のキーワードを試すか、検索をクリアしてください。';
 
   @override
   String get searchFactsHint => 'ファクトを検索...';
@@ -4733,9 +4699,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get selectConversation => '会話を選択';
-
-  @override
-  String get selectEffortLevel => 'エフォートレベルを選択';
 
   @override
   String get selectLabel => '選択';
@@ -4796,9 +4759,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String signedInAs(String username) {
     return '$usernameとしてサインインしています。';
   }
-
-  @override
-  String get skillEditor => 'スキルエディター';
 
   @override
   String get skillNameRequired => 'スキル名は必須です。';
@@ -6067,9 +6027,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get pipelineTemplatesEmpty => 'パイプラインテンプレートはまだありません。作成して始めましょう。';
 
   @override
-  String get pipelineTemplateIdLabel => 'テンプレートID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => '組み込み';
 
   @override
@@ -6079,9 +6036,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'パイプラインテンプレート $name を削除しますか？この操作は取り消せません。';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'パイプラインを編集';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6095,9 +6049,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => '項目をキャンバスにドラッグするとノードが追加されます。';
-
-  @override
-  String get editorDragHint => 'ライブラリからドラッグし、ノードをクリックして編集';
 
   @override
   String get editorEmptyCanvas => 'ライブラリからノードをドラッグして開始してください。';
@@ -6230,12 +6181,6 @@ class AppLocalizationsJa extends AppLocalizations {
       'bash -c で実行します。GITHUB_TOKEN が設定されます。プレースホルダーは実行前に置換されます。';
 
   @override
-  String get nodeConfigTriggers => 'トリガー元';
-
-  @override
-  String get nodeConfigNoUpstream => '接続元にできる他のノードはありません。';
-
-  @override
   String get nodeConfigRouteKeys => 'ルートキー';
 
   @override
@@ -6307,37 +6252,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get conditionDefaultCase => 'デフォルトケース';
 
   @override
-  String get triggerPanelTitle => 'トリガー';
-
-  @override
-  String get triggerPanelHelp => 'このパイプラインを開始する条件です。';
-
-  @override
   String get triggerManualHelp => '実行ページに表示し、手動で開始します。';
 
   @override
-  String get triggerSectionAutomatic => '自動トリガー';
-
-  @override
-  String get triggerAddButton => 'トリガーを追加';
-
-  @override
-  String get triggerNoneYet => '自動トリガーはまだありません。';
-
-  @override
-  String get triggerAddDialogTitle => 'トリガーを追加';
-
-  @override
-  String get triggerKindLabel => 'トリガーの種類';
-
-  @override
-  String get triggerKindEvent => 'イベント時';
-
-  @override
   String get triggerKindSchedule => 'スケジュール時';
-
-  @override
-  String get triggerKindWebhook => 'webhook 経由';
 
   @override
   String get triggerScheduleExprLabel => 'スケジュール（cron または every:seconds）';
@@ -6383,12 +6301,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook のパス';
-
-  @override
-  String get triggerEventFieldLabel => 'イベント';
-
-  @override
-  String get triggerNoMoreEvents => '利用できるイベントはすべて接続済みです。';
 
   @override
   String get triggerMatchStatusLabel => 'ステータスが次のときのみ';
@@ -6851,13 +6763,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get agentQuestionAnsweredLabel => '回答済み';
 
   @override
-  String get agentQuestionSubmit => '回答を送信';
-
-  @override
   String get agentQuestionFreeformHint => '回答を入力…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'あなたの回答';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8410,27 +8316,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get ideReviewCode => 'コードをレビュー';
 
   @override
-  String get ideRevert => '元に戻す';
-
-  @override
   String get ideRevertConfirmTitle => '変更を元に戻す';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count件のファイル',
-      one: '1件のファイル',
-    );
-    return '$_temp0をHEADに戻しますか？ワークツリーの変更は破棄されます。';
-  }
-
-  @override
-  String get ideRevertConfirmAction => '元に戻す';
-
-  @override
-  String get ideRevertConfirmCancel => 'キャンセル';
 
   @override
   String get ideRevertUntracked => '未追跡ファイルは元に戻せません';
@@ -8448,9 +8334,6 @@ class AppLocalizationsJa extends AppLocalizations {
     );
     return '$_temp0を元に戻せませんでした（未追跡）。';
   }
-
-  @override
-  String get ideViewSource => 'ソースを表示';
 
   @override
   String get ideSearchMatchCase => '大文字と小文字を区別';
@@ -8966,10 +8849,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providerBaseUrlHint => 'ベースURL（任意）';
 
   @override
-  String get customProvidersDescription =>
-      'OpenAI または Anthropic 互換のエンドポイント（Ollama、LM Studio、vLLM、プライベート環境など）を、任意の API キー付きで追加できます。';
-
-  @override
   String get addProvider => 'プロバイダーを追加';
 
   @override
@@ -9085,9 +8964,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'まだ実行はありません';
-
-  @override
-  String get repoScriptsOutput => '出力';
 
   @override
   String get repoScriptsSaved => 'スクリプトを保存しました';
@@ -12828,12 +12704,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get providersFilterHint => 'プロバイダーを絞り込み';
 
   @override
-  String get providersFacetNeedsSetup => '要セットアップ';
-
-  @override
-  String get providersFacetCustom => 'カスタム';
-
-  @override
   String get providersNoneMatch => 'このフィルターに一致するものはありません';
 
   @override
@@ -12867,12 +12737,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'ランナーを絞り込み';
-
-  @override
-  String get adaptersFacetReady => '準備完了';
-
-  @override
-  String get adaptersFacetMissing => '未インストール';
 
   @override
   String get adaptersLaunchGroup => '起動';
@@ -13746,9 +13610,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get demoTourStarRepo => 'GitHubでスター';
 
   @override
-  String get demoTourDone => '完了';
-
-  @override
   String get demoTourOpen => '開く';
 
   @override
@@ -13778,15 +13639,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'すべての機能からのあらゆる通知が1つの受信トレイに届きます — レビュー、チケット、実行、会議。';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'このデモセッションはあと$minutes分で終了します。';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'このデモセッションは終了しました。ページを再読み込みすると、新しいセッションが始まります。';
 
   @override
   String get demoUnavailableTitle => 'デモでは利用できません';
@@ -13956,9 +13808,6 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'サーバーが読み取れる.dbファイル。パスはこのデバイスではなく、サーバーホスト上で解決されます。';
-
-  @override
-  String get backupImportChooseFile => 'ファイルを選択';
 
   @override
   String backupImportDone(String name) {

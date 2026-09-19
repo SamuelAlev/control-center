@@ -1627,12 +1627,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get import => 'وارد کردن';
 
   @override
-  String get sortByStatus => 'وضعیت';
-
-  @override
-  String get sortByName => 'نام';
-
-  @override
   String get noMatchingAgents => 'عاملی با فیلتر شما جور نیست';
 
   @override
@@ -2671,9 +2665,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get assignees => 'تخصیص‌یافته‌ها';
 
   @override
-  String get attachFiles => 'پیوست فایل';
-
-  @override
   String get attachImage => 'پیوست تصویر';
 
   @override
@@ -2789,9 +2780,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get closeEsc => 'بستن (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'بستن';
 
   @override
   String get closeReader => 'بستن خواننده';
@@ -3912,9 +3900,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get navSettings => 'تنظیمات';
 
   @override
-  String get navigateLabel => 'ناوبری';
-
-  @override
   String networkBlockCount(int count) {
     return '$count مسدودسازی شبکه';
   }
@@ -3928,9 +3913,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get newFact => 'واقعیت جدید';
-
-  @override
-  String get newLabel => 'جدید';
 
   @override
   String get newPolicy => 'سیاست جدید';
@@ -4048,9 +4030,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'پیکربندی نشده.';
-
-  @override
-  String get notDetected => 'تشخیص داده نشد';
 
   @override
   String get notFoundLabel => 'یافت نشد';
@@ -4303,9 +4282,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get notificationsMuteRepo => 'بی‌صدا کردن این مخزن';
 
   @override
-  String get notificationsUnmuteRepo => 'باصدا کردن این مخزن';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center می‌تواند از کانتینرهای Linux برای جداسازی اجرای عامل استفاده کند.';
 
@@ -4316,9 +4292,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'سندباکس روی این سکو در دسترس نیست. اجرای عامل بدون جداسازی خواهد بود.';
-
-  @override
-  String get openApplicationSettings => 'باز کردن تنظیمات برنامه';
 
   @override
   String get openArticlesInApp => 'باز کردن مقاله‌ها در برنامه';
@@ -4743,9 +4716,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get variableValue => 'مقدار';
 
   @override
-  String get savingChanges => 'در حال ذخیرهٔ تغییرات…';
-
-  @override
   String get savingEllipsis => 'در حال ذخیره…';
 
   @override
@@ -4754,10 +4724,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'pull request مطابقی نیست';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'هیچ PR بازی با جستجوی شما جور نیست. عبارت دیگری امتحان کنید یا جستجو را پاک کنید.';
 
   @override
   String get searchFactsHint => 'جستجوی واقعیت‌ها…';
@@ -4814,9 +4780,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get selectConversation => 'یک گفتگو انتخاب کنید';
-
-  @override
-  String get selectEffortLevel => 'سطح تلاش را انتخاب کنید';
 
   @override
   String get selectLabel => 'انتخاب';
@@ -4878,9 +4841,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String signedInAs(String username) {
     return 'وارد شده به‌عنوان ⁨$username⁩.';
   }
-
-  @override
-  String get skillEditor => 'ویرایشگر مهارت';
 
   @override
   String get skillNameRequired => 'نام مهارت لازم است.';
@@ -6174,9 +6134,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'هنوز قالب پایپ‌لاینی نیست. یکی بسازید تا شروع کنید.';
 
   @override
-  String get pipelineTemplateIdLabel => 'شناسهٔ قالب';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'داخلی';
 
   @override
@@ -6186,9 +6143,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'قالب پایپ‌لاین ⁨$name⁩ حذف شود؟ این کار برگشت‌ناپذیر است.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'ویرایش پایپ‌لاین';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6202,10 +6156,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => 'هر مورد را به بوم بکشید تا گره اضافه شود.';
-
-  @override
-  String get editorDragHint =>
-      'از کتابخانه بکشید، روی گره کلیک کنید تا ویرایش شود';
 
   @override
   String get editorEmptyCanvas => 'گرهی از کتابخانه بکشید تا شروع کنید.';
@@ -6340,12 +6290,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'با ⁨bash -c⁩ اجرا می‌شود. ⁨GITHUB_TOKEN⁩ تنظیم است. نگه‌دارها پیش از اجرا جایگزین می‌شوند.';
 
   @override
-  String get nodeConfigTriggers => 'تریگر از';
-
-  @override
-  String get nodeConfigNoUpstream => 'گره دیگری برای اتصال از آن نیست.';
-
-  @override
   String get nodeConfigRouteKeys => 'کلیدهای مسیر';
 
   @override
@@ -6418,37 +6362,10 @@ class AppLocalizationsFa extends AppLocalizations {
   String get conditionDefaultCase => 'مورد پیش‌فرض';
 
   @override
-  String get triggerPanelTitle => 'تریگرها';
-
-  @override
-  String get triggerPanelHelp => 'چه چیزی این پایپ‌لاین را شروع می‌کند.';
-
-  @override
   String get triggerManualHelp => 'در صفحهٔ اجرا نشان بده و دستی شروع کن.';
 
   @override
-  String get triggerSectionAutomatic => 'تریگرهای خودکار';
-
-  @override
-  String get triggerAddButton => 'افزودن تریگر';
-
-  @override
-  String get triggerNoneYet => 'هنوز تریگر خودکاری نیست.';
-
-  @override
-  String get triggerAddDialogTitle => 'افزودن تریگر';
-
-  @override
-  String get triggerKindLabel => 'نوع تریگر';
-
-  @override
-  String get triggerKindEvent => 'روی یک رویداد';
-
-  @override
   String get triggerKindSchedule => 'روی یک زمان‌بندی';
-
-  @override
-  String get triggerKindWebhook => 'از طریق webhook';
 
   @override
   String get triggerScheduleExprLabel =>
@@ -6495,12 +6412,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'مسیر وب‌هوک';
-
-  @override
-  String get triggerEventFieldLabel => 'رویداد';
-
-  @override
-  String get triggerNoMoreEvents => 'همهٔ رویدادهای موجود از قبل وصل شده‌اند.';
 
   @override
   String get triggerMatchStatusLabel => 'فقط وقتی وضعیت برابر است با';
@@ -6975,13 +6886,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'پاسخ‌داده‌شده';
 
   @override
-  String get agentQuestionSubmit => 'ارسال پاسخ';
-
-  @override
   String get agentQuestionFreeformHint => 'پاسختان را بنویسید…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'پاسخ شما';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8555,27 +8460,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get ideReviewCode => 'بازبینی کد';
 
   @override
-  String get ideRevert => 'بازگردانی';
-
-  @override
   String get ideRevertConfirmTitle => 'بازگردانی تغییرات';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count فایل',
-      one: '1 فایل',
-    );
-    return '$_temp0 به HEAD بازگردانده شود؟ تغییرات worktree دور ریخته می‌شود.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'بازگردانی';
-
-  @override
-  String get ideRevertConfirmCancel => 'لغو';
 
   @override
   String get ideRevertUntracked => 'فایل‌های ردیابی‌نشده قابل بازگردانی نیستند';
@@ -8594,9 +8479,6 @@ class AppLocalizationsFa extends AppLocalizations {
     );
     return '$_temp0 بازگردانده نشد (ردیابی‌نشده).';
   }
-
-  @override
-  String get ideViewSource => 'نمایش منبع';
 
   @override
   String get ideSearchMatchCase => 'تطبیق بزرگ‌کوچک';
@@ -9124,10 +9006,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get providerBaseUrlHint => 'URL پایه (اختیاری)';
 
   @override
-  String get customProvidersDescription =>
-      'هر نقطهٔ سازگار با OpenAI یا Anthropic — Ollama، LM Studio، vLLM یا استقرار خصوصی — با کلید API اختیاری.';
-
-  @override
   String get addProvider => 'افزودن ارائه‌دهنده';
 
   @override
@@ -9243,9 +9121,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'هنوز اجرایی نیست';
-
-  @override
-  String get repoScriptsOutput => 'خروجی';
 
   @override
   String get repoScriptsSaved => 'اسکریپت‌ها ذخیره شد';
@@ -13059,12 +12934,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get providersFilterHint => 'فیلتر ارائه‌دهندگان';
 
   @override
-  String get providersFacetNeedsSetup => 'نیاز به راه‌اندازی';
-
-  @override
-  String get providersFacetCustom => 'سفارشی';
-
-  @override
   String get providersNoneMatch => 'چیزی با این فیلتر جور نیست';
 
   @override
@@ -13100,12 +12969,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'فیلتر اجراکننده‌ها';
-
-  @override
-  String get adaptersFacetReady => 'آماده';
-
-  @override
-  String get adaptersFacetMissing => 'غایب';
 
   @override
   String get adaptersLaunchGroup => 'راه‌اندازی';
@@ -13996,9 +13859,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get demoTourStarRepo => 'ستاره در GitHub';
 
   @override
-  String get demoTourDone => 'تمام';
-
-  @override
   String get demoTourOpen => 'باز کردن';
 
   @override
@@ -14028,15 +13888,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'هر هشدار از هر ستون در یک صندوق ورودی می‌آید — بازبینی‌ها، تیکت‌ها، اجراها و جلسات.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'این نشست دمو تا $minutes دقیقه دیگر تمام می‌شود.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'این نشست دمو تمام شده. صفحه را دوباره بارگذاری کنید تا یکی جدید شروع شود.';
 
   @override
   String get demoUnavailableTitle => 'در دمو در دسترس نیست';
@@ -14207,9 +14058,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'فایل ⁨.db⁩ که سرور بتواند بخواند. مسیرها روی میزبان سرور حل می‌شوند، نه این دستگاه.';
-
-  @override
-  String get backupImportChooseFile => 'انتخاب فایل';
 
   @override
   String backupImportDone(String name) {

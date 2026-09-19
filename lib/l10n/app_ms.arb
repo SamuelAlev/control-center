@@ -761,8 +761,6 @@
   "copyRelativePath": "Salin laluan relatif",
   "nameRequired": "Nama diperlukan",
   "import": "Import",
-  "sortByStatus": "Status",
-  "sortByName": "Nama",
   "noMatchingAgents": "Tiada ejen sepadan dengan penapis anda",
   "watchVideoOn": "Tonton video di {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Tanya AI",
   "askAiReviewDescription": "Minta AI menyemak PR ini",
   "assignees": "Penerima tugasan",
-  "attachFiles": "Lampirkan fail",
   "attachImage": "Lampirkan imej",
   "attachedAgents": "Ejen dilampirkan",
   "audioInput": "Input audio",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Klik untuk cuba semula",
   "close": "Tutup",
   "closeEsc": "Tutup (Esc)",
-  "closeKeyboardHint": "Tutup",
   "closeReader": "Tutup pembaca",
   "closed": "Ditutup",
   "codeFont": "Fon kod",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Pemasangan kotak pasir natif diperlukan",
   "navObservability": "Kebolehcerapan",
   "navSettings": "Tetapan",
-  "navigateLabel": "Navigasi",
   "networkBlockCount": "{count} sekatan rangkaian",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Neutral",
   "newCommitsPushed": "Commit baharu telah di-push — klik untuk memuat semula diff",
   "newFact": "Fakta baharu",
-  "newLabel": "Baharu",
   "newPolicy": "Polisi baharu",
   "newsfeed": "Suapan berita",
   "newsfeedLabel": "Suapan berita",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Tiada (semua peranan)",
   "notAvailable": "Tidak tersedia",
   "notConfiguredLabel": "Tidak dikonfigurasikan.",
-  "notDetected": "Tidak dikesan",
   "notFoundLabel": "Tidak dijumpai",
   "notes": "Nota",
   "notificationAgentFinished": "Ejen selesai",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Senyapkan repositori ini",
-  "notificationsUnmuteRepo": "Nyahsenyap repositori ini",
   "onboardingLinuxDescription": "Control Center boleh menggunakan bekas Linux untuk mengasingkan pelaksanaan ejen.",
   "onboardingMacosDescription": "Control Center menggunakan kotak pasir natif pada macOS untuk mengasingkan pelaksanaan ejen.",
   "onboardingUnsupportedDescription": "Kotak pasir tidak tersedia pada platform ini. Pelaksanaan ejen akan tanpa pengasingan.",
-  "openApplicationSettings": "Buka tetapan aplikasi",
   "openArticlesInApp": "Buka artikel dalam apl",
   "openInBrowser": "Buka dalam penyemak imbas",
   "openedInYourBrowser": "Dibuka dalam pelayar anda.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Pemboleh ubah persekitaran tersuai yang dihantar ke penyesuai ini (e.g. kunci API). Disimpan dalam keychain.",
   "variableKey": "Kunci",
   "variableValue": "Nilai",
-  "savingChanges": "Menyimpan perubahan…",
   "savingEllipsis": "Menyimpan…",
   "scopeDiffToCommits": "Skopkan diff ke commit — Shift-klik untuk julat",
   "noPrsMatchSearch": "Tiada pull request yang sepadan",
-  "noPrsMatchSearchHint": "Tiada PR terbuka sepadan dengan carian anda. Cuba terma berbeza atau kosongkan carian.",
   "searchFactsHint": "Cari fakta...",
   "searchFonts": "Cari fon…",
   "searchGifs": "Cari GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Pilih ejen untuk dilaporkan…",
   "selectAnAgent": "Pilih ejen",
   "selectConversation": "Pilih perbualan",
-  "selectEffortLevel": "Pilih tahap usaha",
   "selectLabel": "Pilih",
   "selectRunner": "Pilih pelari",
   "semanticSearch": "Carian semantik",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Editor kemahiran",
   "skillNameRequired": "Nama kemahiran diperlukan.",
   "skillSaved": "Kemahiran \"{name}\" disimpan.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Editor seret-dan-lepas untuk pipeline yang mengorkestra ejen anda.",
   "pipelineTemplatesNew": "Templat baharu",
   "pipelineTemplatesEmpty": "Belum ada templat pipeline. Cipta satu untuk bermula.",
-  "pipelineTemplateIdLabel": "ID templat",
   "pipelineTemplateBuiltInBadge": "Terbina",
   "pipelineTemplateDeleteConfirmTitle": "Padam templat?",
   "pipelineTemplateDeleteConfirmBody": "Padam templat pipeline {name}? Ini tidak boleh dibuat asal.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Sunting pipeline",
   "pipelineTemplateEditorSubtitle": "Seret jenis nod dari bar sisi ke kanvas, kemudian sambungkannya.",
   "unsavedChanges": "Perubahan belum disimpan",
   "nodeLibraryTitle": "Pustaka nod",
   "nodeLibraryHint": "Seret mana-mana entri ke kanvas untuk menambah nod.",
-  "editorDragHint": "Seret dari pustaka, klik nod untuk sunting",
   "editorEmptyCanvas": "Seret nod dari pustaka untuk bermula.",
   "pipelineWhenThisHappens": "Apabila ini berlaku",
   "pipelineDoThis": "Lakukan ini",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Gunakan pemegang tempat kurungan berganda untuk menarik nilai dari keadaan pada masa larian.",
   "nodeConfigScript": "Skrip Bash",
   "nodeConfigScriptHelp": "Berjalan dengan bash -c. GITHUB_TOKEN ditetapkan. Pemegang tempat diganti sebelum pelaksanaan.",
-  "nodeConfigTriggers": "Pencetus dari",
-  "nodeConfigNoUpstream": "Tiada nod lain untuk disambungkan daripadanya.",
   "nodeConfigRouteKeys": "Kunci laluan",
   "nodeConfigRouteKeyFrom": "Kunci laluan dari {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Kes (dipisahkan koma)",
   "conditionCasesHelp": "Kunci laluan untuk dipadankan dengan nilai, mengikut urutan.",
   "conditionDefaultCase": "Kes lalai",
-  "triggerPanelTitle": "Pencetus",
-  "triggerPanelHelp": "Apa yang memulakan pipeline ini.",
   "triggerManualHelp": "Tunjukkan pada halaman larian dan mulakan secara manual.",
-  "triggerSectionAutomatic": "Pencetus automatik",
-  "triggerAddButton": "Tambah pencetus",
-  "triggerNoneYet": "Belum ada pencetus automatik.",
-  "triggerAddDialogTitle": "Tambah pencetus",
-  "triggerKindLabel": "Jenis pencetus",
-  "triggerKindEvent": "Pada peristiwa",
   "triggerKindSchedule": "Pada jadual",
-  "triggerKindWebhook": "Melalui webhook",
   "triggerScheduleExprLabel": "Jadual (cron atau every:seconds)",
   "triggerTimezoneLabel": "Zon waktu (pilihan)",
   "triggerCatchUpLabel": "Pada larian terlepas",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "URL webhook yang ditandatangani dijana. Sistem luaran POST kepadanya untuk memulakan pipeline ini.",
   "triggerWebhookPathLabel": "Laluan webhook",
-  "triggerEventFieldLabel": "Peristiwa",
-  "triggerNoMoreEvents": "Semua peristiwa tersedia sudah disambungkan.",
   "triggerMatchStatusLabel": "Hanya apabila status ialah",
   "triggerSummaryNone": "Tiada pencetus",
   "triggerEverySeconds": "Setiap {seconds}s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Buang iklan, penjejak dan sepanduk kuki dari artikel yang anda buka dalam pembaca.",
   "agentQuestionHeader": "Soalan untuk anda",
   "agentQuestionAnsweredLabel": "Dijawab",
-  "agentQuestionSubmit": "Hantar jawapan",
   "agentQuestionFreeformHint": "Taip jawapan anda…",
-  "agentQuestionAnswerLabel": "Jawapan anda",
   "agentQuestionProgress": "Soalan {index} daripada {count}",
   "agentQuestionSkip": "Langkau",
   "agentQuestionSkippedLabel": "Dilangkau",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Buka editor",
   "ideNewTabMenu": "Tab baharu",
   "ideReviewCode": "Semak kod",
-  "ideRevert": "Kembalikan",
   "ideRevertConfirmTitle": "Kembalikan perubahan",
-  "ideRevertConfirmMessage": "Kembalikan {count, plural, =1{1 fail} other{{count} fail}} kepada HEAD? Ini membuang perubahan worktree.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Kembalikan",
-  "ideRevertConfirmCancel": "Batal",
   "ideRevertUntracked": "Fail tidak dijejak tidak dapat dikembalikan",
   "ideRevertFailed": "Tidak dapat mengembalikan fail. Worktree perbualan mungkin tidak tersedia.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 fail} other{{count} fail}} tidak dapat dikembalikan (tidak dijejak).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Lihat sumber",
   "ideSearchMatchCase": "Padankan huruf",
   "ideSearchWholeWord": "Perkataan penuh",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "URL asas (pilihan)",
-  "customProvidersDescription": "Mana-mana titik akhir serasi OpenAI atau Anthropic — Ollama, LM Studio, vLLM, atau penempatan peribadi — dengan kunci API pilihan.",
   "addProvider": "Tambah penyedia",
   "noCustomProviders": "Belum ada penyedia tersuai.",
   "providerNameLabel": "Nama",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "e.g. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Larian terkini",
   "repoScriptsNoRuns": "Belum ada larian",
-  "repoScriptsOutput": "Output",
   "repoScriptsSaved": "Skrip disimpan",
   "repoScriptsRunKindSetup": "Persediaan",
   "repoScriptsRunKindArchive": "Arkib",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Tiada penyedia disambungkan, jadi masa larian ejen terbina tiada apa untuk dijalankan. Tambah kunci API atau log masuk ke satu di bawah.",
   "providersFilterHint": "Tapis penyedia",
-  "providersFacetNeedsSetup": "Perlu persediaan",
-  "providersFacetCustom": "Tersuai",
   "providersNoneMatch": "Tiada yang sepadan dengan penapis ini",
   "providerDeniedHereTitle": "Ditolak dalam ruang kerja ini",
   "providerDeniedHereBody": "Ejen di sini tidak dapat menggunakan penyedia ini, walaupun ia disambungkan. Ruang kerja lain tidak terjejas.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Tapis model",
   "adaptersNoneReadyNote": "Tiada CLI pelari yang dikatalog dijumpai pada mesin ini. Pasang satu, kemudian muat semula.",
   "adaptersFilterHint": "Tapis pelari",
-  "adaptersFacetReady": "Sedia",
-  "adaptersFacetMissing": "Hilang",
   "adaptersLaunchGroup": "Lancarkan",
   "adaptersLaunchGroupDescription": "Apa yang pelari ini diberikan apabila ejen memulakannya. Tetapkan ini sebelum memasang CLI jika anda mahu.",
   "adaptersEnvNone": "Tiada ditetapkan",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Empat tempat yang menunjukkan apa yang apl sebenarnya lakukan.",
   "demoTourSkip": "Langkau",
   "demoTourStarRepo": "Bintang di GitHub",
-  "demoTourDone": "Selesai",
   "demoTourOpen": "Buka",
   "demoTourSpacesTitle": "Bercakap dengan ejen",
   "demoTourSpacesBody": "Hantar mesej dalam ruang dan tonton larian menstrim masuk — pemikiran, panggilan alat dan kos, tepat seperti larian sebenar dipaparkan.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Tiket, tugasan dan rancangan dipautkan kepada perbualan yang sama yang ejen sedang adakan.",
   "demoTourInboxTitle": "Lihat seluruh operasi",
   "demoTourInboxBody": "Setiap amaran dari setiap tiang mendarat dalam satu peti masuk — semakan, tiket, larian dan mesyuarat.",
-  "demoSessionEndingSoon": "Sesi demo ini tamat dalam {minutes} minit.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Sesi demo ini telah tamat. Muat semula halaman untuk memulakan yang baharu.",
   "demoUnavailableTitle": "Tidak tersedia dalam demo",
   "demoUnavailableTerminal": "Terminal menjalankan shell sebenar pada hos pelayan. Demo tiada permukaan pelaksanaan langsung — itulah yang menjadikannya selamat untuk dibuka kepada umum.",
   "demoUnavailableRig": "Persekitaran terasing ialah mesin maya pakai buang yang ejen kawal. Demo tidak but mana-mana: titik akhir awam yang boleh memulakan VM bukan demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Fail pangkalan data ruang kerja",
   "backupImportSourceDescription": "Fail .db yang pelayan boleh baca. Laluan diselesaikan pada hos pelayan, bukan pada peranti ini.",
-  "backupImportChooseFile": "Pilih fail",
   "backupImportDone": "Diimport ke {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

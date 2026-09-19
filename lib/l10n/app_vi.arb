@@ -761,8 +761,6 @@
   "copyRelativePath": "Sao chép đường dẫn tương đối",
   "nameRequired": "Tên là bắt buộc",
   "import": "Nhập",
-  "sortByStatus": "Trạng thái",
-  "sortByName": "Tên",
   "noMatchingAgents": "Không có agent nào khớp bộ lọc của bạn",
   "watchVideoOn": "Xem video trên {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Hỏi AI",
   "askAiReviewDescription": "Yêu cầu AI đánh giá PR này",
   "assignees": "Người được giao",
-  "attachFiles": "Đính kèm tệp",
   "attachImage": "Đính kèm ảnh",
   "attachedAgents": "Agent đã gắn",
   "audioInput": "Đầu vào âm thanh",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Nhấp để thử lại",
   "close": "Đóng",
   "closeEsc": "Đóng (Esc)",
-  "closeKeyboardHint": "Đóng",
   "closeReader": "Đóng trình đọc",
   "closed": "Đã đóng",
   "codeFont": "Phông chữ mã",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Cần cài đặt sandbox gốc",
   "navObservability": "Quan sát",
   "navSettings": "Cài đặt",
-  "navigateLabel": "Điều hướng",
   "networkBlockCount": "{count} chặn mạng",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Trung tính",
   "newCommitsPushed": "Đã đẩy commit mới — nhấn để tải lại diff",
   "newFact": "Thông tin mới",
-  "newLabel": "Mới",
   "newPolicy": "Chính sách mới",
   "newsfeed": "Bảng tin",
   "newsfeedLabel": "Bảng tin",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Không (tất cả vai trò)",
   "notAvailable": "Không khả dụng",
   "notConfiguredLabel": "Chưa cấu hình.",
-  "notDetected": "Không phát hiện",
   "notFoundLabel": "Không tìm thấy",
   "notes": "Ghi chú",
   "notificationAgentFinished": "Agent đã hoàn tất",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Tắt thông báo kho lưu trữ này",
-  "notificationsUnmuteRepo": "Bật lại thông báo kho lưu trữ này",
   "onboardingLinuxDescription": "Control Center có thể dùng container Linux để cô lập việc chạy agent.",
   "onboardingMacosDescription": "Control Center dùng sandbox gốc trên macOS để cô lập việc chạy agent.",
   "onboardingUnsupportedDescription": "Sandbox không khả dụng trên nền tảng này. Agent sẽ chạy mà không có cô lập.",
-  "openApplicationSettings": "Mở cài đặt ứng dụng",
   "openArticlesInApp": "Mở bài viết trong ứng dụng",
   "openInBrowser": "Mở trong trình duyệt",
   "openedInYourBrowser": "Đã mở trong trình duyệt.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Biến môi trường tùy chỉnh truyền cho adapter này (vd. khóa API). Lưu trong keychain.",
   "variableKey": "Khóa",
   "variableValue": "Giá trị",
-  "savingChanges": "Đang lưu thay đổi…",
   "savingEllipsis": "Đang lưu…",
   "scopeDiffToCommits": "Giới hạn diff theo commit — Shift-click để chọn khoảng",
   "noPrsMatchSearch": "Không có pull request khớp",
-  "noPrsMatchSearchHint": "Không có PR đang mở khớp tìm kiếm. Thử từ khác hoặc xóa tìm kiếm.",
   "searchFactsHint": "Tìm fact...",
   "searchFonts": "Tìm font…",
   "searchGifs": "Tìm GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Chọn agent để báo cáo…",
   "selectAnAgent": "Chọn một agent",
   "selectConversation": "Chọn cuộc hội thoại",
-  "selectEffortLevel": "Chọn mức effort",
   "selectLabel": "Chọn",
   "selectRunner": "Chọn runner",
   "semanticSearch": "Tìm kiếm ngữ nghĩa",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Trình chỉnh sửa skill",
   "skillNameRequired": "Tên skill là bắt buộc.",
   "skillSaved": "Đã lưu skill \"{name}\".",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Trình soạn kéo thả cho các quy trình điều phối agent.",
   "pipelineTemplatesNew": "Mẫu mới",
   "pipelineTemplatesEmpty": "Chưa có mẫu quy trình. Tạo một mẫu để bắt đầu.",
-  "pipelineTemplateIdLabel": "ID mẫu",
   "pipelineTemplateBuiltInBadge": "Có sẵn",
   "pipelineTemplateDeleteConfirmTitle": "Xóa mẫu?",
   "pipelineTemplateDeleteConfirmBody": "Xóa mẫu quy trình {name}? Không thể hoàn tác.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Sửa quy trình",
   "pipelineTemplateEditorSubtitle": "Kéo các loại nút từ thanh bên vào canvas, rồi nối chúng với nhau.",
   "unsavedChanges": "Thay đổi chưa lưu",
   "nodeLibraryTitle": "Thư viện nút",
   "nodeLibraryHint": "Kéo bất kỳ mục nào vào canvas để thêm nút.",
-  "editorDragHint": "Kéo từ thư viện, nhấp nút để chỉnh sửa",
   "editorEmptyCanvas": "Kéo một nút từ thư viện để bắt đầu.",
   "pipelineWhenThisHappens": "Khi việc này xảy ra",
   "pipelineDoThis": "Làm điều này",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Dùng placeholder ngoặc nhọn kép để lấy giá trị từ trạng thái lúc chạy.",
   "nodeConfigScript": "Script bash",
   "nodeConfigScriptHelp": "Chạy bằng bash -c. GITHUB_TOKEN được thiết lập. Placeholder được thay thế trước khi thực thi.",
-  "nodeConfigTriggers": "Kích hoạt từ",
-  "nodeConfigNoUpstream": "Không có nút nào khác để nối từ.",
   "nodeConfigRouteKeys": "Khóa định tuyến",
   "nodeConfigRouteKeyFrom": "Khóa định tuyến từ {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Các nhánh (phân tách bằng dấu phẩy)",
   "conditionCasesHelp": "Các khóa nhánh để khớp với giá trị, theo thứ tự.",
   "conditionDefaultCase": "Nhánh mặc định",
-  "triggerPanelTitle": "Bộ kích hoạt",
-  "triggerPanelHelp": "Điều khởi chạy quy trình này.",
   "triggerManualHelp": "Hiện trên trang chạy và khởi chạy thủ công.",
-  "triggerSectionAutomatic": "Bộ kích hoạt tự động",
-  "triggerAddButton": "Thêm bộ kích hoạt",
-  "triggerNoneYet": "Chưa có bộ kích hoạt tự động.",
-  "triggerAddDialogTitle": "Thêm bộ kích hoạt",
-  "triggerKindLabel": "Loại bộ kích hoạt",
-  "triggerKindEvent": "Khi có sự kiện",
   "triggerKindSchedule": "Theo lịch",
-  "triggerKindWebhook": "Qua webhook",
   "triggerScheduleExprLabel": "Lịch (cron hoặc every:seconds)",
   "triggerTimezoneLabel": "Múi giờ (tùy chọn)",
   "triggerCatchUpLabel": "Khi bỏ lỡ lần chạy",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Một URL webhook đã ký được tạo. Hệ thống bên ngoài POST tới đó để khởi chạy quy trình này.",
   "triggerWebhookPathLabel": "Đường dẫn webhook",
-  "triggerEventFieldLabel": "Sự kiện",
-  "triggerNoMoreEvents": "Tất cả sự kiện có sẵn đã được gắn.",
   "triggerMatchStatusLabel": "Chỉ khi trạng thái là",
   "triggerSummaryNone": "Không có bộ kích hoạt",
   "triggerEverySeconds": "Mỗi {seconds}s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Loại bỏ quảng cáo, trình theo dõi và banner cookie khỏi bài viết bạn mở trong trình đọc.",
   "agentQuestionHeader": "Câu hỏi dành cho bạn",
   "agentQuestionAnsweredLabel": "Đã trả lời",
-  "agentQuestionSubmit": "Gửi câu trả lời",
   "agentQuestionFreeformHint": "Nhập câu trả lời…",
-  "agentQuestionAnswerLabel": "Câu trả lời của bạn",
   "agentQuestionProgress": "Câu hỏi {index} / {count}",
   "agentQuestionSkip": "Bỏ qua",
   "agentQuestionSkippedLabel": "Đã bỏ qua",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Mở trình soạn thảo",
   "ideNewTabMenu": "Tab mới",
   "ideReviewCode": "Review mã",
-  "ideRevert": "Hoàn nguyên",
   "ideRevertConfirmTitle": "Hoàn nguyên thay đổi",
-  "ideRevertConfirmMessage": "Hoàn nguyên {count, plural, =1{1 tệp} other{{count} tệp}} về HEAD? Thao tác này sẽ hủy thay đổi trên cây làm việc.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Hoàn nguyên",
-  "ideRevertConfirmCancel": "Hủy",
   "ideRevertUntracked": "Không thể hoàn nguyên tệp chưa theo dõi",
   "ideRevertFailed": "Không hoàn nguyên được các tệp. Cây làm việc của cuộc hội thoại có thể không khả dụng.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 tệp} other{{count} tệp}} không hoàn nguyên được (chưa theo dõi).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Xem nguồn",
   "ideSearchMatchCase": "Phân biệt hoa/thường",
   "ideSearchWholeWord": "Cả từ",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "URL gốc (tùy chọn)",
-  "customProvidersDescription": "Mọi endpoint tương thích OpenAI hoặc Anthropic — Ollama, LM Studio, vLLM, hoặc triển khai riêng — kèm khóa API tùy chọn.",
   "addProvider": "Thêm nhà cung cấp",
   "noCustomProviders": "Chưa có nhà cung cấp tùy chỉnh.",
   "providerNameLabel": "Tên",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "vd. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Lần chạy gần đây",
   "repoScriptsNoRuns": "Chưa có lần chạy nào",
-  "repoScriptsOutput": "Kết quả",
   "repoScriptsSaved": "Đã lưu script",
   "repoScriptsRunKindSetup": "Thiết lập",
   "repoScriptsRunKindArchive": "Lưu trữ",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Chưa kết nối nhà cung cấp nào, nên runtime agent tích hợp không có nơi để chạy. Thêm API key hoặc đăng nhập một nhà cung cấp bên dưới.",
   "providersFilterHint": "Lọc nhà cung cấp",
-  "providersFacetNeedsSetup": "Cần thiết lập",
-  "providersFacetCustom": "Tùy chỉnh",
   "providersNoneMatch": "Không có mục nào khớp bộ lọc này",
   "providerDeniedHereTitle": "Bị từ chối trong không gian làm việc này",
   "providerDeniedHereBody": "Agent ở đây không thể dùng nhà cung cấp này, dù đã kết nối. Các không gian làm việc khác không bị ảnh hưởng.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Lọc model",
   "adaptersNoneReadyNote": "Không tìm thấy CLI runner nào trong danh mục trên máy này. Cài một cái, rồi làm mới.",
   "adaptersFilterHint": "Lọc runner",
-  "adaptersFacetReady": "Sẵn sàng",
-  "adaptersFacetMissing": "Thiếu",
   "adaptersLaunchGroup": "Khởi chạy",
   "adaptersLaunchGroupDescription": "Runner nhận gì khi agent khởi chạy nó. Có thể đặt trước khi cài CLI.",
   "adaptersEnvNone": "Chưa đặt",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Bốn chỗ cho thấy ứng dụng thực sự làm gì.",
   "demoTourSkip": "Bỏ qua",
   "demoTourStarRepo": "Gắn sao trên GitHub",
-  "demoTourDone": "Xong",
   "demoTourOpen": "Mở",
   "demoTourSpacesTitle": "Nói chuyện với agent",
   "demoTourSpacesBody": "Gửi tin nhắn trong một space và xem run được stream vào — suy nghĩ, lệnh gọi công cụ và chi phí, đúng như một run thật hiển thị.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Phiếu, việc cần làm và kế hoạch được liên kết với cùng các cuộc trò chuyện mà agent đang có.",
   "demoTourInboxTitle": "Xem toàn bộ vận hành",
   "demoTourInboxBody": "Mọi cảnh báo từ mọi trụ cột vào một hộp thư đến — đánh giá, phiếu, run và cuộc họp.",
-  "demoSessionEndingSoon": "Phiên demo này kết thúc sau {minutes} phút.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Phiên demo này đã kết thúc. Tải lại trang để bắt đầu phiên mới.",
   "demoUnavailableTitle": "Không có trong bản demo",
   "demoUnavailableTerminal": "Terminal chạy một shell thật trên máy chủ. Bản demo không có bề mặt thực thi nào — đó là lý do nó an toàn để mở cho công chúng.",
   "demoUnavailableRig": "Enclosure là máy ảo dùng một lần do agent điều khiển. Bản demo không khởi động cái nào: endpoint công khai có thể khởi động VM thì không còn là demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Tệp cơ sở dữ liệu không gian làm việc",
   "backupImportSourceDescription": "Tệp .db mà máy chủ đọc được. Đường dẫn được phân giải trên máy chủ, không trên thiết bị này.",
-  "backupImportChooseFile": "Chọn tệp",
   "backupImportDone": "Đã nhập vào {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

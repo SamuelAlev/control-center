@@ -18,10 +18,6 @@ MediaDiskCache? _installed;
 /// Installs [cache] as the process-wide media disk cache.
 void installMediaDiskCache(MediaDiskCache cache) => _installed = cache;
 
-/// Clears the installed cache (tests).
-@visibleForTesting
-void resetMediaDiskCache() => _installed = null;
-
 /// The installed cache, if boot got that far.
 MediaDiskCache? get mediaDiskCache => _installed;
 

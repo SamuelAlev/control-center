@@ -781,13 +781,6 @@ Map<String, dynamic> spaceReadToWire(String spaceId, DateTime? lastReadAt) => {
   if (lastReadAt != null) 'last_read_at': lastReadAt.toIso8601String(),
 };
 
-/// Reconstructs the cursor `DateTime?` from a `SpaceReadDto` wire map (the
-/// inverse of [spaceReadToWire]).
-DateTime? spaceReadFromWire(Map<String, dynamic> w) {
-  final value = w['last_read_at'];
-  return value is String ? DateTime.parse(value) : null;
-}
-
 /// Maps a [Repo] to the `RepoDto` wire shape.
 ///
 /// The keys must stay in lockstep with `RepoDto.fromJson` — a mismatch is
@@ -1614,27 +1607,6 @@ Map<String, dynamic> reviewSpaceToWire(ReviewSpaceAssociation a) => {
   'created_at': a.createdAt.toIso8601String(),
   'updated_at': a.updatedAt.toIso8601String(),
 };
-
-/// Reconstructs a [ReviewSpaceAssociation] from a
-/// `ReviewSpaceAssociationDto` wire map (inverse of [reviewSpaceToWire]).
-ReviewSpaceAssociation reviewSpaceFromWire(Map<String, dynamic> w) {
-  DateTime parse(Object? iso) => iso is String
-      ? DateTime.parse(iso)
-      : DateTime.fromMillisecondsSinceEpoch(0);
-  return ReviewSpaceAssociation(
-    id: w['id'] as String,
-    spaceId: w['space_id'] as String? ?? '',
-    workspaceId: w['workspace_id'] as String? ?? '',
-    prExternalId: w['pr_external_id'] as String? ?? '',
-    prNumber: (w['pr_number'] as num?)?.toInt() ?? 0,
-    repoFullName: w['repo_full_name'] as String? ?? '',
-    status:
-        ReviewSpaceStatus.values.asNameMap()[w['status']] ??
-        ReviewSpaceStatus.requested,
-    createdAt: parse(w['created_at']),
-    updatedAt: parse(w['updated_at']),
-  );
-}
 
 /// Maps an [IsolatedRepo] to the `IsolatedRepoDto` wire shape (enum `backend`
 /// as `.name`).
@@ -2862,14 +2834,6 @@ typedef PrSearchFetcher =
 /// split into the profile rail's four buckets (open / draft / merged / closed).
 typedef PrCountsByAuthorFetcher =
     Future<({int open, int draft, int merged, int closed})> Function(
-      List<Repo> repos,
-      String login,
-    );
-
-/// Fetches the merged/closed PRs authored by [login] across [repos] (first page
-/// per repo) on the SERVER's gh client, grouped per repo.
-typedef ClosedByAuthorFetcher =
-    Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
       List<Repo> repos,
       String login,
     );

@@ -12,7 +12,6 @@ library;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/activity_entry.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
@@ -29,22 +28,6 @@ import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/model_routing/domain/services/model_catalog_service.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// Shared honest failure for a desktop-only capability invoked with no local
-/// equivalent — kept symmetric with `provider_bindings_web.dart`.
-class _DesktopProcessControl implements ProcessControlPort {
-  @override
-  bool isPidAlive(int pid) => throw UnsupportedError(
-    'Local agent process control (kill) is not available — the sandbox runs '
-    'on the connected cc_server, not this machine.',
-  );
-
-  @override
-  Future<void> kill(int pid) => throw UnsupportedError(
-    'Local agent process control (kill) is not available — the sandbox runs '
-    'on the connected cc_server, not this machine.',
-  );
-}
 
 /// Workspace filesystem over RPC: the agents/skills/conversation directory
 /// tree lives on the SERVER's machine, so the desktop resolves its server-side
@@ -69,10 +52,6 @@ Stream<List<Workspace>> buildBootstrapWorkspacesStream(Ref ref) =>
 /// `process.detect` op — identical to web.
 ProcessDetectionPort buildProcessDetectionService(Ref ref) =>
     RpcProcessDetectionPort(ref.watch(rpcClientProvider));
-
-/// Honest stub: killing a local agent process by pid has no client equivalent
-/// — the sandbox runs on the connected `cc_server`, not this machine.
-ProcessControlPort buildProcessControlPort(Ref ref) => _DesktopProcessControl();
 
 /// Adapter detection over RPC: Settings → Adapters probes the agent-runner
 /// CLIs installed on the SERVER host through the catalog's `adapter.detectOne`

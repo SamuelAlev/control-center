@@ -761,8 +761,6 @@
   "copyRelativePath": "Kopier relativ sti",
   "nameRequired": "Navn er påkrevd",
   "import": "Importer",
-  "sortByStatus": "Status",
-  "sortByName": "Navn",
   "noMatchingAgents": "Ingen agenter matcher filteret ditt",
   "watchVideoOn": "Se video på {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Spør AI",
   "askAiReviewDescription": "Be AI om å gjennomgå denne PR-en",
   "assignees": "Tildelte",
-  "attachFiles": "Legg ved filer",
   "attachImage": "Legg ved bilde",
   "attachedAgents": "Tilknyttede agenter",
   "audioInput": "Lydinngang",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Klikk for å prøve på nytt",
   "close": "Lukk",
   "closeEsc": "Lukk (Esc)",
-  "closeKeyboardHint": "Lukk",
   "closeReader": "Lukk leser",
   "closed": "Lukket",
   "codeFont": "Kodeskift",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Installasjon av innebygd sandkasse kreves",
   "navObservability": "Observabilitet",
   "navSettings": "Innstillinger",
-  "navigateLabel": "Naviger",
   "networkBlockCount": "{count} nettverksblokker",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Nøytral",
   "newCommitsPushed": "Nye commits ble pushet — klikk for å laste inn diff på nytt",
   "newFact": "Nytt faktum",
-  "newLabel": "Ny",
   "newPolicy": "Ny policy",
   "newsfeed": "Nyhetsstrøm",
   "newsfeedLabel": "Nyhetsstrøm",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Ingen (alle roller)",
   "notAvailable": "Ikke tilgjengelig",
   "notConfiguredLabel": "Ikke konfigurert.",
-  "notDetected": "Ikke oppdaget",
   "notFoundLabel": "Ikke funnet",
   "notes": "Notater",
   "notificationAgentFinished": "Agent ferdig",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Demp dette arkivet",
-  "notificationsUnmuteRepo": "Opphev demping av dette arkivet",
   "onboardingLinuxDescription": "Control Center kan bruke Linux-containere for å isolere agentkjøring.",
   "onboardingMacosDescription": "Control Center bruker innebygd sandkasse på macOS for å isolere agentkjøring.",
   "onboardingUnsupportedDescription": "Sandkasse er ikke tilgjengelig på denne plattformen. Agentkjøring skjer uten isolasjon.",
-  "openApplicationSettings": "Åpne appinnstillinger",
   "openArticlesInApp": "Åpne artikler i appen",
   "openInBrowser": "Åpne i nettleser",
   "openedInYourBrowser": "Åpnet i nettleseren din.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Egendefinerte miljøvariabler som sendes til denne adapteren (f.eks. API-nøkler). Lagres i nøkkelringen.",
   "variableKey": "Nøkkel",
   "variableValue": "Verdi",
-  "savingChanges": "Lagrer endringer…",
   "savingEllipsis": "Lagrer…",
   "scopeDiffToCommits": "Avgrens diff til commits — Shift-klikk for intervall",
   "noPrsMatchSearch": "Ingen matchende pull requests",
-  "noPrsMatchSearchHint": "Ingen åpne PR-er matcher søket ditt. Prøv andre termer eller tøm søket.",
   "searchFactsHint": "Søk i fakta…",
   "searchFonts": "Søk i skrifter…",
   "searchGifs": "Søk i GIF-er",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Velg agent å rapportere til…",
   "selectAnAgent": "Velg en agent",
   "selectConversation": "Velg en samtale",
-  "selectEffortLevel": "Velg innsatsnivå",
   "selectLabel": "Velg",
   "selectRunner": "Velg en kjører",
   "semanticSearch": "Semantisk søk",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Ferdighetsredigerer",
   "skillNameRequired": "Ferdighetsnavn er påkrevd.",
   "skillSaved": "Ferdighet «{name}» lagret.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Dra-og-slipp-redigerer for pipelinene som orkestrerer agentene dine.",
   "pipelineTemplatesNew": "Ny mal",
   "pipelineTemplatesEmpty": "Ingen pipeline-maler ennå. Opprett én for å komme i gang.",
-  "pipelineTemplateIdLabel": "Mal-ID",
   "pipelineTemplateBuiltInBadge": "Innebygd",
   "pipelineTemplateDeleteConfirmTitle": "Slette mal?",
   "pipelineTemplateDeleteConfirmBody": "Slette pipeline-malen {name}? Dette kan ikke angres.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Rediger pipeline",
   "pipelineTemplateEditorSubtitle": "Dra nodetyper fra sidestolpen til lerretet, og kople dem sammen.",
   "unsavedChanges": "Ulagrede endringer",
   "nodeLibraryTitle": "Nodebibliotek",
   "nodeLibraryHint": "Dra en oppføring til lerretet for å legge til en node.",
-  "editorDragHint": "Dra fra biblioteket, klikk en node for å redigere",
   "editorEmptyCanvas": "Dra en node fra biblioteket for å starte.",
   "pipelineWhenThisHappens": "Når dette skjer",
   "pipelineDoThis": "Gjør dette",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Bruk dobbeltkrøllparentes-plassholdere for å hente verdier fra tilstand ved kjøretid.",
   "nodeConfigScript": "Bash-skript",
   "nodeConfigScriptHelp": "Kjører med bash -c. GITHUB_TOKEN er satt. Plassholdere erstattes før kjøring.",
-  "nodeConfigTriggers": "Utløses fra",
-  "nodeConfigNoUpstream": "Ingen andre noder å koble fra.",
   "nodeConfigRouteKeys": "Rutenøkler",
   "nodeConfigRouteKeyFrom": "Rutenøkkel fra {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Tilfeller (kommaseparert)",
   "conditionCasesHelp": "Rutenøkler som skal matches mot verdien, i rekkefølge.",
   "conditionDefaultCase": "Standardtilfelle",
-  "triggerPanelTitle": "Utløsere",
-  "triggerPanelHelp": "Hva som starter denne pipelinen.",
   "triggerManualHelp": "Vis på kjøringssiden og start for hånd.",
-  "triggerSectionAutomatic": "Automatiske utløsere",
-  "triggerAddButton": "Legg til utløser",
-  "triggerNoneYet": "Ingen automatiske utløsere ennå.",
-  "triggerAddDialogTitle": "Legg til utløser",
-  "triggerKindLabel": "Utløsertype",
-  "triggerKindEvent": "Ved en hendelse",
   "triggerKindSchedule": "Etter en tidsplan",
-  "triggerKindWebhook": "Via en webhook",
   "triggerScheduleExprLabel": "Tidsplan (cron eller every:seconds)",
   "triggerTimezoneLabel": "Tidssone (valgfritt)",
   "triggerCatchUpLabel": "Ved tapte kjøringer",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "En signert webhook-URL genereres. Eksterne systemer POSTer til den for å starte denne pipelinen.",
   "triggerWebhookPathLabel": "Webhook-sti",
-  "triggerEventFieldLabel": "Hendelse",
-  "triggerNoMoreEvents": "Alle tilgjengelige hendelser er allerede koblet.",
   "triggerMatchStatusLabel": "Bare når statusen er",
   "triggerSummaryNone": "Ingen utløsere",
   "triggerEverySeconds": "Hver {seconds}s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Fjern annonser, sporere og infokapsler fra artikler du åpner i leseren.",
   "agentQuestionHeader": "Spørsmål til deg",
   "agentQuestionAnsweredLabel": "Besvart",
-  "agentQuestionSubmit": "Send svar",
   "agentQuestionFreeformHint": "Skriv svaret ditt…",
-  "agentQuestionAnswerLabel": "Ditt svar",
   "agentQuestionProgress": "Spørsmål {index} av {count}",
   "agentQuestionSkip": "Hopp over",
   "agentQuestionSkippedLabel": "Hoppet over",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Åpne redigerer",
   "ideNewTabMenu": "Ny fane",
   "ideReviewCode": "Gjennomgå kode",
-  "ideRevert": "Tilbakestill",
   "ideRevertConfirmTitle": "Tilbakestill endringer",
-  "ideRevertConfirmMessage": "Tilbakestille {count, plural, one{1 fil} other{{count} filer}} til HEAD? Dette forkaster worktree-endringer.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Tilbakestill",
-  "ideRevertConfirmCancel": "Avbryt",
   "ideRevertUntracked": "Usporede filer kan ikke tilbakestilles",
   "ideRevertFailed": "Kunne ikke tilbakestille filene. Samtalens worktree kan være utilgjengelig.",
   "ideRevertSomeSkipped": "{count, plural, one{1 fil} other{{count} filer}} kunne ikke tilbakestilles (usporet).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Vis kilde",
   "ideSearchMatchCase": "Skill mellom store og små bokstaver",
   "ideSearchWholeWord": "Hele ord",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Base-URL (valgfritt)",
-  "customProvidersDescription": "Ethvert OpenAI- eller Anthropic-kompatibelt endepunkt — Ollama, LM Studio, vLLM eller en privat utplassering — med en valgfri API-nøkkel.",
   "addProvider": "Legg til leverandør",
   "noCustomProviders": "Ingen egendefinerte leverandører ennå.",
   "providerNameLabel": "Navn",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "e.g. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Nylige kjøringer",
   "repoScriptsNoRuns": "Ingen kjøringer ennå",
-  "repoScriptsOutput": "Utdata",
   "repoScriptsSaved": "Skript lagret",
   "repoScriptsRunKindSetup": "Oppsett",
   "repoScriptsRunKindArchive": "Arkiver",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Ingen leverandør er tilkoblet, så den innebygde agentkjøretiden har ingenting å kjøre på. Legg til en API-nøkkel eller logg inn på én under.",
   "providersFilterHint": "Filtrer leverandører",
-  "providersFacetNeedsSetup": "Trenger oppsett",
-  "providersFacetCustom": "Egendefinert",
   "providersNoneMatch": "Ingenting matcher dette filteret",
   "providerDeniedHereTitle": "Nektet i dette arbeidsområdet",
   "providerDeniedHereBody": "Agenter her kan ikke bruke denne leverandøren, selv om den er tilkoblet. Andre arbeidsområder påvirkes ikke.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Filtrer modeller",
   "adaptersNoneReadyNote": "Ingen av de katalogiserte kjører-CLI-ene ble funnet på denne maskinen. Installer én, og oppdater deretter.",
   "adaptersFilterHint": "Filtrer kjørere",
-  "adaptersFacetReady": "Klar",
-  "adaptersFacetMissing": "Mangler",
   "adaptersLaunchGroup": "Start",
   "adaptersLaunchGroupDescription": "Hva denne kjøreren får når en agent starter den. Sett disse før du installerer CLI-en om du vil.",
   "adaptersEnvNone": "Ingen satt",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Fire steder som viser hva appen faktisk gjør.",
   "demoTourSkip": "Hopp over",
   "demoTourStarRepo": "Stjerne på GitHub",
-  "demoTourDone": "Ferdig",
   "demoTourOpen": "Åpne",
   "demoTourSpacesTitle": "Snakk med en agent",
   "demoTourSpacesBody": "Send en melding i et område og se en kjøring strømme inn — tenkning, verktøykall og kostnad, nøyaktig slik en ekte kjøring vises.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Saker, gjøremål og planer er knyttet til de samme samtalene agentene har.",
   "demoTourInboxTitle": "Se hele operasjonen",
   "demoTourInboxBody": "Hvert varsel fra hver søyle lander i én innboks — gjennomganger, saker, kjøringer og møter.",
-  "demoSessionEndingSoon": "Denne demoøkten slutter om {minutes} minutter.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Denne demoøkten er over. Last siden på nytt for å starte en ny.",
   "demoUnavailableTitle": "Ikke tilgjengelig i demoen",
   "demoUnavailableTerminal": "En terminal kjører et ekte skall på serververten. Demoen har ingen kjøreflate i det hele tatt — det er det som gjør den trygg å åpne for offentligheten.",
   "demoUnavailableRig": "Et isolert miljø er en engangs virtuell maskin en agent styrer. Demoen starter ingen: et offentlig endepunkt som kan starte en VM, er ikke en demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Arbeidsområdets databasefil",
   "backupImportSourceDescription": "En .db-fil serveren kan lese. Stier løses på serververten, ikke på denne enheten.",
-  "backupImportChooseFile": "Velg fil",
   "backupImportDone": "Importert inn i {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

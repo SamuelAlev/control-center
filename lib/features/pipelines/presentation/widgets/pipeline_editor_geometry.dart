@@ -105,10 +105,6 @@ Offset pipelineEditorNodeOffset(
 List<PipelineTrigger> sortedPipelineTriggers(List<PipelineTrigger> triggers) =>
     sortPipelineTriggers(triggers);
 
-/// How many stacked slots the trigger column occupies (ghost tile = 1).
-int pipelineEditorTriggerSlotCount(int triggerCount) =>
-    triggerCount == 0 ? 1 : triggerCount;
-
 /// Definition-space top-left of trigger [index] when expanding a shared entry.
 Offset pipelineEditorTriggerStackOffset({
   required Offset entryOrigin,
@@ -117,13 +113,6 @@ Offset pipelineEditorTriggerStackOffset({
   entryOrigin.dx,
   entryOrigin.dy + index * kPipelineEditorTriggerPitch,
 );
-
-/// Vertical extent of the trigger column in definition space.
-double pipelineEditorTriggerColumnHeight(int triggerCount) {
-  final slots = pipelineEditorTriggerSlotCount(triggerCount);
-  return slots * kPipelineEditorNodeHeight +
-      (slots - 1) * kPipelineEditorTriggerStackGap;
-}
 
 /// Walks [steps] into unique directed edges. Terminals are skipped because
 /// the canvases do not render them.

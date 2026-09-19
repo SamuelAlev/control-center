@@ -247,10 +247,6 @@ class LspClient {
     return _diagnostics[path] ?? const [];
   }
 
-  /// The diagnostics currently known for [path], without waiting.
-  List<LspDiagnostic> diagnosticsFor(String path) =>
-      _diagnostics[path] ?? const [];
-
   /// Every diagnostic the server has published, across all files.
   List<LspDiagnostic> allDiagnostics() => [
     for (final entry in _diagnostics.entries) ...entry.value,

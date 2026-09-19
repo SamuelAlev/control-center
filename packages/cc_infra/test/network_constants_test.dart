@@ -3,11 +3,6 @@ import 'package:test/test.dart';
 
 void main() {
   group('network constants', () {
-    test('githubApiBaseUrl is the GitHub REST host over HTTPS', () {
-      expect(githubApiBaseUrl, 'https://api.github.com');
-      expect(githubApiBaseUrl, startsWith('https://'));
-    });
-
     test('googleCalendarApiBaseUrl is the Calendar v3 host over HTTPS', () {
       expect(
         googleCalendarApiBaseUrl,

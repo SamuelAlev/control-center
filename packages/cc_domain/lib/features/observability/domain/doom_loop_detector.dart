@@ -132,13 +132,3 @@ class DoomLoopDetector {
     _streak = 0;
   }
 }
-
-/// Builds the steering message shown to an agent caught in a doom loop.
-///
-/// [toolName] is the repeated tool and [count] is how many times in a row it has
-/// been called with identical arguments. The message instructs the agent to
-/// stop repeating the call and change approach or report what is blocking it.
-String doomLoopSteerNotice(String toolName, int count) =>
-    '[loop notice] You have called `$toolName` with identical arguments $count '
-    'times in a row. Stop repeating it — change approach or report what is '
-    'blocking you.';

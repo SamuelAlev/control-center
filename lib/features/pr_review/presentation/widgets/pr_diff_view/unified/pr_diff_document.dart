@@ -517,9 +517,6 @@ class PrDiffDocument {
   /// Effective line count of file [i] (exact when parsed, else estimated).
   int lineCountOf(int i) => _layouts[i].lineCount;
 
-  /// Comment blocks of file [i], sorted by anchor line.
-  List<DiffCommentBlock> commentsOf(int i) => _layouts[i].comments;
-
   /// File index whose vertical range contains [offset].
   int fileAtOffset(double offset) => _fenwick.indexAtOffset(offset);
 

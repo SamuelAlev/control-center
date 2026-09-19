@@ -1,5 +1,4 @@
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
-import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 
 /// The messaging IDE's [EditorLayoutCodec] configuration.
@@ -80,12 +79,3 @@ Map<String, Object?> _deferResourceStart(
     ? {...args, EditorLayoutCodec.deferStartArg: true}
     : args;
 
-/// Serialises [controller]'s tree to a JSON string for the cache.
-String encodeEditorLayout(EditorLayoutController controller) =>
-    messagingLayoutCodec.encode(controller);
-
-/// Rebuilds an [EditorLayoutController] from [json], or returns null when the
-/// payload is missing, malformed, an unknown schema version, or contains no
-/// restorable tabs.
-EditorLayoutController? decodeEditorLayout(String json) =>
-    messagingLayoutCodec.decode(json);

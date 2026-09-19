@@ -237,12 +237,3 @@ final spaceRunTreeProvider = Provider.autoDispose
       return ref.watch(spaceRunLogsProvider(key)).whenData(_buildTree);
     });
 
-/// Watches the live run tree (parent dispatch + spawned subagents) for a
-/// conversation, for the General pane's AGENTS section.
-///
-/// Derived rather than its own subscription, so the tree and any open activity
-/// tab share one stream over the same conversation.
-final conversationRunTreeProvider = Provider.autoDispose
-    .family<AsyncValue<List<RunTreeNode>>, ConversationRunsKey>((ref, key) {
-      return ref.watch(conversationRunLogsProvider(key)).whenData(_buildTree);
-    });

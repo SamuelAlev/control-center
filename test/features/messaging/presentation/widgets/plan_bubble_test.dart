@@ -98,8 +98,6 @@ Future<List<EditorTab>> _pump(
 }
 
 void main() {
-  setUp(resetAutoOpenedPlanTabs);
-
   testWidgets('renders the plan as one compact row', (tester) async {
     await _pump(tester, submittedAt: DateTime(2026));
 

@@ -1655,12 +1655,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get import => 'Импорт';
 
   @override
-  String get sortByStatus => 'Статус';
-
-  @override
-  String get sortByName => 'Имя';
-
-  @override
   String get noMatchingAgents => 'Нет агентов, подходящих под фильтр';
 
   @override
@@ -2706,9 +2700,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get assignees => 'Исполнители';
 
   @override
-  String get attachFiles => 'Прикрепить файлы';
-
-  @override
   String get attachImage => 'Прикрепить изображение';
 
   @override
@@ -2825,9 +2816,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get closeEsc => 'Закрыть (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Закрыть';
 
   @override
   String get closeReader => 'Закрыть режим чтения';
@@ -3971,9 +3959,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get navSettings => 'Настройки';
 
   @override
-  String get navigateLabel => 'Навигация';
-
-  @override
   String networkBlockCount(int count) {
     return '$count сетевых блокировок';
   }
@@ -3987,9 +3972,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get newFact => 'Новый факт';
-
-  @override
-  String get newLabel => 'Новый';
 
   @override
   String get newPolicy => 'Новая политика';
@@ -4110,9 +4092,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Не настроено.';
-
-  @override
-  String get notDetected => 'Не обнаружено';
 
   @override
   String get notFoundLabel => 'Не найдено';
@@ -4369,10 +4348,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get notificationsMuteRepo => 'Отключить уведомления этого репозитория';
 
   @override
-  String get notificationsUnmuteRepo =>
-      'Включить уведомления этого репозитория';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center может использовать контейнеры Linux для изоляции выполнения агентов.';
 
@@ -4383,9 +4358,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Песочница недоступна на этой платформе. Агенты будут выполняться без изоляции.';
-
-  @override
-  String get openApplicationSettings => 'Открыть настройки приложения';
 
   @override
   String get openArticlesInApp => 'Открыть статьи в приложении';
@@ -4817,9 +4789,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get variableValue => 'Значение';
 
   @override
-  String get savingChanges => 'Сохранение изменений…';
-
-  @override
   String get savingEllipsis => 'Сохранение…';
 
   @override
@@ -4828,10 +4797,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Нет подходящих pull request';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Нет открытых PR, соответствующих поиску. Измените запрос или очистите поиск.';
 
   @override
   String get searchFactsHint => 'Поиск фактов...';
@@ -4890,9 +4855,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get selectConversation => 'Выберите беседу';
-
-  @override
-  String get selectEffortLevel => 'Выберите уровень усилий';
 
   @override
   String get selectLabel => 'Выбрать';
@@ -4954,9 +4916,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String signedInAs(String username) {
     return 'Вы вошли как $username.';
   }
-
-  @override
-  String get skillEditor => 'Редактор скиллов';
 
   @override
   String get skillNameRequired => 'Укажите имя скилла.';
@@ -6266,9 +6225,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Пока нет шаблонов конвейеров. Создайте первый, чтобы начать.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID шаблона';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Встроенный';
 
   @override
@@ -6278,9 +6234,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Удалить шаблон конвейера $name? Это действие нельзя отменить.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Редактирование конвейера';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6295,10 +6248,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Перетащите элемент на холст, чтобы добавить узел.';
-
-  @override
-  String get editorDragHint =>
-      'Перетащите из библиотеки, нажмите узел для правки';
 
   @override
   String get editorEmptyCanvas =>
@@ -6434,13 +6383,6 @@ class AppLocalizationsRu extends AppLocalizations {
       'Запускается через bash -c. Задаётся GITHUB_TOKEN. Плейсхолдеры подставляются до выполнения.';
 
   @override
-  String get nodeConfigTriggers => 'Триггеры от';
-
-  @override
-  String get nodeConfigNoUpstream =>
-      'Нет других узлов, от которых можно соединить.';
-
-  @override
   String get nodeConfigRouteKeys => 'Ключи маршрута';
 
   @override
@@ -6513,38 +6455,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get conditionDefaultCase => 'Вариант по умолчанию';
 
   @override
-  String get triggerPanelTitle => 'Триггеры';
-
-  @override
-  String get triggerPanelHelp => 'Что запускает этот конвейер.';
-
-  @override
   String get triggerManualHelp =>
       'Показывать на странице запуска и запускать вручную.';
 
   @override
-  String get triggerSectionAutomatic => 'Автоматические триггеры';
-
-  @override
-  String get triggerAddButton => 'Добавить триггер';
-
-  @override
-  String get triggerNoneYet => 'Автоматических триггеров пока нет.';
-
-  @override
-  String get triggerAddDialogTitle => 'Добавить триггер';
-
-  @override
-  String get triggerKindLabel => 'Тип триггера';
-
-  @override
-  String get triggerKindEvent => 'По событию';
-
-  @override
   String get triggerKindSchedule => 'По расписанию';
-
-  @override
-  String get triggerKindWebhook => 'Через webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Расписание (cron или every:seconds)';
@@ -6590,12 +6505,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Путь вебхука';
-
-  @override
-  String get triggerEventFieldLabel => 'Событие';
-
-  @override
-  String get triggerNoMoreEvents => 'Все доступные события уже подключены.';
 
   @override
   String get triggerMatchStatusLabel => 'Только при статусе';
@@ -7079,13 +6988,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Отвечено';
 
   @override
-  String get agentQuestionSubmit => 'Отправить ответ';
-
-  @override
   String get agentQuestionFreeformHint => 'Введите ответ…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Ваш ответ';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8693,29 +8596,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get ideReviewCode => 'Проверить код';
 
   @override
-  String get ideRevert => 'Откатить';
-
-  @override
   String get ideRevertConfirmTitle => 'Откатить изменения';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count файлов',
-      many: '$count файлов',
-      few: '$count файла',
-      one: '$count файл',
-    );
-    return 'Откатить $_temp0 к HEAD? Изменения в рабочем дереве будут сброшены.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Откатить';
-
-  @override
-  String get ideRevertConfirmCancel => 'Отмена';
 
   @override
   String get ideRevertUntracked => 'Неотслеживаемые файлы нельзя откатить';
@@ -8736,9 +8617,6 @@ class AppLocalizationsRu extends AppLocalizations {
     );
     return '$_temp0.';
   }
-
-  @override
-  String get ideViewSource => 'Исходный код';
 
   @override
   String get ideSearchMatchCase => 'Учитывать регистр';
@@ -9272,10 +9150,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get providerBaseUrlHint => 'Базовый URL (необязательно)';
 
   @override
-  String get customProvidersDescription =>
-      'Любая совместимая с OpenAI или Anthropic конечная точка — Ollama, LM Studio, vLLM или частное развёртывание — с необязательным API-ключом.';
-
-  @override
   String get addProvider => 'Добавить провайдера';
 
   @override
@@ -9391,9 +9265,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Запусков пока нет';
-
-  @override
-  String get repoScriptsOutput => 'Вывод';
 
   @override
   String get repoScriptsSaved => 'Скрипты сохранены';
@@ -13279,12 +13150,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get providersFilterHint => 'Фильтр провайдеров';
 
   @override
-  String get providersFacetNeedsSetup => 'Нужна настройка';
-
-  @override
-  String get providersFacetCustom => 'Пользовательские';
-
-  @override
   String get providersNoneMatch => 'Ничего не подходит под фильтр';
 
   @override
@@ -13321,12 +13186,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Фильтр раннеров';
-
-  @override
-  String get adaptersFacetReady => 'Готовы';
-
-  @override
-  String get adaptersFacetMissing => 'Отсутствуют';
 
   @override
   String get adaptersLaunchGroup => 'Запуск';
@@ -14233,9 +14092,6 @@ class AppLocalizationsRu extends AppLocalizations {
   String get demoTourStarRepo => 'Поставить звезду на GitHub';
 
   @override
-  String get demoTourDone => 'Готово';
-
-  @override
   String get demoTourOpen => 'Открыть';
 
   @override
@@ -14265,15 +14121,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Все оповещения со всех направлений собираются во входящих — ревью, тикеты, запуски и встречи.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Демо-сессия закончится через $minutes мин.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Демо-сессия завершена. Перезагрузите страницу, чтобы начать новую.';
 
   @override
   String get demoUnavailableTitle => 'В демо недоступно';
@@ -14448,9 +14295,6 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Файл .db, который сервер может прочитать. Пути разрешаются на хосте сервера, не на этом устройстве.';
-
-  @override
-  String get backupImportChooseFile => 'Выбрать файл';
 
   @override
   String backupImportDone(String name) {

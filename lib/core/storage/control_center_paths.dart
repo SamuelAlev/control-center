@@ -37,13 +37,6 @@ Future<Directory> pipelineRunDir(String pipelineRunId) =>
 Future<Directory> meetingAudioDir(String meetingId) =>
     _paths.meetingAudioDir(meetingId);
 
-/// Deprecated: use [modelsRootDir] instead.
-@Deprecated('Use modelsRootDir()')
-Future<Directory> voiceModelsRootDir() => modelsRootDir();
-
-/// Path to the server-global SQLite database (`global.db`).
-Future<File> controlCenterDatabaseFile() => _paths.databaseFile();
-
 /// Path to the rift copy-on-write registry database shared by managed worktrees.
 String riftRegistryPath() => _paths.riftRegistryPath();
 

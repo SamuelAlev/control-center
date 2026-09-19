@@ -71,8 +71,6 @@ class _FakeMessagingRepo implements MessagingRepository {
     }
   }
 
-  Message? getMessage(String id) => _messages[id];
-
   SenderType _parseSenderType(String t) =>
       t == 'agent' ? SenderType.agent : SenderType.user;
 

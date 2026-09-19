@@ -508,37 +508,3 @@ final currentUserLoginForPrProvider = Provider.autoDispose
       }
       return logins[ForgeHost.github] ?? logins.values.first;
     });
-
-/// Tracks which queue sections are currently collapsed. Keyed by `Repo.id`
-/// when grouping by repository and by the group key (`author:<login>`,
-/// `status:<name>`) for the other groupings, so state survives filter changes.
-class CollapsedReposNotifier extends Notifier<Set<String>> {
-  @override
-  /// Builds the initial set (no sections collapsed).
-  Set<String> build() => const {};
-
-  /// Toggles the collapsed state of a queue section.
-  void toggle(String repoId) {
-    final next = Set<String>.from(state);
-    if (!next.add(repoId)) {
-      next.remove(repoId);
-    }
-    state = next;
-  }
-
-  /// Collapses a queue section.
-  void collapse(String repoId) {
-    state = Set<String>.from(state)..add(repoId);
-  }
-
-  /// Expands a queue section.
-  void expand(String repoId) {
-    state = Set<String>.from(state)..remove(repoId);
-  }
-}
-
-/// Set of section keys collapsed in the queue. See [CollapsedReposNotifier].
-final collapsedReposProvider =
-    NotifierProvider<CollapsedReposNotifier, Set<String>>(
-      CollapsedReposNotifier.new,
-    );

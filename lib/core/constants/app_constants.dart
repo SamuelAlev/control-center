@@ -69,12 +69,6 @@ const String selectedMeetingTemplateKey = 'selected_meeting_template';
 /// SharedPreferences key for whether automatic meeting detection is enabled.
 const String meetingAutoDetectKey = 'meeting_auto_detect';
 
-/// Default conversation status when created.
-const String defaultConversationStatus = 'active';
-
-/// Default MCP server host.
-const String defaultMcpHost = '127.0.0.1';
-
 /// Storage key for the PR file-tree panel width preference.
 const String prTreeWidthKey = 'pr_tree_width';
 

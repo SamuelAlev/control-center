@@ -121,8 +121,8 @@ void main() {
     'pin_skill': {'fileWriteOutsideWorktree'},
 
     // --- Ticket writes: propagate to external vendors via the sync path and
-    //     some dispatch agents. See MultiVendorTicketSyncCoordinator /
-    //     TicketRemoteSyncHandler + TeamRoutingService. ---
+    //     some dispatch agents. See MultiVendorTicketSyncCoordinator +
+    //     TeamRoutingService. ---
     'create_ticket': {'vendorSyncWrite'},
     'update_ticket': {'vendorSyncWrite'},
     'close_ticket': {'vendorSyncWrite'},

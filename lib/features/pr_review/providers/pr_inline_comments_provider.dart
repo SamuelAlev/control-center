@@ -568,37 +568,4 @@ final prInlineCommentsControllerProvider =
       PrInlineCommentsController,
       PrInlineCommentsState,
       PrRef
-    >(PrInlineCommentsController.new);
-
-@immutable
-/// Key used to subscribe to inline threads for a specific file within a PR.
-/// Carries the full [PrRef] — the number alone is ambiguous across repos.
-class PrFileThreadsKey {
-  /// Creates a key for the given PR and file path.
-  const PrFileThreadsKey({required this.pr, required this.filePath});
-
-  /// The pull request the file belongs to.
-  final PrRef pr;
-
-  /// The file path within the PR.
-  final String filePath;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is PrFileThreadsKey && other.pr == pr && other.filePath == filePath;
-
-  @override
-  int get hashCode => Object.hash(pr, filePath);
-}
-
-/// Per-file slice of [prInlineCommentsControllerProvider]. Cards subscribe to
-/// just their file's threads so a draft added on file A doesn't rebuild file B.
-final prFileInlineThreadsProvider = Provider.family
-    .autoDispose<List<PrInlineThread>, PrFileThreadsKey>((ref, key) {
-      return ref.watch(
-        prInlineCommentsControllerProvider(
-          key.pr,
-        ).select((s) => s.threadsByPath[key.filePath] ?? const []),
-      );
-    });
+>(PrInlineCommentsController.new);

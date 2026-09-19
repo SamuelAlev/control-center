@@ -761,8 +761,6 @@
   "copyRelativePath": "Salin jalur relatif",
   "nameRequired": "Nama wajib diisi",
   "import": "Impor",
-  "sortByStatus": "Status",
-  "sortByName": "Nama",
   "noMatchingAgents": "Tidak ada agen yang cocok dengan filter Anda",
   "watchVideoOn": "Tonton video di {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Tanya AI",
   "askAiReviewDescription": "Minta AI meninjau PR ini",
   "assignees": "Penerima tugas",
-  "attachFiles": "Lampirkan file",
   "attachImage": "Lampirkan gambar",
   "attachedAgents": "Agen terlampir",
   "audioInput": "Input audio",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Klik untuk mencoba lagi",
   "close": "Tutup",
   "closeEsc": "Tutup (Esc)",
-  "closeKeyboardHint": "Tutup",
   "closeReader": "Tutup pembaca",
   "closed": "Ditutup",
   "codeFont": "Font kode",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Instalasi sandbox native diperlukan",
   "navObservability": "Observabilitas",
   "navSettings": "Pengaturan",
-  "navigateLabel": "Navigasi",
   "networkBlockCount": "{count} blok jaringan",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Netral",
   "newCommitsPushed": "Commit baru telah di-push — klik untuk memuat ulang diff",
   "newFact": "Fakta baru",
-  "newLabel": "Baru",
   "newPolicy": "Kebijakan baru",
   "newsfeed": "Umpan berita",
   "newsfeedLabel": "Umpan berita",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Tidak ada (semua peran)",
   "notAvailable": "Tidak tersedia",
   "notConfiguredLabel": "Belum dikonfigurasi.",
-  "notDetected": "Tidak terdeteksi",
   "notFoundLabel": "Tidak ditemukan",
   "notes": "Catatan",
   "notificationAgentFinished": "Agen selesai",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Bisukan repositori ini",
-  "notificationsUnmuteRepo": "Batalkan bisu repositori ini",
   "onboardingLinuxDescription": "Control Center dapat menggunakan kontainer Linux untuk mengisolasi eksekusi agen.",
   "onboardingMacosDescription": "Control Center menggunakan sandbox native di macOS untuk mengisolasi eksekusi agen.",
   "onboardingUnsupportedDescription": "Sandbox tidak tersedia di platform ini. Eksekusi agen akan tanpa isolasi.",
-  "openApplicationSettings": "Buka pengaturan aplikasi",
   "openArticlesInApp": "Buka artikel di aplikasi",
   "openInBrowser": "Buka di browser",
   "openedInYourBrowser": "Dibuka di browser Anda.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Variabel lingkungan kustom yang diteruskan ke adapter ini (mis. kunci API). Disimpan di keychain.",
   "variableKey": "Kunci",
   "variableValue": "Nilai",
-  "savingChanges": "Menyimpan perubahan…",
   "savingEllipsis": "Menyimpan…",
   "scopeDiffToCommits": "Batasi diff ke commit — Shift-klik untuk rentang",
   "noPrsMatchSearch": "Tidak ada pull request yang cocok",
-  "noPrsMatchSearchHint": "Tidak ada PR terbuka yang cocok dengan pencarian. Coba kata lain atau hapus pencarian.",
   "searchFactsHint": "Cari fakta...",
   "searchFonts": "Cari font…",
   "searchGifs": "Cari GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Pilih agen tujuan laporan…",
   "selectAnAgent": "Pilih agen",
   "selectConversation": "Pilih percakapan",
-  "selectEffortLevel": "Pilih tingkat upaya",
   "selectLabel": "Pilih",
   "selectRunner": "Pilih runner",
   "semanticSearch": "Pencarian semantik",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Editor skill",
   "skillNameRequired": "Nama skill wajib diisi.",
   "skillSaved": "Skill \"{name}\" disimpan.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Editor seret-lepas untuk pipeline yang mengorkestrasi agen Anda.",
   "pipelineTemplatesNew": "Template baru",
   "pipelineTemplatesEmpty": "Belum ada template pipeline. Buat satu untuk memulai.",
-  "pipelineTemplateIdLabel": "ID template",
   "pipelineTemplateBuiltInBadge": "Bawaan",
   "pipelineTemplateDeleteConfirmTitle": "Hapus template?",
   "pipelineTemplateDeleteConfirmBody": "Hapus template pipeline {name}? Tindakan ini tidak dapat dibatalkan.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Edit pipeline",
   "pipelineTemplateEditorSubtitle": "Seret jenis node dari bilah sisi ke kanvas, lalu hubungkan.",
   "unsavedChanges": "Perubahan belum disimpan",
   "nodeLibraryTitle": "Pustaka node",
   "nodeLibraryHint": "Seret entri apa pun ke kanvas untuk menambahkan node.",
-  "editorDragHint": "Seret dari pustaka, klik node untuk mengedit",
   "editorEmptyCanvas": "Seret node dari pustaka untuk memulai.",
   "pipelineWhenThisHappens": "Saat ini terjadi",
   "pipelineDoThis": "Lakukan ini",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Gunakan placeholder kurung kurawal ganda untuk mengambil nilai dari state saat runtime.",
   "nodeConfigScript": "Skrip bash",
   "nodeConfigScriptHelp": "Dijalankan dengan bash -c. GITHUB_TOKEN disetel. Placeholder disubstitusi sebelum eksekusi.",
-  "nodeConfigTriggers": "Pemicu dari",
-  "nodeConfigNoUpstream": "Tidak ada node lain untuk dihubungkan.",
   "nodeConfigRouteKeys": "Kunci rute",
   "nodeConfigRouteKeyFrom": "Kunci rute dari {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Kasus (dipisah koma)",
   "conditionCasesHelp": "Kunci rute yang dicocokkan dengan nilai, berurutan.",
   "conditionDefaultCase": "Kasus default",
-  "triggerPanelTitle": "Trigger",
-  "triggerPanelHelp": "Apa yang memulai pipeline ini.",
   "triggerManualHelp": "Tampilkan di halaman run dan mulai secara manual.",
-  "triggerSectionAutomatic": "Trigger otomatis",
-  "triggerAddButton": "Tambah trigger",
-  "triggerNoneYet": "Belum ada trigger otomatis.",
-  "triggerAddDialogTitle": "Tambah trigger",
-  "triggerKindLabel": "Jenis trigger",
-  "triggerKindEvent": "Pada event",
   "triggerKindSchedule": "Pada jadwal",
-  "triggerKindWebhook": "Via webhook",
   "triggerScheduleExprLabel": "Jadwal (cron atau every:seconds)",
   "triggerTimezoneLabel": "Zona waktu (opsional)",
   "triggerCatchUpLabel": "Jika run terlewat",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "URL webhook bertanda tangan akan dibuat. Sistem eksternal POST ke URL itu untuk memulai pipeline ini.",
   "triggerWebhookPathLabel": "Jalur webhook",
-  "triggerEventFieldLabel": "Event",
-  "triggerNoMoreEvents": "Semua event yang tersedia sudah terhubung.",
   "triggerMatchStatusLabel": "Hanya jika statusnya",
   "triggerSummaryNone": "Tidak ada trigger",
   "triggerEverySeconds": "Setiap {seconds}d",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Hapus iklan, pelacak, dan spanduk cookie dari artikel yang dibuka di pembaca.",
   "agentQuestionHeader": "Pertanyaan untuk Anda",
   "agentQuestionAnsweredLabel": "Dijawab",
-  "agentQuestionSubmit": "Kirim jawaban",
   "agentQuestionFreeformHint": "Ketik jawaban Anda…",
-  "agentQuestionAnswerLabel": "Jawaban Anda",
   "agentQuestionProgress": "Pertanyaan {index} dari {count}",
   "agentQuestionSkip": "Lewati",
   "agentQuestionSkippedLabel": "Dilewati",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Buka editor",
   "ideNewTabMenu": "Tab baru",
   "ideReviewCode": "Tinjau kode",
-  "ideRevert": "Kembalikan",
   "ideRevertConfirmTitle": "Kembalikan perubahan",
-  "ideRevertConfirmMessage": "Kembalikan {count, plural, =1{1 file} other{{count} file}} ke HEAD? Perubahan di pohon kerja akan dibuang.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Kembalikan",
-  "ideRevertConfirmCancel": "Batal",
   "ideRevertUntracked": "File yang belum dilacak tidak dapat dikembalikan",
   "ideRevertFailed": "File tidak dapat dikembalikan. Pohon kerja percakapan mungkin tidak tersedia.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 file} other{{count} file}} tidak dapat dikembalikan (belum dilacak).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Lihat sumber",
   "ideSearchMatchCase": "Cocokkan huruf besar/kecil",
   "ideSearchWholeWord": "Kata utuh",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Base URL (opsional)",
-  "customProvidersDescription": "Endpoint yang kompatibel dengan OpenAI atau Anthropic — Ollama, LM Studio, vLLM, atau deployment pribadi — dengan kunci API opsional.",
   "addProvider": "Tambah penyedia",
   "noCustomProviders": "Belum ada penyedia kustom.",
   "providerNameLabel": "Nama",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "mis. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Eksekusi terbaru",
   "repoScriptsNoRuns": "Belum ada eksekusi",
-  "repoScriptsOutput": "Output",
   "repoScriptsSaved": "Skrip disimpan",
   "repoScriptsRunKindSetup": "Setup",
   "repoScriptsRunKindArchive": "Arsip",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Tidak ada penyedia yang terhubung, jadi runtime agen bawaan tidak punya tempat untuk berjalan. Tambahkan kunci API atau masuk ke salah satunya di bawah.",
   "providersFilterHint": "Filter penyedia",
-  "providersFacetNeedsSetup": "Perlu penyiapan",
-  "providersFacetCustom": "Kustom",
   "providersNoneMatch": "Tidak ada yang cocok dengan filter ini",
   "providerDeniedHereTitle": "Ditolak di ruang kerja ini",
   "providerDeniedHereBody": "Agen di sini tidak dapat menggunakan penyedia ini, meskipun sudah terhubung. Ruang kerja lain tidak terpengaruh.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Filter model",
   "adaptersNoneReadyNote": "Tidak ada CLI runner dalam katalog yang ditemukan di mesin ini. Instal salah satu, lalu segarkan.",
   "adaptersFilterHint": "Filter runner",
-  "adaptersFacetReady": "Siap",
-  "adaptersFacetMissing": "Tidak ada",
   "adaptersLaunchGroup": "Peluncuran",
   "adaptersLaunchGroupDescription": "Yang diberikan ke runner ini saat agen memulainya. Atur ini sebelum menginstal CLI jika Anda mau.",
   "adaptersEnvNone": "Tidak ada yang diatur",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Empat tempat yang menunjukkan apa yang benar-benar dilakukan aplikasi.",
   "demoTourSkip": "Lewati",
   "demoTourStarRepo": "Beri bintang di GitHub",
-  "demoTourDone": "Selesai",
   "demoTourOpen": "Buka",
   "demoTourSpacesTitle": "Bicara dengan agen",
   "demoTourSpacesBody": "Kirim pesan di space dan saksikan run streaming masuk — alur berpikir, pemanggilan tool, dan biaya, persis seperti run sungguhan.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Tiket, todo, dan rencana tertaut ke percakapan yang sama yang sedang dijalani agen.",
   "demoTourInboxTitle": "Lihat seluruh operasi",
   "demoTourInboxBody": "Setiap peringatan dari setiap pilar masuk ke satu kotak masuk — review, tiket, run, dan rapat.",
-  "demoSessionEndingSoon": "Sesi demo ini berakhir dalam {minutes} menit.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Sesi demo ini telah berakhir. Muat ulang halaman untuk memulai yang baru.",
   "demoUnavailableTitle": "Tidak tersedia di demo",
   "demoUnavailableTerminal": "Terminal menjalankan shell sungguhan di host server. Demo tidak punya permukaan eksekusi sama sekali — itulah yang membuatnya aman dibuka ke publik.",
   "demoUnavailableRig": "Enclosure adalah mesin virtual sekali pakai yang dikendalikan agen. Demo tidak menyalakan satu pun: endpoint publik yang bisa menyalakan VM bukanlah demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "File basis data ruang kerja",
   "backupImportSourceDescription": "File .db yang bisa dibaca server. Path diselesaikan di host server, bukan di perangkat ini.",
-  "backupImportChooseFile": "Pilih file",
   "backupImportDone": "Diimpor ke {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

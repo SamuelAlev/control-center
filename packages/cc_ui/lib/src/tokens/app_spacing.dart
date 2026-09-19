@@ -50,7 +50,4 @@ abstract final class AppSpacing {
 
   /// A horizontal gap of [md].
   static const SizedBox hGapMd = SizedBox(width: md);
-
-  /// A horizontal gap of [lg].
-  static const SizedBox hGapLg = SizedBox(width: lg);
 }

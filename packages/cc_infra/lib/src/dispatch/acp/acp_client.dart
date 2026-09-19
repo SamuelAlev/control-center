@@ -93,15 +93,6 @@ class AcpClient {
     onDone?.call();
   }
 
-  /// Cancels an in-progress turn.
-  Future<void> sessionCancel(String sessionId) async {
-    try {
-      await _request('session/cancel', {'sessionId': sessionId});
-    } catch (_) {
-      // Best-effort: a failing cancel (process already gone) must not throw.
-    }
-  }
-
   // -- transport ---------------------------------------------------------------
 
   /// Feeds one decoded JSON-RPC line from the agent's stdout. Routes it as a

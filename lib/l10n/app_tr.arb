@@ -761,8 +761,6 @@
   "copyRelativePath": "Göreli yolu kopyala",
   "nameRequired": "Ad gerekli",
   "import": "İçe aktar",
-  "sortByStatus": "Durum",
-  "sortByName": "Ad",
   "noMatchingAgents": "Filtrenizle eşleşen ajan yok",
   "watchVideoOn": "Videoyu {provider} üzerinde izle",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "AI'ya sor",
   "askAiReviewDescription": "Bu PR'ı AI'ya incelet",
   "assignees": "Atananlar",
-  "attachFiles": "Dosya ekle",
   "attachImage": "Görüntü ekle",
   "attachedAgents": "Ekli ajanlar",
   "audioInput": "Ses girişi",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Yeniden denemek için tıklayın",
   "close": "Kapat",
   "closeEsc": "Kapat (Esc)",
-  "closeKeyboardHint": "Kapat",
   "closeReader": "Okuyucuyu kapat",
   "closed": "Kapalı",
   "codeFont": "Kod yazı tipi",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Yerel sandbox kurulumu gerekli",
   "navObservability": "Gözlemlenebilirlik",
   "navSettings": "Ayarlar",
-  "navigateLabel": "Gezin",
   "networkBlockCount": "{count} ağ bloğu",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Nötr",
   "newCommitsPushed": "Yeni commit'ler gönderildi — farkı yeniden yüklemek için tıkla",
   "newFact": "Yeni olgu",
-  "newLabel": "Yeni",
   "newPolicy": "Yeni politika",
   "newsfeed": "Haber akışı",
   "newsfeedLabel": "Haber akışı",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Yok (tüm roller)",
   "notAvailable": "Kullanılamıyor",
   "notConfiguredLabel": "Yapılandırılmamış.",
-  "notDetected": "Algılanmadı",
   "notFoundLabel": "Bulunamadı",
   "notes": "Notlar",
   "notificationAgentFinished": "Ajan tamamlandı",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Bu depoyu sessize al",
-  "notificationsUnmuteRepo": "Bu deponun sesini aç",
   "onboardingLinuxDescription": "Control Center, ajan yürütmesini yalıtmak için Linux konteynerleri kullanabilir.",
   "onboardingMacosDescription": "Control Center, ajan yürütmesini yalıtmak için macOS'ta yerel sandbox kullanır.",
   "onboardingUnsupportedDescription": "Sandbox bu platformda kullanılamıyor. Ajan yürütmesi yalıtım olmadan gerçekleşecek.",
-  "openApplicationSettings": "Uygulama ayarlarını aç",
   "openArticlesInApp": "Makaleleri uygulamada aç",
   "openInBrowser": "Tarayıcıda aç",
   "openedInYourBrowser": "Tarayıcınızda açıldı.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Bu bağdaştırıcıya iletilen özel ortam değişkenleri (ör. API anahtarları). Anahtar zincirinde saklanır.",
   "variableKey": "Anahtar",
   "variableValue": "Değer",
-  "savingChanges": "Değişiklikler kaydediliyor…",
   "savingEllipsis": "Kaydediliyor…",
   "scopeDiffToCommits": "Diff'i commit'lere sınırla — aralık için Shift-tıkla",
   "noPrsMatchSearch": "Eşleşen pull request yok",
-  "noPrsMatchSearchHint": "Aramanızla eşleşen açık PR yok. Farklı terimler deneyin veya aramayı temizleyin.",
   "searchFactsHint": "Bilgi ara...",
   "searchFonts": "Yazı tipi ara…",
   "searchGifs": "GIF ara",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Raporlanacak ajanı seç…",
   "selectAnAgent": "Bir ajan seç",
   "selectConversation": "Bir konuşma seç",
-  "selectEffortLevel": "Efor düzeyi seç",
   "selectLabel": "Seç",
   "selectRunner": "Bir runner seç",
   "semanticSearch": "Anlamsal arama",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Beceri düzenleyici",
   "skillNameRequired": "Beceri adı gerekli.",
   "skillSaved": "\"{name}\" becerisi kaydedildi.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Ajanlarınızı orkestre eden pipeline'lar için sürükle-bırak düzenleyici.",
   "pipelineTemplatesNew": "Yeni şablon",
   "pipelineTemplatesEmpty": "Henüz pipeline şablonu yok. Başlamak için bir tane oluşturun.",
-  "pipelineTemplateIdLabel": "Şablon kimliği",
   "pipelineTemplateBuiltInBadge": "Yerleşik",
   "pipelineTemplateDeleteConfirmTitle": "Şablon silinsin mi?",
   "pipelineTemplateDeleteConfirmBody": "{name} pipeline şablonu silinsin mi? Bu işlem geri alınamaz.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Pipeline'ı düzenle",
   "pipelineTemplateEditorSubtitle": "Kenar çubuğundaki düğüm türlerini tuvale sürükleyin, ardından birbirine bağlayın.",
   "unsavedChanges": "Kaydedilmemiş değişiklikler",
   "nodeLibraryTitle": "Düğüm kitaplığı",
   "nodeLibraryHint": "Düğüm eklemek için herhangi bir öğeyi tuvale sürükleyin.",
-  "editorDragHint": "Kitaplıktan sürükleyin, düzenlemek için bir düğüme tıklayın",
   "editorEmptyCanvas": "Başlamak için kitaplıktan bir düğüm sürükleyin.",
   "pipelineWhenThisHappens": "Bu olduğunda",
   "pipelineDoThis": "Bunu yap",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Çalışma anında durumdan değer çekmek için çift süslü parantezli yer tutucular kullanın.",
   "nodeConfigScript": "Bash betiği",
   "nodeConfigScriptHelp": "bash -c ile çalışır. GITHUB_TOKEN ayarlıdır. Yer tutucular çalıştırılmadan önce değiştirilir.",
-  "nodeConfigTriggers": "Tetikleyen",
-  "nodeConfigNoUpstream": "Bağlanacak başka düğüm yok.",
   "nodeConfigRouteKeys": "Rota anahtarları",
   "nodeConfigRouteKeyFrom": "{source} kaynağından rota anahtarı",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Durumlar (virgülle ayrılmış)",
   "conditionCasesHelp": "Değerle eşleşecek rota anahtarları, sırayla.",
   "conditionDefaultCase": "Varsayılan durum",
-  "triggerPanelTitle": "Tetikleyiciler",
-  "triggerPanelHelp": "Bu pipeline'ı ne başlatır.",
   "triggerManualHelp": "Çalıştırma sayfasında göster ve elle başlat.",
-  "triggerSectionAutomatic": "Otomatik tetikleyiciler",
-  "triggerAddButton": "Tetikleyici ekle",
-  "triggerNoneYet": "Henüz otomatik tetikleyici yok.",
-  "triggerAddDialogTitle": "Tetikleyici ekle",
-  "triggerKindLabel": "Tetikleyici türü",
-  "triggerKindEvent": "Bir olayda",
   "triggerKindSchedule": "Zamanlamayla",
-  "triggerKindWebhook": "Webhook ile",
   "triggerScheduleExprLabel": "Zamanlama (cron veya every:seconds)",
   "triggerTimezoneLabel": "Saat dilimi (isteğe bağlı)",
   "triggerCatchUpLabel": "Kaçırılan çalıştırmalarda",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "İmzalı bir webhook URL'si oluşturulur. Dış sistemler bu pipeline'ı başlatmak için buna POST gönderir.",
   "triggerWebhookPathLabel": "Webhook yolu",
-  "triggerEventFieldLabel": "Olay",
-  "triggerNoMoreEvents": "Kullanılabilir tüm olaylar zaten bağlı.",
   "triggerMatchStatusLabel": "Yalnızca durum şu olduğunda",
   "triggerSummaryNone": "Tetikleyici yok",
   "triggerEverySeconds": "Her {seconds}s",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Okuyucuda açtığınız makalelerden reklamları, izleyicileri ve çerez bildirimlerini kaldırın.",
   "agentQuestionHeader": "Sizin için soru",
   "agentQuestionAnsweredLabel": "Yanıtlandı",
-  "agentQuestionSubmit": "Yanıtı gönder",
   "agentQuestionFreeformHint": "Yanıtınızı yazın…",
-  "agentQuestionAnswerLabel": "Yanıtınız",
   "agentQuestionProgress": "Soru {index} / {count}",
   "agentQuestionSkip": "Atla",
   "agentQuestionSkippedLabel": "Atlandı",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Editörü aç",
   "ideNewTabMenu": "Yeni sekme",
   "ideReviewCode": "Kodu incele",
-  "ideRevert": "Geri al",
   "ideRevertConfirmTitle": "Değişiklikleri geri al",
-  "ideRevertConfirmMessage": "{count, plural, =1{1 dosya} other{{count} dosya}} HEAD'e geri alınsın mı? Bu, çalışma ağacındaki değişiklikleri siler.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Geri al",
-  "ideRevertConfirmCancel": "İptal",
   "ideRevertUntracked": "İzlenmeyen dosyalar geri alınamaz",
   "ideRevertFailed": "Dosyalar geri alınamadı. Sohbet çalışma ağacı kullanılamıyor olabilir.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 dosya} other{{count} dosya}} geri alınamadı (izlenmeyen).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Kaynağı görüntüle",
   "ideSearchMatchCase": "Büyük/küçük harf eşleştir",
   "ideSearchWholeWord": "Tam sözcük",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Temel URL (isteğe bağlı)",
-  "customProvidersDescription": "İsteğe bağlı bir API anahtarıyla herhangi bir OpenAI veya Anthropic uyumlu uç nokta — Ollama, LM Studio, vLLM veya özel bir dağıtım.",
   "addProvider": "Sağlayıcı ekle",
   "noCustomProviders": "Henüz özel sağlayıcı yok.",
   "providerNameLabel": "Ad",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "ör. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Son çalıştırmalar",
   "repoScriptsNoRuns": "Henüz çalıştırma yok",
-  "repoScriptsOutput": "Çıktı",
   "repoScriptsSaved": "Betikler kaydedildi",
   "repoScriptsRunKindSetup": "Kurulum",
   "repoScriptsRunKindArchive": "Arşiv",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Bağlı sağlayıcı yok, bu yüzden yerleşik ajan çalışma zamanının üzerinde çalışacak bir şey yok. Bir API anahtarı ekleyin veya aşağıdakilerden birine oturum açın.",
   "providersFilterHint": "Sağlayıcıları filtrele",
-  "providersFacetNeedsSetup": "Kurulum gerekli",
-  "providersFacetCustom": "Özel",
   "providersNoneMatch": "Bu filtreyle eşleşen yok",
   "providerDeniedHereTitle": "Bu çalışma alanında reddedildi",
   "providerDeniedHereBody": "Bağlı olsa da buradaki ajanlar bu sağlayıcıyı kullanamaz. Diğer çalışma alanları etkilenmez.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Modelleri filtrele",
   "adaptersNoneReadyNote": "Katalogdaki runner CLI'larından hiçbiri bu makinede bulunamadı. Birini yükleyin, ardından yenileyin.",
   "adaptersFilterHint": "Runner'ları filtrele",
-  "adaptersFacetReady": "Hazır",
-  "adaptersFacetMissing": "Eksik",
   "adaptersLaunchGroup": "Başlatma",
   "adaptersLaunchGroupDescription": "Bir ajan bu runner'ı başlattığında verilenler. İsterseniz CLI'yı yüklemeden önce bunları ayarlayın.",
   "adaptersEnvNone": "Hiçbiri ayarlı değil",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Uygulamanın gerçekte ne yaptığını gösteren dört yer.",
   "demoTourSkip": "Atla",
   "demoTourStarRepo": "GitHub'da yıldızla",
-  "demoTourDone": "Bitti",
   "demoTourOpen": "Aç",
   "demoTourSpacesTitle": "Bir ajanla konuş",
   "demoTourSpacesBody": "Bir alanda mesaj gönderin ve bir çalıştırmanın akışını izleyin — düşünme, araç çağrıları ve maliyet, tam olarak gerçek bir çalıştırmanın gösterdiği gibi.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Biletler, yapılacaklar ve planlar, ajanların yürüttüğü aynı konuşmalara bağlıdır.",
   "demoTourInboxTitle": "Operasyonun tamamını görün",
   "demoTourInboxBody": "Her sütundan gelen her uyarı tek bir gelen kutusuna düşer — incelemeler, biletler, çalıştırmalar ve toplantılar.",
-  "demoSessionEndingSoon": "Bu demo oturumu {minutes} dakika içinde sona erer.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Bu demo oturumu sona erdi. Yeni bir tane başlatmak için sayfayı yenileyin.",
   "demoUnavailableTitle": "Demoda kullanılamaz",
   "demoUnavailableTerminal": "Bir terminal, sunucu makinesinde gerçek bir shell çalıştırır. Demoda hiç yürütme yüzeyi yoktur — herkese açık tutulmasını güvenli kılan da budur.",
   "demoUnavailableRig": "Bir enclosure, bir ajanın sürdüğü tek kullanımlık bir sanal makinedir. Demo hiçbirini başlatmaz: VM açabilen herkese açık bir uç nokta demo değildir.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Çalışma alanı veritabanı dosyası",
   "backupImportSourceDescription": "Sunucunun okuyabileceği bir .db dosyası. Yollar bu aygıtta değil, sunucu makinesinde çözülür.",
-  "backupImportChooseFile": "Dosya seç",
   "backupImportDone": "{name} içine aktarıldı.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

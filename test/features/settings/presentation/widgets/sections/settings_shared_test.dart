@@ -99,6 +99,24 @@ void main() {
       );
     });
 
+    testWidgets('opening the language picker lists every locale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(testWrap(const AppearanceSection()));
+
+      final field = find.descendant(
+        of: find.byType(CcAutocomplete<Locale>),
+        matching: find.byType(EditableText),
+      );
+      await tester.tap(field);
+      await tester.pumpAndSettle();
+
+      expect(find.text('System'), findsWidgets);
+      expect(find.text('Deutsch (Deutschland)'), findsOneWidget);
+      expect(find.text('Français (France)'), findsOneWidget);
+      expect(find.text('日本語（日本）'), findsOneWidget);
+    });
+
     testWidgets('typing filters locales by name and tag', (tester) async {
       await tester.pumpWidget(testWrap(const AppearanceSection()));
 

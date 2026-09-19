@@ -17,10 +17,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// window would re-open a tab the operator may have deliberately closed.
 final Set<String> _autoOpenedPlanIds = <String>{};
 
-/// Clears the auto-open ledger. Tests only — each case needs a clean session.
-@visibleForTesting
-void resetAutoOpenedPlanTabs() => _autoOpenedPlanIds.clear();
-
 /// Renders a submitted plan's whole lifecycle as one compact row in the feed.
 ///
 /// The message metadata carries only the plan id; the bubble watches the

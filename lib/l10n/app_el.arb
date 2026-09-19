@@ -761,8 +761,6 @@
   "copyRelativePath": "Αντιγραφή σχετικής διαδρομής",
   "nameRequired": "Το όνομα είναι υποχρεωτικό",
   "import": "Εισαγωγή",
-  "sortByStatus": "Κατάσταση",
-  "sortByName": "Όνομα",
   "noMatchingAgents": "Κανένας πράκτορας δεν ταιριάζει με το φίλτρο",
   "watchVideoOn": "Παρακολούθηση βίντεο στο {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Ερώτηση AI",
   "askAiReviewDescription": "Ζητήστε από την AI να ανασκοπήσει αυτό το PR",
   "assignees": "Ανατεθειμένοι",
-  "attachFiles": "Επισύναψη αρχείων",
   "attachImage": "Επισύναψη εικόνας",
   "attachedAgents": "Συνδεδεμένοι πράκτορες",
   "audioInput": "Είσοδος ήχου",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Κάντε κλικ για επανάληψη",
   "close": "Κλείσιμο",
   "closeEsc": "Κλείσιμο (Esc)",
-  "closeKeyboardHint": "Κλείσιμο",
   "closeReader": "Κλείσιμο αναγνώστη",
   "closed": "Κλειστό",
   "codeFont": "Γραμματοσειρά κώδικα",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Απαιτείται εγκατάσταση εγγενούς sandbox",
   "navObservability": "Παρατηρησιμότητα",
   "navSettings": "Ρυθμίσεις",
-  "navigateLabel": "Πλοήγηση",
   "networkBlockCount": "{count} αποκλεισμοί δικτύου",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Ουδέτερο",
   "newCommitsPushed": "Έγιναν push νέα commits — κάντε κλικ για επαναφόρτωση του diff",
   "newFact": "Νέο γεγονός",
-  "newLabel": "Νέο",
   "newPolicy": "Νέα πολιτική",
   "newsfeed": "Ροή ειδήσεων",
   "newsfeedLabel": "Ροή ειδήσεων",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Κανένας (όλοι οι ρόλοι)",
   "notAvailable": "Μη διαθέσιμο",
   "notConfiguredLabel": "Δεν έχει ρυθμιστεί.",
-  "notDetected": "Δεν ανιχνεύθηκε",
   "notFoundLabel": "Δεν βρέθηκε",
   "notes": "Σημειώσεις",
   "notificationAgentFinished": "Ο πράκτορας ολοκλήρωσε",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Σίγαση αυτού του αποθετηρίου",
-  "notificationsUnmuteRepo": "Άρση σίγασης αυτού του αποθετηρίου",
   "onboardingLinuxDescription": "Το Control Center μπορεί να χρησιμοποιεί κοντέινερ Linux για απομόνωση της εκτέλεσης πρακτόρων.",
   "onboardingMacosDescription": "Το Control Center χρησιμοποιεί εγγενές sandbox στο macOS για απομόνωση της εκτέλεσης πρακτόρων.",
   "onboardingUnsupportedDescription": "Το sandbox δεν είναι διαθέσιμο σε αυτή την πλατφόρμα. Η εκτέλεση πρακτόρων θα γίνει χωρίς απομόνωση.",
-  "openApplicationSettings": "Άνοιγμα ρυθμίσεων εφαρμογής",
   "openArticlesInApp": "Άνοιγμα άρθρων στην εφαρμογή",
   "openInBrowser": "Άνοιγμα στο πρόγραμμα περιήγησης",
   "openedInYourBrowser": "Άνοιξε στο πρόγραμμα περιήγησης.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Προσαρμοσμένες μεταβλητές περιβάλλοντος που περνούν σε αυτόν τον προσαρμογέα (π.χ. κλειδιά API). Αποθηκεύονται στο keychain.",
   "variableKey": "Κλειδί",
   "variableValue": "Τιμή",
-  "savingChanges": "Αποθήκευση αλλαγών…",
   "savingEllipsis": "Αποθήκευση…",
   "scopeDiffToCommits": "Περιορισμός diff σε commits — Shift-κλικ για εύρος",
   "noPrsMatchSearch": "Κανένα αντίστοιχο pull request",
-  "noPrsMatchSearchHint": "Κανένα ανοιχτό PR δεν ταιριάζει με την αναζήτησή σας. Δοκιμάστε άλλους όρους ή καθαρίστε την αναζήτηση.",
   "searchFactsHint": "Αναζήτηση γεγονότων...",
   "searchFonts": "Αναζήτηση γραμματοσειρών…",
   "searchGifs": "Αναζήτηση GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Επιλέξτε πράκτορα στον οποίο αναφέρεται…",
   "selectAnAgent": "Επιλέξτε πράκτορα",
   "selectConversation": "Επιλέξτε συνομιλία",
-  "selectEffortLevel": "Επιλέξτε επίπεδο προσπάθειας",
   "selectLabel": "Επιλογή",
   "selectRunner": "Επιλέξτε εκτελεστή",
   "semanticSearch": "Σημασιολογική αναζήτηση",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Επεξεργαστής δεξιοτήτων",
   "skillNameRequired": "Το όνομα δεξιότητας είναι υποχρεωτικό.",
   "skillSaved": "Η δεξιότητα «{name}» αποθηκεύτηκε.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Επεξεργαστής μεταφοράς-και-απόθεσης για τα pipelines που ενορχηστρώνουν τους πράκτορές σας.",
   "pipelineTemplatesNew": "Νέο πρότυπο",
   "pipelineTemplatesEmpty": "Δεν υπάρχουν ακόμη πρότυπα pipeline. Δημιουργήστε ένα για να ξεκινήσετε.",
-  "pipelineTemplateIdLabel": "ID προτύπου",
   "pipelineTemplateBuiltInBadge": "Ενσωματωμένο",
   "pipelineTemplateDeleteConfirmTitle": "Διαγραφή προτύπου;",
   "pipelineTemplateDeleteConfirmBody": "Διαγραφή του προτύπου pipeline {name}; Αυτή η ενέργεια δεν αναιρείται.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Επεξεργασία pipeline",
   "pipelineTemplateEditorSubtitle": "Σύρετε τύπους κόμβων από την πλαϊνή γραμμή στον καμβά και συνδέστε τους.",
   "unsavedChanges": "Μη αποθηκευμένες αλλαγές",
   "nodeLibraryTitle": "Βιβλιοθήκη κόμβων",
   "nodeLibraryHint": "Σύρετε οποιαδήποτε καταχώριση στον καμβά για να προσθέσετε κόμβο.",
-  "editorDragHint": "Σύρετε από τη βιβλιοθήκη, κάντε κλικ σε κόμβο για επεξεργασία",
   "editorEmptyCanvas": "Σύρετε έναν κόμβο από τη βιβλιοθήκη για να ξεκινήσετε.",
   "pipelineWhenThisHappens": "Όταν συμβεί αυτό",
   "pipelineDoThis": "Κάντε αυτό",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Χρησιμοποιήστε υποκατάστατα διπλών αγκίστρων για να πάρετε τιμές από την κατάσταση κατά την εκτέλεση.",
   "nodeConfigScript": "Σενάριο Bash",
   "nodeConfigScriptHelp": "Εκτελείται με bash -c. Το GITHUB_TOKEN ορίζεται. Τα υποκατάστατα αντικαθίστανται πριν την εκτέλεση.",
-  "nodeConfigTriggers": "Ενεργοποιείται από",
-  "nodeConfigNoUpstream": "Δεν υπάρχουν άλλοι κόμβοι για σύνδεση από.",
   "nodeConfigRouteKeys": "Κλειδιά δρομολόγησης",
   "nodeConfigRouteKeyFrom": "Κλειδί δρομολόγησης από {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Περιπτώσεις (χωρισμένες με κόμμα)",
   "conditionCasesHelp": "Κλειδιά δρομολόγησης για αντιστοίχιση με την τιμή, με τη σειρά.",
   "conditionDefaultCase": "Προεπιλεγμένη περίπτωση",
-  "triggerPanelTitle": "Εναύσματα",
-  "triggerPanelHelp": "Τι ξεκινά αυτό το pipeline.",
   "triggerManualHelp": "Εμφάνιση στη σελίδα εκτέλεσης και έναρξη χειροκίνητα.",
-  "triggerSectionAutomatic": "Αυτόματα εναύσματα",
-  "triggerAddButton": "Προσθήκη εναύσματος",
-  "triggerNoneYet": "Δεν υπάρχουν ακόμη αυτόματα εναύσματα.",
-  "triggerAddDialogTitle": "Προσθήκη εναύσματος",
-  "triggerKindLabel": "Τύπος εναύσματος",
-  "triggerKindEvent": "Σε γεγονός",
   "triggerKindSchedule": "Σε χρονοδιάγραμμα",
-  "triggerKindWebhook": "Μέσω webhook",
   "triggerScheduleExprLabel": "Χρονοδιάγραμμα (cron ή every:seconds)",
   "triggerTimezoneLabel": "Ζώνη ώρας (προαιρετικά)",
   "triggerCatchUpLabel": "Σε χαμένες εκτελέσεις",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Δημιουργείται υπογεγραμμένο URL webhook. Εξωτερικά συστήματα κάνουν POST σε αυτό για να ξεκινήσουν αυτό το pipeline.",
   "triggerWebhookPathLabel": "Διαδρομή webhook",
-  "triggerEventFieldLabel": "Γεγονός",
-  "triggerNoMoreEvents": "Όλα τα διαθέσιμα γεγονότα είναι ήδη συνδεδεμένα.",
   "triggerMatchStatusLabel": "Μόνο όταν η κατάσταση είναι",
   "triggerSummaryNone": "Χωρίς εναύσματα",
   "triggerEverySeconds": "Κάθε {seconds}δ",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Αφαίρεση διαφημίσεων, ιχνηλατών και banner cookies από άρθρα που ανοίγετε στον αναγνώστη.",
   "agentQuestionHeader": "Ερώτηση για εσάς",
   "agentQuestionAnsweredLabel": "Απαντήθηκε",
-  "agentQuestionSubmit": "Υποβολή απάντησης",
   "agentQuestionFreeformHint": "Πληκτρολογήστε την απάντησή σας…",
-  "agentQuestionAnswerLabel": "Η απάντησή σας",
   "agentQuestionProgress": "Ερώτηση {index} από {count}",
   "agentQuestionSkip": "Παράλειψη",
   "agentQuestionSkippedLabel": "Παραλείφθηκε",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Άνοιγμα επεξεργαστή",
   "ideNewTabMenu": "Νέα καρτέλα",
   "ideReviewCode": "Ανασκόπηση κώδικα",
-  "ideRevert": "Επαναφορά",
   "ideRevertConfirmTitle": "Επαναφορά αλλαγών",
-  "ideRevertConfirmMessage": "Επαναφορά {count, plural, one{1 αρχείου} other{{count} αρχείων}} στο HEAD; Αυτό απορρίπτει τις αλλαγές του worktree.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Επαναφορά",
-  "ideRevertConfirmCancel": "Ακύρωση",
   "ideRevertUntracked": "Τα μη παρακολουθούμενα αρχεία δεν μπορούν να επαναφερθούν",
   "ideRevertFailed": "Δεν ήταν δυνατή η επαναφορά των αρχείων. Το worktree της συνομιλίας μπορεί να μην είναι διαθέσιμο.",
   "ideRevertSomeSkipped": "{count, plural, one{1 αρχείο} other{{count} αρχεία}} δεν μπόρεσαν να επαναφερθούν (μη παρακολουθούμενα).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Προβολή πηγής",
   "ideSearchMatchCase": "Διάκριση πεζών/κεφαλαίων",
   "ideSearchWholeWord": "Ολόκληρη λέξη",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Base URL (προαιρετικά)",
-  "customProvidersDescription": "Οποιοδήποτε συμβατό με OpenAI ή Anthropic endpoint — Ollama, LM Studio, vLLM ή ιδιωτική εγκατάσταση — με προαιρετικό κλειδί API.",
   "addProvider": "Προσθήκη παρόχου",
   "noCustomProviders": "Δεν υπάρχουν ακόμη προσαρμοσμένοι πάροχοι.",
   "providerNameLabel": "Όνομα",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "π.χ. ⁨docker compose -p $CC_SPACE_ID down⁩",
   "repoScriptsRecentRuns": "Πρόσφατες εκτελέσεις",
   "repoScriptsNoRuns": "Δεν υπάρχουν ακόμη εκτελέσεις",
-  "repoScriptsOutput": "Έξοδος",
   "repoScriptsSaved": "Τα σενάρια αποθηκεύτηκαν",
   "repoScriptsRunKindSetup": "Ρύθμιση",
   "repoScriptsRunKindArchive": "Αρχειοθέτηση",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Κανένας πάροχος δεν είναι συνδεδεμένος, οπότε ο ενσωματωμένος χρόνος εκτέλεσης πρακτόρων δεν έχει πού να τρέξει. Προσθέστε ένα κλειδί API ή συνδεθείτε σε έναν παρακάτω.",
   "providersFilterHint": "Φιλτράρισμα παρόχων",
-  "providersFacetNeedsSetup": "Χρειάζεται ρύθμιση",
-  "providersFacetCustom": "Προσαρμοσμένο",
   "providersNoneMatch": "Τίποτα δεν ταιριάζει με αυτό το φίλτρο",
   "providerDeniedHereTitle": "Απορρίφθηκε σε αυτόν τον χώρο εργασίας",
   "providerDeniedHereBody": "Οι πράκτορες εδώ δεν μπορούν να χρησιμοποιήσουν αυτόν τον πάροχο, παρότι είναι συνδεδεμένος. Οι άλλοι χώροι εργασίας δεν επηρεάζονται.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Φιλτράρισμα μοντέλων",
   "adaptersNoneReadyNote": "Κανένα από τα καταλογογραφημένα CLI εκτελεστών δεν βρέθηκε σε αυτό το μηχάνημα. Εγκαταστήστε ένα και μετά ανανεώστε.",
   "adaptersFilterHint": "Φιλτράρισμα εκτελεστών",
-  "adaptersFacetReady": "Έτοιμο",
-  "adaptersFacetMissing": "Λείπει",
   "adaptersLaunchGroup": "Εκκίνηση",
   "adaptersLaunchGroupDescription": "Τι δίνεται σε αυτόν τον εκτελεστή όταν τον ξεκινά ένας πράκτορας. Ορίστε τα πριν την εγκατάσταση του CLI αν θέλετε.",
   "adaptersEnvNone": "Κανένα ορισμένο",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Τέσσερα μέρη που δείχνουν τι κάνει πραγματικά η εφαρμογή.",
   "demoTourSkip": "Παράλειψη",
   "demoTourStarRepo": "Αστέρι στο GitHub",
-  "demoTourDone": "Τέλος",
   "demoTourOpen": "Άνοιγμα",
   "demoTourSpacesTitle": "Μιλήστε σε έναν πράκτορα",
   "demoTourSpacesBody": "Στείλτε μήνυμα σε έναν χώρο και παρακολουθήστε μια εκτέλεση να ρέει — σκέψη, κλήσεις εργαλείων και κόστος, ακριβώς όπως αποδίδεται μια πραγματική εκτέλεση.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Τα εισιτήρια, οι εκκρεμότητες και τα σχέδια συνδέονται με τις ίδιες συνομιλίες που κάνουν οι πράκτορες.",
   "demoTourInboxTitle": "Δείτε όλη τη λειτουργία",
   "demoTourInboxBody": "Κάθε ειδοποίηση από κάθε πυλώνα καταλήγει σε ένα εισερχόμενα — ανασκοπήσεις, εισιτήρια, εκτελέσεις και συσκέψεις.",
-  "demoSessionEndingSoon": "Αυτή η συνεδρία demo τελειώνει σε {minutes} λεπτά.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Αυτή η συνεδρία demo έχει τελειώσει. Επαναφορτώστε τη σελίδα για να ξεκινήσετε νέα.",
   "demoUnavailableTitle": "Δεν είναι διαθέσιμο στο demo",
   "demoUnavailableTerminal": "Ένα τερματικό τρέχει πραγματικό κέλυφος στον κεντρικό υπολογιστή του διακομιστή. Το demo δεν έχει καθόλου επιφάνεια εκτέλεσης — αυτό το καθιστά ασφαλές να ανοιχτεί στο κοινό.",
   "demoUnavailableRig": "Ένα απομονωμένο περιβάλλον είναι μια αναλώσιμη εικονική μηχανή που οδηγεί ένας πράκτορας. Το demo δεν εκκινεί καμία: ένα δημόσιο endpoint που μπορεί να ξεκινήσει VM δεν είναι demo.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Αρχείο βάσης δεδομένων χώρου εργασίας",
   "backupImportSourceDescription": "Ένα αρχείο .db που μπορεί να διαβάσει ο διακομιστής. Οι διαδρομές επιλύονται στον κεντρικό υπολογιστή του διακομιστή, όχι σε αυτή τη συσκευή.",
-  "backupImportChooseFile": "Επιλογή αρχείου",
   "backupImportDone": "Εισήχθη στο {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

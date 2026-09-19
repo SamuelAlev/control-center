@@ -1,14 +1,9 @@
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
-import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/utils/diff_palette.dart';
 import 'package:control_center/shared/syntax/cc_shiki_theme.dart';
 import 'package:control_center/shared/syntax/shiki_tokenizers.dart';
 import 'package:flutter/widgets.dart';
 import 'package:shiki_flutter/engine.dart' show ThemedToken;
-
-/// Color used as the base text color in diff content lines.
-Color diffCodeColor(BuildContext context) =>
-    (context.designSystem ?? DesignSystemTokens.light()).textPrimary;
 
 /// Synchronously tokenizes [text] with shiki and returns one [DiffToken] list
 /// per line, coloured by the CC theme for [dark]. Exposed so widgets that

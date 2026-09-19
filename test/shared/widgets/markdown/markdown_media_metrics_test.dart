@@ -238,7 +238,6 @@ void main() {
         urlWithJwt({'exp': epoch(now.subtract(const Duration(minutes: 10)))}),
       );
       expect(hasExpiredAttachmentJwt(uri, now: now), isTrue);
-      expect(needsAttachmentCredentials(uri, now: now), isTrue);
     });
 
     test('a malformed percent-escape anywhere in the query cannot throw', () {
@@ -287,7 +286,6 @@ void main() {
         urlWithJwt({'exp': epoch(now.add(const Duration(minutes: 4)))}),
       );
       expect(hasExpiredAttachmentJwt(uri, now: now), isFalse);
-      expect(needsAttachmentCredentials(uri, now: now), isFalse);
     });
 
     test('a long-dead token is refused', () {

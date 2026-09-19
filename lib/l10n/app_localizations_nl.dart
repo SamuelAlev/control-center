@@ -1640,12 +1640,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get import => 'Importeren';
 
   @override
-  String get sortByStatus => 'Status';
-
-  @override
-  String get sortByName => 'Naam';
-
-  @override
   String get noMatchingAgents => 'Geen agenten komen overeen met je filter';
 
   @override
@@ -2688,9 +2682,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get assignees => 'TOEGEWEZENEN';
 
   @override
-  String get attachFiles => 'Bestanden bijvoegen';
-
-  @override
   String get attachImage => 'Afbeelding bijvoegen';
 
   @override
@@ -2807,9 +2798,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get closeEsc => 'Sluiten (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Sneltoetsen sluiten';
 
   @override
   String get closeReader => 'Lezer sluiten';
@@ -3942,9 +3930,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get navSettings => 'Instellingen';
 
   @override
-  String get navigateLabel => 'Navigeren';
-
-  @override
   String networkBlockCount(int count) {
     return '$count netwerkblokkades';
   }
@@ -3958,9 +3943,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get newFact => 'Nieuw feit';
-
-  @override
-  String get newLabel => 'Nieuw';
 
   @override
   String get newPolicy => 'Nieuwe beleidsregel';
@@ -4083,9 +4065,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Niet geconfigureerd.';
-
-  @override
-  String get notDetected => 'Niet gedetecteerd';
 
   @override
   String get notFoundLabel => 'Niet gevonden';
@@ -4339,9 +4318,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get notificationsMuteRepo => 'Deze repository dempen';
 
   @override
-  String get notificationsUnmuteRepo => 'Demping opheffen';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center kan Linux-containers gebruiken om de uitvoering van agenten te isoleren.';
 
@@ -4352,9 +4328,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox is niet beschikbaar op dit platform. De uitvoering van agenten zal zonder isolatie plaatsvinden.';
-
-  @override
-  String get openApplicationSettings => 'Toepassingsinstellingen openen';
 
   @override
   String get openArticlesInApp => 'Artikelen in app openen';
@@ -4782,9 +4755,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get variableValue => 'Waarde';
 
   @override
-  String get savingChanges => 'Wijzigingen opslaan…';
-
-  @override
   String get savingEllipsis => 'Opslaan…';
 
   @override
@@ -4793,10 +4763,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Geen overeenkomende pull requests';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Geen open PR\'s komen overeen met je zoekopdracht. Probeer andere termen of wis de zoekopdracht.';
 
   @override
   String get searchFactsHint => 'Feiten zoeken...';
@@ -4853,9 +4819,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get selectConversation => 'Een gesprek selecteren';
-
-  @override
-  String get selectEffortLevel => 'Inspanningsniveau selecteren';
 
   @override
   String get selectLabel => 'Selecteren';
@@ -4917,9 +4880,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String signedInAs(String username) {
     return 'Ingelogd als $username.';
   }
-
-  @override
-  String get skillEditor => 'Vaardighedeneditor';
 
   @override
   String get skillNameRequired => 'Vaardigheidsnaam is vereist.';
@@ -6221,9 +6181,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Nog geen pipeline-templates. Maak er een om te beginnen.';
 
   @override
-  String get pipelineTemplateIdLabel => 'Template-ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Ingebouwd';
 
   @override
@@ -6233,9 +6190,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Pipeline-template $name verwijderen? Dit kan niet ongedaan worden gemaakt.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Pipeline bewerken';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6250,10 +6204,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Sleep een item naar het canvas om een node toe te voegen.';
-
-  @override
-  String get editorDragHint =>
-      'Sleep vanuit de bibliotheek, klik een node om te bewerken';
 
   @override
   String get editorEmptyCanvas =>
@@ -6389,13 +6339,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Uitgevoerd met bash -c. GITHUB_TOKEN is ingesteld. Placeholders worden vóór uitvoering vervangen.';
 
   @override
-  String get nodeConfigTriggers => 'Geactiveerd door';
-
-  @override
-  String get nodeConfigNoUpstream =>
-      'Er zijn geen andere nodes om vanaf te verbinden.';
-
-  @override
   String get nodeConfigRouteKeys => 'Routesleutels';
 
   @override
@@ -6468,38 +6411,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get conditionDefaultCase => 'Standaardgeval';
 
   @override
-  String get triggerPanelTitle => 'Triggers';
-
-  @override
-  String get triggerPanelHelp => 'Wat deze pipeline start.';
-
-  @override
   String get triggerManualHelp =>
       'Toon op de uitvoerpagina en start handmatig.';
 
   @override
-  String get triggerSectionAutomatic => 'Automatische triggers';
-
-  @override
-  String get triggerAddButton => 'Trigger toevoegen';
-
-  @override
-  String get triggerNoneYet => 'Nog geen automatische triggers.';
-
-  @override
-  String get triggerAddDialogTitle => 'Trigger toevoegen';
-
-  @override
-  String get triggerKindLabel => 'Triggertype';
-
-  @override
-  String get triggerKindEvent => 'Bij een gebeurtenis';
-
-  @override
   String get triggerKindSchedule => 'Volgens een schema';
-
-  @override
-  String get triggerKindWebhook => 'Via een webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Planning (cron of every:seconden)';
@@ -6545,13 +6461,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhookpad';
-
-  @override
-  String get triggerEventFieldLabel => 'Gebeurtenis';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Alle beschikbare gebeurtenissen zijn al gekoppeld.';
 
   @override
   String get triggerMatchStatusLabel => 'Alleen wanneer de status is';
@@ -7032,13 +6941,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Beantwoord';
 
   @override
-  String get agentQuestionSubmit => 'Antwoord versturen';
-
-  @override
   String get agentQuestionFreeformHint => 'Typ je antwoord…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Jouw antwoord';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8625,27 +8528,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get ideReviewCode => 'Code beoordelen';
 
   @override
-  String get ideRevert => 'Terugdraaien';
-
-  @override
   String get ideRevertConfirmTitle => 'Wijzigingen terugdraaien';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count bestanden',
-      one: '1 bestand',
-    );
-    return '$_temp0 terugdraaien naar HEAD? Dit verwijdert werkboom-wijzigingen.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Terugdraaien';
-
-  @override
-  String get ideRevertConfirmCancel => 'Annuleren';
 
   @override
   String get ideRevertUntracked =>
@@ -8665,9 +8548,6 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0 kon(den) niet worden teruggezet (niet-gevolgd).';
   }
-
-  @override
-  String get ideViewSource => 'Bron weergeven';
 
   @override
   String get ideSearchMatchCase => 'Hoofdlettergevoelig';
@@ -9200,10 +9080,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get providerBaseUrlHint => 'Basis-URL (optioneel)';
 
   @override
-  String get customProvidersDescription =>
-      'Elk OpenAI- of Anthropic-compatibel endpoint — Ollama, LM Studio, vLLM of een privé-implementatie — met een optionele API-sleutel.';
-
-  @override
   String get addProvider => 'Provider toevoegen';
 
   @override
@@ -9320,9 +9196,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Nog geen uitvoeringen';
-
-  @override
-  String get repoScriptsOutput => 'Uitvoer';
 
   @override
   String get repoScriptsSaved => 'Scripts opgeslagen';
@@ -13154,12 +13027,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get providersFilterHint => 'Providers filteren';
 
   @override
-  String get providersFacetNeedsSetup => 'Nog instellen';
-
-  @override
-  String get providersFacetCustom => 'Eigen';
-
-  @override
   String get providersNoneMatch => 'Niets komt overeen met dit filter';
 
   @override
@@ -13195,12 +13062,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Runners filteren';
-
-  @override
-  String get adaptersFacetReady => 'Klaar';
-
-  @override
-  String get adaptersFacetMissing => 'Ontbrekend';
 
   @override
   String get adaptersLaunchGroup => 'Starten';
@@ -14096,9 +13957,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get demoTourStarRepo => 'Een ster geven op GitHub';
 
   @override
-  String get demoTourDone => 'Klaar';
-
-  @override
   String get demoTourOpen => 'Openen';
 
   @override
@@ -14128,15 +13986,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Elke melding van elke pijler belandt in één postvak — reviews, tickets, runs en vergaderingen.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Deze demosessie eindigt over $minutes minuten.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Deze demosessie is beëindigd. Herlaad de pagina om een nieuwe te starten.';
 
   @override
   String get demoUnavailableTitle => 'Niet beschikbaar in de demo';
@@ -14307,9 +14156,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Een .db-bestand dat de server kan lezen. Paden worden op de serverhost opgelost, niet op dit apparaat.';
-
-  @override
-  String get backupImportChooseFile => 'Bestand kiezen';
 
   @override
   String backupImportDone(String name) {

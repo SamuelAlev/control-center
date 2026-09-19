@@ -49,7 +49,7 @@ void main() {
           const TabDragData(sourceLeafId: 'leaf-0', tabIndex: 2, tab: browser),
         );
 
-        final restored = decodeEditorLayout(encodeEditorLayout(ctl));
+        final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl));
         expect(restored, isNotNull);
 
         final root = restored!.root;
@@ -93,7 +93,7 @@ void main() {
         ),
       ]);
 
-      final tabs = _tabsOf(decodeEditorLayout(encodeEditorLayout(ctl))!.root);
+      final tabs = _tabsOf(messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl))!.root);
       expect(tabs.map((t) => t.kind), [
         MessagingTabKinds.chat,
         MessagingTabKinds.plan,
@@ -112,11 +112,11 @@ void main() {
       ]);
       (ctl.root as EditorLeafNode).controller.selectedIndex = 2;
 
-      final encoded = encodeEditorLayout(ctl);
+      final encoded = messagingLayoutCodec.encode(ctl);
       expect(encoded, isNot(contains('"sel"')));
       expect(encoded, isNot(contains('"active"')));
 
-      final restored = decodeEditorLayout(encoded)!;
+      final restored = messagingLayoutCodec.decode(encoded)!;
       expect((restored.root as EditorLeafNode).controller.selectedIndex, 0);
     });
 
@@ -129,7 +129,7 @@ void main() {
         ),
       ]);
 
-      final restored = decodeEditorLayout(encodeEditorLayout(ctl));
+      final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl));
       final tab = restored!.activeLeaf.controller.tabs.single;
       expect(tab.args['surface'], 'ios');
       expect(tab.args['slot'], 's2');
@@ -143,7 +143,7 @@ void main() {
         _chat('c'),
         const EditorTab(kind: MessagingTabKinds.fileDiff, label: 'diff'),
       ]);
-      final restored = decodeEditorLayout(encodeEditorLayout(ctl))!;
+      final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl))!;
       final tabs = _tabsOf(restored.root);
       expect(tabs.map((t) => t.kind), [MessagingTabKinds.chat]);
     });
@@ -152,23 +152,23 @@ void main() {
       final ctl = _single([
         const EditorTab(kind: MessagingTabKinds.fileDiff, label: 'diff'),
       ]);
-      expect(decodeEditorLayout(encodeEditorLayout(ctl)), isNull);
+      expect(messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl)), isNull);
     });
   });
 
   group('robust decode', () {
     test('garbage input returns null', () {
-      expect(decodeEditorLayout('not json'), isNull);
-      expect(decodeEditorLayout('{}'), isNull);
-      expect(decodeEditorLayout('{"v": 999, "root": {}}'), isNull);
-      expect(decodeEditorLayout('[]'), isNull);
+      expect(messagingLayoutCodec.decode('not json'), isNull);
+      expect(messagingLayoutCodec.decode('{}'), isNull);
+      expect(messagingLayoutCodec.decode('{"v": 999, "root": {}}'), isNull);
+      expect(messagingLayoutCodec.decode('[]'), isNull);
     });
 
     test('a chat tab missing its spaceId is dropped', () {
       const json =
           '{"v":1,"root":{"t":"leaf","tabs":['
           '{"kind":"chat","label":"Chat","args":{}}]}}';
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
   });
 
@@ -189,7 +189,7 @@ void main() {
     test('round-trips the kind, every arg and the dedupe key', () {
       final ctl = _single([activity()]);
 
-      final restored = decodeEditorLayout(encodeEditorLayout(ctl))!;
+      final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl))!;
       final tab = _tabsOf(restored.root).single;
 
       expect(tab.kind, MessagingTabKinds.agentActivity);
@@ -207,7 +207,7 @@ void main() {
         activity(),
       ]);
 
-      final restored = decodeEditorLayout(encodeEditorLayout(ctl))!;
+      final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl))!;
 
       expect(_tabsOf(restored.root).map((t) => t.kind), [
         MessagingTabKinds.agentActivity,
@@ -220,7 +220,7 @@ void main() {
           '{"kind":"agentActivity","label":"scout","args":'
           '{"workspaceId":"ws-1","spaceId":"c-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
 
     test('a tab missing its workspaceId is dropped', () {
@@ -229,7 +229,7 @@ void main() {
           '{"kind":"agentActivity","label":"scout","args":'
           '{"spaceId":"c-1","runId":"run-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
 
     test('a tab missing its spaceId is dropped', () {
@@ -238,7 +238,7 @@ void main() {
           '{"kind":"agentActivity","label":"scout","args":'
           '{"workspaceId":"ws-1","runId":"run-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
   });
 
@@ -252,7 +252,7 @@ void main() {
         ),
       ]);
 
-      final restored = decodeEditorLayout(encodeEditorLayout(ctl))!;
+      final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl))!;
       final tab = _tabsOf(restored.root).single;
 
       expect(tab.kind, MessagingTabKinds.artifact);
@@ -268,7 +268,7 @@ void main() {
           '{"kind":"artifact","label":"Rollout plan","args":'
           '{"workspaceId":"ws-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
 
     test('a tab missing its workspaceId is dropped', () {
@@ -279,7 +279,7 @@ void main() {
           '{"kind":"artifact","label":"Rollout plan","args":'
           '{"workProductId":"wp-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
   });
 
@@ -294,7 +294,7 @@ void main() {
         ),
       ]);
 
-      final restored = decodeEditorLayout(encodeEditorLayout(ctl))!;
+      final restored = messagingLayoutCodec.decode(messagingLayoutCodec.encode(ctl))!;
       final tab = _tabsOf(restored.root).single;
 
       expect(tab.kind, MessagingTabKinds.contextExplorer);
@@ -311,7 +311,7 @@ void main() {
           '{"kind":"contextExplorer","label":"Context","args":'
           '{"workspaceId":"ws-1","spaceId":"sp-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
 
     test('a tab missing its workspaceId is dropped', () {
@@ -322,7 +322,7 @@ void main() {
           '{"kind":"contextExplorer","label":"Context","args":'
           '{"spaceId":"sp-1","agentId":"ag-1"}}]}}';
 
-      expect(decodeEditorLayout(json), isNull);
+      expect(messagingLayoutCodec.decode(json), isNull);
     });
   });
 }

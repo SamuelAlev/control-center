@@ -217,19 +217,6 @@ class VisualDiffSnapshot {
     if (headSha != null) 'headSha': headSha,
   };
 
-  /// Returns a copy with a new [status] (used by the approve gate).
-  VisualDiffSnapshot withStatus(VisualDiffStatus status) => VisualDiffSnapshot(
-    id: id,
-    workspaceId: workspaceId,
-    repoId: repoId,
-    prExternalId: prExternalId,
-    componentKey: componentKey,
-    componentTitle: componentTitle,
-    status: status,
-    variants: variants,
-    headSha: headSha,
-  );
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||

@@ -217,15 +217,6 @@ void main() {
     });
   });
 
-  group('ReviewAction enum', () {
-    test('has three values', () {
-      expect(ReviewAction.values, hasLength(3));
-      expect(ReviewAction.values, contains(ReviewAction.approve));
-      expect(ReviewAction.values, contains(ReviewAction.requestChanges));
-      expect(ReviewAction.values, contains(ReviewAction.comment));
-    });
-  });
-
   group('EmptyPrReviewRepository', () {
     test('watchPullRequest emits null', () async {
       const repo = EmptyPrReviewRepository();
@@ -417,7 +408,7 @@ void main() {
       );
       const b = (
         workspaceId: 'ws',
-        repoFullName: 'controlcenter/ffy-cli',
+        repoFullName: 'controlcenter/repo-b',
         number: 7,
       );
       expect(a == b, isFalse);

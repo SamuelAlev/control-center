@@ -50,15 +50,6 @@ bool isStartingSoon(
   return start.isAfter(now.subtract(grace)) && start.isBefore(now.add(window));
 }
 
-/// Whether [event] overlaps the day [day] (date-only), for agenda grouping.
-bool occursOnDay(CalendarEvent event, DateTime day) {
-  final dayStart = dayKey(day);
-  final dayEnd = dayStart.add(const Duration(days: 1));
-  final start = event.startTime.toLocal();
-  final end = event.endTime.toLocal();
-  return start.isBefore(dayEnd) && end.isAfter(dayStart);
-}
-
 /// Groups [events] by their start day (date-only, local), each bucket sorted by
 /// start time. Returns an ordered map (earliest day first).
 Map<DateTime, List<CalendarEvent>> groupEventsByDay(

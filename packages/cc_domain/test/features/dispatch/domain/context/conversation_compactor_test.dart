@@ -163,26 +163,4 @@ void main() {
       expect(summary, contains('next task'));
     });
   });
-
-  group('buildCompactionUserPrompt', () {
-    test('wraps the prior summary in a previous-summary anchor', () {
-      final prompt = buildCompactionUserPrompt(
-        CompactionInput(
-          messages: [_user('hi')],
-          previousSummary: 'old summary',
-        ),
-      );
-      expect(prompt, contains('<previous-summary>'));
-      expect(prompt, contains('old summary'));
-      expect(prompt, contains('<conversation-history>'));
-    });
-
-    test('asks for a fresh summary when there is no prior', () {
-      final prompt = buildCompactionUserPrompt(
-        CompactionInput(messages: [_user('hi')]),
-      );
-      expect(prompt, isNot(contains('<previous-summary>')));
-      expect(prompt, contains('Create an anchored summary'));
-    });
-  });
 }

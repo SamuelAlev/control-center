@@ -1641,12 +1641,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get import => 'Importera';
 
   @override
-  String get sortByStatus => 'Status';
-
-  @override
-  String get sortByName => 'Namn';
-
-  @override
   String get noMatchingAgents => 'Inga agenter matchar ditt filter';
 
   @override
@@ -2689,9 +2683,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get assignees => 'Tilldelade';
 
   @override
-  String get attachFiles => 'Bifoga filer';
-
-  @override
   String get attachImage => 'Bifoga bild';
 
   @override
@@ -2807,9 +2798,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get closeEsc => 'Stäng (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Stäng';
 
   @override
   String get closeReader => 'Stäng läsaren';
@@ -3934,9 +3922,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get navSettings => 'Inställningar';
 
   @override
-  String get navigateLabel => 'Navigera';
-
-  @override
   String networkBlockCount(int count) {
     return '$count nätverksblockeringar';
   }
@@ -3950,9 +3935,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get newFact => 'Ny fakta';
-
-  @override
-  String get newLabel => 'Ny';
 
   @override
   String get newPolicy => 'Ny policy';
@@ -4072,9 +4054,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Inte konfigurerad.';
-
-  @override
-  String get notDetected => 'Inte upptäckt';
 
   @override
   String get notFoundLabel => 'Hittades inte';
@@ -4326,9 +4305,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get notificationsMuteRepo => 'Tysta det här arkivet';
 
   @override
-  String get notificationsUnmuteRepo => 'Sluta tysta det här arkivet';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center kan använda Linux-containrar för att isolera agentkörning.';
 
@@ -4339,9 +4315,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandlåda saknas på den här plattformen. Agentkörning sker utan isolering.';
-
-  @override
-  String get openApplicationSettings => 'Öppna appinställningar';
 
   @override
   String get openArticlesInApp => 'Öppna artiklar i appen';
@@ -4765,9 +4738,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get variableValue => 'Värde';
 
   @override
-  String get savingChanges => 'Sparar ändringar…';
-
-  @override
   String get savingEllipsis => 'Sparar…';
 
   @override
@@ -4776,10 +4746,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Inga matchande pull requests';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Inga öppna PR:ar matchar din sökning. Prova andra termer eller rensa sökningen.';
 
   @override
   String get searchFactsHint => 'Sök fakta...';
@@ -4836,9 +4802,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get selectConversation => 'Välj ett samtal';
-
-  @override
-  String get selectEffortLevel => 'Välj insatsnivå';
 
   @override
   String get selectLabel => 'Välj';
@@ -4900,9 +4863,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String signedInAs(String username) {
     return 'Inloggad som $username.';
   }
-
-  @override
-  String get skillEditor => 'Färdighetsredigerare';
 
   @override
   String get skillNameRequired => 'Färdighetsnamn krävs.';
@@ -6205,9 +6165,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga pipelinemallar ännu. Skapa en för att komma igång.';
 
   @override
-  String get pipelineTemplateIdLabel => 'Mall-ID';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Inbyggd';
 
   @override
@@ -6217,9 +6174,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Ta bort pipelinemallen $name? Det går inte att ångra.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Redigera pipeline';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6234,10 +6188,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Dra en post till duken för att lägga till en nod.';
-
-  @override
-  String get editorDragHint =>
-      'Dra från biblioteket, klicka på en nod för att redigera';
 
   @override
   String get editorEmptyCanvas => 'Dra en nod från biblioteket för att börja.';
@@ -6372,12 +6322,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Körs med bash -c. GITHUB_TOKEN är satt. Platshållare ersätts före körning.';
 
   @override
-  String get nodeConfigTriggers => 'Triggrar från';
-
-  @override
-  String get nodeConfigNoUpstream => 'Inga andra noder att koppla från.';
-
-  @override
   String get nodeConfigRouteKeys => 'Ruttnycklar';
 
   @override
@@ -6450,37 +6394,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get conditionDefaultCase => 'Standardfall';
 
   @override
-  String get triggerPanelTitle => 'Triggrar';
-
-  @override
-  String get triggerPanelHelp => 'Vad som startar den här pipelinen.';
-
-  @override
   String get triggerManualHelp => 'Visa på körningssidan och starta för hand.';
 
   @override
-  String get triggerSectionAutomatic => 'Automatiska triggrar';
-
-  @override
-  String get triggerAddButton => 'Lägg till trigger';
-
-  @override
-  String get triggerNoneYet => 'Inga automatiska triggrar ännu.';
-
-  @override
-  String get triggerAddDialogTitle => 'Lägg till trigger';
-
-  @override
-  String get triggerKindLabel => 'Triggertyp';
-
-  @override
-  String get triggerKindEvent => 'Vid en händelse';
-
-  @override
   String get triggerKindSchedule => 'Enligt schema';
-
-  @override
-  String get triggerKindWebhook => 'Via en webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Schema (cron eller every:seconds)';
@@ -6526,13 +6443,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook-sökväg';
-
-  @override
-  String get triggerEventFieldLabel => 'Händelse';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Alla tillgängliga händelser är redan kopplade.';
 
   @override
   String get triggerMatchStatusLabel => 'Bara när statusen är';
@@ -7011,13 +6921,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Besvarad';
 
   @override
-  String get agentQuestionSubmit => 'Skicka svar';
-
-  @override
   String get agentQuestionFreeformHint => 'Skriv ditt svar…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Ditt svar';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8597,27 +8501,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get ideReviewCode => 'Granska kod';
 
   @override
-  String get ideRevert => 'Ångra';
-
-  @override
   String get ideRevertConfirmTitle => 'Ångra ändringar';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filer',
-      one: '1 fil',
-    );
-    return 'Återställ $_temp0 till HEAD? Det kastar worktree-ändringar.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Ångra';
-
-  @override
-  String get ideRevertConfirmCancel => 'Avbryt';
 
   @override
   String get ideRevertUntracked => 'Ospårade filer kan inte återställas';
@@ -8636,9 +8520,6 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0 kunde inte återställas (ospårade).';
   }
-
-  @override
-  String get ideViewSource => 'Visa källa';
 
   @override
   String get ideSearchMatchCase => 'Matcha skiftläge';
@@ -9171,10 +9052,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get providerBaseUrlHint => 'Bas-URL (valfritt)';
 
   @override
-  String get customProvidersDescription =>
-      'Valfri OpenAI- eller Anthropic-kompatibel endpoint – Ollama, LM Studio, vLLM eller en privat installation – med en valfri API-nyckel.';
-
-  @override
   String get addProvider => 'Lägg till leverantör';
 
   @override
@@ -9291,9 +9168,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Inga körningar ännu';
-
-  @override
-  String get repoScriptsOutput => 'Utdata';
 
   @override
   String get repoScriptsSaved => 'Skripten sparades';
@@ -13119,12 +12993,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get providersFilterHint => 'Filtrera leverantörer';
 
   @override
-  String get providersFacetNeedsSetup => 'Behöver konfigureras';
-
-  @override
-  String get providersFacetCustom => 'Egna';
-
-  @override
   String get providersNoneMatch => 'Inget matchar det här filtret';
 
   @override
@@ -13161,12 +13029,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Filtrera körare';
-
-  @override
-  String get adaptersFacetReady => 'Redo';
-
-  @override
-  String get adaptersFacetMissing => 'Saknas';
 
   @override
   String get adaptersLaunchGroup => 'Start';
@@ -14058,9 +13920,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get demoTourStarRepo => 'Stjärnmärk på GitHub';
 
   @override
-  String get demoTourDone => 'Klar';
-
-  @override
   String get demoTourOpen => 'Öppna';
 
   @override
@@ -14090,15 +13949,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Varje avisering från varje pelare landar i en inkorg – granskningar, ärenden, körningar och möten.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Den här demosessionen tar slut om $minutes minuter.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Den här demosessionen har tagit slut. Läs in sidan igen för att starta en ny.';
 
   @override
   String get demoUnavailableTitle => 'Inte tillgängligt i demon';
@@ -14269,9 +14119,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'En .db-fil servern kan läsa. Sökvägar löses på servervärden, inte på den här enheten.';
-
-  @override
-  String get backupImportChooseFile => 'Välj fil';
 
   @override
   String backupImportDone(String name) {

@@ -28,7 +28,6 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/activity_entry.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/core/domain/ports/notification_preferences_port.dart';
-import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/core/domain/ports/run_transcript_relay_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
@@ -39,15 +38,11 @@ import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
-import 'package:cc_domain/core/domain/services/activity_logger.dart';
 import 'package:cc_domain/core/domain/services/agent_mention_parser.dart';
-import 'package:cc_domain/core/domain/services/memory_access_policy.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_port.dart';
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
 import 'package:cc_domain/features/fonts/fonts.dart';
-import 'package:cc_domain/features/governance/domain/repositories/approval_repository.dart';
-import 'package:cc_domain/features/governance/domain/repositories/goal_repository.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/voice_profile_repository.dart';
 import 'package:cc_domain/features/meetings/domain/services/meeting_audio_capture_port.dart';
@@ -75,7 +70,6 @@ import 'package:cc_domain/features/model_routing/domain/services/model_catalog_s
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/core/notifications/notification_preferences.dart';
 import 'package:control_center/core/notifications/notification_sound_service.dart';
-import 'package:control_center/core/providers/event_bus_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/providers/sync_engine_provider.dart';
@@ -124,11 +118,7 @@ final runTranscriptRelayPortProvider = Provider<RunTranscriptRelayPort>((ref) {
   return RpcAgentRunLogRepository(ref.watch(rpcClientProvider));
 });
 
-/// Provides the governance [GoalRepository] the UI reads through (read-only;
-/// goal writes run server-side via the MCP tools — PRD 09).
-final goalRepositoryProvider = Provider<GoalRepository>((ref) {
-  return RpcGoalRepository(ref.watch(rpcClientProvider));
-});
+
 
 /// Provides the durable-goal (`AgentGoalRun`, `/goal` + `/loop`) read/control
 /// surface — the `agentGoalRuns.*` ops. Standalone like
@@ -140,11 +130,6 @@ final agentGoalRunRepositoryProvider = Provider<RpcAgentGoalRunRepository>((
   return RpcAgentGoalRunRepository(ref.watch(rpcClientProvider));
 });
 
-/// Provides the governance [ApprovalRepository] the UI reads through (read-only;
-/// decisions run server-side via the MCP tools — PRD 09).
-final approvalRepositoryProvider = Provider<ApprovalRepository>((ref) {
-  return RpcApprovalRepository(ref.watch(rpcClientProvider));
-});
 
 /// Reads computed agent presence (availability × workload) over RPC, keyed by
 /// agent id — the `agent_presence.forWorkspace` op (PRD 09).
@@ -278,19 +263,9 @@ final voiceProfileRepositoryProvider = Provider<VoiceProfileRepository>((ref) {
 
 // ── Pure UI-domain helpers (web-safe, cc_domain) ─────────────────────────────
 
-/// Provides the [MemoryAccessPolicy] instance.
-final memoryAccessPolicyProvider = Provider<MemoryAccessPolicy>((ref) {
-  return const MemoryAccessPolicy();
-});
-
 /// Provides the [AgentMentionParser] instance.
 final agentMentionParserProvider = Provider<AgentMentionParser>((ref) {
   return const AgentMentionParser();
-});
-
-/// Provides the [ActivityLogger] instance (event-bus driven, web-safe).
-final activityLoggerProvider = Provider<ActivityLogger>((ref) {
-  return ActivityLogger(eventBus: ref.watch(domainEventBusProvider));
 });
 
 // ── VM-backed but UI-read (seamed via provider_bindings.dart) ────────────────
@@ -312,10 +287,6 @@ final processDetectionServiceProvider = Provider<ProcessDetectionPort>(
   buildProcessDetectionService,
 );
 
-/// Provides the [ProcessControlPort] (kill a local agent process on desktop).
-final processControlPortProvider = Provider<ProcessControlPort>(
-  buildProcessControlPort,
-);
 
 /// Provides the [AdapterRepository] (settings → adapters; desktop detection).
 final adapterRepositoryProvider = Provider<AdapterRepository>(

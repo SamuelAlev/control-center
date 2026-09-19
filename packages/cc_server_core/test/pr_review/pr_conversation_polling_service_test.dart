@@ -267,15 +267,15 @@ void main() {
   });
 
   test('comment sweeps skip a suspended owner', () async {
-    gateway.suspendedOwnerLogins = {'frontify'};
+    gateway.suspendedOwnerLogins = {'suspended'};
     associated = [
       const AssociatedPullRequest(
         workspaceId: 'ws-a',
-        repoFullName: 'Frontify/ffy-cli',
+        repoFullName: 'SuspensedOrg/suspended-repo',
         prNumber: 414,
       ),
     ];
-    gateway.setIssue('Frontify', 'ffy-cli', 414, [
+    gateway.setIssue('SuspensedOrg', 'suspended-repo', 414, [
       _issue(11, '@$_botLogin hello?'),
     ]);
 

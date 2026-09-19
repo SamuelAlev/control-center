@@ -20,7 +20,6 @@ import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
-import 'package:cc_domain/features/pr_review/domain/usecases/review_pull_request_use_case.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
@@ -621,25 +620,6 @@ class PrOptimisticReviewStateNotifier
     state = Map.unmodifiable(map);
   }
 }
-
-/// Review action.
-enum ReviewAction {
-  /// Approve.
-  approve,
-
-  /// Request changes.
-  requestChanges,
-
-  /// Comment.
-  comment,
-}
-
-/// Provider for the review pull request use case.
-final reviewPullRequestUseCaseProvider = Provider<ReviewPullRequestUseCase>(
-  (ref) => ReviewPullRequestUseCase(
-    repository: ref.watch(prReviewRepositoryProvider),
-  ),
-);
 
 /// Stream of the review space association for a PR, scoped to the active workspace.
 final reviewSpaceForPrProvider = StreamProvider.autoDispose

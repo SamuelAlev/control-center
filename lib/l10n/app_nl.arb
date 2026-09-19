@@ -566,8 +566,6 @@
   "copyRelativePath": "Relatief pad kopiëren",
   "nameRequired": "Naam is verplicht",
   "import": "Importeren",
-  "sortByStatus": "Status",
-  "sortByName": "Naam",
   "noMatchingAgents": "Geen agenten komen overeen met je filter",
   "watchVideoOn": "Bekijk video op {provider}",
   "@@locale": "nl",
@@ -1054,7 +1052,6 @@
   "askAi": "Ask AI",
   "askAiReviewDescription": "Vraag de AI om deze PR te reviewen",
   "assignees": "TOEGEWEZENEN",
-  "attachFiles": "Bestanden bijvoegen",
   "attachImage": "Afbeelding bijvoegen",
   "attachedAgents": "Gekoppelde agenten",
   "audioInput": "Audio-invoer",
@@ -1113,10 +1110,6 @@
   },
   "close": "Sluiten",
   "closeEsc": "Sluiten (Esc)",
-  "closeKeyboardHint": "Sneltoetsen sluiten",
-  "@closeKeyboardHint": {
-    "description": "Locale string for closeKeyboardHint"
-  },
   "closeReader": "Lezer sluiten",
   "closed": "Gesloten",
   "codeFont": "Codelettertype",
@@ -1896,10 +1889,6 @@
   },
   "navObservability": "Observeerbaarheid",
   "navSettings": "Instellingen",
-  "navigateLabel": "Navigeren",
-  "@navigateLabel": {
-    "description": "Locale string for navigateLabel"
-  },
   "networkBlockCount": "{count} netwerkblokkades",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -1915,7 +1904,6 @@
   "@newFact": {
     "description": "Dialog title for creating a new fact"
   },
-  "newLabel": "Nieuw",
   "newPolicy": "Nieuwe beleidsregel",
   "@newPolicy": {
     "description": "Dialog title for creating a new policy"
@@ -2016,10 +2004,6 @@
     "description": "Not available status label"
   },
   "notConfiguredLabel": "Niet geconfigureerd.",
-  "notDetected": "Niet gedetecteerd",
-  "@notDetected": {
-    "description": "Not detected status label"
-  },
   "notFoundLabel": "Niet gevonden",
   "@notFoundLabel": {
     "description": "Not found status label"
@@ -2304,7 +2288,6 @@
     }
   },
   "notificationsMuteRepo": "Deze repository dempen",
-  "notificationsUnmuteRepo": "Demping opheffen",
   "onboardingLinuxDescription": "Control Center kan Linux-containers gebruiken om de uitvoering van agenten te isoleren.",
   "@onboardingLinuxDescription": {
     "description": "Locale string for onboardingLinuxDescription"
@@ -2317,7 +2300,6 @@
   "@onboardingUnsupportedDescription": {
     "description": "Locale string for onboardingUnsupportedDescription"
   },
-  "openApplicationSettings": "Toepassingsinstellingen openen",
   "openArticlesInApp": "Artikelen in app openen",
   "openInBrowser": "Openen in browser",
   "openedInYourBrowser": "Geopend in je browser.",
@@ -2568,14 +2550,9 @@
   "@variableValue": {
     "description": "Environment variable value label"
   },
-  "savingChanges": "Wijzigingen opslaan…",
-  "@savingChanges": {
-    "description": "Locale string for savingChanges"
-  },
   "savingEllipsis": "Opslaan…",
   "scopeDiffToCommits": "Diff beperken tot commits — Shift-klik voor bereik",
   "noPrsMatchSearch": "Geen overeenkomende pull requests",
-  "noPrsMatchSearchHint": "Geen open PR's komen overeen met je zoekopdracht. Probeer andere termen of wis de zoekopdracht.",
   "searchFactsHint": "Feiten zoeken...",
   "@searchFactsHint": {
     "description": "Search field hint in facts tab"
@@ -2613,7 +2590,6 @@
     "description": "Select an agent"
   },
   "selectConversation": "Een gesprek selecteren",
-  "selectEffortLevel": "Inspanningsniveau selecteren",
   "selectLabel": "Selecteren",
   "selectRunner": "Een runner selecteren",
   "semanticSearch": "Semantisch zoeken",
@@ -2649,7 +2625,6 @@
   },
   "signedIn": "Ingelogd.",
   "signedInAs": "Ingelogd als {username}.",
-  "skillEditor": "Vaardighedeneditor",
   "skillNameRequired": "Vaardigheidsnaam is vereist.",
   "skillSaved": "Vaardigheid \\\"{name}\\\" opgeslagen.",
   "skillsSourcesTab": "Bronnen",
@@ -3613,16 +3588,13 @@
   "pipelineTemplatesSubtitle": "Drag-and-drop-editor voor de pipelines die je agents orkestreren.",
   "pipelineTemplatesNew": "Nieuwe template",
   "pipelineTemplatesEmpty": "Nog geen pipeline-templates. Maak er een om te beginnen.",
-  "pipelineTemplateIdLabel": "Template-ID",
   "pipelineTemplateBuiltInBadge": "Ingebouwd",
   "pipelineTemplateDeleteConfirmTitle": "Template verwijderen?",
   "pipelineTemplateDeleteConfirmBody": "Pipeline-template {name} verwijderen? Dit kan niet ongedaan worden gemaakt.",
-  "pipelineTemplateEditorTitle": "Pipeline bewerken",
   "pipelineTemplateEditorSubtitle": "Sleep node-types vanuit de zijbalk naar het canvas en verbind ze.",
   "unsavedChanges": "Niet-opgeslagen wijzigingen",
   "nodeLibraryTitle": "Node-bibliotheek",
   "nodeLibraryHint": "Sleep een item naar het canvas om een node toe te voegen.",
-  "editorDragHint": "Sleep vanuit de bibliotheek, klik een node om te bewerken",
   "editorEmptyCanvas": "Sleep een node vanuit de bibliotheek om te beginnen.",
   "pipelineWhenThisHappens": "Wanneer dit gebeurt",
   "pipelineDoThis": "Doe dit",
@@ -3659,8 +3631,6 @@
   "nodeConfigOutputKey": "Uitvoersleutel",
   "nodeConfigPrompt": "Prompt-template",
   "nodeConfigPromptHelp": "Gebruik placeholders met dubbele accolades om waarden uit de state in te voegen op runtime.",
-  "nodeConfigTriggers": "Geactiveerd door",
-  "nodeConfigNoUpstream": "Er zijn geen andere nodes om vanaf te verbinden.",
   "nodeConfigAgent": "Agent",
   "nodeConfigAgentHint": "Kies een agent…",
   "nodeConfigScript": "Bash-script",
@@ -3687,17 +3657,8 @@
   "conditionCases": "Gevallen (door komma's gescheiden)",
   "conditionCasesHelp": "Routesleutels om met de waarde te vergelijken, op volgorde.",
   "conditionDefaultCase": "Standaardgeval",
-  "triggerPanelTitle": "Triggers",
-  "triggerPanelHelp": "Wat deze pipeline start.",
   "triggerManualHelp": "Toon op de uitvoerpagina en start handmatig.",
-  "triggerSectionAutomatic": "Automatische triggers",
-  "triggerAddButton": "Trigger toevoegen",
-  "triggerNoneYet": "Nog geen automatische triggers.",
-  "triggerAddDialogTitle": "Trigger toevoegen",
-  "triggerKindLabel": "Triggertype",
-  "triggerKindEvent": "Bij een gebeurtenis",
   "triggerKindSchedule": "Volgens een schema",
-  "triggerKindWebhook": "Via een webhook",
   "triggerScheduleExprLabel": "Planning (cron of every:seconden)",
   "triggerTimezoneLabel": "Tijdzone (optioneel)",
   "triggerCatchUpLabel": "Bij gemiste uitvoeringen",
@@ -3712,8 +3673,6 @@
   "syncHealthFailedStreak": "{count} opeenvolgende fouten",
   "triggerWebhookHelp": "Er wordt een ondertekende webhook-URL gegenereerd. Externe systemen sturen een POST om deze pipeline te starten.",
   "triggerWebhookPathLabel": "Webhookpad",
-  "triggerEventFieldLabel": "Gebeurtenis",
-  "triggerNoMoreEvents": "Alle beschikbare gebeurtenissen zijn al gekoppeld.",
   "triggerMatchStatusLabel": "Alleen wanneer de status is",
   "triggerSummaryNone": "Geen triggers",
   "triggerEverySeconds": "Elke {seconds}s",
@@ -3860,9 +3819,7 @@
   "blockAdsTrackersDescription": "Advertenties, trackers en cookiebanners verwijderen uit artikelen die je in de lezer opent.",
   "agentQuestionHeader": "Vraag voor jou",
   "agentQuestionAnsweredLabel": "Beantwoord",
-  "agentQuestionSubmit": "Antwoord versturen",
   "agentQuestionFreeformHint": "Typ je antwoord…",
-  "agentQuestionAnswerLabel": "Jouw antwoord",
   "agentQuestionProgress": "Vraag {index} van {count}",
   "agentQuestionSkip": "Overslaan",
   "agentQuestionSkippedLabel": "Overgeslagen",
@@ -4317,18 +4274,7 @@
   "ideNewTab": "Editor openen",
   "ideNewTabMenu": "Nieuw tabblad",
   "ideReviewCode": "Code beoordelen",
-  "ideRevert": "Terugdraaien",
   "ideRevertConfirmTitle": "Wijzigingen terugdraaien",
-  "ideRevertConfirmMessage": "{count, plural, =1{1 bestand} other{{count} bestanden}} terugdraaien naar HEAD? Dit verwijdert werkboom-wijzigingen.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Terugdraaien",
-  "ideRevertConfirmCancel": "Annuleren",
   "ideRevertUntracked": "Niet-gevolgde bestanden kunnen niet worden teruggezet",
   "ideRevertFailed": "Kon de bestanden niet terugdraaien. De werkboom van het gesprek is mogelijk niet beschikbaar.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 bestand} other{{count} bestanden}} kon(den) niet worden teruggezet (niet-gevolgd).",
@@ -4339,7 +4285,6 @@
       }
     }
   },
-  "ideViewSource": "Bron weergeven",
   "ideSearchMatchCase": "Hoofdlettergevoelig",
   "ideSearchWholeWord": "Heel woord",
   "ideSearchRegex": "Regex",
@@ -4505,7 +4450,6 @@
   "providerSignOutAccountConfirmTitle": "Afmelden bij dit account?",
   "providerCredentialRemoveConfirmBody": "Agents die {provider} gebruiken, vallen terug op de andere sleutels en accounts. Zijn die op, dan stoppen ze totdat je er een toevoegt.",
   "providerBaseUrlHint": "Basis-URL (optioneel)",
-  "customProvidersDescription": "Elk OpenAI- of Anthropic-compatibel endpoint — Ollama, LM Studio, vLLM of een privé-implementatie — met een optionele API-sleutel.",
   "addProvider": "Provider toevoegen",
   "noCustomProviders": "Nog geen aangepaste providers.",
   "providerNameLabel": "Naam",
@@ -4555,7 +4499,6 @@
   "repoScriptsArchivePlaceholder": "bijv. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Recente uitvoeringen",
   "repoScriptsNoRuns": "Nog geen uitvoeringen",
-  "repoScriptsOutput": "Uitvoer",
   "repoScriptsSaved": "Scripts opgeslagen",
   "repoScriptsRunKindSetup": "Installatie",
   "repoScriptsRunKindArchive": "Archivering",
@@ -7128,8 +7071,6 @@
   },
   "providersNoneConnectedNote": "Er is geen provider verbonden, dus de ingebouwde agent-runtime heeft niets om op te draaien. Voeg hieronder een API-sleutel toe of meld je bij een provider aan.",
   "providersFilterHint": "Providers filteren",
-  "providersFacetNeedsSetup": "Nog instellen",
-  "providersFacetCustom": "Eigen",
   "providersNoneMatch": "Niets komt overeen met dit filter",
   "providerDeniedHereTitle": "Geweigerd in deze werkruimte",
   "providerDeniedHereBody": "Agents hier kunnen deze provider niet gebruiken, ook al is hij verbonden. Andere werkruimtes blijven ongemoeid.",
@@ -7141,8 +7082,6 @@
   "providerModelsFilterHint": "Modellen filteren",
   "adaptersNoneReadyNote": "Geen van de runner-CLI’s uit de catalogus is op deze machine gevonden. Installeer er een en ververs daarna.",
   "adaptersFilterHint": "Runners filteren",
-  "adaptersFacetReady": "Klaar",
-  "adaptersFacetMissing": "Ontbrekend",
   "adaptersLaunchGroup": "Starten",
   "adaptersLaunchGroupDescription": "Wat deze runner meekrijgt wanneer een agent hem start. Je kunt dit ook instellen voordat je de CLI installeert.",
   "adaptersEnvNone": "Geen ingesteld",
@@ -7613,7 +7552,6 @@
   "demoTourSubtitle": "Vier plekken die laten zien wat de app echt doet.",
   "demoTourSkip": "Overslaan",
   "demoTourStarRepo": "Een ster geven op GitHub",
-  "demoTourDone": "Klaar",
   "demoTourOpen": "Openen",
   "demoTourSpacesTitle": "Praat met een agent",
   "demoTourSpacesBody": "Stuur een bericht in een space en zie een run binnenkomen — denkwerk, tool-aanroepen en kosten, precies zoals een echte run.",
@@ -7623,8 +7561,6 @@
   "demoTourTicketsBody": "Tickets, taken en plannen hangen aan dezelfde gesprekken die de agents voeren.",
   "demoTourInboxTitle": "Zie de hele operatie",
   "demoTourInboxBody": "Elke melding van elke pijler belandt in één postvak — reviews, tickets, runs en vergaderingen.",
-  "demoSessionEndingSoon": "Deze demosessie eindigt over {minutes} minuten.",
-  "demoSessionEnded": "Deze demosessie is beëindigd. Herlaad de pagina om een nieuwe te starten.",
   "demoUnavailableTitle": "Niet beschikbaar in de demo",
   "demoUnavailableTerminal": "Een terminal draait een echte shell op de server. De demo heeft helemaal geen uitvoeringsoppervlak — juist daardoor kun je hem veilig openbaar zetten.",
   "demoUnavailableRig": "Een enclosure is een wegwerp-VM die een agent bestuurt. De demo start er geen: een openbaar endpoint dat een VM kan starten is geen demo.",
@@ -7666,7 +7602,6 @@
   "backupImportBody": "Dit vervangt alles in {name} door de inhoud van het bestand. Wat die werkruimte nu bevat, gaat verloren en is niet terug te draaien.",
   "backupImportSourceLabel": "Databasebestand van de werkruimte",
   "backupImportSourceDescription": "Een .db-bestand dat de server kan lezen. Paden worden op de serverhost opgelost, niet op dit apparaat.",
-  "backupImportChooseFile": "Bestand kiezen",
   "backupImportDone": "Geïmporteerd in {name}.",
   "backupDeleteBody": "{name} verdwijnt uit elke lijst en zoekopdracht. Het databasebestand blijft op schijf staan, back-ups nemen het nog steeds mee, en niets maakt die ruimte automatisch vrij.",
   "backupExportDescription": "Zet een kopie op de server, of download er een naar dit apparaat.",

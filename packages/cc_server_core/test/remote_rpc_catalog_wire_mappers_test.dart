@@ -231,14 +231,6 @@ void main() {
       expect(withRead['last_read_at'], '2026-07-01T09:00:00.000');
     });
 
-    test('spaceReadFromWire round-trips', () {
-      expect(spaceReadFromWire({'space_id': 'c-1'}), isNull);
-      expect(
-        spaceReadFromWire({'last_read_at': '2026-07-01T09:00:00.000'}),
-        DateTime(2026, 7, 1, 9),
-      );
-    });
-
     test('agentRunLogToWire flattens cost into token columns', () {
       final w = agentRunLogToWire(
         AgentRunLog(

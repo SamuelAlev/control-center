@@ -566,8 +566,6 @@
   "copyRelativePath": "Copiar ruta relativa",
   "nameRequired": "El nombre es obligatorio",
   "import": "Importar",
-  "sortByStatus": "Estado",
-  "sortByName": "Nombre",
   "noMatchingAgents": "Ningún agente coincide con tu filtro",
   "watchVideoOn": "Ver vídeo en {provider}",
   "@@locale": "es",
@@ -1054,7 +1052,6 @@
   "askAi": "Ask AI",
   "askAiReviewDescription": "Pedir a la IA que revise esta PR",
   "assignees": "ASIGNADOS",
-  "attachFiles": "Adjuntar archivos",
   "attachImage": "Adjuntar imagen",
   "attachedAgents": "Agentes adjuntos",
   "audioInput": "Entrada de audio",
@@ -1113,10 +1110,6 @@
   },
   "close": "Cerrar",
   "closeEsc": "Cerrar (Esc)",
-  "closeKeyboardHint": "Cerrar atajos de teclado",
-  "@closeKeyboardHint": {
-    "description": "Locale string for closeKeyboardHint"
-  },
   "closeReader": "Cerrar lector",
   "closed": "Cerrado",
   "codeFont": "Fuente de código",
@@ -1899,10 +1892,6 @@
   },
   "navObservability": "Observabilidad",
   "navSettings": "Ajustes",
-  "navigateLabel": "Navegar",
-  "@navigateLabel": {
-    "description": "Locale string for navigateLabel"
-  },
   "networkBlockCount": "{count} bloqueos de red",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -1918,7 +1907,6 @@
   "@newFact": {
     "description": "Dialog title for creating a new fact"
   },
-  "newLabel": "Nuevo",
   "newPolicy": "Nueva política",
   "@newPolicy": {
     "description": "Dialog title for creating a new policy"
@@ -2019,10 +2007,6 @@
     "description": "Not available status label"
   },
   "notConfiguredLabel": "No configurado.",
-  "notDetected": "No detectado",
-  "@notDetected": {
-    "description": "Not detected status label"
-  },
   "notFoundLabel": "No encontrado",
   "@notFoundLabel": {
     "description": "Not found status label"
@@ -2307,7 +2291,6 @@
     }
   },
   "notificationsMuteRepo": "Silenciar este repositorio",
-  "notificationsUnmuteRepo": "Reactivar este repositorio",
   "onboardingLinuxDescription": "Control Center puede usar contenedores Linux para aislar la ejecución de agentes.",
   "@onboardingLinuxDescription": {
     "description": "Locale string for onboardingLinuxDescription"
@@ -2320,7 +2303,6 @@
   "@onboardingUnsupportedDescription": {
     "description": "Locale string for onboardingUnsupportedDescription"
   },
-  "openApplicationSettings": "Abrir ajustes de la aplicación",
   "openArticlesInApp": "Abrir artículos en la app",
   "openInBrowser": "Abrir en el navegador",
   "openedInYourBrowser": "Abierto en tu navegador.",
@@ -2565,14 +2547,9 @@
   "@variableValue": {
     "description": "Environment variable value label"
   },
-  "savingChanges": "Guardando cambios...",
-  "@savingChanges": {
-    "description": "Locale string for savingChanges"
-  },
   "savingEllipsis": "Guardando…",
   "scopeDiffToCommits": "Filtrar diff por commits — Mayús-clic para rango",
   "noPrsMatchSearch": "No hay pull requests coincidentes",
-  "noPrsMatchSearchHint": "Ninguna PR abierta coincide con tu búsqueda. Prueba otros términos o borra la búsqueda.",
   "searchFactsHint": "Buscar hechos...",
   "@searchFactsHint": {
     "description": "Search field hint in facts tab"
@@ -2610,7 +2587,6 @@
     "description": "Select an agent"
   },
   "selectConversation": "Seleccionar una conversación",
-  "selectEffortLevel": "Selecciona el nivel de esfuerzo",
   "selectLabel": "Seleccionar",
   "selectRunner": "Seleccionar un ejecutor",
   "semanticSearch": "Búsqueda semántica",
@@ -2646,7 +2622,6 @@
   },
   "signedIn": "Sesión iniciada.",
   "signedInAs": "Sesión iniciada como {username}.",
-  "skillEditor": "Editor de habilidades",
   "skillNameRequired": "El nombre de la habilidad es obligatorio.",
   "skillSaved": "Habilidad \"{name}\" guardada.",
   "skillsSourcesTab": "Fuentes",
@@ -3607,16 +3582,13 @@
   "pipelineTemplatesSubtitle": "Editor arrastrar y soltar para los pipelines que orquestan tus agentes.",
   "pipelineTemplatesNew": "Nueva plantilla",
   "pipelineTemplatesEmpty": "Aún no hay plantillas de pipeline. Crea una para empezar.",
-  "pipelineTemplateIdLabel": "ID de plantilla",
   "pipelineTemplateBuiltInBadge": "Integrada",
   "pipelineTemplateDeleteConfirmTitle": "¿Eliminar plantilla?",
   "pipelineTemplateDeleteConfirmBody": "¿Eliminar la plantilla de pipeline {name}? Esta acción no se puede deshacer.",
-  "pipelineTemplateEditorTitle": "Editar pipeline",
   "pipelineTemplateEditorSubtitle": "Arrastra tipos de nodos desde la barra lateral al lienzo y conéctalos.",
   "unsavedChanges": "Cambios sin guardar",
   "nodeLibraryTitle": "Biblioteca de nodos",
   "nodeLibraryHint": "Arrastra cualquier entrada al lienzo para añadir un nodo.",
-  "editorDragHint": "Arrastra desde la biblioteca, haz clic en un nodo para editarlo",
   "editorEmptyCanvas": "Arrastra un nodo desde la biblioteca para empezar.",
   "pipelineWhenThisHappens": "Cuando ocurra esto",
   "pipelineDoThis": "Hacer esto",
@@ -3653,8 +3625,6 @@
   "nodeConfigOutputKey": "Clave de salida",
   "nodeConfigPrompt": "Plantilla del prompt",
   "nodeConfigPromptHelp": "Usa marcadores con doble llave para insertar valores desde el estado en tiempo de ejecución.",
-  "nodeConfigTriggers": "Activado por",
-  "nodeConfigNoUpstream": "No hay otros nodos para conectar.",
   "nodeConfigAgent": "Agente",
   "nodeConfigAgentHint": "Elige un agente…",
   "nodeConfigScript": "Script bash",
@@ -3681,17 +3651,8 @@
   "conditionCases": "Casos (separados por comas)",
   "conditionCasesHelp": "Claves de ruta para comparar con el valor, en orden.",
   "conditionDefaultCase": "Caso por defecto",
-  "triggerPanelTitle": "Disparadores",
-  "triggerPanelHelp": "Qué inicia este pipeline.",
   "triggerManualHelp": "Mostrar en la página de ejecución e iniciar a mano.",
-  "triggerSectionAutomatic": "Disparadores automáticos",
-  "triggerAddButton": "Añadir disparador",
-  "triggerNoneYet": "Aún no hay disparadores automáticos.",
-  "triggerAddDialogTitle": "Añadir disparador",
-  "triggerKindLabel": "Tipo de disparador",
-  "triggerKindEvent": "Por un evento",
   "triggerKindSchedule": "Según una programación",
-  "triggerKindWebhook": "Mediante un webhook",
   "triggerScheduleExprLabel": "Programación (cron o every:segundos)",
   "triggerTimezoneLabel": "Zona horaria (opcional)",
   "triggerCatchUpLabel": "Si se pierden ejecuciones",
@@ -3706,8 +3667,6 @@
   "syncHealthFailedStreak": "{count} errores consecutivos",
   "triggerWebhookHelp": "Se genera una URL de webhook firmada. Los sistemas externos hacen POST para iniciar este pipeline.",
   "triggerWebhookPathLabel": "Ruta del webhook",
-  "triggerEventFieldLabel": "Evento",
-  "triggerNoMoreEvents": "Todos los eventos disponibles ya están configurados.",
   "triggerMatchStatusLabel": "Solo cuando el estado es",
   "triggerSummaryNone": "Sin disparadores",
   "triggerEverySeconds": "Cada {seconds}s",
@@ -3854,9 +3813,7 @@
   "blockAdsTrackersDescription": "Eliminar anuncios, rastreadores y banners de cookies de los artículos que abras en el lector.",
   "agentQuestionHeader": "Pregunta para ti",
   "agentQuestionAnsweredLabel": "Respondido",
-  "agentQuestionSubmit": "Enviar respuesta",
   "agentQuestionFreeformHint": "Escribe tu respuesta…",
-  "agentQuestionAnswerLabel": "Tu respuesta",
   "agentQuestionProgress": "Pregunta {index} de {count}",
   "agentQuestionSkip": "Omitir",
   "agentQuestionSkippedLabel": "Omitida",
@@ -4311,18 +4268,7 @@
   "ideNewTab": "Abrir editor",
   "ideNewTabMenu": "Nueva pestaña",
   "ideReviewCode": "Revisar código",
-  "ideRevert": "Revertir",
   "ideRevertConfirmTitle": "Revertir cambios",
-  "ideRevertConfirmMessage": "¿Revertir {count, plural, =1{1 archivo} other{{count} archivos}} a HEAD? Esto descarta los cambios del árbol de trabajo.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Revertir",
-  "ideRevertConfirmCancel": "Cancelar",
   "ideRevertUntracked": "Los archivos sin seguimiento no se pueden revertir",
   "ideRevertFailed": "No se pudieron revertir los archivos. El árbol de trabajo de la conversación podría no estar disponible.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 archivo} other{{count} archivos}} no se pudieron revertir (sin seguimiento).",
@@ -4333,7 +4279,6 @@
       }
     }
   },
-  "ideViewSource": "Ver código fuente",
   "ideSearchMatchCase": "Coincidir mayúsculas/minúsculas",
   "ideSearchWholeWord": "Palabra completa",
   "ideSearchRegex": "Regex",
@@ -4499,7 +4444,6 @@
   "providerSignOutAccountConfirmTitle": "¿Cerrar sesión de esta cuenta?",
   "providerCredentialRemoveConfirmBody": "Los agentes que usan {provider} recurren a sus otras claves y cuentas. Si no queda ninguna, se detienen hasta que añadas una.",
   "providerBaseUrlHint": "URL base (opcional)",
-  "customProvidersDescription": "Cualquier endpoint compatible con OpenAI o Anthropic — Ollama, LM Studio, vLLM o un despliegue privado — con una clave de API opcional.",
   "addProvider": "Añadir proveedor",
   "noCustomProviders": "Aún no hay proveedores personalizados.",
   "providerNameLabel": "Nombre",
@@ -4549,7 +4493,6 @@
   "repoScriptsArchivePlaceholder": "p. ej. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Ejecuciones recientes",
   "repoScriptsNoRuns": "Aún no hay ejecuciones",
-  "repoScriptsOutput": "Salida",
   "repoScriptsSaved": "Scripts guardados",
   "repoScriptsRunKindSetup": "Configuración",
   "repoScriptsRunKindArchive": "Archivado",
@@ -7122,8 +7065,6 @@
   },
   "providersNoneConnectedNote": "No hay ningún proveedor conectado, así que el motor de agentes integrado no tiene con qué funcionar. Añade una clave de API o inicia sesión en alguno de abajo.",
   "providersFilterHint": "Filtrar proveedores",
-  "providersFacetNeedsSetup": "Falta configurar",
-  "providersFacetCustom": "Personalizados",
   "providersNoneMatch": "Nada coincide con este filtro",
   "providerDeniedHereTitle": "Denegado en este espacio de trabajo",
   "providerDeniedHereBody": "Los agentes de aquí no pueden usar este proveedor, aunque esté conectado. Otros espacios de trabajo no se ven afectados.",
@@ -7135,8 +7076,6 @@
   "providerModelsFilterHint": "Filtrar modelos",
   "adaptersNoneReadyNote": "No se encontró en esta máquina ninguna de las CLI de runners del catálogo. Instala una y luego actualiza.",
   "adaptersFilterHint": "Filtrar runners",
-  "adaptersFacetReady": "Listos",
-  "adaptersFacetMissing": "Ausentes",
   "adaptersLaunchGroup": "Lanzamiento",
   "adaptersLaunchGroupDescription": "Lo que recibe este runner cuando un agente lo inicia. Puedes configurarlo antes incluso de instalar la CLI.",
   "adaptersEnvNone": "Ninguna definida",
@@ -7607,7 +7546,6 @@
   "demoTourSubtitle": "Cuatro lugares que muestran lo que hace realmente la aplicación.",
   "demoTourSkip": "Omitir",
   "demoTourStarRepo": "Dar una estrella en GitHub",
-  "demoTourDone": "Listo",
   "demoTourOpen": "Abrir",
   "demoTourSpacesTitle": "Habla con un agente",
   "demoTourSpacesBody": "Envía un mensaje en un espacio y observa cómo llega una ejecución: razonamiento, llamadas a herramientas y coste, igual que una ejecución real.",
@@ -7617,8 +7555,6 @@
   "demoTourTicketsBody": "Los tickets, las tareas y los planes están enlazados con las mismas conversaciones que mantienen los agentes.",
   "demoTourInboxTitle": "Ve toda la operación",
   "demoTourInboxBody": "Cada aviso de cada pilar llega a una sola bandeja de entrada: revisiones, tickets, ejecuciones y reuniones.",
-  "demoSessionEndingSoon": "Esta sesión de demo termina en {minutes} minutos.",
-  "demoSessionEnded": "Esta sesión de demo ha terminado. Recarga la página para iniciar otra.",
   "demoUnavailableTitle": "No disponible en la demo",
   "demoUnavailableTerminal": "Un terminal ejecuta un shell real en el servidor. La demo no tiene ninguna superficie de ejecución: eso es lo que permite abrirla al público con seguridad.",
   "demoUnavailableRig": "Un recinto es una máquina virtual desechable que dirige un agente. La demo no arranca ninguna: un endpoint público capaz de lanzar una VM no es una demo.",
@@ -7660,7 +7596,6 @@
   "backupImportBody": "Esto sustituye todo lo que hay en {name} por el contenido del archivo. Lo que ese espacio de trabajo contenga ahora se pierde, y no se puede deshacer.",
   "backupImportSourceLabel": "Archivo de base de datos del espacio de trabajo",
   "backupImportSourceDescription": "Un archivo .db que el servidor pueda leer. Las rutas se resuelven en el host del servidor, no en este dispositivo.",
-  "backupImportChooseFile": "Elegir archivo",
   "backupImportDone": "Importado en {name}.",
   "backupDeleteBody": "{name} desaparece de todas las listas y búsquedas. Su archivo de base de datos permanece en el disco, las copias de seguridad lo siguen incluyendo y nada recupera ese espacio automáticamente.",
   "backupExportDescription": "Escribe una copia en el servidor o descarga una en este dispositivo.",

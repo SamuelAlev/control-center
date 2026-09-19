@@ -761,8 +761,6 @@
   "copyRelativePath": "复制相对路径",
   "nameRequired": "必须填写名称",
   "import": "导入",
-  "sortByStatus": "状态",
-  "sortByName": "名称",
   "noMatchingAgents": "没有符合筛选条件的智能体",
   "watchVideoOn": "在 {provider} 上观看视频",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "询问 AI",
   "askAiReviewDescription": "让 AI 评审此 PR",
   "assignees": "受理人",
-  "attachFiles": "附加文件",
   "attachImage": "附加图片",
   "attachedAgents": "附加的智能体",
   "audioInput": "音频输入",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "点击重试",
   "close": "关闭",
   "closeEsc": "关闭（Esc）",
-  "closeKeyboardHint": "关闭",
   "closeReader": "关闭阅读器",
   "closed": "已关闭",
   "codeFont": "代码字体",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "需要安装原生沙盒",
   "navObservability": "可观测性",
   "navSettings": "设置",
-  "navigateLabel": "导航",
   "networkBlockCount": "{count} 条网络拦截规则",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "中立",
   "newCommitsPushed": "有新提交推送——点击重新加载 diff",
   "newFact": "新事实",
-  "newLabel": "新建",
   "newPolicy": "新策略",
   "newsfeed": "新闻流",
   "newsfeedLabel": "新闻流",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "无（所有角色）",
   "notAvailable": "不可用",
   "notConfiguredLabel": "未配置。",
-  "notDetected": "未检测到",
   "notFoundLabel": "未找到",
   "notes": "笔记",
   "notificationAgentFinished": "智能体已完成",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "静音此仓库",
-  "notificationsUnmuteRepo": "取消静音此仓库",
   "onboardingLinuxDescription": "Control Center 可以使用 Linux 容器来隔离智能体执行。",
   "onboardingMacosDescription": "Control Center 在 macOS 上使用原生沙盒来隔离智能体执行。",
   "onboardingUnsupportedDescription": "此平台不支持沙盒。智能体执行将不进行隔离。",
-  "openApplicationSettings": "打开应用设置",
   "openArticlesInApp": "在应用内打开文章",
   "openInBrowser": "在浏览器中打开",
   "openedInYourBrowser": "已在浏览器中打开。",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "传递给此适配器的自定义环境变量（例如 API 密钥）。存储在钥匙串中。",
   "variableKey": "键",
   "variableValue": "值",
-  "savingChanges": "正在保存更改…",
   "savingEllipsis": "正在保存…",
   "scopeDiffToCommits": "将 diff 限定到提交 — 按住 Shift 单击可选择范围",
   "noPrsMatchSearch": "没有匹配的 pull request",
-  "noPrsMatchSearchHint": "没有与搜索匹配的打开的 PR。请尝试其他关键词或清除搜索。",
   "searchFactsHint": "搜索事实...",
   "searchFonts": "搜索字体…",
   "searchGifs": "搜索 GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "选择要汇报的智能体…",
   "selectAnAgent": "选择智能体",
   "selectConversation": "选择对话",
-  "selectEffortLevel": "选择努力程度",
   "selectLabel": "选择",
   "selectRunner": "选择运行器",
   "semanticSearch": "语义搜索",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "技能编辑器",
   "skillNameRequired": "技能名称为必填项。",
   "skillSaved": "技能“{name}”已保存。",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "用于编排智能体流水线的拖放编辑器。",
   "pipelineTemplatesNew": "新建模板",
   "pipelineTemplatesEmpty": "暂无流水线模板。创建一个以开始使用。",
-  "pipelineTemplateIdLabel": "模板 ID",
   "pipelineTemplateBuiltInBadge": "内置",
   "pipelineTemplateDeleteConfirmTitle": "删除模板？",
   "pipelineTemplateDeleteConfirmBody": "删除流水线模板 {name}？此操作无法撤销。",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "编辑流水线",
   "pipelineTemplateEditorSubtitle": "从侧边栏将节点类型拖到画布上，再将它们连线。",
   "unsavedChanges": "未保存的更改",
   "nodeLibraryTitle": "节点库",
   "nodeLibraryHint": "将任意条目拖到画布上即可添加节点。",
-  "editorDragHint": "从库中拖入，点击节点进行编辑",
   "editorEmptyCanvas": "从库中拖入节点以开始。",
   "pipelineWhenThisHappens": "当发生以下情况",
   "pipelineDoThis": "执行此操作",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "使用双花括号占位符，在运行时从状态中取值。",
   "nodeConfigScript": "Bash 脚本",
   "nodeConfigScriptHelp": "通过 bash -c 运行。已设置 GITHUB_TOKEN。执行前会替换占位符。",
-  "nodeConfigTriggers": "触发来源",
-  "nodeConfigNoUpstream": "没有可连接的上游节点。",
   "nodeConfigRouteKeys": "路由键",
   "nodeConfigRouteKeyFrom": "来自 {source} 的路由键",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "分支（逗号分隔）",
   "conditionCasesHelp": "按顺序与该值匹配的路由键。",
   "conditionDefaultCase": "默认分支",
-  "triggerPanelTitle": "触发器",
-  "triggerPanelHelp": "启动此流水线的方式。",
   "triggerManualHelp": "显示在运行页，可手动启动。",
-  "triggerSectionAutomatic": "自动触发器",
-  "triggerAddButton": "添加触发器",
-  "triggerNoneYet": "尚未添加自动触发器。",
-  "triggerAddDialogTitle": "添加触发器",
-  "triggerKindLabel": "触发器类型",
-  "triggerKindEvent": "按事件",
   "triggerKindSchedule": "按计划",
-  "triggerKindWebhook": "通过 webhook",
   "triggerScheduleExprLabel": "计划（cron 或 every:seconds）",
   "triggerTimezoneLabel": "时区（可选）",
   "triggerCatchUpLabel": "错过运行时",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "会生成带签名的 webhook URL。外部系统向其发送 POST 请求即可启动此流水线。",
   "triggerWebhookPathLabel": "Webhook 路径",
-  "triggerEventFieldLabel": "事件",
-  "triggerNoMoreEvents": "所有可用事件均已接入。",
   "triggerMatchStatusLabel": "仅当状态为",
   "triggerSummaryNone": "无触发器",
   "triggerEverySeconds": "每 {seconds} 秒",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "从阅读器中打开的文章里去除广告、跟踪器和 Cookie 横幅。",
   "agentQuestionHeader": "需要你回答的问题",
   "agentQuestionAnsweredLabel": "已回答",
-  "agentQuestionSubmit": "提交回答",
   "agentQuestionFreeformHint": "输入你的回答…",
-  "agentQuestionAnswerLabel": "你的回答",
   "agentQuestionProgress": "问题 {index} / {count}",
   "agentQuestionSkip": "跳过",
   "agentQuestionSkippedLabel": "已跳过",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "打开编辑器",
   "ideNewTabMenu": "新建标签页",
   "ideReviewCode": "审查代码",
-  "ideRevert": "还原",
   "ideRevertConfirmTitle": "还原更改",
-  "ideRevertConfirmMessage": "将 {count, plural, =1{1 个文件} other{{count} 个文件}} 还原到 HEAD？这将丢弃工作树中的更改。",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "还原",
-  "ideRevertConfirmCancel": "取消",
   "ideRevertUntracked": "未跟踪的文件无法还原",
   "ideRevertFailed": "无法还原这些文件。对话工作树可能不可用。",
   "ideRevertSomeSkipped": "{count, plural, =1{1 个文件} other{{count} 个文件}} 无法还原（未跟踪）。",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "查看源码",
   "ideSearchMatchCase": "区分大小写",
   "ideSearchWholeWord": "全字匹配",
   "ideSearchRegex": "正则表达式",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "基础 URL（可选）",
-  "customProvidersDescription": "任意兼容 OpenAI 或 Anthropic 的端点 — Ollama、LM Studio、vLLM 或私有部署 — 可选用 API 密钥。",
   "addProvider": "添加提供商",
   "noCustomProviders": "暂无自定义提供商。",
   "providerNameLabel": "名称",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "例如 docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "最近运行",
   "repoScriptsNoRuns": "暂无运行记录",
-  "repoScriptsOutput": "输出",
   "repoScriptsSaved": "脚本已保存",
   "repoScriptsRunKindSetup": "设置",
   "repoScriptsRunKindArchive": "归档",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "尚未连接任何提供商，因此内置智能体运行时没有可运行的平台。请在下方添加 API 密钥或登录某一提供商。",
   "providersFilterHint": "筛选提供商",
-  "providersFacetNeedsSetup": "需要设置",
-  "providersFacetCustom": "自定义",
   "providersNoneMatch": "没有符合此筛选条件的内容",
   "providerDeniedHereTitle": "在此工作区中被拒绝",
   "providerDeniedHereBody": "即使此提供商已连接，此处的智能体也无法使用它。其他工作区不受影响。",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "筛选模型",
   "adaptersNoneReadyNote": "未在此机器上找到目录中的任何运行器 CLI。请先安装一个，然后刷新。",
   "adaptersFilterHint": "筛选运行器",
-  "adaptersFacetReady": "就绪",
-  "adaptersFacetMissing": "缺失",
   "adaptersLaunchGroup": "启动",
   "adaptersLaunchGroupDescription": "智能体启动此运行器时传递给它的内容。可以在安装 CLI 之前先设置好。",
   "adaptersEnvNone": "未设置",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "四个能展示应用实际功能的地方。",
   "demoTourSkip": "跳过",
   "demoTourStarRepo": "在 GitHub 上加星标",
-  "demoTourDone": "完成",
   "demoTourOpen": "打开",
   "demoTourSpacesTitle": "与智能体对话",
   "demoTourSpacesBody": "在空间中发送消息并观看运行流式呈现——思考、工具调用和成本，与真实运行的渲染完全一致。",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "工单、待办和计划都与智能体正在进行的相同对话相关联。",
   "demoTourInboxTitle": "纵览整个运营",
   "demoTourInboxBody": "各板块的所有提醒都汇入同一个收件箱——审查、工单、运行和会议。",
-  "demoSessionEndingSoon": "此演示会话将在 {minutes} 分钟后结束。",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "此演示会话已结束。重新加载页面即可开始新的会话。",
   "demoUnavailableTitle": "演示中不可用",
   "demoUnavailableTerminal": "终端会在服务器主机上运行真实的 shell。演示完全没有执行面——这正是它可以公开开放的原因。",
   "demoUnavailableRig": "Enclosure 是由智能体驱动的一次性虚拟机。演示一台也不启动：能启动虚拟机的公共端点就算不上演示。",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "工作区数据库文件",
   "backupImportSourceDescription": "服务器可读取的 .db 文件。路径在服务器主机上解析，而不是在此设备上。",
-  "backupImportChooseFile": "选择文件",
   "backupImportDone": "已导入到 {name}。",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

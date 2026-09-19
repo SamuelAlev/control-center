@@ -47,10 +47,6 @@ bool bodyMentions(String body, String login) {
   ).any((l) => mentionPattern(l).hasMatch(body));
 }
 
-/// Whether [body] @mentions any of [logins].
-bool bodyMentionsAny(String body, Iterable<String> logins) =>
-    logins.any((l) => bodyMentions(body, l));
-
 /// Strips the first @mention of [login] from [body].
 ///
 /// The full login is tried first so `@app[bot] question` strips to `question`,

@@ -372,26 +372,6 @@ final prsByRepoProvider =
       PrsByRepoNotifier.new,
     );
 
-/// PRs in the active workspace grouped by repo, filtered to a single author.
-final prsByAuthorInWorkspaceProvider = Provider.autoDispose
-    .family<AsyncValue<List<RepoPullRequests>>, String>((ref, login) {
-      final async = ref.watch(prsByRepoProvider);
-      return async.whenData((s) {
-        final norm = login.toLowerCase();
-        return s.repos
-            .map(
-              (r) => RepoPullRequests(
-                repo: r.repo,
-                prs: r.prs
-                    .where((p) => p.author?.login.toLowerCase() == norm)
-                    .toList(),
-              ),
-            )
-            .where((r) => r.prs.isNotEmpty)
-            .toList();
-      });
-    });
-
 /// The open PRs in the active workspace the operator has already reviewed,
 /// as `"<owner/repo>#<number>"` keys, resolved by one server-side
 /// `reviewed-by:<me>` search.

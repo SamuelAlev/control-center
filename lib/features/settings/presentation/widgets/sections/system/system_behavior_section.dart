@@ -9,8 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// System-behavior settings exposed in General Settings.
 ///
-/// Currently the "keep computer awake while agents run" toggle, which drives the
-/// `AgentAwakeService` (an `NSProcessInfo` activity assertion on macOS).
+/// Currently the "keep computer awake while agents run" toggle, persisted via
+/// the `AppPreferences` backed `keepComputerAwakeProvider`.
 class SystemBehaviorSection extends ConsumerWidget {
   /// Creates a [SystemBehaviorSection].
   const SystemBehaviorSection({super.key});

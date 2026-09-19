@@ -9,16 +9,11 @@
 // so the web client drives the SERVER host's real behavior rather than a stub.
 // A host that wires no detector leaves the op absent (default-deny) and the
 // adapter degrades gracefully (empty / "not found").
-//
-// The one remaining honest stub is [ProcessControlPort]: its `isPidAlive` is
-// synchronous (no remote round trip) and the port is only driven by host-side
-// reconcilers that never run on web, so it stays a loud `UnsupportedError` stub.
 library;
 
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/activity_entry.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
-import 'package:cc_domain/core/domain/ports/process_control_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
@@ -36,25 +31,6 @@ import 'package:cc_domain/features/model_routing/domain/services/model_catalog_s
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/meetings/data/web/web_audio_capture.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-/// Shared honest failure for a desktop-only capability invoked on web.
-Never _unsupported(String capability) => throw UnsupportedError(
-  '$capability is not available on web (a desktop-only capability with no '
-  'web equivalent).',
-);
-
-/// Mixin that fails loudly for any unimplemented member of a stubbed interface.
-mixin _WebUnavailable {
-  String get _capability;
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => _unsupported(_capability);
-}
-
-class _WebProcessControl with _WebUnavailable implements ProcessControlPort {
-  @override
-  String get _capability => 'Local agent process control (kill)';
-}
 
 /// Workspace filesystem over RPC: the agents/skills/conversation directory tree
 /// lives on the SERVER's machine, so the web client resolves its server-side
@@ -77,12 +53,6 @@ Stream<List<Workspace>> buildBootstrapWorkspacesStream(Ref ref) =>
 /// the host catalog's `process.detect` / `process.kill` ops.
 ProcessDetectionPort buildProcessDetectionService(Ref ref) =>
     RpcProcessDetectionPort(ref.watch(rpcClientProvider));
-
-/// Honest stub: killing a local agent process by pid has no web equivalent.
-/// `ProcessControlPort.isPidAlive` is synchronous (it cannot be an async RPC
-/// round trip) and the port is only driven by host-side reconcilers that never
-/// run on web, so this stays a loud stub rather than an RPC seam.
-ProcessControlPort buildProcessControlPort(Ref ref) => _WebProcessControl();
 
 /// Adapter detection over RPC: Settings → Adapters probes the agent-runner CLIs
 /// installed on the SERVER host through the catalog's `adapter.detectOne` /

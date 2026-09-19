@@ -761,8 +761,6 @@
   "copyRelativePath": "Копировать относительный путь",
   "nameRequired": "Имя обязательно",
   "import": "Импорт",
-  "sortByStatus": "Статус",
-  "sortByName": "Имя",
   "noMatchingAgents": "Нет агентов, подходящих под фильтр",
   "watchVideoOn": "Смотреть видео на {provider}",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "Спросить AI",
   "askAiReviewDescription": "Попросить AI сделать ревью этого PR",
   "assignees": "Исполнители",
-  "attachFiles": "Прикрепить файлы",
   "attachImage": "Прикрепить изображение",
   "attachedAgents": "Прикреплённые агенты",
   "audioInput": "Аудиовход",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "Нажмите, чтобы повторить",
   "close": "Закрыть",
   "closeEsc": "Закрыть (Esc)",
-  "closeKeyboardHint": "Закрыть",
   "closeReader": "Закрыть режим чтения",
   "closed": "Закрыто",
   "codeFont": "Шрифт кода",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "Требуется установка нативной песочницы",
   "navObservability": "Наблюдаемость",
   "navSettings": "Настройки",
-  "navigateLabel": "Навигация",
   "networkBlockCount": "{count} сетевых блокировок",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "Нейтральный",
   "newCommitsPushed": "Появились новые коммиты — нажмите, чтобы обновить diff",
   "newFact": "Новый факт",
-  "newLabel": "Новый",
   "newPolicy": "Новая политика",
   "newsfeed": "Лента новостей",
   "newsfeedLabel": "Лента новостей",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "Нет (все роли)",
   "notAvailable": "Недоступно",
   "notConfiguredLabel": "Не настроено.",
-  "notDetected": "Не обнаружено",
   "notFoundLabel": "Не найдено",
   "notes": "Заметки",
   "notificationAgentFinished": "Агент завершил работу",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "Отключить уведомления этого репозитория",
-  "notificationsUnmuteRepo": "Включить уведомления этого репозитория",
   "onboardingLinuxDescription": "Control Center может использовать контейнеры Linux для изоляции выполнения агентов.",
   "onboardingMacosDescription": "Control Center использует встроенную песочницу macOS для изоляции выполнения агентов.",
   "onboardingUnsupportedDescription": "Песочница недоступна на этой платформе. Агенты будут выполняться без изоляции.",
-  "openApplicationSettings": "Открыть настройки приложения",
   "openArticlesInApp": "Открыть статьи в приложении",
   "openInBrowser": "Открыть в браузере",
   "openedInYourBrowser": "Открыто в браузере.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "Пользовательские переменные окружения для этого адаптера (напр. ключи API). Хранятся в связке ключей.",
   "variableKey": "Ключ",
   "variableValue": "Значение",
-  "savingChanges": "Сохранение изменений…",
   "savingEllipsis": "Сохранение…",
   "scopeDiffToCommits": "Ограничить diff коммитами — Shift-клик для диапазона",
   "noPrsMatchSearch": "Нет подходящих pull request",
-  "noPrsMatchSearchHint": "Нет открытых PR, соответствующих поиску. Измените запрос или очистите поиск.",
   "searchFactsHint": "Поиск фактов...",
   "searchFonts": "Поиск шрифтов…",
   "searchGifs": "Поиск GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "Выберите агента для отчёта…",
   "selectAnAgent": "Выберите агента",
   "selectConversation": "Выберите беседу",
-  "selectEffortLevel": "Выберите уровень усилий",
   "selectLabel": "Выбрать",
   "selectRunner": "Выберите раннер",
   "semanticSearch": "Семантический поиск",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "Редактор скиллов",
   "skillNameRequired": "Укажите имя скилла.",
   "skillSaved": "Скилл «{name}» сохранён.",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "Редактор с перетаскиванием для конвейеров, которые оркестрируют агентов.",
   "pipelineTemplatesNew": "Новый шаблон",
   "pipelineTemplatesEmpty": "Пока нет шаблонов конвейеров. Создайте первый, чтобы начать.",
-  "pipelineTemplateIdLabel": "ID шаблона",
   "pipelineTemplateBuiltInBadge": "Встроенный",
   "pipelineTemplateDeleteConfirmTitle": "Удалить шаблон?",
   "pipelineTemplateDeleteConfirmBody": "Удалить шаблон конвейера {name}? Это действие нельзя отменить.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Редактирование конвейера",
   "pipelineTemplateEditorSubtitle": "Перетащите типы узлов с боковой панели на холст и соедините их.",
   "unsavedChanges": "Несохранённые изменения",
   "nodeLibraryTitle": "Библиотека узлов",
   "nodeLibraryHint": "Перетащите элемент на холст, чтобы добавить узел.",
-  "editorDragHint": "Перетащите из библиотеки, нажмите узел для правки",
   "editorEmptyCanvas": "Перетащите узел из библиотеки, чтобы начать.",
   "pipelineWhenThisHappens": "Когда это происходит",
   "pipelineDoThis": "Сделать это",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "Используйте плейсхолдеры в двойных фигурных скобках, чтобы брать значения из состояния во время выполнения.",
   "nodeConfigScript": "Скрипт bash",
   "nodeConfigScriptHelp": "Запускается через bash -c. Задаётся GITHUB_TOKEN. Плейсхолдеры подставляются до выполнения.",
-  "nodeConfigTriggers": "Триггеры от",
-  "nodeConfigNoUpstream": "Нет других узлов, от которых можно соединить.",
   "nodeConfigRouteKeys": "Ключи маршрута",
   "nodeConfigRouteKeyFrom": "Ключ маршрута от {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "Варианты (через запятую)",
   "conditionCasesHelp": "Ключи маршрутов для сопоставления со значением, по порядку.",
   "conditionDefaultCase": "Вариант по умолчанию",
-  "triggerPanelTitle": "Триггеры",
-  "triggerPanelHelp": "Что запускает этот конвейер.",
   "triggerManualHelp": "Показывать на странице запуска и запускать вручную.",
-  "triggerSectionAutomatic": "Автоматические триггеры",
-  "triggerAddButton": "Добавить триггер",
-  "triggerNoneYet": "Автоматических триггеров пока нет.",
-  "triggerAddDialogTitle": "Добавить триггер",
-  "triggerKindLabel": "Тип триггера",
-  "triggerKindEvent": "По событию",
   "triggerKindSchedule": "По расписанию",
-  "triggerKindWebhook": "Через webhook",
   "triggerScheduleExprLabel": "Расписание (cron или every:seconds)",
   "triggerTimezoneLabel": "Часовой пояс (необязательно)",
   "triggerCatchUpLabel": "При пропущенных запусках",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "Создаётся подписанный URL webhook. Внешние системы отправляют на него POST, чтобы запустить этот конвейер.",
   "triggerWebhookPathLabel": "Путь вебхука",
-  "triggerEventFieldLabel": "Событие",
-  "triggerNoMoreEvents": "Все доступные события уже подключены.",
   "triggerMatchStatusLabel": "Только при статусе",
   "triggerSummaryNone": "Нет триггеров",
   "triggerEverySeconds": "Каждые {seconds} с",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "Убирать рекламу, трекеры и cookie-баннеры из статей, открытых в читалке.",
   "agentQuestionHeader": "Вопрос для вас",
   "agentQuestionAnsweredLabel": "Отвечено",
-  "agentQuestionSubmit": "Отправить ответ",
   "agentQuestionFreeformHint": "Введите ответ…",
-  "agentQuestionAnswerLabel": "Ваш ответ",
   "agentQuestionProgress": "Вопрос {index} из {count}",
   "agentQuestionSkip": "Пропустить",
   "agentQuestionSkippedLabel": "Пропущено",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "Открыть редактор",
   "ideNewTabMenu": "Новая вкладка",
   "ideReviewCode": "Проверить код",
-  "ideRevert": "Откатить",
   "ideRevertConfirmTitle": "Откатить изменения",
-  "ideRevertConfirmMessage": "Откатить {count, plural, one{{count} файл} few{{count} файла} many{{count} файлов} other{{count} файлов}} к HEAD? Изменения в рабочем дереве будут сброшены.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Откатить",
-  "ideRevertConfirmCancel": "Отмена",
   "ideRevertUntracked": "Неотслеживаемые файлы нельзя откатить",
   "ideRevertFailed": "Не удалось откатить файлы. Рабочее дерево разговора может быть недоступно.",
   "ideRevertSomeSkipped": "{count, plural, one{{count} файл не удалось откатить (неотслеживаемый)} few{{count} файла не удалось откатить (неотслеживаемые)} many{{count} файлов не удалось откатить (неотслеживаемые)} other{{count} файлов не удалось откатить (неотслеживаемые)}}.",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "Исходный код",
   "ideSearchMatchCase": "Учитывать регистр",
   "ideSearchWholeWord": "Слово целиком",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Базовый URL (необязательно)",
-  "customProvidersDescription": "Любая совместимая с OpenAI или Anthropic конечная точка — Ollama, LM Studio, vLLM или частное развёртывание — с необязательным API-ключом.",
   "addProvider": "Добавить провайдера",
   "noCustomProviders": "Пока нет пользовательских провайдеров.",
   "providerNameLabel": "Имя",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "например, docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Недавние запуски",
   "repoScriptsNoRuns": "Запусков пока нет",
-  "repoScriptsOutput": "Вывод",
   "repoScriptsSaved": "Скрипты сохранены",
   "repoScriptsRunKindSetup": "Настройка",
   "repoScriptsRunKindArchive": "Архивация",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "Ни один провайдер не подключён, поэтому встроенной среде выполнения агентов не на чем работать. Добавьте API-ключ или войдите в один из провайдеров ниже.",
   "providersFilterHint": "Фильтр провайдеров",
-  "providersFacetNeedsSetup": "Нужна настройка",
-  "providersFacetCustom": "Пользовательские",
   "providersNoneMatch": "Ничего не подходит под фильтр",
   "providerDeniedHereTitle": "Запрещён в этом рабочем пространстве",
   "providerDeniedHereBody": "Агенты здесь не могут использовать этот провайдер, хотя он подключён. Другие рабочие пространства не затрагиваются.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "Фильтр моделей",
   "adaptersNoneReadyNote": "На этой машине не найдено ни одного CLI из каталога раннеров. Установите один, затем обновите список.",
   "adaptersFilterHint": "Фильтр раннеров",
-  "adaptersFacetReady": "Готовы",
-  "adaptersFacetMissing": "Отсутствуют",
   "adaptersLaunchGroup": "Запуск",
   "adaptersLaunchGroupDescription": "Что передаётся этому раннеру, когда агент его запускает. Можно задать до установки CLI.",
   "adaptersEnvNone": "Не заданы",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "Четыре места, где видно, что делает приложение.",
   "demoTourSkip": "Пропустить",
   "demoTourStarRepo": "Поставить звезду на GitHub",
-  "demoTourDone": "Готово",
   "demoTourOpen": "Открыть",
   "demoTourSpacesTitle": "Поговорить с агентом",
   "demoTourSpacesBody": "Отправьте сообщение в пространстве и смотрите, как в поток приходит запуск — рассуждения, вызовы инструментов и стоимость, как в настоящем запуске.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "Тикеты, to-do и планы связаны с теми же разговорами, которые ведут агенты.",
   "demoTourInboxTitle": "Смотрите всю операцию",
   "demoTourInboxBody": "Все оповещения со всех направлений собираются во входящих — ревью, тикеты, запуски и встречи.",
-  "demoSessionEndingSoon": "Демо-сессия закончится через {minutes} мин.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "Демо-сессия завершена. Перезагрузите страницу, чтобы начать новую.",
   "demoUnavailableTitle": "В демо недоступно",
   "demoUnavailableTerminal": "Терминал запускает настоящий shell на хосте сервера. В демо нет среды исполнения — поэтому его безопасно открыть публично.",
   "demoUnavailableRig": "Enclosure — одноразовая виртуальная машина, которой управляет агент. Демо не запускает ни одной: публичная точка, которая может стартовать VM, — это уже не демо.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "Файл базы рабочего пространства",
   "backupImportSourceDescription": "Файл .db, который сервер может прочитать. Пути разрешаются на хосте сервера, не на этом устройстве.",
-  "backupImportChooseFile": "Выбрать файл",
   "backupImportDone": "Импортировано в {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

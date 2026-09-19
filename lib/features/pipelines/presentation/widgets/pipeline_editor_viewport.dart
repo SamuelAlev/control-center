@@ -1,5 +1,4 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';

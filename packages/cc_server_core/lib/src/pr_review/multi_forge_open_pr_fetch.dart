@@ -290,23 +290,3 @@ class MultiForgeMergedHistory {
     return groups;
   }
 }
-
-/// Sorts merged pull requests newest-first across forges.
-///
-/// Ordering is by the forge-reported merge time, which is the only field the
-/// three agree on. Anything missing one sorts last rather than first, so a
-/// forge that omits the timestamp cannot dominate the top of the list.
-int compareByMergedAtDesc(PullRequest a, PullRequest b) {
-  final at = a.mergedAt;
-  final bt = b.mergedAt;
-  if (at == null && bt == null) {
-    return 0;
-  }
-  if (at == null) {
-    return 1;
-  }
-  if (bt == null) {
-    return -1;
-  }
-  return bt.compareTo(at);
-}

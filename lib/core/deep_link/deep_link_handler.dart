@@ -1,5 +1,3 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 /// Somewhere in the app an external `control-center://` link asks for.
 sealed class DeepLinkTarget {
   const DeepLinkTarget();
@@ -152,7 +150,3 @@ final class DeepLinkHandler {
       segment.isNotEmpty && _validSegment.hasMatch(segment);
 }
 
-/// Provides the singleton [DeepLinkHandler].
-final deepLinkHandlerProvider = Provider<DeepLinkHandler>(
-  (_) => DeepLinkHandler._(),
-);

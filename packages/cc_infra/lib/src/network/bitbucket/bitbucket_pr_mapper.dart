@@ -17,7 +17,6 @@ import 'package:cc_infra/src/network/bitbucket/models/bitbucket_commit.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_commit_status.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_diffstat_entry.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_participant.dart';
-import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pipeline.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
 
@@ -358,33 +357,6 @@ CheckRun checkRunFromBitbucketStatus(BitbucketCommitStatus status) {
     startedAt: status.createdOn,
     completedAt: status.isTerminal ? status.updatedOn : null,
     output: status.description,
-  );
-}
-
-/// Maps a Bitbucket Pipelines run onto the domain's check run.
-///
-/// For callers that want the native pipeline view. A run also publishes a
-/// build status, so mixing these into the list from
-/// [checkRunFromBitbucketStatus] double-counts the same work.
-CheckRun checkRunFromBitbucketPipeline(BitbucketPipeline pipeline) {
-  final state = pipeline.stateName.toUpperCase();
-  final result = pipeline.resultName.toUpperCase();
-  return CheckRun(
-    name: pipeline.displayName,
-    status: switch (state) {
-      'COMPLETED' => CheckRunStatus.completed,
-      'IN_PROGRESS' || 'PAUSED' => CheckRunStatus.inProgress,
-      _ => CheckRunStatus.queued,
-    },
-    conclusion: switch (result) {
-      'SUCCESSFUL' => CheckRunConclusion.success,
-      'FAILED' || 'ERROR' => CheckRunConclusion.failure,
-      'STOPPED' => CheckRunConclusion.cancelled,
-      _ => null,
-    },
-    startedAt: pipeline.createdOn,
-    completedAt: pipeline.completedOn,
-    output: pipeline.triggerName,
   );
 }
 

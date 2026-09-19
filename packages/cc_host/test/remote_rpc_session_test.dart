@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
@@ -1149,19 +1148,6 @@ void main() {
       // Must not throw even though send throws.
       space.inject({'jsonrpc': '2.0', 'method': 'foo', 'id': 1});
       await pumpEventQueue(times: 5);
-    });
-  });
-
-  test('encodeFrame JSON-encodes a frame map', () {
-    final s = encodeFrame({
-      'jsonrpc': '2.0',
-      'id': 1,
-      'result': {'ok': true},
-    });
-    expect(jsonDecode(s), {
-      'jsonrpc': '2.0',
-      'id': 1,
-      'result': {'ok': true},
     });
   });
 }

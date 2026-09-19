@@ -7,16 +7,6 @@
 /// Calendar dio + auth interceptor.
 library;
 
-import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-
-/// Base URL for the GitHub REST API.
-///
-/// Sourced from [ForgeHost] so a forge has exactly one place declaring where it
-/// lives. The GitHub clients no longer interpolate this into their paths —
-/// they issue relative paths against the base URL their injected Dio carries,
-/// which is what lets one client class serve a different host.
-final String githubApiBaseUrl = ForgeHost.github.apiBaseUrl;
-
 /// Base URL for the Slack Web API. Every Slack call is an outbound HTTPS POST,
 /// which is what lets the Socket Mode bridge run on a server with no public
 /// endpoint.

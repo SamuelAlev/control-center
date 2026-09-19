@@ -566,8 +566,6 @@
   "copyRelativePath": "Copiar caminho relativo",
   "nameRequired": "O nome é obrigatório",
   "import": "Importar",
-  "sortByStatus": "Estado",
-  "sortByName": "Nome",
   "noMatchingAgents": "Nenhum agente corresponde ao filtro",
   "watchVideoOn": "Assistir ao vídeo no {provider}",
   "@@locale": "pt",
@@ -1054,7 +1052,6 @@
   "askAi": "Ask AI",
   "askAiReviewDescription": "Pedir à IA para revisar esta PR",
   "assignees": "RESPONSÁVEIS",
-  "attachFiles": "Anexar arquivos",
   "attachImage": "Anexar imagem",
   "attachedAgents": "Agentes anexados",
   "audioInput": "Entrada de áudio",
@@ -1113,10 +1110,6 @@
   },
   "close": "Fechar",
   "closeEsc": "Fechar (Esc)",
-  "closeKeyboardHint": "Fechar atalhos de teclado",
-  "@closeKeyboardHint": {
-    "description": "Locale string for closeKeyboardHint"
-  },
   "closeReader": "Fechar leitor",
   "closed": "Fechado",
   "codeFont": "Fonte de código",
@@ -1899,10 +1892,6 @@
   },
   "navObservability": "Observabilidade",
   "navSettings": "Configurações",
-  "navigateLabel": "Navegar",
-  "@navigateLabel": {
-    "description": "Locale string for navigateLabel"
-  },
   "networkBlockCount": "{count} bloqueios de rede",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -1918,7 +1907,6 @@
   "@newFact": {
     "description": "Dialog title for creating a new fact"
   },
-  "newLabel": "Novo",
   "newPolicy": "Nova política",
   "@newPolicy": {
     "description": "Dialog title for creating a new policy"
@@ -2019,10 +2007,6 @@
     "description": "Not available status label"
   },
   "notConfiguredLabel": "Não configurado.",
-  "notDetected": "Não detetado",
-  "@notDetected": {
-    "description": "Not detected status label"
-  },
   "notFoundLabel": "Não encontrado",
   "@notFoundLabel": {
     "description": "Not found status label"
@@ -2307,7 +2291,6 @@
     }
   },
   "notificationsMuteRepo": "Silenciar este repositório",
-  "notificationsUnmuteRepo": "Reativar este repositório",
   "onboardingLinuxDescription": "O Control Center pode utilizar containers Linux para isolar a execução de agentes.",
   "@onboardingLinuxDescription": {
     "description": "Locale string for onboardingLinuxDescription"
@@ -2320,7 +2303,6 @@
   "@onboardingUnsupportedDescription": {
     "description": "Locale string for onboardingUnsupportedDescription"
   },
-  "openApplicationSettings": "Abrir configurações do aplicativo",
   "openArticlesInApp": "Abrir artigos no app",
   "openInBrowser": "Abrir no navegador",
   "openedInYourBrowser": "Aberto no seu navegador.",
@@ -2565,14 +2547,9 @@
   "@variableValue": {
     "description": "Environment variable value label"
   },
-  "savingChanges": "A guardar alterações...",
-  "@savingChanges": {
-    "description": "Locale string for savingChanges"
-  },
   "savingEllipsis": "Salvando…",
   "scopeDiffToCommits": "Filtrar diff por commits — Shift-clique para intervalo",
   "noPrsMatchSearch": "Nenhum pull request correspondente",
-  "noPrsMatchSearchHint": "Nenhum PR aberto corresponde à pesquisa. Tente outros termos ou limpe a pesquisa.",
   "searchFactsHint": "Procurar factos...",
   "@searchFactsHint": {
     "description": "Search field hint in facts tab"
@@ -2610,7 +2587,6 @@
     "description": "Select an agent"
   },
   "selectConversation": "Selecionar uma conversa",
-  "selectEffortLevel": "Selecionar nível de esforço",
   "selectLabel": "Selecionar",
   "selectRunner": "Selecionar um executor",
   "semanticSearch": "Busca semântica",
@@ -2646,7 +2622,6 @@
   },
   "signedIn": "Conectado.",
   "signedInAs": "Conectado como {username}.",
-  "skillEditor": "Editor de habilidades",
   "skillNameRequired": "O nome da habilidade é obrigatório.",
   "skillSaved": "Habilidade \"{name}\" salva.",
   "skillsSourcesTab": "Fontes",
@@ -3610,16 +3585,13 @@
   "pipelineTemplatesSubtitle": "Editor de arrastar e soltar para as pipelines que orquestram seus agentes.",
   "pipelineTemplatesNew": "Novo modelo",
   "pipelineTemplatesEmpty": "Ainda não há modelos de pipeline. Crie um para começar.",
-  "pipelineTemplateIdLabel": "ID do modelo",
   "pipelineTemplateBuiltInBadge": "Integrado",
   "pipelineTemplateDeleteConfirmTitle": "Excluir modelo?",
   "pipelineTemplateDeleteConfirmBody": "Excluir o modelo de pipeline {name}? Não é possível desfazer.",
-  "pipelineTemplateEditorTitle": "Editar pipeline",
   "pipelineTemplateEditorSubtitle": "Arraste tipos de nós da barra lateral até o canvas e conecte-os.",
   "unsavedChanges": "Alterações não salvas",
   "nodeLibraryTitle": "Biblioteca de nós",
   "nodeLibraryHint": "Arraste qualquer item para o canvas para adicionar um nó.",
-  "editorDragHint": "Arraste da biblioteca, clique em um nó para editar",
   "editorEmptyCanvas": "Arraste um nó da biblioteca para começar.",
   "pipelineWhenThisHappens": "Quando isso acontecer",
   "pipelineDoThis": "Fazer isso",
@@ -3656,8 +3628,6 @@
   "nodeConfigOutputKey": "Chave de saída",
   "nodeConfigPrompt": "Modelo de prompt",
   "nodeConfigPromptHelp": "Use placeholders com chaves duplas para inserir valores do estado em tempo de execução.",
-  "nodeConfigTriggers": "Acionado por",
-  "nodeConfigNoUpstream": "Não há outros nós para conectar.",
   "nodeConfigAgent": "Agente",
   "nodeConfigAgentHint": "Escolher um agente…",
   "nodeConfigScript": "Script bash",
@@ -3684,17 +3654,8 @@
   "conditionCases": "Casos (separados por vírgulas)",
   "conditionCasesHelp": "Chaves de rota a comparar com o valor, em ordem.",
   "conditionDefaultCase": "Caso padrão",
-  "triggerPanelTitle": "Gatilhos",
-  "triggerPanelHelp": "O que inicia este pipeline.",
   "triggerManualHelp": "Mostrar na página de execução e iniciar manualmente.",
-  "triggerSectionAutomatic": "Gatilhos automáticos",
-  "triggerAddButton": "Adicionar gatilho",
-  "triggerNoneYet": "Ainda não há gatilhos automáticos.",
-  "triggerAddDialogTitle": "Adicionar gatilho",
-  "triggerKindLabel": "Tipo de gatilho",
-  "triggerKindEvent": "Em um evento",
   "triggerKindSchedule": "Em uma programação",
-  "triggerKindWebhook": "Através de um webhook",
   "triggerScheduleExprLabel": "Agendamento (cron ou every:segundos)",
   "triggerTimezoneLabel": "Fuso horário (opcional)",
   "triggerCatchUpLabel": "Em execuções perdidas",
@@ -3709,8 +3670,6 @@
   "syncHealthFailedStreak": "{count} falhas consecutivas",
   "triggerWebhookHelp": "É gerado um URL de webhook assinado. Sistemas externos fazem POST para iniciar este pipeline.",
   "triggerWebhookPathLabel": "Caminho do webhook",
-  "triggerEventFieldLabel": "Evento",
-  "triggerNoMoreEvents": "Todos os eventos disponíveis já estão configurados.",
   "triggerMatchStatusLabel": "Somente quando o status for",
   "triggerSummaryNone": "Sem gatilhos",
   "triggerEverySeconds": "A cada {seconds}s",
@@ -3857,9 +3816,7 @@
   "blockAdsTrackersDescription": "Remover anúncios, rastreadores e banners de cookies dos artigos abertos no leitor.",
   "agentQuestionHeader": "Pergunta para você",
   "agentQuestionAnsweredLabel": "Respondido",
-  "agentQuestionSubmit": "Enviar resposta",
   "agentQuestionFreeformHint": "Digite sua resposta…",
-  "agentQuestionAnswerLabel": "Sua resposta",
   "agentQuestionProgress": "Pergunta {index} de {count}",
   "agentQuestionSkip": "Pular",
   "agentQuestionSkippedLabel": "Pulada",
@@ -4314,18 +4271,7 @@
   "ideNewTab": "Abrir editor",
   "ideNewTabMenu": "Nova aba",
   "ideReviewCode": "Revisar código",
-  "ideRevert": "Reverter",
   "ideRevertConfirmTitle": "Reverter alterações",
-  "ideRevertConfirmMessage": "Reverter {count, plural, =1{1 arquivo} other{{count} arquivos}} para HEAD? Isso descarta as alterações da árvore de trabalho.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Reverter",
-  "ideRevertConfirmCancel": "Cancelar",
   "ideRevertUntracked": "Arquivos não rastreados não podem ser revertidos",
   "ideRevertFailed": "Não foi possível reverter os arquivos. A árvore de trabalho da conversa pode estar indisponível.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 arquivo} other{{count} arquivos}} não pôde(puderam) ser revertido(s) (não rastreado).",
@@ -4336,7 +4282,6 @@
       }
     }
   },
-  "ideViewSource": "Ver código-fonte",
   "ideSearchMatchCase": "Diferenciar maiúsculas/minúsculas",
   "ideSearchWholeWord": "Palavra inteira",
   "ideSearchRegex": "Regex",
@@ -4502,7 +4447,6 @@
   "providerSignOutAccountConfirmTitle": "Terminar sessão desta conta?",
   "providerCredentialRemoveConfirmBody": "Os agentes que usam {provider} recorrem às suas outras chaves e contas. Se não restar nenhuma, param até adicionares uma.",
   "providerBaseUrlHint": "URL base (opcional)",
-  "customProvidersDescription": "Qualquer endpoint compatível com OpenAI ou Anthropic — Ollama, LM Studio, vLLM ou uma implantação privada — com uma chave de API opcional.",
   "addProvider": "Adicionar fornecedor",
   "noCustomProviders": "Ainda não há fornecedores personalizados.",
   "providerNameLabel": "Nome",
@@ -4552,7 +4496,6 @@
   "repoScriptsArchivePlaceholder": "ex.: docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Execuções recentes",
   "repoScriptsNoRuns": "Ainda sem execuções",
-  "repoScriptsOutput": "Saída",
   "repoScriptsSaved": "Scripts salvos",
   "repoScriptsRunKindSetup": "Configuração",
   "repoScriptsRunKindArchive": "Arquivamento",
@@ -7125,8 +7068,6 @@
   },
   "providersNoneConnectedNote": "Nenhum provedor está conectado, então o runtime de agentes integrado não tem onde rodar. Adicione uma chave de API ou entre em um deles abaixo.",
   "providersFilterHint": "Filtrar provedores",
-  "providersFacetNeedsSetup": "Falta configurar",
-  "providersFacetCustom": "Personalizados",
   "providersNoneMatch": "Nada corresponde a este filtro",
   "providerDeniedHereTitle": "Negado neste espaço de trabalho",
   "providerDeniedHereBody": "Os agentes daqui não podem usar este provedor, mesmo estando conectado. Outros espaços de trabalho não são afetados.",
@@ -7138,8 +7079,6 @@
   "providerModelsFilterHint": "Filtrar modelos",
   "adaptersNoneReadyNote": "Nenhuma das CLIs de runners do catálogo foi encontrada nesta máquina. Instale uma e depois atualize.",
   "adaptersFilterHint": "Filtrar runners",
-  "adaptersFacetReady": "Prontos",
-  "adaptersFacetMissing": "Ausentes",
   "adaptersLaunchGroup": "Inicialização",
   "adaptersLaunchGroupDescription": "O que este runner recebe quando um agente o inicia. Você pode configurar isto antes mesmo de instalar a CLI.",
   "adaptersEnvNone": "Nenhuma definida",
@@ -7610,7 +7549,6 @@
   "demoTourSubtitle": "Quatro sítios que mostram o que a aplicação faz mesmo.",
   "demoTourSkip": "Ignorar",
   "demoTourStarRepo": "Dar uma estrela no GitHub",
-  "demoTourDone": "Concluído",
   "demoTourOpen": "Abrir",
   "demoTourSpacesTitle": "Falar com um agente",
   "demoTourSpacesBody": "Envie uma mensagem num espaço e veja uma execução chegar — raciocínio, chamadas a ferramentas e custo, tal como numa execução real.",
@@ -7620,8 +7558,6 @@
   "demoTourTicketsBody": "Tickets, tarefas e planos estão ligados às mesmas conversas que os agentes estão a ter.",
   "demoTourInboxTitle": "Ver toda a operação",
   "demoTourInboxBody": "Cada alerta de cada pilar chega a uma única caixa de entrada — revisões, tickets, execuções e reuniões.",
-  "demoSessionEndingSoon": "Esta sessão de demo termina daqui a {minutes} minutos.",
-  "demoSessionEnded": "Esta sessão de demo terminou. Recarregue a página para iniciar outra.",
   "demoUnavailableTitle": "Indisponível na demo",
   "demoUnavailableTerminal": "Um terminal executa uma shell real no servidor. A demo não tem qualquer superfície de execução — é isso que permite abri-la ao público em segurança.",
   "demoUnavailableRig": "Um enclosure é uma máquina virtual descartável conduzida por um agente. A demo não arranca nenhuma: um endpoint público capaz de lançar uma VM não é uma demo.",
@@ -7663,7 +7599,6 @@
   "backupImportBody": "Isto substitui tudo em {name} pelo conteúdo do arquivo. O que esse espaço de trabalho tem agora é perdido, e não dá para desfazer.",
   "backupImportSourceLabel": "Arquivo de banco de dados do espaço de trabalho",
   "backupImportSourceDescription": "Um arquivo .db que o servidor consiga ler. Os caminhos são resolvidos no host do servidor, não neste dispositivo.",
-  "backupImportChooseFile": "Escolher arquivo",
   "backupImportDone": "Importado para {name}.",
   "backupDeleteBody": "{name} desaparece de todas as listas e buscas. Seu arquivo de banco de dados continua no disco, os backups continuam incluindo ele, e nada recupera esse espaço automaticamente.",
   "backupExportDescription": "Grave uma cópia no servidor ou baixe uma para este dispositivo.",

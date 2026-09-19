@@ -68,18 +68,14 @@ Future<void> _expandWorkflow(WidgetTester tester) async {
 }
 
 void main() {
-
   testWidgets('in-progress job tile spins; queued job tile does not', (
     tester,
   ) async {
     final checks = [_check(name: 'build', status: CheckRunStatus.inProgress)];
     await tester.pumpWidget(
-      _wrap(ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        )),
+      _wrap(
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
+      ),
     );
     await _expandWorkflow(tester);
 
@@ -166,11 +162,11 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        ),
+            prRef: _prRef,
+            checks: checks,
+            isLoading: false,
+            error: null,
+          ),
           overrides: [
             prWorkflowGraphProvider.overrideWith((ref, key) async => graph),
             prJobRunDetailProvider.overrideWith(
@@ -204,15 +200,12 @@ void main() {
     },
   );
 
-  testWidgets('matrix jobs group onto their node instead of trailing the '
-      'selected job as a flat list', (tester) async {
-    // Fondue CI's shape: two sharded matrix jobs whose YAML `name:` is a
-    // `${{ … }}` template, so no check-run name ever equals it.
+  testWidgets('matrix jobs group onto their node instead of trailing the selected job as a flat list', (tester) async {
     const runId = 900;
     const shardTemplate =
         r' (shard ${{ matrix.shard }}/${{ strategy.job-total }})';
     final graph = WorkflowGraph(
-      name: 'Fondue CI',
+      name: 'Test CI',
       jobs: [
         WorkflowJobNode(id: 'lint-typecheck', name: 'Lint & Typecheck'),
         WorkflowJobNode(
@@ -242,12 +235,7 @@ void main() {
 
     await tester.pumpWidget(
       _wrap(
-        ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        ),
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
         overrides: [
           prWorkflowGraphProvider.overrideWith(
             (ref, key) async => key.workflowRunId == runId ? graph : null,
@@ -311,12 +299,7 @@ void main() {
 
     await tester.pumpWidget(
       _wrap(
-        ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        ),
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
         overrides: [
           prWorkflowGraphProvider.overrideWith((ref, key) async => graph),
         ],
@@ -341,12 +324,9 @@ void main() {
       ),
     ];
     await tester.pumpWidget(
-      _wrap(ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        )),
+      _wrap(
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
+      ),
     );
     await _expandWorkflow(tester);
 
@@ -368,12 +348,7 @@ void main() {
     ];
     await tester.pumpWidget(
       _wrap(
-        ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        ),
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
         overrides: [
           prWorkflowGraphProvider.overrideWith((ref, key) async => null),
         ],
@@ -396,12 +371,9 @@ void main() {
       ),
     ];
     await tester.pumpWidget(
-      _wrap(ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        )),
+      _wrap(
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
+      ),
     );
     await tester.pump();
 
@@ -425,12 +397,9 @@ void main() {
       ),
     ];
     await tester.pumpWidget(
-      _wrap(ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        )),
+      _wrap(
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
+      ),
     );
     await _expandWorkflow(tester);
 
@@ -447,12 +416,9 @@ void main() {
     // …sticks when the same checks arrive again (refetch): the seed is
     // one-shot, so the card stays collapsed.
     await tester.pumpWidget(
-      _wrap(ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        )),
+      _wrap(
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
+      ),
     );
     await tester.pump();
     expect(find.text('Build'), findsNothing);
@@ -481,12 +447,7 @@ void main() {
 
     await tester.pumpWidget(
       _wrap(
-        ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        ),
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
         overrides: [
           prWorkflowGraphProvider.overrideWith(
             (ref, key) async => key.workflowRunId == runId ? graph : null,
@@ -522,12 +483,7 @@ void main() {
 
     await tester.pumpWidget(
       _wrap(
-        ChecksTab(
-          prRef: _prRef,
-          checks: checks,
-          isLoading: false,
-          error: null,
-        ),
+        ChecksTab(prRef: _prRef, checks: checks, isLoading: false, error: null),
         overrides: [
           prWorkflowGraphProvider.overrideWith(
             (ref, key) async => key.workflowRunId == runId ? graph : null,

@@ -366,8 +366,8 @@ class PullRequest {
   /// Equality comparison.
   ///
   /// Keyed on `(id, repoFullName)` — the mappers set `id` to the PR NUMBER,
-  /// which is unique only within its repo, so `id` alone made app-server#33373
-  /// equal web-app#33373. Two PRs are the same PR only when they are the same
+  /// which is unique only within its repo, so `id` alone made repo-a#33373
+  /// equal repo-b#33373. Two PRs are the same PR only when they are the same
   /// number in the same repo.
   @override
   bool operator ==(Object other) =>

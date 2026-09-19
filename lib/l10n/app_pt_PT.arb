@@ -198,7 +198,6 @@
   "addRepoBrowseIntro": "Navegue pelas pastas na máquina que executa o servidor e selecione os checkouts git para registar.",
   "appFont": "Fonte da aplicação",
   "articlesSubscribed": "Artigos dos seus feeds subscritos.",
-  "attachFiles": "Anexar ficheiros",
   "awaitingYourReview": "A aguardar a sua revisão",
   "checking": "A verificar",
   "checkingEllipsis": "A verificar…",
@@ -331,7 +330,6 @@
       }
     }
   },
-  "openApplicationSettings": "Abrir definições da aplicação",
   "openArticlesInApp": "Abrir artigos na aplicação",
   "prMergedBody": "Uma pull request foi fundida",
   "prsMerged": "PRs fundidas",
@@ -446,7 +444,6 @@
   },
   "pipelineTemplateEditorSubtitle": "Arraste tipos de nós da barra lateral até o canvas e ligue-os.",
   "unsavedChanges": "Alterações não guardadas",
-  "nodeConfigNoUpstream": "Não há outros nós para ligar.",
   "conditionModeFilesAny": "Ficheiro(s) existe(m) — algum",
   "conditionModeFilesAll": "Ficheiros existem — todos",
   "conditionFilePaths": "Caminhos de ficheiro",
@@ -619,14 +616,6 @@
   "ideCloseTab": "Fechar separador",
   "ideCloseSaved": "Fechar guardadas",
   "ideNewTabMenu": "Novo separador",
-  "ideRevertConfirmMessage": "Reverter {count, plural, =1{1 ficheiro} other{{count} ficheiros}} para HEAD? Isso descarta as alterações da árvore de trabalho.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "ideRevertUntracked": "Ficheiros não rastreados não podem ser revertidos",
   "ideRevertFailed": "Não foi possível reverter os ficheiros. A árvore de trabalho da conversa pode estar indisponível.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 ficheiro} other{{count} ficheiros}} não pôde(puderam) ser revertido(s) (não rastreado).",
@@ -987,7 +976,6 @@
   },
   "backupImportSourceLabel": "Ficheiro de base de dados do espaço de trabalho",
   "backupImportSourceDescription": "Um ficheiro .db que o servidor consiga ler. Os caminhos são resolvidos no host do servidor, não neste dispositivo.",
-  "backupImportChooseFile": "Escolher ficheiro",
   "backupDeleteBody": "{name} desaparece de todas as listas e pesquisas. Seu ficheiro de base de dados continua no disco, os backups continuam incluindo ele, e nada recupera esse espaço automaticamente.",
   "@backupDeleteBody": {
     "description": "What deleting a workspace does and what it leaves on disk",

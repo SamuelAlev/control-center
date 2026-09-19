@@ -186,8 +186,6 @@ class _FakeMessagingRepository implements MessagingRepository {
   @override
   Future<void> deleteSpace(String workspaceId, String spaceId) async {}
 
-  Future<void> updateSpaceType(String spaceId, String type) async {}
-
   @override
   Future<void> updateSpaceName(
     String workspaceId,

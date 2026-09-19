@@ -783,8 +783,6 @@
   "copyRelativePath": "คัดลอกพาธสัมพัทธ์",
   "nameRequired": "ต้องระบุชื่อ",
   "import": "นำเข้า",
-  "sortByStatus": "สถานะ",
-  "sortByName": "ชื่อ",
   "noMatchingAgents": "ไม่มีเอเจนต์ที่ตรงกับตัวกรอง",
   "@runsInLastSixMonths": {
     "description": "Total agent runs in the last six months",
@@ -1647,7 +1645,6 @@
   "askAi": "ถาม AI",
   "askAiReviewDescription": "ให้ AI รีวิว PR นี้",
   "assignees": "ผู้รับมอบหมาย",
-  "attachFiles": "แนบไฟล์",
   "attachImage": "แนบภาพ",
   "attachedAgents": "เอเจนต์ที่แนบ",
   "audioInput": "อินพุตเสียง",
@@ -1702,7 +1699,6 @@
   "clickToRetry": "คลิกเพื่อลองใหม่",
   "close": "ปิด",
   "closeEsc": "ปิด (Esc)",
-  "closeKeyboardHint": "ปิด",
   "closeReader": "ปิดตัวอ่าน",
   "closed": "ปิดแล้ว",
   "codeFont": "แบบอักษรโค้ด",
@@ -2430,7 +2426,6 @@
   "nativeSandboxNeedsInstall": "ต้องติดตั้งแซนด์บ็อกซ์เนทีฟ",
   "navObservability": "การสังเกตการณ์",
   "navSettings": "การตั้งค่า",
-  "navigateLabel": "นำทาง",
   "networkBlockCount": "บล็อกเครือข่าย {count} รายการ",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2443,7 +2438,6 @@
   "neutral": "เป็นกลาง",
   "newCommitsPushed": "มีคอมมิตใหม่ถูกพุช — คลิกเพื่อโหลด diff ใหม่",
   "newFact": "ข้อเท็จจริงใหม่",
-  "newLabel": "ใหม่",
   "newPolicy": "นโยบายใหม่",
   "newsfeed": "ฟีดข่าว",
   "newsfeedLabel": "ฟีดข่าว",
@@ -2489,7 +2483,6 @@
   "noneAllRoles": "ไม่มี (ทุกบทบาท)",
   "notAvailable": "ไม่พร้อมใช้",
   "notConfiguredLabel": "ยังไม่ได้ตั้งค่า",
-  "notDetected": "ไม่พบ",
   "notFoundLabel": "ไม่พบ",
   "notes": "บันทึก",
   "notificationAgentFinished": "เอเจนต์เสร็จแล้ว",
@@ -2707,11 +2700,9 @@
     }
   },
   "notificationsMuteRepo": "ปิดเสียงรีโพสิทอรีนี้",
-  "notificationsUnmuteRepo": "เปิดเสียงรีโพสิทอรีนี้",
   "onboardingLinuxDescription": "Control Center สามารถใช้คอนเทนเนอร์ Linux เพื่อแยกการรันของเอเจนต์",
   "onboardingMacosDescription": "Control Center ใช้แซนด์บ็อกซ์เนทีฟบน macOS เพื่อแยกการรันของเอเจนต์",
   "onboardingUnsupportedDescription": "แซนด์บ็อกซ์ใช้ไม่ได้บนแพลตฟอร์มนี้ การรันของเอเจนต์จะไม่ถูกแยก",
-  "openApplicationSettings": "เปิดการตั้งค่าแอป",
   "openArticlesInApp": "เปิดบทความในแอป",
   "openInBrowser": "เปิดในเบราว์เซอร์",
   "openedInYourBrowser": "เปิดในเบราว์เซอร์แล้ว",
@@ -2911,11 +2902,9 @@
   "environmentVariablesDescription": "ตัวแปรสภาพแวดล้อมที่กำหนดเองที่ส่งให้อะแดปเตอร์นี้ (เช่น คีย์ API) เก็บในพวงกุญแจ",
   "variableKey": "คีย์",
   "variableValue": "ค่า",
-  "savingChanges": "กำลังบันทึกการเปลี่ยนแปลง…",
   "savingEllipsis": "กำลังบันทึก…",
   "scopeDiffToCommits": "จำกัด diff ตามคอมมิต — Shift-คลิกสำหรับช่วง",
   "noPrsMatchSearch": "ไม่มี pull request ที่ตรง",
-  "noPrsMatchSearchHint": "ไม่มี PR ที่เปิดอยู่ตรงกับการค้นหา ลองคำอื่นหรือล้างการค้นหา",
   "searchFactsHint": "ค้นหาข้อเท็จจริง...",
   "searchFonts": "ค้นหาแบบอักษร…",
   "searchGifs": "ค้นหา GIF",
@@ -2940,7 +2929,6 @@
   "selectAgentToReportTo": "เลือกเอเจนต์ที่จะรายงานต่อ…",
   "selectAnAgent": "เลือกเอเจนต์",
   "selectConversation": "เลือกการสนทนา",
-  "selectEffortLevel": "เลือกระดับความพยายาม",
   "selectLabel": "เลือก",
   "selectRunner": "เลือกตัวรัน",
   "semanticSearch": "ค้นหาเชิงความหมาย",
@@ -2983,7 +2971,6 @@
       }
     }
   },
-  "skillEditor": "ตัวแก้ไขสกิล",
   "skillNameRequired": "ต้องระบุชื่อสกิล",
   "skillSaved": "บันทึกสกิล \"{name}\" แล้ว",
   "@skillSaved": {
@@ -3763,7 +3750,6 @@
   "pipelineTemplatesSubtitle": "ตัวแก้ไขลากแล้ววางสำหรับไปป์ไลน์ที่ประสานเอเจนต์ของคุณ",
   "pipelineTemplatesNew": "เทมเพลตใหม่",
   "pipelineTemplatesEmpty": "ยังไม่มีเทมเพลตไปป์ไลน์ สร้างหนึ่งรายการเพื่อเริ่มต้น",
-  "pipelineTemplateIdLabel": "ID เทมเพลต",
   "pipelineTemplateBuiltInBadge": "ในตัว",
   "pipelineTemplateDeleteConfirmTitle": "ลบเทมเพลตหรือไม่?",
   "pipelineTemplateDeleteConfirmBody": "ลบเทมเพลตไปป์ไลน์ {name} หรือไม่? เลิกทำไม่ได้",
@@ -3775,12 +3761,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "แก้ไขไปป์ไลน์",
   "pipelineTemplateEditorSubtitle": "ลากชนิดโหนดจากแถบข้างลงบนแคนวาส แล้วต่อเข้าด้วยกัน",
   "unsavedChanges": "มีการเปลี่ยนแปลงที่ยังไม่บันทึก",
   "nodeLibraryTitle": "คลังโหนด",
   "nodeLibraryHint": "ลากรายการใดก็ได้ลงบนแคนวาสเพื่อเพิ่มโหนด",
-  "editorDragHint": "ลากจากคลัง คลิกโหนดเพื่อแก้ไข",
   "editorEmptyCanvas": "ลากโหนดจากคลังเพื่อเริ่ม",
   "pipelineWhenThisHappens": "เมื่อสิ่งนี้เกิดขึ้น",
   "pipelineDoThis": "ทำสิ่งนี้",
@@ -3829,8 +3813,6 @@
   "nodeConfigPromptHelp": "ใช้ตัวยึดวงเล็บปีกกาคู่เพื่อดึงค่าจากสถานะตอนรัน",
   "nodeConfigScript": "สคริปต์ Bash",
   "nodeConfigScriptHelp": "รันด้วย bash -c มีการตั้ง GITHUB_TOKEN ตัวยึดถูกแทนที่ก่อนรัน",
-  "nodeConfigTriggers": "ทริกเกอร์จาก",
-  "nodeConfigNoUpstream": "ไม่มีโหนดอื่นให้ต่อจาก",
   "nodeConfigRouteKeys": "คีย์เส้นทาง",
   "nodeConfigRouteKeyFrom": "คีย์เส้นทางจาก {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3861,17 +3843,8 @@
   "conditionCases": "กรณี (คั่นด้วยจุลภาค)",
   "conditionCasesHelp": "คีย์เส้นทางที่จับคู่กับค่า ตามลำดับ",
   "conditionDefaultCase": "กรณีเริ่มต้น",
-  "triggerPanelTitle": "ทริกเกอร์",
-  "triggerPanelHelp": "สิ่งที่เริ่มไปป์ไลน์นี้",
   "triggerManualHelp": "แสดงในหน้ารันและเริ่มด้วยตนเอง",
-  "triggerSectionAutomatic": "ทริกเกอร์อัตโนมัติ",
-  "triggerAddButton": "เพิ่มทริกเกอร์",
-  "triggerNoneYet": "ยังไม่มีทริกเกอร์อัตโนมัติ",
-  "triggerAddDialogTitle": "เพิ่มทริกเกอร์",
-  "triggerKindLabel": "ชนิดทริกเกอร์",
-  "triggerKindEvent": "เมื่อเกิดเหตุการณ์",
   "triggerKindSchedule": "ตามตารางเวลา",
-  "triggerKindWebhook": "ผ่าน webhook",
   "triggerScheduleExprLabel": "ตารางเวลา (cron หรือ every:seconds)",
   "triggerTimezoneLabel": "เขตเวลา (ไม่บังคับ)",
   "triggerCatchUpLabel": "เมื่อพลาดรัน",
@@ -3893,8 +3866,6 @@
   },
   "triggerWebhookHelp": "สร้าง URL webhook ที่ลงนาม ระบบภายนอก POST ไปที่นั่นเพื่อเริ่มไปป์ไลน์นี้",
   "triggerWebhookPathLabel": "เส้นทางเว็บฮุค",
-  "triggerEventFieldLabel": "เหตุการณ์",
-  "triggerNoMoreEvents": "เหตุการณ์ที่ใช้ได้ถูกต่อไว้หมดแล้ว",
   "triggerMatchStatusLabel": "เฉพาะเมื่อสถานะคือ",
   "triggerSummaryNone": "ไม่มีทริกเกอร์",
   "triggerEverySeconds": "ทุก {seconds} วินาที",
@@ -4100,9 +4071,7 @@
   "blockAdsTrackersDescription": "ตัดโฆษณา ตัวติดตาม และแบนเนอร์คุกกี้ออกจากบทความที่เปิดในตัวอ่าน",
   "agentQuestionHeader": "คำถามสำหรับคุณ",
   "agentQuestionAnsweredLabel": "ตอบแล้ว",
-  "agentQuestionSubmit": "ส่งคำตอบ",
   "agentQuestionFreeformHint": "พิมพ์คำตอบของคุณ…",
-  "agentQuestionAnswerLabel": "คำตอบของคุณ",
   "agentQuestionProgress": "คำถาม {index} จาก {count}",
   "agentQuestionSkip": "ข้าม",
   "agentQuestionSkippedLabel": "ข้ามแล้ว",
@@ -5190,18 +5159,7 @@
   "ideNewTab": "เปิดตัวแก้ไข",
   "ideNewTabMenu": "แท็บใหม่",
   "ideReviewCode": "รีวิวโค้ด",
-  "ideRevert": "ย้อนกลับ",
   "ideRevertConfirmTitle": "ย้อนการเปลี่ยนแปลง",
-  "ideRevertConfirmMessage": "ย้อน {count, plural, =1{1 ไฟล์} other{{count} ไฟล์}} ไปที่ HEAD หรือไม่? การเปลี่ยนแปลงใน worktree จะถูกทิ้ง",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "ย้อนกลับ",
-  "ideRevertConfirmCancel": "ยกเลิก",
   "ideRevertUntracked": "ไฟล์ที่ยังไม่ติดตามย้อนกลับไม่ได้",
   "ideRevertFailed": "ย้อนไฟล์ไม่ได้ worktree ของการสนทนาอาจใช้ไม่ได้",
   "ideRevertSomeSkipped": "{count, plural, =1{1 ไฟล์} other{{count} ไฟล์}} ย้อนกลับไม่ได้ (ยังไม่ติดตาม)",
@@ -5212,7 +5170,6 @@
       }
     }
   },
-  "ideViewSource": "ดูซอร์ส",
   "ideSearchMatchCase": "ตรงตัวพิมพ์",
   "ideSearchWholeWord": "ทั้งคำ",
   "ideSearchRegex": "Regex",
@@ -5543,7 +5500,6 @@
     }
   },
   "providerBaseUrlHint": "Base URL (ไม่บังคับ)",
-  "customProvidersDescription": "เอนด์พอยต์ที่เข้ากันได้กับ OpenAI หรือ Anthropic — Ollama, LM Studio, vLLM หรือการติดตั้งส่วนตัว — พร้อมคีย์ API ไม่บังคับ",
   "addProvider": "เพิ่มผู้ให้บริการ",
   "noCustomProviders": "ยังไม่มีผู้ให้บริการที่กำหนดเอง",
   "providerNameLabel": "ชื่อ",
@@ -5607,7 +5563,6 @@
   "repoScriptsArchivePlaceholder": "เช่น docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "รันล่าสุด",
   "repoScriptsNoRuns": "ยังไม่มีรัน",
-  "repoScriptsOutput": "เอาต์พุต",
   "repoScriptsSaved": "บันทึกสคริปต์แล้ว",
   "repoScriptsRunKindSetup": "ตั้งค่า",
   "repoScriptsRunKindArchive": "เก็บถาวร",
@@ -8155,8 +8110,6 @@
   },
   "providersNoneConnectedNote": "ยังไม่เชื่อมต่อผู้ให้บริการ ดังนั้นรันไทม์เอเจนต์ในตัวไม่มีอะไรให้รัน เพิ่มคีย์ API หรือลงชื่อเข้าใช้ด้านล่าง",
   "providersFilterHint": "กรองผู้ให้บริการ",
-  "providersFacetNeedsSetup": "ต้องตั้งค่า",
-  "providersFacetCustom": "กำหนดเอง",
   "providersNoneMatch": "ไม่มีอะไรตรงกับตัวกรองนี้",
   "providerDeniedHereTitle": "ปฏิเสธในเวิร์กสเปซนี้",
   "providerDeniedHereBody": "เอเจนต์ที่นี่ใช้ผู้ให้บริการนี้ไม่ได้ แม้เชื่อมต่อแล้ว เวิร์กสเปซอื่นไม่ได้รับผลกระทบ",
@@ -8168,8 +8121,6 @@
   "providerModelsFilterHint": "กรองโมเดล",
   "adaptersNoneReadyNote": "ไม่พบ CLI ของตัวรันในแคตตาล็อกบนเครื่องนี้ ติดตั้งหนึ่งตัว แล้วรีเฟรช",
   "adaptersFilterHint": "กรองตัวรัน",
-  "adaptersFacetReady": "พร้อม",
-  "adaptersFacetMissing": "ขาด",
   "adaptersLaunchGroup": "เปิดใช้",
   "adaptersLaunchGroupDescription": "สิ่งที่ตัวรันนี้ได้รับเมื่อเอเจนต์เริ่ม ตั้งค่าเหล่านี้ก่อนติดตั้ง CLI ได้ถ้าต้องการ",
   "adaptersEnvNone": "ยังไม่ได้ตั้ง",
@@ -8728,7 +8679,6 @@
   "demoTourSubtitle": "สี่ที่ที่แสดงสิ่งที่แอปทำจริง",
   "demoTourSkip": "ข้าม",
   "demoTourStarRepo": "Star บน GitHub",
-  "demoTourDone": "เสร็จแล้ว",
   "demoTourOpen": "เปิด",
   "demoTourSpacesTitle": "คุยกับเอเจนต์",
   "demoTourSpacesBody": "ส่งข้อความในสเปซแล้วดูรันสตรีมเข้ามา — การคิด การเรียกเครื่องมือ และค่าใช้จ่าย เหมือนรันจริง",
@@ -8738,16 +8688,6 @@
   "demoTourTicketsBody": "ตั๋วงาน สิ่งที่ต้องทำ และแผนลิงก์กับการสนทนาเดียวกันที่เอเจนต์กำลังมี",
   "demoTourInboxTitle": "ดูการทำงานทั้งหมด",
   "demoTourInboxBody": "ทุกการแจ้งจากทุกเสาลงในกล่องขาเข้าเดียว — รีวิว ตั๋วงาน รัน และการประชุม",
-  "demoSessionEndingSoon": "เซสชันเดโมนี้จบใน {minutes} นาที",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "เซสชันเดโมนี้จบแล้ว โหลดหน้าใหม่เพื่อเริ่มอันใหม่",
   "demoUnavailableTitle": "ใช้ไม่ได้ในเดโม",
   "demoUnavailableTerminal": "เทอร์มินัลรันเชลล์จริงบนโฮสต์เซิร์ฟเวอร์ เดโมไม่มีพื้นผิวการรันเลย — นั่นคือสิ่งที่ทำให้เปิดสู่สาธารณะได้อย่างปลอดภัย",
   "demoUnavailableRig": "เอนโคลเจอร์คือเครื่องเสมือนใช้แล้วทิ้งที่เอเจนต์ขับ เดโมไม่บูตเลย: เอนด์พอยต์สาธารณะที่เริ่ม VM ได้ไม่ใช่เดโม",
@@ -8853,7 +8793,6 @@
   },
   "backupImportSourceLabel": "ไฟล์ฐานข้อมูลเวิร์กสเปซ",
   "backupImportSourceDescription": "ไฟล์ .db ที่เซิร์ฟเวอร์อ่านได้ พาธแก้บนโฮสต์เซิร์ฟเวอร์ ไม่ใช่บนอุปกรณ์นี้",
-  "backupImportChooseFile": "เลือกไฟล์",
   "backupImportDone": "นำเข้าใน {name} แล้ว",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

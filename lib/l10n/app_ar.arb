@@ -761,8 +761,6 @@
   "copyRelativePath": "نسخ المسار النسبي",
   "nameRequired": "الاسم مطلوب",
   "import": "استيراد",
-  "sortByStatus": "الحالة",
-  "sortByName": "الاسم",
   "noMatchingAgents": "لا وكلاء يطابقون عامل التصفية",
   "watchVideoOn": "مشاهدة الفيديو على ⁨{provider}⁩",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "اسأل الذكاء الاصطناعي",
   "askAiReviewDescription": "اطلب من الذكاء الاصطناعي مراجعة هذا الـ PR",
   "assignees": "المُسند إليهم",
-  "attachFiles": "إرفاق ملفات",
   "attachImage": "إرفاق صورة",
   "attachedAgents": "الوكلاء المرفقون",
   "audioInput": "إدخال الصوت",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "انقر لإعادة المحاولة",
   "close": "إغلاق",
   "closeEsc": "إغلاق (Esc)",
-  "closeKeyboardHint": "إغلاق",
   "closeReader": "إغلاق القارئ",
   "closed": "مغلق",
   "codeFont": "خط التعليمات البرمجية",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "يلزم تثبيت البيئة المعزولة الأصلية",
   "navObservability": "قابلية الملاحظة",
   "navSettings": "الإعدادات",
-  "navigateLabel": "التنقل",
   "networkBlockCount": "{count} من عمليات حظر الشبكة",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "محايد",
   "newCommitsPushed": "تم دفع إيداعات جديدة — انقر لإعادة تحميل الفرق",
   "newFact": "حقيقة جديدة",
-  "newLabel": "جديد",
   "newPolicy": "سياسة جديدة",
   "newsfeed": "موجز الأخبار",
   "newsfeedLabel": "موجز الأخبار",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "بلا (جميع الأدوار)",
   "notAvailable": "غير متوفر",
   "notConfiguredLabel": "غير مكوّن.",
-  "notDetected": "لم يُكتشف",
   "notFoundLabel": "غير موجود",
   "notes": "ملاحظات",
   "notificationAgentFinished": "انتهى الوكيل",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "كتم هذا المستودع",
-  "notificationsUnmuteRepo": "إلغاء كتم هذا المستودع",
   "onboardingLinuxDescription": "يمكن لـ Control Center استخدام حاويات Linux لعزل تنفيذ الوكلاء.",
   "onboardingMacosDescription": "يستخدم Control Center البيئة المعزولة الأصلية على macOS لعزل تنفيذ الوكلاء.",
   "onboardingUnsupportedDescription": "البيئة المعزولة غير متوفرة على هذا النظام الأساسي. سيعمل تنفيذ الوكلاء دون عزل.",
-  "openApplicationSettings": "فتح إعدادات التطبيق",
   "openArticlesInApp": "فتح المقالات داخل التطبيق",
   "openInBrowser": "فتح في المتصفح",
   "openedInYourBrowser": "فُتح في متصفحك.",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "متغيرات بيئة مخصصة تُمرَّر إلى هذا المحوّل (مثل مفاتيح API). تُخزَّن في سلسلة المفاتيح.",
   "variableKey": "المفتاح",
   "variableValue": "القيمة",
-  "savingChanges": "جارٍ حفظ التغييرات…",
   "savingEllipsis": "جارٍ الحفظ…",
   "scopeDiffToCommits": "حصر الفرق في إيداعات محددة — انقر مع الضغط على Shift لتحديد نطاق",
   "noPrsMatchSearch": "لا توجد طلبات سحب مطابقة",
-  "noPrsMatchSearchHint": "لا توجد PRs مفتوحة تطابق بحثك. جرّب مصطلحات مختلفة أو امسح البحث.",
   "searchFactsHint": "البحث في الحقائق...",
   "searchFonts": "البحث في الخطوط…",
   "searchGifs": "البحث عن صور GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "حدد الوكيل الذي يتبع له…",
   "selectAnAgent": "حدد وكيلًا",
   "selectConversation": "حدد محادثة",
-  "selectEffortLevel": "حدد مستوى الجهد",
   "selectLabel": "تحديد",
   "selectRunner": "حدد مشغّلًا",
   "semanticSearch": "البحث الدلالي",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "محرر المهارات",
   "skillNameRequired": "اسم المهارة مطلوب.",
   "skillSaved": "تم حفظ المهارة \"⁨{name}⁩\".",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "محرر سحب وإفلات لخطوط الأنابيب التي تنسّق وكلاءك.",
   "pipelineTemplatesNew": "قالب جديد",
   "pipelineTemplatesEmpty": "لا قوالب خطوط أنابيب بعد. أنشئ واحدًا للبدء.",
-  "pipelineTemplateIdLabel": "معرّف القالب",
   "pipelineTemplateBuiltInBadge": "مدمج",
   "pipelineTemplateDeleteConfirmTitle": "حذف القالب؟",
   "pipelineTemplateDeleteConfirmBody": "هل تريد حذف قالب خط الأنابيب ⁨{name}⁩؟ لا يمكن التراجع عن هذا.",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "تعديل خط الأنابيب",
   "pipelineTemplateEditorSubtitle": "اسحب أنواع العقد من الشريط الجانبي إلى اللوحة، ثم اربطها معًا.",
   "unsavedChanges": "تغييرات غير محفوظة",
   "nodeLibraryTitle": "مكتبة العقد",
   "nodeLibraryHint": "اسحب أي عنصر إلى اللوحة لإضافة عقدة.",
-  "editorDragHint": "اسحب من المكتبة، وانقر على عقدة لتعديلها",
   "editorEmptyCanvas": "اسحب عقدة من المكتبة للبدء.",
   "pipelineWhenThisHappens": "عندما يحدث هذا",
   "pipelineDoThis": "نفّذ هذا",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "استخدم عناصر نائبة بأقواس مزدوجة لسحب القيم من الحالة وقت التشغيل.",
   "nodeConfigScript": "سكربت Bash",
   "nodeConfigScriptHelp": "يعمل عبر ⁨bash -c⁩. المتغير GITHUB_TOKEN مضبوط. تُستبدل العناصر النائبة قبل التنفيذ.",
-  "nodeConfigTriggers": "يُشغَّل من",
-  "nodeConfigNoUpstream": "لا عقد أخرى يمكن الربط منها.",
   "nodeConfigRouteKeys": "مفاتيح التوجيه",
   "nodeConfigRouteKeyFrom": "مفتاح التوجيه من {source}",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "الحالات (مفصولة بفواصل)",
   "conditionCasesHelp": "مفاتيح التوجيه التي تُطابَق مع القيمة، بالترتيب.",
   "conditionDefaultCase": "الحالة الافتراضية",
-  "triggerPanelTitle": "المشغّلات",
-  "triggerPanelHelp": "ما الذي يبدأ خط الأنابيب هذا.",
   "triggerManualHelp": "الإظهار في صفحة التشغيل والبدء يدويًا.",
-  "triggerSectionAutomatic": "المشغّلات التلقائية",
-  "triggerAddButton": "إضافة مشغّل",
-  "triggerNoneYet": "لا مشغّلات تلقائية بعد.",
-  "triggerAddDialogTitle": "إضافة مشغّل",
-  "triggerKindLabel": "نوع المشغّل",
-  "triggerKindEvent": "عند حدث",
   "triggerKindSchedule": "وفق جدول",
-  "triggerKindWebhook": "عبر ويب هوك",
   "triggerScheduleExprLabel": "الجدولة (cron أو ⁨every:seconds⁩)",
   "triggerTimezoneLabel": "المنطقة الزمنية (اختياري)",
   "triggerCatchUpLabel": "عند التشغيلات الفائتة",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "يُنشأ عنوان URL موقّع للويب هوك. ترسل الأنظمة الخارجية طلب POST إليه لبدء خط الأنابيب هذا.",
   "triggerWebhookPathLabel": "مسار الويب هوك",
-  "triggerEventFieldLabel": "الحدث",
-  "triggerNoMoreEvents": "كل الأحداث المتاحة موصولة بالفعل.",
   "triggerMatchStatusLabel": "فقط عندما تكون الحالة",
   "triggerSummaryNone": "لا مشغّلات",
   "triggerEverySeconds": "كل {seconds} ثانية",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "أزل الإعلانات والمتتبعات ولافتات ملفات تعريف الارتباط من المقالات التي تفتحها في القارئ.",
   "agentQuestionHeader": "سؤال لك",
   "agentQuestionAnsweredLabel": "تمت الإجابة",
-  "agentQuestionSubmit": "إرسال الإجابة",
   "agentQuestionFreeformHint": "اكتب إجابتك…",
-  "agentQuestionAnswerLabel": "إجابتك",
   "agentQuestionProgress": "السؤال {index} من {count}",
   "agentQuestionSkip": "تخطي",
   "agentQuestionSkippedLabel": "تم التخطي",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "فتح محرر",
   "ideNewTabMenu": "علامة تبويب جديدة",
   "ideReviewCode": "مراجعة الكود",
-  "ideRevert": "إرجاع",
   "ideRevertConfirmTitle": "إرجاع التغييرات",
-  "ideRevertConfirmMessage": "هل تريد إرجاع {count, plural, zero{0 ملفات} one{ملف واحد} two{ملفين} few{{count} ملفات} many{{count} ملفًا} other{{count} ملف}} إلى HEAD؟ هذا يتجاهل تغييرات شجرة العمل.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "إرجاع",
-  "ideRevertConfirmCancel": "إلغاء",
   "ideRevertUntracked": "لا يمكن إرجاع الملفات غير المتتبعة",
   "ideRevertFailed": "تعذر إرجاع الملفات. قد تكون شجرة عمل المحادثة غير متاحة.",
   "ideRevertSomeSkipped": "تعذر إرجاع {count, plural, zero{0 ملفات} one{ملف واحد} two{ملفين} few{{count} ملفات} many{{count} ملفًا} other{{count} ملف}} (غير متتبعة).",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "عرض المصدر",
   "ideSearchMatchCase": "مطابقة حالة الأحرف",
   "ideSearchWholeWord": "الكلمة كاملة",
   "ideSearchRegex": "تعبير نمطي",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "عنوان URL الأساسي (اختياري)",
-  "customProvidersDescription": "أي نقطة نهاية متوافقة مع OpenAI أو Anthropic — مثل Ollama أو LM Studio أو vLLM أو نشر خاص — مع مفتاح API اختياري.",
   "addProvider": "إضافة مزود",
   "noCustomProviders": "لا يوجد مزودون مخصصون بعد.",
   "providerNameLabel": "الاسم",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "مثال: docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "عمليات التشغيل الأخيرة",
   "repoScriptsNoRuns": "لا توجد عمليات تشغيل بعد",
-  "repoScriptsOutput": "المخرجات",
   "repoScriptsSaved": "تم حفظ السكربتات",
   "repoScriptsRunKindSetup": "إعداد",
   "repoScriptsRunKindArchive": "أرشفة",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "لا يوجد موفّر متصل، لذا لا يملك وقت تشغيل الوكلاء المدمج ما يعمل عليه. أضف مفتاح API أو سجّل الدخول إلى أحد الموفّرين أدناه.",
   "providersFilterHint": "تصفية الموفّرين",
-  "providersFacetNeedsSetup": "يحتاج إلى إعداد",
-  "providersFacetCustom": "مخصص",
   "providersNoneMatch": "لا شيء يطابق هذه التصفية",
   "providerDeniedHereTitle": "مرفوض في مساحة العمل هذه",
   "providerDeniedHereBody": "لا يستطيع الوكلاء هنا استخدام هذا الموفّر رغم أنه متصل. مساحات العمل الأخرى غير متأثرة.",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "تصفية النماذج",
   "adaptersNoneReadyNote": "لم يُعثر على أي من أدوات CLI للمشغّلات المفهرسة على هذا الجهاز. ثبّت أحدها ثم حدّث.",
   "adaptersFilterHint": "تصفية المشغّلات",
-  "adaptersFacetReady": "جاهز",
-  "adaptersFacetMissing": "مفقود",
   "adaptersLaunchGroup": "الإطلاق",
   "adaptersLaunchGroupDescription": "ما يُعطى لهذا المشغّل عندما يبدؤه وكيل. يمكنك ضبط هذه القيم قبل تثبيت الـ CLI إذا شئت.",
   "adaptersEnvNone": "لا شيء مضبوط",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "أربعة أماكن تُظهر ما يفعله التطبيق فعليًا.",
   "demoTourSkip": "تخطٍّ",
   "demoTourStarRepo": "ضع نجمة على GitHub",
-  "demoTourDone": "تم",
   "demoTourOpen": "فتح",
   "demoTourSpacesTitle": "تحدث إلى وكيل",
   "demoTourSpacesBody": "أرسل رسالة في مساحة وشاهد تشغيلاً يتدفق — التفكير واستدعاءات الأدوات والتكلفة، تمامًا كما يُعرض التشغيل الحقيقي.",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "التذاكر والمهام والخطط مرتبطة بالمحادثات نفسها التي يجريها الوكلاء.",
   "demoTourInboxTitle": "شاهد العملية بأكملها",
   "demoTourInboxBody": "كل تنبيه من كل ركن يصل إلى وارد واحد — المراجعات والتذاكر وعمليات التشغيل والاجتماعات.",
-  "demoSessionEndingSoon": "تنتهي جلسة العرض التجريبي هذه خلال {minutes} دقيقة.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "انتهت جلسة العرض التجريبي هذه. أعد تحميل الصفحة لبدء جلسة جديدة.",
   "demoUnavailableTitle": "غير متاح في النسخة التجريبية",
   "demoUnavailableTerminal": "تشغّل الطرفية صدفة أوامر حقيقية على مضيف الخادم. لا تملك النسخة التجريبية أي سطح تنفيذ على الإطلاق — وهذا ما يجعلها آمنة للفتح أمام العموم.",
   "demoUnavailableRig": "الحاوية المعزولة هي آلة افتراضية مؤقتة يقودها وكيل. لا تشغّل النسخة التجريبية أيًا منها: نقطة نهاية عامة يمكنها بدء VM ليست نسخة تجريبية.",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "ملف قاعدة بيانات مساحة العمل",
   "backupImportSourceDescription": "ملف ⁨.db⁩ يمكن للخادم قراءته. تُحل المسارات على مضيف الخادم، لا على هذا الجهاز.",
-  "backupImportChooseFile": "اختيار ملف",
   "backupImportDone": "تم الاستيراد إلى {name}.",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

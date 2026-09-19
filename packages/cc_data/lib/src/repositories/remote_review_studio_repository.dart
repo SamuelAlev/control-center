@@ -172,11 +172,6 @@ class RemoteReviewStudioRepository {
     if (level != null) 'level': level.wireName,
   });
 
-  /// Aggregated review-effectiveness counters for the bound workspace:
-  /// `{findings_total, resolved, dismissed, still_open, addressed}`.
-  Future<Map<String, dynamic>> reviewStats() =>
-      _client.call('review_hub.stats', const {});
-
   /// Structured failure signals from the PR's failing CI jobs, correlated to
   /// its changed files. Raw payload: `{available, failing_count, jobs}`.
   Future<Map<String, dynamic>> ciSignals({

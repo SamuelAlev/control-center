@@ -373,8 +373,6 @@ class _FakeMessagingRepo implements MessagingRepository {
     _embeddings[messageId] = embedding;
   }
 
-  Uint8List? embeddingFor(String messageId) => _embeddings[messageId];
-
   @override
   Future<List<EmbeddedMessage>> getMessagesWithEmbedding(
     String workspaceId,

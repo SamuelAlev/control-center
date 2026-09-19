@@ -71,11 +71,6 @@ void main() {
   });
 
   group('Veracity + Bayesian confidence (phase 4.1)', () {
-    test('base confidence is weight * 0.5', () {
-      expect(baseConfidenceFor(MemoryVeracity.stated), closeTo(0.5, 0.0001));
-      expect(baseConfidenceFor(MemoryVeracity.tool), closeTo(0.25, 0.0001));
-    });
-
     test('re-mention raises confidence toward 1.0, never above', () {
       var c = 0.5;
       for (var i = 0; i < 50; i++) {

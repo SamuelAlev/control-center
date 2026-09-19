@@ -113,9 +113,6 @@ const String kDemoProjectRepoFullName = 'SamuelAlev/control-center';
 /// The workspace name a visitor lands in.
 const String kDemoWorkspaceName = 'Helix';
 
-/// The team slug review requests address (`helix/ml-eng`).
-const String kDemoTeamSlug = 'ml-eng';
-
 /// Display name of the in-product agent team that slug maps onto.
 const String kDemoTeamName = 'ML eng';
 
@@ -173,16 +170,6 @@ const List<DemoPerson> kDemoCast = [
     role: 'Product',
   ),
 ];
-
-/// Looks a person up by handle.
-DemoPerson? demoPersonByHandle(String handle) {
-  for (final person in kDemoCast) {
-    if (person.handle == handle) {
-      return person;
-    }
-  }
-  return null;
-}
 
 /// Whether [userId] is one of the shared cast fixtures.
 ///

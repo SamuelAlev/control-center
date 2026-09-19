@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
-import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_domain/features/ticketing/domain/repositories/ticket_repository.dart';
 import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_service.dart';
 import 'package:cc_mcp/src/tools/delegate_task_tool.dart';

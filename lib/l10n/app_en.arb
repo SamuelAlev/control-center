@@ -842,8 +842,6 @@
   "copyRelativePath": "Copy relative path",
   "nameRequired": "Name is required",
   "import": "Import",
-  "sortByStatus": "Status",
-  "sortByName": "Name",
   "noMatchingAgents": "No agents match your filter",
   "@runsInLastSixMonths": {
     "description": "Total agent runs in the last six months",
@@ -1908,10 +1906,6 @@
     "description": "Ask AI to review this PR"
   },
   "assignees": "Assignees",
-  "attachFiles": "Attach files",
-  "@attachFiles": {
-    "description": "Attach files"
-  },
   "attachImage": "Attach image",
   "@attachImage": {
     "description": "Attach image"
@@ -2031,10 +2025,6 @@
   "closeEsc": "Close (Esc)",
   "@closeEsc": {
     "description": "Close (Esc)"
-  },
-  "closeKeyboardHint": "Close",
-  "@closeKeyboardHint": {
-    "description": "Locale string for closeKeyboardHint"
   },
   "closeReader": "Close reader",
   "@closeReader": {
@@ -3288,10 +3278,6 @@
   "@navSettings": {
     "description": "Settings"
   },
-  "navigateLabel": "Navigate",
-  "@navigateLabel": {
-    "description": "Locale string for navigateLabel"
-  },
   "networkBlockCount": "{count} network blocks",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -3307,7 +3293,6 @@
   "@newFact": {
     "description": "Dialog title for creating a new fact"
   },
-  "newLabel": "New",
   "newPolicy": "New policy",
   "@newPolicy": {
     "description": "Dialog title for creating a new policy"
@@ -3410,10 +3395,6 @@
     "description": "Not available status label"
   },
   "notConfiguredLabel": "Not configured.",
-  "notDetected": "Not detected",
-  "@notDetected": {
-    "description": "Not detected status label"
-  },
   "notFoundLabel": "Not found",
   "@notFoundLabel": {
     "description": "Not found status label"
@@ -3634,7 +3615,6 @@
     }
   },
   "notificationsMuteRepo": "Mute this repository",
-  "notificationsUnmuteRepo": "Unmute this repository",
   "onboardingLinuxDescription": "Control Center can use Linux containers to isolate agent execution.",
   "@onboardingLinuxDescription": {
     "description": "Locale string for onboardingLinuxDescription"
@@ -3647,7 +3627,6 @@
   "@onboardingUnsupportedDescription": {
     "description": "Locale string for onboardingUnsupportedDescription"
   },
-  "openApplicationSettings": "Open application settings",
   "openArticlesInApp": "Open articles in app",
   "openInBrowser": "Open in browser",
   "openedInYourBrowser": "Opened in your browser.",
@@ -4074,18 +4053,10 @@
   "@variableValue": {
     "description": "Environment variable value label"
   },
-  "savingChanges": "Saving changes…",
-  "@savingChanges": {
-    "description": "Locale string for savingChanges"
-  },
   "savingEllipsis": "Saving…",
   "scopeDiffToCommits": "Scope diff to commits — Shift-click for range",
   "noPrsMatchSearch": "No matching pull requests",
   "@noPrsMatchSearch": {
-    "description": "PR queue search field / empty-search state"
-  },
-  "noPrsMatchSearchHint": "No open PRs match your search. Try different terms or clear the search.",
-  "@noPrsMatchSearchHint": {
     "description": "PR queue search field / empty-search state"
   },
   "searchFactsHint": "Search facts...",
@@ -4148,7 +4119,6 @@
   "@selectConversation": {
     "description": "Select a conversation"
   },
-  "selectEffortLevel": "Select effort level",
   "selectLabel": "Select",
   "@selectLabel": {
     "description": "Select"
@@ -4226,10 +4196,6 @@
         "type": "String"
       }
     }
-  },
-  "skillEditor": "Skill editor",
-  "@skillEditor": {
-    "description": "Skill editor"
   },
   "skillNameRequired": "Skill name is required.",
   "@skillNameRequired": {
@@ -5863,10 +5829,6 @@
   "@pipelineTemplatesEmpty": {
     "description": "Empty state for the pipeline templates list"
   },
-  "pipelineTemplateIdLabel": "Template ID",
-  "@pipelineTemplateIdLabel": {
-    "description": "Field label for entering a new template ID"
-  },
   "pipelineTemplateBuiltInBadge": "Built-in",
   "@pipelineTemplateBuiltInBadge": {
     "description": "Badge shown next to built-in templates"
@@ -5884,10 +5846,6 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "Edit pipeline",
-  "@pipelineTemplateEditorTitle": {
-    "description": "Title of the pipeline template editor screen"
-  },
   "pipelineTemplateEditorSubtitle": "Drag node types from the sidebar onto the canvas, then wire them together.",
   "@pipelineTemplateEditorSubtitle": {
     "description": "Subtitle of the editor screen"
@@ -5903,10 +5861,6 @@
   "nodeLibraryHint": "Drag any entry onto the canvas to add a node.",
   "@nodeLibraryHint": {
     "description": "Hint shown under the node library header"
-  },
-  "editorDragHint": "Drag from the library, click a node to edit",
-  "@editorDragHint": {
-    "description": "Legend hint shown on the editor canvas"
   },
   "editorEmptyCanvas": "Drag a node from the library to start.",
   "@editorEmptyCanvas": {
@@ -6073,14 +6027,6 @@
   "@nodeConfigScriptHelp": {
     "description": "Helper text for the bash script field"
   },
-  "nodeConfigTriggers": "Triggers from",
-  "@nodeConfigTriggers": {
-    "description": "Section header for selecting upstream triggers"
-  },
-  "nodeConfigNoUpstream": "No other nodes to connect from.",
-  "@nodeConfigNoUpstream": {
-    "description": "Shown when there are no candidate upstream nodes"
-  },
   "nodeConfigRouteKeys": "Route keys",
   "@nodeConfigRouteKeys": {
     "description": "Header for the per-edge route-key fields below the trigger chips"
@@ -6114,17 +6060,8 @@
   "conditionCases": "Cases (comma-separated)",
   "conditionCasesHelp": "Route keys to match against the value, in order.",
   "conditionDefaultCase": "Default case",
-  "triggerPanelTitle": "Triggers",
-  "triggerPanelHelp": "What starts this pipeline.",
   "triggerManualHelp": "Show on the run page and start by hand.",
-  "triggerSectionAutomatic": "Automatic triggers",
-  "triggerAddButton": "Add trigger",
-  "triggerNoneYet": "No automatic triggers yet.",
-  "triggerAddDialogTitle": "Add trigger",
-  "triggerKindLabel": "Trigger type",
-  "triggerKindEvent": "On an event",
   "triggerKindSchedule": "On a schedule",
-  "triggerKindWebhook": "Via a webhook",
   "triggerScheduleExprLabel": "Schedule (cron or every:seconds)",
   "triggerTimezoneLabel": "Timezone (optional)",
   "triggerCatchUpLabel": "On missed runs",
@@ -6146,8 +6083,6 @@
   },
   "triggerWebhookHelp": "A signed webhook URL is generated. External systems POST to it to start this pipeline.",
   "triggerWebhookPathLabel": "Webhook path",
-  "triggerEventFieldLabel": "Event",
-  "triggerNoMoreEvents": "All available events are already wired.",
   "triggerMatchStatusLabel": "Only when the status is",
   "triggerSummaryNone": "No triggers",
   "triggerEverySeconds": "Every {seconds}s",
@@ -6368,9 +6303,7 @@
   "blockAdsTrackersDescription": "Strip ads, trackers and cookie banners from articles you open in the reader.",
   "agentQuestionHeader": "Question for you",
   "agentQuestionAnsweredLabel": "Answered",
-  "agentQuestionSubmit": "Submit answer",
   "agentQuestionFreeformHint": "Type your answer…",
-  "agentQuestionAnswerLabel": "Your answer",
   "agentQuestionProgress": "Question {index} of {count}",
   "@agentQuestionProgress": {
     "description": "Caption on an ask-user card locating this question in a batch",
@@ -7652,18 +7585,7 @@
   "ideNewTab": "Open editor",
   "ideNewTabMenu": "New tab",
   "ideReviewCode": "Review code",
-  "ideRevert": "Revert",
   "ideRevertConfirmTitle": "Revert changes",
-  "ideRevertConfirmMessage": "Revert {count, plural, =1{1 file} other{{count} files}} to HEAD? This discards working-tree changes.",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "Revert",
-  "ideRevertConfirmCancel": "Cancel",
   "ideRevertUntracked": "Untracked files can't be reverted",
   "ideRevertFailed": "Couldn't revert the files. The conversation worktree may be unavailable.",
   "ideRevertSomeSkipped": "{count, plural, =1{1 file} other{{count} files}} couldn't be reverted (untracked).",
@@ -7674,7 +7596,6 @@
       }
     }
   },
-  "ideViewSource": "View source",
   "ideSearchMatchCase": "Match case",
   "ideSearchWholeWord": "Whole word",
   "ideSearchRegex": "Regex",
@@ -8035,7 +7956,6 @@
     }
   },
   "providerBaseUrlHint": "Base URL (optional)",
-  "customProvidersDescription": "Any OpenAI- or Anthropic-compatible endpoint — Ollama, LM Studio, vLLM, or a private deployment — with an optional API key.",
   "addProvider": "Add provider",
   "noCustomProviders": "No custom providers yet.",
   "providerNameLabel": "Name",
@@ -8099,7 +8019,6 @@
   "repoScriptsArchivePlaceholder": "e.g. docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "Recent runs",
   "repoScriptsNoRuns": "No runs yet",
-  "repoScriptsOutput": "Output",
   "repoScriptsSaved": "Scripts saved",
   "repoScriptsRunKindSetup": "Setup",
   "repoScriptsRunKindArchive": "Archive",
@@ -11749,8 +11668,6 @@
   },
   "providersNoneConnectedNote": "No provider is connected, so the built-in agent runtime has nothing to run on. Add an API key or sign in to one below.",
   "providersFilterHint": "Filter providers",
-  "providersFacetNeedsSetup": "Needs setup",
-  "providersFacetCustom": "Custom",
   "providersNoneMatch": "Nothing matches this filter",
   "providerDeniedHereTitle": "Denied in this workspace",
   "providerDeniedHereBody": "Agents here cannot use this provider, even though it is connected. Other workspaces are unaffected.",
@@ -11762,8 +11679,6 @@
   "providerModelsFilterHint": "Filter models",
   "adaptersNoneReadyNote": "None of the catalogued runner CLIs were found on this machine. Install one, then refresh.",
   "adaptersFilterHint": "Filter runners",
-  "adaptersFacetReady": "Ready",
-  "adaptersFacetMissing": "Missing",
   "adaptersLaunchGroup": "Launch",
   "adaptersLaunchGroupDescription": "What this runner is given when an agent starts it. Set these ahead of installing the CLI if you like.",
   "adaptersEnvNone": "None set",
@@ -12685,10 +12600,6 @@
   "@demoTourStarRepo": {
     "description": "Button in the demo tour header that opens the project's own GitHub repository in the OS browser"
   },
-  "demoTourDone": "Done",
-  "@demoTourDone": {
-    "description": "Button that closes the demo tour on the last step"
-  },
   "demoTourOpen": "Open",
   "@demoTourOpen": {
     "description": "Button on a demo tour step that navigates to that pillar"
@@ -12724,19 +12635,6 @@
   "demoTourInboxBody": "Every alert from every pillar lands in one inbox — reviews, tickets, runs and meetings.",
   "@demoTourInboxBody": {
     "description": "Demo tour step body: the unified inbox"
-  },
-  "demoSessionEndingSoon": "This demo session ends in {minutes} minutes.",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "This demo session has ended. Reload the page to start a new one.",
-  "@demoSessionEnded": {
-    "description": "Shown when a demo visitor's session has been reaped"
   },
   "demoUnavailableTitle": "Not available in the demo",
   "@demoUnavailableTitle": {
@@ -12941,10 +12839,6 @@
   "backupImportSourceDescription": "A .db file the server can read. Paths resolve on the server host, not on this device.",
   "@backupImportSourceDescription": {
     "description": "That import paths are resolved on the server, not the client"
-  },
-  "backupImportChooseFile": "Choose file",
-  "@backupImportChooseFile": {
-    "description": "Button that opens the native file picker for an import"
   },
   "backupImportDone": "Imported into {name}.",
   "@backupImportDone": {

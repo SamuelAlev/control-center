@@ -189,21 +189,4 @@ void main() {
       expect(s.observeTurn([call('read')]), isNotNull);
     });
   });
-
-  group('decodeChecklistArgs', () {
-    test('passes a decoded map through', () {
-      expect(decodeChecklistArgs({'todos': []}), {'todos': <Object?>[]});
-    });
-
-    test('decodes a JSON string payload', () {
-      final decoded = decodeChecklistArgs('{"todos":[{"content":"a"}]}');
-      expect(decoded['todos'], isA<List<dynamic>>());
-    });
-
-    test('degrades malformed JSON to an empty map', () {
-      expect(decodeChecklistArgs('{not json'), isEmpty);
-      expect(decodeChecklistArgs(null), isEmpty);
-      expect(decodeChecklistArgs(42), isEmpty);
-    });
-  });
 }

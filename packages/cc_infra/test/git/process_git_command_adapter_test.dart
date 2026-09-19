@@ -261,29 +261,6 @@ void main() {
       );
     });
 
-    test('the contention detector matches git and not everything else', () {
-      // Pinned directly: the detector keys on the lock FILE name plus one of
-      // git's phrasings, because the prose around it has been reworded across
-      // versions and is localized.
-      expect(
-        isIndexLockContentionForTesting(
-          "fatal: Unable to create '/repo/.git/index.lock': File exists.",
-        ),
-        isTrue,
-      );
-      expect(
-        isIndexLockContentionForTesting(
-          'Another git process seems to be running in this repository',
-        ),
-        isFalse,
-        reason: 'no lock file named — not this failure',
-      );
-      expect(
-        isIndexLockContentionForTesting('error: pathspec did not match'),
-        isFalse,
-      );
-    });
-
     test('a succeeding command is not retried', () async {
       final dir = Directory.systemTemp.createTempSync('git_ok');
       addTearDown(() => dir.deleteSync(recursive: true));

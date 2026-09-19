@@ -156,21 +156,6 @@ const String kSmolvmRigLabel = 'cc-rig';
 /// The owner label value this backend writes and sweeps.
 const String kSmolvmOwnerValue = 'control-center';
 
-/// The registry hosts every image machine may reach to pull its pinned
-/// image.
-///
-/// smolvm's guest agent does the pull, from inside the gated network — a
-/// machine created without these can never boot an unpulled image. This is
-/// image maintenance traffic, not workload policy (same class as the base
-/// image itself): both pinned images live on Docker Hub, whose pull path is
-/// `docker.io` (index/registry/auth — host entries match subdomains) plus
-/// the blob CDN. Anything the workload itself reaches still requires an
-/// explicit allowlist entry.
-const List<String> kSmolvmRegistryHosts = [
-  'docker.io',
-  'production.cloudflare.docker.com',
-];
-
 /// The init command every exec machine runs on every start.
 ///
 /// Idempotent by construction: the `command -v` gate makes a warm start a

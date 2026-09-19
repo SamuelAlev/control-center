@@ -761,8 +761,6 @@
   "copyRelativePath": "複製相對路徑",
   "nameRequired": "必須填寫名稱",
   "import": "匯入",
-  "sortByStatus": "狀態",
-  "sortByName": "名稱",
   "noMatchingAgents": "沒有符合篩選條件的代理",
   "watchVideoOn": "在 {provider} 觀看影片",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "詢問 AI",
   "askAiReviewDescription": "請 AI 審查此 PR",
   "assignees": "指派對象",
-  "attachFiles": "附加檔案",
   "attachImage": "附加圖片",
   "attachedAgents": "已附加的代理",
   "audioInput": "音訊輸入",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "點一下即可重試",
   "close": "關閉",
   "closeEsc": "關閉 (Esc)",
-  "closeKeyboardHint": "關閉",
   "closeReader": "關閉閱讀器",
   "closed": "已關閉",
   "codeFont": "程式碼字型",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "需要安裝原生沙盒",
   "navObservability": "可觀測性",
   "navSettings": "設定",
-  "navigateLabel": "導覽",
   "networkBlockCount": "{count} 個網路封鎖",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "中性",
   "newCommitsPushed": "有新 commit 已推送 — 點選以重新載入 diff",
   "newFact": "新事實",
-  "newLabel": "新增",
   "newPolicy": "新政策",
   "newsfeed": "Newsfeed",
   "newsfeedLabel": "Newsfeed",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "無（所有角色）",
   "notAvailable": "無法使用",
   "notConfiguredLabel": "尚未設定。",
-  "notDetected": "未偵測到",
   "notFoundLabel": "找不到",
   "notes": "備註",
   "notificationAgentFinished": "代理已完成",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "靜音此存放庫",
-  "notificationsUnmuteRepo": "取消靜音此存放庫",
   "onboardingLinuxDescription": "Control Center 可使用 Linux 容器隔離代理執行。",
   "onboardingMacosDescription": "Control Center 會使用 macOS 原生沙盒隔離代理執行。",
   "onboardingUnsupportedDescription": "此平台無法使用沙盒。代理執行將沒有隔離。",
-  "openApplicationSettings": "開啟應用程式設定",
   "openArticlesInApp": "在應用程式中開啟文章",
   "openInBrowser": "在瀏覽器中開啟",
   "openedInYourBrowser": "已在瀏覽器中開啟。",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "傳遞給此介面卡的自訂環境變數（例如 API 金鑰）。儲存在鑰匙圈中。",
   "variableKey": "鍵",
   "variableValue": "值",
-  "savingChanges": "正在儲存變更…",
   "savingEllipsis": "儲存中…",
   "scopeDiffToCommits": "將 diff 範圍限定在 commit—按住 Shift 點擊可選取範圍",
   "noPrsMatchSearch": "沒有符合的 pull request",
-  "noPrsMatchSearchHint": "沒有符合你搜尋條件的開啟中 PR。請嘗試其他字詞或清除搜尋。",
   "searchFactsHint": "搜尋事實…",
   "searchFonts": "搜尋字型…",
   "searchGifs": "搜尋 GIF",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "選擇要回報的代理…",
   "selectAnAgent": "選擇代理",
   "selectConversation": "選擇對話",
-  "selectEffortLevel": "選擇投入程度",
   "selectLabel": "選擇",
   "selectRunner": "選擇執行器",
   "semanticSearch": "語意搜尋",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "技能編輯器",
   "skillNameRequired": "技能名稱為必填。",
   "skillSaved": "技能「{name}」已儲存。",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "以拖放方式編輯用來編排代理的管線。",
   "pipelineTemplatesNew": "新增範本",
   "pipelineTemplatesEmpty": "尚無管線範本。建立一個來開始吧。",
-  "pipelineTemplateIdLabel": "範本 ID",
   "pipelineTemplateBuiltInBadge": "內建",
   "pipelineTemplateDeleteConfirmTitle": "刪除範本？",
   "pipelineTemplateDeleteConfirmBody": "要刪除管線範本 {name} 嗎？此操作無法復原。",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "編輯管線",
   "pipelineTemplateEditorSubtitle": "從側邊欄將節點類型拖放到畫布上，再將它們連接起來。",
   "unsavedChanges": "有未儲存的變更",
   "nodeLibraryTitle": "節點庫",
   "nodeLibraryHint": "將任一項目拖放到畫布即可新增節點。",
-  "editorDragHint": "從節點庫拖放，點擊節點以編輯",
   "editorEmptyCanvas": "從節點庫拖放一個節點開始。",
   "pipelineWhenThisHappens": "當發生以下情況",
   "pipelineDoThis": "執行此操作",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "使用雙大括號預留位置，在執行時從狀態取出值。",
   "nodeConfigScript": "Bash 指令碼",
   "nodeConfigScriptHelp": "以 bash -c 執行。會設定 GITHUB_TOKEN。預留位置會在執行前替換。",
-  "nodeConfigTriggers": "觸發來源",
-  "nodeConfigNoUpstream": "沒有其他可連接的節點。",
   "nodeConfigRouteKeys": "路由鍵",
   "nodeConfigRouteKeyFrom": "來自 {source} 的路由鍵",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "案例（以逗號分隔）",
   "conditionCasesHelp": "依序與值比對的路由鍵。",
   "conditionDefaultCase": "預設案例",
-  "triggerPanelTitle": "觸發器",
-  "triggerPanelHelp": "什麼會啟動此管線。",
   "triggerManualHelp": "顯示在執行頁面並可手動啟動。",
-  "triggerSectionAutomatic": "自動觸發器",
-  "triggerAddButton": "新增觸發器",
-  "triggerNoneYet": "尚無自動觸發器。",
-  "triggerAddDialogTitle": "新增觸發器",
-  "triggerKindLabel": "觸發器類型",
-  "triggerKindEvent": "於事件發生時",
   "triggerKindSchedule": "依排程",
-  "triggerKindWebhook": "透過 webhook",
   "triggerScheduleExprLabel": "排程（cron 或 every:seconds）",
   "triggerTimezoneLabel": "時區（選填）",
   "triggerCatchUpLabel": "錯過執行時",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "會產生一個帶簽章的 webhook URL。外部系統向它 POST 即可啟動此管線。",
   "triggerWebhookPathLabel": "Webhook 路徑",
-  "triggerEventFieldLabel": "事件",
-  "triggerNoMoreEvents": "所有可用的事件都已接上了。",
   "triggerMatchStatusLabel": "僅當狀態為",
   "triggerSummaryNone": "無觸發器",
   "triggerEverySeconds": "每 {seconds} 秒",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "從你在閱讀器中開啟的文章移除廣告、追蹤器與 Cookie 橫幅。",
   "agentQuestionHeader": "給你的問題",
   "agentQuestionAnsweredLabel": "已回答",
-  "agentQuestionSubmit": "送出答案",
   "agentQuestionFreeformHint": "輸入你的答案…",
-  "agentQuestionAnswerLabel": "你的答案",
   "agentQuestionProgress": "問題 {index} / {count}",
   "agentQuestionSkip": "略過",
   "agentQuestionSkippedLabel": "已略過",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "開啟編輯器",
   "ideNewTabMenu": "新增分頁",
   "ideReviewCode": "審查程式碼",
-  "ideRevert": "還原",
   "ideRevertConfirmTitle": "還原變更",
-  "ideRevertConfirmMessage": "要將 {count, plural, =1{1 個檔案} other{{count} 個檔案}} 還原至 HEAD 嗎？這會捨棄工作樹中的變更。",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "還原",
-  "ideRevertConfirmCancel": "取消",
   "ideRevertUntracked": "未追蹤的檔案無法還原",
   "ideRevertFailed": "無法還原檔案。對話工作樹可能無法使用。",
   "ideRevertSomeSkipped": "{count, plural, =1{1 個檔案} other{{count} 個檔案}} 無法還原（未追蹤）。",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "檢視原始碼",
   "ideSearchMatchCase": "區分大小寫",
   "ideSearchWholeWord": "全字相符",
   "ideSearchRegex": "規則運算式",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "Base URL（選填）",
-  "customProvidersDescription": "任何與 OpenAI 或 Anthropic 相容的端點—Ollama、LM Studio、vLLM 或私人部署—可搭配選填的 API 金鑰。",
   "addProvider": "新增供應商",
   "noCustomProviders": "尚無自訂供應商。",
   "providerNameLabel": "名稱",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "例如 docker compose -p $CC_SPACE_ID down",
   "repoScriptsRecentRuns": "最近的執行",
   "repoScriptsNoRuns": "尚無執行記錄",
-  "repoScriptsOutput": "輸出",
   "repoScriptsSaved": "指令碼已儲存",
   "repoScriptsRunKindSetup": "設定",
   "repoScriptsRunKindArchive": "封存",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "尚未連接任何供應商，因此內建的代理執行環境沒有可用的運行基礎。請在下方新增 API 金鑰或登入其中一個。",
   "providersFilterHint": "篩選供應商",
-  "providersFacetNeedsSetup": "需要設定",
-  "providersFacetCustom": "自訂",
   "providersNoneMatch": "沒有項目符合此篩選條件",
   "providerDeniedHereTitle": "已在此工作區中拒絕",
   "providerDeniedHereBody": "此處的代理無法使用此供應商，即使它已連線。其他工作區不受影響。",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "篩選模型",
   "adaptersNoneReadyNote": "此機器上找不到任何已列入目錄的執行器 CLI。請先安裝一個，再重新整理。",
   "adaptersFilterHint": "篩選執行器",
-  "adaptersFacetReady": "就緒",
-  "adaptersFacetMissing": "缺少",
   "adaptersLaunchGroup": "啟動",
   "adaptersLaunchGroupDescription": "代理啟動此執行器時會給它什麼。你可以選擇在安裝 CLI 前先設定好。",
   "adaptersEnvNone": "未設定",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "四個能看出這個應用程式實際功能的地方。",
   "demoTourSkip": "略過",
   "demoTourStarRepo": "在 GitHub 上加星",
-  "demoTourDone": "完成",
   "demoTourOpen": "開啟",
   "demoTourSpacesTitle": "與代理對話",
   "demoTourSpacesBody": "在空間中送出訊息，看著執行串流進來——思考、工具呼叫與成本，與真實執行的呈現完全相同。",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "工單、待辦與計畫都連結到代理正在進行的同一批對話。",
   "demoTourInboxTitle": "綜觀整個運作",
   "demoTourInboxBody": "來自各個支柱的所有警示都會匯入同一個收件匣——檢閱、工單、執行與會議。",
-  "demoSessionEndingSoon": "此示範工作階段將於 {minutes} 分鐘後結束。",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "此示範工作階段已結束。重新載入頁面即可開始新的。",
   "demoUnavailableTitle": "示範中不提供",
   "demoUnavailableTerminal": "終端機會在伺服器主機上執行真實的 shell。示範完全沒有執行面——這正是它能安全公開的原因。",
   "demoUnavailableRig": "隔離艙是一部由代理操縱的一次性虛擬機器。示範不會啟動任何一部：能啟動 VM 的公開端點就算不上示範。",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "工作區資料庫檔案",
   "backupImportSourceDescription": "伺服器可讀取的 .db 檔案。路徑是在伺服器主機上解析，不是在這部裝置上。",
-  "backupImportChooseFile": "選擇檔案",
   "backupImportDone": "已匯入至 {name}。",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

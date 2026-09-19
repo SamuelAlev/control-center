@@ -1637,12 +1637,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get import => 'İçe aktar';
 
   @override
-  String get sortByStatus => 'Durum';
-
-  @override
-  String get sortByName => 'Ad';
-
-  @override
   String get noMatchingAgents => 'Filtrenizle eşleşen ajan yok';
 
   @override
@@ -2684,9 +2678,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get assignees => 'Atananlar';
 
   @override
-  String get attachFiles => 'Dosya ekle';
-
-  @override
   String get attachImage => 'Görüntü ekle';
 
   @override
@@ -2803,9 +2794,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get closeEsc => 'Kapat (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Kapat';
 
   @override
   String get closeReader => 'Okuyucuyu kapat';
@@ -3929,9 +3917,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get navSettings => 'Ayarlar';
 
   @override
-  String get navigateLabel => 'Gezin';
-
-  @override
   String networkBlockCount(int count) {
     return '$count ağ bloğu';
   }
@@ -3945,9 +3930,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get newFact => 'Yeni olgu';
-
-  @override
-  String get newLabel => 'Yeni';
 
   @override
   String get newPolicy => 'Yeni politika';
@@ -4066,9 +4048,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Yapılandırılmamış.';
-
-  @override
-  String get notDetected => 'Algılanmadı';
 
   @override
   String get notFoundLabel => 'Bulunamadı';
@@ -4321,9 +4300,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get notificationsMuteRepo => 'Bu depoyu sessize al';
 
   @override
-  String get notificationsUnmuteRepo => 'Bu deponun sesini aç';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center, ajan yürütmesini yalıtmak için Linux konteynerleri kullanabilir.';
 
@@ -4334,9 +4310,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox bu platformda kullanılamıyor. Ajan yürütmesi yalıtım olmadan gerçekleşecek.';
-
-  @override
-  String get openApplicationSettings => 'Uygulama ayarlarını aç';
 
   @override
   String get openArticlesInApp => 'Makaleleri uygulamada aç';
@@ -4763,9 +4736,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get variableValue => 'Değer';
 
   @override
-  String get savingChanges => 'Değişiklikler kaydediliyor…';
-
-  @override
   String get savingEllipsis => 'Kaydediliyor…';
 
   @override
@@ -4774,10 +4744,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Eşleşen pull request yok';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Aramanızla eşleşen açık PR yok. Farklı terimler deneyin veya aramayı temizleyin.';
 
   @override
   String get searchFactsHint => 'Bilgi ara...';
@@ -4834,9 +4800,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get selectConversation => 'Bir konuşma seç';
-
-  @override
-  String get selectEffortLevel => 'Efor düzeyi seç';
 
   @override
   String get selectLabel => 'Seç';
@@ -4898,9 +4861,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String signedInAs(String username) {
     return '$username olarak oturum açıldı.';
   }
-
-  @override
-  String get skillEditor => 'Beceri düzenleyici';
 
   @override
   String get skillNameRequired => 'Beceri adı gerekli.';
@@ -6197,9 +6157,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Henüz pipeline şablonu yok. Başlamak için bir tane oluşturun.';
 
   @override
-  String get pipelineTemplateIdLabel => 'Şablon kimliği';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Yerleşik';
 
   @override
@@ -6209,9 +6166,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return '$name pipeline şablonu silinsin mi? Bu işlem geri alınamaz.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Pipeline\'ı düzenle';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6226,10 +6180,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Düğüm eklemek için herhangi bir öğeyi tuvale sürükleyin.';
-
-  @override
-  String get editorDragHint =>
-      'Kitaplıktan sürükleyin, düzenlemek için bir düğüme tıklayın';
 
   @override
   String get editorEmptyCanvas =>
@@ -6365,12 +6315,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'bash -c ile çalışır. GITHUB_TOKEN ayarlıdır. Yer tutucular çalıştırılmadan önce değiştirilir.';
 
   @override
-  String get nodeConfigTriggers => 'Tetikleyen';
-
-  @override
-  String get nodeConfigNoUpstream => 'Bağlanacak başka düğüm yok.';
-
-  @override
   String get nodeConfigRouteKeys => 'Rota anahtarları';
 
   @override
@@ -6443,38 +6387,11 @@ class AppLocalizationsTr extends AppLocalizations {
   String get conditionDefaultCase => 'Varsayılan durum';
 
   @override
-  String get triggerPanelTitle => 'Tetikleyiciler';
-
-  @override
-  String get triggerPanelHelp => 'Bu pipeline\'ı ne başlatır.';
-
-  @override
   String get triggerManualHelp =>
       'Çalıştırma sayfasında göster ve elle başlat.';
 
   @override
-  String get triggerSectionAutomatic => 'Otomatik tetikleyiciler';
-
-  @override
-  String get triggerAddButton => 'Tetikleyici ekle';
-
-  @override
-  String get triggerNoneYet => 'Henüz otomatik tetikleyici yok.';
-
-  @override
-  String get triggerAddDialogTitle => 'Tetikleyici ekle';
-
-  @override
-  String get triggerKindLabel => 'Tetikleyici türü';
-
-  @override
-  String get triggerKindEvent => 'Bir olayda';
-
-  @override
   String get triggerKindSchedule => 'Zamanlamayla';
-
-  @override
-  String get triggerKindWebhook => 'Webhook ile';
 
   @override
   String get triggerScheduleExprLabel => 'Zamanlama (cron veya every:seconds)';
@@ -6520,12 +6437,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Webhook yolu';
-
-  @override
-  String get triggerEventFieldLabel => 'Olay';
-
-  @override
-  String get triggerNoMoreEvents => 'Kullanılabilir tüm olaylar zaten bağlı.';
 
   @override
   String get triggerMatchStatusLabel => 'Yalnızca durum şu olduğunda';
@@ -7002,13 +6913,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Yanıtlandı';
 
   @override
-  String get agentQuestionSubmit => 'Yanıtı gönder';
-
-  @override
   String get agentQuestionFreeformHint => 'Yanıtınızı yazın…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Yanıtınız';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8586,27 +8491,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get ideReviewCode => 'Kodu incele';
 
   @override
-  String get ideRevert => 'Geri al';
-
-  @override
   String get ideRevertConfirmTitle => 'Değişiklikleri geri al';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dosya',
-      one: '1 dosya',
-    );
-    return '$_temp0 HEAD\'e geri alınsın mı? Bu, çalışma ağacındaki değişiklikleri siler.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Geri al';
-
-  @override
-  String get ideRevertConfirmCancel => 'İptal';
 
   @override
   String get ideRevertUntracked => 'İzlenmeyen dosyalar geri alınamaz';
@@ -8625,9 +8510,6 @@ class AppLocalizationsTr extends AppLocalizations {
     );
     return '$_temp0 geri alınamadı (izlenmeyen).';
   }
-
-  @override
-  String get ideViewSource => 'Kaynağı görüntüle';
 
   @override
   String get ideSearchMatchCase => 'Büyük/küçük harf eşleştir';
@@ -9162,10 +9044,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get providerBaseUrlHint => 'Temel URL (isteğe bağlı)';
 
   @override
-  String get customProvidersDescription =>
-      'İsteğe bağlı bir API anahtarıyla herhangi bir OpenAI veya Anthropic uyumlu uç nokta — Ollama, LM Studio, vLLM veya özel bir dağıtım.';
-
-  @override
   String get addProvider => 'Sağlayıcı ekle';
 
   @override
@@ -9282,9 +9160,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Henüz çalıştırma yok';
-
-  @override
-  String get repoScriptsOutput => 'Çıktı';
 
   @override
   String get repoScriptsSaved => 'Betikler kaydedildi';
@@ -13107,12 +12982,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get providersFilterHint => 'Sağlayıcıları filtrele';
 
   @override
-  String get providersFacetNeedsSetup => 'Kurulum gerekli';
-
-  @override
-  String get providersFacetCustom => 'Özel';
-
-  @override
   String get providersNoneMatch => 'Bu filtreyle eşleşen yok';
 
   @override
@@ -13148,12 +13017,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Runner\'ları filtrele';
-
-  @override
-  String get adaptersFacetReady => 'Hazır';
-
-  @override
-  String get adaptersFacetMissing => 'Eksik';
 
   @override
   String get adaptersLaunchGroup => 'Başlatma';
@@ -14047,9 +13910,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get demoTourStarRepo => 'GitHub\'da yıldızla';
 
   @override
-  String get demoTourDone => 'Bitti';
-
-  @override
   String get demoTourOpen => 'Aç';
 
   @override
@@ -14079,15 +13939,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Her sütundan gelen her uyarı tek bir gelen kutusuna düşer — incelemeler, biletler, çalıştırmalar ve toplantılar.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Bu demo oturumu $minutes dakika içinde sona erer.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Bu demo oturumu sona erdi. Yeni bir tane başlatmak için sayfayı yenileyin.';
 
   @override
   String get demoUnavailableTitle => 'Demoda kullanılamaz';
@@ -14258,9 +14109,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'Sunucunun okuyabileceği bir .db dosyası. Yollar bu aygıtta değil, sunucu makinesinde çözülür.';
-
-  @override
-  String get backupImportChooseFile => 'Dosya seç';
 
   @override
   String backupImportDone(String name) {

@@ -1632,12 +1632,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get import => 'Impor';
 
   @override
-  String get sortByStatus => 'Status';
-
-  @override
-  String get sortByName => 'Nama';
-
-  @override
   String get noMatchingAgents => 'Tidak ada agen yang cocok dengan filter Anda';
 
   @override
@@ -2680,9 +2674,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get assignees => 'Penerima tugas';
 
   @override
-  String get attachFiles => 'Lampirkan file';
-
-  @override
   String get attachImage => 'Lampirkan gambar';
 
   @override
@@ -2798,9 +2789,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get closeEsc => 'Tutup (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'Tutup';
 
   @override
   String get closeReader => 'Tutup pembaca';
@@ -3931,9 +3919,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get navSettings => 'Pengaturan';
 
   @override
-  String get navigateLabel => 'Navigasi';
-
-  @override
   String networkBlockCount(int count) {
     return '$count blok jaringan';
   }
@@ -3947,9 +3932,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get newFact => 'Fakta baru';
-
-  @override
-  String get newLabel => 'Baru';
 
   @override
   String get newPolicy => 'Kebijakan baru';
@@ -4074,9 +4056,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'Belum dikonfigurasi.';
-
-  @override
-  String get notDetected => 'Tidak terdeteksi';
 
   @override
   String get notFoundLabel => 'Tidak ditemukan';
@@ -4329,9 +4308,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get notificationsMuteRepo => 'Bisukan repositori ini';
 
   @override
-  String get notificationsUnmuteRepo => 'Batalkan bisu repositori ini';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center dapat menggunakan kontainer Linux untuk mengisolasi eksekusi agen.';
 
@@ -4342,9 +4318,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'Sandbox tidak tersedia di platform ini. Eksekusi agen akan tanpa isolasi.';
-
-  @override
-  String get openApplicationSettings => 'Buka pengaturan aplikasi';
 
   @override
   String get openArticlesInApp => 'Buka artikel di aplikasi';
@@ -4770,9 +4743,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get variableValue => 'Nilai';
 
   @override
-  String get savingChanges => 'Menyimpan perubahan…';
-
-  @override
   String get savingEllipsis => 'Menyimpan…';
 
   @override
@@ -4781,10 +4751,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'Tidak ada pull request yang cocok';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'Tidak ada PR terbuka yang cocok dengan pencarian. Coba kata lain atau hapus pencarian.';
 
   @override
   String get searchFactsHint => 'Cari fakta...';
@@ -4841,9 +4807,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get selectConversation => 'Pilih percakapan';
-
-  @override
-  String get selectEffortLevel => 'Pilih tingkat upaya';
 
   @override
   String get selectLabel => 'Pilih';
@@ -4905,9 +4868,6 @@ class AppLocalizationsId extends AppLocalizations {
   String signedInAs(String username) {
     return 'Masuk sebagai $username.';
   }
-
-  @override
-  String get skillEditor => 'Editor skill';
 
   @override
   String get skillNameRequired => 'Nama skill wajib diisi.';
@@ -6207,9 +6167,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Belum ada template pipeline. Buat satu untuk memulai.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ID template';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'Bawaan';
 
   @override
@@ -6219,9 +6176,6 @@ class AppLocalizationsId extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'Hapus template pipeline $name? Tindakan ini tidak dapat dibatalkan.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'Edit pipeline';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6236,9 +6190,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get nodeLibraryHint =>
       'Seret entri apa pun ke kanvas untuk menambahkan node.';
-
-  @override
-  String get editorDragHint => 'Seret dari pustaka, klik node untuk mengedit';
 
   @override
   String get editorEmptyCanvas => 'Seret node dari pustaka untuk memulai.';
@@ -6373,12 +6324,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Dijalankan dengan bash -c. GITHUB_TOKEN disetel. Placeholder disubstitusi sebelum eksekusi.';
 
   @override
-  String get nodeConfigTriggers => 'Pemicu dari';
-
-  @override
-  String get nodeConfigNoUpstream => 'Tidak ada node lain untuk dihubungkan.';
-
-  @override
   String get nodeConfigRouteKeys => 'Kunci rute';
 
   @override
@@ -6451,38 +6396,11 @@ class AppLocalizationsId extends AppLocalizations {
   String get conditionDefaultCase => 'Kasus default';
 
   @override
-  String get triggerPanelTitle => 'Trigger';
-
-  @override
-  String get triggerPanelHelp => 'Apa yang memulai pipeline ini.';
-
-  @override
   String get triggerManualHelp =>
       'Tampilkan di halaman run dan mulai secara manual.';
 
   @override
-  String get triggerSectionAutomatic => 'Trigger otomatis';
-
-  @override
-  String get triggerAddButton => 'Tambah trigger';
-
-  @override
-  String get triggerNoneYet => 'Belum ada trigger otomatis.';
-
-  @override
-  String get triggerAddDialogTitle => 'Tambah trigger';
-
-  @override
-  String get triggerKindLabel => 'Jenis trigger';
-
-  @override
-  String get triggerKindEvent => 'Pada event';
-
-  @override
   String get triggerKindSchedule => 'Pada jadwal';
-
-  @override
-  String get triggerKindWebhook => 'Via webhook';
 
   @override
   String get triggerScheduleExprLabel => 'Jadwal (cron atau every:seconds)';
@@ -6528,13 +6446,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'Jalur webhook';
-
-  @override
-  String get triggerEventFieldLabel => 'Event';
-
-  @override
-  String get triggerNoMoreEvents =>
-      'Semua event yang tersedia sudah terhubung.';
 
   @override
   String get triggerMatchStatusLabel => 'Hanya jika statusnya';
@@ -7009,13 +6920,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'Dijawab';
 
   @override
-  String get agentQuestionSubmit => 'Kirim jawaban';
-
-  @override
   String get agentQuestionFreeformHint => 'Ketik jawaban Anda…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'Jawaban Anda';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8600,27 +8505,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get ideReviewCode => 'Tinjau kode';
 
   @override
-  String get ideRevert => 'Kembalikan';
-
-  @override
   String get ideRevertConfirmTitle => 'Kembalikan perubahan';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count file',
-      one: '1 file',
-    );
-    return 'Kembalikan $_temp0 ke HEAD? Perubahan di pohon kerja akan dibuang.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'Kembalikan';
-
-  @override
-  String get ideRevertConfirmCancel => 'Batal';
 
   @override
   String get ideRevertUntracked =>
@@ -8640,9 +8525,6 @@ class AppLocalizationsId extends AppLocalizations {
     );
     return '$_temp0 tidak dapat dikembalikan (belum dilacak).';
   }
-
-  @override
-  String get ideViewSource => 'Lihat sumber';
 
   @override
   String get ideSearchMatchCase => 'Cocokkan huruf besar/kecil';
@@ -9173,10 +9055,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get providerBaseUrlHint => 'Base URL (opsional)';
 
   @override
-  String get customProvidersDescription =>
-      'Endpoint yang kompatibel dengan OpenAI atau Anthropic — Ollama, LM Studio, vLLM, atau deployment pribadi — dengan kunci API opsional.';
-
-  @override
   String get addProvider => 'Tambah penyedia';
 
   @override
@@ -9293,9 +9171,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'Belum ada eksekusi';
-
-  @override
-  String get repoScriptsOutput => 'Output';
 
   @override
   String get repoScriptsSaved => 'Skrip disimpan';
@@ -13123,12 +12998,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get providersFilterHint => 'Filter penyedia';
 
   @override
-  String get providersFacetNeedsSetup => 'Perlu penyiapan';
-
-  @override
-  String get providersFacetCustom => 'Kustom';
-
-  @override
   String get providersNoneMatch => 'Tidak ada yang cocok dengan filter ini';
 
   @override
@@ -13164,12 +13033,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'Filter runner';
-
-  @override
-  String get adaptersFacetReady => 'Siap';
-
-  @override
-  String get adaptersFacetMissing => 'Tidak ada';
 
   @override
   String get adaptersLaunchGroup => 'Peluncuran';
@@ -14062,9 +13925,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get demoTourStarRepo => 'Beri bintang di GitHub';
 
   @override
-  String get demoTourDone => 'Selesai';
-
-  @override
   String get demoTourOpen => 'Buka';
 
   @override
@@ -14094,15 +13954,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'Setiap peringatan dari setiap pilar masuk ke satu kotak masuk — review, tiket, run, dan rapat.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'Sesi demo ini berakhir dalam $minutes menit.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'Sesi demo ini telah berakhir. Muat ulang halaman untuk memulai yang baru.';
 
   @override
   String get demoUnavailableTitle => 'Tidak tersedia di demo';
@@ -14273,9 +14124,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'File .db yang bisa dibaca server. Path diselesaikan di host server, bukan di perangkat ini.';
-
-  @override
-  String get backupImportChooseFile => 'Pilih file';
 
   @override
   String backupImportDone(String name) {

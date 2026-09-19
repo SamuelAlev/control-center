@@ -132,26 +132,6 @@ Offset _clipDiamond(Rect rect, double dx, double dy) {
   };
 }
 
-/// The bounding box of [points], or [Rect.zero] when empty.
-Rect boundsOf(Iterable<Offset> points) {
-  var minX = double.infinity;
-  var minY = double.infinity;
-  var maxX = double.negativeInfinity;
-  var maxY = double.negativeInfinity;
-  var any = false;
-  for (final point in points) {
-    any = true;
-    minX = math.min(minX, point.dx);
-    minY = math.min(minY, point.dy);
-    maxX = math.max(maxX, point.dx);
-    maxY = math.max(maxY, point.dy);
-  }
-  if (!any) {
-    return Rect.zero;
-  }
-  return Rect.fromLTRB(minX, minY, maxX, maxY);
-}
-
 /// Drops points that repeat the previous one (a zero-length segment has no
 /// direction, so an arrowhead built from it would point nowhere).
 List<Offset> dedupePoints(List<Offset> points) {

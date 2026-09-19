@@ -5,9 +5,9 @@
 /// instead of calling a model, so a public demo streams a convincing run
 /// without a provider credential and without executing a single tool.
 ///
-/// This is deliberately NOT `SessionRecordingData`: that type carries
-/// expected-signature/eval fields a hand-authored demo has no honest value for,
-/// and nothing produces one from a live run today.
+/// Deliberately not a recorded-session type: it carries no
+/// expected-signature/eval fields a hand-authored demo has no honest value
+/// for, and nothing produces one from a live run today.
 library;
 
 /// One step of a [DemoRunScript].

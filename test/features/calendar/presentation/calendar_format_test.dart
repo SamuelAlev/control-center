@@ -129,11 +129,4 @@ void main() {
     });
   });
 
-  group('occursOnDay', () {
-    test('true on the event day, false on adjacent days', () {
-      final e = _event(start: DateTime(2026, 6, 11, 10));
-      expect(occursOnDay(e, DateTime(2026, 6, 11)), isTrue);
-      expect(occursOnDay(e, DateTime(2026, 6, 12)), isFalse);
-    });
-  });
 }

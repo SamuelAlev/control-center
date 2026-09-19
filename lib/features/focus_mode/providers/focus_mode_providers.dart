@@ -1,5 +1,4 @@
 import 'package:cc_domain/features/focus_mode/domain/focus_mode_state.dart';
-import 'package:control_center/app/focus_primary_window.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -107,15 +106,6 @@ class FocusModeNotifier extends Notifier<FocusModeState> {
     }
   }
 
-  /// Updates the preferred session duration without toggling.
-  Future<void> setDuration(int minutes) async {
-    state = state.copyWith(sessionDurationMinutes: minutes);
-    await _storage.savePreferences(
-      durationMinutes: minutes,
-      blockNotifications: state.blockNotifications,
-    );
-  }
-
   /// Sets the goal shown in the floating bar.
   void setGoal(String? goal) {
     state = state.copyWith(goal: goal, clearGoal: goal == null);
@@ -127,15 +117,6 @@ class FocusModeNotifier extends Notifier<FocusModeState> {
       return;
     }
     state = state.copyWith(compactMode: true);
-  }
-
-  /// Hides the pill and brings the main window back to the front.
-  Future<void> exitCompactMode() async {
-    if (!state.compactMode) {
-      return;
-    }
-    state = state.copyWith(compactMode: false);
-    focusPrimaryWindow();
   }
 }
 

@@ -247,22 +247,4 @@ class ReviewCiSignalService {
       note: dropped > 0 ? '$dropped further failing job(s) not read' : '',
     );
   }
-
-  /// The advisory correctness-axis note for [signals], or empty when there is
-  /// nothing honest to say.
-  ///
-  /// Advisory only. A failing test is strong evidence but the correlation is a
-  /// path-suffix heuristic, so it annotates the axis rather than moving a gate.
-  String correctnessNote(PrCiSignals signals) {
-    if (!signals.available || signals.failingCount == 0) {
-      return '';
-    }
-    for (final job in signals.jobs) {
-      for (final c in job.correlations) {
-        final test = c.evidence.isEmpty ? job.name : c.evidence;
-        return 'CI failure "$test" points at ${c.filePath}';
-      }
-    }
-    return '${signals.failingCount} CI check(s) failing';
-  }
 }

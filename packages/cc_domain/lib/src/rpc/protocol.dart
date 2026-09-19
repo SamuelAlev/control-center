@@ -91,9 +91,6 @@ abstract final class RpcMethods {
   /// `sub/snapshot` — full snapshot for a subscription (initial + per-change).
   static const subSnapshot = 'sub/snapshot';
 
-  /// `sub/update` — delta patch (reserved; negotiated capability).
-  static const subUpdate = 'sub/update';
-
   /// `sub/error` — a subscription failed or was invalidated server-side.
   static const subError = 'sub/error';
 

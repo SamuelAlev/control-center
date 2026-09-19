@@ -109,19 +109,4 @@ class ActionRequest {
     Object.hashAll(hosts),
     Object.hashAllUnordered(classes),
   );
-
-  /// The redacted shape hashed into the audit trail: WHAT was authorized,
-  /// without the argument values that may carry secrets. Paths and hosts are
-  /// included (they are the authorization-relevant part and are not secret);
-  /// the command is included because a policy decision about a command that
-  /// does not name the command is unauditable.
-  Map<String, Object?> toDigestPayload() => {
-    'classes': [for (final c in classes) c.wire]..sort(),
-    'command': command,
-    'paths': paths,
-    'refs': refs,
-    'hosts': hosts,
-    'magnitude': magnitude,
-    'cents': cents,
-  };
 }

@@ -77,25 +77,5 @@ void main() {
       }
     });
 
-    test('settingScopeForLocation reads the scope back off a path', () {
-      for (final group in kSettingsNav) {
-        for (final entry in group.items) {
-          final path = logical(entry.route(workspaceId));
-          if (!path.startsWith('/settings/')) {
-            continue;
-          }
-          final resolved = settingScopeForLocation(path);
-          if (resolved == null) {
-            continue; // foreign feature route, covered above
-          }
-          expect(resolved, group.scope, reason: entry.id);
-        }
-      }
-    });
-
-    test('a non-settings path has no scope', () {
-      expect(settingScopeForLocation('/inbox'), isNull);
-      expect(settingScopeForLocation('/settings'), isNull);
-    });
   });
 }

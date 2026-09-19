@@ -8,8 +8,6 @@ String _textOf(List<InlineSpan> spans) =>
     spans.map((s) => s is TextSpan ? (s.text ?? '') : '').join();
 
 void main() {
-  setUp(clearHighlightCache);
-
   group('highlightCodeSpans', () {
     test('returns a single plain span when languageId is null', () {
       final spans = highlightCodeSpans(
@@ -209,14 +207,6 @@ const Panel = ({ title }: Props) => (
       expect(debugHighlightParseCount, after + 1);
     });
 
-    test('clearHighlightCache forces a re-tokenize', () {
-      const code = 'final cleared = true;';
-      highlightCodeSpans(code: code, languageId: 'dart', dark: false);
-      clearHighlightCache();
-      final after = debugHighlightParseCount;
-      highlightCodeSpans(code: code, languageId: 'dart', dark: false);
-      expect(debugHighlightParseCount, after + 1);
-    });
   });
 
   group('peek + async', () {

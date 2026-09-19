@@ -1365,9 +1365,3 @@ void _writeCachedPayload(Uri uri, _MediaPayload payload) {
   }
 }
 
-/// Empties the fetched-media cache.
-@visibleForTesting
-void resetMarkdownMediaPayloadCache() {
-  _payloadCache.clear();
-  _payloadCacheBytes = 0;
-}

@@ -82,9 +82,6 @@ class _Broker {
 const _psk = 'test-psk-for-relay';
 const _room = 'room-relay';
 
-String admissionToken() =>
-    RemoteControlCrypto.relayAdmissionToken(psk: _psk, room: _room);
-
 /// The owner/server half of the relay data plane, built from the same
 /// [ChunkedRelaySession] the client uses. It seals frames to the room and opens
 /// inbound sealed frames from the client.

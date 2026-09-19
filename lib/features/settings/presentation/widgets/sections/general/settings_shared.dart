@@ -67,9 +67,9 @@ class AppearanceSection extends ConsumerWidget {
   }
 }
 
-/// Closed-list language autocomplete. Typing filters native names, BCP 47
-/// tags and ISO codes; abandoning the query restores the current selection
-/// rather than committing free text.
+/// Closed-list language autocomplete. Opening lists every locale; typing
+/// then filters native names, BCP 47 tags and ISO codes. Abandoning the
+/// query restores the current selection rather than committing free text.
 class _LanguagePicker extends ConsumerStatefulWidget {
   const _LanguagePicker({
     required this.selected,

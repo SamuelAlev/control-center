@@ -269,7 +269,7 @@ void main() {
     });
 
     test(
-      'recordingToWire, goldenToWire, configVersionToWire serialize fields',
+      'recordingToWire, goldenToWire serialize fields',
       () {
         final recWire = recordingToWire(
           SessionRecording(
@@ -318,29 +318,6 @@ void main() {
         expect(goldWire['lastStatus'], 'failed');
         expect(goldWire['lastScorecardJson'], '{}');
         expect(goldWire['blessedBy'], 'user-1');
-
-        final vWire = configVersionToWire(
-          AgentConfigVersion(
-            id: 'v-1',
-            workspaceId: 'ws-1',
-            agentId: 'a-1',
-            configHash: 'hash',
-            hashVersion: 1,
-            status: 'live',
-            scorecardJson: '{}',
-            promotedBy: 'user-1',
-            promotedAt: DateTime.utc(2026, 1, 2),
-            createdAt: DateTime.utc(2026, 1, 1),
-          ),
-        );
-        expect(vWire['id'], 'v-1');
-        expect(vWire['agentId'], 'a-1');
-        expect(vWire['configHash'], 'hash');
-        expect(vWire['hashVersion'], 1);
-        expect(vWire['status'], 'live');
-        expect(vWire['scorecardJson'], '{}');
-        expect(vWire['promotedBy'], 'user-1');
-        expect(vWire['promotedAt'], contains('2026-01-02'));
       },
     );
   });

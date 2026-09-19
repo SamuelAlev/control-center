@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
-import 'package:uuid/uuid.dart';
 
 /// Converts domain [PipelineTrigger] to Drift companion.
 PipelineTriggersTableCompanion triggerToCompanion(PipelineTrigger t) {
@@ -56,6 +55,3 @@ Map<String, dynamic> _decodeMap(String raw) {
   }
   return const {};
 }
-
-/// Generates a new UUID.
-String newTriggerId() => const Uuid().v4();

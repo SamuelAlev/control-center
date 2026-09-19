@@ -44,18 +44,6 @@ int goalTokenDelta(GoalTokenUsage current, GoalTokenUsage baseline) {
   return total;
 }
 
-/// A goal's lifecycle state.
-enum GoalBudgetState {
-  /// Working, within budget.
-  active,
-
-  /// Out of budget. NOT the same as complete.
-  budgetLimited,
-
-  /// Verified complete.
-  complete,
-}
-
 /// Tracks one goal's token and wall-clock spend against its budget.
 class GoalBudget {
   /// Creates a [GoalBudget].
@@ -141,30 +129,6 @@ class GoalBudget {
   }
 }
 
-/// The steer sent once when a goal hits its budget.
-///
-/// The load-bearing sentence is the last one. Left to itself a model reads
-/// "you are out of budget" as "wrap up and declare victory", and a goal that
-/// reports success because it ran out of money is worse than one that reports
-/// honestly that it did not finish — the first is a lie the user acts on.
-String goalBudgetLimitSteer({
-  required String objective,
-  required String budgetLine,
-}) =>
-    '''
-The budget for this goal is spent ($budgetLine).
-
-<objective>
-$objective
-</objective>
-
-Do NOT start new substantive work. Wrap up this turn: summarize what is
-actually done and verified, name what remains, and leave a clear next step.
-
-Budget exhaustion is not completion. Do not declare the goal complete unless
-the current state of the repository proves it is — if the work is unfinished,
-say so plainly.''';
-
 /// The audit a goal must pass before it may declare itself finished.
 ///
 /// This is the single highest-value prompt in the whole port. The failure it
@@ -193,29 +157,3 @@ repository:
 Declare completion only when every deliverable has direct, current-state
 evidence. It is a load-bearing claim: it ends the loop and tells the user the
 work is finished.''';
-
-/// The hidden continuation sent to keep an autonomous goal working.
-///
-/// Framed as data, not instruction, and explicitly told not to narrate: a
-/// continuation that says "continuing with the goal" every segment burns a turn
-/// on saying nothing.
-String goalContinuationSteer({
-  required String objective,
-  required String budgetLine,
-}) =>
-    '''
-Continue working on the active goal.
-
-<objective>
-$objective
-</objective>
-
-Budget: $budgetLine
-
-This is an autonomous continuation. The objective persists across segments —
-never redefine success around a smaller or already-completed subset of it.
-
-$goalCompletionAudit
-
-If the work is not done, just keep working. Do not narrate that you are
-continuing — act.''';

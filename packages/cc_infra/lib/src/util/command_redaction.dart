@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 final _redactionPatterns = <RegExp>[
   // `--flag=VALUE` (equals form).
   RegExp(r'(--api[-_]?key\s*=\s*)\S+', caseSensitive: false),
@@ -101,36 +99,6 @@ Object? redactSecretsInJsonValue(Object? value, {bool underSecretKey = false}) {
   return value;
 }
 
-/// Redacts sensitive values from a JSON string by parsing and recursively
-/// sanitizing its keys and values.
-String redactSecretsFromJson(String jsonLine) {
-  try {
-    final map = jsonDecode(jsonLine) as Map<String, dynamic>;
-    final sanitized = _redactMapValues(map);
-    return jsonEncode(sanitized);
-  } catch (_) {
-    return redactSecrets(jsonLine);
-  }
-}
-
-Map<String, dynamic> _redactMapValues(Map<String, dynamic> map) {
-  final result = <String, dynamic>{};
-  for (final entry in map.entries) {
-    final keyLower = entry.key.toLowerCase();
-    if (entry.value is String &&
-        (_isSecretKey(keyLower) || _looksLikeSecret(entry.value as String))) {
-      result[entry.key] = _redacted;
-    } else if (entry.value is Map<String, dynamic>) {
-      result[entry.key] = _redactMapValues(entry.value as Map<String, dynamic>);
-    } else if (entry.value is List) {
-      result[entry.key] = entry.value;
-    } else {
-      result[entry.key] = entry.value;
-    }
-  }
-  return result;
-}
-
 bool _isSecretKey(String keyLower) {
   return keyLower.contains('api_key') ||
       keyLower.contains('apikey') ||
@@ -141,16 +109,3 @@ bool _isSecretKey(String keyLower) {
       keyLower.contains('auth');
 }
 
-bool _looksLikeSecret(String value) {
-  if (value.length < 10) {
-    return false;
-  }
-  return value.startsWith('sk-') ||
-      value.startsWith('ghp_') ||
-      value.startsWith('gho_') ||
-      value.startsWith('ghs_') ||
-      value.startsWith('ghu_') ||
-      value.startsWith('ghr_') ||
-      value.startsWith('github_pat_') ||
-      value.startsWith('lin_');
-}

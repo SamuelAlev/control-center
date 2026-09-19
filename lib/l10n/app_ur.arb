@@ -761,8 +761,6 @@
   "copyRelativePath": "نسبتی پاتھ کاپی کریں",
   "nameRequired": "نام ضروری ہے",
   "import": "درآمد",
-  "sortByStatus": "اسٹیٹس",
-  "sortByName": "نام",
   "noMatchingAgents": "آپ کے فلٹر سے کوئی ایجنٹ میل نہیں کھاتا",
   "watchVideoOn": "ویڈیو ⁨{provider}⁩ پر دیکھیں",
   "@watchVideoOn": {
@@ -1591,7 +1589,6 @@
   "askAi": "AI سے پوچھیں",
   "askAiReviewDescription": "اس PR کا ریویو AI سے پوچھیں",
   "assignees": "تفویض شدہ",
-  "attachFiles": "فائلیں منسلک کریں",
   "attachImage": "تصویر منسلک کریں",
   "attachedAgents": "منسلک ایجنٹس",
   "audioInput": "آڈیو ان پٹ",
@@ -1638,7 +1635,6 @@
   "clickToRetry": "دوبارہ کوشش کے لیے کلک کریں",
   "close": "بند کریں",
   "closeEsc": "بند کریں (Esc)",
-  "closeKeyboardHint": "بند کریں",
   "closeReader": "ریڈر بند کریں",
   "closed": "بند",
   "codeFont": "کوڈ فونٹ",
@@ -2318,7 +2314,6 @@
   "nativeSandboxNeedsInstall": "نیٹو سینڈ باکس انسٹالیشن درکار",
   "navObservability": "آبزرویبلٹی",
   "navSettings": "ترتیبات",
-  "navigateLabel": "نیویگیٹ",
   "networkBlockCount": "{count} نیٹ ورک بلاکس",
   "@networkBlockCount": {
     "description": "Locale string for networkBlockCount",
@@ -2331,7 +2326,6 @@
   "neutral": "غیر جانبدار",
   "newCommitsPushed": "نئے کمیٹس پش ہوئے — diff دوبارہ لوڈ کرنے کے لیے کلک کریں",
   "newFact": "نیا فیکٹ",
-  "newLabel": "نیا",
   "newPolicy": "نئی پالیسی",
   "newsfeed": "نیوز فیڈ",
   "newsfeedLabel": "نیوز فیڈ",
@@ -2377,7 +2371,6 @@
   "noneAllRoles": "کوئی نہیں (تمام کردار)",
   "notAvailable": "دستیاب نہیں",
   "notConfiguredLabel": "کنفیگر نہیں۔",
-  "notDetected": "دریافت نہیں ہوا",
   "notFoundLabel": "نہیں ملا",
   "notes": "نوٹس",
   "notificationAgentFinished": "ایجنٹ ختم ہوا",
@@ -2595,11 +2588,9 @@
     }
   },
   "notificationsMuteRepo": "اس ریپوزٹری کو خاموش کریں",
-  "notificationsUnmuteRepo": "اس ریپوزٹری کی خاموشی ہٹائیں",
   "onboardingLinuxDescription": "Control Center ایجنٹ عمل درآمد الگ کرنے کے لیے Linux کنٹینرز استعمال کر سکتا ہے۔",
   "onboardingMacosDescription": "Control Center macOS پر ایجنٹ عمل درآمد الگ کرنے کے لیے نیٹو سینڈ باکس استعمال کرتا ہے۔",
   "onboardingUnsupportedDescription": "اس پلیٹ فارم پر سینڈ باکس دستیاب نہیں۔ ایجنٹ عمل درآمد بغیر علیحدگی کے ہو گا۔",
-  "openApplicationSettings": "ایپلیکیشن ترتیبات کھولیں",
   "openArticlesInApp": "مضامین ایپ میں کھولیں",
   "openInBrowser": "براؤزر میں کھولیں",
   "openedInYourBrowser": "آپ کے براؤزر میں کھل گیا۔",
@@ -2799,11 +2790,9 @@
   "environmentVariablesDescription": "اس اڈاپٹر کو دیے گئے حسبِ ضرورت ماحول کے ویری ایبلز (مثلاً API کلیدیں)۔ کی چین میں محفوظ۔",
   "variableKey": "کلید",
   "variableValue": "ویلیو",
-  "savingChanges": "تبدیلیاں محفوظ ہو رہی ہیں…",
   "savingEllipsis": "محفوظ ہو رہا ہے…",
   "scopeDiffToCommits": "Diff کو کمیٹس تک محدود کریں — رینج کے لیے Shift-کلک",
   "noPrsMatchSearch": "کوئی مماثل pull request نہیں",
-  "noPrsMatchSearchHint": "آپ کی تلاش سے کوئی کھلا PR میل نہیں کھاتا۔ دوسرے الفاظ آزمائیں یا تلاش صاف کریں۔",
   "searchFactsHint": "فیکٹس تلاش کریں...",
   "searchFonts": "فونٹس تلاش کریں…",
   "searchGifs": "GIFs تلاش کریں",
@@ -2828,7 +2817,6 @@
   "selectAgentToReportTo": "رپورٹ کرنے کے لیے ایجنٹ منتخب کریں…",
   "selectAnAgent": "ایجنٹ منتخب کریں",
   "selectConversation": "گفتگو منتخب کریں",
-  "selectEffortLevel": "زور کی سطح منتخب کریں",
   "selectLabel": "منتخب کریں",
   "selectRunner": "رنر منتخب کریں",
   "semanticSearch": "سیمانٹک تلاش",
@@ -2871,7 +2859,6 @@
       }
     }
   },
-  "skillEditor": "مہارت ایڈیٹر",
   "skillNameRequired": "مہارت کا نام ضروری ہے۔",
   "skillSaved": "مہارت \"⁨{name}⁩\" محفوظ ہو گئی۔",
   "@skillSaved": {
@@ -3618,7 +3605,6 @@
   "pipelineTemplatesSubtitle": "آپ کے ایجنٹس کو آرکیسٹریٹ کرنے والی پائپ لائنز کے لیے ڈریگ اینڈ ڈراپ ایڈیٹر۔",
   "pipelineTemplatesNew": "نیا ٹیمپلیٹ",
   "pipelineTemplatesEmpty": "ابھی کوئی پائپ لائن ٹیمپلیٹ نہیں۔ شروع کرنے کے لیے ایک بنائیں۔",
-  "pipelineTemplateIdLabel": "Template ID",
   "pipelineTemplateBuiltInBadge": "بلٹ اِن",
   "pipelineTemplateDeleteConfirmTitle": "ٹیمپلیٹ حذف کریں؟",
   "pipelineTemplateDeleteConfirmBody": "پائپ لائن ٹیمپلیٹ ⁨{name}⁩ حذف کریں؟ یہ واپس نہیں ہو سکتا۔",
@@ -3630,12 +3616,10 @@
       }
     }
   },
-  "pipelineTemplateEditorTitle": "پائپ لائن میں ترمیم",
   "pipelineTemplateEditorSubtitle": "سائڈ بار سے نوڈ اقسام کینوس پر گھسیٹیں، پھر انہیں جوڑیں۔",
   "unsavedChanges": "غیر محفوظ تبدیلیاں",
   "nodeLibraryTitle": "نوڈ لائبریری",
   "nodeLibraryHint": "نوڈ شامل کرنے کے لیے کوئی اندراج کینوس پر گھسیٹیں۔",
-  "editorDragHint": "لائبریری سے گھسیٹیں، ترمیم کے لیے نوڈ پر کلک کریں",
   "editorEmptyCanvas": "شروع کرنے کے لیے لائبریری سے نوڈ گھسیٹیں۔",
   "pipelineWhenThisHappens": "جب یہ ہوتا ہے",
   "pipelineDoThis": "یہ کریں",
@@ -3684,8 +3668,6 @@
   "nodeConfigPromptHelp": "رن ٹائم پر اسٹیٹ سے ویلیوز لینے کے لیے ڈبل بریس پلیس ہولڈرز استعمال کریں۔",
   "nodeConfigScript": "Bash اسکرپٹ",
   "nodeConfigScriptHelp": "⁨bash -c⁩ سے چلتا ہے۔ ⁨GITHUB_TOKEN⁩ سیٹ ہوتا ہے۔ عمل سے پہلے پلیس ہولڈرز بدل جاتے ہیں۔",
-  "nodeConfigTriggers": "ٹرگرز از",
-  "nodeConfigNoUpstream": "جوڑنے کے لیے کوئی اور نوڈ نہیں۔",
   "nodeConfigRouteKeys": "روٹ کلیدیں",
   "nodeConfigRouteKeyFrom": "⁨{source}⁩ سے روٹ کلید",
   "@nodeConfigRouteKeyFrom": {
@@ -3716,17 +3698,8 @@
   "conditionCases": "کیسز (کاما سے جدا)",
   "conditionCasesHelp": "ویلیو سے میل کھانے والی روٹ کلیدیں، ترتیب سے۔",
   "conditionDefaultCase": "ڈیفالٹ کیس",
-  "triggerPanelTitle": "ٹرگرز",
-  "triggerPanelHelp": "اس پائپ لائن کو کیا شروع کرتا ہے۔",
   "triggerManualHelp": "رن صفحے پر دکھائیں اور ہاتھ سے شروع کریں۔",
-  "triggerSectionAutomatic": "خودکار ٹرگرز",
-  "triggerAddButton": "ٹرگر شامل کریں",
-  "triggerNoneYet": "ابھی کوئی خودکار ٹرگر نہیں۔",
-  "triggerAddDialogTitle": "ٹرگر شامل کریں",
-  "triggerKindLabel": "ٹرگر کی قسم",
-  "triggerKindEvent": "ایونٹ پر",
   "triggerKindSchedule": "شیڈول پر",
-  "triggerKindWebhook": "ویب ہک سے",
   "triggerScheduleExprLabel": "شیڈول (cron یا ⁨every:seconds⁩)",
   "triggerTimezoneLabel": "ٹائم زون (اختیاری)",
   "triggerCatchUpLabel": "چھوٹے رنز پر",
@@ -3748,8 +3721,6 @@
   },
   "triggerWebhookHelp": "دستخط شدہ ویب ہک URL بنتا ہے۔ بیرونی سسٹمز اس پائپ لائن شروع کرنے کے لیے اس پر POST کرتے ہیں۔",
   "triggerWebhookPathLabel": "ویب ہُک کا راستہ",
-  "triggerEventFieldLabel": "ایونٹ",
-  "triggerNoMoreEvents": "تمام دستیاب ایونٹس پہلے سے جڑے ہیں۔",
   "triggerMatchStatusLabel": "صرف جب اسٹیٹس ہو",
   "triggerSummaryNone": "کوئی ٹرگر نہیں",
   "triggerEverySeconds": "ہر {seconds}س",
@@ -3941,9 +3912,7 @@
   "blockAdsTrackersDescription": "ریڈر میں کھلے مضامین سے اشتہارات، ٹریکرز اور کوکی بینرز ہٹائیں۔",
   "agentQuestionHeader": "آپ کے لیے سوال",
   "agentQuestionAnsweredLabel": "جواب دیا گیا",
-  "agentQuestionSubmit": "جواب جمع کریں",
   "agentQuestionFreeformHint": "اپنا جواب ٹائپ کریں…",
-  "agentQuestionAnswerLabel": "آپ کا جواب",
   "agentQuestionProgress": "سوال {index} از {count}",
   "agentQuestionSkip": "چھوڑیں",
   "agentQuestionSkippedLabel": "چھوڑ دیا گیا",
@@ -4934,18 +4903,7 @@
   "ideNewTab": "ایڈیٹر کھولیں",
   "ideNewTabMenu": "نیا ٹیب",
   "ideReviewCode": "کوڈ ریویو",
-  "ideRevert": "واپس کریں",
   "ideRevertConfirmTitle": "تبدیلیاں واپس کریں",
-  "ideRevertConfirmMessage": "{count, plural, one{1 فائل} other{{count} فائلیں}} HEAD پر واپس کریں؟ اس سے worktree تبدیلیاں ضائع ہوتی ہیں۔",
-  "@ideRevertConfirmMessage": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "ideRevertConfirmAction": "واپس کریں",
-  "ideRevertConfirmCancel": "منسوخ",
   "ideRevertUntracked": "ان ٹریکڈ فائلیں واپس نہیں ہو سکتیں",
   "ideRevertFailed": "فائلیں واپس نہیں ہو سکیں۔ گفتگو کا worktree دستیاب نہ ہو۔",
   "ideRevertSomeSkipped": "{count, plural, one{1 فائل} other{{count} فائلیں}} واپس نہیں ہو سکیں (ان ٹریکڈ)۔",
@@ -4956,7 +4914,6 @@
       }
     }
   },
-  "ideViewSource": "سورس دیکھیں",
   "ideSearchMatchCase": "کیس میل",
   "ideSearchWholeWord": "پورا لفظ",
   "ideSearchRegex": "Regex",
@@ -5225,7 +5182,6 @@
     }
   },
   "providerBaseUrlHint": "بیس URL (اختیاری)",
-  "customProvidersDescription": "کوئی OpenAI- یا Anthropic-موافق اینڈ پوائنٹ — Ollama، LM Studio، vLLM، یا نجی ڈیپلائمنٹ — اختیاری API کلید کے ساتھ۔",
   "addProvider": "فراہم کنندہ شامل کریں",
   "noCustomProviders": "ابھی کوئی حسبِ ضرورت فراہم کنندہ نہیں۔",
   "providerNameLabel": "نام",
@@ -5289,7 +5245,6 @@
   "repoScriptsArchivePlaceholder": "مثال: ⁨docker compose -p $CC_SPACE_ID down⁩",
   "repoScriptsRecentRuns": "حالیہ رنز",
   "repoScriptsNoRuns": "ابھی کوئی رن نہیں",
-  "repoScriptsOutput": "آؤٹ پٹ",
   "repoScriptsSaved": "اسکرپٹس محفوظ ہو گئیں",
   "repoScriptsRunKindSetup": "سیٹ اپ",
   "repoScriptsRunKindArchive": "آرکائیو",
@@ -7743,8 +7698,6 @@
   },
   "providersNoneConnectedNote": "کوئی فراہم کنندہ منسلک نہیں، اس لیے بلٹ اِن ایجنٹ رن ٹائم چلانے کو کچھ نہیں۔ نیچے API کلید شامل کریں یا سائن اِن کریں۔",
   "providersFilterHint": "فراہم کنندگان فلٹر کریں",
-  "providersFacetNeedsSetup": "سیٹ اپ درکار",
-  "providersFacetCustom": "حسبِ ضرورت",
   "providersNoneMatch": "اس فلٹر سے کچھ میل نہیں کھاتا",
   "providerDeniedHereTitle": "اس ورک اسپیس میں منع",
   "providerDeniedHereBody": "یہاں ایجنٹس یہ فراہم کنندہ استعمال نہیں کر سکتے، چاہے منسلک ہو۔ دوسرے ورک اسپیسز متاثر نہیں۔",
@@ -7756,8 +7709,6 @@
   "providerModelsFilterHint": "ماڈلز فلٹر کریں",
   "adaptersNoneReadyNote": "اس مشین پر کیٹلاگ کا کوئی رنر CLI نہیں ملا۔ ایک انسٹال کریں، پھر تازہ کریں۔",
   "adaptersFilterHint": "رنرز فلٹر کریں",
-  "adaptersFacetReady": "تیار",
-  "adaptersFacetMissing": "غائب",
   "adaptersLaunchGroup": "لانچ",
   "adaptersLaunchGroupDescription": "ایجنٹ شروع کرنے پر اس رنر کو کیا دیا جاتا ہے۔ CLI انسٹال سے پہلے بھی سیٹ کر سکتے ہیں۔",
   "adaptersEnvNone": "کوئی سیٹ نہیں",
@@ -8316,7 +8267,6 @@
   "demoTourSubtitle": "چار جگہیں جو دکھاتی ہیں کہ ایپ اصل میں کیا کرتی ہے۔",
   "demoTourSkip": "چھوڑیں",
   "demoTourStarRepo": "GitHub پر اسٹار",
-  "demoTourDone": "مکمل",
   "demoTourOpen": "کھولیں",
   "demoTourSpacesTitle": "ایجنٹ سے بات کریں",
   "demoTourSpacesBody": "اسپیس میں پیغام بھیجیں اور رن اسٹریم دیکھیں — سوچ، ٹول کالز اور لاگت، بالکل جیسے حقیقی رن۔",
@@ -8326,16 +8276,6 @@
   "demoTourTicketsBody": "ٹکٹس، todos اور پلانز انہی گفتگوؤں سے جڑے ہیں جو ایجنٹس کر رہے ہیں۔",
   "demoTourInboxTitle": "پوری کارروائی دیکھیں",
   "demoTourInboxBody": "ہر ستون کی ہر الرٹ ایک ان باکس میں آتی ہے — ریویوز، ٹکٹس، رنز اور میٹنگز۔",
-  "demoSessionEndingSoon": "یہ ڈیمو سیشن {minutes} منٹ میں ختم ہوتا ہے۔",
-  "@demoSessionEndingSoon": {
-    "description": "Warning shown as a demo visitor's TTL approaches",
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
-  "demoSessionEnded": "یہ ڈیمو سیشن ختم ہو گیا۔ نیا شروع کرنے کے لیے صفحہ دوبارہ لوڈ کریں۔",
   "demoUnavailableTitle": "ڈیمو میں دستیاب نہیں",
   "demoUnavailableTerminal": "ٹرمینل سرور ہوسٹ پر حقیقی شیل چلاتا ہے۔ ڈیمو کا کوئی عمل درآمد سطح نہیں — اسی لیے عوام کے لیے کھولنا محفوظ ہے۔",
   "demoUnavailableRig": "انکلوژر عارضی ورچوئل مشین ہے جو ایجنٹ چلاتا ہے۔ ڈیمو کوئی نہیں بوٹ کرتا: جو پبلک اینڈ پوائنٹ VM شروع کر سکے وہ ڈیمو نہیں۔",
@@ -8441,7 +8381,6 @@
   },
   "backupImportSourceLabel": "ورک اسپیس ڈیٹا بیس فائل",
   "backupImportSourceDescription": "ایک .db فائل جو سرور پڑھ سکے۔ پاتھ اس ڈیوائس پر نہیں، سرور ہوسٹ پر حل ہوتے ہیں۔",
-  "backupImportChooseFile": "فائل منتخب کریں",
   "backupImportDone": "⁨{name}⁩ میں درآمد ہو گیا۔",
   "@backupImportDone": {
     "description": "Toast after a workspace database is imported",

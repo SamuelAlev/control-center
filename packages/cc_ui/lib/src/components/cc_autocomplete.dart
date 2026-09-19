@@ -39,8 +39,9 @@ typedef CcAutocompleteFilter<T> =
 /// [CcSelectOption]s, shown in a floating panel anchored below the field.
 ///
 /// The field is an input-styled box wrapping an [EditableText] (no Material).
-/// Clicking anywhere in the field opens the menu, already filtered by the
-/// current text when the field is filled. As the user types, [filter]
+/// Clicking anywhere in the field opens the menu. A field that still shows
+/// its last selection lists every option — so a picker is not pre-filtered
+/// down to the one row it is displaying. As the user types, [filter]
 /// (or a default case-insensitive `contains` on the label) narrows [options]
 /// and the best-matching (first) option stays highlighted. The matches render
 /// in a width-matched floating panel of [CcTappable] rows. Selecting a row —
@@ -142,6 +143,15 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
   /// the caret) must not re-filter the list or mark the text as user-typed.
   String _lastText = '';
 
+  /// True once the focused user has edited the field. A committed selection
+  /// (or a parent-seeded value) is not a query: opening must list every
+  /// option rather than filtering down to the displayed label.
+  bool _typedQuery = false;
+
+  /// Suppresses treating a programmatic controller write as a typed query
+  /// (selection fills the field while it still has focus).
+  bool _ignoreTypedQuery = false;
+
   TextEditingController get _text =>
       widget.controller ?? (_internalText ??= TextEditingController());
 
@@ -163,7 +173,7 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     if (oldWidget.options != widget.options) {
       // Options often arrive async (model lists, branch lists): refresh the
       // matches so a click can open the panel without a keystroke first.
-      setState(() => _matches = _matchesForQuery(_text.text));
+      setState(() => _matches = _matchesForQuery(_queryForMatches()));
     }
   }
 
@@ -188,6 +198,10 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
       return;
     }
     _lastText = query;
+    if (!_ignoreTypedQuery) {
+      // A focused edit is a live query; a blur-time restore is not.
+      _typedQuery = _focus.hasFocus;
+    }
     final filter = widget.filter ?? _defaultFilter;
     final next = filter(widget.options, query);
     setState(() {
@@ -237,6 +251,7 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
       }
     }
     _committedCustom = text;
+    _typedQuery = false;
     onCustomValue(text);
   }
 
@@ -267,13 +282,13 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     _commitCustom();
   }
 
-  /// Opens the panel over a freshly computed match list. An empty field
-  /// shows every option; a filled field opens already filtered by its text.
+  /// Opens the panel over a freshly computed match list. A committed
+  /// selection shows every option; a live typed query keeps its filter.
   void _openPanel() {
     if (!widget.enabled) {
       return;
     }
-    final query = _text.text;
+    final query = _queryForMatches();
     final next = _matchesForQuery(query);
     final committableCustom =
         widget.onCustomValue != null && query.trim().isNotEmpty;
@@ -292,6 +307,9 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
     }
     _rows.reveal(_highlighted ?? -1);
   }
+
+  /// Live typed text filters; a displayed selection is not a query.
+  String _queryForMatches() => _typedQuery ? _text.text : '';
 
   /// Empty query → the full list; any text → the filter's matches.
   List<CcSelectOption<T>> _matchesForQuery(String query) {
@@ -341,9 +359,15 @@ class _CcAutocompleteState<T> extends State<CcAutocomplete<T>> {
 
   void _select(CcSelectOption<T> option) {
     final value = _display(option);
-    _text
-      ..text = value
-      ..selection = TextSelection.collapsed(offset: value.length);
+    _ignoreTypedQuery = true;
+    try {
+      _text
+        ..text = value
+        ..selection = TextSelection.collapsed(offset: value.length);
+    } finally {
+      _ignoreTypedQuery = false;
+    }
+    _typedQuery = false;
     _hideWithoutCommit();
     // Keep the field focused after selection.
     _focus.requestFocus();

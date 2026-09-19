@@ -24,9 +24,6 @@ class RemotePairingLifecycle {
   /// `pendingConfirm`) rather than auto-resuming a long-dormant trust.
   static const Duration reapprovalAfterIdle = Duration(days: 14);
 
-  /// The expiry instant for a new pairing offer, given [now].
-  static DateTime offerExpiry(DateTime now) => now.add(pairingOfferWindow);
-
   /// The expiry instant for a newly-confirmed credential, given [now].
   static DateTime credentialExpiry(DateTime now) => now.add(credentialLifetime);
 

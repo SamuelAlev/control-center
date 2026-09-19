@@ -1631,12 +1631,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get import => 'ייבא';
 
   @override
-  String get sortByStatus => 'סטטוס';
-
-  @override
-  String get sortByName => 'שם';
-
-  @override
   String get noMatchingAgents => 'אין סוכנים התואמים למסנן שלך';
 
   @override
@@ -2674,9 +2668,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get assignees => 'אחראים';
 
   @override
-  String get attachFiles => 'צירוף קבצים';
-
-  @override
   String get attachImage => 'צירוף תמונה';
 
   @override
@@ -2792,9 +2783,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get closeEsc => 'סגירה (Esc)';
-
-  @override
-  String get closeKeyboardHint => 'סגירה';
 
   @override
   String get closeReader => 'סגירת תצוגת הקריאה';
@@ -3914,9 +3902,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get navSettings => 'הגדרות';
 
   @override
-  String get navigateLabel => 'ניווט';
-
-  @override
   String networkBlockCount(int count) {
     return '$count חסימות רשת';
   }
@@ -3930,9 +3915,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get newFact => 'עובדה חדשה';
-
-  @override
-  String get newLabel => 'חדש';
 
   @override
   String get newPolicy => 'מדיניות חדשה';
@@ -4048,9 +4030,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get notConfiguredLabel => 'לא מוגדר.';
-
-  @override
-  String get notDetected => 'לא זוהה';
 
   @override
   String get notFoundLabel => 'לא נמצא';
@@ -4304,9 +4283,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get notificationsMuteRepo => 'השתק מאגר זה';
 
   @override
-  String get notificationsUnmuteRepo => 'בטל השתקת מאגר זה';
-
-  @override
   String get onboardingLinuxDescription =>
       'Control Center יכול להשתמש בקונטיינרים של Linux כדי לבודד הרצת סוכנים.';
 
@@ -4317,9 +4293,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get onboardingUnsupportedDescription =>
       'ארגז חול אינו זמין בפלטפורמה זו. הרצת סוכנים תתבצע ללא בידוד.';
-
-  @override
-  String get openApplicationSettings => 'פתח את הגדרות היישום';
 
   @override
   String get openArticlesInApp => 'פתח כתבות בתוך היישום';
@@ -4748,9 +4721,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get variableValue => 'ערך';
 
   @override
-  String get savingChanges => 'שומר שינויים…';
-
-  @override
   String get savingEllipsis => 'שומר…';
 
   @override
@@ -4759,10 +4729,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get noPrsMatchSearch => 'אין בקשות משיכה תואמות';
-
-  @override
-  String get noPrsMatchSearchHint =>
-      'אין PRs פתוחים שתואמים לחיפוש שלך. נסה מונחים אחרים או נקה את החיפוש.';
 
   @override
   String get searchFactsHint => 'חיפוש עובדות...';
@@ -4821,9 +4787,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get selectConversation => 'בחר שיחה';
-
-  @override
-  String get selectEffortLevel => 'בחר רמת מאמץ';
 
   @override
   String get selectLabel => 'בחר';
@@ -4885,9 +4848,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String signedInAs(String username) {
     return 'מחובר בתור ⁨$username⁩.';
   }
-
-  @override
-  String get skillEditor => 'עורך מיומנויות';
 
   @override
   String get skillNameRequired => 'נדרש שם מיומנות.';
@@ -6188,9 +6148,6 @@ class AppLocalizationsHe extends AppLocalizations {
       'אין עדיין תבניות פייפליין. צרו אחת כדי להתחיל.';
 
   @override
-  String get pipelineTemplateIdLabel => 'ה-ID של התבנית';
-
-  @override
   String get pipelineTemplateBuiltInBadge => 'מובנה';
 
   @override
@@ -6200,9 +6157,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String pipelineTemplateDeleteConfirmBody(String name) {
     return 'למחוק את תבנית הפייפליין $name? לא ניתן לבטל פעולה זו.';
   }
-
-  @override
-  String get pipelineTemplateEditorTitle => 'עריכת פייפליין';
 
   @override
   String get pipelineTemplateEditorSubtitle =>
@@ -6216,9 +6170,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get nodeLibraryHint => 'גררו פריט אל הקנבס כדי להוסיף צומת.';
-
-  @override
-  String get editorDragHint => 'גררו מהספרייה ולחצו על צומת כדי לערוך';
 
   @override
   String get editorEmptyCanvas => 'גררו צומת מהספרייה כדי להתחיל.';
@@ -6352,12 +6303,6 @@ class AppLocalizationsHe extends AppLocalizations {
       'רץ עם ⁨bash -c⁩. המשתנה ⁨GITHUB_TOKEN⁩ מוגדר. מצייני מקום מוחלפים לפני הביצוע.';
 
   @override
-  String get nodeConfigTriggers => 'מופעל על ידי';
-
-  @override
-  String get nodeConfigNoUpstream => 'אין צמתים אחרים להתחבר מהם.';
-
-  @override
   String get nodeConfigRouteKeys => 'מפתחות ניתוב';
 
   @override
@@ -6429,37 +6374,10 @@ class AppLocalizationsHe extends AppLocalizations {
   String get conditionDefaultCase => 'מקרה ברירת מחדל';
 
   @override
-  String get triggerPanelTitle => 'טריגרים';
-
-  @override
-  String get triggerPanelHelp => 'מה מתחיל את הפייפליין הזה.';
-
-  @override
   String get triggerManualHelp => 'הצגה בדף ההרצה והתחלה ידנית.';
 
   @override
-  String get triggerSectionAutomatic => 'טריגרים אוטומטיים';
-
-  @override
-  String get triggerAddButton => 'הוספת טריגר';
-
-  @override
-  String get triggerNoneYet => 'אין עדיין טריגרים אוטומטיים.';
-
-  @override
-  String get triggerAddDialogTitle => 'הוספת טריגר';
-
-  @override
-  String get triggerKindLabel => 'סוג טריגר';
-
-  @override
-  String get triggerKindEvent => 'באירוע';
-
-  @override
   String get triggerKindSchedule => 'לפי לוח זמנים';
-
-  @override
-  String get triggerKindWebhook => 'דרך webhook';
 
   @override
   String get triggerScheduleExprLabel => 'לוח זמנים (cron או ⁨every:seconds⁩)';
@@ -6505,12 +6423,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get triggerWebhookPathLabel => 'נתיב ה-webhook';
-
-  @override
-  String get triggerEventFieldLabel => 'אירוע';
-
-  @override
-  String get triggerNoMoreEvents => 'כל האירועים הזמינים כבר מחוברים.';
 
   @override
   String get triggerMatchStatusLabel => 'רק כשהסטטוס הוא';
@@ -6980,13 +6892,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get agentQuestionAnsweredLabel => 'נענתה';
 
   @override
-  String get agentQuestionSubmit => 'שליחת תשובה';
-
-  @override
   String get agentQuestionFreeformHint => 'הקלידו את תשובתכם…';
-
-  @override
-  String get agentQuestionAnswerLabel => 'התשובה שלכם';
 
   @override
   String agentQuestionProgress(int index, int count) {
@@ -8579,29 +8485,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get ideReviewCode => 'סקירת קוד';
 
   @override
-  String get ideRevert => 'שחזור';
-
-  @override
   String get ideRevertConfirmTitle => 'שחזור שינויים';
-
-  @override
-  String ideRevertConfirmMessage(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count קבצים',
-      many: '$count קבצים',
-      two: 'שני קבצים',
-      one: 'קובץ אחד',
-    );
-    return 'לשחזר $_temp0 ל-⁨HEAD⁩? פעולה זו מוחקת את השינויים בעץ העבודה.';
-  }
-
-  @override
-  String get ideRevertConfirmAction => 'שחזור';
-
-  @override
-  String get ideRevertConfirmCancel => 'ביטול';
 
   @override
   String get ideRevertUntracked => 'לא ניתן לשחזר קבצים שאינם במעקב';
@@ -8622,9 +8506,6 @@ class AppLocalizationsHe extends AppLocalizations {
     );
     return 'לא ניתן היה לשחזר $_temp0 (לא במעקב).';
   }
-
-  @override
-  String get ideViewSource => 'הצגת המקור';
 
   @override
   String get ideSearchMatchCase => 'התאמת רישיות';
@@ -9144,10 +9025,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get providerBaseUrlHint => 'כתובת בסיס (אופציונלי)';
 
   @override
-  String get customProvidersDescription =>
-      'כל נקודת קצה תואמת OpenAI או Anthropic — Ollama‏, LM Studio‏, vLLM או פריסה פרטית — עם מפתח API אופציונלי.';
-
-  @override
   String get addProvider => 'הוספת ספק';
 
   @override
@@ -9263,9 +9140,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get repoScriptsNoRuns => 'אין הרצות עדיין';
-
-  @override
-  String get repoScriptsOutput => 'פלט';
 
   @override
   String get repoScriptsSaved => 'הסקריפטים נשמרו';
@@ -13115,12 +12989,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get providersFilterHint => 'סינון ספקים';
 
   @override
-  String get providersFacetNeedsSetup => 'דורש הגדרה';
-
-  @override
-  String get providersFacetCustom => 'מותאם אישית';
-
-  @override
   String get providersNoneMatch => 'אין התאמות למסנן הזה';
 
   @override
@@ -13155,12 +13023,6 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get adaptersFilterHint => 'סינון מריצים';
-
-  @override
-  String get adaptersFacetReady => 'מוכן';
-
-  @override
-  String get adaptersFacetMissing => 'חסר';
 
   @override
   String get adaptersLaunchGroup => 'הפעלה';
@@ -14056,9 +13918,6 @@ class AppLocalizationsHe extends AppLocalizations {
   String get demoTourStarRepo => 'כוכב ב-GitHub';
 
   @override
-  String get demoTourDone => 'סיום';
-
-  @override
   String get demoTourOpen => 'פתיחה';
 
   @override
@@ -14088,15 +13947,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get demoTourInboxBody =>
       'כל התראה מכל תחום נוחתת בדואר נכנס אחד — סקירות, כרטיסים, הרצות ופגישות.';
-
-  @override
-  String demoSessionEndingSoon(int minutes) {
-    return 'הפעלת הדמו הזו מסתיימת בעוד $minutes דקות.';
-  }
-
-  @override
-  String get demoSessionEnded =>
-      'הפעלת הדמו הזו הסתיימה. רעננו את הדף כדי להתחיל חדשה.';
 
   @override
   String get demoUnavailableTitle => 'לא זמין בדמו';
@@ -14271,9 +14121,6 @@ class AppLocalizationsHe extends AppLocalizations {
   @override
   String get backupImportSourceDescription =>
       'קובץ ⁨.db⁩ שהשרת יכול לקרוא. נתיבים נפתרים על מארח השרת, לא במכשיר הזה.';
-
-  @override
-  String get backupImportChooseFile => 'בחירת קובץ';
 
   @override
   String backupImportDone(String name) {
