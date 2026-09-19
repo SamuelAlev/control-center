@@ -341,9 +341,9 @@ void main() {
 
   group('DebugEvent', () {
     test('has correct type and content', timeout: const Timeout.factor(2), () {
-      final e = DebugEvent(content: 'launching pi');
+      final e = DebugEvent(content: 'launching claude');
       expect(e.type, AgentProcessEventType.debug);
-      expect(e.content, 'launching pi');
+      expect(e.content, 'launching claude');
     });
   });
 

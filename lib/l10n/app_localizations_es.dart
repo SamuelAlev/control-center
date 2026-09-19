@@ -6285,6 +6285,43 @@ class AppLocalizationsEs extends AppLocalizations {
       'Arrastra un nodo desde la biblioteca para empezar.';
 
   @override
+  String get pipelineWhenThisHappens => 'Cuando ocurra esto';
+
+  @override
+  String get pipelineDoThis => 'Hacer esto';
+
+  @override
+  String get pipelineAddStep => 'Añadir paso';
+
+  @override
+  String get pipelineTidyUp => 'Ordenar el diseño';
+
+  @override
+  String get pipelineEditorHint =>
+      'Arrastra los pasos para ordenarlos · arrastra un controlador para conectar';
+
+  @override
+  String get pipelineRemoveConnection => 'Quitar conexión';
+
+  @override
+  String get pipelineDragToConnect => 'Arrastra para conectar';
+
+  @override
+  String get pipelineNewDefaultName => 'Nuevo pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Disparadores';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Añadir un disparador';
+
+  @override
+  String get pipelineOnEvent => 'Por evento';
+
+  @override
   String get nodeConfigTitle => 'Configuración del nodo';
 
   @override
@@ -6531,6 +6568,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Se genera una URL de webhook firmada. Los sistemas externos hacen POST para iniciar este pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Ruta del webhook';
+
+  @override
   String get triggerEventFieldLabel => 'Evento';
 
   @override
@@ -6659,6 +6699,87 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket asignado';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket creado';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Estado del ticket cambiado';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Grabación de la reunión detenida';
+
+  @override
+  String get triggerEventSkillUpdated => 'Habilidad actualizada';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Espacio eliminado';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Una pull request abierta en el anfitrión de código, no desde Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Una pull request abierta desde Control Center o por un agente.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Fusionada, cerrada, abierta, reabierta o aprobada. Filtra por estado en el inspector.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Solo cuando la pull request se fusiona, no al cerrarla o reabrirla.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Se vincula un repositorio a este espacio de trabajo.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Un archivo de un repositorio vinculado cambia en disco.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Llega un mensaje nuevo a un espacio.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Se crea un ticket en este espacio de trabajo.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Un ticket cambia de estado.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Un ticket termina correctamente.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Una ejecución del agente falló y el ticket se marca como fallido.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Se cancela un ticket y no continuará.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Se supera un límite de gasto del espacio de trabajo o del agente.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Se asigna un ticket a una persona, un agente o un equipo.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Termina la grabación de una reunión.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'Se instala o actualiza una habilidad.';
+
+  @override
+  String get triggerSpaceDeletedHelp =>
+      'Se elimina un espacio de conversación.';
 
   @override
   String get navTickets => 'Tickets';

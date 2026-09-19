@@ -142,7 +142,7 @@ class AgentLoopRunner implements AgentLoop {
     // One-shot latch for the host-priced soft budget steer (section 5b).
     var externalPressureSteered = false;
     // Bounds how many times a mid-run "context too long" rejection triggers a
-    // forced compaction + retry before the run gives up (mirrors goose's ×2).
+    // forced compaction + retry before the run gives up.
     var overflowRecoveries = 0;
     const maxOverflowRecoveries = 2;
     // Bounds how many times a `max_tokens`-truncated answer (no tool calls) is

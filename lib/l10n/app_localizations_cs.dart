@@ -6302,6 +6302,43 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editorEmptyCanvas => 'Začněte přetažením uzlu z knihovny.';
 
   @override
+  String get pipelineWhenThisHappens => 'Když se to stane';
+
+  @override
+  String get pipelineDoThis => 'Proveďte toto';
+
+  @override
+  String get pipelineAddStep => 'Přidat krok';
+
+  @override
+  String get pipelineTidyUp => 'Uklidit rozložení';
+
+  @override
+  String get pipelineEditorHint =>
+      'Přetáhněte kroky pro uspořádání · přetáhněte úchyt pro propojení';
+
+  @override
+  String get pipelineRemoveConnection => 'Odebrat spojení';
+
+  @override
+  String get pipelineDragToConnect => 'Přetáhněte pro propojení';
+
+  @override
+  String get pipelineNewDefaultName => 'Nový pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Spouštěče';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Přidat spouštěč';
+
+  @override
+  String get pipelineOnEvent => 'Při události';
+
+  @override
   String get nodeConfigTitle => 'Konfigurace uzlu';
 
   @override
@@ -6547,6 +6584,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vygeneruje se podepsané URL webhooku. Externí systémy na něj POSTují a spustí tuto pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Cesta webhooku';
+
+  @override
   String get triggerEventFieldLabel => 'Událost';
 
   @override
@@ -6677,6 +6717,85 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket přiřazen';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket vytvořen';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Stav ticketu se změnil';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Nahrávání schůzky zastaveno';
+
+  @override
+  String get triggerEventSkillUpdated => 'Dovednost aktualizována';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Prostor smazán';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Pull request otevřený na hostiteli kódu, ne z Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Pull request otevřený z Control Center nebo agentem.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Sloučený, uzavřený, otevřený, znovu otevřený nebo schválený. Stav vyfiltrujete v inspectoru.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Jen když je pull request sloučen, ne uzavřen nebo znovu otevřen.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'K tomuto pracovnímu prostoru se připojí repozitář.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Soubor v připojeném repozitáři se změní na disku.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'Do prostoru dorazí nová zpráva.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'V tomto pracovním prostoru se vytvoří tiket.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Tiket se přesune mezi stavy.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Tiket úspěšně skončí.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Běh agenta selhal a tiket je označen jako neúspěšný.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Tiket je zrušen a nebude pokračovat.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Je překročen limit výdajů pracovního prostoru nebo agenta.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Tiket je přiřazen osobě, agentovi nebo týmu.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'Nahrávání schůzky skončí.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Dovednost je nainstalována nebo aktualizována.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Konverzační prostor je smazán.';
 
   @override
   String get navTickets => 'Tickety';

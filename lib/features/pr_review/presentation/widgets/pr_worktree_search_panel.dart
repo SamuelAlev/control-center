@@ -661,6 +661,16 @@ class _ResultsHeader extends StatelessWidget {
   }
 }
 
+/// File-header leading geometry. Match rows start at the file icon, which
+/// sits just in front of the filename.
+const _kHeaderStartPad = 2.0;
+const _kChevronIconSize = 12.0;
+const _kChevronButtonPad = 4.0;
+const _kChevronExtent = _kChevronButtonPad * 2 + _kChevronIconSize;
+const _kFileIconStartPad = 2.0;
+const _kMatchRowStartPad =
+    _kHeaderStartPad + _kChevronExtent + _kFileIconStartPad;
+
 /// A single collapsible file-header row in the flattened results list. Its match
 /// lines are separate list items (see the flatten in `_contentView`), so this
 /// renders only the header (chevron, file name, dir, match count).
@@ -689,17 +699,22 @@ class _ResultHeader extends StatelessWidget {
     return ColoredBox(
       color: const Color(0x00000000),
       child: Padding(
-        padding: const EdgeInsetsDirectional.fromSTEB(2, 4, 8, 4),
+        padding: const EdgeInsetsDirectional.fromSTEB(
+          _kHeaderStartPad,
+          4,
+          8,
+          4,
+        ),
         child: Row(
           children: [
             CcTappable(
               onPressed: onToggle,
               borderRadius: BorderRadius.circular(3),
               builder: (context, states) => Padding(
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(_kChevronButtonPad),
                 child: Icon(
                   collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
-                  size: 12,
+                  size: _kChevronIconSize,
                   color: tokens.textTertiary,
                 ),
               ),
@@ -715,7 +730,12 @@ class _ResultHeader extends StatelessWidget {
                       color: hovered ? tokens.hover : const Color(0x00000000),
                     ),
                     child: Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(2, 0, 0, 0),
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        _kFileIconStartPad,
+                        0,
+                        0,
+                        0,
+                      ),
                       child: Row(
                         children: [
                           Icon(
@@ -724,33 +744,40 @@ class _ResultHeader extends StatelessWidget {
                             color: tokens.textTertiary,
                           ),
                           const SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              name,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: tokens.textPrimary,
-                              ),
+                          // Hug name+dir in one slot so leftover flex cannot
+                          // land after the trailing count (LTR right / RTL left).
+                          Expanded(
+                            child: Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    name,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: tokens.textPrimary,
+                                    ),
+                                  ),
+                                ),
+                                if (dir.isNotEmpty) ...[
+                                  const SizedBox(width: 6),
+                                  Flexible(
+                                    child: Text(
+                                      dir,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: tokens.textTertiary,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
-                          if (dir.isNotEmpty) ...[
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                dir,
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: tokens.textTertiary,
-                                ),
-                              ),
-                            ),
-                          ] else
-                            const Spacer(),
                           const SizedBox(width: 6),
                           _CountBadge(count: group.lines.length),
                         ],
@@ -797,12 +824,12 @@ class _MatchRow extends StatelessWidget {
             color: hovered ? tokens.hover : const Color(0x00000000),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(30, 2, 8, 2),
+            padding: const EdgeInsets.fromLTRB(_kMatchRowStartPad, 2, 8, 2),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 34,
+                  width: 28,
                   child: Text(
                     '${match.line}',
                     textAlign: TextAlign.right,

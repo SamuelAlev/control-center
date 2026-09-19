@@ -30,11 +30,11 @@ void main() {
     cliName: 'claude',
   );
 
-  const piAdapter = Adapter(
-    id: 'pi',
-    name: 'Pi',
-    description: 'pi AI CLI',
-    cliName: 'pi',
+  const harnessAdapter = Adapter(
+    id: 'cc-harness',
+    name: 'Control Center (built-in)',
+    description: 'Built-in agent loop',
+    cliName: 'cc-harness',
   );
 
   group('detectOne', () {
@@ -80,15 +80,15 @@ void main() {
         ),
       );
       service.stub(
-        'pi',
+        'cc-harness',
         const DetectedAdapter(
-          adapter: piAdapter,
+          adapter: harnessAdapter,
           status: DetectionStatus.found,
-          path: '/a/pi',
+          path: '/a/cc-harness',
         ),
       );
 
-      final results = await repo.detectAll([claudeAdapter, piAdapter]);
+      final results = await repo.detectAll([claudeAdapter, harnessAdapter]);
       expect(results.length, 2);
       expect(results[0].status, DetectionStatus.found);
       expect(results[1].status, DetectionStatus.found);
@@ -108,14 +108,14 @@ void main() {
         ),
       );
       service.stub(
-        'pi',
+        'cc-harness',
         const DetectedAdapter(
-          adapter: piAdapter,
+          adapter: harnessAdapter,
           status: DetectionStatus.notFound,
         ),
       );
 
-      final results = await repo.detectAll([claudeAdapter, piAdapter]);
+      final results = await repo.detectAll([claudeAdapter, harnessAdapter]);
       expect(results.length, 2);
       expect(results[0].status, DetectionStatus.found);
       expect(results[1].status, DetectionStatus.notFound);

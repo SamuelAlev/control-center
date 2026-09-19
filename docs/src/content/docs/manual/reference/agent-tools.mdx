@@ -3,9 +3,9 @@ title: Built-in agent tools
 description: The tool surface the built-in harness gives an agent — language server, structural search, debugger, kernels and worker control — with every operation and its arguments.
 ---
 
-These are the tools the **built-in agent runtime** registers directly, as opposed to the [MCP tools](/manual/reference/mcp-tools/) it bridges in. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
+These are the **server-bound** tools the built-in agent runtime registers directly — language server, structural search, debugger, kernels, questions and worker control — as opposed to the [MCP tools](/manual/reference/mcp-tools/) it bridges in and the generic file, search and shell tools from the harness runtime. They are not on the MCP registry: an external MCP client will not see them, because each one is bound to a live server-side resource — a language server process, a debug adapter, an interpreter — that belongs to one run.
 
-Every tool here is registered conditionally. A tool whose resource cannot exist on this host is not advertised at all, rather than advertised and failing on call.
+Every tool here is registered only when its backing resource is wired for the run — a language-server or debug supervisor, a tree-sitter parser, a kernel factory, a question port, a vibe roster. Detection of a language server or debug adapter for *this checkout* is a separate, later check (`status` / `adapters`): those tools stay on the surface so the agent can ask why nothing is usable, rather than guessing.
 
 ## Approval tiers
 
@@ -21,7 +21,7 @@ Each tool declares a tier, and the tier decides **which surfaces see it** — no
 
 ## `lsp` — language-server queries
 
-Registered when a language server is detected for the checkout. Detection is an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means the tool is not offered.
+Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
 
 Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
 
@@ -33,8 +33,8 @@ Positions are addressed by `line` plus a `symbol` substring, never by column. A 
 | `implementation`  | `file`, `line`, `symbol`         | Concrete implementations                   |
 | `references`      | `file`, `line`, `symbol`         | Every use, capped at 50                    |
 | `hover`           | `file`, `line`, `symbol`         | Signature and doc comment                  |
-| `symbols`         | `query`                          | Workspace symbol search, capped at 200     |
-| `code_actions`    | `file`, `line`                   | Quick fixes the server offers              |
+| `symbols`         | `query` or `file`                | Workspace search with `query` (capped at 100); document symbols with `file` (capped at 200) |
+| `code_actions`    | `file`, `line`, `symbol`         | Quick fixes the server offers              |
 | `status`          | —                                | Which servers are running, and for which roots |
 | `reload`          | —                                | Restarts the server for this root          |
 
@@ -73,7 +73,7 @@ matches a guard that disposes what it tested, and does **not** match one that di
 | ------------- | ----------------------------------------------------------- |
 | `pattern`     | A code fragment with metavariables                          |
 | `path`        | File or directory to search; defaults to the whole workspace |
-| `language`    | `dart`, `javascript`, `typescript`, `tsx`, `php`. Inferred when `path` names a file |
+| `language`    | A shipped grammar id (`dart`, `python`, `rust`, `c`, …). Inferred when `path` names a file |
 | `max_results` | Default 50                                                  |
 
 :::note[The pattern is parsed by the same grammar as the file]
@@ -113,9 +113,9 @@ Every file is compared against the content captured at staging time, and **any**
 
 ## `debug` — drive a debugger
 
-Registered when a debug adapter is detected for the checkout, by the same intersection rule as the language server. `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
+Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
 
-One session per conversation, with a hard TTL. A second `launch` is refused rather than silently replacing the first.
+One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
 
 | Op            | Arguments                     | Notes                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -144,7 +144,7 @@ One session per conversation, with a hard TTL. A second `launch` is refused rath
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
 
 ---
 
@@ -152,11 +152,12 @@ One session per conversation, with a hard TTL. A second `launch` is refused rath
 
 A Python or JavaScript cell whose variables, imports and loaded data survive between calls. `exec` tier; not parallel-safe.
 
-| Argument   | Meaning                                          |
-| ---------- | ------------------------------------------------ |
-| `code`     | The cell                                         |
-| `language` | `python` (default) or `javascript`               |
-| `reset`    | Discard the interpreter and start clean first    |
+| Argument      | Meaning                                          |
+| ------------- | ------------------------------------------------ |
+| `code`        | The cell                                         |
+| `description` | Required. 5–10 words for the transcript label    |
+| `language`    | `python` (default) or `javascript`               |
+| `reset`       | Discard the interpreter and start clean first    |
 
 - The last expression is echoed the way a notebook does.
 - `display()` works, a pandas frame renders as a table, and a matplotlib figure comes back as an **image the transcript shows**.
@@ -170,7 +171,7 @@ contents = tool("read", {"path": "lib/auth.dart"})
 
 The bridge **re-enters the harness tool registry**, so guardrails, approval and every wrapper apply exactly as they do to a model-issued call. It rides the kernel's own pipe rather than a loopback socket: no port, no secret, no egress rule.
 
-The cell's timeout is an *inactivity* budget and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
+The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
 
 :::note[Where the kernel runs]
 In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
@@ -185,6 +186,7 @@ In the conversation's enclosure when it has one, on the host otherwise. It does 
 | Argument       | Meaning                                    |
 | -------------- | ------------------------------------------ |
 | `question`     | What to ask                                |
+| `context`      | Optional: why you are asking and what hangs on the answer |
 | `options[]`    | Choices, each `{label, description?}`      |
 | `allow_free_text` | Whether a typed answer is accepted       |
 | `multi_select` | Whether several options may be chosen      |

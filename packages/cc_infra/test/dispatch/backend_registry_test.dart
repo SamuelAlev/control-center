@@ -46,18 +46,17 @@ void main() {
             id: 'x',
             name: 'X',
             description: '',
-            cliName: 'opencode',
+            cliName: 'acp-cli',
             transport: AdapterTransport.acp,
             acpArgs: 'acp',
           ),
         ],
       );
-      final backend = registry.backendFor('opencode');
+      final backend = registry.backendFor('acp-cli');
       expect(backend, isA<AcpBackend>());
       final acp = backend as AcpBackend;
-      expect(acp.cliName, 'opencode');
+      expect(acp.cliName, 'acp-cli');
       expect(acp.acpArgs, 'acp');
-      // Non-goose ACP backend has no default env.
       expect(acp.defaultEnvironment, isEmpty);
     });
 

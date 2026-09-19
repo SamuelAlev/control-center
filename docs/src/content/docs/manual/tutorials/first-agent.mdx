@@ -16,7 +16,7 @@ Prerequisites: [Your first workspace](/manual/tutorials/first-workspace/) comple
 ## Step 1: Create an agent
 
 1. Go to **Settings → Workspace → Agents**
-2. Click **Add agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
+2. Click **New agent**. An agent called "Unnamed agent" is created immediately and selected in the roster — there is no create dialog and nothing to confirm. You configure it in place.
 3. On the **Settings** tab, fill in:
    - **Name**: something short and memorable, like `alice`. This is what you type after `@`.
    - **Title**: what it does, e.g. "Backend engineer"
@@ -29,14 +29,14 @@ Prerequisites: [Your first workspace](/manual/tutorials/first-workspace/) comple
 When the Adapter field is unset, dispatch falls back to **Control Center (built-in)** — the agent loop inside the server, so there is nothing to install on the host. It still needs a model: with none set it asks Anthropic for its default, which works if you have connected an Anthropic account and otherwise fails with `No credential for provider "anthropic"`. Set both explicitly anyway, or you will be running on a model you did not choose.
 :::
 
-**Checkpoint.** The roster row shows your agent's name and its detail header reads "No runs yet".
+**Checkpoint.** The roster row shows your agent's name and a hollow status ring.
 
 ## Step 2: Start a space
 
 1. In the sidebar, find the **Spaces** section and click the **+** button
 2. Give the space a name
 3. Under **Add agents**, select the agent you just created
-4. If the workspace has more than one repo, pick which ones this space should work on
+4. If the workspace has any repos, pick which ones this space should work on
 5. Click **Create**
 
 The space opens. In the background Control Center provisions a copy-on-write worktree of the selected repos for this conversation, on its own branch. Your source checkout is never mutated.
@@ -63,7 +63,7 @@ If the agent asks something, answer in the conversation and it resumes.
 
 For a run's own metrics and its pause, resume and stop controls, find the running agent in the **Agents** section of the space's General panel and choose **Open activity**.
 
-In the agent registry, the status badge moves from **No runs yet** to **Running**, then to **Idle** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**.
+In the activity pane, the status badge reads **Running**, then **Succeeded** when the run ends. A run that stalls or loops reads **Blocked**; one that errors reads **Failed**. In the agent registry the roster ring is hollow before the first run and solid once the agent is idle again.
 
 What constrains the run: its own copy-on-write worktree, the credentials brokered for it at launch and revoked at teardown, a sanitized environment, the tool surface its mode allows and the action guardrails. Effects like pushing a branch or opening a pull request are gated separately — see [Guardrails](/manual/concepts/guardrails/).
 

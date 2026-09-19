@@ -15,8 +15,8 @@ The item only appears while the PR is open — it is a pre-merge action. The sam
 button is offered as **Ask AI** on the **Review** tab's empty state, before any
 review exists.
 
-Control Center starts the seeded `pr_review` pipeline and navigates you to its run
-page so you can watch it. The pipeline:
+Control Center starts the seeded `pr_review` pipeline and opens the PR's
+**Review** tab so you can watch it. The pipeline:
 
 1. Opens the PR's own review space, whose isolated worktree has the PR checked
    out at its head
@@ -25,13 +25,13 @@ page so you can watch it. The pipeline:
    There is no language or domain detection
 3. Has the lead (CEO) agent consolidate their findings into a walkthrough
 4. Finalizes: sorts the findings into consensus buckets and computes the
-   verdict, and the status bar on the Review tab flips to **Awaiting your
-   approval**
+   verdict. When the association reaches `awaiting approval`, **Publish to
+   GitHub** appears on the Review tab
 
 How deep the review goes is the workspace's **review level** — `light` (one
 reviewer), `balanced` (three, the default) or `thorough` (all five, adding the
 security and performance specialists) — set at
-**Settings → Workspace → Workspace policy → Review level**. A lighter level
+**Settings → Workspace → General**, on the **Workspace policy** card. A lighter level
 files just as many findings; it reports fewer of them front and centre.
 
 All the reviewers post into the PR's single review space, which is what makes
@@ -45,8 +45,8 @@ start one from GitHub itself, no pipeline trigger needed: mention the server's
 bot on the PR or add the `ai-review` label — see
 [Talk to Control Center from a GitHub PR](/manual/guides/github-pr-conversations/).
 
-If the toast says the run is a duplicate, a review is already in flight for this
-PR; open **Pipelines** to find it.
+If a toast says a review is already running for this pull request, one is
+already in flight; stay on the **Review** tab or open **Pipelines** to find it.
 
 ## Read the findings
 
@@ -56,7 +56,7 @@ Reviewers record findings as **review nodes** in the review space. Each carries:
 | -------------- | ------------------------------------------------------------- |
 | Kind           | `bug`, `suggestion`, `recommendation`, `question` or `ticket` |
 | Priority       | P0 (critical) → P3 (nit)                                      |
-| Axis           | Which review axis the finding belongs to                      |
+| Category       | `security`, `stability`, `data_integrity`, `correctness`, `performance` or `maintainability` |
 | File and line  | Where the finding is anchored                                 |
 | Original code  | The code the finding is about                                 |
 | Suggested code | The proposed fix                                              |
@@ -71,7 +71,7 @@ The **Review** tab shows the findings list, filterable by kind and status, with 
 toggle for dismissed findings, beside the artifact the consolidating agent
 published. The deterministic view — cohorts, the multi-axis dashboard, contract
 and visual diffs — is computed server-side but has no surface in the app; see
-[Review Studio](/manual/guides/review-studio/) for what exists and where.
+[Review compute](/manual/guides/review-compute/) for what the pass produces.
 
 ## Check the disagreements panel
 
@@ -101,20 +101,21 @@ Absence of evidence never clears a gate.
 ## Publish the review to GitHub
 
 Publishing is a separate, deliberately user-gated step. The `pr_review` pipeline
-does **not** post to GitHub — the old "post PR comment" step was removed so a
-review cannot double-publish.
+keeps the review in Control Center; it does not post to GitHub.
 
-1. On the **Review** tab, wait for the status bar to read **Awaiting your
-   approval**
+1. On the **Review** tab, wait until **Publish to GitHub** appears
 2. Press **Publish to GitHub**
 
 Control Center sends **one** GitHub review. Findings already resolved or dismissed
-are skipped and only findings a peer confirmed are included. Those that carry a
-file and line anchor become inline comments; everything else folds into the summary
-body, each with a "— Control Center AI review" footer so the source is
-unambiguous. A **Block** verdict is submitted as `REQUEST_CHANGES`; anything else
-is submitted as `COMMENT` — the bot never approves on your behalf. The status bar
-then flips to **Published**.
+are skipped. The button includes every remaining open finding and, on **Ship**,
+submits `APPROVE`. (The MCP tool `publish_review_to_github` still defaults to
+peer-confirmed findings only and does not approve unless you pass
+`approve_on_ship`.) Those that carry a file and line anchor become inline
+comments; everything else folds into the summary body, each with a
+"— Control Center AI review" footer so the source is unambiguous. A **Block**
+verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
+`APPROVE` from this button. A toast then reads **Published**. The review is
+posted under the server's app identity.
 
 If GitHub rejects an inline anchor because the line is not part of the diff, the
 whole review is re-sent with every finding folded into the body, so nothing is
@@ -142,7 +143,7 @@ reviewer nodes to a pipeline. Both paths, with the tool's exact signature, are i
 
 - [Review and merge a PR](/manual/guides/review-merge-pr/)
 - [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
-- [Review Studio (cohorts and axes)](/manual/guides/review-studio/)
+- [Review compute (cohorts and axes)](/manual/guides/review-compute/)
 
 ## Related concepts
 

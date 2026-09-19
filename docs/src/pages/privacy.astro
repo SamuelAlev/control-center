@@ -2,7 +2,7 @@
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 import LegalDoc from '../components/legal/LegalDoc.astro';
 
-const lastUpdated = '12 June 2026';
+const lastUpdated = '19 September 2026';
 const issuesUrl = 'https://github.com/SamuelAlev/control-center/issues';
 
 const sections = [
@@ -41,8 +41,8 @@ const sections = [
         <li><strong>There is no Control Center server.</strong> We do not operate a backend that collects, stores, or syncs your data. The app keeps your data on your device.</li>
         <li><strong>Your data is stored locally.</strong> Workspaces, agents, spaces, tickets, memory, code indexes and meeting notes are kept in a local database and files on your machine.</li>
         <li><strong>Some features talk to services you connect.</strong> When you link GitHub, Linear, Google Calendar, or an AI coding agent, the relevant data is sent to those providers to make the feature work. They process it under their own privacy policies.</li>
-        <li><strong>Your code can be sent to an AI provider.</strong> If you run an agent with the Claude Code adapter, your prompts and the code, diffs, tickets and context the agent reads are sent to Anthropic for processing under your own Claude Code subscription.</li>
-        <li><strong>Crash reports are sent in production — and you can turn them off.</strong> Released builds send crash, error, performance and session-replay diagnostics to Sentry; you can disable this during onboarding or in Settings → Privacy. See <a href="#diagnostics">Diagnostics and crash reporting</a> for exactly what this includes.</li>
+        <li><strong>Your code can be sent to an AI provider.</strong> The built-in adapter sends prompts, code, diffs and context to whichever model provider you connect. The Claude Code adapter sends the same kinds of data to Anthropic under your own Claude Code subscription.</li>
+        <li><strong>Crash reports are sent in production — and you can turn them off.</strong> Released builds send crash, error, performance and session-replay diagnostics to Sentry; you can disable this during onboarding or in Settings → Server → Diagnostics & privacy. See <a href="#diagnostics">Diagnostics and crash reporting</a> for exactly what this includes.</li>
       </ul>
     </section>
 
@@ -63,13 +63,13 @@ const sections = [
         <li><strong>Agent run logs</strong> — execution traces of agent runs, including reasoning, commands and outputs.</li>
         <li><strong>Tickets, pull requests and reviews</strong> — work items, pull-request metadata mirrored from GitHub for offline use and your draft review comments.</li>
         <li><strong>Pipelines</strong> — pipeline templates, run state, trigger events and error traces.</li>
-        <li><strong>Meeting notes</strong> — transcripts, summaries, decisions, action items and (optionally) raw audio. See <a href="#meetings">Meeting capture and transcription</a>.</li>
+        <li><strong>Meeting notes</strong> — transcripts, summaries, decisions, action items and the WAV the host writes for each recording. See <a href="#meetings">Meeting capture and transcription</a>.</li>
         <li><strong>Calendar data</strong> — calendar account metadata and cached event details from connected Google accounts.</li>
         <li><strong>Newsfeed</strong> — your RSS/Atom subscriptions and cached article content.</li>
         <li><strong>Activity and analytics</strong> — a local activity log and in-app analytics such as agent performance, streaks and achievements. These are computed and stored on your device and are not uploaded.</li>
         <li><strong>Preferences</strong> — non-sensitive settings such as theme, notification, sandbox and log-level preferences.</li>
       </ul>
-      <p><strong>A note on encryption at rest.</strong> Credentials (see <a href="#integrations">Connected services</a>) are stored in your operating system's secure keychain. The remainder of the local data above — the database, run logs, agent and skill files, meeting audio and indexed repository copies — is stored unencrypted on disk. It is protected by your operating system's user account and file permissions, not by application-level encryption. Anyone with access to your device or disk could read it, so we recommend full-disk encryption (such as FileVault or BitLocker) on the machine where you run Control Center.</p>
+      <p><strong>A note on encryption at rest.</strong> Provider credentials (see <a href="#integrations">Connected services</a>) live on your <code>cc_server</code> in an owner-only secrets file. The client keychain holds only this device's pairing credential. The remainder of the data above — the database, run logs, agent and skill files, meeting audio and indexed repository copies — is stored unencrypted on the server host's disk. It is protected by the operating system's user account and file permissions, not by application-level encryption. Anyone with access to that machine or disk could read it, so we recommend full-disk encryption (such as FileVault or BitLocker) on the host where you run <code>cc_server</code>.</p>
     </section>
 
     <section id="no-collection">
@@ -87,11 +87,11 @@ const sections = [
 
     <section id="integrations">
       <h2>Connected services</h2>
-      <p>The app only contacts a third-party service when a feature you use requires it. You authenticate with each service using your own credentials, which are stored in your operating system's secure keychain (macOS Keychain, Windows Credential Manager, or the Linux secret service) — never on a server of ours. What is shared with each service:</p>
+      <p>The app only contacts a third-party service when a feature you use requires it. You authenticate with each service using your own credentials, which are stored on your self-hosted <code>cc_server</code> (an owner-only secrets file, keyed by your user id) — not in a client keychain, and not on any Control Center-operated server. What is shared with each service:</p>
       <h3>GitHub</h3>
-      <p>Used for pull-request and repository features. The app sends repository names, pull-request numbers, file diffs, commit and review data and requests for user-profile details (including contribution history). Authentication uses a personal access token or a token from the <code>gh</code> CLI, sent to GitHub's API.</p>
+      <p>Used for pull-request and repository features. The server sends repository names, pull-request numbers, file diffs, commit and review data and requests for user-profile details. Authentication uses a personal access token you paste, or a token from GitHub's device flow when the server has a GitHub App registered. The <code>gh</code> CLI is not an authentication method.</p>
       <h3>Google Calendar</h3>
-      <p>Used for the calendar feature. With your consent through Google's OAuth flow, the app reads your calendar list and event details (titles, times, attendees, recurrence) and can write your RSVP responses. It requests the <code>calendar.readonly</code> and <code>calendar.events</code> scopes plus your account email and profile to identify the account. Access is per-workspace and can be revoked at any time from your Google account settings.</p>
+      <p>Used for the calendar feature. With your consent through Google's OAuth device-code flow, the app reads your calendar list and event details (titles, times, attendees, recurrence). It requests the <code>calendar.readonly</code> scope plus <code>openid</code> and <code>email</code> to identify the account. It does not request <code>calendar.events</code>, so RSVP writes fail. Access is per-workspace and can be revoked at any time from your Google account settings.</p>
       <h3>Linear</h3>
       <p>Used for the ticketing integration. The app sends issue data — title, description, team, priority, assignee, labels and state changes — to Linear's API, authenticated with a Linear API key you provide.</p>
       <h3>Newsfeed and other requests</h3>
@@ -100,14 +100,13 @@ const sections = [
 
     <section id="ai">
       <h2>AI agents and your code</h2>
-      <p>Control Center dispatches AI coding agents. What leaves your device depends entirely on which agent adapter you choose:</p>
+      <p>Control Center dispatches AI coding agents. What leaves your device depends on which adapter you pick and which model provider that adapter talks to:</p>
       <ul>
-        <li><strong>Local adapter (default).</strong> The default agent adapter runs as a sandboxed process on your own machine and does <strong>not</strong> send your data to any external AI provider.</li>
-        <li><strong>Claude Code adapter.</strong> If you select the Claude Code adapter, the agent communicates with Anthropic's API (<code>api.anthropic.com</code>). The app routes this traffic through a local loopback relay and authenticates using <em>your own</em> Claude Code subscription — the app does not store or manage an Anthropic API key on your behalf.</li>
+        <li><strong>Built-in adapter (default).</strong> The agent loop runs inside your own <code>cc_server</code>. Prompts, code, diffs and context are sent to whichever model provider you connected (Anthropic, OpenAI, Codex, Cursor, Kimi Code, and so on) under your own credentials. Point it at a local endpoint (Ollama, LM Studio, a private deployment) and that traffic stays on the host you named.</li>
+        <li><strong>Claude Code adapter.</strong> If you select Claude Code, the agent communicates with Anthropic through the Claude Code CLI under <em>your own</em> Claude Code subscription. The app does not store or manage an Anthropic API key on your behalf for that path.</li>
       </ul>
-      <p>When the Claude Code adapter is used, the data sent to Anthropic for processing can include: your prompts; the agent's composed context (its identity, system prompt, persona, skills and the active workspace policies and memory notes); recent conversation history and summaries; and the source code, pull-request diffs, ticket text and other content the agent reads. The agent retrieves code, diffs and tickets on demand through its tools rather than sending your whole repository, but you should assume that any code or content an agent works on may be transmitted to the provider. Anthropic processes this data under its own terms and privacy policy.</p>
+      <p>When either adapter talks to a cloud provider, the data sent for processing can include: your prompts; the agent's composed context (its identity, system prompt, persona, skills and the active workspace policies and memory notes); recent conversation history and summaries; and the source code, pull-request diffs, ticket text and other content the agent reads. The agent retrieves code, diffs and tickets on demand through its tools rather than sending your whole repository, but you should assume that any code or content an agent works on may be transmitted to the provider. Each provider processes this data under its own terms and privacy policy.</p>
       <p><strong>Diff-sharing control.</strong> The app includes a privacy preference that, when turned off, excludes raw pull-request diff content from review prompts so that only structured metadata is sent to the model. This setting affects review-mode prompts; it does not disable other transmissions described in this policy.</p>
-      <p>We do not integrate any other AI model provider, such as OpenAI or Google Gemini.</p>
     </section>
 
     <section id="meetings">
@@ -115,9 +114,9 @@ const sections = [
       <p>The optional meeting-notes feature records and transcribes meetings. Because this involves audio, we describe it in detail:</p>
       <ul>
         <li><strong>Audio capture.</strong> When you start a recording, the app captures your microphone and, where supported, the system/loopback audio of remote participants. This requires the relevant operating-system permissions (for example, microphone and audio-capture permission on macOS), which you grant explicitly.</li>
-        <li><strong>On-device transcription.</strong> Speech-to-text transcription runs entirely on your device using a bundled local model. <strong>Raw audio is never sent to any server.</strong></li>
-        <li><strong>Raw audio retention is opt-in.</strong> Raw audio is only saved to disk if you install the optional speaker-diarization models; otherwise it is processed in memory and not retained. Any retained audio is stored unencrypted in the app's directory.</li>
-        <li><strong>Transcript text and summaries.</strong> The transcript text, summaries, decisions and action items are stored locally. If you use an AI agent (such as the Claude Code adapter) to summarize or enhance a meeting, the <strong>transcript text</strong> — the words spoken — is sent to that AI provider for processing, even though the raw audio is not.</li>
+        <li><strong>On-host transcription.</strong> Capture streams 16 kHz PCM to your own <code>cc_server</code> (the same host that holds the rest of the workspace). Speech-to-text, diarization and embeddings run there with models the server downloads at boot — they are not bundled in the client. Raw audio is not sent to Control Center or to a speech vendor; it does leave the recording client if that client is not the server host (web, phone, or a remote desktop).</li>
+        <li><strong>Raw audio is written for every recording.</strong> The host always stores WAVs under <code>&lt;dataDir&gt;/meetings/&lt;meetingId&gt;/</code>, unencrypted. Deleting a meeting in the app removes the database row, not that directory. Diarization is installed at boot with the speech and embedding models; it is not an opt-in that gates whether audio is kept.</li>
+        <li><strong>Transcript text and summaries.</strong> The transcript, summaries, decisions and action items live in that workspace's database on the server. The built-in <code>meeting_summary</code> pipeline (and any agent you ask to re-summarize) sends the <strong>transcript text</strong> — the words spoken — to the model provider you connected. The WAV stays on the host.</li>
       </ul>
       <p>You are responsible for obtaining any consent required by the people you record under the laws that apply to you.</p>
     </section>
@@ -127,7 +126,7 @@ const sections = [
       <p>To find and fix crashes and errors, released (production) builds of the app send diagnostic data to <strong>Sentry</strong>, an error-monitoring service, at a data center in Germany. This is the only telemetry the app sends. Please read this section carefully:</p>
       <ul>
         <li><strong>When it runs.</strong> Diagnostics are sent only in released production builds. Local development and debug builds send nothing.</li>
-        <li><strong>You can turn it off.</strong> Diagnostics are on by default, but you can disable them during onboarding or at any time in Settings → Privacy. Turning them off stops further reporting (a restart fully applies the change). The diff-sharing preference described above is a separate control and does not affect diagnostics.</li>
+        <li><strong>You can turn it off.</strong> Diagnostics are on by default, but you can disable them during onboarding or at any time in Settings → Server → Diagnostics & privacy. Turning them off stops further reporting (a restart fully applies the change). The diff-sharing preference described above is a separate control and does not affect diagnostics.</li>
         <li><strong>What is sent.</strong> Crash and error reports; application logs and activity breadcrumbs (a trail of the recent actions in the app leading up to an event); your IP address and HTTP request metadata (such as your platform and user-agent); performance traces and profiles, captured for <strong>100% of sessions</strong>; and session-replay recordings that capture interface interactions and on-screen content for <strong>10% of all sessions</strong> and <strong>100% of sessions in which an error occurs</strong>.</li>
       </ul>
       <p>Sentry processes this data on our behalf to provide error monitoring. Because session replay and logs can incidentally capture content visible in the app, we keep this data only as long as needed for debugging and we recommend disabling diagnostics if you routinely work with sensitive material. If you have questions or want a diagnostic record removed, <a href={issuesUrl}>contact us</a>.</p>
@@ -136,14 +135,14 @@ const sections = [
     <section id="security">
       <h2>How your data is protected</h2>
       <ul>
-        <li><strong>Credentials in the keychain.</strong> API tokens and OAuth credentials are stored in your operating system's keychain (macOS keychain, Windows Credential Manager, or the Linux secret service) — the only data the app encrypts at rest. On macOS the keychain is accessible while you are signed in to your account; we recommend full-disk encryption to protect it against physical access to your device.</li>
-        <li><strong>Local-only servers.</strong> The built-in agent-tooling server and the AI relay bind to your loopback interface (127.0.0.1) and are not exposed to the internet.</li>
+        <li><strong>Credentials on your server.</strong> API tokens and OAuth credentials live on your <code>cc_server</code> in an owner-only secrets file, attached to your user. The client operating-system keychain holds only this device's pairing credential. We recommend full-disk encryption on the server host.</li>
+        <li><strong>Default local bind.</strong> A desktop-spawned <code>cc_server</code> listens on loopback (<code>127.0.0.1</code>) by default. Binding a non-loopback address requires TLS (or an explicit <code>--insecure</code> behind a terminating proxy).</li>
         <li><strong>Sandboxed agents.</strong> Agents run in operating-system sandboxes, with credentials passed through scoped environment variables rather than embedded in prompts.</li>
         <li><strong>Workspace isolation.</strong> Data is partitioned by workspace as a hard design boundary, so one workspace's data does not surface in another.</li>
-        <li><strong>OAuth best practice.</strong> Google sign-in uses an industry-standard OAuth flow with a public client and cross-site-request-forgery protection; the AI relay forwards your provider token without storing it.</li>
+        <li><strong>OAuth best practice.</strong> Google Calendar sign-in uses an industry-standard device-code OAuth flow with a public client; the server stores the resulting tokens for that user and never returns them to a client.</li>
         <li><strong>Transport security.</strong> Network requests to third-party services use HTTPS and authentication headers are never written to logs.</li>
       </ul>
-      <p>As noted above, the local database and files (other than keychain-stored secrets) are not encrypted by the app. Securing the device itself — with full-disk encryption, a strong account password and timely deletion of data you no longer need — is an important part of protecting this data.</p>
+      <p>As noted above, the database and files (other than the server secrets file and the client pairing credential) are not encrypted by the app. Securing the server host — with full-disk encryption, a strong account password and timely deletion of data you no longer need — is an important part of protecting this data.</p>
     </section>
 
     <section id="retention">

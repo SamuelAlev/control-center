@@ -1,312 +1,104 @@
+import 'dart:async' show unawaited;
+
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart'
-    show StepKind;
-import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
-import 'package:cc_domain/features/pipelines/domain/services/event_payload_mapper.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/node_field_label.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/trigger_labels.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 
-/// Side panel shown in the template editor when the [StepKind.trigger] entry
-/// node is selected. Lists and edits the pipeline's `PipelineTrigger` rows —
-/// the source of truth for what starts it: a manual run, domain events (with
-/// an optional payload filter), or a schedule.
+const _prStatuses = ['merged', 'closed', 'approved', 'opened', 'reopened'];
+
+/// Right-hand inspector for one selected start-trigger on the canvas.
+///
+/// Hidden until a trigger proxy is selected. Kind-specific fields (schedule
+/// expression, webhook path, PR status chips) live here so they can be edited
+/// after the node is dropped, not only at insert time.
 class TriggerNodePanel extends ConsumerWidget {
-  /// Creates a [TriggerNodePanel].
+  /// Creates a [TriggerNodePanel] for [triggerId].
   const TriggerNodePanel({
     super.key,
     required this.workspaceId,
     required this.templateId,
+    required this.triggerId,
+    required this.onDelete,
   });
 
   /// Workspace the template belongs to.
   final String workspaceId;
 
-  /// Template whose triggers are edited.
+  /// Template whose trigger is shown.
   final String templateId;
+
+  /// The canvas-selected trigger row.
+  final String triggerId;
+
+  /// Removes this trigger (parent also clears the selection).
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
     final triggersAsync = ref.watch(
       pipelineTriggersForWorkspaceProvider(workspaceId),
     );
-    final all =
-        triggersAsync.value
-            ?.where((t) => t.templateId == templateId)
-            .toList() ??
-        const <PipelineTrigger>[];
-    final manual = all.firstWhereOrNull(
-      (t) => t.eventType == PipelineTrigger.manualEventType,
+    final trigger = triggersAsync.value?.firstWhereOrNull(
+      (t) => t.id == triggerId && t.templateId == templateId,
     );
-    final autos =
-        all
-            .where((t) => t.eventType != PipelineTrigger.manualEventType)
-            .toList()
-          ..sort((a, b) => a.eventType.compareTo(b.eventType));
-    // Lazy: the write-path repo (and its RPC client) resolves only when the
-    // operator toggles/edits a trigger, so the panel renders without a
-    // connected server (widget tests, offline previews).
-    late final repo = ref.read(pipelineTriggerRepositoryProvider);
-
-    return Container(
-      color: tokens.bgPrimary,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Row(
-            children: [
-              Icon(AppIcons.zap, size: 16, color: tokens.textPrimary),
-              const SizedBox(width: 8),
-              Text(
-                l10n.triggerPanelTitle,
-                style: TextStyle(
-                  color: tokens.textPrimary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.triggerPanelHelp,
-            style: TextStyle(color: tokens.textTertiary, fontSize: 12),
-          ),
-          const SizedBox(height: 16),
-          // ── Manual run ────────────────────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CcSwitch(
-                value: manual?.enabled ?? false,
-                onChanged: (allow) =>
-                    _setManual(repo, ref, manual, allow: allow),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.triggerEventManual,
-                      style: TextStyle(
-                        color: tokens.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Text(
-                      l10n.triggerManualHelp,
-                      style: TextStyle(
-                        color: tokens.textTertiary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28, child: Center(child: CcDivider())),
-          // ── Automatic triggers ────────────────────────────────────────
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.triggerSectionAutomatic,
-                  style: TextStyle(
-                    color: tokens.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              CcButton(
-                onPressed: () => _showAddDialog(context, ref, autos),
-                size: CcButtonSize.sm,
-                variant: CcButtonVariant.secondary,
-                icon: AppIcons.plus,
-                child: Text(l10n.triggerAddButton),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (autos.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                l10n.triggerNoneYet,
-                style: TextStyle(color: tokens.textTertiary, fontSize: 13),
-              ),
-            )
-          else
-            for (final trigger in autos)
-              _TriggerRow(
-                trigger: trigger,
-                onToggle: (v) => repo.update(trigger.copyWith(enabled: v)),
-                onDelete: () =>
-                    repo.deleteById(context.currentWorkspaceId!, trigger.id),
-              ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _setManual(
-    PipelineTriggerRepository repo,
-    WidgetRef ref,
-    PipelineTrigger? manual, {
-    required bool allow,
-  }) async {
-    if (allow) {
-      if (manual == null) {
-        await repo.insert(
-          PipelineTrigger(
-            id: const Uuid().v4(),
-            eventType: PipelineTrigger.manualEventType,
-            templateId: templateId,
-            workspaceId: workspaceId,
-            enabled: true,
-          ),
-        );
-      } else if (!manual.enabled) {
-        await repo.update(manual.copyWith(enabled: true));
-      }
-    } else if (manual != null) {
-      await repo.deleteById(ref.requireWorkspaceId(), manual.id);
+    if (trigger == null) {
+      return const SizedBox.shrink();
     }
-  }
-
-  Future<void> _showAddDialog(
-    BuildContext context,
-    WidgetRef ref,
-    List<PipelineTrigger> existing,
-  ) async {
-    final spec = await showCcDialog<_NewTriggerSpec>(
-      context: context,
-      builder: (ctx) => _AddTriggerDialog(
-        existingEventTypes: existing.map((t) => t.eventType).toSet(),
-      ),
+    return _TriggerInspector(
+      key: ValueKey(trigger.id),
+      trigger: trigger,
+      onDelete: onDelete,
     );
-    if (spec == null) {
-      return;
-    }
-    await ref
-        .read(pipelineTriggerRepositoryProvider)
-        .insert(
-          PipelineTrigger(
-            id: const Uuid().v4(),
-            eventType: spec.eventType,
-            templateId: templateId,
-            workspaceId: workspaceId,
-            enabled: true,
-            cronExpression: spec.cronExpression,
-            timezone: spec.timezone,
-            webhookToken: spec.webhookToken,
-            match: spec.match,
-            catchUpPolicy: spec.catchUpPolicy,
-          ),
-        );
   }
 }
 
-class _TriggerRow extends StatelessWidget {
-  const _TriggerRow({
+class _TriggerInspector extends ConsumerStatefulWidget {
+  const _TriggerInspector({
+    super.key,
     required this.trigger,
-    required this.onToggle,
     required this.onDelete,
   });
 
   final PipelineTrigger trigger;
-  final ValueChanged<bool> onToggle;
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          CcSwitch(value: trigger.enabled, onChanged: onToggle),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              triggerDetailLabel(l10n, trigger),
-              style: TextStyle(color: tokens.textPrimary, fontSize: 13),
-            ),
-          ),
-          CcIconButton(
-            onPressed: onDelete,
-            variant: CcButtonVariant.ghost,
-            icon: AppIcons.trash2,
-            tooltip: l10n.delete,
-          ),
-        ],
-      ),
-    );
-  }
+  ConsumerState<_TriggerInspector> createState() => _TriggerInspectorState();
 }
 
-/// The result of the add-trigger dialog.
-class _NewTriggerSpec {
-  const _NewTriggerSpec({
-    required this.eventType,
-    this.cronExpression,
-    this.timezone,
-    this.webhookToken,
-    this.match = const {},
-    this.catchUpPolicy = CronCatchUpPolicy.catchUpLatestOnly,
-  });
-
-  final String eventType;
-  final String? cronExpression;
-  final String? timezone;
-  final String? webhookToken;
-  final Map<String, dynamic> match;
-  final CronCatchUpPolicy catchUpPolicy;
-}
-
-class _AddTriggerDialog extends StatefulWidget {
-  const _AddTriggerDialog({required this.existingEventTypes});
-
-  final Set<String> existingEventTypes;
+class _TriggerInspectorState extends ConsumerState<_TriggerInspector> {
+  late final TextEditingController _scheduleCtrl;
+  late final TextEditingController _timezoneCtrl;
+  late CronCatchUpPolicy _catchUp;
 
   @override
-  State<_AddTriggerDialog> createState() => _AddTriggerDialogState();
-}
-
-class _AddTriggerDialogState extends State<_AddTriggerDialog> {
-  // Trigger kind: 'event' | 'schedule' | 'webhook'.
-  String _kind = 'event';
-  String? _eventType;
-  // Schedule expression: an interval (`every:<seconds>`) or a 5-field cron
-  // expression like `0 9 * * 1`. Defaults to a daily interval for back-compat.
-  final _scheduleCtrl = TextEditingController(text: 'every:86400');
-  final _timezoneCtrl = TextEditingController();
-  // How missed scheduled fires (server downtime) are handled.
-  CronCatchUpPolicy _catchUpPolicy = CronCatchUpPolicy.catchUpLatestOnly;
-  // PR status filter (only shown for PullRequestStatusChanged).
-  final Set<String> _statuses = {'merged'};
-
-  static const _prStatuses = [
-    'merged',
-    'closed',
-    'approved',
-    'opened',
-    'reopened',
-  ];
+  void initState() {
+    super.initState();
+    _scheduleCtrl = TextEditingController(
+      text: widget.trigger.cronExpression ?? 'every:86400',
+    );
+    _timezoneCtrl = TextEditingController(text: widget.trigger.timezone ?? '');
+    _catchUp = widget.trigger.catchUpPolicy;
+  }
 
   @override
   void dispose() {
+    if (widget.trigger.eventType == PipelineTrigger.scheduleEventType) {
+      final next = _withPendingSchedule(widget.trigger);
+      if (next.cronExpression != widget.trigger.cronExpression ||
+          (next.timezone ?? '') != (widget.trigger.timezone ?? '') ||
+          next.catchUpPolicy != widget.trigger.catchUpPolicy) {
+        unawaited(ref.read(pipelineTriggerRepositoryProvider).update(next));
+      }
+    }
     _scheduleCtrl.dispose();
     _timezoneCtrl.dispose();
     super.dispose();
@@ -316,218 +108,281 @@ class _AddTriggerDialogState extends State<_AddTriggerDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    // Event types selectable here: the real domain events (manual + schedule
-    // are handled separately). Hide ones already wired so we don't collide
-    // with the unique (template, event) constraint.
-    final eventOptions = [
-      for (final e in EventPayloadMapper.knownEventTypes)
-        if (!widget.existingEventTypes.contains(e))
-          CcSelectOption(value: e, label: triggerEventLabel(l10n, e)),
-    ];
-    final isPrStatus = _eventType == 'PullRequestStatusChanged';
+    final trigger = widget.trigger;
+    final title = triggerEventLabel(l10n, trigger.eventType);
+    final help = _helpFor(l10n, trigger.eventType);
+    final showTypeName = title != trigger.eventType;
 
-    return CcDialog(
-      title: l10n.triggerAddDialogTitle,
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 420, maxHeight: 420),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    return Container(
+      color: tokens.bgPrimary,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
             children: [
-              // Kind: event vs schedule vs webhook.
-              _LabeledTriggerField(
-                label: l10n.triggerKindLabel,
-                tokens: tokens,
-                child: CcSelect<String>(
-                  options: [
-                    CcSelectOption(
-                      value: 'event',
-                      label: l10n.triggerKindEvent,
-                    ),
-                    CcSelectOption(
-                      value: 'schedule',
-                      label: l10n.triggerKindSchedule,
-                    ),
-                    CcSelectOption(
-                      value: 'webhook',
-                      label: l10n.triggerKindWebhook,
-                    ),
-                  ],
-                  value: _kind,
-                  onChanged: (v) => setState(() => _kind = v),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              if (_kind == 'schedule') ...[
-                _LabeledTriggerField(
-                  label: l10n.triggerScheduleExprLabel,
-                  tokens: tokens,
-                  child: CcTextField(
-                    controller: _scheduleCtrl,
-                    hintText: '0 9 * * 1   ·   every:86400',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _LabeledTriggerField(
-                  label: l10n.triggerTimezoneLabel,
-                  tokens: tokens,
-                  child: CcTextField(
-                    controller: _timezoneCtrl,
-                    hintText: 'UTC',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _LabeledTriggerField(
-                  label: l10n.triggerCatchUpLabel,
-                  tokens: tokens,
-                  child: CcSelect<CronCatchUpPolicy>(
-                    options: [
-                      CcSelectOption(
-                        value: CronCatchUpPolicy.catchUpLatestOnly,
-                        label: l10n.triggerCatchUpRunOnce,
-                      ),
-                      CcSelectOption(
-                        value: CronCatchUpPolicy.skip,
-                        label: l10n.triggerCatchUpSkip,
-                      ),
-                    ],
-                    value: _catchUpPolicy,
-                    onChanged: (v) => setState(() => _catchUpPolicy = v),
-                  ),
-                ),
-              ] else if (_kind == 'webhook')
-                Text(
-                  l10n.triggerWebhookHelp,
-                  style: TextStyle(color: tokens.textTertiary, fontSize: 13),
-                )
-              else ...[
-                if (eventOptions.isEmpty)
-                  Text(
-                    l10n.triggerNoMoreEvents,
-                    style: TextStyle(color: tokens.textTertiary, fontSize: 13),
-                  )
-                else
-                  _LabeledTriggerField(
-                    label: l10n.triggerEventFieldLabel,
-                    tokens: tokens,
-                    child: CcSelect<String>(
-                      options: eventOptions,
-                      value: _eventType,
-                      onChanged: (v) => setState(() => _eventType = v),
-                    ),
-                  ),
-                if (isPrStatus) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.triggerMatchStatusLabel,
-                    style: TextStyle(color: tokens.textPrimary, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      for (final s in _prStatuses)
-                        CcChip(
-                          label: s,
-                          selected: _statuses.contains(s),
-                          onPressed: () => setState(() {
-                            if (!_statuses.add(s)) {
-                              _statuses.remove(s);
-                            }
-                          }),
-                        ),
-                    ],
-                  ),
-                ],
-              ],
+              CcIconButton(
+                onPressed: widget.onDelete,
+                variant: CcButtonVariant.ghost,
+                icon: AppIcons.trash2,
+                tooltip: l10n.delete,
+              ),
             ],
           ),
-        ),
+          if (showTypeName) ...[
+            const SizedBox(height: 4),
+            Text(
+              trigger.eventType,
+              style: TextStyle(color: tokens.textTertiary, fontSize: 12),
+            ),
+          ],
+          if (help != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              help,
+              style: TextStyle(color: tokens.textTertiary, fontSize: 12),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.enabled,
+                  style: TextStyle(color: tokens.textPrimary, fontSize: 13),
+                ),
+              ),
+              CcSwitch(
+                value: trigger.enabled,
+                onChanged: (enabled) {
+                  unawaited(
+                    _save(
+                      _withPendingSchedule(trigger.copyWith(enabled: enabled)),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          if (trigger.eventType == PipelineTrigger.scheduleEventType) ...[
+            const SizedBox(height: 16),
+            NodeFieldLabel(
+              label: l10n.triggerScheduleExprLabel,
+              child: CcTextField(
+                controller: _scheduleCtrl,
+                hintText: '0 9 * * 1   ·   every:86400',
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () => unawaited(_persistSchedule()),
+                onSubmitted: (_) => unawaited(_persistSchedule()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            NodeFieldLabel(
+              label: l10n.triggerTimezoneLabel,
+              child: CcTextField(
+                controller: _timezoneCtrl,
+                hintText: 'UTC',
+                textInputAction: TextInputAction.done,
+                onEditingComplete: () => unawaited(_persistSchedule()),
+                onSubmitted: (_) => unawaited(_persistSchedule()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            NodeFieldLabel(
+              label: l10n.triggerCatchUpLabel,
+              child: CcSelect<CronCatchUpPolicy>(
+                options: [
+                  CcSelectOption(
+                    value: CronCatchUpPolicy.catchUpLatestOnly,
+                    label: l10n.triggerCatchUpRunOnce,
+                  ),
+                  CcSelectOption(
+                    value: CronCatchUpPolicy.skip,
+                    label: l10n.triggerCatchUpSkip,
+                  ),
+                ],
+                value: _catchUp,
+                onChanged: (policy) {
+                  setState(() => _catchUp = policy);
+                  unawaited(_persistSchedule(policy: policy));
+                },
+              ),
+            ),
+          ] else if (trigger.eventType == PipelineTrigger.webhookEventType) ...[
+            const SizedBox(height: 16),
+            NodeFieldLabel(
+              label: l10n.triggerWebhookPathLabel,
+              description: l10n.triggerWebhookHelp,
+              child: _WebhookPathCopy(token: trigger.webhookToken),
+            ),
+          ] else if (trigger.eventType == 'PullRequestStatusChanged') ...[
+            const SizedBox(height: 16),
+            Text(
+              l10n.triggerMatchStatusLabel,
+              style: TextStyle(color: tokens.textPrimary, fontSize: 13),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final status in _prStatuses)
+                  CcChip(
+                    label: status,
+                    selected: _statusesFrom(trigger).contains(status),
+                    onPressed: () => unawaited(_toggleStatus(status)),
+                  ),
+              ],
+            ),
+          ],
+        ],
       ),
-      actions: [
-        CcButton(
-          onPressed: () => Navigator.pop(context),
-          variant: CcButtonVariant.secondary,
-          child: Text(l10n.cancel),
-        ),
-        CcButton(
-          onPressed: _canSubmit ? () => Navigator.pop(context, _build()) : null,
-          child: Text(l10n.add),
-        ),
-      ],
     );
   }
 
-  bool get _canSubmit {
-    switch (_kind) {
-      case 'schedule':
-        return _scheduleCtrl.text.trim().isNotEmpty;
-      case 'webhook':
-        return true;
-      default:
-        return _eventType != null;
+  String? _helpFor(AppLocalizations l10n, String eventType) {
+    if (eventType == PipelineTrigger.scheduleEventType ||
+        eventType == PipelineTrigger.webhookEventType) {
+      // Those inspectors already explain themselves with their own fields.
+      return null;
     }
+    final help = triggerEventHelp(l10n, eventType);
+    return help == eventType ? null : help;
   }
 
-  _NewTriggerSpec _build() {
-    if (_kind == 'schedule') {
-      final raw = _scheduleCtrl.text.trim();
-      // A bare number is treated as an interval for back-compat; anything else
-      // (e.g. `0 9 * * 1`) is passed through as a cron expression.
-      final cron = int.tryParse(raw) != null ? 'every:$raw' : raw;
-      final tz = _timezoneCtrl.text.trim();
-      return _NewTriggerSpec(
-        eventType: PipelineTrigger.scheduleEventType,
-        cronExpression: cron,
-        timezone: tz.isEmpty ? null : tz,
-        catchUpPolicy: _catchUpPolicy,
+  PipelineTrigger _withPendingSchedule(PipelineTrigger base) {
+    if (base.eventType != PipelineTrigger.scheduleEventType) {
+      return base;
+    }
+    final cron = _normalizeSchedule(_scheduleCtrl.text) ?? base.cronExpression;
+    final tz = _timezoneCtrl.text.trim();
+    final cronChanged = cron != base.cronExpression;
+    final tzChanged = tz != (base.timezone ?? '');
+    return base.copyWith(
+      cronExpression: cron,
+      timezone: tz,
+      catchUpPolicy: _catchUp,
+      clearNextRunAt: cronChanged || tzChanged,
+    );
+  }
+
+  Future<void> _persistSchedule({CronCatchUpPolicy? policy}) async {
+    if (policy != null) {
+      _catchUp = policy;
+    }
+    await _save(_withPendingSchedule(widget.trigger));
+  }
+
+  Future<void> _toggleStatus(String status) async {
+    final next = {..._statusesFrom(widget.trigger)};
+    if (!next.add(status)) {
+      next.remove(status);
+    }
+    final match = next.isEmpty
+        ? const <String, dynamic>{}
+        : <String, dynamic>{'status': next.toList()};
+    await _save(widget.trigger.copyWith(match: match));
+  }
+
+  Future<void> _save(PipelineTrigger next) async {
+    final current = widget.trigger;
+    // [PipelineTrigger.==] is identity + enabled only; schedule/match edits
+    // have to be compared field-by-field or they look unchanged.
+    if (next.enabled == current.enabled &&
+        next.cronExpression == current.cronExpression &&
+        (next.timezone ?? '') == (current.timezone ?? '') &&
+        next.catchUpPolicy == current.catchUpPolicy &&
+        const DeepCollectionEquality().equals(next.match, current.match)) {
+      return;
+    }
+    try {
+      await ref.read(pipelineTriggerRepositoryProvider).update(next);
+    } on Object catch (e) {
+      if (!mounted) {
+        return;
+      }
+      CcToastScope.maybeOf(context)?.show(
+        AppLocalizations.of(context).errorWithDetail('$e'),
+        variant: CcToastVariant.danger,
       );
     }
-    if (_kind == 'webhook') {
-      return _NewTriggerSpec(
-        eventType: PipelineTrigger.webhookEventType,
-        webhookToken: const Uuid().v4().replaceAll('-', ''),
-      );
-    }
-    final match =
-        (_eventType == 'PullRequestStatusChanged' && _statuses.isNotEmpty)
-        ? <String, dynamic>{'status': _statuses.toList()}
-        : const <String, dynamic>{};
-    return _NewTriggerSpec(eventType: _eventType!, match: match);
   }
 }
 
-/// A form field with a label rendered above its child input, instead of
-/// relying on an input widget's own built-in label slot.
-class _LabeledTriggerField extends StatelessWidget {
-  const _LabeledTriggerField({
-    required this.label,
-    required this.tokens,
-    required this.child,
-  });
+class _WebhookPathCopy extends StatelessWidget {
+  const _WebhookPathCopy({required this.token});
 
-  final String label;
-  final DesignSystemTokens tokens;
-  final Widget child;
+  final String? token;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    final l10n = AppLocalizations.of(context);
+    final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final path = token == null || token!.isEmpty ? null : '/webhooks/$token';
+    if (path == null) {
+      return Text(
+        l10n.triggerWebhookHelp,
+        style: TextStyle(color: tokens.textTertiary, fontSize: 12),
+      );
+    }
+    return Row(
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: tokens.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            path,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: CcFonts.code(
+              textStyle: CcTypography.caption.copyWith(
+                color: tokens.textPrimary,
+                height: 1.5,
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 6),
-        child,
+        CcIconButton(
+          icon: AppIcons.copy,
+          size: CcButtonSize.sm,
+          variant: CcButtonVariant.ghost,
+          tooltip: l10n.copy,
+          onPressed: () async {
+            await Clipboard.setData(ClipboardData(text: path));
+            if (context.mounted) {
+              CcToastScope.maybeOf(context)?.show(l10n.copied);
+            }
+          },
+        ),
       ],
     );
   }
+}
+
+String? _normalizeSchedule(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  return int.tryParse(trimmed) != null ? 'every:$trimmed' : trimmed;
+}
+
+Set<String> _statusesFrom(PipelineTrigger trigger) {
+  final raw = trigger.match['status'];
+  if (raw is List) {
+    return {
+      for (final value in raw)
+        if (value is String) value,
+    };
+  }
+  if (raw is String && raw.isNotEmpty) {
+    return {raw};
+  }
+  return {};
 }

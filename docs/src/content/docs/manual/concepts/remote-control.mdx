@@ -22,19 +22,11 @@ relay** that carries end-to-end-sealed JSON-RPC frames. The full **web build**
 [Deployment and clients](/manual/concepts/deployment/) for how the two differ.
 :::
 
-## This is not WebRTC
+## Transport
 
-It is worth saying plainly, because the shape of the thing looks like it should
-be. There is **no peer-to-peer data channel**. The server owns one invite-gated
-room on a WebSocket signaling broker and relays sealed frames through it, or the
-client connects directly over loopback, LAN, tailnet, or `wss://`. That is the
-whole topology.
-
-`flutter_webrtc` is still listed in the root `pubspec.yaml` and the signaling
-broker can mint short-lived TURN credentials — but no Dart file imports the
-former and nothing consumes the latter. Both are provisioned against a possible
-future WebRTC transport. Neither is an active NAT-traversal mechanism today; the
-brokered relay is what guarantees reachability.
+The phone reaches `cc_server` over a WebSocket: either a direct connection
+(loopback, LAN, tailnet, or `wss://`) or an invite-gated room on a signaling
+broker that relays sealed frames. There is no peer-to-peer data channel.
 
 ## What the phone can do
 
@@ -49,8 +41,8 @@ The paired phone reaches a small, intentional slice of the server's surface:
 - **Switch workspaces**, from the phone's own picker
 
 That is close to all of it. A phone is a **lower-privilege principal** than a
-full client. It cannot spawn processes, spend LLM budget, push to GitHub, hire
-or fire agents, or create workspaces. See
+full client. It cannot spawn processes, spend LLM budget, push to GitHub, or
+create workspaces. See
 [the access model](#the-access-model) for how that is enforced rather than
 merely intended.
 
@@ -124,12 +116,12 @@ reads need `guest`, mutations need `member`, destructive operations need
 ### 2. A phone is a lower session tier
 
 Beyond the role check, a phone session carries a lower capability than a desktop
-or web session. Seventeen operations are declared full-client-only and are
-refused for a phone before the handler runs, regardless of how privileged the
-user behind it is: minting, listing, renaming and revoking device pairings;
-reading and setting tunnel connectivity; server backup and workspace
-export/import; process detection and kill; server settings; and taking over or
-handing back a running agent.
+or web session. Operations declared full-client-only are refused for a phone
+before the handler runs, regardless of how privileged the user behind it is:
+minting, listing, renaming and revoking device pairings; reading and setting
+tunnel connectivity; server backup and workspace export/import; process
+detection and kill; adapter probes; server settings; SSO admin; fleet control;
+and taking over or handing back a running agent.
 
 ### 3. A default-deny tool allow-list
 

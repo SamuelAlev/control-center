@@ -63,6 +63,13 @@ class DemoPrCacheKind {
 
   /// Single-row key for [openPrList].
   static const String openPrListKey = 'v1';
+
+  /// Maya's merged-PR history, the snapshot
+  /// `pr.closedByAuthorForWorkspace` reads in demo mode.
+  static const String closedPrList = 'closedPrList';
+
+  /// Single-row key for [closedPrList].
+  static const String closedPrListKey = 'v1';
 }
 
 /// Cache key for a PR-scoped entry: `owner/repo#number`.
@@ -74,12 +81,8 @@ String demoPrCacheKey(String repoFullName, int prNumber) =>
     '$repoFullName#$prNumber';
 
 /// Cache key for a SHA-scoped entry: `owner/repo|sha`.
-String demoShaCacheKey(String repoFullName, String sha) =>
-    '$repoFullName|$sha';
+String demoShaCacheKey(String repoFullName, String sha) => '$repoFullName|$sha';
 
 /// Cache key for a file-content entry: `owner/repo|ref|path`.
-String demoFileContentCacheKey(
-  String repoFullName,
-  String ref,
-  String path,
-) => '$repoFullName|$ref|$path';
+String demoFileContentCacheKey(String repoFullName, String ref, String path) =>
+    '$repoFullName|$ref|$path';

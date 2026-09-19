@@ -15,7 +15,7 @@ A folder can only be registered if all three of these hold:
 2. That work tree has an **`origin` remote**.
 3. The `origin` remote points at a **supported forge**: github.com, gitlab.com or bitbucket.org.
 
-Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree", "No `origin` remote configured for this repository", or "The `origin` remote is not hosted on a supported forge". There is no local-only mode.
+Anything else is refused at registration time with an explicit message: "Folder is not inside a git work tree.", "No `origin` remote configured for this repository.", or "The `origin` remote is not hosted on a supported forge (github.com, gitlab.com, bitbucket.org).". There is no local-only mode.
 
 The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
 
@@ -23,7 +23,7 @@ The folder must also live on the machine hosting `cc_server`, inside one of that
 
 ## Register a checkout
 
-1. Open **Settings → Workspace → Repositories** (`/settings/workspace/repositories`).
+1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Click **Add repository**.
 
 The dialog is a navigable browser over the **server's** filesystem, not yours. It is the same flow on desktop, web and phone, because a native folder picker would pick a folder on the wrong machine.
@@ -42,7 +42,7 @@ The forge badge matters in a mixed workspace: two repos can both be called `acme
 
 Registration fires a `RepoAdded` event scoped to this workspace, which starts the `index_code` pipeline for that checkout. That is what populates the code graph, so search and impact analysis have something to answer with.
 
-Only Dart, JavaScript, TypeScript, TSX and PHP files are indexed. See [Search code with the code graph](/manual/guides/code-search/).
+Only files whose language has a shipped grammar are indexed (Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada). See [Search code with the code graph](/manual/guides/code-search/).
 
 ## Re-index a repo
 
@@ -64,7 +64,7 @@ The link icon on a row opens an editor for the repo's GitHub owner and repositor
 
 The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
 
-Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it. There is no separate unlink, because there is no shared global repo left to unlink from. The same checkout registered in another workspace is an independent row and is unaffected.
+Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. There is no separate unlink, because there is no shared global repo left to unlink from. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
 
 ## Related guides
 

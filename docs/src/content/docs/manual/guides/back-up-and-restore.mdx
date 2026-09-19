@@ -13,7 +13,8 @@ Everything here lives at **Settings → Server → Backup & restore**.
 ## Prerequisites
 
 - A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
-- For per-workspace actions: **admin** of that workspace to export it, **owner** to import or delete it. Downloading a whole install snapshot needs to be the install's **owner**.
+- To take or list an **install snapshot**: the install's **owner**. The same gate applies to downloading the whole snapshot as a zip.
+- For per-workspace actions: **admin** of that workspace to export it, **owner** to import or delete it.
 - For downloads and uploads: a **direct** connection to the server. The brokered relay carries RPC frames, not file transfers, and the transfer controls disable themselves with a note when you are on one.
 
 :::caution[Nothing is scheduled]
@@ -214,7 +215,7 @@ large). Recorded meeting audio under `meetings/` is worth including if you keep 
 
 ### Snapshot on a schedule, without the UI
 
-There is no CLI subcommand and the RPC ops need a paired full client, so the practical
+There is no CLI subcommand and the snapshot RPC ops need a paired full client that is the install owner, so the practical
 way to automate this on the server host is to do what the server does — `VACUUM INTO`,
 which is safe against the live databases:
 
@@ -278,7 +279,7 @@ Do this once when you set backups up, and again whenever you change where they a
 | Symptom                                                                  | Cause and fix                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Download and upload controls are disabled with a note about a relay      | You are connected through the brokered relay, which carries no file transfers. Connect directly                          |
-| "The server refused"                                                     | Role. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot needs the install's operator       |
+| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
 | "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
 | "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
 | Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |

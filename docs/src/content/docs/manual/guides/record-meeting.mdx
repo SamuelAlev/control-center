@@ -8,7 +8,13 @@ See [Meetings and transcription](/manual/concepts/meetings/) for how it works.
 
 ## Before you start
 
-- **Install a speech model on the server, then restart it.** Go to **Settings → Server → Voice & meeting models** and install one (Parakeet TDT 0.6B v3, the multilingual default, is about 600 MB). The server resolves the model **once at boot**, so a model installed while it is running does nothing until the next start. Without one, recording fails with `Could not start recording on the host: …` — the recording ops are simply absent from the server.
+- **Wait for the speech model, then restart the server.** A normal boot
+  force-installs the selected ASR model (Parakeet TDT 0.6B v3, the multilingual
+  default, about 600 MB) in the background. The server resolves the model
+  **once at boot**, so the first run still has no recording ops until you
+  restart. Without a model on disk, recording fails with `Could not start
+  recording on the host: …`. To pick a different build, go to **Settings →
+  Server → Voice & meeting models** — that also needs a restart.
 - Grant **microphone** permission when your OS asks on the first record.
 - On **macOS 14.4+**, system audio is captured with Core Audio process taps — no driver to install, but the OS asks a second time for an _audio capture_ permission. That is not Screen Recording and it never lights the screen-recording indicator. Denying it fails the start with `System-audio capture permission denied.` Below macOS 14.4 there is no system-audio capture.
 - On **Linux**, `parecord` (pulseaudio-utils) or `pw-record` (pipewire) must be on the `PATH` — capture spawns one of them against a PipeWire/PulseAudio monitor source. Without either the start fails with `No system-audio capture tool found`.

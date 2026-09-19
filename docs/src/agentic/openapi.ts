@@ -51,6 +51,11 @@ const htmlResponse = {
   content: { 'text/html': { schema: { type: 'string' } } },
 } as const;
 
+const htmlOnlyResponse = {
+  description: 'The page as HTML. This route has no markdown twin.',
+  content: { 'text/html': { schema: { type: 'string' } } },
+} as const;
+
 const notFoundRef = { $ref: '#/components/responses/NotFound' } as const;
 
 export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: OpenApiInputs): Record<string, unknown> {
@@ -65,12 +70,22 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
     },
   });
 
+  const htmlOnlyGet = (operationId: string, summary: string, description: string) => ({
+    get: {
+      operationId,
+      summary,
+      description,
+      tags: ['Content'],
+      responses: { '200': htmlOnlyResponse, '404': notFoundRef },
+    },
+  });
+
   return {
     openapi: '3.1.0',
     info: {
       title: 'Control Center website API',
       version,
-      description: `Machine-readable surface of usectrl.dev — the Control Center website. ${MARKDOWN_NOTE} The product's own API (103 MCP tools over Streamable HTTP) runs inside the self-hosted cc_server, not on this origin; see ${origin}/manual/guides/mcp-server/.`,
+      description: `Machine-readable surface of usectrl.dev — the Control Center website. ${MARKDOWN_NOTE} The product's own API (110 MCP tools over Streamable HTTP) runs inside the self-hosted cc_server, not on this origin; see ${origin}/manual/guides/mcp-server/.`,
       contact: { name: 'Control Center maintainers', url: 'https://github.com/SamuelAlev/control-center/issues' },
       license: { name: 'MIT', url: 'https://github.com/SamuelAlev/control-center/blob/main/LICENSE' },
     },
@@ -83,7 +98,7 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
       { name: 'Errors', description: 'Structured error behavior for every unpublished path.' },
     ],
     paths: {
-      '/': pageGet('getLandingPage', 'Landing page', `What the product is, the four pillars, downloads. ${MARKDOWN_NOTE}`),
+      '/': pageGet('getLandingPage', 'Landing page', `What the product is, the five pillars, downloads. ${MARKDOWN_NOTE}`),
       '/about': pageGet('getAboutPage', 'About', `What Control Center is, how it is built, who maintains it. ${MARKDOWN_NOTE}`),
       '/contact': pageGet('getContactPage', 'Contact', `How to reach the maintainers (GitHub issues; security and privacy process). ${MARKDOWN_NOTE}`),
       '/developers': pageGet(
@@ -91,6 +106,28 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
         'Developer portal',
         `Integration surface: product MCP server, cc_server CLI and Docker images, plus this site's agent endpoints. ${MARKDOWN_NOTE}`,
       ),
+      '/privacy': htmlOnlyGet('getPrivacyPage', 'Privacy policy', 'What the app and this site store and send. HTML only — no markdown twin.'),
+      '/terms': htmlOnlyGet('getTermsPage', 'Terms of service', 'Terms that govern use of Control Center. HTML only — no markdown twin.'),
+      '/acknowledgements': htmlOnlyGet(
+        'getAcknowledgementsPage',
+        'Acknowledgements',
+        'Credits for third-party software. HTML only — no markdown twin.',
+      ),
+      '/licenses': htmlOnlyGet(
+        'getLicensesPage',
+        'Licenses',
+        'Full license text for bundled third-party software. HTML only — no markdown twin.',
+      ),
+      '/demo': {
+        get: {
+          operationId: 'getDemoRedirect',
+          summary: 'Live demo redirect',
+          description:
+            'A 302 to the web client pre-loaded with the demo connection. Not a content page and not in the sitemap — the destination is the demo fragment, which can change between builds.',
+          tags: ['Content'],
+          responses: { '302': { description: 'Redirect to the demo web client.' } },
+        },
+      },
       '/changelog': pageGet('getChangelogPage', 'Changelog', `Every release, newest first. ${MARKDOWN_NOTE}`),
       '/compare': pageGet('getComparePage', 'Comparison matrix', `Control Center vs the alternatives, capability by capability. ${MARKDOWN_NOTE}`),
       '/compare/{tool}': pageGet('getCompareToolPage', 'Per-tool comparison', `Control Center vs one named tool. ${MARKDOWN_NOTE}`, [
@@ -117,7 +154,7 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
         get: {
           operationId: 'getLandingMarkdown',
           summary: 'Landing page as markdown',
-          description: 'The direct markdown twin of /. Every page has one: append .md to its path.',
+          description: 'The direct markdown twin of /. Content pages that have a twin also answer at `<path>.md`; legal pages and /demo do not.',
           tags: ['Content'],
           responses: { '200': markdownResponse },
         },
@@ -163,6 +200,16 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
           description:
             'The same Streamable HTTP MCP server as /.well-known/mcp, mounted at the conventional /mcp path. Identical request and response contract; either path may be used.',
           tags: ['Agent'],
+          parameters: [
+            {
+              name: 'Accept',
+              in: 'header',
+              required: false,
+              description:
+                'MCP clients send `application/json, text/event-stream`; this server always answers application/json. A missing header is tolerated. A header that lists neither application/json nor */* is answered 406.',
+              schema: { type: 'string', default: 'application/json, text/event-stream' },
+            },
+          ],
           requestBody: {
             required: true,
             content: { 'application/json': { schema: { $ref: '#/components/schemas/JsonRpcRequest' } } },
@@ -174,6 +221,10 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
             },
             '202': { description: 'Notification accepted (empty body).' },
             '400': { $ref: '#/components/responses/BadRequest' },
+            '406': {
+              description: 'Accept header present but lists neither application/json nor */*.',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/JsonRpcResponse' } } },
+            },
           },
         },
         get: {
@@ -235,12 +286,27 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
           },
         },
       },
+      '/.well-known/mcp/server-card': {
+        get: {
+          operationId: 'getMcpServerCardReservedPath',
+          summary: 'MCP server card (reserved path)',
+          description:
+            'The SEP-2127 server card at the spec-reserved <streamable-http-url>/server-card path. Same document as /.well-known/mcp/server-card.json; this path answers application/mcp-server-card+json.',
+          tags: ['Agent'],
+          responses: {
+            '200': {
+              description: 'The server card.',
+              content: { 'application/mcp-server-card+json': { schema: { type: 'object' } } },
+            },
+          },
+        },
+      },
       '/.well-known/mcp/server-card.json': {
         get: {
           operationId: 'getMcpServerCard',
           summary: 'MCP server card',
           description:
-            'The SEP-2127 server card for the docs MCP server: its identity, the streamable-HTTP remotes it answers on and the protocol versions it speaks. The reserved extensionless path /.well-known/mcp/server-card serves the same document.',
+            'The SEP-2127 server card for the docs MCP server: its identity, the streamable-HTTP remotes it answers on and the protocol versions it speaks. The reserved extensionless path /.well-known/mcp/server-card serves the same document as application/mcp-server-card+json.',
           tags: ['Agent'],
           responses: {
             '200': { description: 'The server card.', content: { 'application/json': { schema: { type: 'object' } } } },
@@ -276,8 +342,9 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
             {
               name: 'Accept',
               in: 'header',
-              required: true,
-              description: 'MCP clients send `application/json, text/event-stream`; this server always answers application/json.',
+              required: false,
+              description:
+                'MCP clients send `application/json, text/event-stream`; this server always answers application/json. A missing header is tolerated. A header that lists neither application/json nor */* is answered 406.',
               schema: { type: 'string', default: 'application/json, text/event-stream' },
             },
           ],
@@ -292,6 +359,10 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
             },
             '202': { description: 'Notification accepted (empty body).' },
             '400': { $ref: '#/components/responses/BadRequest' },
+            '406': {
+              description: 'Accept header present but lists neither application/json nor */*.',
+              content: { 'application/json': { schema: { $ref: '#/components/schemas/JsonRpcResponse' } } },
+            },
           },
         },
         get: {
@@ -354,7 +425,8 @@ export function buildOpenApi({ origin, version, compareToolIds, docSlugs }: Open
             method: {
               type: 'string',
               enum: ['initialize', 'ping', 'tools/list', 'tools/call', 'notifications/initialized'],
-              description: 'The MCP methods this server implements.',
+              description:
+                'The MCP methods this server implements. Any method whose name starts with notifications/ is accepted as a notification (202, empty body), not only notifications/initialized.',
             },
             params: { type: 'object' },
           },

@@ -213,10 +213,10 @@ packages:
     dependency: transitive
     description:
       name: cnativeapi
-      sha256: fb08163e70135ec6c20bb8cb6f9598f8ee6866e9e55285b48ca37ac4e1f30189
+      sha256: "43fce94bdf2f60e15bb7b0ef7b78b60fc0758e5463817fa17c5fb59f149566dd"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   code_assets:
     dependency: transitive
     description:
@@ -297,6 +297,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.9"
+  cupertino_ui:
+    dependency: transitive
+    description:
+      name: cupertino_ui
+      sha256: c6747018d37d32feeeb858a1d7043831cb541460ebe1a890a995cdb8df8ea5a5
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   dart_jsonwebtoken:
     dependency: transitive
     description:
@@ -729,10 +737,10 @@ packages:
     dependency: "direct main"
     description:
       name: go_router
-      sha256: d7a3576cb312649eaa51f2356450aed686085fb58fcdebda5b359aa951eef7ea
+      sha256: "008ab21d89d0de8ccd79586838f7533f126c2d894f50bf25f2947888d3c225b5"
       url: "https://pub.dev"
     source: hosted
-    version: "17.5.0"
+    version: "18.0.1"
   graphs:
     dependency: transitive
     description:
@@ -753,10 +761,10 @@ packages:
     dependency: "direct main"
     description:
       name: html
-      sha256: "6d1264f2dffa1b1101c25a91dff0dc2daee4c18e87cd8538729773c073dbf602"
+      sha256: "43b67b8f43321ab066817dfac5619596c98bb1b61624e77203bb4351785f9699"
       url: "https://pub.dev"
     source: hosted
-    version: "0.15.6"
+    version: "0.15.7"
   http:
     dependency: "direct main"
     description:
@@ -769,10 +777,10 @@ packages:
     dependency: transitive
     description:
       name: http2
-      sha256: "382d3aefc5bd6dc68c6b892d7664f29b5beb3251611ae946a98d35158a82bbfa"
+      sha256: "480bf904908b4e4ec4fac8117f69f5ff54cf48c12b1761f0a192e1e10196ee7b"
       url: "https://pub.dev"
     source: hosted
-    version: "2.3.1"
+    version: "3.1.0"
   http_multi_server:
     dependency: transitive
     description:
@@ -881,10 +889,10 @@ packages:
     dependency: "direct main"
     description:
       name: kalender
-      sha256: f9dc2ec334fe68dec5efd56efcd42e4646071e1311f74e2ea5b6b1a356ee5be8
+      sha256: "063ba85318478ceb4205d44cb5fb21765a95bcc4a87ad9056dfb4887745b6d7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.25.0"
+    version: "0.31.3"
   leak_tracker:
     dependency: transitive
     description:
@@ -973,6 +981,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.13.0"
+  material_ui:
+    dependency: transitive
+    description:
+      name: material_ui
+      sha256: "6d056d60ce745335fcf1c726a4fc46a481a62229f202b65dbc2db5edbbabc7e2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.3.0"
   media_kit:
     dependency: "direct main"
     description:
@@ -1041,10 +1057,10 @@ packages:
     dependency: "direct main"
     description:
       name: nativeapi
-      sha256: d4277c8ad49da3387002db3d664e3d33be031493a573320bba4f147e52bd6a39
+      sha256: "2f40b3ac356097f56efa8188703159c303ce2b8b078d04c3d2d4afbe95b384ce"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0"
+    version: "0.3.0"
   nested:
     dependency: transitive
     description:
@@ -2062,10 +2078,10 @@ packages:
     dependency: "direct main"
     description:
       name: yaml
-      sha256: b9da305ac7c39faa3f030eccd175340f968459dae4af175130b3fc47e40d76ce
+      sha256: f67cdd8e07d3c6329146aaef1ba043542b3134c12489f553ca9a7435d1068aea
       url: "https://pub.dev"
     source: hosted
-    version: "3.1.3"
+    version: "3.1.4"
   zmodem:
     dependency: transitive
     description:
@@ -2075,5 +2091,5 @@ packages:
     source: hosted
     version: "0.0.6"
 sdks:
-  dart: ">=3.13.0-0 <4.0.0"
-  flutter: ">=3.44.0"
+  dart: ">=3.13.0 <4.0.0"
+  flutter: ">=3.47.0"

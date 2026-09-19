@@ -308,7 +308,7 @@ void main() {
       test('writes complete log from open to close', () async {
         final writer = await openWriter(
           agentId: 'lifecycle-test',
-          cliName: 'pi',
+          cliName: 'claude',
           capabilities: const AgentCapabilities(
             canPushToRepo: true,
             canAccessNetwork: true,
@@ -331,7 +331,7 @@ void main() {
 
         expect(lines[0]['type'], 'start');
         expect(lines[0]['agentId'], 'lifecycle-test');
-        expect(lines[0]['cliName'], 'pi');
+        expect(lines[0]['cliName'], 'claude');
 
         expect(lines[1]['eventType'], 'thinking');
         expect(lines[1]['content'], 'analyzing code... making changes');

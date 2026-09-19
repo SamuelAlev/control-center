@@ -401,9 +401,7 @@ void main() {
   };
 
   test('RPC catalog ops declare exactly their curated ActionClass sets', () {
-    final declared = _scanRepoOps(
-      '${root.path}/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',
-    );
+    final declared = _scanCatalogRepoOps(root.path);
     final withClasses = {
       for (final op in declared.entries)
         if (op.value.classes.isNotEmpty) op.key: op.value.classes,
@@ -412,9 +410,7 @@ void main() {
   });
 
   test('every mutating op in an effect family declares an ActionClass', () {
-    final declared = _scanRepoOps(
-      '${root.path}/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',
-    );
+    final declared = _scanCatalogRepoOps(root.path);
     final undeclared = <String>[
       for (final op in declared.entries)
         if (op.value.classes.isEmpty &&
@@ -454,6 +450,29 @@ void main() {
 
 /// A RepoOp as the catalog source declares it.
 typedef _RepoOpDecl = ({String kind, Set<String> classes});
+
+/// Catalog files that declare `RepoOp(...)` — the main file plus extraOps packs.
+Iterable<String> _catalogRepoOpPaths(String root) sync* {
+  yield '$root/packages/cc_server_core/lib/src/remote_rpc_catalog.dart';
+  final dir = Directory('$root/packages/cc_server_core/lib/src/catalog');
+  if (!dir.existsSync()) {
+    return;
+  }
+  for (final file in dir.listSync().whereType<File>()) {
+    final path = file.path.replaceAll(r'\', '/');
+    if (path.endsWith('.dart') && !path.endsWith('catalog_wire.dart')) {
+      yield file.path;
+    }
+  }
+}
+
+Map<String, _RepoOpDecl> _scanCatalogRepoOps(String root) {
+  final out = <String, _RepoOpDecl>{};
+  for (final path in _catalogRepoOpPaths(root)) {
+    out.addAll(_scanRepoOps(path));
+  }
+  return out;
+}
 
 /// Scans the RPC catalog source for `RepoOp(...)` literals.
 ///

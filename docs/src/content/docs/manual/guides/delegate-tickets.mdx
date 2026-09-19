@@ -6,10 +6,12 @@ description: Hand a ticket to an agent in a conversation and let agents delegate
 This guide covers getting work off your plate and onto an agent's and what
 happens when agents pass work between themselves.
 
-:::caution[Assigning a ticket does not dispatch anything]
-There is no ticket dispatcher. Assignment records ownership and nothing more —
-no space is created, no status changes, no agent starts. Agent work lives in
-conversations, so that is where you start it.
+:::caution[Assigning a ticket to an agent does not dispatch]
+There is no ticket dispatcher for an agent assignee. Assignment records
+ownership and nothing more — no space is created, no status changes, no agent
+starts. The exception is a ticket assigned to a **team**, which wakes that
+team's leader. Agent work for a named assignee lives in conversations, so that
+is where you start it.
 :::
 
 ## Hand a ticket to an agent
@@ -64,23 +66,28 @@ An agent that hits a sub-problem delegates with the `delegate_task` MCP tool.
 It creates a child ticket assigned to another agent and — when you pass
 `parent_ticket_id` — records the chain so the guards can see it.
 
-Two guards are enforced server-side at the ticketing chokepoint, never by
+Two structural guards always run at the ticketing chokepoint, never by
 prompt instruction:
 
 - **Depth cap** — a chain deeper than 3 hops is refused.
 - **Cycle detection** — a hop back to an agent already in the chain is refused.
 
+When you pass `from_agent_id`, two more guards run (production always supplies
+the resolver ports):
+
+- **Autonomy ceiling** — the delegate's effective level in the space must not
+  exceed the delegator's.
+- **Budget envelope** — delegation bills the delegator's remaining hard-stop
+  budget and cannot mint more. No policy, or an unlimited policy, passes.
+
 A refusal is loud: the tool returns the guard's reason verbatim, so the
 delegating agent sees exactly why. The `delegatedByAgentId` field records who
 delegated, forming a delegation tree.
 
-:::caution[`delegate_ticket` skips both guards]
-The older `delegate_ticket` tool is still registered and calls the _unguarded_
-path — no depth cap, no cycle check. Prefer `delegate_task`.
-
-Two further guards exist in the code but are **not wired in**: the autonomy
-ceiling (a delegate must not act with more autonomy than its delegator) and the
-budget envelope (delegation cannot mint budget). Do not rely on either today.
+:::caution[`delegate_ticket` skips every guard]
+The older `delegate_ticket` tool is still registered and calls `createTicket`
+directly — no depth cap, no cycle check, no autonomy ceiling, no budget
+envelope. Prefer `delegate_task`.
 :::
 
 This delegation depth cap of 3 is a different limit from the built-in harness's
@@ -102,9 +109,10 @@ the space header. They can then @-mention each other there. See
 No node in the pipeline palette creates tickets, so a pipeline cannot fan work
 out as assigned tickets.
 
-The path that does exist is orchestration: approving a proposal materializes its
-whole sub-ticket DAG, files every sub-ticket under a generated project, forms a
-team and starts the pipeline run that drives them. See
+The path that does exist is orchestration: approving a proposal creates a
+project and a team, compiles the proposal's sub-ticket DAG into a **pipeline
+template** (one `promptAgent` step per sub-ticket, not a `Ticket` row each)
+and starts that run. See
 [Run an orchestration](/manual/guides/run-orchestration/).
 
 ## Related guides

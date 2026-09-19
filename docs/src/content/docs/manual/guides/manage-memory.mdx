@@ -5,13 +5,13 @@ description: Review, correct and prune the facts and policies agents have writte
 
 This guide shows you how to work with a workspace's knowledge store.
 
-The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through the `propose_fact`, `propose_policy`, `supersede_fact`, `supersede_policy` and `remember` tools, plus automatic harvesting from completed runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
+The important thing to know before you start: **the memory UI is a review surface, not an authoring one.** Facts and policies are written by agents — through `propose_fact` and `propose_policy`, with `supersede_fact` and `supersede_policy` to replace them. `remember` writes a session-bounded hot-tier item that `consolidate_memory` may later promote to a fact. Recorded meeting decisions are harvested into the `decisions` domain; there is no harvest on completed agent runs. What you do here is read what they wrote, correct it, deactivate it, or delete it.
 
-Memory lives at **Settings → Workspace → Memory** (`/settings/memory`). It is not a top-level sidebar destination.
+Memory lives at **Settings → Workspace → Memory** (`/workspaces/<id>/settings/memory`). It is not a top-level sidebar destination.
 
 ## The three tabs
 
-The page has exactly three tabs, each showing a live count:
+The page has exactly three tabs. Facts and Policies show a live count; the graph does not:
 
 - **Facts** — every fact in the workspace, with a count of the ones that are not superseded
 - **Policies** — normative rules grouped by domain, with a count of the active ones
@@ -23,8 +23,9 @@ Domains are not a thing you create. A domain comes into existence when an agent 
 
 1. Open the **Facts** tab.
 2. Use the search box to narrow the list. It is a plain substring filter over each fact's domain, topic and content — no keyword index, no ranking.
-3. Use the sort toggle to order by recency or by confidence.
-4. Click a fact's edit control.
+3. Use the scope filter to show all scopes, workspace-wide facts only, or one repository's facts.
+4. Use the sort toggle to order by recency or by confidence.
+5. Click a fact's edit control.
 
 The edit dialog lets you change:
 
@@ -65,16 +66,12 @@ Working memory is a private scratchpad per agent, injected into its prompt at di
 
 ## Access grants
 
-Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain.
+Memory access grants map an agent's role to a permission (`none`, `read`, `write`) per domain. Write them with the `memory_access_grant.*` operations.
 
-:::caution[Grants have no user interface]
-There is no screen for access grants — the memory screen has Facts, Policies and Graph tabs and nothing else. The repository is bound on the client, but no widget reads it, so grants are reachable only over the `memory_access_grant.*` RPC ops. You cannot restrict who reads a memory domain from the app today.
-:::
+Two things to understand about how they resolve:
 
-Two things to understand about how they resolve, whichever way a grant is written:
-
-- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. Only writes are hard-enforced and a write without `write` permission throws. Memory is not read-denied by default.
-- **Grants are keyed on the agent's role.** Agents created through the app have no role — the agent form has no role field — so role-keyed grants do not apply to them.
+- **Reads fail open.** With no grant row for a (role, domain) pair, the effective permission is `read`. The one write that throws without `write` is `propose_policy`. Fact writes are not grant-gated.
+- **Grants are keyed on the agent's role.** Proposing tools default a missing `agent_role` to `general`. A grant written for another role does not bind those agents; a `general` grant does.
 
 ## Search is not the same everywhere
 
@@ -84,17 +81,13 @@ Three different things are called "memory search" and they do not agree:
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | The Facts tab's search box          | Substring filter over the facts already loaded in the client                                                 |
 | The `memory_fact.search` RPC op     | FTS5 keyword search only — a thin client cannot ship a query embedding, so hybrid search stays host-internal |
-| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default), fusing lexical and vector recall                            |
+| The agent-side `search_memory` tool | `keyword`, `semantic` or `hybrid` (the default). Hybrid fuses four voices: lexical, semantic, temporal and graph |
 
 So an agent and the Memory page will not rank the same query the same way. When you are checking what an agent can actually recall, ask the agent.
 
 ## Embeddings
 
-Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**.
-
-:::caution[There is no retroactive backfill]
-The embedding backfill job is a stub that always reports zero. Facts written before the model was installed stay keyword-only permanently. If semantic recall matters, install the model before agents start writing memory.
-:::
+Facts are embedded **at write time** and only when the on-device embedding model is installed. Check its status under **Settings → Server → Diagnostics & privacy → Semantic search**. Install the model before agents start writing memory if you want semantic recall.
 
 ## Related guides
 

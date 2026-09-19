@@ -600,7 +600,7 @@ class _FakeDispatchAgentUseCase extends Fake implements DispatchAgentUseCase {
       agent: null,
       mode: Mode.chat,
       resolvedAdapterId: null,
-      cliName: 'pi',
+      cliName: 'claude',
     );
   }
 }

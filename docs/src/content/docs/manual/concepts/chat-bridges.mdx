@@ -83,10 +83,7 @@ to evaporate and a server restart invalidating every outstanding code is the
 correct behavior, not a regression — the member presses "link" again.
 
 A refusal is answered **in the Slack thread the message opened**, as a real
-reply. It used to ride the provider's _ephemeral_ channel — quieter, but an
-ephemeral message anchored to a thread nobody has opened raises no unread, so a
-mention the bridge could not serve was indistinguishable from a bot that was
-down. A threaded reply badges the message it answers, reaches the one person who
+reply. A threaded reply badges the message it answers, reaches the one person who
 needs it and still keeps "you are not linked" out of the channel itself. Posting
 a message is also the one capability every provider has, so the explanation
 never depends on a feature the app may not carry.
@@ -109,10 +106,8 @@ where a truncated reply points.
 
 ## A card reports the work; the text is still the message
 
-A relayed answer used to appear out of nowhere: nothing said the agent had
-started and a long turn looked like a bot that had stopped listening. So where
-the provider renders them, a turn also carries **one task card**, edited in place
-for as long as the turn runs and sitting above the answer it explains.
+Where the provider renders them, a turn carries **one task card**, edited in
+place for as long as the turn runs and sitting above the answer it explains.
 
 The card is one grouped plan, not a mashed paragraph. Slack concatenates
 `details` and `output` on the same task, so a row's details are sent once (the
@@ -203,13 +198,11 @@ instruction the bridge writes names the provider and the command the app
 actually uses, so a renamed command or a second provider reads correctly with no
 new string.
 
-:::caution[A permission change is inert until you reinstall]
-Editing the bot's name, description, or icon takes effect immediately. Editing
-its **permissions** does not: Slack applies the new manifest but keeps the
-_grant_ at whatever was installed, so the bridge keeps running on the old scopes
-indefinitely. The edit returns a remaining step naming the reinstall, with a
-link straight to Slack's "Reinstall to Workspace" page. Nothing changes until
-somebody follows it.
+:::caution[Reinstall after a permission change]
+Editing the bot's name, description, or icon takes effect immediately. A
+**permissions** change needs a reinstall: Slack applies the new manifest but
+keeps the grant at whatever was installed. The edit returns a remaining step
+with a link to Slack's "Reinstall to Workspace" page.
 :::
 
 ## Where credentials live
@@ -235,8 +228,8 @@ back out — status reads answer with connection metadata only.
 - **Structural app settings.** The transport, scopes and event subscriptions
   are asserted, not exposed. An app that can be configured into silence from a
   settings screen is a support ticket, not a feature.
-- **Interactive components.** Buttons and modals are not wired; the surface is
-  conversation plus slash commands.
+- **Conversation plus slash commands.** The Slack surface is messages, thread
+  replies and slash commands.
 - **A second source of truth.** Chat is not a place where work is stored. The
   Slack thread is a space, the reply is a transcript, the ticket is a ticket —
   all of them in the workspace, reachable from every client.

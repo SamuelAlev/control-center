@@ -20,24 +20,28 @@ all connect here over `ws://<host>:<port>/rpc`.
 
 `sqlite3` uses native-asset build hooks, so build with **`dart build cli`**. The bundle ships `libsqlite3` alongside the binary — no system sqlite or Flutter engine needed.
 
-The other runtime natives (rift / fff / ccpty / tree-sitter + grammars / lame /
-sherpa-onnx / onnxruntime) travel the SAME way: `hook/build.dart` re-emits
+The other runtime natives (rift / fff / ccpty / tree-sitter + grammars /
+cc_watcher / lame / cc_inference / cc_saml) travel the SAME way: `hook/build.dart` re-emits
 whatever is staged in `<repo>/build/natives/` (override with
 the repo-root `.cc_natives_prebuilt_dir` pointer file) as `DynamicLoadingBundled` code assets and
-`dart build cli` drops them into `<bundle>/lib/` beside `libsqlite3`. Stage them
+`dart build cli` drops them into `<bundle>/lib/` beside `libsqlite3`. `cc_inference`
+statically links sherpa-onnx and one ONNX Runtime — those are not separate
+dylibs. Stage them
 once before building:
 
 ```sh
 # from the repo root — builds every native into build/natives
-# (rift, fff, tree-sitter + grammars, aec, lame, pty, cc_watcher, cc_inference)
+# (rift, fff, tree-sitter + grammars, aec, lame, pty, cc_watcher, cc_inference, cc_saml)
 scripts/natives/build_natives.sh
 ```
 
 The natives are **required**: the server refuses to boot when any of
-fff / pty / tree-sitter / cc_inference is missing (no degraded mode). The only
-runtime downloads are the on-device **models** (embedding + diarization are
-force-installed at boot into `<data-dir>/models`; the ASR voice model stays
-opt-in) and code-server.
+fff / pty / tree-sitter + grammars / cc_watcher / lame / cc_inference / cc_saml
+is missing (no degraded mode); `rift` is required everywhere except Windows,
+where `git worktree` is the backend. The only
+runtime downloads are the on-device **models** (embedding, diarization and the
+selected ASR voice model are force-installed at boot into `<data-dir>/models`;
+speech still needs one restart before recording ops light up) and code-server.
 
 ```sh
 # from apps/cc_server (use the repo's pinned SDK):

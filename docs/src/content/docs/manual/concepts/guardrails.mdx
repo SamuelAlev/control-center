@@ -75,11 +75,7 @@ Resolution is **specificity first**: the first scope with a matching rule
 decides and resolution stops there. Most-restrictive is only a tie-break —
 between two equally specific rules within one scope and when combining the
 several classes a single action declares. Within a scope, a command rule
-matches on the longest command prefix.
-
-This replaced an earlier flat precedence (`allow > deny > prompt`), which let a
-broad allow silently defeat a narrow deny — the opposite of what a safety
-system should do. Allow no longer beats deny anywhere.
+matches on the longest command prefix. Allow does not beat deny anywhere.
 
 Two decisions carry hard guarantees:
 
@@ -127,7 +123,7 @@ Three rules that matter:
 - A rule that names a facet the request says nothing about is neither applied
   nor skipped: it **escalates to an approval**. Silently skipping would make
   every protected-branch rule inert against a tool that does not report its
-  ref; silently denying would refuse every push the extractor cannot yet
+  ref; silently denying would refuse every push the extractor cannot
   describe. With no approver connected, the existing fail-closed rule turns
   that escalation into a denial.
 
@@ -153,8 +149,8 @@ Answering a prompt with "remember this" writes a real policy rule: scoped
 (space / agent / workspace), **argument-constrained** (approving a push to
 `feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
 explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes appear in the matrix
-marked `remembered`, with their expiry, where they can be revoked early.
+rewriting your permanent policy, and the rules it writes land in the same
+store with provenance `remembered` and an expiry, so they can be revoked early.
 
 ## Enforcement levels
 
@@ -235,9 +231,9 @@ a guardrail system is claiming coverage that does not exist.
 ## Probing policy before it bites
 
 The guardrails live at **Settings → Workspace → Agent permissions**
-(`/workspaces/<id>/settings/workspace/permissions`). The screen has three
-sections: the policy matrix where rules are written, a what-if probe and the
-adapter honesty matrix.
+(`/workspaces/<id>/settings/workspace/permissions`). The screen has the
+policy matrix where rules are written, policy templates, a what-if probe, the
+authorization audit trail and the adapter honesty matrix.
 
 The probe takes an action class (or a command) and a scope and shows which rule
 decided and why. Because resolution is pure and deterministic — same action,

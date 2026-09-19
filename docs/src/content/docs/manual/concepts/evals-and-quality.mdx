@@ -1,0 +1,32 @@
+---
+title: Evals and quality
+description: Eval suites, the starter set seeded into each workspace and where they appear in Observability.
+---
+
+An **eval suite** is a workspace-scoped definition of a task to run against an
+agent: a prompt, a target agent and mode, optional setup, an optional fixture
+with a pinned SHA and a list of graders. Graders are deterministic first; an
+LLM-rubric judge covers what those checks cannot express.
+
+Five starter suites seed when a workspace is created. They cover orchestration
+proposals, a review that finds a seeded bug, plan mode staying read-only, plan
+mode producing a plan and a ticket round-trip. Seeding listens for
+`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
+that already exists and does not backfill older workspaces.
+
+## Where they appear
+
+**Observability → Quality** (`/workspaces/<id>/observability`) lists each suite
+in the workspace.
+
+Create, list, edit and delete suites over `evals.upsertSuite`,
+`evals.deleteSuite` and `evals.watchSuites`. The Quality tab is the list;
+those operations are the editor.
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/): the configuration a suite
+  pins
+- [Guardrails](/manual/concepts/guardrails/): the autonomy dial
+- [Manage costs and budgets](/manual/guides/manage-costs/): spend recorded
+  alongside a run

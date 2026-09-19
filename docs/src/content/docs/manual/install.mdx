@@ -29,8 +29,8 @@ trusts. `cc_server` refuses to bind a non-loopback address without TLS, so choos
 - give it a certificate directly, with `--tls-cert` and `--tls-key`
 - put it behind a TLS-terminating reverse proxy and start it with `--insecure`
 - expose it through a tunnel or VPN that supplies the certificate — Tailscale,
-  cloudflared, or similar. **Settings → Server → Sharing & remote access** has the
-  built-in tunnel opt-in.
+  cloudflared, or similar. **Settings → Server → Connection & status** has the
+  built-in tunnel opt-in under **Share this server**.
 
 Whenever the server sits behind a proxy, NAT, or tunnel, set `--public-url` to the
 address clients should actually dial. It defaults to the local bind, so without it
@@ -63,7 +63,7 @@ follow [Run a headless server](/manual/guides/run-headless-server/).
 
 Intel Macs have no prebuilt download. [Build from source](#build-from-source) instead.
 
-The server's data directory outgrows the app. On its first start `cc_server` downloads about 125 MB of on-device models (text embeddings and speaker diarization) and an embedded code-server build and every agent conversation gets a copy-on-write worktree of the repos it works on. A speech model for dictation and meeting transcription is optional and adds 198–626 MB depending on which one you install.
+The server's data directory outgrows the app. On its first start `cc_server` force-installs the on-device models — text embeddings (~90 MB), speaker diarization (~35 MB) and the selected speech model (Parakeet TDT v3 by default, ~600 MB; Whisper variants 198–626 MB) — plus an embedded code-server build, and every agent conversation gets a copy-on-write worktree of the repos it works on (plain `git worktree` on Windows). Speech is not optional: without the ASR model, meeting and dictation ops are not served. The first download of the speech model still needs one restart before recording lights up.
 
 The desktop points its server at the OS per-user application-support directory. A `cc_server` started by hand with no `--data-dir` defaults to `<application data>/control-center` — `~/Library/Application Support/control-center` on macOS, `%APPDATA%\control-center` on Windows, `$XDG_DATA_HOME/control-center` (or `~/.local/share/control-center`) on Linux.
 
@@ -78,11 +78,9 @@ Download `Control-Center-<version>-arm64.dmg`, open it, and drag Control Center 
 ### Windows (x64)
 
 - `Control-Center-<version>-x64-setup.exe`: a per-user installer.
-- `Control-Center-<version>-windows-x64.zip`: a portable andt.
+- `Control-Center-<version>-windows-x64.zip`: a portable zip.
 
-:::caution[Windows has not been through a validated release]
-The Windows build job runs and ships both files, but no Windows artifact has yet been checked by hand before publishing. Treat the first one you download as a validation run. Windows also has no copy-on-write worktrees (plain `git worktree` is the backend there) and no embedded code-server.
-:::
+Windows uses `git worktree` for space checkouts (no copy-on-write).
 
 ### Linux (x86_64)
 
@@ -97,39 +95,33 @@ The Linux archive is built on Ubuntu 24.04 and its bundled native libraries link
 
 ## Agent backend
 
-Control Center dispatches agents through **adapters**. There are eight of them, the list is fixed, and they are detected automatically — there is no way to register another one.
+Control Center dispatches agents through **adapters**. There are two of them, the list is fixed, and they are detected automatically — there is no way to register another one.
 
-The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. Anthropic, OpenAI and Kimi Code offer a browser sign-in; OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
+The **Control Center (built-in)** adapter needs no external CLI: the agent loop runs inside the server and talks to model providers over HTTP, so it is always available. Connect a provider under **Settings → Server → Model providers**. OpenAI, Codex, Cursor and Kimi Code offer a browser sign-in; Anthropic, OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai and Moonshot take an API key. Codex and Cursor are providers on this runner, not separate CLIs. z.ai is listed twice on purpose: **z.ai** is the pay-as-you-go open platform, billed against your account balance, while **z.ai GLM Coding Plan** is the subscription. It is the same account key, but z.ai serves the plan from a different host — paste a coding-plan key into the plain z.ai tile and every request comes back `429 … "Insufficient balance or no resource package"`, because the plan has no balance to spend. A Claude Pro/Max subscription is not an Anthropic API login; reach that plan through the Claude Code adapter instead. What you _can_ add on that page is a **custom provider** — any OpenAI- or Anthropic-compatible endpoint (Ollama, LM Studio, vLLM, a private deployment) under **Custom providers → Add provider**.
 
-The other seven adapters wrap an external CLI:
-and
+The other adapter wraps an external CLI:
 
 - **Claude Code** (`claude`): `npm install -g @anthropic-ai/claude-code`
-- **Codex** (`codex`): `npm install -g @openai/codex`
-- **Pi** (`pi`), **OpenCode** (`opencode`), **Gemini CLI** (`gemini`), **Goose** (`goose`) and **Cursor** (`cursor-agent`): install each per its own documentation
 
-Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install external CLIs there, not on the client. The **Refresh** button on that page re-runs the probe.
+Detection probes the `PATH` of the machine running `cc_server` — the same machine when the desktop runs its own server, the remote host otherwise. Install the Claude Code CLI there, not on the client. The **Refresh** button on that page re-runs the probe.
 
 Model lists are served live by each connected provider; [models.dev](https://models.dev) only supplies price and context-window metadata. See [Manage adapters and models](/manual/guides/adapters/).
 
 ## GitHub authentication
 
-Control Center stores a GitHub personal access token in the OS keychain (macOS Keychain, Windows Credential Store, Linux libsecret). The token is stored as you type it — nothing probes it first, so a typo shows up as a failed request later.
+A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
 
-Scopes:
+If the server has a GitHub App registered ([Create the GitHub App](/manual/guides/github-app/)), **Settings → You → Profile & identity → Code hosting** offers **Sign in with GitHub** (a device flow the server runs). Otherwise paste a personal access token with:
 
 - `repo`: repository and pull-request access
 - `read:org`: organization repos, team membership, and reviewer routing
 
-Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
+Create one at [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens). The server probes the token for the account name as it is stored, so the row can say "signed in as …"; a failed probe still saves the token, and a typo or missing scope shows up as a failed request later.
 
-If your server has a GitHub App registered ([Create the GitHub App](/manual/guides/github-app/)), the row offers **Sign in with GitHub** instead and the token field becomes optional.
-and
-Onboarding asks for the token on its first step. After that it lives under **Settings → You → Profile & identity → Code hosting**, where you can replace or clear it.
+Onboarding's first step is this connection. After that the same card is where you replace or clear it. GitLab and Bitbucket use the same card; see [Connect a code host](/manual/guides/connect-forges/).
 
 ## Choose where the server runs
 
-and
 Control Center is a thin client over a headless `cc_server` process that owns the database and does all the work; [Deployment and clients](/manual/concepts/deployment/) explains what that split means for the desktop, web and phone.
 
 On first launch the desktop asks **"How should Control Center run?"**:
@@ -140,20 +132,17 @@ On first launch the desktop asks **"How should Control Center run?"**:
 Add or switch servers later under **Settings → Server → Connection & status**. Switching reconnects in place — no restart. A browser cannot run a server, so the web client is always remote; see [Connect to a remote server](/manual/guides/connect-remote-server/).
 
 To host a server yourself, follow [Run a headless server](/manual/guides/run-headless-server/). It covers building the binary, minting a pairing key before first start, and the `--data-dir` / `--port` / `--bind` flags.
-and
 
 ## Verify your setup
 
-1. **Settings → Server → Model providers** lists all eight adapters. "Control Center (built-in)" reads found with version `built-in`; any external CLI you installed on the server host should read found as well. Press **Refresh** if one is missing.
-2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders. and
+1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
+2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
 3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
 4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
 
 ## Build from source
 
-and
 Native libraries are required and there is no degraded mode: a missing one is a hard boot failure, not a slower path. Stage them before anything else. Every Flutter and Dart command goes through `fvm`, because the SDK version is pinned by the repo.
-and
 
 ```bash
 git clone https://github.com/SamuelAlev/control-center.git
@@ -170,11 +159,10 @@ On macOS, secure storage (GitHub, Linear and Google sign-in) needs the app signe
 To build the headless server binary, stage the natives the same way first, then:
 
 ```bash
-cd apps/cc_server and
+cd apps/cc_server
 fvm dart build cli
 ```
 
 The build hook copies whatever is already in `build/natives/` into the bundle, so building before staging yields a bundle with no natives and a server that refuses to start.
 
 For the web client use `scripts/build_web.sh` (`--target remote` for the phone PWA). It is what CI runs: a plain `flutter build web` skips the build-identity stamp, the Web Worker regeneration, the deploy manifest, and the asset-budget check.
-and

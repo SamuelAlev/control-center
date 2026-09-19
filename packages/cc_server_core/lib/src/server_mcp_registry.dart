@@ -53,7 +53,7 @@ import 'package:uuid/uuid.dart';
 /// dispatch/sandbox stack) are wired in as those services land server-side.
 ///
 /// The full catalogue is advertised in `tools/list` — no discovery gating.
-/// External MCP clients (pi, Claude Code) refuse to call tools absent from
+/// External MCP clients (Claude Code) refuse to call tools absent from
 /// their cached `tools/list`, so an "essential subset + hidden-but-callable"
 /// list makes every hidden tool unreachable in practice (this broke all agent
 /// writes: `todo_write`, `propose_fact`, …). `search_tool_bm25` and

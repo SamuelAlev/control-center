@@ -34,13 +34,13 @@ gather at the end is deliberate — a verdict computed from one thread's finding
 would silently be a verdict on one reviewer.
 
 The association carries a status ladder — `requested` → `in progress` →
-`awaiting approval` → `completed` — which is what the status bar on the PR's
-Review tab renders.
+`awaiting approval` → `completed` — which is what gates **Publish to GitHub**
+on the PR's Review tab.
 
 ## Review levels
 
 How deep a review goes is a workspace policy with three levels, set at
-**Settings → Workspace → Workspace policy → Review level**:
+**Settings → Workspace → General**, on the **Workspace policy** card:
 
 | Level       | Reviewers that fan out                        | Reporting                                     |
 | ----------- | --------------------------------------------- | --------------------------------------------- |
@@ -83,8 +83,9 @@ Each node carries:
 Two details are deliberate. A one-click GitHub suggestion is only offered when
 the reviewer supplied exact replacement lines — inferring them from a unified
 diff goes wrong quietly, and a one-click commit of a wrong inference is worse
-than no button at all. And the reasoning must be written before the finding, so
-the finding is conditioned on the analysis rather than rationalized after it.
+than no button at all. And the `add_review_node` schema presents `reasoning`
+before the finding, so a model that fills the object in schema order writes the
+analysis first. The field is optional: omitting it does not reject the node.
 A node whose payload is malformed disappears rather than polluting the review.
 
 ## Peer consensus
@@ -92,8 +93,9 @@ A node whose payload is malformed disappears rather than polluting the review.
 A node moves through `open` → `consensus-ready` → `resolved` or `dismissed`.
 The middle step is the heart of the model: **a finding only graduates when a
 peer reviewer confirms it, and an agent can never confirm its own finding.**
-A single reviewer's opinion never reaches GitHub on its own — publishing
-includes peer-confirmed findings only, by default.
+The MCP tool `publish_review_to_github` and the RPC default still publish
+peer-confirmed findings only. The Review tab's **Publish to GitHub** button
+instead sends every remaining open finding.
 
 The rule is enforced in three independent places — the confirm tool, the
 finalizer and the publisher — so it survives a buggy caller in any one of
@@ -129,9 +131,10 @@ axes, of two kinds.
 
 | Axis                          | Kind          | Drawn from                          |
 | ----------------------------- | ------------- | ----------------------------------- |
-| `correctness`, `security`     | Token-driven  | The reviewers' own findings          |
-| `testGap`                     | Token-driven  | The reviewers' findings              |
-| `performance`, `visual`, `apiContract` | Deterministic | Computed without spending tokens |
+| `correctness`, `security` | Token-driven  | The reviewers' own findings                         |
+| `testGap`                 | Token-driven  | The reviewers' findings                             |
+| `visual`, `apiContract`   | Deterministic | Computed without spending tokens                    |
+| `performance`             | Deterministic | Enum only — nothing in the product computes a result |
 
 An axis verdict is `pass`, `warn`, `fail`, `partial` or `unavailable` — and
 only `pass` or `warn` clears a gate. The distinction between `fail`, `partial`
@@ -177,8 +180,9 @@ The pipeline deliberately does not post to GitHub; publishing is user-gated so
 a review can never double-publish. When you press **Publish to GitHub**:
 
 - One GitHub review is submitted. Findings already resolved or dismissed are
-  skipped, and by default only peer-confirmed findings are included — the
-  precision-first wedge.
+  skipped. The button publishes every remaining open finding
+  (`selection: all_open`). The MCP tool `publish_review_to_github` still
+  defaults to peer-confirmed findings only (`consensus`).
 - Findings anchored to a file and line become inline comments; everything else
   folds into the summary body, each carrying a "— Control Center AI review"
   footer so the source is unambiguous.
@@ -187,11 +191,11 @@ a review can never double-publish. When you press **Publish to GitHub**:
   trust-destroying thing a reviewer can leave; if GitHub rejects an inline
   anchor anyway, the whole review is re-sent with every finding folded into
   the body so nothing is silently dropped.
-- A **Block** verdict is submitted as `REQUEST_CHANGES`; anything else as
-  `COMMENT`. The bot never approves on the author's behalf unless you
-  explicitly opt in.
-- The review arrives under the account of the person who pressed the button.
-  Only agent-triggered auto-publishes ride the server's own identity.
+- A **Block** verdict is submitted as `REQUEST_CHANGES`; **Hold** as
+  `COMMENT`; **Ship** as `APPROVE` from the button (`approve_on_ship: true`).
+  The MCP tool leaves Ship as `COMMENT` unless you pass `approve_on_ship`.
+- The review is posted under the server's app identity. Who pressed Publish is
+  recorded for the role gate and the audit log; it is not the GitHub author.
 
 Publishing declares the `prPublish` action class, so the guardrail chokepoint
 gates it like any mutating action — it prompts by default and fails closed
@@ -217,4 +221,4 @@ published summary.
 
 - [Use AI-powered review](/manual/guides/ai-review/) — run a review and publish it
 - [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/) — choose the reviewers yourself
-- [Review Studio](/manual/guides/review-studio/) — cohorts, axes and diffs, and why they have no viewer
+- [Review compute](/manual/guides/review-compute/) — cohorts, axes and diffs

@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.27
 
 # =============================================================================
 # Dockerfile for self-hosting the Control Center WEB CLIENT.

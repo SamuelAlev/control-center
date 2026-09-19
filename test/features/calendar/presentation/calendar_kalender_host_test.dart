@@ -44,7 +44,7 @@ double _bodyOpacity(WidgetTester tester) {
       .widget<Opacity>(
         find
             .ancestor(
-              of: find.byType(k.CalendarBody),
+              of: find.byType(k.KalenderBody),
               matching: find.byType(Opacity),
             )
             .first,
@@ -214,7 +214,7 @@ void main() {
     /// The whole point of the band is that this number is a constant, so it is
     /// the one every height test is written against.
     double gridTop(WidgetTester tester) =>
-        tester.getTopLeft(find.byType(k.CalendarBody)).dy -
+        tester.getTopLeft(find.byType(k.KalenderBody)).dy -
         tester.getTopLeft(find.byType(CalendarKalenderHost)).dy;
 
     /// The height the all-day band actually paints at, overhang included.

@@ -46,9 +46,8 @@ beats allow. An action that declares several classes resolves each one
 independently and then combines them most-restrictive.
 
 :::caution[Allow does not beat deny]
-The old flat `allow > deny > prompt` precedence is gone. A narrower rule wins on
-specificity and a tie is broken by restrictiveness — so an **Allow** at the
-workspace scope no longer overrides a **Deny** anywhere.
+A narrower rule wins on specificity and a tie is broken by restrictiveness —
+so an **Allow** at the workspace scope does not override a **Deny** anywhere.
 :::
 
 An **Ask first** decision surfaces one approval prompt covering every class that
@@ -72,6 +71,7 @@ a refused one.
 | Install a package            | Allow            |
 | Run a process                | Allow            |
 | Change workspace structure   | Allow            |
+| Drive an enclosure (rig)     | Allow            |
 
 The taxonomy is closed. A new tool that ships without declaring its classes fails
 a ratchet test in CI, so nothing arrives with a silently empty effect set.
@@ -112,7 +112,7 @@ Only a `deny` — from a rule, from the mode preset, or from a built-in default 
 still blocks. Reach for it when you are watching the space, not as a default.
 :::
 
-The dial only reaches the built-in harness. An external CLI adapter runs its own
+The dial only reaches the built-in harness. The Claude Code adapter runs its own
 tools outside this gate.
 
 ## Know where guardrails do not reach
@@ -121,16 +121,16 @@ The **Where rules are enforced** table at the bottom of the same page is the
 in-app version of this: per effect class, it says whether each runner catches it
 at the policy gate, leaves it to the sandbox, or cannot intercept it at all.
 
-- **External CLI and ACP adapters** are not gated on their own tool calls. Claude
+- **The Claude Code adapter** is not gated on its own tool calls. Claude
   Code is launched with `--dangerously-skip-permissions`, so its read, write, edit
-  and bash calls never pass through the guard. What is gated for those adapters
-  is the MCP tool surface they call back into and the shell command Control
-  Center spawns to launch them.
+  and bash calls never pass through the guard. What is gated for that adapter
+  is the MCP tool surface it calls back into and the shell command Control
+  Center spawns to launch it.
 - **A mode's own output verb** (`submit_plan`, `propose_orchestration`) is pinned
   and can never be denied — otherwise a mode would be structurally unable to
   produce its only deliverable.
 - **Whether the sandbox backs these rules up depends on the host.** Where
-  `cc_server` finds a backend it wraps the external CLI and ACP transports and
+  `cc_server` finds a backend it wraps the Claude Code CLI and
   the harness `bash` tool, so a rule you did not write still has an OS floor
   under it. On **Windows there is none** and on Linux or WSL2 without `bwrap`
   and `socat` there is none either — there, guardrails plus the mode's tool

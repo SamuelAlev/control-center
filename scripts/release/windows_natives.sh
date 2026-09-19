@@ -335,11 +335,26 @@ build_grammar() {
   )
 }
 
-build_grammar dart       https://github.com/UserNobody14/tree-sitter-dart.git      "${TS_DART_REF:?}"       src
-build_grammar javascript https://github.com/tree-sitter/tree-sitter-javascript.git "${TS_JAVASCRIPT_REF:?}" src
-build_grammar typescript https://github.com/tree-sitter/tree-sitter-typescript.git "${TS_TYPESCRIPT_REF:?}" typescript/src
-build_grammar tsx        https://github.com/tree-sitter/tree-sitter-typescript.git "${TS_TYPESCRIPT_REF:?}" tsx/src
-build_grammar php        https://github.com/tree-sitter/tree-sitter-php.git         "${TS_PHP_REF:?}"        php/src
+build_grammar dart       https://github.com/UserNobody14/tree-sitter-dart.git           "${TS_DART_REF:?}"       src
+build_grammar javascript https://github.com/tree-sitter/tree-sitter-javascript.git      "${TS_JAVASCRIPT_REF:?}" src
+build_grammar typescript https://github.com/tree-sitter/tree-sitter-typescript.git      "${TS_TYPESCRIPT_REF:?}" typescript/src
+build_grammar tsx        https://github.com/tree-sitter/tree-sitter-typescript.git      "${TS_TYPESCRIPT_REF:?}" tsx/src
+build_grammar php        https://github.com/tree-sitter/tree-sitter-php.git              "${TS_PHP_REF:?}"        php/src
+build_grammar python     https://github.com/tree-sitter/tree-sitter-python.git          "${TS_PYTHON_REF:?}"     src
+build_grammar rust       https://github.com/tree-sitter/tree-sitter-rust.git            "${TS_RUST_REF:?}"       src
+build_grammar zig        https://github.com/tree-sitter-grammars/tree-sitter-zig.git    "${TS_ZIG_REF:?}"        src
+build_grammar c          https://github.com/tree-sitter/tree-sitter-c.git               "${TS_C_REF:?}"          src
+build_grammar cpp        https://github.com/tree-sitter/tree-sitter-cpp.git             "${TS_CPP_REF:?}"        src
+build_grammar go         https://github.com/tree-sitter/tree-sitter-go.git              "${TS_GO_REF:?}"         src
+build_grammar java       https://github.com/tree-sitter/tree-sitter-java.git            "${TS_JAVA_REF:?}"       src
+build_grammar ruby       https://github.com/tree-sitter/tree-sitter-ruby.git            "${TS_RUBY_REF:?}"       src
+build_grammar c_sharp    https://github.com/tree-sitter/tree-sitter-c-sharp.git         "${TS_C_SHARP_REF:?}"    src
+build_grammar swift      https://github.com/alex-pinkus/tree-sitter-swift.git           "${TS_SWIFT_REF:?}"      src
+build_grammar kotlin     https://github.com/tree-sitter-grammars/tree-sitter-kotlin.git "${TS_KOTLIN_REF:?}"     src
+build_grammar r          https://github.com/r-lib/tree-sitter-r.git                     "${TS_R_REF:?}"          src
+build_grammar asm        https://github.com/RubixDev/tree-sitter-asm.git                 "${TS_ASM_REF:?}"        src
+build_grammar matlab     https://github.com/acristoffers/tree-sitter-matlab.git         "${TS_MATLAB_REF:?}"    src
+build_grammar ada        https://github.com/briot/tree-sitter-ada.git                   "${TS_ADA_REF:?}"        src
 
 # --- aec (WebRTC AEC3) -----------------------------------------------------
 # Mirrors scripts/natives/build_aec.sh but with the MSVC toolchain. WebRTC's

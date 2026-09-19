@@ -6103,6 +6103,42 @@ class AppLocalizationsJa extends AppLocalizations {
   String get editorEmptyCanvas => 'ライブラリからノードをドラッグして開始してください。';
 
   @override
+  String get pipelineWhenThisHappens => 'これが起きたとき';
+
+  @override
+  String get pipelineDoThis => 'これを実行';
+
+  @override
+  String get pipelineAddStep => 'ステップを追加';
+
+  @override
+  String get pipelineTidyUp => 'レイアウトを整える';
+
+  @override
+  String get pipelineEditorHint => 'ステップをドラッグして配置 · ハンドルをドラッグして接続';
+
+  @override
+  String get pipelineRemoveConnection => '接続を削除';
+
+  @override
+  String get pipelineDragToConnect => 'ドラッグして接続';
+
+  @override
+  String get pipelineNewDefaultName => '新しいパイプライン';
+
+  @override
+  String get nodeCategoryTriggers => 'トリガー';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'トリガーを追加';
+
+  @override
+  String get pipelineOnEvent => 'イベント時';
+
+  @override
   String get nodeConfigTitle => 'ノード設定';
 
   @override
@@ -6346,6 +6382,9 @@ class AppLocalizationsJa extends AppLocalizations {
       '署名付きの Webhook URL が生成されます。外部システムが POST すると、このパイプラインが開始されます。';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook のパス';
+
+  @override
   String get triggerEventFieldLabel => 'イベント';
 
   @override
@@ -6471,6 +6510,74 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'チケット割り当て';
+
+  @override
+  String get triggerEventTicketCreated => 'チケットが作成';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'チケットの状態が変更';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => '会議の録音が停止';
+
+  @override
+  String get triggerEventSkillUpdated => 'スキルが更新';
+
+  @override
+  String get triggerEventSpaceDeleted => 'スペースが削除';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'コードホスト上で開かれたプルリクエスト。Control Center からではありません。';
+
+  @override
+  String get triggerPrPublishedHelp => 'Control Center またはエージェントが開いたプルリクエスト。';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'マージ、クローズ、オープン、再オープン、または承認。インスペクターで状態を絞り込みます。';
+
+  @override
+  String get triggerPrMergedHelp => 'プルリクエストがマージされたときのみ。クローズや再オープンでは動きません。';
+
+  @override
+  String get triggerRepoAddedHelp => 'このワークスペースにリポジトリがリンクされます。';
+
+  @override
+  String get triggerCodeGraphWatchHelp => 'リンクされたリポジトリのファイルがディスク上で変わります。';
+
+  @override
+  String get triggerMessageReceivedHelp => 'スペースに新しいメッセージが届きます。';
+
+  @override
+  String get triggerTicketCreatedHelp => 'このワークスペースでチケットが作成されます。';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'チケットの状態が変わります。';
+
+  @override
+  String get triggerTicketCompletedHelp => 'チケットが正常に完了します。';
+
+  @override
+  String get triggerTicketFailedHelp => 'エージェントの実行が失敗し、チケットが失敗として記録されます。';
+
+  @override
+  String get triggerTicketCancelledHelp => 'チケットがキャンセルされ、続きません。';
+
+  @override
+  String get triggerBudgetCrossedHelp => 'ワークスペースまたはエージェントの支出上限を超えます。';
+
+  @override
+  String get triggerTicketAssignedHelp => 'チケットが人、エージェント、またはチームに割り当てられます。';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => '会議の録音が終わります。';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'スキルがインストールまたは更新されます。';
+
+  @override
+  String get triggerSpaceDeletedHelp => '会話スペースが削除されます。';
 
   @override
   String get navTickets => 'チケット';

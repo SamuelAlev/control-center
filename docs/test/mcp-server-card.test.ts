@@ -214,7 +214,7 @@ describe('server card — scope honesty', () => {
   });
 
   it("never claims the product's cc_server MCP server on this origin", () => {
-    // The 103-tool product server runs inside the self-hosted cc_server, on a
+    // The 110-tool product server runs inside the self-hosted cc_server, on a
     // host this site knows nothing about. The card documents it and stops.
     const serialized = JSON.stringify(card);
     assert.ok(meta.scope.includes('cc_server'), 'the scope note must name where the product server actually runs');

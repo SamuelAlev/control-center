@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
 # Builds the tree-sitter runtime (libtree-sitter) and the per-language grammar
-# libs the code indexer uses (Dart, JavaScript, TypeScript, TSX, PHP), then
-# installs them where GrammarManager resolves them: the grammars/ dir beside
-# control_center.db (see GrammarManager.resolve — that dir is searched first).
+# libs the code indexer uses, then installs them where GrammarManager resolves
+# them: the grammars/ dir beside control_center.db (see GrammarManager.resolve
+# — that dir is searched first).
 #
 # REQUIRED, runtime AND every grammar: cc_server's boot preflight resolves each
 # one by name and refuses to start on a miss and the indexer throws rather than
@@ -19,9 +19,8 @@
 #   libtree-sitter-<languageId>.<ext>  exports  tree_sitter_<languageId>
 # (the packages/cc_natives path is code_index/code_languages.dart)
 #
-# Source/refs (override the matching *_REF env to iterate or bump; keep in sync
-# with .github/workflows/release.yml):
-#   TREE_SITTER_REF TS_DART_REF TS_JAVASCRIPT_REF TS_TYPESCRIPT_REF TS_PHP_REF
+# Source/refs (override the matching *_REF env to iterate or bump; pins live in
+# scripts/lib/native_pins.env): TREE_SITTER_REF and TS_<LANG>_REF.
 #
 # Requirements: git, a C compiler (cc/clang/gcc); a C++ compiler (c++) only when
 # a grammar ships a C++ scanner (scanner.cc).
@@ -34,7 +33,7 @@ REPO_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 source "$REPO_ROOT/scripts/natives/lib/natives_common.sh"
 
 # Pinned commits for reproducible builds (override via the matching *_REF env).
-# Pins (runtime + all five grammars) come from scripts/lib/native_pins.env,
+# Pins (runtime + every grammar) come from scripts/lib/native_pins.env,
 # where Renovate keeps the runtime and grammars in ABI lockstep. An env
 # override still wins, for one-off bisects.
 load_native_pins
@@ -92,16 +91,33 @@ build_grammar() {
   native_adhoc_sign "$DEST/libtree-sitter-$name.$NATIVE_EXT"
 }
 
-build_grammar dart       https://github.com/UserNobody14/tree-sitter-dart.git      "$TS_DART_REF"       src
-build_grammar javascript https://github.com/tree-sitter/tree-sitter-javascript.git "$TS_JAVASCRIPT_REF" src
-build_grammar typescript https://github.com/tree-sitter/tree-sitter-typescript.git "$TS_TYPESCRIPT_REF" typescript/src
-build_grammar tsx        https://github.com/tree-sitter/tree-sitter-typescript.git "$TS_TYPESCRIPT_REF" tsx/src
-build_grammar php        https://github.com/tree-sitter/tree-sitter-php.git         "$TS_PHP_REF"        php/src
+build_grammar dart       https://github.com/UserNobody14/tree-sitter-dart.git           "$TS_DART_REF"       src
+build_grammar javascript https://github.com/tree-sitter/tree-sitter-javascript.git      "$TS_JAVASCRIPT_REF" src
+build_grammar typescript https://github.com/tree-sitter/tree-sitter-typescript.git      "$TS_TYPESCRIPT_REF" typescript/src
+build_grammar tsx        https://github.com/tree-sitter/tree-sitter-typescript.git      "$TS_TYPESCRIPT_REF" tsx/src
+build_grammar php        https://github.com/tree-sitter/tree-sitter-php.git              "$TS_PHP_REF"        php/src
+build_grammar python     https://github.com/tree-sitter/tree-sitter-python.git          "$TS_PYTHON_REF"     src
+build_grammar rust       https://github.com/tree-sitter/tree-sitter-rust.git            "$TS_RUST_REF"       src
+build_grammar zig        https://github.com/tree-sitter-grammars/tree-sitter-zig.git    "$TS_ZIG_REF"        src
+build_grammar c          https://github.com/tree-sitter/tree-sitter-c.git               "$TS_C_REF"          src
+build_grammar cpp        https://github.com/tree-sitter/tree-sitter-cpp.git             "$TS_CPP_REF"        src
+build_grammar go         https://github.com/tree-sitter/tree-sitter-go.git              "$TS_GO_REF"         src
+build_grammar java       https://github.com/tree-sitter/tree-sitter-java.git            "$TS_JAVA_REF"       src
+build_grammar ruby       https://github.com/tree-sitter/tree-sitter-ruby.git            "$TS_RUBY_REF"       src
+build_grammar c_sharp    https://github.com/tree-sitter/tree-sitter-c-sharp.git         "$TS_C_SHARP_REF"    src
+# Swift's release tags omit parser.c; pin the matching *-with-generated-files
+# tag (see renovate extractVersionTemplate). Ada has no version tags — master.
+build_grammar swift      https://github.com/alex-pinkus/tree-sitter-swift.git           "$TS_SWIFT_REF"      src
+build_grammar kotlin     https://github.com/tree-sitter-grammars/tree-sitter-kotlin.git "$TS_KOTLIN_REF"     src
+build_grammar r          https://github.com/r-lib/tree-sitter-r.git                     "$TS_R_REF"          src
+build_grammar asm        https://github.com/RubixDev/tree-sitter-asm.git                 "$TS_ASM_REF"        src
+build_grammar matlab     https://github.com/acristoffers/tree-sitter-matlab.git         "$TS_MATLAB_REF"    src
+build_grammar ada        https://github.com/briot/tree-sitter-ada.git                   "$TS_ADA_REF"        src
 
 # Stage the hand-authored `.scm` queries beside the grammar libs. GrammarManager
 # resolves a language's query from the same dirs as its lib (see loadQuery), so
 # the queries travel with the natives in dev and in release bundles. queryIdFor
-# maps tsx → typescript, so only 4 query ids ship (dart/javascript/typescript/php).
+# maps tsx → typescript, so those two share one query file.
 log "Staging .scm queries into: $DEST"
 cp -f "$REPO_ROOT/scripts/natives/queries/"*.scm "$DEST/"
 

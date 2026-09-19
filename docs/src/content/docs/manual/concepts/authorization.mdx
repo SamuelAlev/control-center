@@ -44,14 +44,16 @@ The four tiers map exactly onto the built-in roles:
 Five built-in roles — **owner, admin, member, viewer, guest** — are presets
 over that catalog. Ownership is a single seat per workspace, handed over
 explicitly with **Transfer ownership** (an owner who leaves is otherwise
-unremovable: SCIM deprovisioning refuses to delete the last owner).
+unremovable: SCIM deprovisioning refuses any workspace owner — transfer
+first).
 
-**Custom roles are subtractive.** A custom role names a base preset and a set
-of permissions REMOVED from it — "admin, but cannot manage members". It can
-never grant more than its base, which is what makes them safe to introduce
-into an existing install: every existing check remains a sound upper bound.
-Members hold them as `custom:<id>`, and a client too old to understand that
-value falls back to the lowest privilege rather than guessing.
+**Custom roles are subtractive.** A custom role names a base preset (`admin`,
+`member`, `viewer` or `guest` — never `owner`) and a set of permissions
+REMOVED from it — "admin, but cannot manage members". It can never grant more
+than its base, which is what makes them safe to introduce into an existing
+install: every existing check remains a sound upper bound. Members hold them
+as `custom:<id>`, and a client too old to understand that value falls back
+to guest rather than guessing.
 
 Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
 `write`): workspace membership never silently out-privileges the forge. Every

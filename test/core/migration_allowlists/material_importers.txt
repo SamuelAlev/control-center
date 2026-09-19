@@ -1,7 +1,7 @@
 # Enforced by architecture_constraints_test.dart. Migrate to cc_ui + remove.
 # Regenerated to the current baseline (list had drifted again).
 # Shrinking allowlist: files still importing package:flutter/material.dart.
-# Updated 2026-09-18 after the QUALITY Material burn-down.
+# Updated 2026-09-19 after routing + calendar host Material shows.
 lib/app/control_center_app.dart
 lib/bootstrap/bootstrap_io.dart
 lib/core/theme/app_fonts.dart
@@ -10,6 +10,7 @@ lib/core/theme/theme_provider.dart
 lib/features/auth/presentation/screens/api_keys_screen.dart
 lib/features/auth/presentation/screens/onboarding_chrome.dart
 lib/features/calendar/presentation/providers/calendar_ui_providers.dart
+lib/features/calendar/presentation/widgets/calendar_kalender_host.dart
 lib/features/focus_mode/presentation/screens/focus_pill_window.dart
 lib/features/meetings/presentation/screens/meeting_toolbar_window.dart
 lib/features/memory/presentation/widgets/knowledge_graph.dart
@@ -44,6 +45,7 @@ lib/features/soundscape/presentation/screens/soundscape_mini_player_window.dart
 lib/features/ticketing/presentation/screens/tickets_screen.dart
 lib/features/workspaces/presentation/screens/workspace_list_screen.dart
 lib/features/workspaces/presentation/widgets/add_workspace_form.dart
+lib/router/app_router.dart
 lib/router/splash_screen.dart
 lib/shared/widgets/app_shortcuts.dart
 lib/shared/widgets/charts/activity_heatmap.dart

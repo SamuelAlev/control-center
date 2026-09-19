@@ -467,8 +467,8 @@ final _viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
 
   // The demo has no forge credential, so this op is absent from its registry
   // and no amount of retrying will change that. Answer with the fixture
-  // viewer instead: the team membership is what routes PR #414's TEAM review
-  // request into the visitor's queue. See `kDemoViewerLogin`.
+  // viewer instead: the team membership is what routes the retriever PR's
+  // TEAM review request into the visitor's queue. See `kDemoViewerLogin`.
   if (ref.watch(isDemoServerProvider)) {
     return const {
       'user': {'login': kDemoViewerLogin, 'name': 'Maya Okonkwo'},

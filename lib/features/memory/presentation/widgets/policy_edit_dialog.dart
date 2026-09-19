@@ -2,7 +2,6 @@ import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart' show Autocomplete;
 import 'package:flutter/widgets.dart';
 
 /// Dialog for creating or editing a memory policy.
@@ -61,32 +60,19 @@ class _PolicyEditDialogState extends State<PolicyEditDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Autocomplete<String>(
-                initialValue: TextEditingValue(
-                  text: widget.policy?.domain ?? '',
-                ),
-                optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty) {
-                    return widget.existingDomains;
-                  }
-                  return widget.existingDomains.where(
-                    (d) => d.toLowerCase().contains(
-                      textEditingValue.text.toLowerCase(),
-                    ),
-                  );
-                },
-                fieldViewBuilder:
-                    (context, controller, focusNode, onFieldSubmitted) {
-                      _domainController = controller;
-                      return CcTextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        onSubmitted: (_) => onFieldSubmitted(),
-                        label: l10n.domainLabel,
-                      );
-                    },
+              CcAutocomplete<String>(
+                controller: _domainController,
+                hintText: l10n.domainHint,
+                semanticLabel: l10n.domainLabel,
+                options: [
+                  for (final d in widget.existingDomains)
+                    CcSelectOption(value: d, label: d),
+                ],
                 onSelected: (selection) {
                   _domainController.text = selection;
+                },
+                onCustomValue: (value) {
+                  _domainController.text = value;
                 },
               ),
               const SizedBox(height: 16),

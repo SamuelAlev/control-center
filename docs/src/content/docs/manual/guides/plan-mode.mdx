@@ -49,9 +49,9 @@ Control Center's own harness builds the agent's tool registry from plan mode's
 surface spec, so there simply is no write, edit or command tool to call — the
 restriction is not a prompt instruction the model could talk itself out of.
 
-External CLI and ACP adapters get no such filtering: the mode reaches them as a
-request their own runner may or may not honour and Control Center only ever sees
-their `mcp__*` calls. The enforcement badge beside the mode dropdown appears
+The Claude Code adapter gets no such filtering: the mode reaches it as a
+request its own runner may or may not honour and Control Center only ever sees
+its `mcp__*` calls. The enforcement badge beside the mode dropdown appears
 exactly when that is the case.
 :::
 
@@ -104,32 +104,22 @@ approved, the agent's next `exit_plan_mode` call flips the space from plan
 to agent mode and unlocks its mutating tools. A rejection lets it open a fresh
 request against a revised plan.
 
-:::caution[There is no approvals screen yet]
-A `plan_exit` approval is a durable governance row and nothing in the desktop or
-web client reads those rows — no client code calls any `approvals.*` operation.
-The only way to decide one today is the `decide_approval` MCP tool, which means
-another agent has to do it. The guardrail approval overlay you see for blocked tool
-calls is a different, in-memory queue and does not carry plan-exit requests.
-
-The reliable path out of plan mode is to switch the mode back yourself (dropdown,
-Shift+Tab), or to approve the plan.
-:::
+To leave plan mode, switch the composer dropdown (or Shift+Tab), or approve the
+submitted plan. `exit_plan_mode` opens a durable approval decided with the
+`decide_approval` MCP tool. The guardrail overlay for blocked tool calls is a
+different, in-memory queue and does not carry plan-exit requests.
 
 ## Plan mode in a pipeline step
 
-A `promptAgent` pipeline step reads its conversation mode from the node config's
-`mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any other
-spelling, including `conversationMode` or `dispatchMode`, is silently ignored and
-the step falls back to its default, which is **review** mode, not chat.
-
-:::caution[There is no editor field for this yet]
-The node config editor exposes label, kind, agent, input keys, output key, prompt,
-script, reducer, timeout, retries, output schema and routing — but no conversation
-mode. The **Dispatch mode** select you can see there is a different field
-(`allParallel` / `manager` for team-dispatch nodes) and setting it does nothing to
-the conversation mode. Today, `extras['mode']` can only be set by a template that
-ships with it or by writing the node config through the API.
-:::
+A `messaging.createSpace` pipeline node reads the conversation mode from the node
+config's `mode` **extra** — `extras['mode']: 'plan'`. The key is exact-match: any
+other spelling, including `conversationMode` or `dispatchMode`, is silently
+ignored and the room falls back to the body's default, which is **review** mode,
+not chat. A `promptAgent` step joins a room it did not create and does not
+re-permission it. The node config editor's **Dispatch mode** select
+(`allParallel` / `manager`) is for team-dispatch nodes. Set conversation mode
+with `extras['mode']` on a template that opens the space, or on that node's
+config through the API.
 
 ## Related guides
 

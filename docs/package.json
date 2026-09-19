@@ -2,7 +2,7 @@
   "name": "docs",
   "type": "module",
   "version": "0.0.1",
-  "packageManager": "pnpm@11.21.0+sha512.521705bce689924eac72f5a3587122f362689ef6571e55ba80076fd637c11132ecffada26fad4ea79c485bfddbfd3d5a2a5b05805a77e893de71ec8a6cca3bb1",
+  "packageManager": "pnpm@12.4.2+sha512.08adc6613180275c7c9edada39dcf08c9c61ad4e7eaf330a4f3461f102b0f907423454d117f98e72d47fef0616070644d7bffc973a6a57f5090a6d7c368b07c9",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
@@ -13,14 +13,14 @@
     "generate-types": "wrangler types"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.2.5",
-    "@astrojs/mdx": "^7.0.8",
+    "@astrojs/cloudflare": "^14.3.2",
+    "@astrojs/mdx": "^8.0.1",
     "@astrojs/rss": "^4.0.19",
-    "@astrojs/starlight": "^0.41.9",
+    "@astrojs/starlight": "^0.41.11",
     "@tailwindcss/vite": "^4.3.3",
-    "astro": "^7.2.9",
+    "astro": "^7.3.3",
     "sharp": "^0.35.4",
     "tailwindcss": "^4.3.3",
-    "wrangler": "^4.127.0"
+    "wrangler": "^4.135.0"
   }
 }

@@ -6100,6 +6100,42 @@ class AppLocalizationsKo extends AppLocalizations {
   String get editorEmptyCanvas => '라이브러리에서 노드를 끌어다 놓아 시작하세요.';
 
   @override
+  String get pipelineWhenThisHappens => '이 일이 발생하면';
+
+  @override
+  String get pipelineDoThis => '이 작업을 실행';
+
+  @override
+  String get pipelineAddStep => '단계 추가';
+
+  @override
+  String get pipelineTidyUp => '레이아웃 정리';
+
+  @override
+  String get pipelineEditorHint => '단계를 끌어 배치하세요 · 핸들을 끌어 연결하세요';
+
+  @override
+  String get pipelineRemoveConnection => '연결 제거';
+
+  @override
+  String get pipelineDragToConnect => '드래그하여 연결';
+
+  @override
+  String get pipelineNewDefaultName => '새 파이프라인';
+
+  @override
+  String get nodeCategoryTriggers => '트리거';
+
+  @override
+  String get triggerEventWebhook => '웹훅';
+
+  @override
+  String get pipelineAddTrigger => '트리거 추가';
+
+  @override
+  String get pipelineOnEvent => '이벤트 시';
+
+  @override
   String get nodeConfigTitle => '노드 설정';
 
   @override
@@ -6343,6 +6379,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '서명된 웹훅 URL이 생성됩니다. 외부 시스템이 이 URL로 POST하여 이 파이프라인을 시작합니다.';
 
   @override
+  String get triggerWebhookPathLabel => '웹훅 경로';
+
+  @override
   String get triggerEventFieldLabel => '이벤트';
 
   @override
@@ -6468,6 +6507,74 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => '티켓 할당됨';
+
+  @override
+  String get triggerEventTicketCreated => '티켓 생성됨';
+
+  @override
+  String get triggerEventTicketStatusChanged => '티켓 상태 변경';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => '회의 녹음 중지';
+
+  @override
+  String get triggerEventSkillUpdated => '스킬 업데이트됨';
+
+  @override
+  String get triggerEventSpaceDeleted => '스페이스 삭제됨';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Control Center가 아니라 코드 호스트에서 열린 풀 리퀘스트입니다.';
+
+  @override
+  String get triggerPrPublishedHelp => 'Control Center 또는 에이전트가 연 풀 리퀘스트입니다.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      '병합, 닫힘, 열림, 다시 열림 또는 승인. 검사기에서 상태로 필터링하세요.';
+
+  @override
+  String get triggerPrMergedHelp => '풀 리퀘스트가 병합될 때만입니다. 닫히거나 다시 열릴 때는 아닙니다.';
+
+  @override
+  String get triggerRepoAddedHelp => '이 워크스페이스에 저장소가 연결됩니다.';
+
+  @override
+  String get triggerCodeGraphWatchHelp => '연결된 저장소의 파일이 디스크에서 바뀝니다.';
+
+  @override
+  String get triggerMessageReceivedHelp => '스페이스에 새 메시지가 도착합니다.';
+
+  @override
+  String get triggerTicketCreatedHelp => '이 워크스페이스에 티켓이 만들어집니다.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => '티켓이 상태 사이를 이동합니다.';
+
+  @override
+  String get triggerTicketCompletedHelp => '티켓이 성공적으로 끝납니다.';
+
+  @override
+  String get triggerTicketFailedHelp => '에이전트 실행이 실패했고 티켓이 실패로 표시됩니다.';
+
+  @override
+  String get triggerTicketCancelledHelp => '티켓이 취소되며 계속되지 않습니다.';
+
+  @override
+  String get triggerBudgetCrossedHelp => '워크스페이스 또는 에이전트 지출 한도를 넘습니다.';
+
+  @override
+  String get triggerTicketAssignedHelp => '티켓이 사람, 에이전트 또는 팀에 할당됩니다.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => '회의 녹음이 끝납니다.';
+
+  @override
+  String get triggerSkillUpdatedHelp => '스킬이 설치되거나 업데이트됩니다.';
+
+  @override
+  String get triggerSpaceDeletedHelp => '대화 스페이스가 삭제됩니다.';
 
   @override
   String get navTickets => '티켓';

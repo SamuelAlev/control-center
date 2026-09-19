@@ -255,7 +255,7 @@ class ToolSegment extends TranscriptSegment {
   /// Name of the tool (e.g. `Read`, `Edit`, `mcp__cc__create_ticket`).
   final String toolName;
 
-  /// Id pairing the call with its result. May be `''` for legacy pi events.
+  /// Id pairing the call with its result. May be `''` for legacy events.
   final String toolCallId;
 
   /// Parsed JSON tool arguments (e.g. `{file_path, old_string, new_string}`).

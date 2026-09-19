@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
@@ -17,7 +18,6 @@ import 'package:cc_server_core/src/demo/demo_profile.dart';
 import 'package:cc_server_core/src/demo/demo_repo_stats.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
-
 
 /// Everything `buildDemoWiring` needs from a half-built server runtime.
 ///
@@ -154,6 +154,11 @@ abstract interface class DemoWiring {
   /// A poller that never polls, so `pr.watchOpenForWorkspace` follows the
   /// seeded snapshot instead of short-circuiting to a signed-out empty list.
   OpenPrPollingService get openPrPoller;
+
+  /// Maya's merged-PR history, answered from the seeded cache rather than
+  /// GitHub. Same signature as production `MultiForgeMergedHistory.mergedByViewer`.
+  Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>>
+  mergedByViewer(List<Repo> repos, {String? userId, String? workspaceId});
 
   /// The project's own GitHub stars, fetched and cached server-side. Backs
   /// the `demo.repoStars` op — the one lane through which the client's

@@ -44,7 +44,7 @@ class IosAutomationArtifact {
 const IosAutomationArtifact kIosAutomationArm64 = IosAutomationArtifact(
   architecture: 'arm64',
   url:
-      'https://github.com/appium/WebDriverAgent/releases/download/v16.12.8/'
+      'https://github.com/appium/WebDriverAgent/releases/download/$kIosAutomationVersion/'
       'WebDriverAgentRunner-Build-Sim-arm64.zip',
   sha256: '99bca36962e6f06bb140971f467e851f4cebf9e89c20af8d45bcd6f3bd00aab4',
 );
@@ -53,7 +53,7 @@ const IosAutomationArtifact kIosAutomationArm64 = IosAutomationArtifact(
 const IosAutomationArtifact kIosAutomationX64 = IosAutomationArtifact(
   architecture: 'x86_64',
   url:
-      'https://github.com/appium/WebDriverAgent/releases/download/v16.12.8/'
+      'https://github.com/appium/WebDriverAgent/releases/download/$kIosAutomationVersion/'
       'WebDriverAgentRunner-Build-Sim-x86_64.zip',
   sha256: 'bf683d59a8ffc031031ddeeb3d5edf9556f3060692694904edcf4b8aa5ba05a2',
 );

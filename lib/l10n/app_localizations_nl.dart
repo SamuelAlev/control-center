@@ -6260,6 +6260,43 @@ class AppLocalizationsNl extends AppLocalizations {
       'Sleep een node vanuit de bibliotheek om te beginnen.';
 
   @override
+  String get pipelineWhenThisHappens => 'Wanneer dit gebeurt';
+
+  @override
+  String get pipelineDoThis => 'Doe dit';
+
+  @override
+  String get pipelineAddStep => 'Stap toevoegen';
+
+  @override
+  String get pipelineTidyUp => 'Lay-out opruimen';
+
+  @override
+  String get pipelineEditorHint =>
+      'Sleep stappen om te schikken · sleep een handvat om te verbinden';
+
+  @override
+  String get pipelineRemoveConnection => 'Verbinding verwijderen';
+
+  @override
+  String get pipelineDragToConnect => 'Sleep om te verbinden';
+
+  @override
+  String get pipelineNewDefaultName => 'Nieuwe pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Triggers';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Trigger toevoegen';
+
+  @override
+  String get pipelineOnEvent => 'Bij gebeurtenis';
+
+  @override
   String get nodeConfigTitle => 'Node-configuratie';
 
   @override
@@ -6507,6 +6544,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Er wordt een ondertekende webhook-URL gegenereerd. Externe systemen sturen een POST om deze pipeline te starten.';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhookpad';
+
+  @override
   String get triggerEventFieldLabel => 'Gebeurtenis';
 
   @override
@@ -6634,6 +6674,87 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket toegewezen';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket aangemaakt';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Ticketstatus gewijzigd';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'Vergaderopname gestopt';
+
+  @override
+  String get triggerEventSkillUpdated => 'Vaardigheid bijgewerkt';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Ruimte verwijderd';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Een pull request geopend op de codehost, niet vanuit Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Een pull request geopend vanuit Control Center of door een agent.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Samengevoegd, gesloten, geopend, heropend of goedgekeurd. Filter op status in de inspector.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Alleen wanneer de pull request wordt samengevoegd, niet bij sluiten of heropenen.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Een repository wordt gekoppeld aan deze werkruimte.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Een bestand in een gekoppelde repository verandert op schijf.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Er komt een nieuw bericht binnen in een ruimte.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Er wordt een ticket aangemaakt in deze werkruimte.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Een ticket wisselt van status.';
+
+  @override
+  String get triggerTicketCompletedHelp =>
+      'Een ticket wordt succesvol afgerond.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Een agentrun is mislukt en het ticket wordt als mislukt gemarkeerd.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Een ticket wordt geannuleerd en gaat niet verder.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Een uitgavenlimiet van de werkruimte of agent wordt overschreden.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Een ticket wordt toegewezen aan een persoon, agent of team.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Een vergaderopname eindigt.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Een vaardigheid wordt geïnstalleerd of bijgewerkt.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Een gespreksruimte wordt verwijderd.';
 
   @override
   String get navTickets => 'Tickets';

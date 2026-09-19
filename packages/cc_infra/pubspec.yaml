@@ -15,9 +15,6 @@ dependencies:
     path: ../cc_harness
   cc_harness_runtime:
     path: ../cc_harness_runtime
-  # Pure-Dart dart:ffi native bindings leaf (rift/fff/tree-sitter/aec). Allowed
-  # here since it was de-Fluttered (exodus 32) — cc_infra hosts the adapters
-  # that drive these natives and both stay linkable into the server binary.
   cc_natives:
     path: ../cc_natives
   # SHA256 content-addressing for skill bundles + the skills-lock manifest.
@@ -26,15 +23,14 @@ dependencies:
 
   archive: ^4.0.9
   any_date: 1.2.2
-  # Pure-Dart image decode/diff for the PR visual-diff golden harness
-  # (PRD 18 §4). Links into the Flutter-free server binary.
+  # Pure-Dart image decode/diff for the PR visual-diff golden harness.
   image: ^4.3.0
-  html: 0.15.6
+  html: 0.15.7
   path: ^1.9.1
   pool: any
   rss_dart: any
   uuid: 4.6.0
-  yaml: 3.1.3
+  yaml: 3.1.4
   meta: any
   dart_jsonwebtoken: ^3.4.1
 dev_dependencies:

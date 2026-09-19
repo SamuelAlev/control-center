@@ -50,10 +50,13 @@ copies the raw source rather than the rendered diff markers.
 2. Write your feedback in Markdown
 3. Submit
 
-An inline comment is **posted to the forge the moment you submit it** — there is
-no batching. The thread shows a pending state until the forge confirms it, then
-flips to synced. If the post fails, the thread is marked with the error and
-offers a retry.
+On GitHub and GitLab the composer offers two submits: **Add single comment**
+posts immediately, and **Start a review** / **Add to review** queues the
+comment onto a pending review that goes out with **Approve**, **Request
+changes** or **Comment**. Bitbucket has no pending-review batching, so there
+every submit posts immediately. An immediate post shows a pending state until
+the forge confirms it, then flips to synced. If the post fails, the thread is
+marked with the error and offers a retry.
 
 Only the review _body_ is a draft: it is saved server-side against
 (owner, repo, PR number) a moment after you stop typing, so it survives a reload
@@ -65,11 +68,12 @@ and follows you between the desktop and web clients.
    on a closed or merged PR)
 2. Write the review body. You can attach an image, insert an emoji or a GIF and
    toggle between write and preview
-3. Press **Approve** (`⌘↵`) or **Request changes** (`⌘⇧↵`)
+3. Press **Request changes**, **Comment** or **Approve**
 
-The verdict _is_ the button — there is no separate verdict picker and no
-comment-only verdict in this overlay. After submitting, the button relabels itself
-to **Approved** or **Requested changes** and the draft body is cleared.
+The verdict _is_ the button — there is no separate verdict picker. After
+**Approve** or **Request changes**, the button relabels itself to **Approved**
+or **Requested changes** and the draft body is cleared. A **Comment** verdict
+leaves the button labelled **Review**.
 
 :::caution[Submitting is irreversible]
 `pr_review.submitReview` publishes to the forge and never enters the undo stack.
@@ -114,9 +118,8 @@ delete the space yourself if you want it out of the sidebar.
 The ⋯ overflow menu on the Overview tab carries **Ask AI**, which starts the
 seeded `pr_review` pipeline for this PR. It only appears while the PR is open. See
 [Use AI-powered review](/manual/guides/ai-review/) for what the pipeline does and
-how to publish its findings, and [Review Studio](/manual/guides/review-studio/)
-for the deterministic cohort and axis model — which the server computes and
-nothing in the app renders.
+how to publish its findings, and [Review compute](/manual/guides/review-compute/)
+for the deterministic cohort and axis model.
 
 ## Review an external PR
 
@@ -127,5 +130,5 @@ above is identical. External PRs are detected by the PR polling service.
 
 - [Use AI-powered review](/manual/guides/ai-review/)
 - [Dispatch reviewer agents](/manual/guides/dispatch-reviewers/)
-- [Review Studio (cohorts and axes)](/manual/guides/review-studio/)
+- [Review compute (cohorts and axes)](/manual/guides/review-compute/)
 - [Connect a code host](/manual/guides/connect-forges/)

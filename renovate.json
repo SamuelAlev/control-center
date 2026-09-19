@@ -89,6 +89,189 @@
       "datasourceTemplate": "github-tags"
     },
     {
+      "description": "tree-sitter-python grammar pin (TS_PYTHON_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_PYTHON_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-python",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-rust grammar pin (TS_RUST_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_RUST_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-rust",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-zig grammar pin (TS_ZIG_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_ZIG_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter-grammars/tree-sitter-zig",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-c grammar pin (TS_C_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_C_REF=(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-c",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-cpp grammar pin (TS_CPP_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_CPP_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-cpp",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-go grammar pin (TS_GO_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_GO_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-go",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-java grammar pin (TS_JAVA_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_JAVA_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-java",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-ruby grammar pin (TS_RUBY_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_RUBY_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-ruby",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-c-sharp grammar pin (TS_C_SHARP_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_C_SHARP_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter/tree-sitter-c-sharp",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-swift grammar pin (TS_SWIFT_REF; only *-with-generated-files tags ship parser.c)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_SWIFT_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "alex-pinkus/tree-sitter-swift",
+      "datasourceTemplate": "github-tags",
+      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)-with-generated-files$"
+    },
+    {
+      "description": "tree-sitter-kotlin grammar pin (TS_KOTLIN_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_KOTLIN_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "tree-sitter-grammars/tree-sitter-kotlin",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-r grammar pin (TS_R_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_R_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "r-lib/tree-sitter-r",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-asm grammar pin (TS_ASM_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_ASM_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "RubixDev/tree-sitter-asm",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-matlab grammar pin (TS_MATLAB_REF)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_MATLAB_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "acristoffers/tree-sitter-matlab",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "tree-sitter-ada grammar pin (TS_ADA_REF; no releases \u2014 track master HEAD)",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "TS_ADA_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})"
+      ],
+      "depNameTemplate": "briot/tree-sitter-ada",
+      "packageNameTemplate": "https://github.com/briot/tree-sitter-ada",
+      "datasourceTemplate": "git-refs",
+      "currentValueTemplate": "master"
+    },
+    {
       "description": "tree-sitter-dart grammar pin (TS_DART_REF; no releases \u2014 track master HEAD)",
       "customType": "regex",
       "managerFilePatterns": [
@@ -98,6 +281,7 @@
         "TS_DART_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})"
       ],
       "depNameTemplate": "UserNobody14/tree-sitter-dart",
+      "packageNameTemplate": "https://github.com/UserNobody14/tree-sitter-dart",
       "datasourceTemplate": "git-refs",
       "currentValueTemplate": "master"
     },
@@ -113,6 +297,208 @@
       "depNameTemplate": "pulseaudio/webrtc-audio-processing",
       "datasourceTemplate": "gitlab-tags",
       "registryUrlTemplate": "https://gitlab.freedesktop.org"
+    },
+    {
+      "description": "sherpa-onnx static archive pin (SHERPA_ONNX_VERSION). Checksums in native_pins.env must be regenerated with the version.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "SHERPA_ONNX_VERSION=(?<currentValue>[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "k2-fsa/sherpa-onnx",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "description": "appimagetool tagged release pin (APPIMAGETOOL_URL). SHA256 must be regenerated with the version. Ignore the mutable `continuous` tag.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/scripts/lib/native_pins\\.env$/"
+      ],
+      "matchStrings": [
+        "APPIMAGETOOL_URL=https://github\\.com/AppImage/appimagetool/releases/download/(?<currentValue>[0-9][\\w.]*)/"
+      ],
+      "depNameTemplate": "AppImage/appimagetool",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "code-server release pin (codeServerVersion). CI fetch and the managed download both grep this const.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_infra/lib/src/ide/code_server_service\\.dart$/"
+      ],
+      "matchStrings": [
+        "const String codeServerVersion = '(?<currentValue>[0-9][\\w.]*)'"
+      ],
+      "depNameTemplate": "coder/code-server",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "description": "code-server curated Dart LSP extension (Open VSX fetch follows this version).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_infra/lib/src/ide/code_server_service\\.dart$/"
+      ],
+      "matchStrings": [
+        "publisher: 'Dart-Code', name: 'dart-code', version: '(?<currentValue>[0-9][\\w.]*)'"
+      ],
+      "depNameTemplate": "Dart-Code/Dart-Code",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "description": "WebDriverAgent simulator runner pin. Artifact checksums in ios_automation_store.dart must be regenerated with the version.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_infra/lib/src/rigs/ios_automation_store\\.dart$/",
+        "/scripts/lib/third_party\\.sh$/"
+      ],
+      "matchStrings": [
+        "kIosAutomationVersion = '(?<currentValue>v[0-9][\\w.]*)'",
+        "WebDriverAgent\\|(?<currentValue>v[0-9][\\w.]*)\\|"
+      ],
+      "depNameTemplate": "appium/WebDriverAgent",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Phosphor Regular icon font (phosphor-icons/core). Replace the vendored TTF when this bumps.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_ui/fonts/Phosphor-LICENSE\\.txt$/",
+        "/third_party/licenses/phosphor-font-LICENSE\\.txt$/",
+        "/packages/cc_ui/pubspec\\.yaml$/",
+        "/scripts/lib/third_party\\.sh$/"
+      ],
+      "matchStrings": [
+        "phosphor-icons/core v(?<currentValue>[0-9][\\w.]*)",
+        "Phosphor Icons \\(font\\)\\|(?<currentValue>[0-9][\\w.]*)\\|"
+      ],
+      "depNameTemplate": "phosphor-icons/core",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "description": "Manrope UI font. Replace the vendored TTF when this bumps.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_ui/fonts/Manrope-LICENSE\\.txt$/",
+        "/third_party/licenses/manrope-font-LICENSE\\.txt$/",
+        "/scripts/lib/third_party\\.sh$/"
+      ],
+      "matchStrings": [
+        "Manrope \\(variable font\\) (?<currentValue>[0-9][\\w.]*)",
+        "Manrope \\(font\\)\\|(?<currentValue>[0-9][\\w.]*)\\|"
+      ],
+      "depNameTemplate": "sharanda/manrope",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "Fira Code mono font. Replace the vendored TTF when this bumps.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_ui/fonts/FiraCode-LICENSE\\.txt$/",
+        "/third_party/licenses/firacode-font-LICENSE\\.txt$/",
+        "/scripts/lib/third_party\\.sh$/"
+      ],
+      "matchStrings": [
+        "Fira Code \\(variable font\\) (?<currentValue>[0-9][\\w.]*)",
+        "Fira Code \\(font\\)\\|(?<currentValue>[0-9][\\w.]*)\\|"
+      ],
+      "depNameTemplate": "tonsky/FiraCode",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "description": "Sarabun Thai companion font. Replace the vendored TTFs when this bumps.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_ui/fonts/scripts/Sarabun-LICENSE\\.txt$/"
+      ],
+      "matchStrings": [
+        "Sarabun Regular \\+ SemiBold (?<currentValue>[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "cadsondemak/Sarabun",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "Rubik Hebrew companion font. Replace the vendored TTF when this bumps.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_ui/fonts/scripts/Rubik-LICENSE\\.txt$/"
+      ],
+      "matchStrings": [
+        "Rubik \\(variable wght\\) (?<currentValue>[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "googlefonts/rubik",
+      "datasourceTemplate": "github-tags"
+    },
+    {
+      "description": "Vendored flutter_pty C sources (ccpty). Re-copy src/ from the pub package when this bumps.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_natives/native/pty/PROVENANCE\\.md$/",
+        "/scripts/natives/build_pty\\.sh$/",
+        "/scripts/lib/third_party\\.sh$/"
+      ],
+      "matchStrings": [
+        "flutter_pty (?<currentValue>\\d+\\.\\d+\\.\\d+)",
+        "flutter_pty \\(vendored C\\)\\|(?<currentValue>\\d+\\.\\d+\\.\\d+)\\|"
+      ],
+      "depNameTemplate": "flutter_pty",
+      "datasourceTemplate": "pub"
+    },
+    {
+      "description": "Flutter SDK commit pin (.fvmrc). Channel is main; the git ref is master.",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/\\.fvmrc$/"
+      ],
+      "matchStrings": [
+        "\"flutter\":\\s*\"(?<currentDigest>[0-9a-f]{40})\""
+      ],
+      "depNameTemplate": "flutter/flutter",
+      "packageNameTemplate": "https://github.com/flutter/flutter",
+      "datasourceTemplate": "git-refs",
+      "currentValueTemplate": "master"
+    },
+    {
+      "description": "smolvm exec rig OCI image (digest-pinned Ubuntu 24.04).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend\\.dart$/"
+      ],
+      "matchStrings": [
+        "kSmolvmExecImage\\s*=\\s*'ubuntu:(?<currentValue>[^@']+)@sha256:(?<currentDigest>[a-f0-9]{64})'"
+      ],
+      "depNameTemplate": "ubuntu",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "ubuntu"
+    },
+    {
+      "description": "smolvm browser rig OCI image (digest-pinned Debian trixie-slim).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend\\.dart$/"
+      ],
+      "matchStrings": [
+        "kSmolvmDebianBrowserImage\\s*=\\s*'debian:(?<currentValue>[^']+)'\\s*'@sha256:(?<currentDigest>[a-f0-9]{64})'"
+      ],
+      "depNameTemplate": "debian",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Dart SDK pin for the signaling-server image (ARG DART_SDK_VERSION).",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/apps/cc_signaling_server/Dockerfile$/"
+      ],
+      "matchStrings": [
+        "ARG DART_SDK_VERSION=(?<currentValue>[0-9][\\w.]*)"
+      ],
+      "depNameTemplate": "dart",
+      "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
@@ -123,9 +509,49 @@
         "tree-sitter/tree-sitter-javascript",
         "tree-sitter/tree-sitter-typescript",
         "tree-sitter/tree-sitter-php",
+        "tree-sitter/tree-sitter-python",
+        "tree-sitter/tree-sitter-rust",
+        "tree-sitter-grammars/tree-sitter-zig",
+        "tree-sitter/tree-sitter-c",
+        "tree-sitter/tree-sitter-cpp",
+        "tree-sitter/tree-sitter-go",
+        "tree-sitter/tree-sitter-java",
+        "tree-sitter/tree-sitter-ruby",
+        "tree-sitter/tree-sitter-c-sharp",
+        "alex-pinkus/tree-sitter-swift",
+        "tree-sitter-grammars/tree-sitter-kotlin",
+        "r-lib/tree-sitter-r",
+        "RubixDev/tree-sitter-asm",
+        "acristoffers/tree-sitter-matlab",
+        "briot/tree-sitter-ada",
         "UserNobody14/tree-sitter-dart"
       ],
       "groupName": "tree-sitter native libs"
+    },
+    {
+      "description": "Keep the sherpa-onnx archive pin and the sherpa-onnx-sys crate on the same version.",
+      "matchPackageNames": [
+        "k2-fsa/sherpa-onnx",
+        "sherpa-onnx-sys"
+      ],
+      "groupName": "sherpa-onnx"
+    },
+    {
+      "description": "appimagetool's `continuous` tag is rebuilt in place and is not a pin.",
+      "matchPackageNames": [
+        "AppImage/appimagetool"
+      ],
+      "allowedVersions": "/^[0-9]/"
+    },
+    {
+      "description": "WAP v2.1's tag (846fe90) is behind the pinned master commit (d0569cfa). Ignore digest-only tag syncs so Renovate does not downgrade AEC3.",
+      "matchPackageNames": [
+        "pulseaudio/webrtc-audio-processing"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "enabled": false
     }
   ]
 }

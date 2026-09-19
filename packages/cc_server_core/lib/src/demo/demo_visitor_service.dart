@@ -162,8 +162,7 @@ class DemoState {
 typedef DemoWorkspaceSeed = Future<void> Function(String workspaceId);
 
 /// Seeds the per-user, global-database lanes (the newsfeed) for one visitor.
-typedef DemoUserSeed =
-    Future<void> Function(String userId, String workspaceId);
+typedef DemoUserSeed = Future<void> Function(String userId, String workspaceId);
 
 /// The demo's front door and its reaper.
 ///
@@ -239,6 +238,7 @@ class DemoVisitorService {
   DemoState _state = DemoState();
   Timer? _reaper;
   Future<void>? _fill;
+
   /// Serializes the front door. Redemption checks per-IP state and then spans
   /// seconds of awaits (an inline seed when the pool is dry, user + newsfeed
   /// writes); concurrent requests all passed the checks and each grew the
@@ -311,9 +311,7 @@ class DemoVisitorService {
     Map<String, dynamic> body, {
     String? remoteIp,
   }) {
-    final run = _door.then(
-      (_) => _redeemLocked(body, remoteIp: remoteIp),
-    );
+    final run = _door.then((_) => _redeemLocked(body, remoteIp: remoteIp));
     // A failed redemption must release the door for the next caller while its
     // error reaches its own caller.
     _door = run.then((_) {}, onError: (_) {});
@@ -357,7 +355,7 @@ class DemoVisitorService {
     final user = User(
       id: _uuid.v4(),
       handle: handle,
-      displayName: 'Guest',
+      displayName: kDemoVisitorDisplayName,
       createdAt: now,
       // A demo visitor never walks onboarding: they are dropped straight into a
       // furnished workspace, and an unset flag would strand them on the setup
@@ -486,9 +484,7 @@ class DemoVisitorService {
             break;
           }
           final id = await _seedFreshWorkspace();
-          _state.pool.add(
-            DemoWarmWorkspace(workspaceId: id, seededAt: _now()),
-          );
+          _state.pool.add(DemoWarmWorkspace(workspaceId: id, seededAt: _now()));
           await _save();
         }
       } on Object catch (e) {
@@ -654,10 +650,9 @@ class DemoVisitorService {
   Future<void> _reapUnowned(String workspaceId) async {
     try {
       final db = _globalDb;
-      final devices =
-          await (db.select(
-            db.pairedDevicesTable,
-          )..where((t) => t.workspaceId.equals(workspaceId))).get();
+      final devices = await (db.select(
+        db.pairedDevicesTable,
+      )..where((t) => t.workspaceId.equals(workspaceId))).get();
       for (final device in devices) {
         await _globalDb.pairedDeviceDao.remove(device.id);
         await _secrets.deletePsk(device.id);
@@ -685,10 +680,9 @@ class DemoVisitorService {
   /// workspace, whose [DemoVisitor] record no longer exists to drive it.
   Future<void> _deleteUserRows(String userId) async {
     final db = _globalDb;
-    final feeds =
-        await (db.select(
-          db.rssFeedsTable,
-        )..where((t) => t.userId.equals(userId))).get();
+    final feeds = await (db.select(
+      db.rssFeedsTable,
+    )..where((t) => t.userId.equals(userId))).get();
     for (final feed in feeds) {
       await (db.delete(
         db.rssArticlesTable,
@@ -779,7 +773,10 @@ class DemoVisitorService {
       if (!dir.existsSync()) {
         return false;
       }
-      await for (final entity in dir.list(recursive: true, followLinks: false)) {
+      await for (final entity in dir.list(
+        recursive: true,
+        followLinks: false,
+      )) {
         if (entity is File) {
           total += await entity.length();
           if (total > limits.diskBudgetBytes) {

@@ -74,6 +74,20 @@ class EventPayloadMapper {
         'is_agent_message': event.isAgentMessage,
       };
     }
+    if (event is TicketCreated) {
+      return {
+        'ticket_id': event.ticketId,
+        'workspace_id': event.workspaceId,
+      };
+    }
+    if (event is TicketStatusChanged) {
+      return {
+        'ticket_id': event.ticketId,
+        'workspace_id': event.workspaceId,
+        'from': event.from,
+        'to': event.to,
+      };
+    }
     if (event is TicketCompleted) {
       return {'ticket_id': event.ticketId};
     }
@@ -146,7 +160,7 @@ class EventPayloadMapper {
   static String typeName(DomainEvent event) => event.runtimeType.toString();
 
   /// All event types that can trigger pipelines.
-  /// Used by the automation settings screen to offer choices.
+  /// Used by the node library and the add-trigger dialog to offer choices.
   static const List<String> knownEventTypes = [
     'ExternalPrDetected',
     'PullRequestPublished',
@@ -190,6 +204,12 @@ class EventPayloadMapper {
     }
     if (event is MessageReceived) {
       return event.messageId;
+    }
+    if (event is TicketCreated) {
+      return event.ticketId;
+    }
+    if (event is TicketStatusChanged) {
+      return '${event.ticketId}:${event.to}';
     }
     if (event is TicketCompleted) {
       return event.ticketId;

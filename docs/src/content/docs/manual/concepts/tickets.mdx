@@ -8,22 +8,21 @@ artifact: a title, a body, a status, an owner and a place in a tree. It is not
 the thing agents execute against — agent work lives in conversations and the
 structured output of a run lives on the run log.
 
-Tickets replaced the former "tasks" feature. `Ticket` is now the single
-unit-of-work aggregate.
-
 ## Assignment records ownership; it dispatches nothing
 
-This is the single most important thing to get right about tickets, because it
-used to work the other way.
+This is the single most important thing to get right about tickets.
 
 Setting `assignedAgentId` writes a field and publishes a `TicketAssigned`
 [domain event](/manual/concepts/domain-events/). That event is an audit and
-notification signal and a pipeline trigger. **It starts no agent run.** There
-is no ticket dispatcher in the product; nothing watches for assignment and wakes
-an agent.
+notification signal and a pipeline trigger. **Assignment to an agent starts no
+run.** There is no ticket dispatcher that watches `assignedAgentId` and wakes
+that agent.
 
-If you want an agent to work on a ticket, you ask it in a conversation, or a
-pipeline step dispatches it, or another agent delegates to it. Assigning a
+The exception is a team: when `assignedTeamId` is set, `TeamRoutingService`
+dispatches the team leader with the operating protocol and roster.
+
+If you want a specific agent to work on a ticket, you ask it in a conversation,
+or a pipeline step dispatches it, or another agent delegates to it. Assigning a
 ticket to an agent and waiting is the one thing that will never produce work.
 
 ## Mirror and overlay
@@ -54,9 +53,10 @@ MCP tools and reconcilers. An illegal transition there is logged and ignored, so
 a confused agent cannot walk a ticket backwards out of a terminal state.
 
 Every user-driven change in the UI passes `force: true` and bypasses the graph
-entirely. A human may move a ticket to any status, including reopening a
-terminal one. The graph is a guard rail for automation, not a rule about how
-work is allowed to go.
+entirely. A human may move a ticket to any status the picker lists — including
+reopening a terminal one. The picker does not offer `failed`; agents set that
+through `fail_ticket`. The graph is a guard rail for automation, not a rule
+about how work is allowed to go.
 
 `TicketWorkflowService` owns every mutation through a single chokepoint that
 loads the row, asserts it belongs to the caller's workspace and writes with an
@@ -67,11 +67,12 @@ For the full status table, transitions, field list and relation kinds, see
 
 ## Provenance: how a ticket came to exist
 
-Every ticket records `originKind`: `manual` for one a human filed, `pipelineStep`
-for one a pipeline produced, `agentDelegation` for a delegated child,
-`externalSync` for a mirrored vendor issue and `recovery` for one a reconciler
-rebuilt. That is where you look when a ticket appears that nobody remembers
-creating.
+Every ticket has an `originKind`. The enum has five values — `manual`,
+`pipelineStep`, `agentDelegation`, `externalSync`, `recovery` — but only two
+are written today: `manual` (the default on `createTicket`, including
+delegated children) and `externalSync` (the sync engine, on a vendor pull).
+`TicketWorkflowService.createTicket` does not take an origin argument, so
+`pipelineStep`, `agentDelegation` and `recovery` never land on a row.
 
 ## Guarded delegation
 
@@ -80,20 +81,19 @@ privilege could leak, so the guards live server-side at a chokepoint rather than
 in prompt instructions.
 
 `delegate_task` routes through `TicketWorkflowService.delegateGuarded`, which
-computes the child's depth and root from the parent chain and refuses two
-things: a hop that would exceed a **depth cap of 3** and a hop back to an agent
-already in the chain (**cycle detection**). A refusal is thrown as a
+computes the child's depth and root from the parent chain and then runs all
+four `DelegationGuards` checks: a hop that would exceed a **depth cap of 3**, a
+hop back to an agent already in the chain (**cycle detection**), an **autonomy
+ceiling** (the delegate's effective level in the space must not exceed the
+delegator's) and a **budget envelope** (delegation bills the delegator's
+remaining hard-stop budget and cannot mint more). Production wiring supplies
+both resolver ports. Autonomy and budget skip when `from_agent_id` is omitted
+(unlimited / no-policy budget also passes). A refusal is thrown as a
 `DelegationRefusedException` whose message reaches the delegating agent
 verbatim — a loud denial, never a silent no-op.
 
-`delegate_ticket` is the older, **unguarded** sibling: it calls `delegate`
-directly and skips both checks. Prefer `delegate_task`.
-
-:::caution[Two guards are declared but not enforced]
-`DelegationGuards` also defines an autonomy ceiling and a budget-envelope check.
-Neither is wired into the ticket chokepoint yet, so today only the depth cap and
-cycle detection are enforced.
-:::
+`delegate_ticket` is the older, **unguarded** sibling: it calls `createTicket`
+directly and skips every guard. Prefer `delegate_task`.
 
 Do not confuse the delegation depth cap (3, on `delegate_task` chains) with the
 built-in harness's subagent nesting cap (2). They are different limits on
@@ -125,34 +125,26 @@ sentinel value for "the user" and no foreign key to either table.
 
 ## External sync
 
-Control Center's ticket is primary; a vendor issue is mirrored into it. The
-current path is `TicketSyncEngine` with a `MultiVendorTicketSyncCoordinator`
-pushing local changes out on domain events. Four adapters ship: Linear, GitHub
-Issues, Jira and ClickUp. Vendor pulls write without emitting domain events, so
-a mirrored change can never loop back out.
-
-:::caution[Vendor sync has no in-app configuration]
-Nothing in the product creates a `TicketSyncConfig` row — the thin client's
-config repository refuses the write outright and no RPC op creates one. The
-engine, the adapters and the inbound webhook path are code-complete, but a
-connection row must be inserted out of band before any of it runs. Adapter
-credentials come from the server's environment, not from settings.
-:::
-
-Deleting a ticket is **local only**. No provider supports remote deletion, so a
+Control Center's ticket is primary. Deleting a ticket is **local only**, so a
 vendor-backed ticket you delete is not deleted on the tracker and may reappear
 on the next sync. Collaborators and child tickets cascade.
 
+Adapter credentials resolve from the server's credential stores (a Linear key or
+GitHub token pasted in Settings is picked up on the next request; the
+environment only seeds those stores).
+
 ## Tickets and pipelines
 
-A pipeline step can create, complete and cancel tickets and a pipeline trigger
-can fire on `TicketAssigned`, `TicketCompleted`, `TicketFailed`, or
-`TicketCancelled`. A ticket a pipeline created is identifiable by
-`originKind: pipelineStep`; there is no `pipelineRunId` column on the ticket.
+No pipeline node creates, completes or cancels tickets — the palette has no
+such step and the engine does not call `TicketWorkflowService`. A pipeline
+trigger can still fire on `TicketAssigned`, `TicketCompleted`,
+`TicketFailed`, or `TicketCancelled` (those four are the ticket events
+`EventPayloadMapper` actually maps). There is no `pipelineRunId` column on
+the ticket; pipeline coupling lives on the agent run log.
 
 ## See also
 
-- [Pipelines and automation](/manual/concepts/pipelines/): pipelines create and complete tickets
+- [Pipelines and automation](/manual/concepts/pipelines/): ticket events can trigger a pipeline
 - [Orchestration](/manual/concepts/orchestration/): where a DAG of sub-tickets comes from
 - [The agent model](/manual/concepts/agent-model/): who a ticket is assigned to
 - [Domain events](/manual/concepts/domain-events/): the ticket lifecycle events

@@ -109,8 +109,8 @@ wired, which is what a demo server is.
 
 | Op                   | Kind   | Scope     | Minimum role | Arguments     | Returns                       |
 | -------------------- | ------ | --------- | ------------ | ------------- | ----------------------------- |
-| `server.backupNow`   | mutate | Install   | —            | none          | `{ok, path}`                  |
-| `server.listBackups` | read   | Install   | —            | none          | `{backups: [...]}`            |
+| `server.backupNow`   | mutate | Install   | install **owner** | none     | `{ok, path}`                  |
+| `server.listBackups` | read   | Install   | install **owner** | none     | `{backups: [...]}`            |
 | `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
 | `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Install\* | `owner`      | `id`          | registry row marked deleted   |
@@ -121,11 +121,13 @@ membership of the named workspace itself and requires `owner`.
 
 `path` in every response is a path on the **server host**.
 
-:::note[Taking a snapshot is not owner-gated; downloading one is]
-`server.backupNow` and `server.listBackups` carry no server-admin gate — any full client
-may take a snapshot and see which ones exist, and what they get back is a list of paths,
-not bytes. `GET /backup/snapshot`, which hands over the actual archive of every
-workspace on the install, requires the install **owner**.
+:::note[A whole-install snapshot is owner-gated on both lanes]
+`server.backupNow` and `server.listBackups` require the install **owner**
+(`ServerAuthority.serverOwner`), the same gate as `GET /backup/snapshot`. A snapshot
+captures every workspace's database, so being an admin of one workspace is not enough
+to copy the others. The Settings page is still listed for every full client; the ops
+refuse if you are not the operator. Per-workspace export/import stay on workspace
+admin/owner, not the install owner.
 :::
 
 ### `server.listBackups` response

@@ -144,12 +144,12 @@ void main() {
         cliName: 't',
         capabilities: caps,
       );
-      w.logEvent(DebugEvent(content: 'launching pi'));
+      w.logEvent(DebugEvent(content: 'launching claude'));
       await w.close();
 
       final ev = (await records(w)).firstWhere((r) => r['type'] == 'event');
       expect(ev['eventType'], 'debug');
-      expect(ev['content'], 'launching pi');
+      expect(ev['content'], 'launching claude');
       expect(ev.containsKey('metadata'), isFalse);
     });
   });

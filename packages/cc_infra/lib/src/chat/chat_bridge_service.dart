@@ -484,7 +484,7 @@ class ChatBridgeService {
         userId: null,
         refusal:
             'I do not know who you are in Control Center yet. Open Settings → '
-            'Accounts → Chat bridges, press “Link my $_productName account”, '
+            'You → Profile & identity, press “Link my $_productName account”, '
             'then send me `$_command link CODE` with the code it shows.',
       );
     }
@@ -700,12 +700,12 @@ class ChatBridgeService {
     final code = rawCode.trim();
     if (code.isEmpty) {
       return 'Send `$_command link CODE`, using the code from Settings → '
-          'Accounts → Chat bridges.';
+          'You → Profile & identity.';
     }
     final claim = _linkCodes.consume(workspaceId, code, provider: provider);
     if (claim == null) {
       return 'That code is not valid (or has expired). Generate a fresh one in '
-          'Settings → Accounts → Chat bridges.';
+          'Settings → You → Profile & identity.';
     }
     final member = await _members.getMember(workspaceId, claim.userId);
     if (member == null) {

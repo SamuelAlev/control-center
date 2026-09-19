@@ -107,7 +107,7 @@ class CalendarOverflowFlyout extends StatelessWidget {
   final DateTime date;
 
   /// Every event of [date] (shown and hidden alike).
-  final List<k.CalendarEvent> events;
+  final List<k.KalenderEvent> events;
 
   /// Row height for each event tile (matches the body's tile height).
   final double tileHeight;
@@ -170,7 +170,7 @@ class CalendarOverflowFlyout extends StatelessWidget {
     final card = CcCardTokens.panel(t);
     final l10n = AppLocalizations.of(context);
     final locale = Localizations.localeOf(context).toString();
-    final range = k.InternalDateTime(date.year, date.month, date.day).dayRange;
+    final range = k.FloatingDateTime(date.year, date.month, date.day).dayRange;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -248,6 +248,7 @@ class CalendarOverflowFlyout extends StatelessWidget {
                                 child: SizedBox(
                                   height: tileHeight,
                                   child: overlayTileBuilder(
+                                    context,
                                     event,
                                     range,
                                     portalController.hide,

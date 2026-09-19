@@ -33,21 +33,21 @@ export const faqs: FaqItem[] = [
     ],
   },
   {
-    question: 'Which AI coding agents does Control Center support?',
+    question: 'What do Control Center agents run on?',
     answer:
-      'Eight runners: a built-in pure-Dart agent runtime that needs no external CLI, plus adapters for Claude Code, Codex, Pi, OpenCode, Gemini CLI, Goose and Cursor. Any OpenAI- or Anthropic-compatible endpoint also joins as a custom provider. You can mix runners in the same fleet and the same pipeline.',
+      'Two runners. The built-in pure-Dart runtime needs no external CLI and talks to Anthropic, OpenAI, Codex, Cursor, Kimi Code and any OpenAI- or Anthropic-compatible endpoint. The Claude Code adapter runs your existing Claude Code plan. Mix them in the same fleet and the same pipeline.',
     links: [{ label: 'Agent runners and adapters', href: '/manual/guides/adapters/' }],
   },
   {
     question: 'Does my code or data leave my machine?',
     answer:
-      'No, unless you decide to run it that way. Control Center is local-first: state lives in SQLite files you own, meeting transcription and speaker diarization run on-device, and semantic-search embeddings are computed by an on-device model. your code host and Linear are called only from your own server, over credentials stored in your OS keychain.',
+      'No, unless you decide to run it that way. Control Center is local-first: state lives in SQLite files you own, meeting transcription and speaker diarization run on-device, and semantic-search embeddings are computed by an on-device model. Your code host and Linear are called only from your own server, over credentials stored on that server and attached to your user — never in a client keychain.',
     links: [{ label: 'Security model', href: '/manual/concepts/sandbox-security/' }],
   },
   {
     question: 'Can an agent test in a real browser or run risky commands safely?',
     answer:
-      'Yes — that is what rigs are for. A rig is a disposable VM the agent drives in real time: a headless browser, a Linux desktop, an Android device, or the machine behind an enclosed terminal. It has its own kernel, a throwaway disk and a network that reaches only the hosts you allow; you watch it live and can take the controls at any moment. Dev servers started inside are forwarded to localhost, to the agent’s browser and to dev domains like https://myapp.test — and nothing inside a rig ever touches your machine.',
+      'Yes — that is what rigs are for. A rig is a disposable machine the agent drives in real time: a headless browser (Chromium, Firefox or WebKit), a Linux desktop, an Android emulator, an iOS Simulator, or the machine behind an enclosed terminal. Enclosed VMs have their own kernel, a throwaway disk and a network that reaches only the hosts you allow; Android and iOS use disposable emulator devices with the host’s network. You watch it live and can take the controls at any moment. Dev servers started inside are forwarded to localhost, to the agent’s browser and to dev domains like https://myapp.test.',
     links: [
       { label: 'Give an agent a machine', href: '/manual/guides/use-rigs/' },
       { label: 'How enclosures work', href: '/manual/concepts/rigs/' },

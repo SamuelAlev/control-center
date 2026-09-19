@@ -11,6 +11,7 @@ String triggerEventLabel(AppLocalizations l10n, String eventType) {
   return switch (eventType) {
     PipelineTrigger.manualEventType => l10n.triggerEventManual,
     PipelineTrigger.scheduleEventType => l10n.triggerEventSchedule,
+    PipelineTrigger.webhookEventType => l10n.triggerEventWebhook,
     'PullRequestStatusChanged' => l10n.triggerEventPrStatusChanged,
     'ExternalPrDetected' => l10n.triggerEventExternalPr,
     'PullRequestPublished' => l10n.triggerEventPrPublished,
@@ -18,11 +19,46 @@ String triggerEventLabel(AppLocalizations l10n, String eventType) {
     'RepoAdded' => l10n.triggerEventRepoAdded,
     IndexCodeTemplate.watchTriggerEventType => l10n.triggerEventCodeGraphWatch,
     'MessageReceived' => l10n.triggerEventMessageReceived,
+    'TicketCreated' => l10n.triggerEventTicketCreated,
+    'TicketStatusChanged' => l10n.triggerEventTicketStatusChanged,
     'TicketCompleted' => l10n.triggerEventTicketCompleted,
     'TicketFailed' => l10n.triggerEventTicketFailed,
     'TicketCancelled' => l10n.triggerEventTicketCancelled,
     'BudgetThresholdCrossed' => l10n.triggerEventBudgetCrossed,
     'TicketAssigned' => l10n.triggerEventTicketAssigned,
+    'MeetingRecordingStopped' => l10n.triggerEventMeetingRecordingStopped,
+    'SkillUpdated' => l10n.triggerEventSkillUpdated,
+    'SpaceDeleted' => l10n.triggerEventSpaceDeleted,
+    _ => eventType,
+  };
+}
+
+/// One-line help under a trigger title in the node library and inspector.
+///
+/// Falls back to the raw type so an event added to the mapper without a string
+/// still has something to search and render, rather than a blank card.
+String triggerEventHelp(AppLocalizations l10n, String eventType) {
+  return switch (eventType) {
+    PipelineTrigger.manualEventType => l10n.triggerManualHelp,
+    PipelineTrigger.scheduleEventType => l10n.triggerKindSchedule,
+    PipelineTrigger.webhookEventType => l10n.triggerWebhookHelp,
+    'PullRequestStatusChanged' => l10n.triggerPrStatusChangedHelp,
+    'ExternalPrDetected' => l10n.triggerExternalPrHelp,
+    'PullRequestPublished' => l10n.triggerPrPublishedHelp,
+    'PrMerged' => l10n.triggerPrMergedHelp,
+    'RepoAdded' => l10n.triggerRepoAddedHelp,
+    IndexCodeTemplate.watchTriggerEventType => l10n.triggerCodeGraphWatchHelp,
+    'MessageReceived' => l10n.triggerMessageReceivedHelp,
+    'TicketCreated' => l10n.triggerTicketCreatedHelp,
+    'TicketStatusChanged' => l10n.triggerTicketStatusChangedHelp,
+    'TicketCompleted' => l10n.triggerTicketCompletedHelp,
+    'TicketFailed' => l10n.triggerTicketFailedHelp,
+    'TicketCancelled' => l10n.triggerTicketCancelledHelp,
+    'BudgetThresholdCrossed' => l10n.triggerBudgetCrossedHelp,
+    'TicketAssigned' => l10n.triggerTicketAssignedHelp,
+    'MeetingRecordingStopped' => l10n.triggerMeetingRecordingStoppedHelp,
+    'SkillUpdated' => l10n.triggerSkillUpdatedHelp,
+    'SpaceDeleted' => l10n.triggerSpaceDeletedHelp,
     _ => eventType,
   };
 }

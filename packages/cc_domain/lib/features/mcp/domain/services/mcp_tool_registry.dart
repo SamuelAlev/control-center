@@ -20,19 +20,19 @@ abstract interface class ToolCatalog {
 /// Every registered tool is advertised in `tools/list`. An earlier revision
 /// gated the list to a curated "essential" subset above a discovery threshold
 /// and relied on a hidden-but-callable contract (`lookup` resolved unlisted
-/// names). That contract is unenforceable against real MCP clients: pi's
-/// mcp-adapter and Claude Code both validate tool names against their cached
-/// `tools/list` *client-side* and refuse anything unlisted without ever
-/// contacting the server — which made every gated tool (all writes included)
-/// structurally unreachable. The list is therefore ungated; context savings
-/// for CC's own harness belong in the harness layer, where activation is real.
+/// names). That contract is unenforceable against real MCP clients: Claude
+/// Code validates tool names against its cached `tools/list` *client-side*
+/// and refuses anything unlisted without ever contacting the server — which
+/// made every gated tool (all writes included) structurally unreachable. The
+/// list is therefore ungated; context savings for CC's own harness belong in
+/// the harness layer, where activation is real.
 ///
 /// Transports keep clients fresh through two levers: [onToolsChanged] fires on
 /// every mutation (the MCP HTTP server broadcasts
 /// `notifications/tools/list_changed` from it) and [toolsetRevision] is a
 /// stable fingerprint of the catalogue that dispatch embeds in each agent's
 /// MCP client config, so a toolset change busts config-hash-keyed client
-/// caches (pi persists its tool list for 7 days keyed by config hash).
+/// caches on server upgrades.
 class McpToolRegistry implements ToolCatalog {
   /// Creates a registry over the [tools] base set.
   McpToolRegistry(List<McpTool> tools)
@@ -123,7 +123,7 @@ class McpToolRegistry implements ToolCatalog {
   /// Stable fingerprint of the current catalogue (names + schema keys),
   /// as a hex string. Changes exactly when the advertised toolset changes, so
   /// embedding it in a client config invalidates config-hash-keyed tool-list
-  /// caches (pi's mcp-adapter) on server upgrades.
+  /// caches on server upgrades.
   String get toolsetRevision {
     final entries = _allTools().values.map((t) {
       final props = t.inputSchema['properties'];

@@ -5594,7 +5594,9 @@ Future<CcServer> runCcServer({
     // The caller's merged PR history, asked of each repo's own forge under
     // the CALLER's per-forge viewer identity. Fails soft per repo so one
     // inaccessible repo — or one unconnected forge — never sinks the rest.
-    fetchMergedHistory: mergedHistory.mergedByViewer,
+    fetchMergedHistory: demo != null
+        ? demo.mergedByViewer
+        : mergedHistory.mergedByViewer,
     // GitHub org members across the workspace's repo owners (deduped by login).
     fetchOrgMembers: ghToken.isEmpty
         ? null

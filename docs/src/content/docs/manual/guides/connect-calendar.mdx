@@ -24,15 +24,9 @@ specifically.
 The account is connected **to the active workspace only**. Switch workspaces and
 you'll see that workspace's calendars instead.
 
-:::caution[RSVP does not work for accounts connected this way]
-Control Center requests `calendar.readonly` plus your email, so it reads events
-and nothing more. The event panel shows a **Going?** control with **Yes** / **No**
-/ **Maybe**, but for an account connected through the built-in device-code flow
-Google rejects the write with a 403 and the app reports "Couldn't update your
-response". RSVP needs the `calendar.events` write scope, which this flow does not
-request. To make it work you must bring your own Google client and add that scope
-— see below.
-:::
+The connect flow requests `calendar.readonly` plus your email — the same scopes
+for the built-in app and for a client you paste in. Control Center reads events;
+it does not create, edit, delete, or respond to invitations on Google.
 
 ## How syncing works
 
@@ -75,27 +69,27 @@ stored tokens on the server.
 A server with no GUI attached connects the same account from its own terminal:
 
 ```bash
-cc_server calendar connect --data-dir <dir> --workspace <workspace-id> \
-  --google-client-id <id> --google-client-secret <secret>
+GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
+  cc_server calendar connect --data-dir <dir> --workspace <workspace-id>
 ```
 
 It prints a code and a URL, waits for approval, then stores the tokens and syncs
 on the next sweep.
 
 A build from source ships **no** Google client, so the id and secret are
-required — pass them as flags, or set `GOOGLE_OAUTH_CLIENT_ID` and
-`GOOGLE_OAUTH_CLIENT_SECRET`. Without them the command exits with a
-missing-client error.
+required — set `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
+There is no `--google-client-id` flag (unknown flags are ignored). Without the
+environment pair the command exits with a missing-client error.
 
 ## Bring your own Google client (forks and self-hosting)
 
 Released builds ship with a Google client, so most people never touch this. Bring
-your own if you build from source, run your own server, want the consent screen
-to name your own project, or need RSVP to work.
+your own if you build from source, run your own server, or want the consent screen
+to name your own project.
 
-1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. Add `https://www.googleapis.com/auth/calendar.events` as well if you want RSVP writes to succeed. While the app is unverified, add yourself as a **test user**.
+1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**. Adding `calendar.events` on the consent screen does not enable RSVP — Control Center never requests that scope.
 2. Create an **OAuth client ID** of application type **TVs and limited input devices** and copy both the client id and the client secret.
-3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET` (equivalently `--google-client-id` / `--google-client-secret`).
+3. Supply them either per-connect (choose **Use my own Google Cloud client** in the dialog) or server-wide with `GOOGLE_OAUTH_CLIENT_ID` and `GOOGLE_OAUTH_CLIENT_SECRET`.
 
 A server-wide pair replaces the built-in one everywhere, including behind the
 "use Control Center's Google app" option — so on your own server, that option is
@@ -114,7 +108,7 @@ copy of the pair, so rotating it is a matter of restarting with a new value.
 | `invalid_client` from Google                        | The client is not a **TVs and limited input devices** client, or the id and secret are from different clients                                         |
 | Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or `calendar.readonly` was not granted                                                     |
 | The code expires before you approve it              | Device codes are short-lived. Start the connect again for a fresh one                                                                                 |
-| "Couldn't update your response" on an RSVP          | The account was connected without the `calendar.events` scope — expected for the built-in flow                                                        |
+| "Couldn't update your response" on an RSVP          | Expected: the connect flow never requests `calendar.events`                                                                                                       |
 | Sync stops with a refresh warning in the server log | The account was connected with a client that is no longer configured. Reconnect the account, or restore that client id and secret                     |
 
 ## Related guides

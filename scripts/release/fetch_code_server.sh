@@ -5,9 +5,9 @@
 # build/code-server/<platform>/ — the managed install dir CodeServerService
 # resolves before PATH.
 #
-# Same pin-a-git-ref-in-CI convention cc_natives uses: the version is pinned in
-# packages/cc_infra/lib/src/ide/code_server_service.dart (codeServerVersion)
-# and here. Keep the two in sync (Renovate-tracked). Bump both together.
+# The version is pinned in packages/cc_infra/lib/src/ide/code_server_service.dart
+# (codeServerVersion) and grepped here. Renovate tracks that const; this script
+# follows it.
 #
 # code-server ships NO native Windows host, so this script is a no-op (with a
 # warning) on Windows — the Windows-local story is WSL/remote-only (see the

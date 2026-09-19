@@ -29,6 +29,7 @@ class RefreshControl extends StatefulWidget {
     this.isLoading = false,
     this.tooltip,
     this.variant = CcButtonVariant.ghost,
+    this.size = CcButtonSize.md,
   });
 
   /// Invoked when the refresh button is pressed. When null, no button renders.
@@ -49,6 +50,10 @@ class RefreshControl extends StatefulWidget {
   /// Button variant, to match the surrounding toolbar (e.g. ghost).
   /// Defaults to [CcButtonVariant.ghost].
   final CcButtonVariant variant;
+
+  /// Icon-button box size. Defaults to [CcButtonSize.md] (40px) so it lines
+  /// up with labeled toolbar buttons; dense flyout headers pass [CcButtonSize.sm].
+  final CcButtonSize size;
 
   @override
   State<RefreshControl> createState() => _RefreshControlState();
@@ -101,6 +106,7 @@ class _RefreshControlState extends State<RefreshControl> {
     final button = CcIconButton(
       icon: AppIcons.refreshCw,
       variant: widget.variant,
+      size: widget.size,
       loading: widget.isLoading,
       // The freshness rides along in the accessible name — the hover card
       // itself is never read by assistive tech.

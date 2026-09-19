@@ -206,7 +206,7 @@ export function createMcpHandler(getPages: () => Promise<McpPage[]>, server: Mcp
           protocolVersion: PROTOCOL_VERSION,
           capabilities: CAPABILITIES,
           serverInfo: { name: server.name, version: server.version },
-          instructions: `Read-only MCP server over usectrl.dev — the Control Center product site and manual. Tools: list_pages, get_page_markdown, search_pages. The product's own MCP server (103 tools over your repos, tickets, pipelines and agents) runs inside the self-hosted cc_server; see ${server.origin}/manual/guides/mcp-server/.`,
+          instructions: `Read-only MCP server over usectrl.dev — the Control Center product site and manual. Tools: list_pages, get_page_markdown, search_pages. The product's own MCP server (110 tools over your repos, tickets, pipelines and agents) runs inside the self-hosted cc_server; see ${server.origin}/manual/guides/mcp-server/.`,
         }),
       };
     }

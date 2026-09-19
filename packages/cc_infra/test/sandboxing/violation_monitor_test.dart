@@ -27,7 +27,7 @@ void main() {
     test('returns null when there is no deny(ies) marker', () {
       expect(
         SandboxViolationMonitor.parseLogLine(
-          logLine('Sandbox: pi(1) something-else'),
+          logLine('Sandbox: claude(1) something-else'),
         ),
         isNull,
       );
@@ -35,17 +35,17 @@ void main() {
 
     test('returns null when the deny marker has no trailing action', () {
       expect(
-        SandboxViolationMonitor.parseLogLine(logLine('Sandbox: pi(1) deny(1)')),
+        SandboxViolationMonitor.parseLogLine(logLine('Sandbox: claude(1) deny(1)')),
         isNull,
       );
     });
 
     test('parses a file-read denial with process name', () {
       final parsed = SandboxViolationMonitor.parseLogLine(
-        logLine('Sandbox: pi(123) deny(1) file-read-data /Library/foo'),
+        logLine('Sandbox: claude(123) deny(1) file-read-data /Library/foo'),
       );
       expect(parsed, isNotNull);
-      expect(parsed!.processName, 'pi');
+      expect(parsed!.processName, 'claude');
       expect(parsed.violation.action, 'file-read-data');
       expect(parsed.violation.target, '/Library/foo');
       expect(parsed.violation.raw, isNotNull);
@@ -109,14 +109,14 @@ void main() {
 
   group('isNoise', () {
     ParsedLine parsed({
-      String? processName = 'pi',
+      String? processName = 'claude',
       required String action,
       required String target,
     }) {
       return ParsedLine(
         processName: processName,
         violation: SandboxViolationMonitor.parseLogLine(
-          logLine('Sandbox: pi(1) deny(1) $action $target'),
+          logLine('Sandbox: claude(1) deny(1) $action $target'),
         )!.violation,
       );
     }
@@ -221,7 +221,7 @@ void main() {
 
   group('visibleForTesting constants', () {
     test('agentProcesses covers common agent binaries', () {
-      expect(SandboxViolationMonitor.agentProcesses, contains('pi'));
+      expect(SandboxViolationMonitor.agentProcesses, contains('claude'));
       expect(SandboxViolationMonitor.agentProcesses, contains('node'));
       expect(SandboxViolationMonitor.agentProcesses, contains('git'));
       expect(SandboxViolationMonitor.agentProcesses, contains('python3'));

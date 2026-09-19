@@ -23,7 +23,7 @@ name: Natives
 # case the release simply falls back to a full source build — the cache is an
 # accelerator, never a correctness dependency.
 #
-# Runners MUST match release.yml's build jobs (macos-14, not macos-latest):
+# Runners MUST match release.yml's build jobs (macos-26, not macos-latest):
 # the key includes runner.os/arch and an artifact built on a different
 # image family is not the artifact the release would have built.
 
@@ -81,9 +81,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Stay on 24.04, not 26.04: same glibc ABI contract as
+          # release.yml's build-linux (debian:trixie-slim).
           - runner: ubuntu-24.04
             os: linux
-          - runner: macos-14
+          - runner: macos-26
             os: macos
           - runner: windows-latest
             os: windows
@@ -117,7 +119,7 @@ jobs:
       #                                                   release job)
       - name: Harden runner
         if: runner.os == 'Linux'
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -141,12 +143,12 @@ jobs:
         # `block` is Linux-only in harden-runner; audit is the ceiling on
         # macOS and Windows.
         if: runner.os != 'Linux'
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 

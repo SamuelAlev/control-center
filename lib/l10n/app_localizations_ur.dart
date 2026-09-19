@@ -6211,6 +6211,43 @@ class AppLocalizationsUr extends AppLocalizations {
   String get editorEmptyCanvas => 'شروع کرنے کے لیے لائبریری سے نوڈ گھسیٹیں۔';
 
   @override
+  String get pipelineWhenThisHappens => 'جب یہ ہوتا ہے';
+
+  @override
+  String get pipelineDoThis => 'یہ کریں';
+
+  @override
+  String get pipelineAddStep => 'مرحلہ شامل کریں';
+
+  @override
+  String get pipelineTidyUp => 'لے آؤٹ سنواریں';
+
+  @override
+  String get pipelineEditorHint =>
+      'مرحلے گھسیٹ کر ترتیب دیں · ہینڈل گھسیٹ کر جوڑیں';
+
+  @override
+  String get pipelineRemoveConnection => 'رابطہ ہٹائیں';
+
+  @override
+  String get pipelineDragToConnect => 'جوڑنے کے لیے گھسیٹیں';
+
+  @override
+  String get pipelineNewDefaultName => 'نئی پائپ لائن';
+
+  @override
+  String get nodeCategoryTriggers => 'ٹرگرز';
+
+  @override
+  String get triggerEventWebhook => 'ویب ہک';
+
+  @override
+  String get pipelineAddTrigger => 'ٹرگر شامل کریں';
+
+  @override
+  String get pipelineOnEvent => 'ایونٹ پر';
+
+  @override
   String get nodeConfigTitle => 'نوڈ کنفیگ';
 
   @override
@@ -6456,6 +6493,9 @@ class AppLocalizationsUr extends AppLocalizations {
       'دستخط شدہ ویب ہک URL بنتا ہے۔ بیرونی سسٹمز اس پائپ لائن شروع کرنے کے لیے اس پر POST کرتے ہیں۔';
 
   @override
+  String get triggerWebhookPathLabel => 'ویب ہُک کا راستہ';
+
+  @override
   String get triggerEventFieldLabel => 'ایونٹ';
 
   @override
@@ -6582,6 +6622,84 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'ٹکٹ تفویض ہوا';
+
+  @override
+  String get triggerEventTicketCreated => 'ٹکٹ بن گیا';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'ٹکٹ کی حیثیت بدل گئی';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'میٹنگ ریکارڈنگ رک گئی';
+
+  @override
+  String get triggerEventSkillUpdated => 'مہارت اپ ڈیٹ ہوئی';
+
+  @override
+  String get triggerEventSpaceDeleted => 'اسپیس حذف ہو گئی';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'کوڈ ہوسٹ پر کھلی پل ریکویسٹ، Control Center سے نہیں۔';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Control Center یا کسی ایجنٹ کی کھلی پل ریکویسٹ۔';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'ضم، بند، کھلی، دوبارہ کھلی یا منظور۔ انسپکٹر میں حیثیت سے فلٹر کریں۔';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'صرف جب پل ریکویسٹ ضم ہو، بند یا دوبارہ کھلی ہونے پر نہیں۔';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'اس ورک اسپیس سے ایک ریپوزٹری منسلک ہوتی ہے۔';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'منسلک ریپوزٹری کی فائل ڈسک پر بدل جاتی ہے۔';
+
+  @override
+  String get triggerMessageReceivedHelp => 'ایک اسپیس میں نیا پیغام آتا ہے۔';
+
+  @override
+  String get triggerTicketCreatedHelp => 'اس ورک اسپیس میں ایک ٹکٹ بنتی ہے۔';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'ٹکٹ حیثیتوں کے درمیان منتقل ہوتی ہے۔';
+
+  @override
+  String get triggerTicketCompletedHelp => 'ٹکٹ کامیابی سے مکمل ہوتی ہے۔';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'ایجنٹ رن ناکام ہوا اور ٹکٹ ناکام نشان زد ہوتی ہے۔';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'ٹکٹ منسوخ ہوتی ہے اور جاری نہیں رہے گی۔';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'ورک اسپیس یا ایجنٹ کی خرچ حد پار ہوتی ہے۔';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'ٹکٹ کسی شخص، ایجنٹ یا ٹیم کو سونپی جاتی ہے۔';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'میٹنگ ریکارڈنگ ختم ہوتی ہے۔';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'مہارت نصب یا تازہ ہوتی ہے۔';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'گفتگو کی اسپیس حذف ہوتی ہے۔';
 
   @override
   String get navTickets => 'ٹکٹس';

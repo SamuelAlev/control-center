@@ -38,6 +38,7 @@ class RpcPipelineTemplateRepository implements PipelineTemplateRepository {
         inputs: d.inputs.map(PipelineInput.fromJson).toList(),
         isBuiltIn: d.isBuiltIn,
         isEnabled: d.isEnabled,
+        maxParallelRuns: d.maxParallelRuns,
         version: d.version,
       );
 
@@ -76,6 +77,7 @@ class RpcPipelineTemplateRepository implements PipelineTemplateRepository {
         inputs: d.inputs.map((i) => i.toJson()).toList(),
         isBuiltIn: d.isBuiltIn,
         isEnabled: d.isEnabled,
+        maxParallelRuns: d.maxParallelRuns,
         version: d.version,
       );
 

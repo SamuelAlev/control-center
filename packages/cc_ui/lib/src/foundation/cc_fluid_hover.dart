@@ -5,6 +5,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+// RTL carve-out: the hover highlight is placed in canvas coordinates from
+// pointer geometry, not reading direction.
+
 /// The geometry used to choose the nearest item in a [CcFluidHover] group.
 enum CcFluidHoverAxis {
   /// Vertical lists such as menus and sidebars.

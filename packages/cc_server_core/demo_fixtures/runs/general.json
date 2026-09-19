@@ -13,18 +13,18 @@
     {
       "kind": "tool",
       "tool": "list_dir",
-      "args": { "path": "lib/" },
-      "result": "closing/\ndocuments/\nescrow/\nlistings/\noffers/\nreports/\ntitle/\nui/\nmain.dart"
+      "args": { "path": "." },
+      "result": "evalkit/\nretriever/\nfeatures/\nfinetune/\ntests/\nREADME.md"
     },
     {
       "kind": "tool",
       "tool": "read",
       "args": { "path": "README.md", "limit": 12 },
-      "result": "# Parced\n\nParced is a real-estate closing platform: one file per property, from\naccepted offer to recorded deed. A Dart backend and a Flutter client\nshare one domain model — escrow timelines, contingencies and title are\nthe interesting part; everything else is listings and paperwork around\nit.\n\n## Layout\n- `lib/escrow/` — timelines and contingency deadlines (start here)\n- `lib/title/`  — exceptions and county records\n- `lib/offers/` — offers and counter-offers"
+      "result": "# Helix\n\nHelix is an applied LLM / data-science lab: evaluation harnesses,\nretrieval pipelines, a feature store and fine-tuning. Four repos share\none domain model — eval budgets, hybrid retrieval and feature lineage\nare the interesting part.\n\n## Repos\n- `helix/evalkit`   — eval harness, token budgets, graders (start here)\n- `helix/retriever` — hybrid BM25 + embedding search\n- `helix/features`  — online feature store and lineage\n- `helix/finetune`  — LoRA / QLoRA adapter training"
     },
     {
       "kind": "say",
-      "text": "This is **Parced**, a real-estate closing platform — one file per property, from accepted offer to recorded deed. The interesting part is `lib/escrow/` — the timeline and contingency model shared by the backend and the Flutter client; everything around it is listings, title and paperwork.\n\nA few things I can help with right now:\n\n- **Review a pull request** — there are three open on `parced/closing`, and #412 has a blocking comment waiting.\n- **Triage a ticket** — PD-118 has two brokerage reports attached to it.\n- **Fix a failing test** — the escrow suite has one flake at a business-day boundary.\n- **Plan a feature** — scheduled closing exports is specced but not broken down.\n\nTell me which, or just describe what you want and I'll pick up from there."
+      "text": "This is **Helix**, an applied LLM lab — eval harnesses, retrieval, a feature store and fine-tuning. The interesting part is `evalkit/` — the token-budget and grader model shared by the run card and the nightly suite.\n\nA few things I can help with right now:\n\n- **Review a pull request** — there are open PRs across four repos, and #412 on `helix/evalkit` has a blocking comment waiting.\n- **Triage a ticket** — HX-118 has two eval suites reporting hangs at 99%.\n- **Fix a failing test** — the budget suite has one flake at a UTC-day boundary.\n- **Plan a feature** — scheduled eval-score exports is specced but not broken down.\n\nTell me which, or just describe what you want and I'll pick up from there."
     },
     {
       "kind": "usage",

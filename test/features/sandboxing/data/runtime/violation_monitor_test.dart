@@ -60,7 +60,7 @@ void main() {
 
     test('parses mach-lookup actions', () {
       const line =
-          '{"eventMessage":"Sandbox: pi(7777) deny(1) mach-lookup com.apple.CoreDisplay.Notification"}';
+          '{"eventMessage":"Sandbox: claude(7777) deny(1) mach-lookup com.apple.CoreDisplay.Notification"}';
       final result = SandboxViolationMonitor.parseLogLine(line);
       expect(result, isNotNull);
       expect(result!.violation.action, 'mach-lookup');
@@ -260,7 +260,7 @@ void main() {
 
       test('file-read on /usr/lib/ → noise', () {
         final p = makeParsed(
-          processName: 'pi',
+          processName: 'claude',
           action: 'file-read-data',
           target: '/usr/lib/libSystem.B.dylib',
         );
@@ -269,7 +269,7 @@ void main() {
 
       test('file-read on /usr/share/ → noise', () {
         final p = makeParsed(
-          processName: 'pi',
+          processName: 'claude',
           action: 'file-read-data',
           target: '/usr/share/zoneinfo/UTC',
         );
@@ -571,7 +571,7 @@ void main() {
 
     test('contains sandbox-specific processes', () {
       const procs = SandboxViolationMonitor.agentProcesses;
-      expect(procs, contains('pi'));
+      expect(procs, contains('claude'));
       expect(procs, contains('sandbox-exec'));
     });
 

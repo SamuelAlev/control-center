@@ -38,7 +38,7 @@ Behind that, the server publishes a `WorkspaceCreated` event and seeds the works
 
 Every workspace you create gets all of this, not just the first one.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring; select one and its detail header reads "No runs yet".
+Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
 
 ## Step 2: Register a repository
 
@@ -51,11 +51,11 @@ Control Center reads each checkout's `origin` remote, resolves owner and repo an
 
 Registering the same checkout in another workspace later creates a second, independent repo row with its own id. Across workspaces a checkout is identified by its filesystem path, never by id.
 
-Confirm it: the repo appears in the list with its GitHub `owner/repo` and current branch.
+Confirm it: the repo appears in the list with its `owner/repo` and current branch.
 
 ## Step 3: Make one agent runnable
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto CEO agents only and only once, so a workspace you create afterwards starts with all five unset. Set one now.
+The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
 
 1. Open **Settings → Workspace → Agents**
 2. Select `engineer` in the roster

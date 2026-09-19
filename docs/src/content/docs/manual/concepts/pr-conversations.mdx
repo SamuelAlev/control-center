@@ -8,7 +8,8 @@ conversations make it a surface on a Control Center workspace, the same way a
 [chat bridge](/manual/concepts/chat-bridges/) makes Slack one: @mention the
 server's GitHub App bot on a PR, reply inside its review threads, or add the
 `ai-review` label, and the work happens in the PR's review space — under the
-same membership, attribution and guardrails as anything typed in the app. The
+same attribution and guardrails as anything typed in the app. A comment is
+also gated on membership; the label is not, because it has no author. The
 bot's answers come back on GitHub, in the lane the question was asked in.
 
 Three decisions shape the feature, and each is the same decision the chat
@@ -19,11 +20,12 @@ side is attributed to**.
 ## Polling is the transport
 
 GitHub's only push channel for an app is a webhook, and a webhook needs an
-inbound URL — the one thing this server deliberately never requires. So
+inbound URL — the one thing this surface deliberately never requires. So
 discovery is a sweep: every minute or so, one aliased search per app
-installation asks GitHub for the open PRs that mention the bot or carry the
-review label, PRs that already have a review space get their comment threads
-read, and everything is diffed by comment id against what was seen last sweep.
+installation asks GitHub for PRs that mention the bot (or its short slug) and
+for open PRs that carry the review label, PRs that already have a review space
+get their comment threads read, and everything is diffed by comment id against
+what was seen last sweep.
 
 The design consequences are worth naming:
 
@@ -56,12 +58,20 @@ rebuilt on a TTL because people sign in and get invited while the server runs.
 Failing closed looks like a ladder, and every rung answers in the thread it
 refused in:
 
-- **An unlinked login** is told how to link
-- **A linked non-member** is told membership is the boundary
-- **A read-only member** is told their role cannot start work
+- **An unknown login** — not linked, or linked by someone who is not a member
+  of this workspace — is told to sign in and make sure they belong
+- **A read-only member** (`viewer` or `guest`) is told their role cannot start
+  work
 
-None of them proceed. A comment is never attributed to somebody who did not
-send it, and a stranger's words never enter a workspace they cannot see.
+The two unknown-login cases share one reply: the reverse index only returns a
+member of _this_ workspace, so an unlinked account and a linked non-member are
+the same miss. None of them proceed. A comment is never attributed to somebody
+who did not send it, and a stranger's words never enter a workspace they cannot
+see.
+
+The `ai-review` label has no author to resolve, so it does not climb this
+ladder. Adding it starts the review in the workspace that already links the
+repository.
 
 ## Two identities, on purpose
 
@@ -74,9 +84,10 @@ is the feature:
   webhooks and polling off human credentials.
 - **In the space, the question is yours.** The message is attributed to the
   member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, their stored credential backs the run, and the
-  space's autonomy dial and action guardrails apply exactly as they do to a
-  message typed in the app.
+  commits co-author them, and the space's autonomy dial and action guardrails
+  apply exactly as they do to a message typed in the app. Forge writes from
+  the run still go out as the app — the same rule as the bullet above — not
+  on the member's personal token.
 
 Publishing review findings back to GitHub remains a person's decision, made in
 Control Center. A mention can _start_ a review; only a human publishes one.
@@ -102,8 +113,9 @@ mention of themselves. Distinctive app names make the collision hypothetical.
   is a separate, human action
 - **No fuzzy identity.** The author resolves to exactly one member or is
   refused — there is no best-guess attribution
-- **No inbound network.** No webhook endpoint exists to secure, because no
-  webhook endpoint exists
+- **No GitHub App webhook.** This surface never registers one, so there is no
+  inbound URL to expose for PR comments. Other product webhooks (pipelines,
+  ticket sync) are a separate, optional setup.
 
 ## See also
 

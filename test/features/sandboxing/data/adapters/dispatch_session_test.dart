@@ -248,8 +248,8 @@ class ControllableSandboxPort extends FakeSandboxPort {
 // ---------------------------------------------------------------------------
 
 /// Stub binary resolver: lets `run()` proceed past the host binary probe
-/// without the adapter CLI (e.g. `pi`) being installed. `pi` is present on the
-/// developer's machine but not on the CI Linux runner, so a real
+/// without the adapter CLI being installed. `claude` is present on the
+/// developer's machine but not on every CI Linux runner, so a real
 /// `resolveBinaryPath` probe would return null there and bail the dispatch
 /// before it reaches `onResolveHandle`/`exec`.
 Future<String?> _fakeResolveBinary(String binary) async => '/usr/bin/$binary';
@@ -1691,9 +1691,6 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(sandbox.lastEnv, isNotNull);
-      // Built-in vars injected by dispatch session
-      expect(sandbox.lastEnv!['CC_DISABLE_PROJECT_CONFIG'], 'true');
-      expect(sandbox.lastEnv!['OPENCODE_DISABLE_PROJECT_CONFIG'], 'true');
       // Caller env passed through
       expect(sandbox.lastEnv!['HOME'], '/tmp');
       // Credentials injected
@@ -1760,7 +1757,7 @@ void main() {
 
     test('non-zero exit after stderr does not repeat as an error', () async {
       // A CLI that explains itself ("Error: Unknown option: --mcp-config") and
-      // then exits 1 must not get `[sandbox] pi exited with code 1` stacked
+      // then exits 1 must not get `[sandbox] claude exited with code 1` stacked
       // under it — a second, scarier row saying strictly less. The line stays
       // in the run log as a DebugEvent.
       final sandbox = ControllableSandboxPort();

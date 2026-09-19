@@ -79,7 +79,7 @@ The code is single-use and expires in 15 minutes. If your Slack email matches a 
 
 If you mention the bot before this is done, it refuses and says why. The three refusals are distinct, so read which one you got:
 
-- **Unlinked sender**: the bot tells you how to link. Its message still names an older settings path — use the one above. Come back to this step.
+- **Unlinked sender**: the bot tells you how to link. Come back to this step.
 - **Linked, but not a member of this workspace**: ask an admin to invite you.
 - **Member with a read-only role** (viewer or guest): the bot will not start work on your behalf.
 
@@ -98,7 +98,7 @@ The bridge:
 
 Reply in the same Slack thread to keep going — no further mentions needed, because the Slack thread is now bridged. Or DM the bot instead of using a channel; each DM conversation drives its own Control Center space, with a title and an "is thinking…" status line while the agent works.
 
-Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app". Everything else works the same.
+Streaming needs Slack's streaming API, which not every plan has. If your app is refused it, the bridge stops trying for the whole connection and posts each reply as a single message instead and the Chat bridges card reads "Live streaming is off for this Slack app — replies arrive as one message." Everything else works the same.
 
 ## Step 7: File a ticket without leaving Slack
 

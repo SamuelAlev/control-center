@@ -25,7 +25,7 @@ describe('buildOpenApi', () => {
   });
 
   it('publishes every agent entrypoint as a path', () => {
-    for (const path of ['/', '/llms.txt', '/llms-full.txt', '/openapi.json', '/.well-known/api-catalog', '/.well-known/agent-skills/index.json', '/.well-known/mcp/server-card.json', '/sitemap-index.xml', '/rss.xml', '/.well-known/mcp', '/developers', '/about', '/contact', '/{path}']) {
+    for (const path of ['/', '/llms.txt', '/llms-full.txt', '/openapi.json', '/.well-known/api-catalog', '/.well-known/agent-skills/index.json', '/.well-known/mcp/server-card', '/.well-known/mcp/server-card.json', '/sitemap-index.xml', '/rss.xml', '/.well-known/mcp', '/developers', '/about', '/contact', '/privacy', '/terms', '/acknowledgements', '/licenses', '/demo', '/{path}']) {
       assert.ok(doc.paths[path], `missing path ${path}`);
     }
   });

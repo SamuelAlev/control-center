@@ -49,8 +49,8 @@ Open **Settings → Workspace → Pipeline templates**, open a template, then:
 
 1. Add a **Reviewer (prompt)** node from the palette
 2. Pick the agent to dispatch and write the reviewer prompt, using `{{key}}`
-   placeholders for upstream outputs (for example `{{repoLocalPath}}`,
-   `{{prNumber}}`)
+   placeholders for upstream outputs (for example `{{repo_local_path}}`,
+   `{{pr_number}}`)
 3. Set the output key (default `reviewer_findings`) so downstream steps can read
    the findings
 
@@ -62,34 +62,31 @@ node's output key. (The palette description still says the step waits for a
 Fan out by wiring several reviewer nodes to the same upstream step, then
 consolidate their outputs with a **Consolidate (join)** node.
 
-:::caution[The terminal sentinel cannot be re-pointed]
-Every template ends in a hidden terminal sentinel and the editor filters it out
-of the canvas — so you cannot select it or re-thread it onto a node you add. The
-engine completes the run the moment the sentinel's incoming branch finishes and
-returns before scheduling anything else that became ready in the same tick. A
-node added _downstream_ of the step the sentinel is wired to therefore never
-executes. Fan-out nodes wired to an _upstream_ step still run.
-:::
+The editor rewires the hidden terminal to every reachable sink, so a node you
+add after the seeded Step still runs. Fan-out nodes wired to the same upstream
+step run in parallel.
 
 ## Automatic dispatch on a new PR
 
 To have a review pipeline fire by itself:
 
 1. Open the template at **Settings → Workspace → Pipeline templates**
-2. Select the trigger entry node on the canvas to open the trigger panel
-3. Add an event trigger and pick the event
-4. Enable both the trigger and the template
+2. Drag **PR published** or **External PR opened** from the Triggers section of
+   the node library onto the canvas (or pick it from the **Add a trigger** ghost
+   tile)
+3. Select the new node and turn on **Enabled** in its inspector, then enable the
+   template
 
 Two events matter here and they are not interchangeable:
 
-| Event                  | Fires when                                                                                                         | Payload keys                                             |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.createOnGitHub` | `prId`, `workspaceId`, `repoOwner`, `repoName`           |
-| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                        | `repoOwner`, `repoName`, `prNumber`, `prTitle`, `author` |
+| Event                  | Fires when                                                                                                      | Payload keys                                                       |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PullRequestPublished` | A PR is opened **through Control Center** — the compose surface, or an agent calling `pr_lifecycle.publish`     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
+| `ExternalPrDetected`   | The PR polling service finds a PR opened directly on GitHub                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
 
 A PR opened on github.com never raises `PullRequestPublished`, so a template
 wired only to that event will not see it. Note also that `PullRequestPublished`
-carries no `prNumber` — a step whose script or prompt references `{{prNumber}}`
+carries no `pr_number` — a step whose script or prompt references `{{pr_number}}`
 must be fed by `ExternalPrDetected`, or by a manual run that supplies it.
 
 Checkpoint: after enabling, open **Pipelines** and confirm a run appears for the

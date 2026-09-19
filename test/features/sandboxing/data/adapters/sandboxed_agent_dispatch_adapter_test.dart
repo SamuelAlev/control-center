@@ -172,7 +172,7 @@ void main() {
         final adapter = _adapter(broker: broker);
 
         final handle = adapter.start(
-          cliName: 'pi',
+          cliName: 'claude',
           prompt: 'hello',
           workingDirectory: '/tmp/work',
           agentId: null,
@@ -196,13 +196,13 @@ void main() {
         final adapter = _adapter(broker: broker);
 
         final h1 = adapter.start(
-          cliName: 'pi',
+          cliName: 'claude',
           prompt: 'p1',
           workingDirectory: '/tmp/w1',
           agentId: 'agent-a',
         );
         final h2 = adapter.start(
-          cliName: 'pi',
+          cliName: 'claude',
           prompt: 'p2',
           workingDirectory: '/tmp/w2',
           agentId: 'agent-b',
@@ -224,7 +224,7 @@ void main() {
       final adapter = _adapter(broker: broker);
 
       final handle = adapter.start(
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'hello',
         workingDirectory: '/tmp/work',
         agentId: null,
@@ -274,13 +274,13 @@ void main() {
       final stalledAdapter = _adapter(broker: stalledBroker);
 
       final h1 = stalledAdapter.start(
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'p1',
         workingDirectory: '/tmp/w1',
         agentId: 'agent-a',
       );
       final h2 = stalledAdapter.start(
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'p2',
         workingDirectory: '/tmp/w2',
         agentId: 'agent-b',
@@ -308,13 +308,13 @@ void main() {
       final adapter = _adapter(broker: broker);
 
       adapter.start(
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'p1',
         workingDirectory: '/tmp/w1',
         agentId: null,
       );
       adapter.start(
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'p2',
         workingDirectory: '/tmp/w2',
         agentId: null,
@@ -346,7 +346,7 @@ void main() {
       final adapter = _adapter(broker: broker);
 
       adapter.start(
-        cliName: 'pi',
+        cliName: 'claude',
         prompt: 'p1',
         workingDirectory: '/tmp/w1',
         agentId: null,

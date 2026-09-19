@@ -307,14 +307,14 @@ void main() {
           agentName: 'architect',
           workspaceName: 'ws',
           pid: 1234,
-          command: 'pi --mode json',
+          command: 'claude -p --output-format stream-json',
           startTime: DateTime(2026, 7, 1, 9),
         ),
       );
       expect(w['agent_name'], 'architect');
       expect(w['workspace_name'], 'ws');
       expect(w['pid'], 1234);
-      expect(w['command'], 'pi --mode json');
+      expect(w['command'], 'claude -p --output-format stream-json');
       expect(w['start_time'], '2026-07-01T09:00:00.000');
     });
 
@@ -323,15 +323,15 @@ void main() {
       final minimal = detectedAdapterToWire(
         const DetectedAdapter(
           adapter: Adapter(
-            id: 'pi',
-            name: 'Pi',
+            id: 'claude-code',
+            name: 'Claude Code',
             description: 'd',
-            cliName: 'pi',
+            cliName: 'claude',
           ),
           status: DetectionStatus.notFound,
         ),
       );
-      expect(minimal['adapter_id'], 'pi');
+      expect(minimal['adapter_id'], 'claude-code');
       expect(minimal['status'], 'notFound');
       expect(minimal.containsKey('version'), isFalse);
       expect(minimal.containsKey('capabilities'), isFalse);
@@ -340,14 +340,14 @@ void main() {
       final full = detectedAdapterToWire(
         const DetectedAdapter(
           adapter: Adapter(
-            id: 'pi',
-            name: 'Pi',
+            id: 'claude-code',
+            name: 'Claude Code',
             description: 'd',
-            cliName: 'pi',
+            cliName: 'claude',
           ),
           status: DetectionStatus.found,
           version: '1.2.3',
-          path: '/usr/local/bin/pi',
+          path: '/usr/local/bin/claude',
           capabilities: AdapterCapabilities(
             supportsJsonMode: true,
             supportsModelSelection: false,
@@ -355,7 +355,7 @@ void main() {
         ),
       );
       expect(full['version'], '1.2.3');
-      expect(full['path'], '/usr/local/bin/pi');
+      expect(full['path'], '/usr/local/bin/claude');
       final capabilities = full['capabilities'] as Map<String, dynamic>;
       expect(capabilities['supports_json_mode'], isTrue);
       expect(capabilities['supports_model_selection'], isFalse);

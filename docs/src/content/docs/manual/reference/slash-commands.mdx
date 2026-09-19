@@ -7,7 +7,7 @@ Commands typed in a space's composer. They fall into three groups by where they 
 
 | Where it runs | What that means                                                                    |
 | ------------- | ---------------------------------------------------------------------------------- |
-| **Local**     | Handled in the client. Nothing is persisted and no agent sees it.                  |
+| **Local**     | Handled in the client (or a client-initiated server op). The command never travels as a message, so no agent sees it. |
 | **Side**      | One server-side model call about the conversation. The conversation is not changed. |
 | **Dispatch**  | Sets a mode or directive for the run the message starts.                            |
 
@@ -17,7 +17,7 @@ Commands typed in a space's composer. They fall into three groups by where they 
 
 ### `/plan`
 
-**Dispatch.** Puts the conversation in plan mode: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit.
+**Local → dispatch.** Arms plan mode on the conversation: a fully read-only worktree and a tool surface capped at `read`. The agent's deliverable is a plan, not an edit. A bare `/plan` only flips the mode and never travels as a message; with a prompt, the rest of the line is what starts the run.
 
 ### `/goal <objective>`
 
@@ -25,10 +25,10 @@ Commands typed in a space's composer. They fall into three groups by where they 
 
 Typing `/goal` with text first opens the **objective interview** — a short pass that refuses to accept a draft until it has all five of: success criteria an evaluator can settle without judgment, an exact verification command, an attempt cap, scope boundaries, and stop conditions. Every step offers *Skip and run as written*: the interview is a default, not a gate.
 
-`/goal pause`, `/goal resume`, `/goal drop` and `/goal budget <N|off>` control a running goal.
+`/goal pause`, `/goal resume` and `/goal drop` are not slash commands. Pause, resume and stop live on the conversation's goals list in the sidebar. Starting flags on the objective itself are `--budget <dollars>`, `--max <N>` (run budget) and `--days <N>` (deadline). A goal that hit its cost cap resumes only by raising that cap, from the same sidebar control.
 
 :::note[Why it interrupts at all]
-An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Six questions are cheaper than one overnight run that finished whenever it felt finished.
+An autonomous goal is the one place a vague brief is genuinely expensive. The run works for hours on an objective whose "done" nobody defined, then reports success on its own terms. Five questions are cheaper than one overnight run that finished whenever it felt finished.
 :::
 
 ### `/loop [budget] [task]`
@@ -47,9 +47,9 @@ Workers never outlive the mode — exiting kills every one of them.
 
 ## Managing context
 
-### `/compact [focus]`
+### `/compact`
 
-**Dispatch.** Folds older history into an anchored summary and continues on the compacted context. The optional free text steers what the summary keeps.
+**Local → server.** Folds older history into an anchored summary and continues on the compacted context. No model-facing argument: the command never travels as a message, and the compaction pass does not take a focus hint.
 
 ### `/shake [target]`
 
@@ -123,9 +123,9 @@ Both are the same shape — take the conversation as it stands, ask one question
 
 ## Everything else
 
-### `/todo [args]`
+### `/todo [subcommand]`
 
-**Local.** Views and edits the conversation's persisted checklist.
+**Local.** Views and edits the conversation's persisted checklist. A bare `/todo` opens the editor. Subcommands: `append`, `start`, `done`, `drop` (alias `rm`), `edit`, `copy`, `export`, `import`.
 
 ### `/skill:<name> [args]`
 
@@ -133,9 +133,9 @@ Both are the same shape — take the conversation as it stands, ask one question
 
 ### `/<your-command> [args]`
 
-**Dispatch.** Any markdown file under `.agents/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
+**Dispatch.** Any markdown file under `.agents/commands`, `.agent/commands`, `.claude/commands`, `.codex/commands` or `.opencode/commands` in the repo. A nested `foo/bar.md` is also reachable as `foo:bar`.
 
-Templating: `$1`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description`, `allowed-tools` and `model`.
+Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
 
 A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
 
@@ -153,7 +153,3 @@ Not commands. A standalone lowercase word anywhere in a prompt attaches a hidden
 The matcher is deliberately strict about boundaries. `orchestrate,` matches; `orchestrated`, `orchestrate.ts`, `foo::orchestrate` and `orchestrate()` do not, and fenced code blocks, inline spans and XML sections are masked out first. Without that, pasting a stack trace would change how the agent behaves.
 
 ---
-
-## Deliberately not shipped
-
-`/omfg` (forging a stream rule from a complaint), `/tan` (spawning a background agent on a tangent) and `/share` (an encrypted public link) were considered and left out.

@@ -1,4 +1,4 @@
-Sarabun Regular + SemiBold, vendored here as Sarabun-Regular.ttf / Sarabun-SemiBold.ttf.
+Sarabun Regular + SemiBold 1.000, vendored here as Sarabun-Regular.ttf / Sarabun-SemiBold.ttf.
 Upstream: https://github.com/cadsondemak/Sarabun — licensed under the SIL Open Font License, Version 1.1.
 ---
 Copyright 2018 The Sarabun Project Authors (https://github.com/cadsondemak/Sarabun)

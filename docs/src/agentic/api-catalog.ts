@@ -10,7 +10,7 @@
  *
  * Scope honesty, same rule as src/agentic/openapi.ts: this catalogs the APIs
  * that answer on THIS origin — the website API and the docs MCP server. The
- * product's own API (103 MCP tools) runs inside the self-hosted `cc_server` on
+ * product's own API (110 MCP tools) runs inside the self-hosted `cc_server` on
  * whatever host the operator runs it on, so it has no anchor URI to publish
  * and is deliberately absent. It is documented, not catalogued, at
  * /manual/guides/mcp-server/ and /manual/reference/mcp-tools/.

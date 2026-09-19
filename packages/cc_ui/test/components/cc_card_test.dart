@@ -59,6 +59,24 @@ void main() {
       expect(tester.takeException(), isNull);
       await gesture.up();
     });
+
+    testWidgets('hovered flag paints the hover wash without a tap handler', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ccTestApp(const CcCard(hovered: true, child: Text('wash me'))),
+      );
+
+      final tokens = DesignSystemTokens.light();
+      final hover = CcCardTokens.panel(tokens).hoverBg;
+      expect(
+        tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).any((box) {
+          final decoration = box.decoration;
+          return decoration is BoxDecoration && decoration.color == hover;
+        }),
+        isTrue,
+      );
+    });
   });
 }
 

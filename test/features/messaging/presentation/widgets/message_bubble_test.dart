@@ -1,5 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';

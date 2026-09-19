@@ -291,8 +291,44 @@ void main() {
         expect(find.text('Open status.claude.com'), findsNothing);
         expect(find.text('Open status.openai.com'), findsNothing);
         expect(find.text('Open status.moonshot.cn'), findsNothing);
+        // Healthy rows share padding with the subscription-usage flyout and
+        // carry no hairline — a divider is a boundary under a faulty block.
+        expect(find.byType(CcDivider), findsOneWidget);
       },
     );
+
+    testWidgets('healthy providers have no dividers', (tester) async {
+      await tester.pumpWidget(_wrap());
+      await tester.pumpAndSettle();
+
+      await tester.tap(serviceStatusLabel());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CcDivider), findsNothing);
+    });
+
+    testWidgets('a fetch failure also draws a divider under that provider', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          notifier: _DataNotifier(
+            ServiceStatuses(
+              github: null,
+              claude: _status(GitHubStatusIndicator.none),
+              openai: _status(GitHubStatusIndicator.none),
+              kimi: _status(GitHubStatusIndicator.none),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(serviceStatusLabel());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(CcDivider), findsOneWidget);
+    });
 
     testWidgets('shows incidents when a provider has them', (tester) async {
       await tester.pumpWidget(

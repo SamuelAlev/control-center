@@ -29,7 +29,7 @@ const LLMS_TXT = `# Control Center
 
 ## Product
 
-- [Landing page](${ORIGIN}/): what the deck is, the four pillars, the platform under the hood, downloads.
+- [Landing page](${ORIGIN}/): what the deck is, the five pillars, the platform under the hood, downloads.
 - [Compare Control Center](${ORIGIN}/compare/): feature matrix against Conductor and others.
 - [Changelog](${ORIGIN}/changelog/): newest first; latest is v0.0.1-rc.1.
 - [Control Center vs Conductor](${ORIGIN}/compare/conductor/): Conductor is the smoother start.

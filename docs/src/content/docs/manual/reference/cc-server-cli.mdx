@@ -3,8 +3,9 @@ title: cc_server CLI
 description: Every flag, environment variable, subcommand and data-directory path of the headless server.
 ---
 
-Every setting takes a CLI flag or an environment variable; the flag wins, then the
-environment, then the default.
+Every process flag takes a CLI flag or an environment variable; the flag wins,
+then the environment, then the default. Third-party credentials are the
+exception — see below.
 
 :::caution[Unknown flags are ignored silently]
 The argument parser is hand-rolled and skips anything it does not recognise, so a typo
@@ -49,12 +50,15 @@ default. Check the startup log lines when a flag seems to have no effect.
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
 | `--credential-gate`      | `CC_SERVER_CREDENTIAL_GATE`     | `900`                                 | Seconds a run parks waiting for a human to fix a credential that cannot serve it (clamped 0–3600). See below                 |
-| `--google-client-id`     | `GOOGLE_OAUTH_CLIENT_ID`     | the client baked into a release build | Google device-code client for calendar sync. Empty disables calendar                                                        |
-| `--google-client-secret` | `GOOGLE_OAUTH_CLIENT_SECRET` | as above                              | The secret for that client                                                                                                  |
-| `--klipy-app-key`        | `KLIPY_APP_KEY`              | the key baked into a release build    | Klipy GIF key. Empty disables the `gif.*` ops                                                                               |
 
 An empty value for a credential reads as unset, so the built-in fallback still applies.
 A build from source carries no built-in credentials at all.
+
+Google Calendar and the Klipy GIF picker are **environment-only** — there is no
+`--google-client-id` / `--klipy-app-key` flag (unknown flags are ignored). Set
+`GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET`, and `KLIPY_APP_KEY`, in
+the environment (or a `.env` next to the server). Empty disables that feature
+rather than failing the boot.
 
 ### `--sandbox`
 
@@ -101,7 +105,7 @@ ends the turn exactly as it did before the gate existed.
 | Command                                       | What it does                                                                                        |
 | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | `cc_server`                                   | Runs the server until `SIGINT`/`SIGTERM`                                                            |
-| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Run it while no server holds the data dir    |
+| `cc_server pair`                              | Provisions a device and prints its id and pairing key. Safe against a data dir a server is already serving — the running server picks the device up without a restart |
 | `cc_server calendar connect --workspace <id>` | Connects a Google account to a workspace over the device-code flow, then exits                      |
 | `cc_server update`                            | Checks for, downloads and verifies a newer standalone release                                       |
 | `cc_server --version`                         | Prints the build version and git SHA — the same identity `/healthz` and the RPC handshake advertise |
@@ -111,17 +115,21 @@ ends the turn exactly as it did before the gate existed.
 | Flag           | Default                                                   | Meaning                                                                                                                                                              |
 | -------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--device`     | `web-client`                                              | The device id. The platform is inferred from it, so `--device desktop` mints a desktop row and `--device ios`/`android` a phone row; anything else is treated as web |
-| `--label`      | derived from the platform                                 | Display name in the devices list                                                                                                                                     |
+| `--label`      | platform name plus this machine's hostname                | Display name in the devices list                                                                                                                                     |
 | `--host`       | `localhost`, or `<this-host>` when bound to any interface | Host to embed in the printed URL. Set it to the LAN IP or tunnel host a client will actually dial                                                                    |
 | `--client-url` | unset                                                     | Origin of the hosted **web** client. Adds a scannable deep link and terminal QR                                                                                      |
 
-Re-running `pair` for the same `--device` rotates its key. A credential minted here has
+`pair` also accepts the core `--data-dir`, `--port` and `--bind` flags: they
+select the data dir to write and shape the printed server URL (`ws` on loopback,
+`wss` when `--bind any`). Re-running `pair` for the same `--device` rotates its
+key and drops that device's live sessions. A credential minted here has
 **no expiry**, unlike the 30 days an in-app pairing sets.
 
 :::caution[The `--client-url` QR is not the phone QR]
-`pair --client-url` emits a v1 deep link for the web client. The phone pairs with a
-different v2 payload minted from the in-app pairing panel. The two are not
-interchangeable — see [Pair a device](/manual/guides/pair-a-device/).
+`pair --client-url` fills in the **web** client's connect form (server URL,
+device id and key in the URL fragment). The phone pairs with a different payload
+minted from the in-app pairing panel — the server's full connection descriptor
+plus an expiry. The two are not interchangeable — see [Pair a device](/manual/guides/pair-a-device/).
 :::
 
 ### `update`
@@ -177,6 +185,7 @@ no home or app-data directory resolves.
 ## See also
 
 - [Run a headless server](/manual/guides/run-headless-server/) — the setup recipe these flags belong to
+- [Run a fleet worker](/manual/guides/run-fleet-worker/) — the separate `cc_worker` binary that registers with this server
 - [Back up and restore](/manual/guides/back-up-and-restore/) — copying this directory somewhere safe
 - [Backup, export and import](/manual/reference/backup/) — the snapshot layout and every backup operation
 - [Connect to a remote server](/manual/guides/connect-remote-server/) — pointing a client at one

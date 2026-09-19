@@ -9,17 +9,17 @@ import 'package:kalender/kalender.dart' as k;
 ///
 /// kalender ships two strategies and both fall short here:
 ///
-///  * [k.overlapLayoutStrategy] stacks conflicting tiles on top of one another,
-///    each narrower and pinned to the right. The base tile keeps its full width,
-///    so its title runs *underneath* the tiles on top — two overlapping events
-///    paint their titles in the same horizontal band and collide into an
-///    unreadable mess.
-///  * [k.sideBySideLayoutStrategy] places tiles next to each other (the layout
-///    we want) but inflates every tile to `minimumTileHeight` first: before
-///    grouping, so two short back-to-back events like 09:15–09:30 and
-///    09:30–09:45, which don't actually conflict, get treated as overlapping and
-///    split into separate columns; and when sizing, so a 15-minute event is
-///    painted 30-minutes tall, visually running past its real end into the
+///  * [k.EventLayoutStrategy.overlap] stacks conflicting tiles on top of one
+///    another, each narrower and pinned to the right. The base tile keeps its
+///    full width, so its title runs *underneath* the tiles on top — two
+///    overlapping events paint their titles in the same horizontal band and
+///    collide into an unreadable mess.
+///  * [k.EventLayoutStrategy.sideBySide] places tiles next to each other (the
+///    layout we want) but inflates every tile to `minimumTileHeight` first:
+///    before grouping, so two short back-to-back events like 09:15–09:30 and
+///    09:30–09:45, which don't actually conflict, get treated as overlapping
+///    and split into separate columns; and when sizing, so a 15-minute event
+///    is painted 30-minutes tall, visually running past its real end into the
 ///    following event's slot.
 ///
 /// This strategy takes the side-by-side placement but fixes both inflation
@@ -30,24 +30,36 @@ import 'package:kalender/kalender.dart' as k;
 /// overlapping events sit side by side and stay readable, an event ends exactly
 /// where its time ends and a short event followed immediately by another is not
 /// inflated into it.
-k.EventLayoutDelegate calendarEventLayoutStrategy(
-  Iterable<k.CalendarEvent> events,
-  k.InternalDateTime date,
-  k.TimeOfDayRange timeOfDayRange,
-  double heightPerMinute,
-  double? minimumTileHeight,
-  k.EventLayoutDelegateCache? cache,
-  k.Location? location,
-) {
-  return _CalendarEventLayoutDelegate(
-    events: events,
-    date: date,
-    timeOfDayRange: timeOfDayRange,
-    heightPerMinute: heightPerMinute,
-    minimumTileHeight: minimumTileHeight,
-    layoutCache: cache ?? k.EventLayoutDelegateCache(),
-    location: location,
-  );
+class CalendarEventLayoutStrategy extends k.EventLayoutStrategy {
+  /// Creates a [CalendarEventLayoutStrategy].
+  const CalendarEventLayoutStrategy();
+
+  @override
+  k.EventLayoutDelegate createDelegate({
+    required Iterable<k.KalenderEvent> events,
+    required k.FloatingDateTime date,
+    required k.KalenderTimeRange timeOfDayRange,
+    required double heightPerMinute,
+    required double? minimumTileHeight,
+    required k.EventLayoutDelegateCache? cache,
+    required k.Location? location,
+  }) {
+    return _CalendarEventLayoutDelegate(
+      events: events,
+      date: date,
+      timeOfDayRange: timeOfDayRange,
+      heightPerMinute: heightPerMinute,
+      minimumTileHeight: minimumTileHeight,
+      layoutCache: cache ?? k.EventLayoutDelegateCache(),
+      location: location,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) => other.runtimeType == runtimeType;
+
+  @override
+  int get hashCode => (CalendarEventLayoutStrategy).hashCode;
 }
 
 class _CalendarEventLayoutDelegate extends k.EventLayoutDelegate {
@@ -64,9 +76,9 @@ class _CalendarEventLayoutDelegate extends k.EventLayoutDelegate {
   /// Earliest first, longer first on ties — a stable order so the leftmost
   /// column holds the earliest (and, on a tie, the longest) event.
   @override
-  List<k.CalendarEvent> sortEvents(Iterable<k.CalendarEvent> events) {
+  List<k.KalenderEvent> sortEvents(Iterable<k.KalenderEvent> events) {
     return events.toList()..sort((a, b) {
-      final byStart = a.dateTimeRange.start.compareTo(b.dateTimeRange.start);
+      final byStart = a.start.compareTo(b.start);
       return byStart != 0 ? byStart : b.duration.compareTo(a.duration);
     });
   }

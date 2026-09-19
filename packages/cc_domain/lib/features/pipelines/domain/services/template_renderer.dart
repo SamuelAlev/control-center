@@ -64,6 +64,31 @@ class TemplateRenderer {
     return _pattern.allMatches(template).map((m) => m.group(1)!).toSet();
   }
 
+  /// Whether [template] contains at least one `{{placeholder}}`.
+  bool containsPlaceholders(String template) => _pattern.hasMatch(template);
+
+  /// Splits [template] into literal text and placeholder refs, in source
+  /// order, so a canvas can draw the braces as chips instead of as syntax.
+  ///
+  /// Empty literals (two placeholders back-to-back, or a template that
+  /// starts/ends on a placeholder) are omitted. Unknown `{{…}}` shapes that
+  /// the renderer does not substitute stay literal text.
+  List<TemplatePart> parts(String template) {
+    final out = <TemplatePart>[];
+    var cursor = 0;
+    for (final match in _pattern.allMatches(template)) {
+      if (match.start > cursor) {
+        out.add(TemplateText(template.substring(cursor, match.start)));
+      }
+      out.add(TemplatePlaceholder(match.group(1)!));
+      cursor = match.end;
+    }
+    if (cursor < template.length) {
+      out.add(TemplateText(template.substring(cursor)));
+    }
+    return out;
+  }
+
   /// Resolves a single placeholder reference, or null if absent.
   Object? resolve(
     String ref, {
@@ -94,6 +119,45 @@ class TemplateRenderer {
     }
     return ref;
   }
+}
+
+/// One piece of a template string: literal text or a placeholder ref.
+sealed class TemplatePart {
+  /// Creates a [TemplatePart].
+  const TemplatePart();
+}
+
+/// Literal characters between (or around) placeholders.
+class TemplateText extends TemplatePart {
+  /// Creates a [TemplateText].
+  const TemplateText(this.value);
+
+  /// The literal substring.
+  final String value;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TemplateText && other.value == value;
+
+  @override
+  int get hashCode => Object.hash('text', value);
+}
+
+/// A `{{ref}}` placeholder, carrying the inner reference (`pr_number`,
+/// `$trigger.author`).
+class TemplatePlaceholder extends TemplatePart {
+  /// Creates a [TemplatePlaceholder].
+  const TemplatePlaceholder(this.ref);
+
+  /// The placeholder reference, without braces.
+  final String ref;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TemplatePlaceholder && other.ref == ref;
+
+  @override
+  int get hashCode => Object.hash('ph', ref);
 }
 
 /// Result of [TemplateRenderer.render].

@@ -82,8 +82,8 @@ void main() {
       'setShortTaskAdapterId persists value',
       timeout: const Timeout.factor(2),
       () async {
-        await prefs.setShortTaskAdapterId('pi-dev');
-        expect(prefs.getShortTaskAdapterId(), 'pi-dev');
+        await prefs.setShortTaskAdapterId('claude-code');
+        expect(prefs.getShortTaskAdapterId(), 'claude-code');
       },
     );
 
@@ -91,7 +91,7 @@ void main() {
       'setShortTaskAdapterId with null removes',
       timeout: const Timeout.factor(2),
       () async {
-        await prefs.setShortTaskAdapterId('pi-dev');
+        await prefs.setShortTaskAdapterId('claude-code');
         await prefs.setShortTaskAdapterId(null);
         expect(prefs.getShortTaskAdapterId(), isNull);
       },

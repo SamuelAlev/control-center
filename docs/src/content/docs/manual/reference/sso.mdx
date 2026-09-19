@@ -5,10 +5,10 @@ description: Every knob, endpoint, op and error code of single sign-on.
 
 Everything configurable about single sign-on, in one place. Values live in
 the `sso_connections` rows of `global.db` (server-wide by design), edited
-via **Settings → Server → Single sign-on** or the `sso.*` RPC ops; the
-`CC_SAML_*` / `CC_OIDC_*` environment variables seed a never-configured
-connection on first boot and are then overrides in spirit only — the saved
-row is the source of truth.
+via **Settings → Server → Single sign-on** or the `sso.*` RPC ops. The
+saved row is the only source of truth — there is no `CC_SAML_*` /
+`CC_OIDC_*` environment path (a connection that could arrive from two
+places is one the settings screen can disagree with).
 
 ## Connection fields
 
@@ -32,19 +32,17 @@ row is the source of truth.
 | `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
 | `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
 
-## Environment seeds
+## Process configuration
 
-| Variable                                                                                                                 | Meaning                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| `CC_SAML_IDP_METADATA` / `CC_SAML_IDP_METADATA_FILE`                                                                     | the metadata XML inline, or a path to it (enables SAML when set)                                             |
-| `CC_SAML_SP_ENTITY_ID`                                                                                                   | pins our entity ID                                                                                           |
-| `CC_SAML_EMAIL_ATTRIBUTE` / `CC_SAML_DISPLAY_NAME_ATTRIBUTE` / `CC_SAML_GROUPS_ATTRIBUTE`                                | attribute names                                                                                              |
-| `CC_SAML_DEFAULT_ROLE` / `CC_SAML_GROUP_ROLE_MAP` / `CC_SAML_AUTO_MEMBER` / `CC_SAML_ALLOW_JIT`                          | provisioning policy (`owner` is refused as a default role)                                                   |
-| `CC_SAML_ALLOW_IDP_INITIATED` / `CC_SAML_WANT_RESPONSE_SIGNED` / `CC_SAML_CLOCK_SKEW_SECS`                               | validation knobs                                                                                             |
-| `CC_OIDC_ISSUER` / `CC_OIDC_CLIENT_ID`                                                                                   | enables OIDC when both set; the issuer must be an `https` URL (`http` is accepted for loopback issuers only) |
-| `CC_OIDC_CLIENT_SECRET`                                                                                                  | confidential-client secret (seeds the secrets file on first boot)                                            |
-| `CC_OIDC_GROUPS_CLAIM` / `CC_OIDC_DEFAULT_ROLE` / `CC_OIDC_GROUP_ROLE_MAP` / `CC_OIDC_AUTO_MEMBER` / `CC_OIDC_ALLOW_JIT` | provisioning policy (`owner` is refused as a default role)                                                   |
-| `CC_SERVER_WEB_CLIENT_URL`                                                                                               | origin SSO callbacks bounce the browser to (credential rides the URL fragment)                               |
+SSO connections are not seeded from the environment. One remaining process
+flag is about the **browser handoff**, not the connection row:
+
+| Variable / flag                          | Meaning                                                                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `--web-client-url` / `CC_SERVER_WEB_CLIENT_URL` | origin SSO callbacks bounce the browser to (credential rides the URL fragment). Unset keeps the handoff same-origin. |
+
+The issuer URL itself must be `https` (`http` is accepted for loopback
+issuers `localhost`, `127.0.0.1`, and `::1` only).
 
 ## HTTP endpoints
 
@@ -61,9 +59,9 @@ row is the source of truth.
 
 ## RPC ops
 
-All `sso.*` ops are server-scoped and gated to the **server-admin role**
-(the caller must own at least one workspace); pairing alone never grants
-them.
+All `sso.*` ops are server-scoped and gated to the **server owner** (the
+install's operator, `ServerAuthority.serverOwner`). Owning a workspace is
+not enough; pairing alone never grants them.
 
 | Op                        | Purpose                                                                                                                                                       |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -73,6 +71,8 @@ them.
 | `sso.testConnection`      | test a connection short of the browser round-trip (SAML: metadata parse + AuthnRequest build; OIDC: issuer discovery), with optional unsaved on-screen values |
 | `sso.spMetadata`          | emit the SP `EntityDescriptor` for an origin                                                                                                                  |
 | `sso.setPairingEnabled`   | allow/forbid manual pairing (invite codes, pairing keys); refusing to disable it while no working SSO connection exists guards against lockout                |
+| `sso.sessionPolicy`       | read the install's device-credential max age and idle timeout (minutes; `0` = unset)                                                                          |
+| `sso.setSessionPolicy`    | set those bounds; enforced at the device check, not advertised to clients                                                                                     |
 | `sso.scimRegenerateToken` | generate + return the SCIM bearer token (once)                                                                                                                |
 
 ## Validation error codes

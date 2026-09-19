@@ -189,7 +189,9 @@ class NativeSandboxAdapter implements SandboxPort {
     _processes[handle.sessionId] = process;
     onPid?.call(process.pid);
 
-    // Always settle stdin — CLIs that read it (like a `--mode json` agent) hang forever otherwise. Pipe the prompt when one is provided; close immediately to signal EOF when not.
+    // Always settle stdin — a CLI that reads it hangs forever otherwise.
+    // Pipe the prompt when one is provided; close immediately to signal EOF
+    // when not.
     if (stdinInput != null) {
       process.stdin.write(stdinInput);
     }

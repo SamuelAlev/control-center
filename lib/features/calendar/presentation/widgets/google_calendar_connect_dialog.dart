@@ -1,9 +1,9 @@
+import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/calendar/providers/connect_account_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/open_url.dart';
-import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -320,13 +320,15 @@ class _ApprovalView extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: SelectableText(
-                  userCode,
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 2,
-                    color: t.textPrimary,
+                child: CcSelectionRegion(
+                  child: Text(
+                    userCode,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2,
+                      color: t.textPrimary,
+                    ),
                   ),
                 ),
               ),

@@ -1228,6 +1228,7 @@ class _FakeHost {
     'name': name,
     'is_built_in': isBuiltIn,
     'is_enabled': true,
+    'max_parallel_runs': 2,
     'version': 1,
     'steps': [
       {
@@ -2140,6 +2141,7 @@ void main() {
       expect(live.single.workspaceId, 'ws1');
       expect(live.single.name, 'PR review');
       expect(live.single.isBuiltIn, isTrue);
+      expect(live.single.maxParallelRuns, 2);
       // Graph + inputs round-trip losslessly.
       expect(live.single.steps.length, 2);
       expect(live.single.entryStep.kind, StepKind.trigger);
@@ -2160,6 +2162,7 @@ void main() {
         templateId: 'pt9',
         workspaceId: 'ws1',
         name: 'Hello',
+        maxParallelRuns: 3,
         steps: [
           PipelineStepDefinition(
             id: 'trigger',
@@ -2181,6 +2184,10 @@ void main() {
       expect(
         (host.sentTemplates.last['template'] as Map)['template_id'],
         'pt9',
+      );
+      expect(
+        (host.sentTemplates.last['template'] as Map)['max_parallel_runs'],
+        3,
       );
       expect(
         ((host.sentTemplates.last['template'] as Map)['steps'] as List).length,

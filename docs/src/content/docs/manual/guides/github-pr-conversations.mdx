@@ -31,7 +31,8 @@ app when registering it.
 1. Go to **Settings → Server → Single sign-on** and scroll to the
    **Provider apps** card
 2. Open the **GitHub** block and click **Test**
-3. The **Bot login** field fills in and is copyable
+3. Copy **Bot login** when it fills in. If it still shows the empty hint, the
+   login is always `<appslug>[bot]` — type that, or the short `@appslug`
 
 GitHub does not offer app accounts in its `@` autocomplete, so the login has to
 be typed — that is why the settings card makes it one click to copy. The
@@ -50,10 +51,12 @@ button starts:
 
 - **Add the `ai-review` label** to the PR. This is the closest thing GitHub
   offers to assigning the bot as a reviewer — app accounts cannot hold the
-  native requested-reviewer slot
-- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation
+  native requested-reviewer slot. There is no comment to react to, so nothing
+  is posted on GitHub; the review starts in Control Center
+- **Comment `@myapp review`** (or just `@myapp`) on the PR conversation. The
+  bot reacts with 👀, then replies when the review has started (or that one is
+  already running)
 
-The bot reacts with 👀 to acknowledge, then replies when the review has started.
 The reviewers work in the PR's review space; read and publish the findings as
 in [Use AI-powered review](/manual/guides/ai-review/). Publishing back to GitHub
 stays a decision you make in Control Center — starting a review from GitHub
@@ -79,14 +82,15 @@ What happens, in order:
 3. An agent answers in the space, and the answer is posted back on the PR as a
    comment that @-mentions you
 
-A question on a PR with no review yet wakes the workspace's lead agent; once a
+A question on a PR with no review yet wakes the workspace's CEO agent; once a
 review has run, the agent that spoke last answers, so follow-ups land with
 whoever has the context.
 
 ## Follow up in a review thread
 
-Reply inside any thread the bot is part of — an inline review comment it left,
-or an answer it posted. No mention is needed; the thread **is** the addressing:
+Reply inside an inline review thread the bot is part of — a diff comment it
+left, or an answer it posted in that thread. No mention is needed; the thread
+**is** the addressing:
 
 ```text
 > @myapp the retry loop looks O(n²) to me
@@ -95,8 +99,11 @@ what would the complexity be with the bounded queue instead?
 ```
 
 Multi-turn works the same way: each reply is another question in the same
-conversation, with the prior thread as context, and the answer comes back in
+conversation, with the review space as context, and the answer comes back in
 the thread.
+
+A follow-up on the PR conversation timeline is a new top-level comment, so it
+still needs an @mention.
 
 ## Who the bot talks to
 
@@ -105,18 +112,21 @@ author before doing anything:
 
 - **Your GitHub account must be linked to your identity** in Control Center —
   [sign in with GitHub](/manual/guides/github-integration/), or paste a token,
-  from **Settings → You → Profile & identity**
-- **You must be a member with a write role** in the workspace that links the
-  repository
+  from **Settings → You → Profile & identity → Code hosting**
+- **You must be a member with a write role** (`member`, `admin`, or `owner`)
+  in the workspace that links the repository
 
-Anyone else gets one polite reply explaining what is missing, and their words
-never enter the workspace.
+Anyone else gets one polite reply explaining what is missing — an unknown
+login (unlinked, or linked but not a member here) and a read-only role are
+the two cases — and their words never enter the workspace. The `ai-review`
+label is not gated this way: it has no author, so it starts the review in
+the workspace that already links the repo.
 
 ## What to expect
 
 | Thing               | Behaviour                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
-| Acknowledgement     | 👀 reaction within about a minute — the sweep interval                    |
+| Acknowledgement     | 👀 on a comment within about a minute — the sweep interval. The `ai-review` label has no comment to react to |
 | Answers             | Posted as the bot (the app), in the lane the question was asked in        |
 | In-space attribution | The question is yours; the agent runs on your behalf, under the space's autonomy settings |
 | Reviews             | Findings land in the review space; publishing to GitHub is manual         |
@@ -136,7 +146,8 @@ next sweep.
 - Is your GitHub account linked, and are you a member with a write role? Check
   the PR for the bot's refusal reply — it says which
 - Still nothing? The server log names the sweep and the PR when something
-  fails; `github_pr_conversation:` is the prefix to look for
+  fails; look for `pr_conversation:` (the poller) and
+  `github_pr_conversation:` (the bridge)
 
 **The label does not start a review.**
 

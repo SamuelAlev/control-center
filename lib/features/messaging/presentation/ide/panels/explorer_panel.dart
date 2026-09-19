@@ -1254,6 +1254,12 @@ class _ContentResultsState extends State<_ContentResults> {
   }
 }
 
+/// File-header leading geometry. Match rows start at the file icon, which
+/// sits just in front of the filename.
+const _kExplorerChevronSize = 14.0;
+const _kMatchRowStartPad =
+    AppSpacing.sm + _kExplorerChevronSize + AppSpacing.xs;
+
 class _ContentFileHeader extends StatelessWidget {
   const _ContentFileHeader({
     required this.group,
@@ -1293,36 +1299,46 @@ class _ContentFileHeader extends StatelessWidget {
               children: [
                 Icon(
                   collapsed ? AppIcons.chevronRight : AppIcons.chevronDown,
-                  size: 14,
+                  size: _kExplorerChevronSize,
                   color: t.textTertiary,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Icon(AppIcons.fileCode, size: 14, color: t.textSecondary),
                 const SizedBox(width: AppSpacing.xs),
-                Flexible(
-                  child: Text(
-                    name,
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: t.textPrimary,
-                    ),
+                // Hug name+dir in one slot so leftover flex cannot land
+                // after the trailing count (LTR right / RTL left).
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: t.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (dir.isNotEmpty) ...[
+                        const SizedBox(width: AppSpacing.xs),
+                        Flexible(
+                          child: Text(
+                            dir,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: t.textTertiary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                if (dir.isNotEmpty) ...[
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      dir,
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                      style: TextStyle(fontSize: 11, color: t.textTertiary),
-                    ),
-                  ),
-                ] else
-                  const Spacer(),
                 const SizedBox(width: AppSpacing.xs),
                 _CountBadge(count: group.lines.length),
               ],
@@ -1362,20 +1378,17 @@ class _ContentMatchRow extends StatelessWidget {
             color: hovered ? t.hover : const Color(0x00000000),
           ),
           child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              34,
-              3,
-              AppSpacing.sm,
-              3,
-            ),
+            // RTL carve-out: a grep match renders code with a line-number
+            // gutter; stays LTR. Start pad aligns with the file icon.
+            padding: const EdgeInsets.fromLTRB(_kMatchRowStartPad, 3, 8, 3),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 34,
+                  width: 28,
                   child: Text(
                     '${match.line}',
-                    textAlign: TextAlign.end,
+                    textAlign: TextAlign.right,
                     style: TextStyle(fontSize: 11, color: t.textTertiary),
                   ),
                 ),

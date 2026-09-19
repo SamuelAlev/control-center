@@ -71,17 +71,16 @@ is only reachable by URL while archived.
 
 ## Projects created for you
 
-Approving an orchestration creates a project and files every generated
-sub-ticket under it, alongside anything you filed by hand. That is the only
-automated path: no pipeline node creates tickets, so a pipeline cannot populate
-a project. See [Run an orchestration](/manual/guides/run-orchestration/).
+Approving an orchestration creates a project and files the parent ticket
+under it, alongside anything you filed by hand. Generated work items are
+pipeline steps, not ticket rows, so they do not appear on the project board.
+That is the only automated path: no pipeline node creates tickets, so a
+pipeline cannot populate a project. See
+[Run an orchestration](/manual/guides/run-orchestration/).
 
-:::note[Agents cannot manage projects]
-There are no project MCP tools — `create_project`, `list_projects`,
-`update_project`, `delete_project` and `set_ticket_project` were deleted rather
-than wired up, so no agent can create, list, update or delete a project, or set a
-ticket's project. Projects are an operator surface today.
-:::
+:::note[Projects are an operator surface]
+Create, list, update and delete projects in the app. Agents do not have
+project tools.
 
 ## Related guides
 

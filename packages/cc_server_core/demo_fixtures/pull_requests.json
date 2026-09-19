@@ -6,16 +6,23 @@
     "with the real *FromCache functions — so a fixture is a realistic cache",
     "entry rather than a parallel invention.",
     "",
+    "Four repos under helix/ (evalkit, retriever, features, finetune). Open PRs",
+    "are chosen so Maya's inbox is furnished: needs-your-review, drafts,",
+    "returned-to-you, approved, waiting-for-reviewers, waiting-for-author.",
+    "Merged PRs (#380, #201) furnish the inbox's merging-and-merged section;",
+    "they are authored by Maya and dated inside the classifier's 7-day window.",
+    "",
     "avatar_url is deliberately EMPTY everywhere: a demo container makes no",
     "outbound request, the media proxy is disabled, and the client renders",
     "initials when there is no avatar. A remote URL here would be the one",
     "thing that broke the zero-egress guarantee."
   ],
-  "repo": {
-    "owner": "parced",
-    "name": "closing",
-    "full_name": "parced/closing"
-  },
+  "repos": [
+    { "id": "demo-repo-evalkit", "owner": "helix", "name": "evalkit", "full_name": "helix/evalkit" },
+    { "id": "demo-repo-retriever", "owner": "helix", "name": "retriever", "full_name": "helix/retriever" },
+    { "id": "demo-repo-features", "owner": "helix", "name": "features", "full_name": "helix/features" },
+    { "id": "demo-repo-finetune", "owner": "helix", "name": "finetune", "full_name": "helix/finetune" }
+  ],
   "assignable_users": [
     { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
     { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
@@ -23,25 +30,25 @@
     { "login": "tlindqvist", "avatar_url": "", "name": "Tom Lindqvist" }
   ],
   "requestable_teams": [
-    { "kind": "team", "name": "Closing eng", "slug": "closing-eng", "avatar_url": "", "is_code_owner": true, "state": "pending" }
+    { "kind": "team", "name": "ML eng", "slug": "ml-eng", "avatar_url": "", "is_code_owner": true, "state": "pending" }
   ],
   "pull_requests": [
     {
       "detail": {
         "id": 4120001,
         "number": 412,
-        "title": "Surface contingency deadlines on the escrow timeline",
-        "body": "Contingency deadlines are typed in as fixed calendar dates after acceptance, so they drift every time a window is renegotiated and nothing agrees with the contract.\n\nThis derives each deadline from contract acceptance instead — per-contingency business-day windows (inspection 10, financing 21, title 14) behind an `EscrowClock` — and surfaces days-remaining on the closing timeline.\n\n- [x] `EscrowClock` abstraction\n- [x] Business-day windows for inspection, financing, title\n- [x] Days-remaining on the timeline\n- [ ] Decide what happens when two closings share one acceptance date",
+        "title": "Cap eval-run token budget per model family",
+        "body": "Eval runs share one org-wide token pool, so a Haiku sweep can starve an Opus grading job that started later.\n\nThis puts a per-family cap behind `EvalBudget` — Sonnet 200k, Haiku 80k, Opus 400k — and surfaces remaining tokens on the run card.\n\n- [x] `EvalBudget` / `TokenLedger`\n- [x] Caps per model family\n- [x] Remaining-tokens chip on the run card\n- [ ] Decide what happens when two evals share one run-group id",
         "state": "open",
         "is_draft": false,
         "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
         "created_at": "@-3d",
         "updated_at": "@-4h",
-        "repo_full_name": "parced/closing",
-        "html_url": "https://example.invalid/parced/closing/pull/412",
+        "repo_full_name": "helix/evalkit",
+        "html_url": "https://example.invalid/helix/evalkit/pull/412",
         "external_id": "PR_412",
         "head_sha": "9f2c1ab7e4d05c3b8a61f7d2e0c94b5a7d13e6f8",
-        "head_ref": "diego/contingency-deadlines",
+        "head_ref": "diego/eval-budget",
         "base_ref": "main",
         "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
         "requested_reviewers": [
@@ -67,22 +74,22 @@
         "mergeable_state": "clean",
         "review_decision": "reviewRequired"
       },
-      "diff": "diff --git a/lib/escrow/timeline.dart b/lib/escrow/timeline.dart\nindex 3f1a9c2..9f2c1ab 100644\n--- a/lib/escrow/timeline.dart\n+++ b/lib/escrow/timeline.dart\n@@ -1,16 +1,44 @@\n class EscrowTimeline {\n+  /// All deadline math goes through the clock so the timeline, the export\n+  /// and the tests share one definition of a business day.\n+  const EscrowTimeline(this._clock);\n+\n+  final EscrowClock _clock;\n+\n   DateTime deadlineFor(Contingency c, DateTime acceptance) =>\n-      acceptance.add(const Duration(days: 17));\n+      _clock.bd(acceptance, _win(c));\n+\n+  int _win(Contingency c) => switch (c.kind) {\n+        ContingencyKind.inspection => 10,\n+        ContingencyKind.financing => 21,\n+        ContingencyKind.title => 14,\n+      };\n \n   int daysRemaining(Contingency c, DateTime acceptance) =>\n-      deadlineFor(c, acceptance).difference(DateTime.now()).inDays;\n+      _clock.bdBetween(_clock.now(), deadlineFor(c, acceptance));\n }\n+\n+/// One definition of a business day, injectable for tests.\n+class EscrowClock {\n+  const EscrowClock([this._now = DateTime.now]);\n+\n+  final DateTime Function() _now;\n+\n+  DateTime now() => _now();\n+\n+  DateTime bd(DateTime from, int days) {\n+    var d = from;\n+    while (days > 0) {\n+      d = d.add(const Duration(days: 1));\n+      if (d.weekday < DateTime.saturday) days--;\n+    }\n+    return d;\n+  }\n+\n+  int bdBetween(DateTime from, DateTime to) {\n+    var n = 0;\n+    for (var d = from; d.isBefore(to); d = d.add(const Duration(days: 1))) {\n+      if (d.weekday < DateTime.saturday) n++;\n+    }\n+    return n;\n+  }\n+}\ndiff --git a/test/escrow/timeline_test.dart b/test/escrow/timeline_test.dart\nindex 8c4e1d0..2b9a7f3 100644\n--- a/test/escrow/timeline_test.dart\n+++ b/test/escrow/timeline_test.dart\n@@ -12,6 +12,22 @@ void main() {\n     expect(deadline, equals(accepted.add(const Duration(days: 17))));\n   });\n \n+  test('inspection window is 10 business days from acceptance', () {\n+    final dl = timeline.deadlineFor(inspection, accepted);\n+    expect(clock.bdBetween(accepted, dl), 10);\n+  });\n+\n+  test('a window never lands on a weekend', () {\n+    final friday = DateTime.utc(2026, 3, 6);\n+    final dl = timeline.deadlineFor(titleContingency, friday);\n+    expect(dl.weekday, lessThan(DateTime.saturday));\n+  });\n+\n }\n",
+      "diff": "diff --git a/evalkit/budget.py b/evalkit/budget.py\nindex 3f1a9c2..9f2c1ab 100644\n--- a/evalkit/budget.py\n+++ b/evalkit/budget.py\n@@ -1,14 +1,42 @@\n class EvalBudget:\n+    \"\"\"All spend math goes through the ledger so the run card, the\n+    grader and the tests share one definition of remaining tokens.\"\"\"\n+\n+    def __init__(self, ledger):\n+        self._ledger = ledger\n+\n     def remaining(self, family, run_group_id):\n-        return 250_000 - self._spent\n+        return self._cap(family) - self._ledger.spent(family)\n+\n+    def _cap(self, family):\n+        return {\n+            \"sonnet\": 200_000,\n+            \"haiku\": 80_000,\n+            \"opus\": 400_000,\n+        }[family]\n+\n+\n+class TokenLedger:\n+    \"\"\"One definition of spend, injectable for tests.\"\"\"\n+\n+    def __init__(self, now=None):\n+        self._now = now or (lambda: datetime.now(timezone.utc))\n+        self._rows = []\n+\n+    def record(self, family, tokens):\n+        self._rows.append((family, tokens, self._now()))\n+\n+    def spent(self, family):\n+        return sum(t for f, t, _ in self._rows if f == family)\n",
       "files": [
         {
-          "filename": "lib/escrow/timeline.dart",
+          "filename": "evalkit/budget.py",
           "status": "modified",
-          "additions": 14,
-          "deletions": 6,
-          "patch": "@@ -1,16 +1,44 @@\n class EscrowTimeline {\n+  /// All deadline math goes through the clock so the timeline, the export\n+  /// and the tests share one definition of a business day.\n+  const EscrowTimeline(this._clock);\n+\n+  final EscrowClock _clock;\n+\n   DateTime deadlineFor(Contingency c, DateTime acceptance) =>\n-      acceptance.add(const Duration(days: 17));\n+      _clock.bd(acceptance, _win(c));\n+\n+  int _win(Contingency c) => switch (c.kind) {\n+        ContingencyKind.inspection => 10,\n+        ContingencyKind.financing => 21,\n+        ContingencyKind.title => 14,\n+      };",
+          "additions": 42,
+          "deletions": 8,
+          "patch": "@@ -1,14 +1,42 @@\n class EvalBudget:\n+    def __init__(self, ledger):\n+        self._ledger = ledger\n+\n     def remaining(self, family, run_group_id):\n-        return 250_000 - self._spent\n+        return self._cap(family) - self._ledger.spent(family)",
           "viewed_state": "unviewed"
         },
         {
-          "filename": "test/escrow/timeline_test.dart",
+          "filename": "tests/evalkit/test_budget.py",
           "status": "modified",
-          "additions": 96,
-          "deletions": 12,
-          "patch": "@@ -12,6 +12,22 @@ void main() {\n+  test('inspection window is 10 business days from acceptance', () {\n+    final dl = timeline.deadlineFor(inspection, accepted);\n+    expect(clock.bdBetween(accepted, dl), 10);\n+  });\n+\n+  test('a window never lands on a weekend', () {\n+    final friday = DateTime.utc(2026, 3, 6);\n+    final dl = timeline.deadlineFor(titleContingency, friday);\n+    expect(dl.weekday, lessThan(DateTime.saturday));\n+  });",
+          "additions": 68,
+          "deletions": 10,
+          "patch": "@@ -12,6 +12,18 @@\n+def test_haiku_cap_is_80k():\n+    assert budget.remaining(\"haiku\", \"g1\") == 80_000\n+\n+def test_a_cap_never_goes_negative():\n+    ledger.record(\"haiku\", 90_000)\n+    assert budget.remaining(\"haiku\", \"g1\") >= 0",
           "viewed_state": "unviewed"
         },
         {
@@ -90,14 +97,14 @@
           "status": "modified",
           "additions": 8,
           "deletions": 8,
-          "patch": "@@ -1,5 +1,5 @@\n # Changelog\n \n-## Unreleased\n+## Unreleased\n+- Contingency deadlines are derived from acceptance in business days (inspection 10, financing 21, title 14).",
+          "patch": "@@ -1,5 +1,5 @@\n # Changelog\n \n-## Unreleased\n+## Unreleased\n+- Eval runs cap tokens per model family (Sonnet 200k, Haiku 80k, Opus 400k).",
           "viewed_state": "viewed"
         }
       ],
       "commits": [
-        { "sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1", "message": "Introduce EscrowClock behind the timeline", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-3d" },
-        { "sha": "4c8b2f19a7d360e5c1b98a2d4f70e6c3b5a91d82", "message": "Derive deadlines from acceptance in business days", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-2d" },
-        { "sha": "7e3a5d81c92b4f06a7d5e8c1b3f92a604d7c8e15", "message": "Pin the inspection and title windows in tests", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-2d" },
+        { "sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1", "message": "Introduce TokenLedger behind EvalBudget", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-3d" },
+        { "sha": "4c8b2f19a7d360e5c1b98a2d4f70e6c3b5a91d82", "message": "Cap remaining tokens per model family", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-2d" },
+        { "sha": "7e3a5d81c92b4f06a7d5e8c1b3f92a604d7c8e15", "message": "Pin the Haiku and Opus caps in tests", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-2d" },
         { "sha": "9f2c1ab7e4d05c3b8a61f7d2e0c94b5a7d13e6f8", "message": "Changelog", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-4h" }
       ],
       "reviews": [
@@ -105,7 +112,7 @@
           "id": 9001,
           "state": "commented",
           "author": { "login": "ravi", "avatar_url": "", "name": "Ravi (AI)" },
-          "body": "Reviewed 3 files (+118/−26).\n\n**What this does.** Contingency deadlines stop being dates someone types in after acceptance: `deadlineFor` now derives each one from contract acceptance through `EscrowClock` — inspection 10, financing 21, title 14 business days — and `daysRemaining` reads through the same clock, so the timeline, the closing export and the tests share one definition of a business day. Deriving instead of storing also means a renegotiated window needs no migration. That part is correct and I have no notes on it.\n\n**Blocking (1).** The calculation is keyed on the acceptance date alone. Two closings can share one — a re-trade re-accepted the same day, a double escrow on adjacent parcels — and `lib/escrow/extensions.dart:71` recomputes through this same path after an extension is recorded, so one closing's extension shifts the *other* file's inspection, financing and title deadlines everywhere they render. This is the open question in the PR body and it is still unresolved: the calculator needs the closing id (or the acceptance event) in the key.\n\n**Nits (3).**\n- `bd` / `bdBetween` on `EscrowClock`, and `_win` here — the most-scrutinized math in the PR under the least searchable names in the codebase. `addBusinessDays`, `businessDaysBetween`, `windowFor` say what they do.\n- Inspection (10) and title (14) each have a pinning test; financing (21) is the one window with a legal consequence when it slips, and it has none.\n- The clock skips weekends but has no holiday table, so a deadline can land on July 4th and nothing moves it. Fine if deliberate — say so where the windows are declared, because the county recorder does not record that day either.\n\nApproving once the shared-acceptance race is addressed — the rest looks correct.",
+          "body": "Reviewed 3 files (+118/−26).\n\n**What this does.** Eval runs stop sharing one org-wide pool: `remaining` now derives each family's cap through `TokenLedger` — Sonnet 200k, Haiku 80k, Opus 400k — so the run card, the grader and the tests share one definition of remaining tokens. That part is correct and I have no notes on it.\n\n**Blocking (1).** The calculation is keyed on the family alone. Two evals can share a run-group id — a nightly sweep and an ad-hoc grade kicked off the same hour — and `evalkit/extensions.py:71` recomputes through this same path after a retry is recorded, so one eval's spend burns the *other* run's remaining budget everywhere it renders. This is the open question in the PR body and it is still unresolved: the ledger needs the run-group id in the key.\n\n**Nits (3).**\n- `_cap` / `spent` — the most-scrutinized math in the PR under the least searchable names. `cap_for` / `spent_for` say what they do.\n- Haiku (80k) and Opus (400k) each have a pinning test; Sonnet (200k) is the one cap with a billing consequence when it slips, and it has none.\n- The ledger never resets at UTC midnight, so a run that straddles the day keeps yesterday's spend. Fine if deliberate — say so where the caps are declared.\n\nApproving once the shared run-group race is addressed — the rest looks correct.",
           "submitted_at": "@-5h",
           "reactions": []
         }
@@ -113,13 +120,13 @@
       "review_comments": [
         {
           "id": 8801,
-          "body": "Two closings can share an acceptance date — a re-trade re-accepted the same day, or a double escrow on adjacent parcels. `deadlineFor` resolves from the date alone, so once an extension is recorded on one file, the other closing's inspection, financing and title deadlines shift too. I think this is the \"deadlines moved on their own\" report.\n\nCould the calculator take the closing id and resolve the window per closing, so an extension on one never moves the other?",
+          "body": "Two evals can share a run-group id — a nightly sweep and an ad-hoc grade kicked off the same hour. `remaining` resolves from the family alone, so once a retry is recorded on one run, the other eval's remaining tokens drop too. I think this is the \"budget moved on its own\" report.\n\nCould the ledger take the run-group id and resolve spend per group, so a retry on one never burns the other?",
           "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
-          "path": "lib/escrow/timeline.dart",
+          "path": "evalkit/budget.py",
           "position": 9,
           "created_at": "@-6h",
           "side": "RIGHT",
-          "diff_hunk": "@@ -1,16 +1,44 @@\n   DateTime deadlineFor(Contingency c, DateTime acceptance) =>",
+          "diff_hunk": "@@ -1,14 +1,42 @@\n     def remaining(self, family, run_group_id):",
           "line": 9,
           "thread_id": "thread-412-1",
           "reactions": [
@@ -128,9 +135,9 @@
         },
         {
           "id": 8802,
-          "body": "Good catch — I'll key the calculator by the acceptance event so each closing resolves its own windows. In this PR, not a follow-up.",
+          "body": "Good catch — I'll key the ledger by the run-group id so each eval resolves its own spend. In this PR, not a follow-up.",
           "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
-          "path": "lib/escrow/timeline.dart",
+          "path": "evalkit/budget.py",
           "position": 9,
           "created_at": "@-5h",
           "side": "RIGHT",
@@ -144,7 +151,7 @@
       "issue_comments": [
         {
           "id": 7701,
-          "body": "Rendering note while it's fresh: once a contingency passes its deadline, \"0 days remaining\" reads like it is still live. Show expired ones as \"Expired 2d ago\" in the danger tone and stop counting down — otherwise we teach agents to ignore the chip. Mock is in the chip spec if you want it.",
+          "body": "Rendering note while it's fresh: once a family is exhausted, \"0 tokens remaining\" reads like the run is still live. Show exhausted ones as \"Budget exhausted\" in the danger tone and stop counting down — otherwise we teach people to ignore the chip.",
           "user": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
           "created_at": "@-2h",
           "reactions": []
@@ -156,7 +163,7 @@
       ],
       "check_runs": [
         { "name": "analyze", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-4h", "completed_at": "@-4h", "output": "No issues found", "workflow_name": "ci" },
-        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-4h", "completed_at": "@-3h", "output": "612 passed", "workflow_name": "ci" }
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-4h", "completed_at": "@-3h", "output":  "184 passed", "workflow_name": "ci" }
       ],
       "commit_statuses": [
         { "context": "ci/build", "state": "success", "description": "Build succeeded", "target_url": "", "created_at": "@-3h" }
@@ -168,92 +175,20 @@
     },
     {
       "detail": {
-        "id": 4010001,
-        "number": 401,
-        "title": "Add a distinct notarization-pending state to document uploads",
-        "body": "Inspection PDFs and disclosure packets upload to 100% and then sit silent while the server-side notarization check runs — on a 1GB scan that is ~30s of nothing, and support logs show people cancel and re-upload a packet that was fine.\n\nThis adds a `notarizing` phase between transfer and done so the tile says what is actually happening instead of parking at 99%.\n\nFixes PD-118.",
-        "state": "open",
-        "is_draft": false,
-        "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
-        "created_at": "@-6d",
-        "updated_at": "@-1d",
-        "repo_full_name": "parced/closing",
-        "html_url": "https://example.invalid/parced/closing/pull/401",
-        "external_id": "PR_401",
-        "head_sha": "b71e4c9d3a25f80c6e1b7d94a3f28c05e6d1b7a4",
-        "head_ref": "priya/notarization-phase",
-        "base_ref": "main",
-        "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
-        "requested_reviewers": [],
-        "requested_team_slugs": ["closing-eng"],
-        "assignees": [],
-        "labels": [
-          { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }
-        ],
-        "reviewed_by_me": false,
-        "reactions": [],
-        "changed_files": 2,
-        "commits_count": 2,
-        "additions": 64,
-        "deletions": 9,
-        "comments_count": 1,
-        "checks_status": "failing",
-        "mergeable_state": "blocked",
-        "review_decision": "approved"
-      },
-      "diff": "diff --git a/lib/documents/upload_client.dart b/lib/documents/upload_client.dart\nindex 22c9f1e..b71e4c9 100644\n--- a/lib/documents/upload_client.dart\n+++ b/lib/documents/upload_client.dart\n@@ -44,10 +44,17 @@ class DocumentUploadClient {\n   Future<void> upload(File file) async {\n     final total = await file.length();\n+    _phase.add(UploadPhase.transferring);\n     await _dio.put(\n       url,\n       data: file.openRead(),\n       onUploadProgress: (sent, _) => _progress.add(sent / total),\n     );\n+    // The server-side notarization check takes ~30s on a 1GB inspection\n+    // scan. Without its own phase the bar sits at 99% and reads as a hang,\n+    // so people cancel an upload that actually completes.\n+    _phase.add(UploadPhase.notarizing);\n     await _finalize();\n+    _phase.add(UploadPhase.done);\n     _progress.add(1.0);\n   }\n",
-      "files": [
-        { "filename": "lib/documents/upload_client.dart", "status": "modified", "additions": 42, "deletions": 6, "patch": "@@ -44,10 +44,17 @@ class DocumentUploadClient {\n+    _phase.add(UploadPhase.notarizing);\n     await _finalize();", "viewed_state": "unviewed" },
-        { "filename": "lib/ui/document_upload_tile.dart", "status": "modified", "additions": 22, "deletions": 3, "patch": "@@ -18,6 +18,12 @@\n+      if (phase == UploadPhase.notarizing)\n+        const Text('Notarization pending…'),", "viewed_state": "unviewed" }
-      ],
-      "commits": [
-        { "sha": "e5c1a7b93d604f28a1c7e9b5d0f3a682c4b91d7e", "message": "Add an explicit notarizing phase to uploads", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-6d" },
-        { "sha": "b71e4c9d3a25f80c6e1b7d94a3f28c05e6d1b7a4", "message": "Render notarization pending in the tile", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-1d" }
-      ],
-      "reviews": [
-        {
-          "id": 9101,
-          "state": "approved",
-          "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
-          "body": "Approved on the state machine — `notarizing` as a real phase instead of a fake 99% is the right call, and the copy matches what we agreed with title ops.\n\nOne thing before merge: the ordering failure Diego flagged is real. `UploadPhase.done` is emitted before `_progress.add(1.0)`, so a listener that reads both briefly sees a finished upload at 99%. Flip those two lines and this is mergeable.",
-          "submitted_at": "@-1d",
-          "reactions": []
-        }
-      ],
-      "review_comments": [],
-      "issue_comments": [],
-      "timeline": [
-        { "kind": "labeled", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "label": { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }, "created_at": "@-6d" },
-        { "kind": "reviewRequested", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "reviewer_name": "closing-eng", "reviewer_is_team": true, "reviewer_avatar_url": "", "created_at": "@-6d" }
-      ],
-      "check_runs": [
-        { "name": "analyze", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-1d", "completed_at": "@-1d", "output": "No issues found", "workflow_name": "ci" },
-        { "name": "test", "status": "completed", "conclusion": "failure", "html_url": "", "started_at": "@-1d", "completed_at": "@-1d", "output": "1 failing: document_upload_test.dart — expected done after progress 1.0", "workflow_name": "ci" }
-      ],
-      "commit_statuses": [
-        { "context": "ci/build", "state": "failure", "description": "1 test failed", "target_url": "", "created_at": "@-1d" }
-      ],
-      "reviewers": [
-        { "kind": "user", "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "is_code_owner": false, "state": "approved" },
-        { "kind": "team", "name": "Closing eng", "slug": "closing-eng", "avatar_url": "", "is_code_owner": true, "state": "pending" }
-      ]
-    },
-    {
-      "detail": {
-        "id": 4080001,
-        "number": 408,
-        "title": "Title exception scraper (experiment)",
-        "body": "Draft. County-record fetch + parse are wired; classification is not — every exception lands in `uncategorized` for now.\n\nDo not review yet — pushing for CI only.",
+        "id": 4090001,
+        "number": 409,
+        "title": "Plugin harness for custom graders (draft)",
+        "body": "Draft. The load path and the grader protocol are wired; sandboxing is not — every plugin currently runs in-process.\n\nDo not review yet — pushing for CI only.",
         "state": "open",
         "is_draft": true,
         "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
         "created_at": "@-2d",
         "updated_at": "@-9h",
-        "repo_full_name": "parced/closing",
-        "html_url": "https://example.invalid/parced/closing/pull/408",
-        "external_id": "PR_408",
+        "repo_full_name": "helix/evalkit",
+        "html_url": "https://example.invalid/helix/evalkit/pull/409",
+        "external_id": "PR_409",
         "head_sha": "c93b7e1a5d284f60b7e2c9a1d5f38b04e7c2a916",
-        "head_ref": "maya/title-exceptions",
+        "head_ref": "maya/grader-plugins",
         "base_ref": "main",
         "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
         "requested_reviewers": [],
@@ -270,12 +205,12 @@
         "mergeable_state": "unknown",
         "review_decision": "none"
       },
-      "diff": "diff --git a/lib/title/exceptions.dart b/lib/title/exceptions.dart\nnew file mode 100644\nindex 0000000..c93b7e1\n--- /dev/null\n+++ b/lib/title/exceptions.dart\n@@ -0,0 +1,24 @@\n+/// One recorded exception pulled from a county recorder export: a lien,\n+/// an easement, a CC&R — anything that encumbers title.\n+///\n+/// Classification is deliberately NOT part of this: lien vs easement vs\n+/// covenant is a judgment we keep getting wrong automatically, so it needs\n+/// its own review pass and a visible \"uncategorized\" state instead.\n+class TitleException {\n+  const TitleException({\n+    required this.id,\n+    required this.countyRecord,\n+    required this.instrument,\n+    required this.recordedAt,\n+    this.category = ExceptionCategory.uncategorized,\n+  });\n+\n+  final String id;\n+  final String countyRecord;\n+  final String instrument;\n+  final DateTime recordedAt;\n+  final ExceptionCategory category;\n+}\n",
+      "diff": "diff --git a/evalkit/plugins.py b/evalkit/plugins.py\nnew file mode 100644\nindex 0000000..c93b7e1\n--- /dev/null\n+++ b/evalkit/plugins.py\n@@ -0,0 +1,24 @@\n+\"\"\"Load path for custom graders.\n+\n+Sandboxing is deliberately NOT part of this draft: an in-process\n+plugin that can `import os` is a judgment we keep getting wrong\n+automatically, so it needs its own review pass.\"\"\"\n+\n+class GraderPlugin:\n+    def __init__(self, name, path):\n+        self.name = name\n+        self.path = path\n",
       "files": [
-        { "filename": "lib/title/exceptions.dart", "status": "added", "additions": 210, "deletions": 0, "patch": "@@ -0,0 +1,24 @@\n+class TitleException {\n+  const TitleException({\n+    required this.id,\n+    required this.countyRecord,\n+    required this.instrument,\n+  });\n+}", "viewed_state": "unviewed" }
+        { "filename": "evalkit/plugins.py", "status": "added", "additions": 210, "deletions": 0, "patch": "@@ -0,0 +1,24 @@\n+class GraderPlugin:\n+    def __init__(self, name, path):\n+        self.name = name\n+        self.path = path", "viewed_state": "unviewed" }
       ],
       "commits": [
-        { "sha": "c93b7e1a5d284f60b7e2c9a1d5f38b04e7c2a916", "message": "Exception model + county-record fetch", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-9h" }
+        { "sha": "c93b7e1a5d284f60b7e2c9a1d5f38b04e7c2a916", "message": "Grader plugin protocol + load path", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-9h" }
       ],
       "reviews": [],
       "review_comments": [],
@@ -292,62 +227,554 @@
     },
     {
       "detail": {
-        "id": 3970001,
-        "number": 397,
-        "title": "Batch MLS sync at 256 listings",
-        "body": "Measured on the 40k-listing MLS corpus: wall clock 41s → 12s, peak RSS unchanged.",
-        "state": "merged",
+        "id": 880001,
+        "number": 88,
+        "title": "Add hybrid BM25 + embedding retrieval",
+        "body": "Dense retrieval alone misses exact identifiers (dataset ids, citation keys). This unions BM25 over the chunk index with the existing embedding search and Reciprocal Rank Fusion, so a query that names a paper id still ranks that chunk first.\n\nFixes HX-118's cousin on the retrieval side — long traces were timing out in the dense-only path.",
+        "state": "open",
         "is_draft": false,
-        "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
-        "created_at": "@-12d",
-        "updated_at": "@-9d",
-        "merged_at": "@-9d",
-        "repo_full_name": "parced/closing",
-        "html_url": "https://example.invalid/parced/closing/pull/397",
-        "external_id": "PR_397",
-        "head_sha": "d40a6c2b81e795f3c0a6b8d2e4f17c93b5a0e6d8",
-        "head_ref": "diego/mls-batch-size",
+        "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
+        "created_at": "@-5d",
+        "updated_at": "@-8h",
+        "repo_full_name": "helix/retriever",
+        "html_url": "https://example.invalid/helix/retriever/pull/88",
+        "external_id": "PR_88",
+        "head_sha": "b71e4c9d3a25f80c6e1b7d94a3f28c05e6d1b7a4",
+        "head_ref": "priya/hybrid-retrieval",
         "base_ref": "main",
-        "base_sha": "0b3c8a71d92e46f5a8c1b7d03e9f2a64c5b8d017",
+        "base_sha": "2c8de91d5b39f7461f0e2d9c8b5f3e7e10d4c6b2",
         "requested_reviewers": [],
-        "requested_team_slugs": [],
+        "requested_team_slugs": ["ml-eng"],
         "assignees": [],
         "labels": [
-          { "name": "performance", "color": "0e8a16", "description": "Improves speed or resource use" }
+          { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 2,
+        "commits_count": 3,
+        "additions": 94,
+        "deletions": 12,
+        "comments_count": 3,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "reviewRequired"
+      },
+      "diff": "diff --git a/retriever/hybrid.py b/retriever/hybrid.py\nindex 22c9f1e..b71e4c9 100644\n--- a/retriever/hybrid.py\n+++ b/retriever/hybrid.py\n@@ -18,8 +18,16 @@ class Retriever:\n     def search(self, query, k=8):\n-        return self._dense.search(query, k)\n+        dense = self._dense.search(query, k * 2)\n+        sparse = self._bm25.search(query, k * 2)\n+        return rrf(dense, sparse)[:k]\n",
+      "files": [
+        { "filename": "retriever/hybrid.py", "status": "modified", "additions": 62, "deletions": 8, "patch": "@@ -18,8 +18,16 @@ class Retriever:\n+        dense = self._dense.search(query, k * 2)\n+        sparse = self._bm25.search(query, k * 2)\n+        return rrf(dense, sparse)[:k]", "viewed_state": "unviewed" },
+        { "filename": "retriever/rrf.py", "status": "added", "additions": 32, "deletions": 0, "patch": "@@ -0,0 +1,16 @@\n+def rrf(*rankings, k=60):\n+    scores = {}\n+    for ranking in rankings:\n+        for i, doc in enumerate(ranking):\n+            scores[doc.id] = scores.get(doc.id, 0) + 1 / (k + i + 1)\n+    return sorted(scores, key=scores.get, reverse=True)", "viewed_state": "unviewed" }
+      ],
+      "commits": [
+        { "sha": "e5c1a7b93d604f28a1c7e9b5d0f3a682c4b91d7e", "message": "Add BM25 over the chunk index", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-5d" },
+        { "sha": "a4d2c8e17b503f19c0d6e8a4f1e27b94d5c0a8f3", "message": "Fuse with reciprocal rank fusion", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-2d" },
+        { "sha": "b71e4c9d3a25f80c6e1b7d94a3f28c05e6d1b7a4", "message": "Pin identifier queries in the retrieval suite", "author": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "date": "@-8h" }
+      ],
+      "reviews": [],
+      "review_comments": [],
+      "issue_comments": [
+        {
+          "id": 7801,
+          "body": "Taking the ml-eng request. Identifier queries (dataset ids, citation keys) have to rank the named chunk first — I'll check that against the retrieval suite before approving.",
+          "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+          "created_at": "@-10h",
+          "reactions": []
+        },
+        {
+          "id": 7802,
+          "body": "The suite now pins `ds_7f3a` and `cite:kr2023`. Ready when you are.",
+          "user": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" },
+          "created_at": "@-8h",
+          "reactions": []
+        }
+      ],
+      "timeline": [
+        { "kind": "labeled", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "label": { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }, "created_at": "@-5d" },
+        { "kind": "reviewRequested", "actor": { "login": "priya-r", "avatar_url": "", "name": "Priya Raman" }, "reviewer_name": "ml-eng", "reviewer_is_team": true, "reviewer_avatar_url": "", "created_at": "@-5d" }
+      ],
+      "check_runs": [
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-8h", "completed_at": "@-8h", "output": "96 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [],
+      "reviewers": [
+        { "kind": "team", "name": "ML eng", "slug": "ml-eng", "avatar_url": "", "is_code_owner": true, "state": "pending" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 810001,
+        "number": 81,
+        "title": "Reranker timeout is silently swallowed",
+        "body": "When the cross-encoder times out we currently return the unre-ranked dense hits and log a warning. Callers treat that as a successful hybrid search, so a 504 looks like \"the corpus has no good matches\".\n\nThis fails the request instead, with a distinct `RerankTimeout` the run card can show.\n\nFixes HX-124.",
+        "state": "open",
+        "is_draft": false,
+        "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+        "created_at": "@-4d",
+        "updated_at": "@-6h",
+        "repo_full_name": "helix/retriever",
+        "html_url": "https://example.invalid/helix/retriever/pull/81",
+        "external_id": "PR_81",
+        "head_sha": "d40a6c2b81e795f3c0a6b8d2e4f17c93b5a0e6d8",
+        "head_ref": "maya/rerank-timeout",
+        "base_ref": "main",
+        "base_sha": "2c8de91d5b39f7461f0e2d9c8b5f3e7e10d4c6b2",
+        "requested_reviewers": [
+          { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }
+        ],
+        "requested_team_slugs": [],
+        "assignees": [{ "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }],
+        "labels": [
+          { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 2,
+        "commits_count": 2,
+        "additions": 48,
+        "deletions": 11,
+        "comments_count": 2,
+        "checks_status": "failing",
+        "mergeable_state": "blocked",
+        "review_decision": "changesRequested"
+      },
+      "diff": "diff --git a/retriever/rerank.py b/retriever/rerank.py\nindex 5a0e6d8..d40a6c2 100644\n--- a/retriever/rerank.py\n+++ b/retriever/rerank.py\n@@ -22,9 +22,8 @@ class Reranker:\n         try:\n             return self._model.predict(pairs, timeout=self._timeout)\n         except TimeoutError:\n-            log.warning(\"rerank timed out; returning unre-ranked hits\")\n-            return hits\n+            raise RerankTimeout(self._timeout) from None\n",
+      "files": [
+        { "filename": "retriever/rerank.py", "status": "modified", "additions": 28, "deletions": 7, "patch": "@@ -22,9 +22,8 @@ class Reranker:\n-            log.warning(\"rerank timed out; returning unre-ranked hits\")\n-            return hits\n+            raise RerankTimeout(self._timeout) from None", "viewed_state": "unviewed" },
+        { "filename": "tests/retriever/test_rerank.py", "status": "modified", "additions": 20, "deletions": 4, "patch": "@@ -40,6 +40,14 @@\n+def test_timeout_is_a_hard_failure():\n+    with pytest.raises(RerankTimeout):\n+        reranker.rerank(hits, query=\"q\")", "viewed_state": "unviewed" }
+      ],
+      "commits": [
+        { "sha": "c1b8d4e92a715f30b2d7c9e5f0a38c04d6b1e8a7", "message": "Fail the request when the reranker times out", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-4d" },
+        { "sha": "d40a6c2b81e795f3c0a6b8d2e4f17c93b5a0e6d8", "message": "Pin the timeout as a hard failure", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-6h" }
+      ],
+      "reviews": [
+        {
+          "id": 9101,
+          "state": "changesRequested",
+          "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+          "body": "The fail-closed call is right, but the new test never injects a clock — it sleeps the real timeout, so CI flakes when the runner is busy. Pass a `timeout=0` reranker in the test, or this stays red.",
+          "submitted_at": "@-6h",
+          "reactions": []
+        }
+      ],
+      "review_comments": [],
+      "issue_comments": [
+        {
+          "id": 7901,
+          "body": "The fail-closed call is the right shape. I'll hold merge until the test injects `timeout=0` — sleeping the real timeout is what made CI red.",
+          "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+          "created_at": "@-5h",
+          "reactions": []
+        }
+      ],
+      "timeline": [
+        { "kind": "labeled", "actor": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "label": { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }, "created_at": "@-4d" }
+      ],
+      "check_runs": [
+        { "name": "analyze", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-6h", "completed_at": "@-6h", "output": "No issues found", "workflow_name": "ci" },
+        { "name": "test", "status": "completed", "conclusion": "failure", "html_url": "", "started_at": "@-6h", "completed_at": "@-6h", "output": "1 failing: test_rerank.py — reranker slept the real timeout", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [
+        { "context": "ci/build", "state": "failure", "description": "1 test failed", "target_url": "", "created_at": "@-6h" }
+      ],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "is_code_owner": false, "state": "changesRequested" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 540001,
+        "number": 54,
+        "title": "Materialize late-arriving features on read",
+        "body": "Online features that land after the training window currently 404 the serving path. This backfills on read from the offline store (capped at 50ms) so a feature that arrived 2s late still serves rather than dropping the example.\n\nWaiting on a first pass from Diego.",
+        "state": "open",
+        "is_draft": false,
+        "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+        "created_at": "@-3d",
+        "updated_at": "@-14h",
+        "repo_full_name": "helix/features",
+        "html_url": "https://example.invalid/helix/features/pull/54",
+        "external_id": "PR_54",
+        "head_sha": "a91c4e8b72d604f19b3e7a5c0d28f16e4b9c0d7a",
+        "head_ref": "maya/late-features",
+        "base_ref": "main",
+        "base_sha": "3d9ef02e6c40a8572a1f3e0d9c6a4f8f21e5d7c3",
+        "requested_reviewers": [
+          { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }
+        ],
+        "requested_team_slugs": [],
+        "assignees": [{ "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }],
+        "labels": [
+          { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 2,
+        "commits_count": 2,
+        "additions": 76,
+        "deletions": 9,
+        "comments_count": 0,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "none"
+      },
+      "diff": "diff --git a/features/serve.py b/features/serve.py\nindex 11aa22b..a91c4e8 100644\n--- a/features/serve.py\n+++ b/features/serve.py\n@@ -30,7 +30,12 @@ class FeatureStore:\n     def get(self, entity_id, name):\n         row = self._online.get(entity_id, name)\n-        if row is None:\n-            raise FeatureMissing(name)\n+        if row is None:\n+            row = self._offline.get(entity_id, name, timeout_ms=50)\n+            if row is None:\n+                raise FeatureMissing(name)\n         return row\n",
+      "files": [
+        { "filename": "features/serve.py", "status": "modified", "additions": 48, "deletions": 6, "patch": "@@ -30,7 +30,12 @@ class FeatureStore:\n+            row = self._offline.get(entity_id, name, timeout_ms=50)", "viewed_state": "unviewed" },
+        { "filename": "tests/features/test_serve.py", "status": "modified", "additions": 28, "deletions": 3, "patch": "@@ -22,6 +22,14 @@\n+def test_late_feature_materializes_from_offline():\n+    assert store.get(\"e1\", \"clicks_1h\") == 4", "viewed_state": "unviewed" }
+      ],
+      "commits": [
+        { "sha": "8e2f1c4a93b705d20c4d8f6b1e39a05c7d2b9e18", "message": "Backfill late features from the offline store", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-3d" },
+        { "sha": "a91c4e8b72d604f19b3e7a5c0d28f16e4b9c0d7a", "message": "Cap the offline read at 50ms", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-14h" }
+      ],
+      "reviews": [],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [
+        { "kind": "reviewRequested", "actor": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "reviewer_name": "dferrer", "reviewer_is_team": false, "reviewer_avatar_url": "", "created_at": "@-3d" }
+      ],
+      "check_runs": [
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-14h", "completed_at": "@-14h", "output": "41 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "is_code_owner": true, "state": "pending" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 490001,
+        "number": 49,
+        "title": "Feature lineage graph",
+        "body": "Walks producers → consumers so a broken transform names every serving path it hits. Maya already reviewed; I am folding her nits.",
+        "state": "open",
+        "is_draft": false,
+        "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+        "created_at": "@-6d",
+        "updated_at": "@-1d",
+        "repo_full_name": "helix/features",
+        "html_url": "https://example.invalid/helix/features/pull/49",
+        "external_id": "PR_49",
+        "head_sha": "f12a7d3c90e816b4d1c8f9a6e5b30d27c8a4f1e9",
+        "head_ref": "diego/lineage-graph",
+        "base_ref": "main",
+        "base_sha": "3d9ef02e6c40a8572a1f3e0d9c6a4f8f21e5d7c3",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [
+          { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }
+        ],
+        "labels": [
+          { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }
         ],
         "reviewed_by_me": true,
         "reactions": [
-          { "content": "ROCKET", "emoji": "🚀", "count": 3, "user_reacted": false, "usernames": ["maya-ok", "priya-r", "tlindqvist"] }
+          { "content": "THUMBS_UP", "emoji": "👍", "count": 1, "user_reacted": true, "usernames": ["maya-ok"] }
         ],
+        "changed_files": 2,
+        "commits_count": 3,
+        "additions": 132,
+        "deletions": 4,
+        "comments_count": 2,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "approved"
+      },
+      "diff": "diff --git a/features/lineage.py b/features/lineage.py\nnew file mode 100644\nindex 0000000..f12a7d3\n--- /dev/null\n+++ b/features/lineage.py\n@@ -0,0 +1,28 @@\n+class LineageGraph:\n+    def consumers(self, feature):\n+        return list(self._edges.get(feature, ()))\n",
+      "files": [
+        { "filename": "features/lineage.py", "status": "added", "additions": 110, "deletions": 0, "patch": "@@ -0,0 +1,28 @@\n+class LineageGraph:\n+    def consumers(self, feature):\n+        return list(self._edges.get(feature, ()))", "viewed_state": "viewed" },
+        { "filename": "tests/features/test_lineage.py", "status": "added", "additions": 22, "deletions": 0, "patch": "@@ -0,0 +1,10 @@\n+def test_a_broken_transform_names_its_serving_paths():\n+    assert graph.consumers(\"clicks_1h\") == [\"ranker\", \"eval\"]", "viewed_state": "viewed" }
+      ],
+      "commits": [
+        { "sha": "b3c9e1f84a726d31e5f8a0c2d47b16d9e3c5a082", "message": "Lineage graph over feature producers", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-6d" },
+        { "sha": "c4d0f2a95b837e42f6a9b1d3e58c27e0f4d6b193", "message": "Name every serving path a transform hits", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-3d" },
+        { "sha": "f12a7d3c90e816b4d1c8f9a6e5b30d27c8a4f1e9", "message": "Fold Maya's nits on the walk order", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-1d" }
+      ],
+      "reviews": [
+        {
+          "id": 9201,
+          "state": "approved",
+          "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+          "body": "Approved — walk order is topological now, so a cycle fails closed instead of looping. The serving-path names match what evalkit already logs.",
+          "submitted_at": "@-1d",
+          "reactions": []
+        }
+      ],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [],
+      "check_runs": [
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-1d", "completed_at": "@-1d", "output": "41 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "is_code_owner": true, "state": "approved" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 230001,
+        "number": 23,
+        "title": "LoRA adapter merge is not deterministic",
+        "body": "Merging the same adapter twice produced different weights because `torch.add` ran without a pinned generator. This seeds the merge from the adapter hash so two merges of the same artifact byte-compare.\n\nDiego approved; landing once CI is green.",
+        "state": "open",
+        "is_draft": false,
+        "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+        "created_at": "@-2d",
+        "updated_at": "@-3h",
+        "repo_full_name": "helix/finetune",
+        "html_url": "https://example.invalid/helix/finetune/pull/23",
+        "external_id": "PR_23",
+        "head_sha": "e81b5d4a03c927e6f2b9c1d8a7e40f38d6c2b5a1",
+        "head_ref": "maya/lora-merge-seed",
+        "base_ref": "main",
+        "base_sha": "4e0fa13f7d51b9683a2a4f1e0d7a5a9a32f6e8d4",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [{ "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }],
+        "labels": [
+          { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [
+          { "content": "ROCKET", "emoji": "🚀", "count": 1, "user_reacted": false, "usernames": ["dferrer"] }
+        ],
+        "changed_files": 2,
+        "commits_count": 2,
+        "additions": 36,
+        "deletions": 8,
+        "comments_count": 1,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "approved"
+      },
+      "diff": "diff --git a/finetune/merge.py b/finetune/merge.py\nindex 88bb99c..e81b5d4 100644\n--- a/finetune/merge.py\n+++ b/finetune/merge.py\n@@ -14,7 +14,9 @@ def merge(base, adapter):\n-    torch.manual_seed(0)\n+    torch.manual_seed(_seed_from(adapter.hash))\n     return base + adapter.delta\n",
+      "files": [
+        { "filename": "finetune/merge.py", "status": "modified", "additions": 22, "deletions": 6, "patch": "@@ -14,7 +14,9 @@ def merge(base, adapter):\n-    torch.manual_seed(0)\n+    torch.manual_seed(_seed_from(adapter.hash))", "viewed_state": "viewed" },
+        { "filename": "tests/finetune/test_merge.py", "status": "modified", "additions": 14, "deletions": 2, "patch": "@@ -8,6 +8,12 @@\n+def test_two_merges_of_the_same_adapter_byte_compare():\n+    assert merge(base, adapter) == merge(base, adapter)", "viewed_state": "viewed" }
+      ],
+      "commits": [
+        { "sha": "c9d4e2b81a637f50d3e8b1c6f29a14e8c5b3d092", "message": "Seed LoRA merge from the adapter hash", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-2d" },
+        { "sha": "e81b5d4a03c927e6f2b9c1d8a7e40f38d6c2b5a1", "message": "Pin two merges of the same adapter", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-3h" }
+      ],
+      "reviews": [
+        {
+          "id": 9301,
+          "state": "approved",
+          "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+          "body": "Approved — I reran the merge twice locally and the tensors byte-compare. Nice.",
+          "submitted_at": "@-3h",
+          "reactions": []
+        }
+      ],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [
+        { "kind": "labeled", "actor": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "label": { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }, "created_at": "@-2d" }
+      ],
+      "check_runs": [
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-3h", "completed_at": "@-3h", "output": "28 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "is_code_owner": false, "state": "approved" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 190001,
+        "number": 19,
+        "title": "QLoRA memory profiler (draft)",
+        "body": "Draft. Records peak VRAM per rank so we can stop guessing at batch size. Not ready for review — the CUDA hook still double-counts activations.",
+        "state": "open",
+        "is_draft": true,
+        "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+        "created_at": "@-1d",
+        "updated_at": "@-5h",
+        "repo_full_name": "helix/finetune",
+        "html_url": "https://example.invalid/helix/finetune/pull/19",
+        "external_id": "PR_19",
+        "head_sha": "aa1b2c3d4e5f67890123456789abcdef01234567",
+        "head_ref": "diego/qlora-profiler",
+        "base_ref": "main",
+        "base_sha": "4e0fa13f7d51b9683a2a4f1e0d7a5a9a32f6e8d4",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [
+          { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [],
         "changed_files": 1,
         "commits_count": 1,
-        "additions": 4,
-        "deletions": 4,
+        "additions": 88,
+        "deletions": 0,
+        "comments_count": 0,
+        "checks_status": "pending",
+        "mergeable_state": "unknown",
+        "review_decision": "none"
+      },
+      "diff": "diff --git a/finetune/profiler.py b/finetune/profiler.py\nnew file mode 100644\nindex 0000000..aa1b2c3\n--- /dev/null\n+++ b/finetune/profiler.py\n@@ -0,0 +1,20 @@\n+class QloraProfiler:\n+    def peak_vram_mb(self, rank):\n+        return self._samples.get(rank, 0)\n",
+      "files": [
+        { "filename": "finetune/profiler.py", "status": "added", "additions": 88, "deletions": 0, "patch": "@@ -0,0 +1,20 @@\n+class QloraProfiler:\n+    def peak_vram_mb(self, rank):\n+        return self._samples.get(rank, 0)", "viewed_state": "unviewed" }
+      ],
+      "commits": [
+        { "sha": "aa1b2c3d4e5f67890123456789abcdef01234567", "message": "QLoRA peak-VRAM sampler (WIP)", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-5h" }
+      ],
+      "reviews": [],
+      "review_comments": [],
+      "issue_comments": [],
+      "timeline": [],
+      "check_runs": [
+        { "name": "analyze", "status": "inProgress", "html_url": "", "started_at": "@-5h", "output": "", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [
+        { "context": "ci/build", "state": "pending", "description": "Build running", "target_url": "", "created_at": "@-5h" }
+      ],
+      "reviewers": []
+    },
+    {
+      "detail": {
+        "id": 3800001,
+        "number": 380,
+        "title": "Pin the eval budget window to a fake clock",
+        "body": "The UTC-day window test called `datetime.now()` directly, so a run that crossed midnight dropped the first record. Inject the clock; HX-131.\n\nMerged after the Haiku/Opus cases landed in #412's sibling.",
+        "state": "merged",
+        "is_draft": false,
+        "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+        "created_at": "@-6d",
+        "updated_at": "@-2d",
+        "merged_at": "@-2d",
+        "repo_full_name": "helix/evalkit",
+        "html_url": "https://example.invalid/helix/evalkit/pull/380",
+        "external_id": "PR_380",
+        "head_sha": "c7e4a91b2d305f68e1a4c7b9d2e5f083a6b1c4d9",
+        "head_ref": "maya/budget-clock",
+        "base_ref": "main",
+        "base_sha": "1a7de90c4b28f6350e9d1c8b7a4f2e6d09c3b5a1",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [{ "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }],
+        "labels": [
+          { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 2,
+        "commits_count": 2,
+        "additions": 36,
+        "deletions": 8,
+        "comments_count": 1,
+        "checks_status": "passing",
+        "mergeable_state": "clean",
+        "review_decision": "approved"
+      },
+      "diff": "diff --git a/evalkit/budget.py b/evalkit/budget.py\nindex 1a7de90..c7e4a91 100644\n--- a/evalkit/budget.py\n+++ b/evalkit/budget.py\n@@ -20,6 +20,8 @@ class TokenLedger:\n     def __init__(self, now=None):\n+        self._now = now or (lambda: datetime.now(timezone.utc))\n",
+      "files": [
+        { "filename": "evalkit/budget.py", "status": "modified", "additions": 18, "deletions": 4, "patch": "@@ -20,6 +20,8 @@ class TokenLedger:\n+        self._now = now or (lambda: datetime.now(timezone.utc))", "viewed_state": "viewed" },
+        { "filename": "tests/evalkit/test_budget.py", "status": "modified", "additions": 18, "deletions": 4, "patch": "@@ -40,6 +40,12 @@\n+def test_window_does_not_drop_across_utc_midnight(frozen_now):", "viewed_state": "viewed" }
+      ],
+      "commits": [
+        { "sha": "b6d3c8e15a407f29c0d7e8a4f1e27c93d5b0a8e2", "message": "Inject the clock into TokenLedger", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-5d" },
+        { "sha": "c7e4a91b2d305f68e1a4c7b9d2e5f083a6b1c4d9", "message": "Pin the UTC-day window across midnight", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-2d" }
+      ],
+      "reviews": [
+        {
+          "id": 9401,
+          "state": "approved",
+          "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+          "body": "Approved — the frozen clock makes the midnight case deterministic. Thanks for not sleeping.",
+          "submitted_at": "@-2d",
+          "reactions": []
+        }
+      ],
+      "review_comments": [],
+      "issue_comments": [
+        {
+          "id": 8001,
+          "body": "Landing this ahead of Thursday so #412 can keep the injected clock.",
+          "user": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+          "created_at": "@-2d",
+          "reactions": []
+        }
+      ],
+      "timeline": [
+        { "kind": "labeled", "actor": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "label": { "name": "bug", "color": "d73a4a", "description": "Something isn't working" }, "created_at": "@-6d" }
+      ],
+      "check_runs": [
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-2d", "completed_at": "@-2d", "output": "186 passed", "workflow_name": "ci" }
+      ],
+      "commit_statuses": [],
+      "reviewers": [
+        { "kind": "user", "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "is_code_owner": false, "state": "approved" }
+      ]
+    },
+    {
+      "detail": {
+        "id": 2010001,
+        "number": 201,
+        "title": "Show peak VRAM per LoRA rank on the training card",
+        "body": "Operators were guessing at batch size. This records peak VRAM per rank on the training card so the next run starts from a measured number, not folklore.",
+        "state": "merged",
+        "is_draft": false,
+        "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" },
+        "created_at": "@-8d",
+        "updated_at": "@-4d",
+        "merged_at": "@-4d",
+        "repo_full_name": "helix/finetune",
+        "html_url": "https://example.invalid/helix/finetune/pull/201",
+        "external_id": "PR_201",
+        "head_sha": "e2b8c4d17a506f39b0c7e9a5d1f38b04c6a2e8d1",
+        "head_ref": "maya/vram-card",
+        "base_ref": "main",
+        "base_sha": "4e0fa13f7d51b9683a2a4f1e0d7a5a9a32f6e8d4",
+        "requested_reviewers": [],
+        "requested_team_slugs": [],
+        "assignees": [{ "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }],
+        "labels": [
+          { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }
+        ],
+        "reviewed_by_me": false,
+        "reactions": [],
+        "changed_files": 2,
+        "commits_count": 2,
+        "additions": 54,
+        "deletions": 6,
         "comments_count": 0,
         "checks_status": "passing",
         "mergeable_state": "clean",
         "review_decision": "approved"
       },
-      "diff": "diff --git a/lib/listings/mls_sync.dart b/lib/listings/mls_sync.dart\nindex 5a0e6d8..d40a6c2 100644\n--- a/lib/listings/mls_sync.dart\n+++ b/lib/listings/mls_sync.dart\n@@ -18,7 +18,7 @@ class MlsSyncEngine {\n-  static const _batchSize = 32;\n+  static const _batchSize = 256;\n",
+      "diff": "diff --git a/finetune/card.py b/finetune/card.py\nnew file mode 100644\nindex 0000000..e2b8c4d\n--- /dev/null\n+++ b/finetune/card.py\n@@ -0,0 +1,8 @@\n+def peak_vram_mb(rank):\n+    return _samples.get(rank, 0)\n",
       "files": [
-        { "filename": "lib/listings/mls_sync.dart", "status": "modified", "additions": 4, "deletions": 4, "patch": "@@ -18,7 +18,7 @@ class MlsSyncEngine {\n-  static const _batchSize = 32;\n+  static const _batchSize = 256;", "viewed_state": "viewed" }
+        { "filename": "finetune/card.py", "status": "added", "additions": 40, "deletions": 0, "patch": "@@ -0,0 +1,8 @@\n+def peak_vram_mb(rank):\n+    return _samples.get(rank, 0)", "viewed_state": "viewed" },
+        { "filename": "tests/finetune/test_card.py", "status": "added", "additions": 14, "deletions": 0, "patch": "@@ -0,0 +1,6 @@\n+def test_peak_vram_is_per_rank():\n+    assert peak_vram_mb(8) >= peak_vram_mb(4)", "viewed_state": "viewed" }
       ],
       "commits": [
-        { "sha": "d40a6c2b81e795f3c0a6b8d2e4f17c93b5a0e6d8", "message": "Batch MLS sync at 256 listings", "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "date": "@-12d" }
+        { "sha": "d1a7b3c05e496f28a9c6d8e4f0b27a93c5e1d8b0", "message": "Record peak VRAM per LoRA rank", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-7d" },
+        { "sha": "e2b8c4d17a506f39b0c7e9a5d1f38b04c6a2e8d1", "message": "Render the peak on the training card", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "date": "@-4d" }
       ],
       "reviews": [
-        { "id": 9201, "state": "approved", "author": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "body": "Ran the same benchmark on the east-region feed before approving — 41s → 12s holds there too.", "submitted_at": "@-9d", "reactions": [] }
+        {
+          "id": 9501,
+          "state": "approved",
+          "author": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" },
+          "body": "Approved — the card matches what the profiler later records. Fine as a first cut.",
+          "submitted_at": "@-4d",
+          "reactions": []
+        }
       ],
       "review_comments": [],
       "issue_comments": [],
       "timeline": [
-        { "kind": "labeled", "actor": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "label": { "name": "performance", "color": "0e8a16", "description": "Improves speed or resource use" }, "created_at": "@-12d" }
+        { "kind": "labeled", "actor": { "login": "maya-ok", "avatar_url": "", "name": "Maya Okonkwo" }, "label": { "name": "enhancement", "color": "a2eeef", "description": "New feature or request" }, "created_at": "@-8d" }
       ],
       "check_runs": [
-        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-9d", "completed_at": "@-9d", "output": "612 passed", "workflow_name": "ci" }
+        { "name": "test", "status": "completed", "conclusion": "success", "html_url": "", "started_at": "@-4d", "completed_at": "@-4d", "output": "22 passed", "workflow_name": "ci" }
       ],
       "commit_statuses": [],
-      "reviewers": []
+      "reviewers": [
+        { "kind": "user", "user": { "login": "dferrer", "avatar_url": "", "name": "Diego Ferrer" }, "is_code_owner": false, "state": "approved" }
+      ]
     }
   ]
 }

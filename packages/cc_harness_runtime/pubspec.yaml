@@ -12,7 +12,7 @@ dependencies:
   cc_harness:
     path: ../cc_harness
   crypto: ^3.0.7
-  http2: ^2.3.1
+  http2: ^3.1.0
   path: ^1.9.1
 
 dev_dependencies:

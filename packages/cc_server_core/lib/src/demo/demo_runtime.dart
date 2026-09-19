@@ -1,6 +1,9 @@
 import 'dart:convert';
+
+import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/provider.dart';
@@ -9,6 +12,7 @@ import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/demo/demo_forge_provider_factory.dart';
 import 'package:cc_server_core/src/demo/demo_hooks.dart';
+import 'package:cc_server_core/src/demo/demo_merged_history.dart';
 import 'package:cc_server_core/src/demo/demo_open_pr_poller.dart';
 import 'package:cc_server_core/src/demo/demo_profile.dart';
 import 'package:cc_server_core/src/demo/demo_provider.dart';
@@ -76,6 +80,10 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
     reviewAxisResultRepository: DaoReviewAxisResultRepository(
       context.workspaceDbs,
     ),
+    teamRepository: TeamRepositoryImpl(context.workspaceDbs),
+    orchestrationRepository: DaoOrchestrationRepository(context.workspaceDbs),
+    planDocumentRepository: DaoPlanDocumentRepository(context.workspaceDbs),
+    isolatedRepoRepository: DaoIsolatedRepoRepository(context.workspaceDbs),
     baseSeed: context.baseSeed,
     registerConfirmation: context.registerConfirmation,
     refreshNewsfeed: context.refreshNewsfeed,
@@ -112,6 +120,7 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
       prToWire: context.pullRequestToWire,
       eventBus: context.eventBus,
     ),
+    mergedHistory: DemoMergedHistory(workspaceDbs: context.workspaceDbs),
     forgeRegistry: buildDemoForgeRegistry(
       workspaceDbs: context.workspaceDbs,
       visitor: kDemoVisitorAuthor,
@@ -125,12 +134,15 @@ class _DemoWiring implements DemoWiring {
     required DemoVisitorService visitors,
     required this.repoStats,
     required this.poller,
+    required DemoMergedHistory mergedHistory,
     required ForgeProviderRegistry forgeRegistry,
   }) : _visitors = visitors,
+       _mergedHistory = mergedHistory,
        _forgeRegistry = forgeRegistry,
        agentLoop = ScriptedAgentLoop(scripts: scripts);
 
   final DemoVisitorService _visitors;
+  final DemoMergedHistory _mergedHistory;
   final ForgeProviderRegistry _forgeRegistry;
 
   /// The poller, exposed by the interface.
@@ -163,6 +175,15 @@ class _DemoWiring implements DemoWiring {
 
   @override
   OpenPrPollingService get openPrPoller => poller;
+
+  @override
+  Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>>
+  mergedByViewer(List<Repo> repos, {String? userId, String? workspaceId}) =>
+      _mergedHistory.mergedByViewer(
+        repos,
+        userId: userId,
+        workspaceId: workspaceId,
+      );
 
   /// One registry for everyone: the demo's PR repository holds no client and
   /// no token, so there is no "as whom" decision to make.

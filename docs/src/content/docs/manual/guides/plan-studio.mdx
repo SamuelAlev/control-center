@@ -112,9 +112,9 @@ orchestration plan.
    back to it. Rewinding saves that proposal as a **new** revision — nothing
    is lost.
 
-If the orchestrator replans while the plan is executing, a banner tells you
-the live revision is ahead of the one you approved and the panel diffs
-against your approved revision.
+`propose_orchestration` and the editor both refuse changes once the plan is
+no longer `proposed`, so an in-flight run does not pick up a mid-execution
+replan.
 
 ## Approve, reject, or widen a plan
 
@@ -130,18 +130,19 @@ Once an orchestration is executing, the bar changes:
 
 - If a step stopped to ask mid-run, select it and press **Continue node** to
   resume it.
+- Press **Approve selected** to widen a _partial_ approval to the selected
+  step plus everything it transitively depends on (a step can never be
+  approved without its dependencies). The control is on the executing bar
+  for every orchestration; it is a no-op when the plan was approved whole.
 - Press **Cancel run** to stop the whole orchestration.
 
-A plan that was approved _partially_ also gets a third control: steps outside
-the approved set render as deferred and do not run and **Approve selected**
-widens the set to a step plus everything it transitively depends on (a step can
-never be approved without its dependencies).
+Steps outside a partial approved set render as deferred and do not run until
+you widen the set.
 
 :::note[Partial approvals cannot originate in the app]
 A partial approval only exists when something called `orchestration.approve`
-over RPC with an explicit `approved_node_keys` list. If you never see deferred
-steps or **Approve selected**, nothing is wrong — you cannot create that state
-from the desktop or web client. Plan documents are approved whole in every
+over RPC with an explicit `approved_node_keys` list. **Approve plan** in the
+app always approves every step. Plan documents are approved whole in every
 case, so an executing document offers **Cancel run** only.
 :::
 

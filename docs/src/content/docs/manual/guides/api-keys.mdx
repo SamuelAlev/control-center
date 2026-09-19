@@ -16,7 +16,7 @@ human behind it.
 | The server's app identity            | The same file, plus `server_settings` for the non-secrets  | Work no human asked for: webhooks, PR polling, ticket sync       |
 | Model provider keys and OAuth tokens | The server's own credential store                         | The built-in adapter, for every workspace on the install         |
 | Slack bot tokens                     | `<dataDir>/<workspaceId>/chat_credentials/` on the server | The chat bridge for that workspace                               |
-| External CLI credentials             | Whatever that CLI uses                                    | Claude Code and friends, on the server host                      |
+| External CLI credentials             | Whatever that CLI uses                                    | Claude Code, on the server host                                  |
 
 ## Two GitHub credentials, and they answer different questions
 
@@ -45,8 +45,8 @@ on the server.
 
 1. Go to **Settings → Server → Model providers**
 2. Scroll to **Providers & models**
-3. Connect the provider — browser OAuth for Anthropic, OpenAI and Kimi Code; an
-   API key for the rest
+3. Connect the provider — browser OAuth for OpenAI, Codex, Cursor and Kimi Code; an
+   API key for Anthropic and the rest
 
 See [Manage adapters and models](/manual/guides/adapters/) for the full list and
 for adding a custom endpoint.
@@ -55,7 +55,7 @@ These credentials are **host-global**: one key serves every workspace on the
 install. OAuth tokens are refreshed before they expire.
 
 External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate each CLI the
+the server host — Control Center does not manage them. Authenticate Claude Code the
 way its own documentation says, on the machine `cc_server` runs on.
 
 The per-adapter **Environment variables** dialog looks like a place to put a key
@@ -65,7 +65,7 @@ its own copy and nothing bridges the two. See
 
 ## Connect a ticketing vendor
 
-The **Ticketing** card holds both halves of one decision: which vendor your
+The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
 tickets live in, and the credential for it. Choosing **Local** hides the
 credential row — local tickets live in this server's own database and have
 nothing to authenticate to.
@@ -74,8 +74,7 @@ Your key is stored on the server against your user id, like the forge one. The
 server keeps its own Linear key separately (**Provider apps**), which is what
 ticket sync runs on when no human asked. A key an agent receives is only
 injected when the agent has the **Allow ticketing API calls** capability. See
-[Set up Linear integration](/manual/guides/linear-integration/) for what is and is
-not wired.
+[Set up Linear integration](/manual/guides/linear-integration/).
 
 ## Rotate or revoke
 
@@ -96,7 +95,7 @@ Check the **Code hosting** row's subtitle. If it names another source ("via this
 server's app", "from the environment"), the credential you are testing is not
 the one answering — yours was not saved.
 
-### A token I just pasted is not working
+### The token is accepted but later requests fail
 
 The token is probed as it is stored, so the row names the account behind it —
 but only the account, not the scopes. A token with too few scopes connects and

@@ -165,9 +165,9 @@ void main() {
     );
 
     test('DebugEvent creates event with correct type and content', () {
-      final event = DebugEvent(content: 'launching pi');
+      final event = DebugEvent(content: 'launching claude');
       expect(event.type, AgentProcessEventType.debug);
-      expect(event.content, 'launching pi');
+      expect(event.content, 'launching claude');
     });
 
     test('DoneEvent creates event with correct type', () {

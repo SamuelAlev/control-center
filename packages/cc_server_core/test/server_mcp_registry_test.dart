@@ -118,7 +118,7 @@ void main() {
 
     // `tools/list` advertises the FULL catalogue. Discovery gating (essential
     // subset + hidden-but-callable lookup) was removed: external MCP clients
-    // (pi's mcp-adapter, Claude Code) validate calls against their cached
+    // (Claude Code) validate calls against their cached
     // tools/list CLIENT-side, so every hidden tool — all agent writes included
     // (`todo_write`, `ticket_cli`, `propose_fact`, …) — was unreachable in
     // practice. The BM25 search tool remains as a catalogue navigation aid.

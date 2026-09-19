@@ -11,8 +11,9 @@ import 'package:flutter_test/flutter_test.dart';
 /// other from another, which is the kind of difference that shows up as a
 /// mysterious per-platform crash rather than a build failure.
 ///
-/// scripts/lib/native_pins.env is now the only home for a pinned ref and
-/// renovate.json's custom managers target it alone.
+/// scripts/lib/native_pins.env is now the only home for a pinned native ref.
+/// renovate.json's custom managers target it for those refs; see
+/// test/tooling/renovate_coverage_test.dart for the rest of the pin surface.
 void main() {
   final root = Directory.current.path;
   final pinsFile = File('$root/scripts/lib/native_pins.env');

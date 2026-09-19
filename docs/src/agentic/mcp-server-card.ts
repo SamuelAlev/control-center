@@ -38,7 +38,7 @@
  *
  * Scope honesty, same rule as src/agentic/openapi.ts and
  * src/agentic/api-catalog.ts: this card describes the read-only docs MCP server
- * that answers on THIS origin. The product's own MCP server (103 tools over
+ * that answers on THIS origin. The product's own MCP server (110 tools over
  * your repos, tickets, pipelines and agents) runs inside the self-hosted
  * `cc_server` on whatever host the operator runs it on. It is not on this
  * origin and is never claimed here — only documented, at
@@ -226,7 +226,7 @@ export function buildServerCard({ origin }: ServerCardInputs): ServerCard {
         transport: 'streamable-http',
         protocolVersion: PROTOCOL_VERSION,
         tools: TOOLS.map((tool): ServerCardTool => ({ name: tool.name, description: tool.description })),
-        scope: `Serves this site's own pages and nothing else. The Control Center product's MCP server (103 tools over your repos, tickets, pipelines and agents) runs inside the self-hosted cc_server, not on this origin — see ${at('/manual/guides/mcp-server/')}.`,
+        scope: `Serves this site's own pages and nothing else. The Control Center product's MCP server (110 tools over your repos, tickets, pipelines and agents) runs inside the self-hosted cc_server, not on this origin — see ${at('/manual/guides/mcp-server/')}.`,
       },
     },
   };

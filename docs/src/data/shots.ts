@@ -51,7 +51,7 @@ export const shots = {
     label: 'Rigs',
     file: 'shots/03-rigs.png',
     description:
-      'A Browser (VM) tab beside the chat: the live machine view with the agent mid-click, the Take control button in the header, the forwarded-ports popover showing 3000 → 3000 (node) and the enclosed terminal’s VM badge.',
+      'A Browser (VM) tab beside the chat: the live machine view with the agent mid-click, the forwarded-ports popover showing 3000 → 3000 (node) and the enclosed terminal’s VM badge.',
   },
   review: {
     id: 'review',

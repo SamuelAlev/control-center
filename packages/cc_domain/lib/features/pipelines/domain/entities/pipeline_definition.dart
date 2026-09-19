@@ -154,8 +154,11 @@ class PipelineDefinition {
     return null;
   }
 
-  /// Returns the entry (trigger) step — the one with [StepKind.trigger].
-  /// Every pipeline has exactly one and it is always the first node.
+  /// Returns the first [StepKind.trigger] step.
+  ///
+  /// Built-in templates still have exactly one. User templates may have
+  /// several — one per start trigger. A run should enter through
+  /// `pipelineStartStep`, which selects by `triggerEventType`.
   PipelineStepDefinition get entryStep {
     for (final s in steps) {
       if (s.kind == StepKind.trigger) {

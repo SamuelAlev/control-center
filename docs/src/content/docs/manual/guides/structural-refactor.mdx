@@ -9,7 +9,7 @@ This guide shows you how to get an agent to make a wide mechanical change — a 
 
 ## Before you start
 
-Structural tools cover the languages the code graph parses: **Dart, JavaScript, TypeScript, TSX and PHP**. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
+Structural tools cover the languages the code graph parses: Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. They need the tree-sitter grammars staged, which they always are in a shipped build — a missing grammar stops the server rather than degrading the search.
 
 ## Find the shape first
 
@@ -128,7 +128,7 @@ Then `resolve`, then `lsp(action: "diagnostics", file: "*")`.
 | Situation                                 | Better tool                          |
 | ----------------------------------------- | ------------------------------------ |
 | Renaming a symbol                         | `lsp_rename` — it follows references, not shapes |
-| Finding a string, a comment or a filename | `search` / `grep`                    |
+| Finding a string, a comment or a filename | `search` (contents) / `search_files` (names) |
 | "What breaks if I change this?"           | The [code graph](/manual/guides/code-search/) |
 | A language the grammars do not cover      | `search` plus `edit`                 |
 

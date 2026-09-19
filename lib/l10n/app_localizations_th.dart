@@ -6180,6 +6180,43 @@ class AppLocalizationsTh extends AppLocalizations {
   String get editorEmptyCanvas => 'ลากโหนดจากคลังเพื่อเริ่ม';
 
   @override
+  String get pipelineWhenThisHappens => 'เมื่อสิ่งนี้เกิดขึ้น';
+
+  @override
+  String get pipelineDoThis => 'ทำสิ่งนี้';
+
+  @override
+  String get pipelineAddStep => 'เพิ่มขั้นตอน';
+
+  @override
+  String get pipelineTidyUp => 'จัดเลย์เอาต์ให้เป็นระเบียบ';
+
+  @override
+  String get pipelineEditorHint =>
+      'ลากขั้นตอนเพื่อจัดวาง · ลากจุดจับเพื่อเชื่อมต่อ';
+
+  @override
+  String get pipelineRemoveConnection => 'ลบการเชื่อมต่อ';
+
+  @override
+  String get pipelineDragToConnect => 'ลากเพื่อเชื่อมต่อ';
+
+  @override
+  String get pipelineNewDefaultName => 'ไปป์ไลน์ใหม่';
+
+  @override
+  String get nodeCategoryTriggers => 'ทริกเกอร์';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'เพิ่มทริกเกอร์';
+
+  @override
+  String get pipelineOnEvent => 'เมื่อเกิดเหตุการณ์';
+
+  @override
   String get nodeConfigTitle => 'การตั้งค่าโหนด';
 
   @override
@@ -6424,6 +6461,9 @@ class AppLocalizationsTh extends AppLocalizations {
       'สร้าง URL webhook ที่ลงนาม ระบบภายนอก POST ไปที่นั่นเพื่อเริ่มไปป์ไลน์นี้';
 
   @override
+  String get triggerWebhookPathLabel => 'เส้นทางเว็บฮุค';
+
+  @override
   String get triggerEventFieldLabel => 'เหตุการณ์';
 
   @override
@@ -6550,6 +6590,80 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'มอบหมายตั๋วงาน';
+
+  @override
+  String get triggerEventTicketCreated => 'สร้างตั๋วงานแล้ว';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'สถานะตั๋วงานเปลี่ยน';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'หยุดการบันทึกประชุม';
+
+  @override
+  String get triggerEventSkillUpdated => 'อัปเดตสกิลแล้ว';
+
+  @override
+  String get triggerEventSpaceDeleted => 'สเปซถูกลบ';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'คำขอพุลที่เปิดบนโฮสต์โค้ด ไม่ใช่จาก Control Center';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'คำขอพุลที่เปิดจาก Control Center หรือโดยเอเจนต์';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'ถูกรวม ปิด เปิด เปิดใหม่ หรืออนุมัติ กรองตามสถานะในตัวตรวจสอบ';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'เฉพาะเมื่อคำขอพุลถูกรวม ไม่ใช่เมื่อปิดหรือเปิดใหม่';
+
+  @override
+  String get triggerRepoAddedHelp => 'ที่เก็บถูกเชื่อมกับพื้นที่ทำงานนี้';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'ไฟล์ในที่เก็บที่เชื่อมอยู่เปลี่ยนบนดิสก์';
+
+  @override
+  String get triggerMessageReceivedHelp => 'ข้อความใหม่มาถึงในสเปซ';
+
+  @override
+  String get triggerTicketCreatedHelp => 'ตั๋วถูกสร้างในพื้นที่ทำงานนี้';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'ตั๋วย้ายระหว่างสถานะ';
+
+  @override
+  String get triggerTicketCompletedHelp => 'ตั๋วเสร็จสมบูรณ์';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'การรันเอเจนต์ล้มเหลว และตั๋วถูกทำเครื่องหมายว่าล้มเหลว';
+
+  @override
+  String get triggerTicketCancelledHelp => 'ตั๋วถูกยกเลิกและจะไม่ต่อ';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'เกินขีดจำกัดการใช้จ่ายของพื้นที่ทำงานหรือเอเจนต์';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'ตั๋วถูกมอบหมายให้บุคคล เอเจนต์ หรือทีม';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'การบันทึกการประชุมสิ้นสุด';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'สกิลถูกติดตั้งหรืออัปเดต';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'สเปซสนทนาถูกลบ';
 
   @override
   String get navTickets => 'ตั๋วงาน';

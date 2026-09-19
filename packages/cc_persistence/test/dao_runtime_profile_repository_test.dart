@@ -50,15 +50,15 @@ void main() {
       await repo.upsert(
         profile(
           id: 'rp-1',
-          family: ProtocolFamily.codex,
+          family: ProtocolFamily.acp,
           fixedArgs: ['--fast', '--no-color'],
-          description: 'codex profile',
+          description: 'acp profile',
         ),
       );
       final fetched = await repo.getById('w-1', 'rp-1');
-      expect(fetched?.protocolFamily, ProtocolFamily.codex);
+      expect(fetched?.protocolFamily, ProtocolFamily.acp);
       expect(fetched?.fixedArgs, ['--fast', '--no-color']);
-      expect(fetched?.description, 'codex profile');
+      expect(fetched?.description, 'acp profile');
     });
 
     test('empty fixedArgs round-trips (mapper handles empty json)', () async {

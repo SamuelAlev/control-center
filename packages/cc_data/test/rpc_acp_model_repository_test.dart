@@ -19,7 +19,7 @@ void main() {
   tearDown(() async => client.close());
 
   group('RpcAcpModelRepository.listModels', () {
-    test('maps models and forwards adapter_id + cli_path', () async {
+    test('maps models and forwards adapter_id', () async {
       host.callResults['acp.listModels'] = {
         'models': [
           {
@@ -32,10 +32,7 @@ void main() {
         ],
       };
       final repo = RpcAcpModelRepository(client);
-      final models = await repo.listModels(
-        'claude',
-        cliPath: '/usr/bin/claude',
-      );
+      final models = await repo.listModels('claude');
       expect(models.length, 2);
       expect(models.first.id, 'anthropic/claude-opus-4-7');
       expect(models.first.name, 'Opus');
@@ -43,7 +40,7 @@ void main() {
       expect(models.last.id, 'glm/glm-4.6');
       final call = host.lastCall('acp.listModels')!;
       expect(call.args['adapter_id'], 'claude');
-      expect(call.args['cli_path'], '/usr/bin/claude');
+      expect(call.args.containsKey('cli_path'), isFalse);
     });
 
     test('skips models with an empty id', () async {
@@ -70,16 +67,6 @@ void main() {
       final models = await repo.listModels('claude');
       expect(models.length, 1);
       expect(models.first.id, 'ok');
-    });
-
-    test('does not send cli_path when it is empty', () async {
-      host.callResults['acp.listModels'] = const {'models': []};
-      final repo = RpcAcpModelRepository(client);
-      await repo.listModels('claude', cliPath: '');
-      expect(
-        host.lastCall('acp.listModels')!.args.containsKey('cli_path'),
-        isFalse,
-      );
     });
 
     test('degrades to an empty list on opUnknown', () async {

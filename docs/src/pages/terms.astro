@@ -2,7 +2,7 @@
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 import LegalDoc from '../components/legal/LegalDoc.astro';
 
-const lastUpdated = '12 June 2026';
+const lastUpdated = '19 September 2026';
 const issuesUrl = 'https://github.com/SamuelAlev/control-center/issues';
 
 const sections = [
@@ -44,7 +44,7 @@ const sections = [
 
     <section id="service">
       <h2>What Control Center is</h2>
-      <p>Control Center is a native desktop application that lets you spawn, direct and review autonomous AI coding agents across isolated Git worktrees, with integrations for source control, project management, pull-request review, pipelines and related workflows. It is a local-first tool: it runs on your own device and stores your data there. We do not operate a server that hosts your workspaces or runs your agents on your behalf. Released builds do send diagnostic data (crash, error and performance information) to a third-party error-monitoring service unless you turn it off during onboarding or in Settings → Privacy; this is described in the <a href="/privacy">privacy policy</a>.</p>
+      <p>Control Center is a native desktop application that lets you spawn, direct and review autonomous AI coding agents across isolated Git worktrees, with integrations for source control, project management, pull-request review, pipelines and related workflows. It is a local-first tool: a thin client over a headless <code>cc_server</code> you run, which stores your data. We do not operate a server that hosts your workspaces or runs your agents on your behalf. Released builds do send diagnostic data (crash, error and performance information) to a third-party error-monitoring service unless you turn it off during onboarding or in Settings → Server → Diagnostics & privacy; this is described in the <a href="/privacy">privacy policy</a>.</p>
       <p>The app is under active development and is provided on a pre-release, evolving basis. Features may change, be added, or be removed and some integrations may be incomplete or experimental.</p>
     </section>
 
@@ -55,13 +55,13 @@ const sections = [
 
     <section id="credentials">
       <h2>Your accounts and credentials</h2>
-      <p>Control Center works by connecting to services and subscriptions that <strong>you</strong> provide and control. This includes, depending on the features you use, your GitHub account or token, your Linear API key, your Google account and your own Claude Code subscription used by the Claude Code agent adapter.</p>
+      <p>Control Center works by connecting to services and subscriptions that <strong>you</strong> provide and control. This includes, depending on the features you use, your GitHub account or token, your Linear API key, your Google account, model-provider accounts on the built-in adapter, and your own Claude Code subscription used by the Claude Code agent adapter.</p>
       <ul>
         <li>You are responsible for keeping your credentials secure and for all activity that occurs through them while using the app.</li>
         <li>Your use of each connected service and AI provider is governed by <strong>that provider's own terms and policies</strong>, in addition to these terms. You are responsible for complying with them — including, where applicable, the terms of your Anthropic Claude Code subscription and GitHub's, Google's and Linear's terms.</li>
         <li>You must have the right to access and use any repositories, accounts, calendars and data you connect to the app.</li>
       </ul>
-      <p>Some features send your data to these providers so they can work. Most importantly, when you use the Claude Code adapter, your prompts and the code, diffs, conversation history and meeting transcript text that the agent works with are sent to Anthropic for processing under your own subscription and Anthropic's terms. The <a href="/privacy">privacy policy</a> sets out what is sent to whom.</p>
+      <p>Some features send your data to these providers so they can work. When you run the built-in adapter, prompts, code, diffs, conversation history and meeting transcript text are sent to whichever model provider you connected. When you use the Claude Code adapter, that same kind of data is sent to Anthropic under your own subscription and Anthropic's terms. The <a href="/privacy">privacy policy</a> sets out what is sent to whom.</p>
     </section>
 
     <section id="agents">

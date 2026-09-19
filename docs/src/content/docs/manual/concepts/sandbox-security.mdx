@@ -14,9 +14,9 @@ to the other boundaries below and the server says so in its startup log.
 Two gaps survive the sandbox and are worth holding in mind:
 
 - The built-in harness's **in-process file tools** (`read`, `write`, `edit`,
-  `apply_patch`, search) run inside the server process, so only `bash` is
-  wrapped. What bounds those is path confinement in the tools themselves plus
-  the action guardrails.
+  `apply_patch`, `search`, `find`, `search_files`) run inside the server
+  process, so only `bash` is wrapped. What bounds those is path confinement in
+  the tools themselves plus the action guardrails.
 - **Claude Code is launched with `--dangerously-skip-permissions`**, because a
   non-interactive `claude -p` would otherwise block forever on its own prompt.
   Its file and shell calls are therefore not gated by Control Center's
@@ -54,14 +54,17 @@ The grain is worth being precise about: **the worktree is per conversation, not
 per agent.** Two agents in the same conversation get distinct overlay working
 directories that _share_ that conversation's `repos/` — which is the point,
 since they are collaborating on one change — while their private agent
-directories stay separate. On a filesystem with no copy-on-write support and
-on Windows where there is no copy-on-write backend at all, this degrades to a
-plain `git worktree`: slower to create, isolating the same way.
+directories stay separate. Copy-on-write is the only backend wherever `rift`
+ships: a filesystem that cannot reflink, or a data dir on a different volume
+from the repo, fails the provision rather than falling back. Windows is the
+exception — there is no copy-on-write backend there, so `git worktree` is the
+backend, not a silent degradation.
 
 **Path confinement in the built-in harness's file tools.** The harness's `read`,
-`write`, `edit`, `apply_patch` and search tools resolve every path against the
-run's working directory plus one shared root — the conversation's `repos/`
-directory, where the worktrees live — and refuse anything that lands outside.
+`write`, `edit`, `apply_patch`, `search`, `find` and `search_files` tools
+resolve every path against the run's working directory plus shared roots — the
+conversation's `repos/` directory, where the worktrees live, and the space's
+attachments dir when it exists — and refuse anything that lands outside.
 Absolute paths are accepted only if they were already inside. A symlink inside
 the worktree pointing out of it is resolved and refused too. This is why an
 agent cannot `write` to `~/.ssh` even with no sandbox in the picture.
@@ -82,10 +85,11 @@ resolves to _denied_ — a question nobody can answer is never a yes. See
 
 **Capability-gated credentials and a sanitized environment.** Credentials are
 minted per launch from the conversation's capability flags and revoked when the
-run ends and the environment handed to any spawned process is stripped of the
-dynamic-linker and interpreter injection vectors (`LD_PRELOAD`,
-`DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and their kin)
-before the process starts.
+run ends. ACP, harness `bash` and Claude Code under the native wrap get an
+environment stripped of the dynamic-linker and interpreter injection vectors
+(`LD_PRELOAD`, `DYLD_INSERT_LIBRARIES`, `NODE_OPTIONS`, `GIT_SSH_COMMAND` and
+their kin) before the process starts. Claude Code through `NoSandboxAdapter`
+inherits the host environment.
 
 ### Where those bounds thin out
 
@@ -135,26 +139,30 @@ credentials problem. Enforcement by absence is robust — there is no check to
 bypass — but it is silent and the agent does not know why it failed.
 
 The network flag behaves the same way. With it off, the harness's `web_fetch`
-and `web_search` tools refuse every call and no proxy endpoint is exposed to a
-spawned process.
+and `web_search` tools refuse every call and a sandboxed spawn's proxy
+allowlist is empty, so every outbound connection is refused.
 
 Credentials are revoked when the run tears down, so a handle does not outlive
-the conversation turn that minted it.
+the run that minted it.
 
 ## What the sandbox adds and where it stops
 
-Two backends are implemented — `native` (Seatbelt on macOS, bubblewrap on Linux
-and WSL2) and `none`. Understanding their shape explains what you gain where
-one is attached and what they were never going to give you.
+The `SandboxBackend` enum has three values — `native` (Seatbelt on macOS,
+bubblewrap on Linux and WSL2), `none`, and `microvm`. Agent command wrapping
+uses only the first two: `microvm` is the enclosed-VM backend for interactive
+terminals and rigs, not a silent upgrade of a `bash` wrap. Understanding the
+native shape explains what you gain where one is attached and what it was never
+going to give you.
 
 `cc_server` probes the host once at boot and where a backend answers it feeds
 both of the seams the dispatch path has, because the transports do not share
-one. The first wraps the CLI transports — Pi and Claude Code. The second wraps
-the ACP adapters (OpenCode, Gemini CLI, Goose, Cursor, Codex) and the built-in
-harness's `bash` tool. Feeding only one would leave the other transport
-spawning unwrapped, which is what used to happen to all of them. On a host with
-no backend, or under `--sandbox off`, they all spawn unwrapped and the server
-says which case you are in on its startup line.
+one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
+(`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
+Feeding only one would leave the others spawning unwrapped, which is what used
+to happen. On a host with no backend, or under `--sandbox off`, they all spawn
+unwrapped and the server says which case you are in on its startup line. ACP
+and harness `bash` still sanitize the environment; Claude Code through
+`NoSandboxAdapter` inherits the host environment.
 
 One surface deliberately opts out: the server-hosted terminal accepts a backend
 argument per session and `cc_server` constructs it defaulting to the host
@@ -179,17 +187,21 @@ registered checkouts are protected by explicit write and rename denials rather
 than by invisibility. Both are namespace-level isolation, not a kernel security
 boundary — the backends say so in their own capability notes.
 
-The bind-mount set is where the cross-agent boundary is drawn. Three mounts,
-resolved per dispatch: the agent's overlay working directory read-write, the
-agent's config directory read-only and the conversation's shared `repos/`
-directory read-write when it exists. A sibling agent's directory is never
-mounted. This is the same shape the harness's in-process path check enforces in
-software, so the two agree — but only the path check covers the harness's own
-file tools, which never reach a mount namespace at all.
+The bind-mount set is where the cross-agent boundary is drawn. Overlay dispatch
+(Claude Code and ACP) mounts up to four paths, resolved per run: the agent's
+overlay working directory read-write, the agent's config directory read-only,
+the conversation's shared `repos/` directory read-write when it exists, and the
+space's attachments directory read-only when it exists. A sibling agent's
+directory is never mounted. The harness `bash` wrap is narrower: it bind-mounts
+only the run's working directory. This is the same shape the harness's
+in-process path check enforces in software, so the two agree — but only the
+path check covers the harness's own file tools, which never reach a mount
+namespace at all.
 
 Your registered checkouts join the deny-write set on top of that, in every mode
-and on all three of the wrapped paths and each rule is emitted in both its
-literal and its symlink-resolved spelling. The second spelling is not a nicety:
+and on all three of the wrapped paths (Claude Code, ACP, harness `bash`), and
+each rule is emitted in both its literal and its symlink-resolved spelling. The
+second spelling is not a nicety:
 the kernel matches a deny rule
 against the resolved path and macOS makes resolution the common case rather
 than the exotic one — `/tmp` is really `/private/tmp`, `/var/folders/…` is
@@ -198,7 +210,8 @@ have been writable while the profile appeared to forbid it.
 
 Network, under a sandbox, is a per-session **domain** allowlist enforced by
 in-process loopback proxies. Egress is default-deny: with the network
-capability off, no proxy is exposed at all. With it on, the resolver builds the
+capability off, the proxies still start but their allowlist is empty, so every
+outbound connection is refused. With it on, the resolver builds the
 allowlist from a curated baseline — LLM API providers, git hosting, package
 registries, the model catalogue — plus the GitHub domains an agent's GitHub or
 push capability earns it and matches every connection's target host against
@@ -213,7 +226,9 @@ more.
 Denials, on macOS, are observable: a monitor taps the system log for Sandbox
 denials, filters known noise, deduplicates retry storms and surfaces each as a
 `SandboxViolation` naming what was attempted and which capability would unblock
-it. Those arrive on the run's own event stream, so a denied syscall shows up in
+it. On Linux the wrap path parses stderr for `EPERM`, `Operation not permitted`
+and `Permission denied` and emits the same event type — there is no system-log
+tap. Those arrive on the run's own event stream, so a denied syscall shows up in
 the transcript rather than only in a log. The telemetry only exists while a
 native sandbox is actually wrapping the process — on a host with no backend
 there is nothing to observe. It is also unrelated to capability gating: a
@@ -234,12 +249,13 @@ runs and it is a denial.
 
 ## Diagnostics
 
-A diagnostic service exists that checks the sandbox backend, database access,
-CLI tool availability, disk space and network connectivity. It has no reachable
-entry point today: there is no doctor command in the client and no `doctor` MCP
-tool — that tool class was deleted, so nothing appears in `tools/list`.
+There is no reachable doctor today: there is no doctor command in the client
+and no `doctor` MCP tool — that tool class was deleted, so nothing appears in
+`tools/list`. A `DoctorPort` remains in the shared kernel with no
+implementation behind it.
+
 [Run agent diagnostics](/manual/guides/agent-diagnostics/) is the single place
-that states what can be run.
+that states what can be checked by hand.
 
 ## Related concepts
 

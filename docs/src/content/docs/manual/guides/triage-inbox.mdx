@@ -23,24 +23,22 @@ accumulate without opening the page.
 Scan top to bottom; the inbox is already ordered by urgency:
 
 1. The pinned **Needs your attention** strip sits above the PR sections. Every
-   card carries a severity chip. Today every card is **Blocked** — both
-   registered sources (an agent stuck on a confirmation prompt, a ticket sync
-   whose vendor mirror is stale) emit that tier. The **Waiting** and **Info**
-   tiers exist for sources not yet wired, so a strip of all-**Blocked** cards is
-   correct, not a bug.
+   card carries a severity chip. Registered sources (an agent stuck on a
+   confirmation prompt, a ticket sync whose vendor mirror is stale) emit
+   **Blocked**.
 2. Within the strip, the most urgent severity comes first; ties go to the item
    that has been waiting longest.
 3. Below the strip, PRs are grouped into fixed review-lifecycle sections —
    **Needs your review**, **Returned to you**, **Approved**, **Drafts**,
    **Waiting for reviewers**, **Merging and recently merged**, **Waiting for
    author**. The top sections are what needs _you_; the rest are where _your_
-   PRs stand. **Needs your review** includes PRs that still request a team or
-   group you belong to on forges that have them (the team drops off once any
-   teammate reviews).
+   PRs stand. **Needs your review** includes PRs that still request a team you
+   belong to on forges that have them (GitHub drops the team once any teammate
+   reviews).
 
 An item only lands in the inbox when it blocks something or explicitly
-requests you, so an empty strip plus an empty section list ("You're all caught
-up") genuinely means nothing is waiting on you.
+requests you. An empty strip plus an empty section list shows **You're all
+caught up** only when that emptiness is trustworthy.
 
 ## One inbox across every forge
 
@@ -54,17 +52,19 @@ A pull request only counts as yours, or as requesting your review, when it
 matches your identity on the forge that repo actually lives on.
 
 A forge that is down or not connected contributes nothing and leaves the rest of
-the inbox intact — one broken connection never empties the whole list. When a
-forge's identity has not resolved, the empty state says so rather than claiming
-you are all caught up.
+the inbox intact — one broken connection never empties the whole list. The empty
+state names a caveat instead of **You're all caught up** when every forge login
+is still unresolved (**Couldn't confirm your GitHub account** — the copy still
+names GitHub), when githubstatus.com reports an incident, or when a GitHub App
+install covering linked repos is suspended.
 
 ## Clear the attention strip
 
 Each strip card has one next action:
 
-1. If a card says an agent is asking to run a command, click **Review** — you
-   land in that agent's space with its pending confirmation. Approve or
-   reject there (see [Chat with an agent](/manual/guides/chat-with-agent/)).
+1. If a card is a pending agent confirmation, click **Review** — you land in
+   that agent's space with its pending confirmation. Approve or reject there
+   (see [Chat with an agent](/manual/guides/chat-with-agent/)).
 2. If a card says **Sync failed** for a vendor, click **Open** — you land on
    **Settings → Workspace → General**, whose **Sync health** card shows each
    connection's last sync, consecutive-failure streak and latest outcome. Only
@@ -102,8 +102,8 @@ which is what a fresh workspace shows.
    clearing reviews).
 5. Click a column header (title, changes, or updated) to sort every section;
    click the active column again to flip direction. The display-options button
-   controls draft visibility, row properties, ordering and grouping by
-   author.
+   controls draft visibility, the recently-merged window, row properties,
+   ordering and grouping (only grouping by author changes the inbox layout).
 
 Filters here are independent of the PR queue — narrowing the inbox never
 changes the queue's filters and vice versa.
@@ -141,8 +141,9 @@ inbox's <kbd>f</kbd> filter shortcut. The full map is in the
 1. Press <kbd>⌘K</kbd> anywhere to open the command palette.
 2. Type **Inbox** to jump to the page, or type a PR title — the palette lists
    matching pull requests and opens the one you pick.
-3. From anywhere else in the app, use the palette's **Copy link** command to
-   copy the current inbox URL for sharing.
+3. While the inbox is open, run **Copy link to this page** to copy that URL
+   for sharing. The command copies the current route, so it is the inbox URL
+   only when you are on this page.
 
 ## Refresh on demand
 

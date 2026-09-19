@@ -438,12 +438,10 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Rendering: triggers section
+    // Rendering: inbound edges live on the canvas, not this panel
     // -----------------------------------------------------------------------
 
-    testWidgets('shows triggers section with upstream candidates', (
-      tester,
-    ) async {
+    testWidgets('does not show inbound-edge chips', (tester) async {
       final current = _step(id: 'step-2');
       final upstream = _step(id: 'step-1', kind: StepKind.listen);
       await _pumpEditor(
@@ -458,71 +456,9 @@ void main() {
         ),
       );
 
-      expect(find.text('Triggers from'), findsOneWidget);
-      expect(find.text('step-1'), findsWidgets);
-    });
-
-    testWidgets('shows no-upstream message when only step exists', (
-      tester,
-    ) async {
-      final step = _step();
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: step,
-          allSteps: _allSteps(step),
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (_) {},
-          onDelete: () {},
-        ),
-      );
-
-      expect(find.text('No other nodes to connect from.'), findsOneWidget);
-    });
-
-    testWidgets('excludes terminal steps from upstream candidates', (
-      tester,
-    ) async {
-      final current = _step(id: 'step-2');
-      final terminal = _step(id: 'step-1', kind: StepKind.terminal);
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, terminal],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (_) {},
-          onDelete: () {},
-        ),
-      );
-
-      expect(find.text('No other nodes to connect from.'), findsOneWidget);
-    });
-
-    testWidgets('trigger chip uses config label when available', (
-      tester,
-    ) async {
-      final current = _step(id: 'step-2');
-      final upstream = _step(
-        id: 'step-1',
-        kind: StepKind.listen,
-        config: const PipelineNodeConfig(label: 'My Custom Name'),
-      );
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, upstream],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (_) {},
-          onDelete: () {},
-        ),
-      );
-
-      expect(find.text('My Custom Name'), findsOneWidget);
+      expect(find.text('Triggers from'), findsNothing);
+      expect(find.text('No other nodes to connect from.'), findsNothing);
+      expect(find.text('step-1'), findsNothing);
     });
 
     // -----------------------------------------------------------------------
@@ -755,58 +691,6 @@ void main() {
     // Edge / trigger interactions
     // -----------------------------------------------------------------------
 
-    testWidgets('tapping a trigger chip connects it and calls onChange', (
-      tester,
-    ) async {
-      PipelineStepDefinition? updated;
-      final current = _step(id: 'step-2');
-      final upstream = _step(id: 'step-1');
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, upstream],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (s) => updated = s,
-          onDelete: () {},
-        ),
-      );
-
-      await tester.tap(find.text('step-1'));
-      await tester.pumpAndSettle();
-
-      expect(updated, isNotNull);
-      expect(updated!.triggers.length, 1);
-      expect(updated!.triggers.first.sourceStepIds, ['step-1']);
-      expect(updated!.triggers.first.routeKey, isNull);
-    });
-
-    testWidgets('tapping trigger chip twice disconnects edge', (tester) async {
-      PipelineStepDefinition? updated;
-      final current = _step(id: 'step-2');
-      final upstream = _step(id: 'step-1');
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, upstream],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (s) => updated = s,
-          onDelete: () {},
-        ),
-      );
-
-      await tester.tap(find.text('step-1'));
-      await tester.pumpAndSettle();
-      expect(updated!.triggers, isNotEmpty);
-
-      await tester.tap(find.text('step-1'));
-      await tester.pumpAndSettle();
-      expect(updated!.triggers, isEmpty);
-    });
-
     testWidgets('shows route key editors for connected router sources', (
       tester,
     ) async {
@@ -928,35 +812,6 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Edge: join kind sets waitForStepIds
-    // -----------------------------------------------------------------------
-
-    testWidgets('join kind emits waitForStepIds from connected edges', (
-      tester,
-    ) async {
-      PipelineStepDefinition? updated;
-      final current = _step(id: 'step-3', kind: StepKind.join);
-      final upstream = _step(id: 'step-1');
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, upstream],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (s) => updated = s,
-          onDelete: () {},
-        ),
-      );
-
-      await tester.tap(find.text('step-1'));
-      await tester.pumpAndSettle();
-
-      expect(updated!.kind, StepKind.join);
-      expect(updated!.waitForStepIds, ['step-1']);
-    });
-
-    // -----------------------------------------------------------------------
     // Schema field: JSON validation
     // -----------------------------------------------------------------------
 
@@ -1061,68 +916,6 @@ void main() {
 
       // Should keep prior value since decoded value is not a Map
       expect(updated!.config.outputSchema, prior);
-    });
-
-    // -----------------------------------------------------------------------
-    // Multiple upstream candidates
-    // -----------------------------------------------------------------------
-
-    testWidgets('multiple upstream candidates all shown as chips', (
-      tester,
-    ) async {
-      final current = _step(id: 'step-4');
-      final up1 = _step(id: 'step-1');
-      final up2 = _step(id: 'step-2');
-      final up3 = _step(
-        id: 'step-3',
-        config: const PipelineNodeConfig(label: 'Third'),
-      );
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, up1, up2, up3],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (_) {},
-          onDelete: () {},
-        ),
-      );
-
-      expect(find.text('step-1'), findsOneWidget);
-      expect(find.text('step-2'), findsOneWidget);
-      expect(find.text('Third'), findsOneWidget);
-    });
-
-    testWidgets('connecting multiple upstream steps emits separate triggers', (
-      tester,
-    ) async {
-      PipelineStepDefinition? updated;
-      final current = _step(id: 'step-3');
-      final up1 = _step(id: 'step-1');
-      final up2 = _step(id: 'step-2');
-      await _pumpEditor(
-        tester,
-        NodeConfigEditor(
-          step: current,
-          allSteps: [current, up1, up2],
-          workspaceAgents: const [],
-          workspaceRepos: const [],
-          onChange: (s) => updated = s,
-          onDelete: () {},
-        ),
-      );
-
-      await tester.tap(find.text('step-1'));
-      await tester.pumpAndSettle();
-      expect(updated!.triggers.length, 1);
-
-      await tester.tap(find.text('step-2'));
-      await tester.pumpAndSettle();
-      expect(updated!.triggers.length, 2);
-
-      final ids = updated!.triggers.expand((t) => t.sourceStepIds).toSet();
-      expect(ids, {'step-1', 'step-2'});
     });
 
     // -----------------------------------------------------------------------

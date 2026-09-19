@@ -21,7 +21,7 @@ void main() {
   final root = Directory.current.path;
   final matrix = File('$root/scripts/lib/natives.sh').readAsStringSync();
   final runtime = File(
-    '$root/packages/cc_server_core/lib/src/cc_server_runtime.dart',
+    '$root/packages/cc_server_core/lib/src/runtime/server_native_preflight.dart',
   ).readAsStringSync();
 
   /// The rows of `CC_NATIVES`, parsed the same way the shell does.
@@ -58,7 +58,7 @@ void main() {
   });
 
   test('every server-role native is probed by the boot preflight', () {
-    // cc_server_runtime.dart names each library inside a nativeRequirement(...)
+    // server_native_preflight.dart names each library inside a nativeRequirement(...)
     // description — `platformLibraryFileName('fff_c')`,
     // `platformLibraryFileName(inferenceLibraryBaseName)`, `ptyLibraryBaseName`,
     // etc. Rather than parse Dart, assert the base name appears somewhere in
@@ -72,21 +72,21 @@ void main() {
       'cc_inference': ['inferenceLibraryBaseName'],
       // Named through a base-name constant (SAML SSO crypto seam).
       'cc_saml': ['samlLibraryBaseName'],
-      // The grammar rows are generated from kLanguageByExtension in a loop.
-      'tree-sitter-dart': ['tree-sitter-\$languageId'],
-      'tree-sitter-javascript': ['tree-sitter-\$languageId'],
-      'tree-sitter-typescript': ['tree-sitter-\$languageId'],
-      'tree-sitter-tsx': ['tree-sitter-\$languageId'],
-      'tree-sitter-php': ['tree-sitter-\$languageId'],
     };
     for (final row in rows.where((r) => r.roles.contains('server'))) {
-      final needles = [row.base, ...?aliases[row.base]];
+      // Grammar rows are generated from kLanguageByExtension in a loop, so
+      // the preflight never names `tree-sitter-dart` literally.
+      final needles = [
+        row.base,
+        ...?aliases[row.base],
+        if (row.base.startsWith('tree-sitter-')) 'tree-sitter-\$languageId',
+      ];
       expect(
         needles.any(runtime.contains),
         isTrue,
         reason:
             'scripts/lib/natives.sh requires "${row.base}" for the server, but '
-            'cc_server_runtime.dart never probes it. Either the packaging gate '
+            'server_native_preflight.dart never probes it. Either the packaging gate '
             'is checking for something the server does not need, or the server '
             'boots without something packaging guarantees.',
       );

@@ -336,8 +336,9 @@ void main() {
       await tester.pumpWidget(host());
       await tester.pumpAndSettle();
 
-      AnimatedOpacity chip() =>
-          tester.widget<AnimatedOpacity>(find.byType(AnimatedOpacity));
+      AnimatedOpacity chip() => tester.widget<AnimatedOpacity>(
+        find.byKey(const ValueKey<String>('cc-expandable-image-chip')),
+      );
       expect(chip().opacity, 0);
 
       final pointer = await tester.createGesture(kind: PointerDeviceKind.mouse);

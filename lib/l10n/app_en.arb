@@ -5912,6 +5912,54 @@
   "@editorEmptyCanvas": {
     "description": "Empty state for the editor canvas"
   },
+  "pipelineWhenThisHappens": "When this happens",
+  "@pipelineWhenThisHappens": {
+    "description": "Eyebrow label above the trigger node on the pipeline editor canvas"
+  },
+  "pipelineDoThis": "Do this",
+  "@pipelineDoThis": {
+    "description": "Eyebrow label above the first action nodes on the pipeline editor canvas"
+  },
+  "pipelineAddStep": "Add step",
+  "@pipelineAddStep": {
+    "description": "Button/tooltip that opens the quick-insert step picker on the pipeline editor canvas"
+  },
+  "pipelineTidyUp": "Tidy up layout",
+  "@pipelineTidyUp": {
+    "description": "Tooltip for the canvas control that auto-arranges pipeline nodes"
+  },
+  "pipelineEditorHint": "Drag steps to arrange · drag a handle to connect",
+  "@pipelineEditorHint": {
+    "description": "Legend hint shown on the pipeline editor canvas"
+  },
+  "pipelineRemoveConnection": "Remove connection",
+  "@pipelineRemoveConnection": {
+    "description": "Tooltip for the control that deletes an edge between two pipeline steps"
+  },
+  "pipelineDragToConnect": "Drag to connect",
+  "@pipelineDragToConnect": {
+    "description": "Tooltip for the output handle that starts an on-canvas edge"
+  },
+  "pipelineNewDefaultName": "New pipeline",
+  "@pipelineNewDefaultName": {
+    "description": "Default name given to a newly created pipeline template"
+  },
+  "nodeCategoryTriggers": "Triggers",
+  "@nodeCategoryTriggers": {
+    "description": "Node library category grouping the pipeline trigger entries"
+  },
+  "triggerEventWebhook": "Webhook",
+  "@triggerEventWebhook": {
+    "description": "Display label for the webhook trigger type"
+  },
+  "pipelineAddTrigger": "Add a trigger",
+  "@pipelineAddTrigger": {
+    "description": "Placeholder tile shown on the pipeline editor canvas when the template has no triggers yet"
+  },
+  "pipelineOnEvent": "On event",
+  "@pipelineOnEvent": {
+    "description": "Node library entry for a pipeline trigger that fires on a domain event"
+  },
   "nodeConfigTitle": "Node config",
   "@nodeConfigTitle": {
     "description": "Header for the node configuration panel"
@@ -6097,6 +6145,7 @@
     }
   },
   "triggerWebhookHelp": "A signed webhook URL is generated. External systems POST to it to start this pipeline.",
+  "triggerWebhookPathLabel": "Webhook path",
   "triggerEventFieldLabel": "Event",
   "triggerNoMoreEvents": "All available events are already wired.",
   "triggerMatchStatusLabel": "Only when the status is",
@@ -6158,6 +6207,28 @@
   "ticketingProvider": "Ticketing provider",
   "connectGitHubAndTicketing": "Connect a code host so Control Center can read your pull requests, issues and reviews. Optionally connect a ticketing provider. Credentials are held by your server, never by this machine.",
   "triggerEventTicketAssigned": "Ticket assigned",
+  "triggerEventTicketCreated": "Ticket created",
+  "triggerEventTicketStatusChanged": "Ticket status changed",
+  "triggerEventMeetingRecordingStopped": "Meeting recording stopped",
+  "triggerEventSkillUpdated": "Skill updated",
+  "triggerEventSpaceDeleted": "Space deleted",
+  "triggerExternalPrHelp": "A pull request opened on the code host, not from Control Center.",
+  "triggerPrPublishedHelp": "A pull request opened from Control Center or by an agent.",
+  "triggerPrStatusChangedHelp": "Merged, closed, opened, reopened, or approved. Filter by status in the inspector.",
+  "triggerPrMergedHelp": "Only when the pull request is merged, not closed or reopened.",
+  "triggerRepoAddedHelp": "A repository is linked to this workspace.",
+  "triggerCodeGraphWatchHelp": "A file in a linked repository changes on disk.",
+  "triggerMessageReceivedHelp": "A new message arrives in a space.",
+  "triggerTicketCreatedHelp": "A ticket is created in this workspace.",
+  "triggerTicketStatusChangedHelp": "A ticket moves between statuses.",
+  "triggerTicketCompletedHelp": "A ticket finishes successfully.",
+  "triggerTicketFailedHelp": "An agent run failed and the ticket is marked failed.",
+  "triggerTicketCancelledHelp": "A ticket is cancelled and will not continue.",
+  "triggerBudgetCrossedHelp": "A workspace or agent spend limit is crossed.",
+  "triggerTicketAssignedHelp": "A ticket is assigned to a person, agent, or team.",
+  "triggerMeetingRecordingStoppedHelp": "A meeting recording finishes.",
+  "triggerSkillUpdatedHelp": "A skill is installed or updated.",
+  "triggerSpaceDeletedHelp": "A conversation space is deleted.",
   "navTickets": "Tickets",
   "ticketsTitle": "Tickets",
   "newTicket": "New ticket",

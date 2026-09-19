@@ -15,9 +15,11 @@ prompt. If you want the reasoning, read the
 [agent model's skills section](/manual/concepts/agent-model/); this page stays
 on the doing.
 
-Skills live at **Settings → Workspace → Skills** (`/settings/workspace/skills`).
-They are workspace-scoped: the skills you install here belong to this workspace
-only.
+Skills live at **Settings → Workspace → Skills**
+(`/workspaces/<id>/settings/workspace/skills`). They are workspace-scoped: the
+skills you install here belong to this workspace only. The page has two tabs:
+**Installed** (local skills, including a **New skill** editor) and **Sources**
+(GitHub catalogs). Both writes pass the same scan gate.
 
 ## Add a skill repository
 
@@ -87,3 +89,40 @@ skill leaves nothing behind.
 installed from it stay installed and still update, because a pin records the
 repository by name rather than by reference to the source entry. Add the
 repository back if you want to browse it again.
+
+## Invoke a skill
+
+Skills are invoked under their own namespace, so they never collide with
+built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
+
+- `/skill:<name>` — a skill installed in this workspace, or attached to the
+  agent
+- `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
+
+A bare non-builtin name still resolves, for messages written before the
+namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
+is always the builtin.
+
+## Repo-scoped skills
+
+A checked-out repo can ship skills of its own, in `.agents/skills/`,
+`.agent/skills/`, `.claude/skills/`, `.opencode/skills/` or `skills/`. Those
+are **not** installed through this page. An agent carries only the skills of
+the repo it is currently working in; they swap when it moves. The composer is
+not scoped that way: `/skill:<repo>:<name>` reaches any repo in the space.
+
+Repo skills pass the same fail-closed scan (`pass` / `warn` / `quarantine`)
+before their frontmatter reaches a prompt. `warn` is admitted; `quarantine`
+is withheld, with no operator override on that path.
+
+See [Repo-scoped skills](/manual/concepts/agent-model/#repo-scoped-skills) and
+[Slash commands](/manual/reference/slash-commands/).
+
+## Related guides
+
+- [Chat with an agent](/manual/guides/chat-with-agent/)
+- [Create and configure an agent](/manual/guides/create-agent/)
+
+## Related concepts
+
+- [The agent model](/manual/concepts/agent-model/)

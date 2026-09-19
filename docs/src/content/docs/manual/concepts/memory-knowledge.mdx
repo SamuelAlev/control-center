@@ -66,21 +66,30 @@ knowledge organizational structure and they are the unit access grants are
 written against — but see the caution below before treating a domain as a
 confidentiality boundary.
 
+A domain is either workspace-wide (`architecture`) or scoped to one repository
+(`repo:<slug>/architecture`). The same name in both scopes is two independent
+stores: a fact that is true of one codebase does not overwrite the
+workspace-wide one. `search_memory` and the dispatch preamble rank repo-scoped
+memory first when the agent is working in that repo; they do not filter the
+rest out. Pass `repo` on `propose_fact` / `propose_policy` / `search_memory` to
+write or boost that scope.
+
 ## Access control is fail-open for reads
 
 `MemoryAccessGrant` maps an agent role and a domain to one of three permission
 levels:
 
-| Permission | Meaning                                             |
-| ---------- | --------------------------------------------------- |
-| `none`     | No access                                           |
-| `read`     | Can search and retrieve facts                       |
-| `write`    | Can create, update and supersede facts and policies |
+| Permission | Meaning                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------ |
+| `none`     | No access                                                                                        |
+| `read`     | Can search and retrieve facts                                                                    |
+| `write`    | Required by `propose_policy`. Fact writes (`propose_fact`, `supersede_fact`) are not grant-gated |
 
 :::caution[A missing grant means read, not deny]
 When there is no grant row for a `(role, domain)` pair, the effective
-permission is **`read`**. Reads are fail-open by design; only writes are hard
-enforced and only writes throw. Putting sensitive content in a memory domain
+permission is **`read`**. Reads are fail-open by design. The one write that
+throws is `propose_policy` without `write` permission
+(`InsufficientMemoryPermission`). Putting sensitive content in a memory domain
 does not restrict who can read it unless you have explicitly written a `none`
 grant for every role that should not see it.
 
@@ -89,10 +98,12 @@ has Facts, Policies and Graph tabs and nothing else; grants are reachable only
 over the `memory_access_grant.*` RPC ops.
 :::
 
-The asymmetry — soft on reads, hard on writes — is a deliberate trade. Memory
-is most useful when it circulates and a read denial produces an agent that
-silently knows less rather than one that reports a problem. A write denial, by
-contrast, is loud and correctable, so that is where the enforcement sits.
+The asymmetry — soft on reads, hard on policy writes — is a deliberate trade.
+Memory is most useful when it circulates and a read denial produces an agent
+that silently knows less rather than one that reports a problem. A policy-write
+denial, by contrast, is loud and correctable, so that is where the enforcement
+sits. A newly created domain seeds `write` for every role; tightening it
+afterwards is an RPC-only edit, because there is no grants UI.
 
 ## Working memory
 
@@ -164,8 +175,11 @@ The memory browser is at **Settings → Workspace → Memory**
 
 There is an asymmetry there that surprises people: **you can edit and delete
 memory, but you cannot create it.** Neither the Facts tab nor the Policies tab
-has an add affordance. Authoring is agent-side, through `propose_fact`,
-`propose_policy` and `remember`. The browser is a review and correction
+has an add affordance. Authoring is agent-side, through `propose_fact` and
+`propose_policy` (`supersede_fact` / `supersede_policy` to replace them).
+`remember` writes a session-bounded hot-tier item that `consolidate_memory` may
+later promote to a fact; `record_observation` and `update_my_notes` write the
+private scratchpad injected at dispatch. The browser is a review and correction
 surface, not an authoring one — so if you want a fact in memory, the way to put
 it there is to tell an agent.
 
@@ -173,7 +187,9 @@ Two maintenance operations are likewise agent-invoked rather than scheduled:
 `consolidate_memory` merges and prunes accumulated facts and
 `harmonize_memory` reconciles beliefs that diverged across agents.
 `list_memory_conflicts` shows what conflict detection has already recorded.
-Nothing runs them for you on a timer.
+Nothing runs them for you on a timer. Meeting decisions are harvested into the
+`decisions` domain when a meeting persist step records them; that is not a
+timer on completed agent runs.
 
 ## Related concepts
 

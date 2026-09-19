@@ -208,7 +208,7 @@ describe('skill documents', () => {
 
   it('does not claim the product API answers on this origin', () => {
     // Scope honesty, the same rule openapi.ts and api-catalog.ts hold: the
-    // 103-tool MCP server runs inside a self-hosted cc_server, not here.
+    // 110-tool MCP server runs inside a self-hosted cc_server, not here.
     const productSkill = skillDocument('control-center-mcp-tools');
     assert.match(productSkill, /does not run on usectrl\.dev/i);
     assert.match(productSkill, /self-host/i);

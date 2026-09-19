@@ -17,7 +17,7 @@ void main() {
           HarnessMessage.assistant('hi'),
         ],
         previousSummary: previousSummary,
-        selfAgentName: 'Pi',
+        selfAgentName: 'architect',
       );
 
   group('LlmHarnessSummarizer.summarize', () {

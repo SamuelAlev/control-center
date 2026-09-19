@@ -212,6 +212,14 @@ class DemoProfile {
     // themselves and their own seeded teammates. Never another visitor — the
     // e2e test asserts exactly that, on both this lane and `users.watchAll`.
     'users.list',
+    // Isolated-repo one-shots the Explorer needs to list a conversation's
+    // snapshot trees. The family is denied because upsert/delete would let a
+    // visitor plant a path; these three are workspace-scoped reads of rows
+    // the seeder wrote. The two *AcrossWorkspaces teardown lookups stay under
+    // the prefix.
+    'isolated_repo.forUnitRepo',
+    'isolated_repo.forSpace',
+    'isolated_repo.forTicket',
   };
 
   /// Reads that reach the network. Refused so a demo container is provably
@@ -225,7 +233,10 @@ class DemoProfile {
     // The only calendar READ that is about reaching a provider rather than
     // reading the seeded calendar.
     'calendar.connectInfo',
-    'pr.closedByAuthorForWorkspace',
+    // The other `pr.*` one-shots dial GitHub. `pr.closedByAuthorForWorkspace`
+    // is admitted: the demo answers it from the seeded cache (see
+    // `DemoMergedHistory`) so the inbox's "Merging and recently merged"
+    // section is furnished without egress.
     'pr.listOpenForWorkspace',
     'pr.openPageForRepo',
     'pr.refreshOpenForWorkspace',

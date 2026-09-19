@@ -3,7 +3,7 @@ title: Code intelligence
 description: Why an agent needs the compiler, a structural matcher and a debugger — and what each one answers that the others cannot.
 ---
 
-Control Center gives an agent three ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are three rather than one is that no single mechanism answers all of them.
+Control Center gives an agent four ways to understand code beyond reading it. They answer genuinely different questions, and the reason there are four rather than one is that no single mechanism answers all of them.
 
 | Mechanism            | Answers                                          | Costs                                  |
 | -------------------- | ------------------------------------------------ | -------------------------------------- |
@@ -14,7 +14,7 @@ Control Center gives an agent three ways to understand code beyond reading it. T
 
 ## The gap the language server closes
 
-The [code graph](/manual/concepts/tool-context/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
+The [code graph](/manual/guides/code-search/) is built from tree-sitter: symbols, call edges, an impact radius. It is fast, it is cheap, and it knows nothing about **types**. It cannot tell you whether the call you just wrote compiles, whether that field exists on the object, or whether your rename missed a re-export.
 
 Without a language server, an agent finds out at test time — or never. It writes something plausible, moves on, and the failure surfaces three turns later attached to a different change.
 
@@ -46,7 +46,7 @@ matches a guard that disposes what it tested, and does not match one that dispos
 
 ### It runs on the tree-sitter already linked
 
-There is no second engine. `cc_natives` already loads tree-sitter and five grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
+There is no second engine. `cc_natives` already loads tree-sitter and its grammars for the code graph, with a compiled-query cache and a language table. The matcher is pure Dart over trees that were being parsed anyway. A second structural engine would mean a second parser, a second grammar set to build and stage on every platform, and two answers to "what is a call expression".
 
 ### A fragment needs somewhere to live
 

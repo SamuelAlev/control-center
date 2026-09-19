@@ -17,6 +17,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_re
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -2327,86 +2328,89 @@ void main() {
       expect(stored.state['resumed'], isTrue);
     });
 
-    test('re-fires interrupted steps in dependency order, on their own rows', () async {
-      // Observed in production on `index_code` (chain: space → index →
-      // analyze). A restart found two rows open and re-fired BOTH in the same
-      // instant, so `analyze` resolved `{{pipeline_space_id}}` against a run
-      // whose `space` step had not written it yet, fell back to a hidden
-      // conversation — and, naming no repo scope, checked out every repo in
-      // the workspace to do it. Once per restart, seven times over.
-      final def = _linearDefinition();
-      templateRepo.seed(def);
+    test(
+      're-fires interrupted steps in dependency order, on their own rows',
+      () async {
+        // Observed in production on `index_code` (chain: space → index →
+        // analyze). A restart found two rows open and re-fired BOTH in the same
+        // instant, so `analyze` resolved `{{pipeline_space_id}}` against a run
+        // whose `space` step had not written it yet, fell back to a hidden
+        // conversation — and, naming no repo scope, checked out every repo in
+        // the workspace to do it. Once per restart, seven times over.
+        final def = _linearDefinition();
+        templateRepo.seed(def);
 
-      final order = <String>[];
-      bodies.registerBody('pipeline.trigger', (_) async => StepResult.ok());
-      bodies.registerBody('bodyA', (ctx) async {
-        order.add('A:${ctx.state['from_a'] ?? 'unset'}');
-        // Give B every chance to run first if the engine lets it.
-        await Future<void>.delayed(const Duration(milliseconds: 20));
-        return StepResult.ok(mutatedState: {'from_a': 'written'});
-      });
-      bodies.registerBody('bodyB', (ctx) async {
-        order.add('B:${ctx.state['from_a'] ?? 'unset'}');
-        return StepResult.ok();
-      });
+        final order = <String>[];
+        bodies.registerBody('pipeline.trigger', (_) async => StepResult.ok());
+        bodies.registerBody('bodyA', (ctx) async {
+          order.add('A:${ctx.state['from_a'] ?? 'unset'}');
+          // Give B every chance to run first if the engine lets it.
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          return StepResult.ok(mutatedState: {'from_a': 'written'});
+        });
+        bodies.registerBody('bodyB', (ctx) async {
+          order.add('B:${ctx.state['from_a'] ?? 'unset'}');
+          return StepResult.ok();
+        });
 
-      runRepo.runs['crashed'] = PipelineRun(
-        id: 'crashed',
-        templateId: 'tpl',
-        workspaceId: 'ws',
-        status: PipelineRunStatus.running,
-        startedAt: DateTime(2026),
-      );
-      runRepo.steps['c-trigger'] = PipelineStepRun(
-        id: 'c-trigger',
-        pipelineRunId: 'crashed',
-        stepId: 'trigger',
-        status: PipelineStepStatus.completed,
-        startedAt: DateTime(2026),
-        finishedAt: DateTime(2026),
-      );
-      // BOTH open when the process died — the shape that exposes the race.
-      runRepo.steps['c-stepA'] = PipelineStepRun(
-        id: 'c-stepA',
-        pipelineRunId: 'crashed',
-        stepId: 'stepA',
-        status: PipelineStepStatus.running,
-        startedAt: DateTime(2026),
-      );
-      runRepo.steps['c-stepB'] = PipelineStepRun(
-        id: 'c-stepB',
-        pipelineRunId: 'crashed',
-        stepId: 'stepB',
-        status: PipelineStepStatus.running,
-        // The room a previous attempt of this step already opened.
-        spaceId: 'space-from-first-attempt',
-        startedAt: DateTime(2026),
-      );
+        runRepo.runs['crashed'] = PipelineRun(
+          id: 'crashed',
+          templateId: 'tpl',
+          workspaceId: 'ws',
+          status: PipelineRunStatus.running,
+          startedAt: DateTime(2026),
+        );
+        runRepo.steps['c-trigger'] = PipelineStepRun(
+          id: 'c-trigger',
+          pipelineRunId: 'crashed',
+          stepId: 'trigger',
+          status: PipelineStepStatus.completed,
+          startedAt: DateTime(2026),
+          finishedAt: DateTime(2026),
+        );
+        // BOTH open when the process died — the shape that exposes the race.
+        runRepo.steps['c-stepA'] = PipelineStepRun(
+          id: 'c-stepA',
+          pipelineRunId: 'crashed',
+          stepId: 'stepA',
+          status: PipelineStepStatus.running,
+          startedAt: DateTime(2026),
+        );
+        runRepo.steps['c-stepB'] = PipelineStepRun(
+          id: 'c-stepB',
+          pipelineRunId: 'crashed',
+          stepId: 'stepB',
+          status: PipelineStepStatus.running,
+          // The room a previous attempt of this step already opened.
+          spaceId: 'space-from-first-attempt',
+          startedAt: DateTime(2026),
+        );
 
-      await engine.resumeAll();
+        await engine.resumeAll();
 
-      await _waitFor(
-        () => runRepo.runs['crashed']?.status == PipelineRunStatus.completed,
-        reason: 'the resumed run should finish',
-      );
+        await _waitFor(
+          () => runRepo.runs['crashed']?.status == PipelineRunStatus.completed,
+          reason: 'the resumed run should finish',
+        );
 
-      expect(
-        order,
-        ['A:unset', 'B:written'],
-        reason:
-            'stepB must not start until stepA has written the state it reads',
-      );
-      // Re-fired on the row it already owns, so the room from the interrupted
-      // attempt survives — a fresh row mints (and clones) a second.
-      expect(runRepo.steps['c-stepB']!.spaceId, 'space-from-first-attempt');
-      expect(
-        runRepo.steps.values.where(
-          (s) => s.pipelineRunId == 'crashed' && s.stepId == 'stepB',
-        ),
-        hasLength(1),
-        reason: 'no duplicate row for the held step',
-      );
-    });
+        expect(
+          order,
+          ['A:unset', 'B:written'],
+          reason:
+              'stepB must not start until stepA has written the state it reads',
+        );
+        // Re-fired on the row it already owns, so the room from the interrupted
+        // attempt survives — a fresh row mints (and clones) a second.
+        expect(runRepo.steps['c-stepB']!.spaceId, 'space-from-first-attempt');
+        expect(
+          runRepo.steps.values.where(
+            (s) => s.pipelineRunId == 'crashed' && s.stepId == 'stepB',
+          ),
+          hasLength(1),
+          reason: 'no duplicate row for the held step',
+        );
+      },
+    );
 
     test(
       'fails non-idempotent running step on resume instead of re-executing',
@@ -3221,8 +3225,7 @@ void main() {
 
       await _waitFor(
         () =>
-            runRepo.runs['r-cancelled']?.status ==
-            PipelineRunStatus.completed,
+            runRepo.runs['r-cancelled']?.status == PipelineRunStatus.completed,
         reason: 'a stopped run picks up again',
       );
       // The previous outcome is forgotten, not carried into the new attempt.
@@ -3521,8 +3524,7 @@ void main() {
       // must still get to run.
       await _waitFor(
         () => siblingRan,
-        reason:
-            'the sibling must not queue behind a step that is only waiting',
+        reason: 'the sibling must not queue behind a step that is only waiting',
       );
 
       release.complete();
@@ -4321,5 +4323,93 @@ void main() {
       final statusMap = {for (final sr in stepRuns) sr.stepId: sr.status};
       expect(statusMap['gated'], PipelineStepStatus.skipped);
     });
+  });
+
+  group('per-start subgraphs', () {
+    test(
+      'schedule start skips a manual-only condition and still runs work',
+      () async {
+        templateRepo.seed(
+          PipelineDefinition(
+            templateId: 'tpl',
+            workspaceId: 'ws',
+            name: 'Two starts',
+            steps: [
+              PipelineStepDefinition(
+                id: 't-manual',
+                kind: StepKind.trigger,
+                bodyKey: 'pipeline.trigger',
+                config: const PipelineNodeConfig(
+                  extras: {kPipelineStartEventTypeKey: 'manual'},
+                ),
+              ),
+              PipelineStepDefinition(
+                id: 't-sched',
+                kind: StepKind.trigger,
+                bodyKey: 'pipeline.trigger',
+                config: const PipelineNodeConfig(
+                  extras: {kPipelineStartEventTypeKey: 'schedule'},
+                ),
+              ),
+              PipelineStepDefinition(
+                id: 'cond',
+                kind: StepKind.listen,
+                bodyKey: 'bodyCond',
+                triggers: const [
+                  StepTrigger(sourceStepIds: ['t-manual']),
+                ],
+              ),
+              PipelineStepDefinition(
+                id: 'work',
+                kind: StepKind.listen,
+                bodyKey: 'bodyWork',
+                triggers: const [
+                  StepTrigger(sourceStepIds: ['cond']),
+                  StepTrigger(sourceStepIds: ['t-sched']),
+                ],
+              ),
+              PipelineStepDefinition(
+                id: 'end',
+                kind: StepKind.terminal,
+                bodyKey: '_terminal',
+                triggers: const [
+                  StepTrigger(sourceStepIds: ['work']),
+                ],
+              ),
+            ],
+          ),
+        );
+        var condRan = false;
+        var workRan = false;
+        bodies
+          ..registerBody('pipeline.trigger', (_) async => StepResult.ok())
+          ..registerBody('bodyCond', (_) async {
+            condRan = true;
+            return StepResult.ok();
+          })
+          ..registerBody('bodyWork', (_) async {
+            workRan = true;
+            return StepResult.ok();
+          });
+
+        final run = await engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          triggerEventType: 'schedule',
+        );
+        await _waitFor(
+          () => runRepo.runs[run!.id]?.status == PipelineRunStatus.completed,
+        );
+
+        expect(condRan, isFalse);
+        expect(workRan, isTrue);
+        final stepRuns = await runRepo.stepRunsForPipeline(run!.id);
+        final statusMap = {for (final sr in stepRuns) sr.stepId: sr.status};
+        expect(statusMap['t-sched'], PipelineStepStatus.completed);
+        expect(statusMap['cond'], PipelineStepStatus.skipped);
+        expect(statusMap['work'], PipelineStepStatus.completed);
+        expect(statusMap.containsKey('t-manual'), isFalse);
+      },
+    );
   });
 }

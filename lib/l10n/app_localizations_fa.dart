@@ -6211,6 +6211,43 @@ class AppLocalizationsFa extends AppLocalizations {
   String get editorEmptyCanvas => 'گرهی از کتابخانه بکشید تا شروع کنید.';
 
   @override
+  String get pipelineWhenThisHappens => 'وقتی این رخ می‌دهد';
+
+  @override
+  String get pipelineDoThis => 'این کار را بکن';
+
+  @override
+  String get pipelineAddStep => 'افزودن گام';
+
+  @override
+  String get pipelineTidyUp => 'مرتب‌سازی چیدمان';
+
+  @override
+  String get pipelineEditorHint =>
+      'گام‌ها را بکشید تا بچینید · دستگیره‌ای بکشید تا وصل کنید';
+
+  @override
+  String get pipelineRemoveConnection => 'برداشتن اتصال';
+
+  @override
+  String get pipelineDragToConnect => 'بکشید تا وصل شود';
+
+  @override
+  String get pipelineNewDefaultName => 'پایپ‌لاین جدید';
+
+  @override
+  String get nodeCategoryTriggers => 'تریگرها';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'افزودن تریگر';
+
+  @override
+  String get pipelineOnEvent => 'روی رویداد';
+
+  @override
   String get nodeConfigTitle => 'پیکربندی گره';
 
   @override
@@ -6457,6 +6494,9 @@ class AppLocalizationsFa extends AppLocalizations {
       'یک URL وب‌هوک امضاشده ساخته می‌شود. سیستم‌های خارجی با POST به آن این پایپ‌لاین را شروع می‌کنند.';
 
   @override
+  String get triggerWebhookPathLabel => 'مسیر وب‌هوک';
+
+  @override
   String get triggerEventFieldLabel => 'رویداد';
 
   @override
@@ -6583,6 +6623,83 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'تیکت تخصیص یافت';
+
+  @override
+  String get triggerEventTicketCreated => 'تیکت ایجاد شد';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'وضعیت تیکت تغییر کرد';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'ضبط جلسه متوقف شد';
+
+  @override
+  String get triggerEventSkillUpdated => 'مهارت به‌روزرسانی شد';
+
+  @override
+  String get triggerEventSpaceDeleted => 'فضا حذف شد';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'یک pull request که روی میزبان کد باز شده، نه از Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'یک pull request که از Control Center یا توسط یک عامل باز شده است.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'ادغام، بسته، باز، بازگشایی یا تأیید شده. وضعیت را در بازرس فیلتر کنید.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'فقط وقتی pull request ادغام می‌شود، نه وقتی بسته یا دوباره باز می‌شود.';
+
+  @override
+  String get triggerRepoAddedHelp => 'یک مخزن به این فضای کاری پیوند می‌خورد.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'فایلی در مخزن پیوندشده روی دیسک تغییر می‌کند.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'پیام جدیدی در یک فضا می‌رسد.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'یک تیکت در این فضای کاری ساخته می‌شود.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'یک تیکت بین وضعیت‌ها جابه‌جا می‌شود.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'یک تیکت با موفقیت تمام می‌شود.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'اجرای عامل شکست خورد و تیکت به‌عنوان ناموفق علامت می‌خورد.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'یک تیکت لغو می‌شود و ادامه نمی‌یابد.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'حد هزینه فضای کاری یا عامل عبور می‌کند.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'یک تیکت به شخص، عامل یا تیم اختصاص می‌یابد.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'ضبط یک جلسه تمام می‌شود.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'یک مهارت نصب یا به‌روزرسانی می‌شود.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'یک فضای گفتگو حذف می‌شود.';
 
   @override
   String get navTickets => 'تیکت‌ها';

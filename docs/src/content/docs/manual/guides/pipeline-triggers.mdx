@@ -1,53 +1,52 @@
 ---
 title: Set up pipeline triggers
-description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the Trigger node in the template editor.
+description: Wire a template to start on a domain event, a schedule, or an inbound webhook — from the node library and the selected trigger's inspector.
 ---
 
-A trigger is what starts a pipeline. Every trigger a template has — including
-the one that makes it manually runnable — lives on the **Trigger** entry node in
-the template editor. There is no triggers tab and no triggers screen.
+A trigger is what starts a pipeline. Each one is a node on the canvas, dropped
+from the **Triggers** section of the node library. Selecting that node opens
+its inspector on the right — there is no always-on triggers list, no triggers
+tab, and no triggers screen.
 
-## Open the trigger panel
+## Open a trigger inspector
 
 1. Go to **Settings → Workspace → Pipeline templates**.
 2. Press the pencil on the template's row to open the editor.
-3. Click the **Trigger** node on the canvas. The right panel switches from the
-   normal node form to the trigger panel.
+3. Select a trigger node on the canvas. The right panel appears with that
+   trigger's settings. With nothing selected, the panel is hidden.
 
-The panel has two parts: a **Manual run** switch at the top and an
-**Automatic triggers** list below it.
+## Add a trigger
 
-## Allow manual runs
+The **Triggers** section of the node library lists every start kind as its own
+node: manual, schedule, webhook, and one card per domain event. Search for
+`merged`, `ticket`, or the type name (`PrMerged`) and drag the card onto the
+canvas. A new template also shows an **Add a trigger** ghost tile at the entry
+anchor — pick from the same searchable list.
 
-Turn on the **Manual run** switch to make the template appear in the run
-launcher. It is not a special case — the switch inserts and deletes an ordinary
-trigger row whose event type is `manual`. It persists immediately; there is
-nothing to save.
-
-## Add an automatic trigger
-
-1. Press **Add trigger** under **Automatic triggers**.
-2. Pick a **Trigger type**: **On an event**, **On a schedule**, or
-   **Via a webhook**.
-3. Fill in that type's fields (below).
-4. Press **Add**.
-
-The trigger is live the moment you press **Add** — there is no separate enable
-step. Use the switch on its row to turn it off later, or the bin icon to delete
-it.
+The trigger is inserted immediately. New automatic triggers start disabled so a
+drop does not fire a run before you have configured it. Use the inspector's
+**Enabled** switch to turn it on, or the bin icon to delete it.
 
 :::note[One trigger per event type]
 `pipeline_triggers` is unique on workspace, event type and template. An event
-type you have already wired disappears from the picker and once you have used
-them all the dialog says "All available events are already wired." Every webhook
-trigger shares the synthetic event type `webhook`, so a template can hold at
-most one webhook.
+type you have already wired disappears from the picker. Every webhook trigger
+shares the synthetic event type `webhook`, so a template can hold at most one
+webhook.
 :::
 
-### On an event
+## Allow manual runs
 
-Pick the domain event from the **Event** dropdown. These fourteen carry a
-payload and can fire:
+Drop **Manual run** (or pick it from the ghost tile) and turn on **Enabled** in
+its inspector. That is what makes the template appear in the run launcher. It
+is not a special case — the switch writes an ordinary trigger row whose event
+type is `manual`. It persists immediately; there is nothing to save.
+
+The same switch is behind **Manual run** in the editor header, where it sits
+alongside the template's declared inputs.
+
+## On an event
+
+These events start a run:
 
 | Picker label              | Event                      |
 | ------------------------- | -------------------------- |
@@ -56,42 +55,40 @@ payload and can fire:
 | PR status changed         | `PullRequestStatusChanged` |
 | PR merged                 | `PrMerged`                 |
 | Message received          | `MessageReceived`          |
+| Ticket created            | `TicketCreated`            |
+| Ticket status changed     | `TicketStatusChanged`      |
 | Ticket assigned           | `TicketAssigned`           |
 | Ticket completed          | `TicketCompleted`          |
 | Ticket failed             | `TicketFailed`             |
 | Ticket cancelled          | `TicketCancelled`          |
 | Budget threshold crossed  | `BudgetThresholdCrossed`   |
 | Repository added          | `RepoAdded`                |
-| `MeetingRecordingStopped` | `MeetingRecordingStopped`  |
-| `SkillUpdated`            | `SkillUpdated`             |
-| `SpaceDeleted`            | `SpaceDeleted`             |
+| Meeting recording stopped | `MeetingRecordingStopped`  |
+| Skill updated             | `SkillUpdated`             |
+| Space deleted             | `SpaceDeleted`             |
 
-The last three have no display label yet, so they show their raw type name.
 `SpaceDeleted` is what the built-in worktree-cleanup pipeline listens on: it
 carries the deleted space's id, so the run reclaims exactly that space's
 worktrees instead of sweeping the whole workspace.
 
-:::caution[Two offered events can never fire]
-`TicketCreated` and `TicketStatusChanged` also appear in the picker, but neither
-has a payload mapping. The dispatcher gives up before it even looks for matching
-triggers, so a trigger on either is selectable, saveable and permanently inert.
-:::
-
 For the payload keys each event carries, see the
 [domain events reference](/manual/reference/domain-events/).
 
-#### Filter an event trigger
+### Filter an event trigger
 
-The only filter the dialog can author is the status chip set and it appears
-only when the event is **PR status changed**. Tap any of `merged`, `closed`,
-`approved`, `opened`, `reopened`; the trigger then fires only when the event's
-`status` matches one of them. Leaving every chip unselected means no filter.
+Select the **PR status changed** node. The inspector's status chips are the
+only filter the UI can author. Tap any of `merged`, `closed`, `approved`,
+`opened`, `reopened`; the trigger then fires only when the event's `status`
+matches one of them. Leaving every chip unselected means no filter.
 
 There is no free-form JSON filter field. A filter key that the event's payload
 does not carry never matches, so do not hand-author one against a key you have
 not confirmed in the domain events reference.
 
-### On a schedule
+## On a schedule
+
+Select the **Schedule** node to edit when it fires. The inspector fields persist
+as you leave them:
 
 | Field                                | Description                                                                                                                                                                         |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -99,26 +96,28 @@ not confirmed in the domain events reference.
 | **Timezone (optional)**              | An IANA zone such as `Europe/Paris`. Defaults to UTC.                                                                                                                               |
 | **On missed runs**                   | What to do about fires missed while the server was down: **Run once** collapses every missed slot into one fire on restart (the default), **Skip** resumes at the next future slot. |
 
-The trigger row's summary line only spells out the interval for the
+The canvas tile's summary line only spells out the interval for the
 `every:<seconds>` form; a cron expression shows as just "Schedule".
 
-### Via a webhook
+## Via a webhook
 
-Choosing **Via a webhook** takes no fields — pressing **Add** mints a random
-token for the trigger.
+Dropping **Webhook** mints a random token. Select the node to copy the path
+`POST /webhooks/<token>` from the inspector.
 
-The endpoint is `POST /webhooks/<token>` on the server. The token is also the
-HMAC secret: the request must carry
+The token is also the HMAC secret: the request must carry
 `X-Hub-Signature-256: sha256=<hex>`, where the hex is `HMAC-SHA256(body, token)`.
 A delivery that fails verification is rejected and logged and is not
 replayable. Duplicates are ignored by their dedupe key.
 
-:::caution[The token and URL are never shown]
-Nothing in the app displays the generated token or builds the URL for you —
-there is no copy affordance anywhere in the pipelines UI and the trigger's row
-just reads "webhook". Until that ships, the value has to be read out of the
-`pipeline_triggers` table directly.
+:::caution[The token is in the database]
+The inspector shows the path. The token itself is the path segment; it is also
+stored on the `pipeline_triggers` row.
 :::
+
+Each start is its own graph node. Pulling a wire from **Schedule** attaches
+only Schedule; **Manual run** can take a different path (for example a
+condition node) before it joins the same work. A run enters the start that
+matches its event type and skips subgraphs that belong to the other starts.
 
 ## How a trigger reaches a run
 
@@ -133,11 +132,14 @@ nothing until you turn the template on.
 
 ## Useful patterns
 
+- **Gate only the manual path** — wire **Manual run** through a condition node,
+  and **Schedule** straight to the work. Each start owns its own wires.
 - **Review every new PR** — event **PR published** on the `pr_review` template.
-- **Clean up after a merge** — event **PR merged**. The built-in
-  `pr_merged_cleanup` template already ships wired this way, plus a daily
-  schedule that is force-enabled on every re-seed because it is garbage
-  collection.
+- **Clean up after a merge** — event **PR status changed**, filtered to
+  `merged` / `closed` / `approved`. The built-in `pr_merged_cleanup` template
+  already listens this way, plus ticket completed/cancelled, `SpaceDeleted`,
+  and a daily schedule that is force-enabled on every re-seed because it is
+  garbage collection.
 - **Nightly sweep** — schedule `0 2 * * *` with a timezone, on a template whose
   first node is a bash script.
 - **React to an external system** — a webhook trigger, with the calling system

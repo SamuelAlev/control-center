@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1.27
 
 # =============================================================================
 # Dockerfile for the Control Center signaling server.
@@ -15,9 +15,9 @@
 # =============================================================================
 
 # ---- Build stage: compile a native AOT executable ---------------------------
-# Pin the Dart SDK to satisfy `sdk: ">=3.11.0 <4.0.0"`.
+# Pin the Dart SDK to satisfy `sdk: ">=3.12.0 <4.0.0"`.
 # Keep this in sync with apps/cc_signaling_server/pubspec.yaml's `environment`.
-ARG DART_SDK_VERSION=3.11
+ARG DART_SDK_VERSION=3.13
 FROM dart:${DART_SDK_VERSION}-sdk AS builder
 
 WORKDIR /build
@@ -34,7 +34,7 @@ RUN printf '%s\n' \
       'name: cc_signaling_server' \
       'publish_to: none' \
       'environment:' \
-      '  sdk: ">=3.11.0 <4.0.0"' \
+      '  sdk: ">=3.12.0 <4.0.0"' \
       'dependencies:' \
       '  crypto: ^3.0.7' > pubspec.yaml \
  && dart pub get \

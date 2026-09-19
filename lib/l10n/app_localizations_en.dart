@@ -6217,6 +6217,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editorEmptyCanvas => 'Drag a node from the library to start.';
 
   @override
+  String get pipelineWhenThisHappens => 'When this happens';
+
+  @override
+  String get pipelineDoThis => 'Do this';
+
+  @override
+  String get pipelineAddStep => 'Add step';
+
+  @override
+  String get pipelineTidyUp => 'Tidy up layout';
+
+  @override
+  String get pipelineEditorHint =>
+      'Drag steps to arrange · drag a handle to connect';
+
+  @override
+  String get pipelineRemoveConnection => 'Remove connection';
+
+  @override
+  String get pipelineDragToConnect => 'Drag to connect';
+
+  @override
+  String get pipelineNewDefaultName => 'New pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Triggers';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Add a trigger';
+
+  @override
+  String get pipelineOnEvent => 'On event';
+
+  @override
   String get nodeConfigTitle => 'Node config';
 
   @override
@@ -6462,6 +6499,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'A signed webhook URL is generated. External systems POST to it to start this pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook path';
+
+  @override
   String get triggerEventFieldLabel => 'Event';
 
   @override
@@ -6588,6 +6628,85 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket assigned';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket created';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Ticket status changed';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'Meeting recording stopped';
+
+  @override
+  String get triggerEventSkillUpdated => 'Skill updated';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Space deleted';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'A pull request opened on the code host, not from Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'A pull request opened from Control Center or by an agent.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Merged, closed, opened, reopened, or approved. Filter by status in the inspector.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Only when the pull request is merged, not closed or reopened.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'A repository is linked to this workspace.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'A file in a linked repository changes on disk.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'A new message arrives in a space.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'A ticket is created in this workspace.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'A ticket moves between statuses.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'A ticket finishes successfully.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'An agent run failed and the ticket is marked failed.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'A ticket is cancelled and will not continue.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'A workspace or agent spend limit is crossed.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'A ticket is assigned to a person, agent, or team.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'A meeting recording finishes.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'A skill is installed or updated.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'A conversation space is deleted.';
 
   @override
   String get navTickets => 'Tickets';

@@ -77,8 +77,9 @@ older proposal as a new revision, so the revision timeline only ever grows.
 ## Honest estimates, or none
 
 The estimate on the approval bar is built from real completed-run history for
-each role, as an interquartile (p25–p75) band and the plan total is the
-critical path through the DAG rather than the sum (parallel branches overlap).
+each role, as an interquartile (p25–p75) band. Cost totals **sum** the
+estimable nodes; duration is the **critical path** through the DAG rather than
+the sum (parallel branches overlap).
 
 A node whose role has **no completed-run history** reports `sampleSize: 0` and
 null ranges. That renders as exactly that — unknown — never as a fabricated
@@ -99,9 +100,10 @@ per-run cost and token rollups and the run-detail UI.
 
 Approval also creates the scaffolding the work needs:
 
-- **hires** any roles marked as new (and records them so they can be cleaned up)
+- **hires** any roles marked as new (and records the hired agent ids so a crash
+  mid-approval can resume without duplicate hires)
 - a **team** grouping the roles
-- a **project** holding the sub-tickets
+- a **project** that files the parent ticket
 - the **pipeline template + run** that drives it all
 
 ## The lifecycle
@@ -118,13 +120,14 @@ proposed → approved → executing → synthesizing → completed
 | `approved`     | You approved it; materialization is in progress (hires, team, project, pipeline) |
 | `executing`    | The generated pipeline is running: sub-tickets, discussion, work                 |
 | `synthesizing` | The sub-tickets are done; the synthesis step is producing the deliverable        |
-| `completed`    | Done: the deliverable landed on the parent ticket                                |
-| `failed`       | A hard error, or every sub-ticket failed                                         |
+| `completed`    | Done: the parent ticket is marked complete and the deliverable is posted in the shared space |
+| `failed`       | Materialization failed, or the generated pipeline run failed                     |
 | `cancelled`    | You cancelled it                                                                 |
 
 A monotonic **revision** number tracks the proposal as the orchestrator revises
-it; the app records which revision you approved, so a mid-flight replan can't
-silently change what you signed off on.
+it while it is still `proposed`; the app records which revision you approved.
+`propose_orchestration` refuses a revision once the status is no longer
+`proposed`.
 
 An orchestration always opens against a **parent ticket** and shares one
 discussion **space**, so the whole effort is traceable to a single work item
@@ -149,7 +152,7 @@ the top of them rather than a separate runtime.
 ## See also
 
 - [Pipelines and automation](/manual/concepts/pipelines/): the engine a materialized orchestration runs on
-- [Tickets and delegation](/manual/concepts/tickets/): the sub-tickets and parent ticket an orchestration creates
+- [Tickets and delegation](/manual/concepts/tickets/): the parent ticket an orchestration is anchored on
 - [The agent model](/manual/concepts/agent-model/): the roles an orchestration fills or hires
 - [Run an orchestration](/manual/guides/run-orchestration/)
 - [Work in Plan Studio](/manual/guides/plan-studio/)

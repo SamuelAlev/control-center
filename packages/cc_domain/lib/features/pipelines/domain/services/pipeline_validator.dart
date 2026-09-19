@@ -4,6 +4,8 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_defin
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart'
     show PipelineBodyRegistry;
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart'
+    show kPipelineStartEventTypeKey;
 import 'package:cc_domain/features/pipelines/domain/services/state_reducer.dart';
 import 'package:cc_domain/features/pipelines/domain/services/template_renderer.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart'
@@ -97,7 +99,7 @@ class PipelineValidator {
   List<PipelineIssue> validate(PipelineDefinition def) {
     final issues = <PipelineIssue>[];
 
-    // ── Structural: exactly one trigger (the entry node), ≥1 terminal ───
+    // ── Structural: ≥1 trigger (entry nodes), ≥1 terminal ───────────────
     final triggers = def.steps
         .where((s) => s.kind == StepKind.trigger)
         .toList();
@@ -110,26 +112,36 @@ class PipelineValidator {
               'a trigger.',
         ),
       );
-    } else if (triggers.length > 1) {
-      issues.add(
-        PipelineIssue(
-          severity: PipelineIssueSeverity.error,
-          message:
-              'Pipeline has ${triggers.length} trigger steps; exactly one '
-              'is allowed.',
-        ),
-      );
-    } else if (triggers.single.triggers.isNotEmpty) {
-      // The trigger is the entry node: nothing may feed into it.
-      issues.add(
-        PipelineIssue(
-          severity: PipelineIssueSeverity.error,
-          stepId: triggers.single.id,
-          message:
-              'Trigger "${triggers.single.id}" is the entry node and cannot '
-              'have upstream steps.',
-        ),
-      );
+    } else {
+      final seenEventTypes = <String>{};
+      for (final trigger in triggers) {
+        if (trigger.triggers.isNotEmpty) {
+          // A trigger is an entry node: nothing may feed into it.
+          issues.add(
+            PipelineIssue(
+              severity: PipelineIssueSeverity.error,
+              stepId: trigger.id,
+              message:
+                  'Trigger "${trigger.id}" is an entry node and cannot '
+                  'have upstream steps.',
+            ),
+          );
+        }
+        final eventType = trigger.config.extras[kPipelineStartEventTypeKey];
+        if (eventType is String && eventType.isNotEmpty) {
+          if (!seenEventTypes.add(eventType)) {
+            issues.add(
+              PipelineIssue(
+                severity: PipelineIssueSeverity.error,
+                stepId: trigger.id,
+                message:
+                    'Trigger "$eventType" is wired twice; each start event '
+                    'may appear once.',
+              ),
+            );
+          }
+        }
+      }
     }
     final terminals = def.steps
         .where((s) => s.kind == StepKind.terminal)

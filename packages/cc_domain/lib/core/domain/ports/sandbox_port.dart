@@ -71,9 +71,9 @@ abstract interface class SandboxPort {
   /// stream so the chat UI can pick them up just like the un-sandboxed path.
   ///
   /// [stdinInput], when non-null, is written to the child's stdin and stdin
-  /// is then closed. Used by CLIs (e.g. the `--mode json` agent) that expect the prompt on stdin
-  /// rather than as an argv entry. When null the child's stdin is closed
-  /// immediately so reads return EOF instead of blocking.
+  /// is then closed. Used by CLIs that expect the prompt on stdin rather
+  /// than as an argv entry. When null the child's stdin is closed immediately
+  /// so reads return EOF instead of blocking.
   Future<int> exec(
     SandboxHandle handle,
     List<String> argv, {

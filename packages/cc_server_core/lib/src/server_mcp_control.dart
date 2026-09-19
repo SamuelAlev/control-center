@@ -256,8 +256,8 @@ class ServerMcpControl implements McpServerControl {
   void notifyToolsChanged() => _handler?.notifyToolsListChanged();
 
   /// Writes (and returns the path to) an MCP client config that points a
-  /// server-spawned agent CLI (`claude`, `pi`, ACP) at this loopback MCP
-  /// endpoint. Call after the surface is running ([ensureRunningForDispatch]).
+  /// server-spawned agent CLI (`claude`, ACP) at this loopback MCP endpoint.
+  /// Call after the surface is running ([ensureRunningForDispatch]).
   ///
   /// The config carries three kinds of headers:
   /// * `Authorization` — the configured bearer token, when set.
@@ -270,16 +270,8 @@ class ServerMcpControl implements McpServerControl {
   ///   its own uuid — one cannot stand in for the other, and guardrail
   ///   resolution keys on the space.
   /// * `X-CC-Toolset-Rev` — the registry's catalogue fingerprint. Clients that
-  ///   key their tool-list cache on a config hash (pi's mcp-adapter persists
-  ///   tool lists for 7 days) see a new hash whenever the toolset changes,
-  ///   which busts the stale cache that once hid new tools for a week.
-  ///
-  /// Alongside `<cwd>/.mcp.json` this also writes `<cwd>/.pi/mcp.json` with
-  /// the same server entry plus `"lifecycle": "eager"`. pi merges the
-  /// `.pi/mcp.json` project source last (per-server it wins over `.mcp.json`),
-  /// so pi connects at session start and re-lists tools fresh instead of
-  /// serving a disk cache; Claude reads only the `--mcp-config` file and never
-  /// sees the pi-specific key.
+  ///   key their tool-list cache on a config hash see a new hash whenever the
+  ///   toolset changes, which busts a stale cache that once hid new tools.
   Future<String> writeAgentMcpConfig(
     File target, {
     String? workspaceId,
@@ -311,11 +303,6 @@ class ServerMcpControl implements McpServerControl {
     };
     await _writeJson(target, {
       'mcpServers': {'control-center': server},
-    });
-    await _writeJson(File(p.join(target.parent.path, '.pi', 'mcp.json')), {
-      'mcpServers': {
-        'control-center': {...server, 'lifecycle': 'eager'},
-      },
     });
     return target.path;
   }

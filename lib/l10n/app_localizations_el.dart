@@ -6299,6 +6299,43 @@ class AppLocalizationsEl extends AppLocalizations {
       'Σύρετε έναν κόμβο από τη βιβλιοθήκη για να ξεκινήσετε.';
 
   @override
+  String get pipelineWhenThisHappens => 'Όταν συμβεί αυτό';
+
+  @override
+  String get pipelineDoThis => 'Κάντε αυτό';
+
+  @override
+  String get pipelineAddStep => 'Προσθήκη βήματος';
+
+  @override
+  String get pipelineTidyUp => 'Τακτοποίηση διάταξης';
+
+  @override
+  String get pipelineEditorHint =>
+      'Σύρετε τα βήματα για διάταξη · σύρετε μια λαβή για σύνδεση';
+
+  @override
+  String get pipelineRemoveConnection => 'Αφαίρεση σύνδεσης';
+
+  @override
+  String get pipelineDragToConnect => 'Σύρετε για σύνδεση';
+
+  @override
+  String get pipelineNewDefaultName => 'Νέο pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Εναύσματα';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Προσθήκη εναύσματος';
+
+  @override
+  String get pipelineOnEvent => 'Σε γεγονός';
+
+  @override
   String get nodeConfigTitle => 'Ρύθμιση κόμβου';
 
   @override
@@ -6547,6 +6584,9 @@ class AppLocalizationsEl extends AppLocalizations {
       'Δημιουργείται υπογεγραμμένο URL webhook. Εξωτερικά συστήματα κάνουν POST σε αυτό για να ξεκινήσουν αυτό το pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Διαδρομή webhook';
+
+  @override
   String get triggerEventFieldLabel => 'Γεγονός';
 
   @override
@@ -6675,6 +6715,89 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ανατέθηκε εισιτήριο';
+
+  @override
+  String get triggerEventTicketCreated => 'Δημιουργήθηκε εισιτήριο';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Άλλαξε η κατάσταση εισιτηρίου';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Η εγγραφή συνάντησης σταμάτησε';
+
+  @override
+  String get triggerEventSkillUpdated => 'Η δεξιότητα ενημερώθηκε';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Ο χώρος διαγράφηκε';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Ένα pull request που ανοίχτηκε στον κεντρικό υπολογιστή κώδικα, όχι από το Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Ένα pull request που ανοίχτηκε από το Control Center ή από έναν πράκτορα.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Συγχωνεύτηκε, έκλεισε, άνοιξε, ξανάνοιξε ή εγκρίθηκε. Φιλτράρετε κατά κατάσταση στον επιθεωρητή.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Μόνο όταν το pull request συγχωνεύεται, όχι όταν κλείνει ή ξανανοίγει.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Ένα αποθετήριο συνδέεται με αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Ένα αρχείο σε συνδεδεμένο αποθετήριο αλλάζει στο δίσκο.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Ένα νέο μήνυμα φτάνει σε έναν χώρο.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Δημιουργείται ένα εισιτήριο σε αυτόν τον χώρο εργασίας.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Ένα εισιτήριο μετακινείται μεταξύ καταστάσεων.';
+
+  @override
+  String get triggerTicketCompletedHelp =>
+      'Ένα εισιτήριο ολοκληρώνεται με επιτυχία.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Μια εκτέλεση πράκτορα απέτυχε και το εισιτήριο σημειώνεται ως αποτυχημένο.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Ένα εισιτήριο ακυρώνεται και δεν συνεχίζεται.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Υπερβαίνεται ένα όριο δαπανών χώρου εργασίας ή πράκτορα.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Ένα εισιτήριο ανατίθεται σε άτομο, πράκτορα ή ομάδα.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Η εγγραφή μιας σύσκεψης τελειώνει.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Μια δεξιότητα εγκαθίσταται ή ενημερώνεται.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Ένας χώρος συνομιλίας διαγράφεται.';
 
   @override
   String get navTickets => 'Εισιτήρια';

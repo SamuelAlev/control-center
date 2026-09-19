@@ -33,9 +33,18 @@ void main() {
     }
   }
 
-  final src = File(
-    '${repoRoot().path}/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',
-  ).readAsStringSync();
+  final srcFiles = <File>[
+    File(
+      '${repoRoot().path}/packages/cc_server_core/lib/src/remote_rpc_catalog.dart',
+    ),
+    ...Directory(
+      '${repoRoot().path}/packages/cc_server_core/lib/src/catalog',
+    ).listSync().whereType<File>().where(
+      (f) =>
+          f.path.endsWith('.dart') &&
+          !f.path.replaceAll(r'\', '/').endsWith('catalog_wire.dart'),
+    ),
+  ];
 
   final nameRe = RegExp(r"""name:\s*(['"])([^'"$]+)\1""");
   final undoRe = RegExp(
@@ -45,20 +54,23 @@ void main() {
   /// name → undoClass for every op that declares one, resolved by taking the
   /// nearest preceding `name:` before each `undoClass:` occurrence.
   Map<String, String> declaredUndoClasses() {
-    final names = nameRe.allMatches(src).toList();
     final result = <String, String>{};
-    for (final u in undoRe.allMatches(src)) {
-      // The op name is the last `name:` literal before this undoClass.
-      String? owner;
-      for (final n in names) {
-        if (n.start < u.start) {
-          owner = n.group(2);
-        } else {
-          break;
+    for (final file in srcFiles) {
+      final src = file.readAsStringSync();
+      final names = nameRe.allMatches(src).toList();
+      for (final u in undoRe.allMatches(src)) {
+        // The op name is the last `name:` literal before this undoClass.
+        String? owner;
+        for (final n in names) {
+          if (n.start < u.start) {
+            owner = n.group(2);
+          } else {
+            break;
+          }
         }
-      }
-      if (owner != null) {
-        result[owner] = u.group(1)!;
+        if (owner != null) {
+          result[owner] = u.group(1)!;
+        }
       }
     }
     return result;

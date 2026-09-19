@@ -1,53 +1,13 @@
 import 'package:cc_domain/features/pipelines/domain/services/node_type_library.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pipelines/presentation/widgets/node_type_visuals.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
-
-/// Editor palette categories. The mandatory trigger entry node is not in the
-/// palette (it is a fixed, single entry node), so there is no trigger category.
-enum _NodeCategory { flow, pr, agents, messaging, code }
-
-/// Maps a `NodeType.id` to its palette category. Defaults to `_NodeCategory.flow`.
-_NodeCategory _categoryFor(String id) {
-  switch (id) {
-    case 'bash.clonePr':
-    case 'prReview.comment':
-    case 'prompt.reviewer':
-      return _NodeCategory.pr;
-    case 'prompt.custom':
-    case 'team.dispatch':
-      return _NodeCategory.agents;
-    case 'messaging.postSpace':
-      return _NodeCategory.messaging;
-    case 'bash.script':
-      return _NodeCategory.code;
-    case 'prompt.join':
-    case 'pipeline.condition':
-    case 'condition.fileExists':
-    case 'condition.anyOf':
-    case 'condition.allOf':
-    case 'human.gate':
-    case 'flow.forEach':
-    case 'flow.callPipeline':
-    default:
-      return _NodeCategory.flow;
-  }
-}
-
-String _categoryLabel(AppLocalizations l10n, _NodeCategory c) {
-  return switch (c) {
-    _NodeCategory.flow => l10n.nodeCategoryFlow,
-    _NodeCategory.pr => l10n.nodeCategoryPr,
-    _NodeCategory.agents => l10n.nodeCategoryAgents,
-    _NodeCategory.messaging => l10n.nodeCategoryMessaging,
-    _NodeCategory.code => l10n.nodeCategoryCode,
-  };
-}
 
 /// Vertical, categorized, searchable list of [NodeType] entries the user can
 /// drag onto the editor canvas. Each entry is a [Draggable] whose payload is
-/// the [NodeType].
+/// the [NodeType]. Icons come from [visualForNodeTypeId] so the palette and
+/// the canvas tiles agree.
 class NodeLibrarySidebar extends StatefulWidget {
   /// Creates a [NodeLibrarySidebar].
   const NodeLibrarySidebar({super.key, required this.library});
@@ -81,27 +41,16 @@ class _NodeLibrarySidebarState extends State<NodeLibrarySidebar> {
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
+    final triggerEntries = filterTriggerEntries(
+      triggerPaletteEntries(l10n),
+      _query,
+    );
+    final grouped = groupNodeTypes(
+      filterNodeTypes(widget.library.types, _query),
+    );
+    final empty = triggerEntries.isEmpty && grouped.isEmpty;
 
-    final filtered = _query.isEmpty
-        ? widget.library.types
-        : widget.library.types
-              .where(
-                (t) =>
-                    t.displayName.toLowerCase().contains(_query) ||
-                    t.description.toLowerCase().contains(_query),
-              )
-              .toList();
-
-    // Group by category, preserving the enum declaration order.
-    final grouped = <_NodeCategory, List<NodeType>>{};
-    for (final t in filtered) {
-      grouped.putIfAbsent(_categoryFor(t.id), () => []).add(t);
-    }
-    final orderedCategories = _NodeCategory.values
-        .where(grouped.containsKey)
-        .toList();
-
-    return Container(
+    return ColoredBox(
       color: tokens.bgPrimary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -132,7 +81,7 @@ class _NodeLibrarySidebarState extends State<NodeLibrarySidebar> {
           ),
           const CcDivider(),
           Expanded(
-            child: orderedCategories.isEmpty
+            child: empty
                 ? Center(
                     child: Text(
                       l10n.nodeLibraryNoMatches,
@@ -148,23 +97,46 @@ class _NodeLibrarySidebarState extends State<NodeLibrarySidebar> {
                       vertical: 12,
                     ),
                     children: [
-                      for (final category in orderedCategories) ...[
+                      if (triggerEntries.isNotEmpty) ...[
                         Padding(
                           padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
                           child: Text(
-                            _categoryLabel(l10n, category).toUpperCase(),
-                            style: TextStyle(
-                              color: tokens.textTertiary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.6,
-                            ),
+                            l10n.nodeCategoryTriggers.toUpperCase(),
+                            style: pipelineNodeEyebrowStyle(tokens),
                           ),
                         ),
-                        for (final type in grouped[category]!)
+                        for (final entry in triggerEntries)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 6),
-                            child: _DraggableEntry(type: type),
+                            child: _PaletteDraggable<TriggerPaletteEntry>(
+                              data: entry,
+                              icon: entry.icon,
+                              title: entry.title,
+                              description: entry.description,
+                            ),
+                          ),
+                        const SizedBox(height: 6),
+                      ],
+                      for (final (category, types) in grouped) ...[
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(2, 6, 2, 6),
+                          child: Text(
+                            pipelineNodeCategoryLabel(
+                              l10n,
+                              category,
+                            ).toUpperCase(),
+                            style: pipelineNodeEyebrowStyle(tokens),
+                          ),
+                        ),
+                        for (final type in types)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 6),
+                            child: _PaletteDraggable<NodeType>(
+                              data: type,
+                              icon: visualForNodeTypeId(type.id).icon,
+                              title: type.displayName,
+                              description: type.description,
+                            ),
                           ),
                         const SizedBox(height: 6),
                       ],
@@ -177,57 +149,87 @@ class _NodeLibrarySidebarState extends State<NodeLibrarySidebar> {
   }
 }
 
-class _DraggableEntry extends StatelessWidget {
-  const _DraggableEntry({required this.type});
+/// Drag source for one palette row. Hover washes the card; the cursor is
+/// grab at rest and grabbing while the payload is in flight.
+class _PaletteDraggable<T extends Object> extends StatefulWidget {
+  const _PaletteDraggable({
+    required this.data,
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
 
-  final NodeType type;
+  final T data;
+  final IconData icon;
+  final String title;
+  final String description;
+
+  @override
+  State<_PaletteDraggable<T>> createState() => _PaletteDraggableState<T>();
+}
+
+class _PaletteDraggableState<T extends Object>
+    extends State<_PaletteDraggable<T>> {
+  bool _hovered = false;
+  bool _dragging = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final card = CcCard(
-      padding: const EdgeInsets.all(10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(AppIcons.gripVertical, size: 16, color: tokens.textTertiary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  type.displayName,
-                  style: TextStyle(
-                    color: tokens.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+    Widget card({required bool washed}) {
+      return CcCard(
+        hovered: washed,
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(widget.icon, size: 16, color: tokens.textSecondary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.title,
+                    style: TextStyle(
+                      color: tokens.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  type.description,
-                  style: TextStyle(
-                    color: tokens.textTertiary,
-                    fontSize: 11,
-                    height: 1.35,
+                  const SizedBox(height: 2),
+                  Text(
+                    widget.description,
+                    style: TextStyle(
+                      color: tokens.textTertiary,
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      );
+    }
 
-    return Draggable<NodeType>(
-      data: type,
-      dragAnchorStrategy: pointerDragAnchorStrategy,
-      feedback: SizedBox(width: 220, child: card),
-      childWhenDragging: Opacity(opacity: 0.4, child: card),
-      child: card,
+    final rest = card(washed: _hovered && !_dragging);
+    return MouseRegion(
+      cursor: _dragging ? SystemMouseCursors.grabbing : SystemMouseCursors.grab,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Draggable<T>(
+        data: widget.data,
+        dragAnchorStrategy: pointerDragAnchorStrategy,
+        onDragStarted: () => setState(() => _dragging = true),
+        onDragEnd: (_) => setState(() => _dragging = false),
+        feedback: SizedBox(width: 220, child: card(washed: false)),
+        childWhenDragging: Opacity(opacity: 0.4, child: card(washed: false)),
+        child: rest,
+      ),
     );
   }
 }

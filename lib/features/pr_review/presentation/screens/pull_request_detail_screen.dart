@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/features/pr_review/domain/entities/deployment_preview.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
+import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -53,7 +54,6 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/providers/last_checked_provider.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
-import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1370,12 +1370,14 @@ class _ErrorStateState extends ConsumerState<_ErrorState> {
               ),
               if (_showDetails) ...[
                 const SizedBox(height: 16),
-                SelectableText(
-                  widget.error.toString(),
-                  textAlign: TextAlign.center,
-                  style: CcTypography.caption.copyWith(
-                    color: t.textTertiary,
-                    fontFamily: CcFonts.codeFamily,
+                CcSelectionRegion(
+                  child: Text(
+                    widget.error.toString(),
+                    textAlign: TextAlign.center,
+                    style: CcTypography.caption.copyWith(
+                      color: t.textTertiary,
+                      fontFamily: CcFonts.codeFamily,
+                    ),
                   ),
                 ),
               ],

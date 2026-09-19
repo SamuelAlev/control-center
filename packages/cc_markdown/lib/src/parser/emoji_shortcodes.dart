@@ -15,7 +15,7 @@
 // are absent on purpose: they are images, not characters, so
 // they stay literal text.
 //
-// Regenerated: 2026-08-25T10:35:33.338654Z
+// Regenerated: 2026-09-19T16:41:18.984102Z
 
 /// Longest shortcode name in [_packed], so the inline scanner
 /// can bound its look-ahead: a `:` with no closing colon inside

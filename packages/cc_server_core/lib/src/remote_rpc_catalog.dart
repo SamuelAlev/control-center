@@ -587,6 +587,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
     List<Repo> repos, {
     String? userId,
+    String? workspaceId,
   })?
   fetchMergedHistory,
   // GitHub org members (profile people picker). Null → empty.
@@ -10942,7 +10943,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // The CALLER's history: resolved under their own per-forge identity
         // and fetched on their own credential, so one member's merged PRs are
         // never presented to another as theirs.
-        final groups = await history(repos, userId: ctx.userId);
+        final groups = await history(
+          repos,
+          userId: ctx.userId,
+          workspaceId: ctx.workspaceId,
+        );
         return {
           'repos': [
             for (final g in groups)

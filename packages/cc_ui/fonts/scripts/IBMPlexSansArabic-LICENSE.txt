@@ -1,4 +1,4 @@
-IBM Plex Sans Arabic Regular + SemiBold, vendored here as IBMPlexSansArabic-Regular.ttf / IBMPlexSansArabic-SemiBold.ttf.
+IBM Plex Sans Arabic Regular + SemiBold 1.101, vendored here as IBMPlexSansArabic-Regular.ttf / IBMPlexSansArabic-SemiBold.ttf.
 Upstream: https://github.com/IBM/plex — licensed under the SIL Open Font License, Version 1.1.
 ---
 Copyright © 2017 IBM Corp. with Reserved Font Name "Plex"

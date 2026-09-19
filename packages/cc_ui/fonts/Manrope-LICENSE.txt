@@ -1,4 +1,4 @@
-Manrope (variable font), vendored here as Manrope-Variable.ttf.
+Manrope (variable font) 4.505, vendored here as Manrope-Variable.ttf.
 Upstream: https://github.com/sharanda/manrope — licensed under the SIL Open Font License, Version 1.1.
 ---
 

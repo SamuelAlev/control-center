@@ -265,6 +265,71 @@ void main() {
       },
     );
 
+    test(
+      'containsPlaceholders is true only when a {{ref}} is present',
+      timeout: const Timeout.factor(2),
+      () {
+        expect(
+          renderer.containsPlaceholders('Cross-review #{{pr_number}}'),
+          isTrue,
+        );
+        expect(renderer.containsPlaceholders('Review'), isFalse);
+        expect(renderer.containsPlaceholders('{{'), isFalse);
+      },
+    );
+
+    // ── parts ───────────────────────────────────────────────────────────
+
+    test(
+      'parts() splits literals from placeholders',
+      timeout: const Timeout.factor(2),
+      () {
+        expect(renderer.parts('Cross-review #{{pr_number}}'), const [
+          TemplateText('Cross-review #'),
+          TemplatePlaceholder('pr_number'),
+        ]);
+      },
+    );
+
+    test(
+      'parts() keeps surrounding punctuation and multiple refs',
+      timeout: const Timeout.factor(2),
+      () {
+        expect(
+          renderer.parts(r'PR #{{pr_number}} by {{$trigger.author}}'),
+          const [
+            TemplateText('PR #'),
+            TemplatePlaceholder('pr_number'),
+            TemplateText(' by '),
+            TemplatePlaceholder(r'$trigger.author'),
+          ],
+        );
+      },
+    );
+
+    test(
+      'parts() omits empty literals around a bare placeholder',
+      timeout: const Timeout.factor(2),
+      () {
+        expect(renderer.parts('{{pr_number}}'), const [
+          TemplatePlaceholder('pr_number'),
+        ]);
+        expect(renderer.parts('{{a}}{{b}}'), const [
+          TemplatePlaceholder('a'),
+          TemplatePlaceholder('b'),
+        ]);
+      },
+    );
+
+    test(
+      'parts() of a plain string is one literal',
+      timeout: const Timeout.factor(2),
+      () {
+        expect(renderer.parts('Review'), const [TemplateText('Review')]);
+        expect(renderer.parts(''), isEmpty);
+      },
+    );
+
     // ── resolve ─────────────────────────────────────────────────────────
 
     test(

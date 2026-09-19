@@ -35,7 +35,7 @@ disagree about. Isolation is enforced per call instead, in four steps:
 3. The caller's `WorkspaceRole` must meet the op's floor, derived from its kind:
    read needs guest, mutate needs member, destructive needs admin.
 4. An op that exposes repo content additionally requires a per-repo grant at
-   the level it declares — `none` / `read` / `write` — so workspace membership
+   the level it declares — `none` / `read` / `review` / `write` — so workspace membership
    never silently out-privileges the forge.
 
 The sentence that matters: **holding a pairing key is not the access boundary;
@@ -141,12 +141,17 @@ registry. This is the programmatic integration path; it is not a GUI. See
 ### Fleet executors (cc_worker)
 
 A **`cc_worker`** is a headless pure-Dart binary that pairs with a `cc_server`,
-declares its host capabilities and pulls leased jobs to execute — agent runs,
-pipeline steps, code indexing, golden renders, eval batches. It streams process
+declares its host capabilities and pulls leased jobs to execute. It streams process
 events back over the same RPC and holds **no durable state**: no database, no
 auth, no approvals, no budgets — those never leave `cc_server`. A worker is a
 limb, not a second brain. One authoritative server, N dumb limbs; there is no
 consensus, no worker-to-worker traffic.
+
+Leased execution is still lease plumbing. `agentRun` is the only kind that runs
+a real command (`CC_JOB_COMMAND`, or an echoed prompt if none was supplied).
+`pipelineStep`, `codeIndex`, `goldenRender`, `benchmark` and `evalBatch`
+currently probe with `git --version` / `rev-parse HEAD` so the streaming path
+is exercised without pretending those jobs ran.
 
 What it advertises is the operating system, CPU architecture, core count, RAM,
 whether a Flutter SDK is reachable and which sandbox backends the host has

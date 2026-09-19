@@ -57,27 +57,29 @@ Engine-specific limits, stated rather than worked around:
 | Surface | Image | Fetched |
 | --- | --- | --- |
 | Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
-| Browser (Chromium) | `chromedp/headless-shell:stable`, digest-pinned | Automatically on first boot |
-| Browser (Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image | **Import** under Settings → Server → Enclosures (checksum-pinned downloads where published) |
+| Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
+| Computer | A qcow2 desktop image | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
 | Android | Google's system images | Through the Android SDK |
-| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Enclosures |
+| iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
 
 After the first boot of each microVM kind the server caches a pre-extracted
 copy under the data directory and boots every later machine from it —
 including pre-warmed images with the packages already installed: `git`,
-`curl` and `socat` for the terminal, and the engine itself for Firefox and
-WebKit. Firefox and WebKit share a base image but never share a pack: the
-cache is keyed on the image **and** the engine, because a machine warmed for
-one has none of the other in it.
+`curl` and `socat` for the terminal, and the engine itself for every
+browser. All three engines share a Debian base but never share a pack: the
+cache is keyed on the image, the engine **and** an audio revision
+(`audio-v1-<engine>`), because a machine warmed for one engine — or before
+PulseAudio and ffmpeg were part of the workload — has none of the other in
+it.
 
-Firefox and WebKit have no baked automation image worth taking — the only
-maintained Firefox one is 33× the size of the Debian base and still ships no
-`socat`, which every browser guest needs for the ports feature, and there is
-no maintained WebKit one at all. So both install their engine on first start
-and reach the Debian archives (`deb.debian.org`, `security.debian.org`,
-`cloudfront.debian.net`) while doing it. Chromium reaches no package mirror
-at all.
+There is no baked automation image worth taking — Chromium's
+`chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
+never emit sound; the only maintained Firefox one is 33× the size of the
+Debian base and still ships no `socat`; there is no maintained WebKit one at
+all. So every engine installs on first start (`chromium`, `firefox-esr`, or
+`webkit2gtk-driver`) and reaches the Debian archives (`deb.debian.org`,
+`security.debian.org`, `cloudfront.debian.net`) while doing it. Chromium is
+the distribution binary launched as `chromium --headless=new`.
 
 ### Per-workspace custom images
 
@@ -87,7 +89,7 @@ at all.
 | `rigs.smolvm.browserImage` | The Chromium Browser (VM) image |
 
 Written through the admin-gated workspace settings store (Settings → Server →
-Enclosures → Custom images). The value must be a registry reference — local
+Rigs → Custom images (this workspace)). The value must be a registry reference — local
 paths, archives and flag-like strings are refused, both at the field and
 again at boot. An invalid stored value is ignored loudly and the default
 boots instead. The image's own registry (plus known blob-CDN companions for
@@ -98,14 +100,16 @@ for the pull.
 preinstalled *or* a Debian/Ubuntu apt base (they are installed on first
 start).
 
-**Browser image contract** — the headless-shell layout: Chromium at
-`/headless-shell/headless-shell`, plus `bash` and `socat`. The server
-launches the browser itself with DevTools on guest loopback `9223`, relayed
-to guest port `9222`. Build `FROM chromedp/headless-shell:stable` to keep the
-layout. The override applies to **Chromium rigs only** — the workload command
-it boots is headless-shell's, and handing it to Firefox or WebKit would launch
-a binary that is not there. A Firefox or WebKit rig ignores it loudly and
-boots its pinned image.
+**Browser image contract** — a Debian/Ubuntu apt base (or the packages already
+installed) with `bash` and `socat`, plus a `chromium` binary the server
+launches itself as `chromium --headless=new` with DevTools on guest loopback
+`9223`, relayed to guest port `9222`. PulseAudio and ffmpeg are installed on
+first start for the audio lane. Do not build `FROM chromedp/headless-shell`:
+upstream `headless.gn` compiles both ALSA and PulseAudio out, so that binary
+cannot emit sound. The override applies to **Chromium rigs only** — the
+workload command it boots is Chromium's, and handing it to Firefox or WebKit
+would launch a binary that is not there. A Firefox or WebKit rig ignores it
+loudly and boots its pinned image.
 
 **Automation ports** — every browser machine forwards exactly one host
 loopback port to guest `9222`. Behind it: Chromium's DevTools and Firefox's
@@ -142,10 +146,12 @@ there. Clipboard content comes back fenced as untrusted data.
 
 ### `browser_use`
 
-`navigate` (http/https only), `click` (selector or coordinate), `fill`,
-`key` (DOM key names), `scroll`, `extract`○ (`a11y` | `dom` | `console`),
-`screenshot`○ (`full_page` optional), `set_viewport` (min 320×240),
-`history`, `wait_for` (0.1–30 s), `clipboard_read`○, `clipboard_write`.
+`navigate` (http/https only), `reload` (`hard` optional), `stop_loading`,
+`click` (selector or coordinate), `fill`, `type`, `key` (DOM key names),
+`scroll`, `mouse_move`, `drag`, `left_mouse_down`, `left_mouse_up`,
+`extract`○ (`a11y` | `dom` | `console`), `screenshot`○ (`full_page`
+optional), `set_viewport` (min 320×240), `history`, `wait_for`○ (selector,
+0.1–30 s), `clipboard_read`○, `clipboard_write`.
 
 Extracted page content returns fenced as untrusted data.
 
@@ -158,16 +164,16 @@ without going through a clipboard.
 ### `mobile_use`
 
 `tap`, `swipe` (50–5000 ms), `type`, `key` (aliases `back`, `home`,
-`recents`, `enter`, `delete`, `tab`, `escape`, `volume_up`, `volume_down`,
-`power`, or any `KEYCODE_*`), `screenshot`○, `ui_dump`○, `install_apk`
+`recents`, `enter`, `delete`, `backspace`, `tab`, `escape`, `search`,
+`menu`, `volume_up`, `volume_down`, `power`, or any `KEYCODE_*`),
+`screenshot`○, `ui_dump`○, `install_apk`
 (confined to the rig's worktree and the server data directory), `start_app`,
 `stop_app`, `clear_app_data`, `uninstall_app`, `open_url`, and `shell`.
 `shell` takes an argv list and runs inside Android, never through a host shell;
 it covers developer diagnostics such as `logcat`, `dumpsys` and `pm grant`.
 
-No clipboard verbs, and that is a property of Android rather than a gap:
-since Android 10 only the *focused app* may read the clipboard. Relaying it
-would need an app installed inside the device, which this product does not ship.
+`mobile_use` has no clipboard verbs. Since Android 10 only the focused app
+may read the clipboard.
 
 ### `ios_use`
 
@@ -223,7 +229,7 @@ audio, microphone, file drop, host shell or enclosed-network guarantee.
 
 | Value | Terminal | Browser | Computer | Mobile |
 | --- | --- | --- | --- | --- |
-| Memory | 512 MB | 2048 MB | 4096 MB | 4096 MB |
+| Memory | 512 MB | 2048 MB (Chromium); 2560 MB (Firefox, WebKit) | 4096 MB | 4096 MB |
 | vCPUs | 2 | 2 | 4 | 4 |
 | Hard TTL | 8 h | 2 h | 2 h | 2 h |
 | Idle window | 45 min | 15 min | 15 min | 15 min |
@@ -264,7 +270,7 @@ audio, microphone, file drop, host shell or enclosed-network guarantee.
 | Surface | Default allowlist |
 | --- | --- |
 | Terminal | The sandbox developer baseline (forges, package registries, model providers) + the Ubuntu apt mirrors + the worktree's own forge host |
-| Browser | The home page's host only — plus the Debian archives on a Firefox or WebKit rig's first boot, while it installs its engine |
+| Browser | `usectrl.dev` (the product site) — plus the Debian archives on every engine's first boot, while it installs its packages. The home page is a local `file://` document and needs no egress |
 | Computer | Empty — deny everything — until a caller grants hosts |
 | Mobile | Not enforced (emulator-managed networking) |
 
@@ -277,6 +283,11 @@ allowlist: no token is minted for a host the guest cannot reach.
 Both directions of copy/paste, and dragging files in and out. Available to a
 person driving a rig; an agent gets the clipboard through the verbs above and
 no file transfer at all (it already has a shell inside the enclosure).
+
+Clipboard crossing is per-user and per-direction. Host-to-rig paste is
+allowed by default; rig-to-host copy prompts (a ten-minute grant, or always
+allow under Settings → Server → Rigs → Clipboard access). The two choices
+are independent and are never a workspace setting.
 
 | Lane | Route | Carries |
 | --- | --- | --- |
@@ -319,13 +330,15 @@ no file transfer at all (it already has a shell inside the enclosure).
 ## Guardrails, events, storage
 
 - Rig tools declare the **`enclosureControl`** action class (plus
-  `networkEgress` and `processSpawn` on the use tools). Allowed by default;
+  `networkEgress` and `processSpawn` on the use tools; `mobile_use` and
+  `ios_use` also declare `packageInstall`). `rig_close` declares
+  `enclosureControl`; `rig_list` declares none. Allowed by default;
   read-only modes deny it wholesale; the per-space autonomy dial can
   demote it to ask-first.
-- Domain events: `RigOpened`, `RigClosedEvent` (with its close reason),
+- Domain events: `RigClosedEvent` (with its close reason),
   `RigControlChanged` (take-over / hand-back), `RigReaped` (idle, TTL or
-  memory eviction, with the driving agent). See [domain
-  events](/manual/reference/domain-events/).
+  memory eviction, with the driving agent). Opening a rig is not an event.
+  See [domain events](/manual/reference/domain-events/).
 - Storage: `rig_sessions` and `rig_action_log` in each workspace database.
   The action log records every input event with its principal and a
   monotonic per-rig sequence; typed text is redacted to a length and hash
@@ -335,4 +348,4 @@ no file transfer at all (it already has a shell inside the enclosure).
   packs), `rigs/tls/` (the dev-domain CA), `rigs/run/` (QEMU overlays and
   seeds).
 - Routes: the live view is a tab in a space or PR page;
-  `/settings/server/rigs` is the Enclosures settings screen.
+  `/settings/server/rigs` is the Rigs settings screen.

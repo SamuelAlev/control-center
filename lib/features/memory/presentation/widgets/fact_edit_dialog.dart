@@ -1,7 +1,6 @@
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/material.dart' show Autocomplete;
 import 'package:flutter/widgets.dart';
 
 /// Dialog for creating or editing a memory fact.
@@ -21,9 +20,7 @@ class FactEditDialog extends StatefulWidget {
 class _FactEditDialogState extends State<FactEditDialog> {
   late final TextEditingController _topicController;
   late final TextEditingController _contentController;
-  // Owned by the [Autocomplete] widget — assigned in its fieldViewBuilder and
-  // disposed by it, so we neither create nor dispose it here.
-  late TextEditingController _domainController;
+  late final TextEditingController _domainController;
   late double _confidence;
 
   @override
@@ -33,6 +30,7 @@ class _FactEditDialogState extends State<FactEditDialog> {
     _contentController = TextEditingController(
       text: widget.fact?.content ?? '',
     );
+    _domainController = TextEditingController(text: widget.fact?.domain ?? '');
     _confidence = widget.fact?.confidence ?? 1.0;
   }
 
@@ -40,6 +38,7 @@ class _FactEditDialogState extends State<FactEditDialog> {
   void dispose() {
     _topicController.dispose();
     _contentController.dispose();
+    _domainController.dispose();
     super.dispose();
   }
 
@@ -58,31 +57,19 @@ class _FactEditDialogState extends State<FactEditDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Autocomplete<String>(
-                initialValue: TextEditingValue(text: widget.fact?.domain ?? ''),
-                optionsBuilder: (textEditingValue) {
-                  if (textEditingValue.text.isEmpty) {
-                    return widget.existingDomains;
-                  }
-                  return widget.existingDomains.where(
-                    (d) => d.toLowerCase().contains(
-                      textEditingValue.text.toLowerCase(),
-                    ),
-                  );
-                },
-                fieldViewBuilder:
-                    (context, controller, focusNode, onFieldSubmitted) {
-                      _domainController = controller;
-                      return CcTextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        onSubmitted: (_) => onFieldSubmitted(),
-                        label: l10n.domainLabel,
-                        hintText: l10n.domainHint,
-                      );
-                    },
+              CcAutocomplete<String>(
+                controller: _domainController,
+                hintText: l10n.domainHint,
+                semanticLabel: l10n.domainLabel,
+                options: [
+                  for (final d in widget.existingDomains)
+                    CcSelectOption(value: d, label: d),
+                ],
                 onSelected: (selection) {
                   _domainController.text = selection;
+                },
+                onCustomValue: (value) {
+                  _domainController.text = value;
                 },
               ),
               const SizedBox(height: 16),

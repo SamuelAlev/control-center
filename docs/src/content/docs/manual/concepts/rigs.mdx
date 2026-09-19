@@ -35,20 +35,23 @@ Mobile surfaces are host-managed and state the weaker boundary directly:
   closes, but its network follows the host Mac.
 
 Enclosed rigs write to a throwaway overlay over a read-only base image, so one
-rig cannot change what the next boots from. Mobile rigs instead own disposable
-emulator devices that are deleted when the rig closes.
+rig cannot change what the next boots from. An iOS rig owns a disposable
+CoreSimulator device that is deleted when the rig closes. Android attaches to
+a host emulator that outlives the session.
 
 ## Deny-by-default egress
 
 A rig's network starts at **nothing**. Hosts are admitted per rig through a
 gate the guest cannot route around: the machine's only paths out are the ones
 the launch configuration created. An enclosed terminal gets the developer
-baseline (package registries, forges, the apt mirrors); a browser rig gets its
-home page's host; everything else is refused at connect time.
+baseline (package registries, forges, the apt mirrors); a browser rig admits
+the product site (`usectrl.dev`) and boots to a local `file://` page that
+needs no egress; everything else is refused at connect time.
 
-Android and iOS are not covered by this gate. Their host emulators use the
-server host's networking, so the UI and capability report mark egress as not
-enforced and never offer a misleading “restart unrestricted” control.
+Android and iOS are not covered by this gate. Their host emulator and
+simulator use the server host's networking, so the UI and capability report
+mark egress as not enforced and never offer a misleading “restart
+unrestricted” control.
 
 Egress and credentials are one policy seen from two sides — the credential
 broker (below) will not mint a token for a host the guest cannot reach.
@@ -85,14 +88,16 @@ gets a cheap one.
 
 ## Take-over is a chokepoint, not a request
 
-Press **Take control** and the server refuses the agent's *mutating* actions
-at the single point every action passes through — not by asking the model to
-behave. The agent keeps its observation verbs (screenshots, extraction) so it
-can narrate what you are doing, and it is told about the take-over through
-its steering lane rather than left to discover it through refused clicks.
-Every input event — yours and the agent's — lands in a per-rig audit log with
-its principal and a monotonic sequence, so "who clicked that" stays
-answerable after the machine is gone.
+Exclusive control is enforced at the single point every action passes through
+— not by asking the model to behave. While a human holds it, the server
+refuses the agent's *mutating* actions. The agent keeps its observation verbs
+(screenshots, extraction) so it can narrate what you are doing, and it is
+told about the take-over through its steering lane rather than left to
+discover it through refused clicks. Clicking and typing on the canvas works
+whenever nobody else holds that lock — or when you do; the status tag reads
+**You have control**. Every input event — yours and the agent's — lands in a
+per-rig audit log with its principal and a monotonic sequence, so "who
+clicked that" stays answerable after the machine is gone.
 
 ## Content crosses the boundary; the machines stay separate
 
@@ -107,6 +112,12 @@ yours. Paste sends the same content the other way and then presses paste
 inside the guest. Nothing is synchronised in the background: a password you
 copy on your own machine does not silently arrive inside a VM because a timer
 fired.
+
+Crossing is gated per user and per direction, independently. Paste into a
+rig is allowed by default; copy out of a rig prompts first (a ten-minute
+grant, or **Always allow** under **Settings → Server → Rigs → Clipboard
+access**). It is never a workspace setting: one member cannot consent to
+another member's clipboard.
 
 On macOS the crossing chord is ⌘C/⌘V, which is unambiguous — ⌃C keeps
 reaching a guest shell as the interrupt it is. On Windows and Linux the two
@@ -220,7 +231,7 @@ so your tab and the agent's `browser_use` calls address *one* machine (one
 per engine, on the browser surface).
 Whether rigs can boot at all is a host property, so capabilities, images,
 per-workspace custom images and the running-machine list live under
-**Settings → Server → Enclosures**. Driving an enclosure is its own
+**Settings → Server → Rigs**. Driving an enclosure is its own
 [guardrail action class](/manual/concepts/guardrails/), so a workspace,
 agent or space can allow it, require approval, or deny it outright —
 read-only modes deny it wholesale.

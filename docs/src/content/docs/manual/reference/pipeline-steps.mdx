@@ -18,14 +18,14 @@ Defined in `packages/cc_domain/lib/features/pipelines/domain/entities/step_kind.
 | `listen`   | Fires when all source steps (in `StepTrigger.sourceStepIds`) complete.                                                                                                                                                                   |
 | `join`     | Fires when all steps in `waitForStepIds` reach terminal state.                                                                                                                                                                           |
 | `router`   | Conditional branching — the body returns `StepResult.route(key)`, which fires only the downstream edge whose `routeKey` matches; unselected branches are marked skipped.                                                                 |
-| `forEach`  | Map / fan-out: runs its body once per item in a state collection (`extras.iterableKey`), then aggregates the per-item outputs into a list under `outputKey`.                                                                             |
-| `terminal` | The pipeline run completes when a terminal step finishes.                                                                                                                                                                                |
+| `forEach`  | Scheduled like `listen` (fires when all `sourceStepIds` complete). The registered `flow.forEach` body is what iterates; the engine does not spawn one child step per item.                                                               |
+| `terminal` | Scheduler sentinel with no body. The pipeline run completes when a terminal step finishes.                                                                                                                                               |
 
 ## Step bodies
 
-Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 24, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
+Registered body closures keyed by the constants in `BuiltInBodyKeys` (`packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart`). There are 25, all listed below. Configuration is read from the step's `PipelineNodeConfig` (see below) unless noted; "state keys" are read from pipeline state / trigger payload at execution time.
 
-A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt: they are scheduler sentinels and carry no body.
+A step whose `bodyKey` is not registered produces a warning at template load and then never executes — it does not fail the run. `trigger` and `terminal` steps are exempt from that warning: the trigger still runs the no-op `pipeline.trigger` body; a `terminal` step has no body.
 
 ### `pipeline.trigger`
 
@@ -53,19 +53,20 @@ Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into 
 | `outputKey`        | State key for the harvested output                           |
 | `outputSchema`     | JSON Schema the output must satisfy                          |
 | `label`            | Human label shown on the canvas                              |
-| `extras.channelId` | Existing conversation to work in — key unchanged (default: a hidden one) |
-| `extras.mode`      | Conversation mode: `chat` / `plan` / `review`                |
+| `extras.spaceId`   | Existing conversation to work in (default: a hidden one)     |
+| `extras.conversationTitle` | Named stream inside that space (optional)             |
+| `extras.mode`      | Read on the node that *opens* the room (`messaging.createSpace`), not here. Default `review`. |
 
 ### `pipeline.condition`
 
 Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
 
 - **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
-  - `{"type": "fileExists", "paths": [...], "baseKey": "repoLocalPath", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repoLocalPath`), else the per-run workspace directory.
+  - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
   - `{"type": "comparison", "left": "{{score}}", "op": "gt", "right": 80}` — operators `equals`, `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`; reads pipeline state, not the filesystem.
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
   - `{"type": "not", "of": <predicate>}` — negation.
-- **Switch** (`extras.switchKey`) — `{"switchKey": "prClass", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
+- **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
 - **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
 
 Edges out of the node carry a `routeKey` that must match the returned key.
@@ -74,13 +75,13 @@ Edges out of the node carry a `routeKey` that must match the returned key.
 
 Posts the consolidated findings as a PR review comment via the GitHub PR client.
 
-| State key              | Description                                  |
-| ---------------------- | -------------------------------------------- |
-| `repoFullName`         | `owner/repo` (required)                      |
-| `prNumber`             | PR number — int or numeric string (required) |
-| `consolidatedFindings` | Comment body (required)                      |
+| State key                 | Description                                  |
+| ------------------------- | -------------------------------------------- |
+| `repo_full_name`          | `owner/repo` (required)                      |
+| `pr_number`               | PR number — int or numeric string (required) |
+| `consolidated_findings`   | Comment body (required)                      |
 
-Returns `StepResult.terminal` with `commentReviewId` and `commentedAt` in state.
+Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
 
 ### `messaging.postSpace`
 
@@ -88,10 +89,10 @@ Posts a message to a messaging space via `MessagingPort`.
 
 | State key   | Description                                       |
 | ----------- | ------------------------------------------------- |
-| `channelId` | Target space — key unchanged (required)           |
+| `space_id`  | Target space (required)                           |
 | `content`   | Message body, read verbatim from state (required) |
 
-Writes `postedChannelId` (key unchanged) and `postedAt` to state.
+Writes `posted_space_id` and `posted_at` to state.
 
 ### `team.dispatch`
 
@@ -103,7 +104,7 @@ Dispatches a whole team instead of a single agent, then suspends until the membe
 | `prompt`                                    | Goal text; supports `{{key}}` substitution (required)                                               |
 | `dispatchMode`                              | `allParallel` (default — one task per member) or `manager` (dispatch only the leader to coordinate) |
 | `outputKey`                                 | State key for the harvested member outputs                                                          |
-| `outputSchema`, `label`, `extras.channelId` | As for `conversation.promptAgent`                                                                       |
+| `outputSchema`, `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                                       |
 
 ### `human.gate`
 
@@ -115,7 +116,7 @@ Approval gate. Dispatches the approver agent into a conversation (review mode) w
 | `prompt`                    | Gate prompt (optional; a default is used when absent)                          |
 | `outputKey`                 | State key for the harvested `{decision, reason}` payload                       |
 | `outputSchema`              | Defaults to an approval schema (`decision`: `approved` / `rejected`, `reason`) |
-| `label`, `extras.channelId` | As for `conversation.promptAgent`                                                  |
+| `label`, `extras.spaceId` | As for `conversation.promptAgent`                                                  |
 
 The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the node-type library and one built-in template's prompt text all name `approve_step` and `reject_step` MCP tools; **neither tool exists** in any package or registry.
 
@@ -123,18 +124,18 @@ The gate resolves through `submit_output` only. `BuiltInBodyKeys.humanGate`, the
 
 Removes stale isolated worktrees; picks its mode from the trigger payload. Honors the run's `dryRun` flag.
 
-| State key                   | Description                                                                           |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| `ticketId`                  | Release that ticket's worktrees                                                       |
-| `repoFullName` + `prNumber` | Release the ephemeral PR-editor worktree                                              |
-| `channelId`                 | Tear down that conversation's worktrees and folder — key unchanged                  |
-| (none of the above)         | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
+| State key                     | Description                                                                           |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| `ticket_id`                   | Release that ticket's worktrees                                                       |
+| `repo_full_name` + `pr_number` | Release the ephemeral PR-editor worktree                                             |
+| `space_id`                    | Tear down that conversation's worktrees and folder                                    |
+| (none of the above)           | Sweep the workspace: vanished directories, dead spaces, orphan conversation folders |
 
 `outputKey` (optional) receives a summary string.
 
 ### `flow.forEach`
 
-Map / fan-out over a state collection: dispatches the agent once per item and suspends until all per-item runs finish; outputs are aggregated into a list under `outputKey`. An empty collection completes immediately with an empty list.
+Map / fan-out over a state collection: renders the prompt once per item, then dispatches the agent **once** with those prompts concatenated (`---` separators) and suspends until that run finishes. An empty collection completes immediately with an empty list. It is not one parallel dispatch per item.
 
 | Config field         | Description                                                     |
 | -------------------- | --------------------------------------------------------------- |
@@ -142,7 +143,7 @@ Map / fan-out over a state collection: dispatches the agent once per item and su
 | `prompt`             | Per-item prompt; supports `{{key}}` substitution (required)     |
 | `extras.iterableKey` | State key holding the collection (required)                     |
 | `extras.itemKey`     | Key the current item is bound to in the prompt (default `item`) |
-| `outputKey`          | State key for the aggregated list                               |
+| `outputKey`          | State key for the harvested output (one dispatch, not a list) |
 
 ### `flow.callPipeline`
 
@@ -156,36 +157,36 @@ Runs another pipeline template as a nested sub-step (the sub-pipeline runs as a 
 
 ### `code.index`
 
-Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run; completes normally (skipped) when the tree-sitter natives aren't installed.
+Background tree-sitter indexing: walks a repo, extracts symbols/edges in worker isolates and ingests them into the workspace code graph. Streams progress into the step-run row; supports dry-run. Tree-sitter and its grammars are required natives — a missing dylib means the server never booted, and a grammar that fails to resolve mid-run fails the step rather than skipping.
 
-| State key       | Description                           |
-| --------------- | ------------------------------------- |
-| `repoId`        | Repo to index (required)              |
-| `repoLocalPath` | Local path of the checkout (required) |
+| State key         | Description                           |
+| ----------------- | ------------------------------------- |
+| `repo_id`         | Repo to index (required)              |
+| `repo_local_path` | Local path of the checkout (required) |
 
 ### `meeting.diarize`
 
-Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarizationSpans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
+Offline speaker diarization. Reads the meeting's retained audio, clusters it into speakers (`Person 1`, `Person 2`, …), relabels the transcript segments and rewrites the `transcript` state; also emits `diarization_spans` for the parallel `meeting.updateTranscript` step. Passes the transcript through unchanged when no audio was retained or the models aren't installed.
 
-| State key   | Description                   |
-| ----------- | ----------------------------- |
-| `meetingId` | Meeting to diarize (required) |
+| State key     | Description                   |
+| ------------- | ----------------------------- |
+| `meeting_id`  | Meeting to diarize (required) |
 
 ### `meeting.saveNotes`, `meeting.addActionItems`, `meeting.addDecisions`
 
-Deterministic meeting-summary persist bodies. Each reads `meetingId` and the agent step's structured `meetingOutcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
+Deterministic meeting-summary persist bodies. Each reads `meeting_id` and the agent step's structured `meeting_outcome` payload (`{summary, enhancedNotes, actionItems[], decisions[]}`) from state and writes its part to its own table — notes, action items, or decisions. Previously-saved rows are never wiped on a degraded run.
 
 ### Other built-in bodies
 
 | Body key                           | Description                                                                                                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `meeting.identifySpeakers`         | Cross-meeting speaker recognition: matches diarized speakers against saved voice profiles and auto-applies confident matches. No-op without profiles/embeddings.                         |
-| `meeting.updateTranscript`         | Applies `Person N` labels from `diarizationSpans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
+| `meeting.updateTranscript`         | Applies `Person N` labels from `diarization_spans` and merges per-window fragments into per-speaker turns, then persists the cleaned transcript. No-op when diarization produced nothing. |
 | `meeting.assemblePlayback`         | Assembles the meeting's mixed playback track from retained per-channel WAVs. No-op when no audio was retained.                                                                           |
 | `orchestration.markPhase`          | At the end of the work DAG, writes failure sentinels for sub-tickets with no output and flips the orchestration to `synthesizing`.                                                       |
 | `orchestration.persistDeliverable` | Writes the synthesis output to the parent ticket, completes it, posts the deliverable and marks the orchestration `completed`.                                                           |
-| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it.                           |
-| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the pipeline's space state key. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
+| `orchestration.awaitApproval`      | Partial-approval gate: completes immediately when the step's node key is in the orchestration's approved set, else suspends until a later approval resumes it. This is the only body that sets `extras.awaitApproval`, which exempts it from the 24-hour suspended-step timeout. |
+| `messaging.createSpace`            | Opens the conversation the rest of the template works in, published under the step's `outputKey` (built-ins use `pipeline_space_id`). An empty `repoIds` list checks out nothing; `extras['allRepos']` checks out every workspace repo. `extras['createConversation']` (off by default) also opens a named stream. An agent step JOINS a room and never opens one, so a fan-out without this node fails at dispatch — and wiring it once means the whole fan-out shares one checkout instead of provisioning one apiece. |
 | `prReview.finalize`                | The last step of the PR-review template: sorts the accumulated review nodes into consensus buckets and computes the per-PR verdict.                                                     |
 | `skills.analyze`                   | Runs the skills supply-chain scan over a workspace's installed skills and records each verdict.                                                                                          |
 
@@ -222,6 +223,7 @@ Per-node configuration carried inside the step definition (`packages/cc_domain/l
 | `script`         | `String?`               | Bash script body with `{{key}}` substitution                                                                                          |
 | `agentId`        | `String?`               | Workspace-scoped agent UUID to dispatch                                                                                               |
 | `inputKeys`      | `List<String>`          | State keys this node consumes as input                                                                                                |
+| `repoIds`        | `List<String>`          | Repos the `messaging.createSpace` node checks out (`<repoId>` or `<repoId>@<branch>`). Empty = none; `extras['allRepos']` = every workspace repo. Ignored on agent steps. |
 | `outputKey`      | `String?`               | State key this node's output is written under                                                                                         |
 | `label`          | `String?`               | Human label shown on the canvas (defaults to the step ID)                                                                             |
 | `outputSchema`   | `Map<String, dynamic>?` | JSON Schema (subset) the output value must satisfy                                                                                    |
@@ -233,7 +235,7 @@ Per-node configuration carried inside the step definition (`packages/cc_domain/l
 | `dispatchMode`   | `String?`               | Team execution mode: `allParallel` or `manager`                                                                                       |
 | `extras`         | `Map<String, dynamic>`  | Free-form body-specific config (e.g. `iterableKey`, `templateId`, condition trees)                                                    |
 
-Derived accessors: `spaceId` (`extras['channelId']`, key unchanged — existing conversation to work in) and `modeName` (`extras['mode']` — `chat` / `review` / `plan`).
+Derived accessors: `spaceId` (`extras['spaceId']` — existing conversation to work in), `createsConversation` (`extras['createConversation']`), `conversationTitle` (`extras['conversationTitle']`), `modeName` (`extras['mode']` — `chat` / `review` / `plan`, read on the space-opening node) and `runWhen` (`extras['runWhen']` — skip the node when unmet).
 
 ## See also
 

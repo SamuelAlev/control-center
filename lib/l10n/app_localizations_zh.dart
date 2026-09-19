@@ -6028,6 +6028,42 @@ class AppLocalizationsZh extends AppLocalizations {
   String get editorEmptyCanvas => '从库中拖入节点以开始。';
 
   @override
+  String get pipelineWhenThisHappens => '当发生以下情况';
+
+  @override
+  String get pipelineDoThis => '执行此操作';
+
+  @override
+  String get pipelineAddStep => '添加步骤';
+
+  @override
+  String get pipelineTidyUp => '整理布局';
+
+  @override
+  String get pipelineEditorHint => '拖动步骤以排列 · 拖动控制点以连接';
+
+  @override
+  String get pipelineRemoveConnection => '移除连接';
+
+  @override
+  String get pipelineDragToConnect => '拖动以连接';
+
+  @override
+  String get pipelineNewDefaultName => '新建流水线';
+
+  @override
+  String get nodeCategoryTriggers => '触发器';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => '添加触发器';
+
+  @override
+  String get pipelineOnEvent => '按事件';
+
+  @override
   String get nodeConfigTitle => '节点配置';
 
   @override
@@ -6266,6 +6302,9 @@ class AppLocalizationsZh extends AppLocalizations {
       '会生成带签名的 webhook URL。外部系统向其发送 POST 请求即可启动此流水线。';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook 路径';
+
+  @override
   String get triggerEventFieldLabel => '事件';
 
   @override
@@ -6391,6 +6430,72 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => '工单已分配';
+
+  @override
+  String get triggerEventTicketCreated => '工单已创建';
+
+  @override
+  String get triggerEventTicketStatusChanged => '工单状态已更改';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => '会议录制已停止';
+
+  @override
+  String get triggerEventSkillUpdated => '技能已更新';
+
+  @override
+  String get triggerEventSpaceDeleted => '空间已删除';
+
+  @override
+  String get triggerExternalPrHelp => '在代码托管平台上打开的拉取请求，不是从 Control Center 打开的。';
+
+  @override
+  String get triggerPrPublishedHelp => '从 Control Center 或由智能体打开的拉取请求。';
+
+  @override
+  String get triggerPrStatusChangedHelp => '已合并、关闭、打开、重新打开或批准。可在检查器中按状态筛选。';
+
+  @override
+  String get triggerPrMergedHelp => '仅在拉取请求合并时触发，关闭或重新打开时不会。';
+
+  @override
+  String get triggerRepoAddedHelp => '将仓库关联到此工作区。';
+
+  @override
+  String get triggerCodeGraphWatchHelp => '已关联仓库中的文件在磁盘上发生变化。';
+
+  @override
+  String get triggerMessageReceivedHelp => '空间中收到新消息。';
+
+  @override
+  String get triggerTicketCreatedHelp => '在此工作区中创建工单。';
+
+  @override
+  String get triggerTicketStatusChangedHelp => '工单在状态之间切换。';
+
+  @override
+  String get triggerTicketCompletedHelp => '工单成功完成。';
+
+  @override
+  String get triggerTicketFailedHelp => '智能体运行失败，工单被标记为失败。';
+
+  @override
+  String get triggerTicketCancelledHelp => '工单被取消，不会继续。';
+
+  @override
+  String get triggerBudgetCrossedHelp => '工作区或智能体的支出上限被突破。';
+
+  @override
+  String get triggerTicketAssignedHelp => '工单被分配给人员、智能体或团队。';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => '会议录音结束。';
+
+  @override
+  String get triggerSkillUpdatedHelp => '技能被安装或更新。';
+
+  @override
+  String get triggerSpaceDeletedHelp => '对话空间被删除。';
 
   @override
   String get navTickets => '工单';
@@ -20153,6 +20258,42 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get editorEmptyCanvas => '從節點庫拖放一個節點開始。';
 
   @override
+  String get pipelineWhenThisHappens => '當發生以下情況';
+
+  @override
+  String get pipelineDoThis => '執行此操作';
+
+  @override
+  String get pipelineAddStep => '新增步驟';
+
+  @override
+  String get pipelineTidyUp => '整理版面';
+
+  @override
+  String get pipelineEditorHint => '拖曳步驟以排列 · 拖曳控制點以連接';
+
+  @override
+  String get pipelineRemoveConnection => '移除連線';
+
+  @override
+  String get pipelineDragToConnect => '拖曳以連接';
+
+  @override
+  String get pipelineNewDefaultName => '新增管線';
+
+  @override
+  String get nodeCategoryTriggers => '觸發器';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => '新增觸發器';
+
+  @override
+  String get pipelineOnEvent => '於事件發生時';
+
+  @override
   String get nodeConfigTitle => '節點設定';
 
   @override
@@ -20389,6 +20530,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get triggerWebhookHelp => '會產生一個帶簽章的 webhook URL。外部系統向它 POST 即可啟動此管線。';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook 路徑';
+
+  @override
   String get triggerEventFieldLabel => '事件';
 
   @override
@@ -20514,6 +20658,73 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get triggerEventTicketAssigned => '工單已指派';
+
+  @override
+  String get triggerEventTicketCreated => '工單已建立';
+
+  @override
+  String get triggerEventTicketStatusChanged => '工單狀態已變更';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => '會議錄製已停止';
+
+  @override
+  String get triggerEventSkillUpdated => '技能已更新';
+
+  @override
+  String get triggerEventSpaceDeleted => '空間已刪除';
+
+  @override
+  String get triggerExternalPrHelp =>
+      '在程式碼託管平台上開啟的拉取請求，不是從 Control Center 開啟的。';
+
+  @override
+  String get triggerPrPublishedHelp => '從 Control Center 或由智慧體開啟的拉取請求。';
+
+  @override
+  String get triggerPrStatusChangedHelp => '已合併、關閉、開啟、重新開啟或核准。可在檢查器中依狀態篩選。';
+
+  @override
+  String get triggerPrMergedHelp => '僅在拉取請求合併時觸發，關閉或重新開啟時不會。';
+
+  @override
+  String get triggerRepoAddedHelp => '將儲存庫關聯到此工作區。';
+
+  @override
+  String get triggerCodeGraphWatchHelp => '已關聯儲存庫中的檔案在磁碟上變更。';
+
+  @override
+  String get triggerMessageReceivedHelp => '空間中收到新訊息。';
+
+  @override
+  String get triggerTicketCreatedHelp => '在此工作區中建立工單。';
+
+  @override
+  String get triggerTicketStatusChangedHelp => '工單在狀態之間切換。';
+
+  @override
+  String get triggerTicketCompletedHelp => '工單成功完成。';
+
+  @override
+  String get triggerTicketFailedHelp => '智慧體執行失敗，工單被標示為失敗。';
+
+  @override
+  String get triggerTicketCancelledHelp => '工單被取消，不會繼續。';
+
+  @override
+  String get triggerBudgetCrossedHelp => '工作區或智慧體的支出上限被突破。';
+
+  @override
+  String get triggerTicketAssignedHelp => '工單被指派給人員、智慧體或團隊。';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => '會議錄音結束。';
+
+  @override
+  String get triggerSkillUpdatedHelp => '技能被安裝或更新。';
+
+  @override
+  String get triggerSpaceDeletedHelp => '對話空間被刪除。';
 
   @override
   String get navTickets => '工單';

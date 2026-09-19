@@ -69,7 +69,8 @@ backlog → open → inProgress ⇄ blocked
 
 `done`, `failed` and `cancelled` are terminal. `cancelled` is reachable from any
 non-terminal status. `done` and `failed` are reachable from `inProgress` or
-`inReview`; `open` can also move directly to `blocked`.
+`inReview`; `open` can also move directly to `blocked`. The UI status picker
+lists every status except `failed` — agents mark that with `fail_ticket`.
 
 To change it, use any of:
 
@@ -79,13 +80,14 @@ To change it, use any of:
 
 :::note[The lifecycle graph binds agents, not you]
 Every status change made from the UI is forced through, bypassing the graph
-entirely — you can move a ticket to any status, including reopening a `done`,
-`failed` or `cancelled` one. The diagram above governs agents and automation:
+entirely — you can move a ticket to any status the picker lists, including
+reopening a `done`, `failed` or `cancelled` one. The picker does not offer
+`failed` as a target. The diagram above governs agents and automation:
 an illegal transition attempted by an MCP tool or a reconciler is logged and
 ignored, not applied.
 :::
 
-Status changes emit domain events (`TicketStarted`, `TicketCompleted` and
+Status changes emit domain events (`TicketStatusChanged`, `TicketCompleted` and
 others) that can trigger pipelines. See
 [Set up pipeline triggers](/manual/guides/pipeline-triggers/).
 
@@ -114,14 +116,9 @@ the properties rail has no label control.
    need; a floating bar appears once anything is selected.
 2. In that bar, open the **Labels** chip.
 3. Pick a label. It is added to every selected ticket that lacks it; existing
-   labels are never wiped. **Clear labels** removes all of them.
-
-:::caution[You cannot create a label from the app]
-The picker offers only labels that already exist on some ticket in the
-workspace and reads "No labels yet" when none do. There is no field anywhere
-in the UI to type a new label name. Agents can introduce one by setting
-`labels` through the `tickets.patch` operation.
-:::
+   labels are never wiped. **Clear labels** removes all of them. The picker
+   lists labels already on a ticket in the workspace. Agents can add a new
+   name through `update_ticket` or `tickets.patch`.
 
 ## Link tickets
 
@@ -159,11 +156,13 @@ Collaborators are a roster on the ticket — who is involved, in what capacity.
 3. Pick an agent.
 
 The three roles are **assignee**, **collaborator** (the default) and
-**reviewer**. Collaborators can be human users as well as agents.
+**reviewer**. The UI picker only lists workspace agents and always writes the
+default role; humans can appear as rows but are not offered in that menu.
+The MCP `add_ticket_collaborator` tool accepts a `role`.
 
-Adding a collaborator writes a row and publishes an event; it grants no space
-access. To put an agent into a conversation, add it as a participant from the
-space header instead — see [Spaces](/manual/guides/spaces/).
+Adding a collaborator writes a row and publishes no domain event; it grants no
+space access. To put an agent into a conversation, add it as a participant from
+the space header instead — see [Spaces](/manual/guides/spaces/).
 
 ## Delete a ticket
 

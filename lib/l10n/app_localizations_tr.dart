@@ -6236,6 +6236,43 @@ class AppLocalizationsTr extends AppLocalizations {
       'Başlamak için kitaplıktan bir düğüm sürükleyin.';
 
   @override
+  String get pipelineWhenThisHappens => 'Bu olduğunda';
+
+  @override
+  String get pipelineDoThis => 'Bunu yap';
+
+  @override
+  String get pipelineAddStep => 'Adım ekle';
+
+  @override
+  String get pipelineTidyUp => 'Yerleşimi düzenle';
+
+  @override
+  String get pipelineEditorHint =>
+      'Adımları sürükleyerek yerleştirin · tutamacı sürükleyerek bağlayın';
+
+  @override
+  String get pipelineRemoveConnection => 'Bağlantıyı kaldır';
+
+  @override
+  String get pipelineDragToConnect => 'Bağlamak için sürükleyin';
+
+  @override
+  String get pipelineNewDefaultName => 'Yeni pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Tetikleyiciler';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Tetikleyici ekle';
+
+  @override
+  String get pipelineOnEvent => 'Olayda';
+
+  @override
   String get nodeConfigTitle => 'Düğüm yapılandırması';
 
   @override
@@ -6482,6 +6519,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'İmzalı bir webhook URL\'si oluşturulur. Dış sistemler bu pipeline\'ı başlatmak için buna POST gönderir.';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook yolu';
+
+  @override
   String get triggerEventFieldLabel => 'Olay';
 
   @override
@@ -6608,6 +6648,83 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Bilet atandı';
+
+  @override
+  String get triggerEventTicketCreated => 'Bilet oluşturuldu';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Bilet durumu değişti';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'Toplantı kaydı durdu';
+
+  @override
+  String get triggerEventSkillUpdated => 'Beceri güncellendi';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Space silindi';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Kod barındırıcısında açılan bir pull request, Control Center\'dan değil.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Control Center\'dan veya bir aracı tarafından açılan bir pull request.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Birleştirildi, kapatıldı, açıldı, yeniden açıldı veya onaylandı. Denetçide duruma göre süzün.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Yalnızca pull request birleştirildiğinde; kapatıldığında veya yeniden açıldığında değil.';
+
+  @override
+  String get triggerRepoAddedHelp => 'Bu çalışma alanına bir depo bağlanır.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Bağlı bir depodaki dosya diskte değişir.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'Bir alana yeni bir ileti gelir.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Bu çalışma alanında bir bilet oluşturulur.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Bir bilet durumlar arasında geçer.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Bir bilet başarıyla biter.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Bir aracı çalışması başarısız oldu ve bilet başarısız olarak işaretlenir.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Bir bilet iptal edilir ve devam etmez.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Bir çalışma alanı veya aracı harcama sınırı aşılır.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Bir bilet bir kişiye, aracıya veya ekibe atanır.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'Bir toplantı kaydı biter.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'Bir beceri kurulur veya güncellenir.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Bir konuşma alanı silinir.';
 
   @override
   String get navTickets => 'Biletler';

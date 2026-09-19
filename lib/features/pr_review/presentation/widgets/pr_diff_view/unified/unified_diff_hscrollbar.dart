@@ -1,6 +1,9 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
+// RTL carve-out: diffs are always LTR; the thumb tracks physical code-column
+// offset, not reading direction.
+
 /// A thin draggable horizontal scrollbar for the diff's code area (scroll
 /// mode). Stateless about the offset — it reads [offset] each build (the
 /// overlay rebuilds after every paint) and reports pans via [onPan]; drag delta

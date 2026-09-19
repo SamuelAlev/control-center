@@ -6,7 +6,7 @@ description: Point an external MCP client at Control Center's tool server, set a
 This guide shows you how to connect an external MCP client — Claude Code, an
 editor, the MCP Inspector — to Control Center's own tool server.
 
-Control Center registers **109** tools and serves them over the Model Context
+Control Center registers **110** tools and serves them over the Model Context
 Protocol at protocol version `2024-11-05`. Whole tool families you might expect
 are absent: there are no meeting or calendar tools and no project tools.
 
@@ -81,9 +81,7 @@ Token changes apply to the live surface immediately — no restart.
 :::note[`GET /sse` takes the token in the query string]
 The notification stream is token-checked like every other route, but a browser
 `EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401. It used to skip the check
-entirely, which left an unauthenticated, uncapped, long-lived GET open on any
-non-loopback mount; that hole is closed.
+as `?token=<token>` as well. Without one it answers 401.
 :::
 
 ## Scope every call to a workspace
@@ -138,14 +136,10 @@ No bearer token is configured. Set one and send it.
 
 Add `workspace_id`. There is no implicit workspace.
 
-### A tool you read about is not there
+### A tool call is refused as unknown
 
-A tool class no longer sits on disk unregistered — every one that exists is
-wired, and a ratchet test fails the build otherwise. What you may have read about
-is a tool that was **deleted**: `create_workspace`, the project tools,
-`hire_agent`, `fire_agent`, `doctor` and `ask_user_question` are all gone and
-return "unknown tool". [MCP tools](/manual/reference/mcp-tools/) lists the
-catalogue and what has no tool behind it.
+[MCP tools](/manual/reference/mcp-tools/) lists the catalogue. Call the name
+exactly as it appears there.
 
 ## Related guides
 

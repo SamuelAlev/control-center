@@ -6297,6 +6297,43 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editorEmptyCanvas => 'Trage un nod din bibliotecă ca să începi.';
 
   @override
+  String get pipelineWhenThisHappens => 'Când se întâmplă asta';
+
+  @override
+  String get pipelineDoThis => 'Fă asta';
+
+  @override
+  String get pipelineAddStep => 'Adaugă pas';
+
+  @override
+  String get pipelineTidyUp => 'Ordonează aspectul';
+
+  @override
+  String get pipelineEditorHint =>
+      'Trage pașii ca să-i aranjezi · trage un mâner ca să conectezi';
+
+  @override
+  String get pipelineRemoveConnection => 'Elimină conexiunea';
+
+  @override
+  String get pipelineDragToConnect => 'Trage pentru a conecta';
+
+  @override
+  String get pipelineNewDefaultName => 'Pipeline nou';
+
+  @override
+  String get nodeCategoryTriggers => 'Declanșatori';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Adaugă un declanșator';
+
+  @override
+  String get pipelineOnEvent => 'La eveniment';
+
+  @override
   String get nodeConfigTitle => 'Configurare nod';
 
   @override
@@ -6543,6 +6580,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se generează un URL de webhook semnat. Sistemele externe fac POST către el ca să pornească acest pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Calea webhook-ului';
+
+  @override
   String get triggerEventFieldLabel => 'Eveniment';
 
   @override
@@ -6672,6 +6712,88 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Tichet asignat';
+
+  @override
+  String get triggerEventTicketCreated => 'Tichet creat';
+
+  @override
+  String get triggerEventTicketStatusChanged =>
+      'Starea tichetului s-a schimbat';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Înregistrarea întâlnirii s-a oprit';
+
+  @override
+  String get triggerEventSkillUpdated => 'Abilitate actualizată';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Spațiu șters';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Un pull request deschis pe gazda de cod, nu din Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Un pull request deschis din Control Center sau de un agent.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Fuzionat, închis, deschis, redeschis sau aprobat. Filtrează după stare în inspector.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Doar când pull request-ul este fuzionat, nu închis sau redeschis.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Un depozit este legat de acest spațiu de lucru.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Un fișier dintr-un depozit legat se schimbă pe disc.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Un mesaj nou ajunge într-un spațiu.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Un bilet este creat în acest spațiu de lucru.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Un bilet trece între stări.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Un bilet se încheie cu succes.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'O rulare a agentului a eșuat, iar biletul este marcat ca eșuat.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Un bilet este anulat și nu va continua.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Se depășește o limită de cheltuieli a spațiului de lucru sau a agentului.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Un bilet este atribuit unei persoane, unui agent sau unei echipe.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Înregistrarea unei întâlniri se încheie.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'O abilitate este instalată sau actualizată.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Un spațiu de conversație este șters.';
 
   @override
   String get navTickets => 'Tichete';

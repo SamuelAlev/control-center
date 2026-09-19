@@ -229,7 +229,7 @@ void main() {
       },
     );
 
-    // It must be the REAL project repo, never the invented `parced/closing`
+    // It must be the REAL project repo, never the invented `helix/evalkit`
     // world the seeded PRs live in — that repo does not exist on GitHub.
     await tester.tap(find.text('Star on GitHub'));
     await tester.pumpAndSettle();

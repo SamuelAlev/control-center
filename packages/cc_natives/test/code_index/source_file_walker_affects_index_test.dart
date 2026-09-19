@@ -10,6 +10,10 @@ void main() {
     expect(SourceFileWalker.affectsIndex('lib/src/foo.dart'), isTrue);
     expect(SourceFileWalker.affectsIndex('/abs/repo/lib/foo.ts'), isTrue);
     expect(SourceFileWalker.affectsIndex(r'lib\src\foo.dart'), isTrue);
+    expect(SourceFileWalker.affectsIndex('src/main.rs'), isTrue);
+    expect(SourceFileWalker.affectsIndex('pkg/mod.py'), isTrue);
+    expect(SourceFileWalker.affectsIndex('src/lib.cpp'), isTrue);
+    expect(SourceFileWalker.affectsIndex('main.go'), isTrue);
   });
 
   test('build output and tool caches do not', () {

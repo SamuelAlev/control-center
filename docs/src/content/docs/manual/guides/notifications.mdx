@@ -21,20 +21,26 @@ The phone client has no notification surface at all.
 
 1. Go to **Settings → You → Notifications**
 2. Leave **Enable notifications** on
-3. Toggle the categories you want. There are exactly ten:
+3. Toggle the categories you want. There are exactly sixteen:
 
-| Category                  | Fires when                                            |
-| ------------------------- | ----------------------------------------------------- |
-| Agent finished            | An agent finished a run                               |
-| PR published              | An agent published a PR                               |
-| PR merged                 | A PR was merged                                       |
-| New messages              | A message arrived in a space you are not looking at   |
-| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR  |
-| Review requested          | Your review was actually requested on a non-draft PR  |
-| Ticket assigned           | A ticket was assigned                                 |
-| Ticket status changed     | A ticket changed status                               |
-| Meeting starting soon     | A calendar meeting is inside your lead window         |
-| Calendar disconnected     | A connected calendar's OAuth token expired            |
+| Category                  | Fires when                                                                 |
+| ------------------------- | -------------------------------------------------------------------------- |
+| Agent finished            | An agent finished a run                                                    |
+| PR published              | An agent published a PR                                                    |
+| PR merged                 | A PR was merged                                                            |
+| New messages              | A message arrived in a space you are not looking at                        |
+| Mentioned in pull request | GitHub's notification poll saw you mentioned on a PR                       |
+| Review requested          | Your review was actually requested on a non-draft PR                       |
+| Review out of date        | New commits landed on a pull request you already reviewed                  |
+| Ready to merge            | A pull request you authored became mergeable, or stopped being             |
+| Review decisions          | A reviewer approved, requested changes, or had an approval dismissed       |
+| Checks                    | CI failed on a pull request you authored, or recovered                     |
+| Review threads            | Someone replied in or resolved a thread you are in                         |
+| Ticket assigned           | A ticket was assigned                                                      |
+| Ticket status changed     | A ticket changed status                                                    |
+| Meeting starting soon     | A calendar meeting is inside your lead window                              |
+| Calendar disconnected     | A connected calendar's OAuth token expired                                 |
+| Enclosure updates         | An enclosure was taken over, reclaimed or failed                           |
 
 Anything outside this list cannot be notified or filtered — there is no
 "everything else" category.
@@ -57,7 +63,7 @@ alert you only see afterwards is worthless, which is the reason.
 ## Choose a sound
 
 1. Scroll to **Notification sound**
-2. Pick one of the twelve bundled sounds, or **None**
+2. Pick one of the eleven bundled sounds, or **None**
 3. Press the test button to hear it and set the volume with the slider
 
 The app plays the sound itself; the OS notification is delivered silently so you
@@ -69,7 +75,7 @@ never hear it twice.
 2. Pick **5**, **10**, **15** or **30** minutes
 
 That is how far ahead of a calendar event the **Meeting starting soon**
-notification fires.
+notification fires. The default is 5 minutes.
 
 ## Know when a notification is suppressed
 
@@ -81,40 +87,32 @@ A notification is dropped, silently, when any of these is true:
 - Focus mode is active and the category is not urgent
 - Quiet hours are active and the category is not urgent
 
+Those checks apply to OS toasts. The durable bell still records the event.
+
 Two more suppressions live further upstream, in what the server sends at all:
 
 - An un-mentioned message from another **human** never becomes a notification
-- Agent-to-agent spaces are muted by construction. They never bump an unread
-  badge and never fire a toast
+- Agent-to-agent spaces are muted in the sidebar, so they never bump the human
+  unread badge
 
 Within a space there is no quiet corner: every conversation notifies equally,
 threads included. Read state is space-scoped, so unread aggregates across a
 space's conversations rather than being tracked per conversation.
-
-:::caution[Two settings that look live but are not]
-**Delivery schedule** (real-time / every 2 hours / daily digest) is read only by
-the settings row that draws it. Delivery is always real-time whatever you pick,
-and the value the dropdown shows by default disagrees with the value actually
-stored. Ignore it.
-
-Focus mode's **Block notifications** switch is persisted but never consulted:
-suppression is gated on the session being active, so non-urgent notifications are
-suppressed either way.
-:::
 
 ## Read and clear the notification centre
 
 1. Click the bell in the title bar
 
 The popover shows recent activity, deep-linking each entry to what it is about.
-Opening it marks everything read and read state follows your user across
-devices.
+Opening it does **not** mark everything read — use **Mark all as read** in the
+header, or mark a single row. Read state follows your user across devices.
 
 :::note[Clear all is a watermark, not a delete]
 **Clear all** stamps a per-user watermark that hides everything older; the rows
 stay. Separately, each workspace retains only its most recent **200** feed rows,
-pruned as new ones arrive, while the bell subscribes to the newest **50**. History
-past that is gone regardless of read state.
+pruned as new ones arrive, while the bell subscribes to the newest **50** and the
+popover lists up to **15** of those. History past that is gone regardless of read
+state.
 :::
 
 ## Troubleshooting
@@ -131,13 +129,13 @@ Expected — the web build has no OS-notification pipeline. Use the bell.
 
 ### The bell badge shows zero but there is clearly new activity
 
-Until your identity resolves after connecting, entries render as read to avoid a
-badge that flashes and then empties. It settles once the session identifies you.
+Until the read-mark stream resolves after connecting, entries render as read to
+avoid a badge that flashes and then empties. It settles once the mark loads.
 
 ### An agent's run finished but nothing pinged me
 
 Check that you were not already on the space it happened in — an active route
-suppresses its own notification.
+suppresses its own OS toast.
 
 ## Related guides
 

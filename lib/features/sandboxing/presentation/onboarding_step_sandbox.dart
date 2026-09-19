@@ -1,11 +1,11 @@
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
+import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_step_layout.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
 import 'package:control_center/features/settings/providers/privacy_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -236,13 +236,15 @@ class _StatusRow extends StatelessWidget {
               ],
               if (installHint != null) ...[
                 const SizedBox(height: 8),
-                SelectableText(
-                  installHint!,
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.5,
-                    fontFamily: 'monospace',
-                    color: tokens?.textBrandPrimary,
+                CcSelectionRegion(
+                  child: Text(
+                    installHint!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      height: 1.5,
+                      fontFamily: 'monospace',
+                      color: tokens?.textBrandPrimary,
+                    ),
                   ),
                 ),
               ],

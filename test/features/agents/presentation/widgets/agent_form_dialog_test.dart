@@ -223,7 +223,7 @@ void main() {
       });
 
       final adapters = [
-        _testDetectedAdapter('opencode', 'adapter-1', '/usr/local/bin'),
+        _testDetectedAdapter('Claude Code', 'adapter-1', '/usr/local/bin'),
       ];
 
       await tester.pumpWidget(
@@ -757,7 +757,7 @@ void main() {
       });
 
       final adapters = [
-        _testDetectedAdapter('opencode', 'adapter-1', '/usr/local/bin'),
+        _testDetectedAdapter('Claude Code', 'adapter-1', '/usr/local/bin'),
       ];
 
       await tester.pumpWidget(
@@ -785,7 +785,7 @@ void main() {
       });
 
       final adapters = [
-        _testDetectedAdapter('OpenCode', 'adapter-1', '/usr/local/bin'),
+        _testDetectedAdapter('Claude Code', 'adapter-1', '/usr/local/bin'),
       ];
 
       await tester.pumpWidget(
@@ -811,7 +811,7 @@ void main() {
         });
 
         final adapters = [
-          _testDetectedAdapter('OpenCode', 'adapter-2', '/usr/local/bin'),
+          _testDetectedAdapter('Claude Code', 'adapter-2', '/usr/local/bin'),
         ];
 
         await tester.pumpWidget(

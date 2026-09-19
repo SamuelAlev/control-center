@@ -786,5 +786,61 @@ void main() {
       final join = roundtripped.steps.firstWhere((s) => s.id == 'join');
       expect(join.waitForStepIds, ['path_a', 'path_b']);
     });
+
+    test('edges from distinct trigger steps stay separate (OR, not AND)', () {
+      final original = PipelineDefinition(
+        templateId: 'two-starts',
+        workspaceId: 'ws-1',
+        name: 'Two starts',
+        steps: [
+          PipelineStepDefinition(
+            id: 't-manual',
+            kind: StepKind.trigger,
+            bodyKey: 'pipeline.trigger',
+          ),
+          PipelineStepDefinition(
+            id: 't-sched',
+            kind: StepKind.trigger,
+            bodyKey: 'pipeline.trigger',
+          ),
+          PipelineStepDefinition(
+            id: 'work',
+            kind: StepKind.listen,
+            bodyKey: 'conversation.promptAgent',
+            triggers: const [
+              StepTrigger(sourceStepIds: ['t-manual']),
+              StepTrigger(sourceStepIds: ['t-sched']),
+            ],
+          ),
+        ],
+      );
+      final companion = pipelineDefinitionToCompanion(
+        original,
+        updatedAt: DateTime(2025, 6, 11),
+        createdAt: DateTime(2025, 1, 1),
+        version: 1,
+      );
+      final row = PipelineTemplatesTableData(
+        id: companion.id.value,
+        workspaceId: companion.workspaceId.value,
+        name: companion.name.value,
+        description: companion.description.value,
+        nodesJson: companion.nodesJson.value,
+        edgesJson: companion.edgesJson.value,
+        inputsJson: companion.inputsJson.value,
+        isBuiltIn: companion.isBuiltIn.value,
+        isEnabled: companion.isEnabled.value,
+        version: companion.version.value,
+        createdAt: companion.createdAt.value,
+        updatedAt: companion.updatedAt.value,
+      );
+      final roundtripped = pipelineDefinitionFromRow(row);
+      final work = roundtripped.steps.firstWhere((s) => s.id == 'work');
+      expect(work.triggers, hasLength(2));
+      expect(work.triggers.map((t) => t.sourceStepIds.single).toSet(), {
+        't-manual',
+        't-sched',
+      });
+    });
   });
 }

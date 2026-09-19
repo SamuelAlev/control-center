@@ -9,16 +9,16 @@ description: Complete catalog of the MCP tools cc_server registers, by family.
 
 | Measure                                                                   | Count |
 | ------------------------------------------------------------------------- | ----- |
-| Tools registered by `cc_server`                                           | 109   |
-| From `packages/cc_mcp`                                                    | 107   |
+| Tools registered by `cc_server`                                           | 110   |
+| From `packages/cc_mcp`                                                    | 108   |
 | From `packages/cc_mcp_client` (tool discovery)                            | 2     |
 | Registered in the base registry (`server_mcp_registry.dart`)              | 63    |
-| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 46    |
+| Registered post-boot as their services come up (`cc_server_runtime.dart`) | 47    |
 | Of the base registry's 63, conditional on a code-graph repository         | 5     |
 
-The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 109 are live in the shipped binary.
+The five code-graph tools are registered only when the host passes a code-graph repository to `buildServerMcpRegistry`. `cc_server` always passes one, so all 110 are live in the shipped binary.
 
-The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools; the CLI-args-in-JSON `ticket_cli` surface was removed.
+The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
 
 :::note[External clients always see the whole catalogue]
 `tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
@@ -26,21 +26,17 @@ The full registry is advertised in `tools/list` with no discovery gating. Ticket
 The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/manual/concepts/tool-context).
 :::
 
-:::note[Every tool class that ships is registered]
-There is no longer a set of tool classes that exist on disk but are constructed
-in no registry. The twenty-one that used to sit in that state (agent lifecycle,
-the Projects CRUD set, `create_workspace`, `doctor`, `ask_user_question` and the
-rest) were deleted outright rather than wired up, so a source file you find under
-`packages/cc_mcp/lib/src/tools/` is a tool an agent can call.
-`packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart` pins that:
-a new tool class that nothing constructs fails the build.
+:::note[Every tool class is registered]
+A source file under `packages/cc_mcp/lib/src/tools/` is a tool an agent can
+call. `packages/cc_server_core/test/mcp_tool_registration_ratchet_test.dart`
+fails the build if a new tool class is constructed by nothing.
 :::
 
 ## Common parameters
 
 ### `workspace_id`
 
-**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it only on the genuinely global tools (`list_workspaces`). When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
+**Required** on every tool that touches workspace-scoped data. A missing or invalid `workspace_id` returns an explicit error and a value that does not match the target entity's workspace is rejected rather than silently ignored. Omit it on the genuinely global tools: `list_workspaces` and the six newsfeed tools (`list_feeds`, `list_articles`, `get_article`, `set_article_read`, `set_article_saved`, `refresh_feeds`), which ride the server owner's per-user feed list. Discovery tools (`search_tool_bm25`, `list_my_tools`) take it optionally so they can classify callability by conversation mode. When an agent is dispatched by the server, the workspace is forced server-side, so the agent cannot reach another workspace by passing a foreign id.
 
 ## Tool discovery
 
@@ -182,7 +178,7 @@ Every install and update passes through a fail-closed scan gate before any skill
 
 ## Code graph tools
 
-Registered only when the host supplies a code-graph repository. The index covers Dart, JavaScript, TypeScript, TSX and PHP; symbols in any other language are not present.
+Registered only when the host supplies a code-graph repository. The index covers the shipped grammar set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada); symbols in any other language are not present.
 
 | Tool           | Description                                                                        |
 | -------------- | ---------------------------------------------------------------------------------- |
@@ -243,10 +239,11 @@ emulator, or an iOS Simulator — from inside a run. Registered post-boot,
 unconditionally: whether a machine can actually boot is a probe question the
 tools answer per call. Repeated calls in one conversation reuse one machine;
 screenshots return as image content with a one-image budget per result, and
-extracted page/UI content is fenced as untrusted data. All six declare the
-`enclosureControl` [action class](/manual/concepts/guardrails/) (the use tools
-also declare `networkEgress` and `processSpawn`), so read-only modes deny them.
-The full verb vocabulary per surface is in the
+extracted page/UI content is fenced as untrusted data. The four use tools plus
+`rig_close` declare the `enclosureControl` [action class](/manual/concepts/guardrails/)
+(the use tools also declare `networkEgress` and `processSpawn`; `mobile_use` and
+`ios_use` also declare `packageInstall`), so read-only modes deny them. `rig_list`
+declares none — it only reads workspace state. The full verb vocabulary per surface is in the
 [rigs reference](/manual/reference/rigs/#action-verbs).
 
 | Tool           | Description                                                                                     |
@@ -264,7 +261,7 @@ Calendar and meetings have no MCP tools. Agents cannot read your calendar, meeti
 
 ## Tool gating by mode
 
-Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for external CLI adapters and once in the built-in harness registry. A blocked call returns the reason.
+Gating is enforced twice from one table (`ModeToolPolicy`): once in the MCP dispatcher for the Claude Code adapter and once in the built-in harness registry. A blocked call returns the reason.
 
 | Mode          | Tool surface                                                                                                                                                                                                                        |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -6245,6 +6245,43 @@ class AppLocalizationsMs extends AppLocalizations {
   String get editorEmptyCanvas => 'Seret nod dari pustaka untuk bermula.';
 
   @override
+  String get pipelineWhenThisHappens => 'Apabila ini berlaku';
+
+  @override
+  String get pipelineDoThis => 'Lakukan ini';
+
+  @override
+  String get pipelineAddStep => 'Tambah langkah';
+
+  @override
+  String get pipelineTidyUp => 'Kemas susun atur';
+
+  @override
+  String get pipelineEditorHint =>
+      'Seret langkah untuk menyusun · seret pemegang untuk sambung';
+
+  @override
+  String get pipelineRemoveConnection => 'Buang sambungan';
+
+  @override
+  String get pipelineDragToConnect => 'Seret untuk sambung';
+
+  @override
+  String get pipelineNewDefaultName => 'Pipeline baharu';
+
+  @override
+  String get nodeCategoryTriggers => 'Pencetus';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Tambah pencetus';
+
+  @override
+  String get pipelineOnEvent => 'Pada peristiwa';
+
+  @override
   String get nodeConfigTitle => 'Konfigurasi nod';
 
   @override
@@ -6492,6 +6529,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'URL webhook yang ditandatangani dijana. Sistem luaran POST kepadanya untuk memulakan pipeline ini.';
 
   @override
+  String get triggerWebhookPathLabel => 'Laluan webhook';
+
+  @override
   String get triggerEventFieldLabel => 'Peristiwa';
 
   @override
@@ -6620,6 +6660,82 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Tiket ditugaskan';
+
+  @override
+  String get triggerEventTicketCreated => 'Tiket dicipta';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Status tiket berubah';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Rakaman mesyuarat dihentikan';
+
+  @override
+  String get triggerEventSkillUpdated => 'Kemahiran dikemas kini';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Ruang dipadam';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Permintaan tarik yang dibuka pada hos kod, bukan dari Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Permintaan tarik yang dibuka dari Control Center atau oleh ejen.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Digabungkan, ditutup, dibuka, dibuka semula atau diluluskan. Tapiskan mengikut status dalam pemeriksa.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Hanya apabila permintaan tarik digabungkan, bukan ditutup atau dibuka semula.';
+
+  @override
+  String get triggerRepoAddedHelp => 'Repositori dipautkan ke ruang kerja ini.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Fail dalam repositori dipaut berubah pada cakera.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'Mesej baharu tiba dalam ruang.';
+
+  @override
+  String get triggerTicketCreatedHelp => 'Tiket dicipta dalam ruang kerja ini.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Tiket beralih antara status.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Tiket selesai dengan jayanya.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Jalan ejen gagal dan tiket ditanda gagal.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Tiket dibatalkan dan tidak akan diteruskan.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Had perbelanjaan ruang kerja atau ejen dilampaui.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Tiket ditugaskan kepada orang, ejen atau pasukan.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'Rakaman mesyuarat tamat.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'Kemahiran dipasang atau dikemas kini.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Ruang perbualan dipadam.';
 
   @override
   String get navTickets => 'Tiket';

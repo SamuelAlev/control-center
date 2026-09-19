@@ -87,8 +87,7 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
       Future.value(PrMergeableState.unknown);
 
   @override
-  Future<String?> latestApprover(Repo repo, int prNumber) =>
-      Future.value(null);
+  Future<String?> latestApprover(Repo repo, int prNumber) => Future.value(null);
 
   @override
   Future<({String name, String? url})?> firstFailingCheck(
@@ -254,10 +253,15 @@ class MultiForgeMergedHistory {
   /// [userId]'s recently merged pull requests across [repos], grouped by
   /// repo. Repos whose forge cannot answer — including a forge that user has
   /// not connected — are simply absent.
+  ///
+  /// [workspaceId] is accepted so this matches the catalog/demo signature;
+  /// production already scoped [repos] to that workspace.
   Future<List<OpenPrGroup>> mergedByViewer(
     List<Repo> repos, {
     String? userId,
+    String? workspaceId,
   }) async {
+    assert(workspaceId == null || workspaceId.isNotEmpty);
     final groups = <OpenPrGroup>[];
 
     await Future.wait(

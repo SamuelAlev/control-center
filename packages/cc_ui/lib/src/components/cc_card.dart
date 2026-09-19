@@ -14,7 +14,8 @@ import 'package:flutter/widgets.dart';
 ///
 /// When [interactive] is true and [onPressed] is non-null the card becomes a
 /// [CcTappable] that washes its background to the token hover color on hover and
-/// exposes itself as a semantic button.
+/// exposes itself as a semantic button. Parents that are not buttons but still
+/// need the wash (drag sources) pass [hovered] instead.
 class CcCard extends StatelessWidget {
   /// Creates a [CcCard].
   const CcCard({
@@ -22,6 +23,7 @@ class CcCard extends StatelessWidget {
     required this.child,
     this.padding,
     this.interactive = false,
+    this.hovered = false,
     this.onPressed,
     this.tokens,
     this.semanticLabel,
@@ -36,6 +38,11 @@ class CcCard extends StatelessWidget {
   /// Whether the card responds to hover/press as a tappable surface. Only takes
   /// effect when [onPressed] is also non-null.
   final bool interactive;
+
+  /// Paints the hover wash without making the card a button. Parents that
+  /// track pointer state (drag sources) set this. Ignored when [interactive]
+  /// is true — pointer state drives the wash there.
+  final bool hovered;
 
   /// Tap handler for an [interactive] card.
   final VoidCallback? onPressed;
@@ -54,7 +61,7 @@ class CcCard extends StatelessWidget {
     final isInteractive = interactive && onPressed != null;
 
     if (!isInteractive) {
-      return _surface(cardTokens.bg, cardTokens.border, resolvedPadding);
+      return _surface(cardTokens, resolvedPadding, washed: hovered);
     }
 
     return CcTappable(
@@ -62,38 +69,35 @@ class CcCard extends StatelessWidget {
       borderRadius: AppRadii.brLg,
       semanticLabel: semanticLabel,
       builder: (context, states) {
-        final hovered =
+        final washed =
             states.contains(WidgetState.pressed) ||
             (states.contains(WidgetState.hovered) &&
                 !CcFluidHover.isItemActive(context));
-        // The hover token is a translucent wash; layer it over the base fill so
-        // the panel never becomes transparent.
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            color: cardTokens.bg,
-            borderRadius: AppRadii.brLg,
-            border: Border.all(color: cardTokens.border),
-          ),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: hovered ? cardTokens.hoverBg : null,
-              borderRadius: AppRadii.brLg,
-            ),
-            child: Padding(padding: resolvedPadding, child: child),
-          ),
-        );
+        return _surface(cardTokens, resolvedPadding, washed: washed);
       },
     );
   }
 
-  Widget _surface(Color bg, Color border, EdgeInsets resolvedPadding) {
+  Widget _surface(
+    CcCardTokens cardTokens,
+    EdgeInsets resolvedPadding, {
+    required bool washed,
+  }) {
+    // The hover token is a translucent wash; layer it over the base fill so
+    // the panel never becomes transparent.
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: bg,
+        color: cardTokens.bg,
         borderRadius: AppRadii.brLg,
-        border: Border.all(color: border),
+        border: Border.all(color: cardTokens.border),
       ),
-      child: Padding(padding: resolvedPadding, child: child),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: washed ? cardTokens.hoverBg : null,
+          borderRadius: AppRadii.brLg,
+        ),
+        child: Padding(padding: resolvedPadding, child: child),
+      ),
     );
   }
 }

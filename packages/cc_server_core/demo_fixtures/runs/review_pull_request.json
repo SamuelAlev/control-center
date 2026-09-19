@@ -4,31 +4,31 @@
   "steps": [
     {
       "kind": "thinking",
-      "text": "The PR reworks contingency deadlines on the escrow timeline, and three surfaces render them. If one closing's extension can shift the calculation, every surface lies at once. Let me read the diff before saying anything."
+      "text": "The PR reworks eval token budgets per model family, and three surfaces render remaining tokens. If one eval's retry can shift the calculation, every surface lies at once. Let me read the diff before saying anything."
     },
     {
       "kind": "say",
-      "text": "Reading the diff on **#412 — Surface contingency deadlines on the escrow timeline**.\n\n"
+      "text": "Reading the diff on **#412 — Cap eval-run token budget per model family**.\n\n"
     },
     {
       "kind": "tool",
       "tool": "read",
-      "args": { "path": "lib/escrow/timeline.dart" },
-      "result": "class EscrowTimeline {\n  /// All deadline math goes through the clock so the timeline, the export\n  /// and the tests share one definition of a business day.\n  const EscrowTimeline(this._clock);\n\n  final EscrowClock _clock;\n\n  DateTime deadlineFor(Contingency c, DateTime acceptance) =>\n      _clock.bd(acceptance, _win(c));\n\n  int _win(Contingency c) => switch (c.kind) {\n        ContingencyKind.inspection => 10,\n        ContingencyKind.financing => 21,\n        ContingencyKind.title => 14,\n      };\n\n  int daysRemaining(Contingency c, DateTime acceptance) =>\n      _clock.bdBetween(_clock.now(), deadlineFor(c, acceptance));\n}"
+      "args": { "path": "evalkit/budget.py" },
+      "result": "class EvalBudget:\n    \"\"\"All spend math goes through the ledger so the run card, the\n    grader and the tests share one definition of remaining tokens.\"\"\"\n\n    def __init__(self, ledger):\n        self._ledger = ledger\n\n    def remaining(self, family, run_group_id):\n        return self._cap(family) - self._ledger.spent(family)\n\n    def _cap(self, family):\n        return {\n            \"sonnet\": 200_000,\n            \"haiku\": 80_000,\n            \"opus\": 400_000,\n        }[family]"
     },
     {
       "kind": "say",
-      "text": "The arithmetic itself is clean — one window table, one clock, deadlines derived instead of typed in. What I want to check is whether two closings can race it: `deadlineFor` resolves from the acceptance date alone, with no closing id in the key.\n\n"
+      "text": "The arithmetic itself is clean — one cap table, one ledger, remaining tokens derived instead of a shared org pool. What I want to check is whether two evals can race it: `remaining` resolves from the family alone, with no run-group id in the key.\n\n"
     },
     {
       "kind": "tool",
       "tool": "grep",
-      "args": { "pattern": "deadlineFor", "path": "lib/" },
-      "result": "lib/escrow/timeline.dart:9:  DateTime deadlineFor(Contingency c, DateTime acceptance) =>\nlib/escrow/timeline_view.dart:44:    final dl = _timeline.deadlineFor(c, closing.acceptedAt);\nlib/escrow/extensions.dart:71:    final shifted = _timeline.deadlineFor(c, ext.acceptedAt);\nlib/reports/closing_export.dart:132:    row('Deadline', _timeline.deadlineFor(c, closing.acceptedAt));"
+      "args": { "pattern": "remaining\\(", "path": "." },
+      "result": "evalkit/budget.py:9:    def remaining(self, family, run_group_id):\nevalkit/run_card.py:44:    remaining = budget.remaining(family, run.run_group_id)\nevalkit/extensions.py:71:    shifted = budget.remaining(family, retry.run_group_id)\nevalkit/export.py:132:    row('Remaining', budget.remaining(family, run.run_group_id))"
     },
     {
       "kind": "say",
-      "text": "Three independent callers, and `extensions.dart` recomputes after an extension is recorded. Two closings can share one acceptance date — a re-trade re-accepted the same day, or a double escrow on adjacent parcels — so one closing's extension shifts the other file's inspection, financing and title deadlines everywhere they render. That is the \"deadlines moved on their own\" report from last month.\n\n"
+      "text": "Three independent callers, and `extensions.py` recomputes after a retry is recorded. Two evals can share one run-group id — a nightly sweep and an ad-hoc grade kicked off the same hour — so one eval's retry burns the other run's remaining tokens everywhere they render. That is the \"budget moved on its own\" report from last month.\n\n"
     },
     {
       "kind": "usage",
@@ -40,7 +40,7 @@
     },
     {
       "kind": "say",
-      "text": "I left one blocking comment on `timeline.dart:9` asking for the closing id in the calculation key, and approved the rest. Days-remaining reads through the clock and needs no migration — that part is correct.\n\n**Summary:** 1 blocking comment, 3 nits, no test coverage for the shared-acceptance case."
+      "text": "I left one blocking comment on `budget.py:9` asking for the run-group id in the ledger key, and approved the rest. Remaining-tokens reads through the ledger and needs no migration — that part is correct.\n\n**Summary:** 1 blocking comment, 3 nits, no test coverage for the shared run-group case."
     },
     {
       "kind": "usage",

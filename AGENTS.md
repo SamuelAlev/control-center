@@ -19,7 +19,8 @@ apps/
 │                       #   heartbeats, pulls leased jobs, executes them, streams events back. Holds no durable state.
 ├── cc_remote/          # Phone thin client — Flutter web PWA, remote-controls the fleet over the brokered relay.
 ├── cc_signaling_server/# Stateless WebSocket relay broker (N-way invite-gated rooms; a dumb relay).
-└── cc_gallery/         # Widgetbook catalogue of cc_ui (the living design-system reference).
+├── cc_gallery/         # Widgetbook catalogue of cc_ui (the living design-system reference).
+└── cc_demo_server/     # Public demo host — a separate binary with a locked-down mutating surface. Not a `--demo` flag on cc_server.
 
 packages/
 ├── cc_ui/              # In-repo design system: tokens, theme, 30+ Cc* components (flutter/widgets.dart only).
@@ -41,9 +42,10 @@ packages/
 ├── cc_markdown/        # In-repo markdown engine: typed-AST parser + widget renderer (CcMarkdown / CcStreamingMarkdown)
 │                       #   + native mermaid diagrams (CcMermaidView, no WebView/JS). widgets-only.
 ├── cc_natives/         # Native FFI leaf (ALL REQUIRED, no degraded mode): rift CoW worktrees, fff file
-│                       #   finder, tree-sitter + grammars, ccpty, aec, lame, plus two in-repo Rust
-│                       #   crates: cc_watcher (native/watcher/) and cc_inference (native/inference/:
-│                       #   sherpa-onnx speech + ONNX Runtime embeddings, statically linked).
+│                       #   finder, tree-sitter + grammars, ccpty, aec, lame, plus three in-repo Rust
+│                       #   crates: cc_watcher (native/watcher/), cc_inference (native/inference/:
+│                       #   sherpa-onnx speech + ONNX Runtime embeddings, statically linked) and
+│                       #   cc_saml (native/saml/).
 └── system_audio_capture/ # Plugin: driver-free system-audio loopback capture (Core Audio taps / WASAPI / PipeWire).
 
 lib/                    # The root Flutter THIN CLIENT (desktop + web). Renders state; holds no business logic.
@@ -431,13 +433,13 @@ Workspaces are isolated tenants. Data from one workspace must NEVER surface in a
 - **`workspaceId` is required, never optional.** Any operation that reads or mutates workspace-scoped data takes a **required** `workspaceId` (Dart) / `workspace_id` (MCP tool schema). Do NOT make it optional, nullable-with-a-default, or resolve a "current"/"active"/"default" workspace implicitly. A required parameter forces every new call site to consciously supply the workspace — and since the split, it is also what picks the database file, so there is nowhere for an unscoped call to go.
 - **Entities own their workspace.** `Agent.workspaceId` is **non-null**. Every agent belongs to exactly one workspace. When an operation already has the entity, source the workspace from it (e.g. `PromptBuilder.identity` and the dispatch/memory path read `agent.workspaceId`) rather than threading a separate, fallible parameter that could disagree. `CreateAgentUseCase` refuses to create a workspace-less agent. A write whose entity carries a `workspaceId` uses it to pick the database, so an entity with no workspace now fails loudly at the write instead of landing in an unowned row.
 - **Isolation is enforced by the database split, not by WHERE clauses.** A workspace's rows live in that workspace's own SQLite file (`<dataDir>/<workspaceId>/workspace.db`), reached through `WorkspaceDatabaseManager.of(workspaceId)`. A `WorkspaceDatabase` does not declare `users`, `workspaces`, or any other workspace's tables, so a cross-workspace read does not compile. The `workspaceId` columns still exist and are still written (they keep the sync triggers/FTS indexes unchanged and make a file self-describing) but they are no longer what keeps workspaces apart. See the **Database** section for the full picture.
-- **Only these tables are shared across workspaces** (they live in `global.db`): `workspaces` (the registry), `users`, `user_preferences`, `paired_devices`, `rss_feeds`/`rss_articles`, `workers`/`jobs`/`placement_log`, `workspace_routes`, `server_meta`. Each is documented `CROSS-WORKSPACE BY DESIGN` and the routing ratchet test pins the set — adding to it is an isolation decision that has to be argued for in review.
+- **Only these tables are shared across workspaces** (they live in `global.db`): `workspaces` (the registry), `users`, `user_preferences`, `paired_devices`, `rss_feeds`/`rss_articles`, `workers`/`jobs`/`placement_log`, `workspace_routes`, `server_meta`, `server_settings`, `sso_connections`, `managed_action_policies`. Each is documented `CROSS-WORKSPACE BY DESIGN` and the routing ratchet test pins the set — adding to it is an isolation decision that has to be argued for in review.
 - **The one way to reintroduce a leak: caching a resolved DAO.** `final AgentDao _dao;` on a repository can only have come from _some_ workspace and every later call is then answered from that workspace's file whatever `workspaceId` was passed. Always hold the manager and resolve per call. The ratchet test fails on a cached per-workspace DAO field.
 - **Repository/DAO methods still take a required `workspaceId`** — that is what selects the file. Never make it optional, nullable-with-a-default, or resolved from a "current"/"active" workspace. An ID-only lookup (`forAgent(agentId)`, `getById(id)`) cannot pick a database, so it must gain one: `forAgent(workspaceId, agentId)`.
 - **Crossing workspaces requires `CrossWorkspaceQueries`.** `fanOut` / `fanOutKeyed` / `forEachWorkspace` / `mergeStreams` / `topN`. Its call sites are the complete inventory of what legitimately spans workspaces (all-workspace dashboards, startup reconcilers, retention/GC, event routers) and each keeps a `CROSS-WORKSPACE BY DESIGN:` comment saying why. Anything that enumerates workspaces itself fails the ratchet.
 - **Pre-auth lookups route through `workspace_routes`.** A few entry points arrive with nothing but a secret or an opaque id and no workspace: an invite code hash, a webhook token, a deep link naming a run/space/ticket. Those resolve their workspace from the global `workspace_routes` index (written by the same operation that creates the entity, entity first then route). A miss is a not-found — there is deliberately no scan fallback that could paper over a route that was never written.
 - **ID-based access is not a substitute for scoping.** Looking an entity up by its id (`ticketId`, `factId`, `symbol_id`) does not prove it belongs to the caller's workspace. Either scope the query by `workspaceId` so a foreign row is simply not found, or fetch then validate `entity.workspaceId == workspaceId` and reject on mismatch.
-- **MCP tools.** Every tool that touches workspace-scoped data declares `workspace_id` in its `required` array, reads it (`if (x is! String) return CallResult.error('Missing or invalid argument: workspace_id')`) and enforces ownership. For repo-scoped tools (code graph) check `WorkspaceRepository.isRepoLinkedToWorkspace`. Tools that genuinely span all workspaces (e.g. `list_workspaces`, `create_workspace`) are the only exemptions.
+- **MCP tools.** Every tool that touches workspace-scoped data declares `workspace_id` in its `required` array, reads it (`if (x is! String) return CallResult.error('Missing or invalid argument: workspace_id')`) and enforces ownership. For repo-scoped tools (code graph) check `WorkspaceRepository.isRepoLinkedToWorkspace`. Tools that genuinely span all workspaces (e.g. `list_workspaces`) are the only exemptions.
 - **Reject cross-workspace access explicitly.** On a mismatch, deny loudly, never silently no-op (that hides the bug) and never proceed (that leaks). Domain/service code throws `WorkspaceMismatchException` (in `packages/cc_domain/lib/src/errors/app_exceptions.dart`); MCP tools return `CallResult.error('... belongs to a different workspace.')`. The thrown exception's message reaches the agent verbatim via the MCP error path.
 - **Validate at a chokepoint.** When a service mutates entities by id, validate once at the single read/write chokepoint rather than per-method. See `TicketWorkflowService._mutate` / `_assertWorkspace`: every mutation threads `workspaceId`, the chokepoint loads the row and asserts `row.workspaceId == workspaceId` before applying.
 - **An unregistered workspace id is refused before its database is opened.** Opening a workspace database CREATES the file, so every client-supplied `workspace_id` passes a registry existence check (`workspaceExists`, wired from the global registry and answered by `workspaceRegistryDao.getById`, which excludes soft-deleted rows) at the `repo/call` and `sub/subscribe` chokepoints BEFORE the membership/role lookup or the query handler runs — the role lookup itself opens the named workspace's database. Without the gate, a stale client-held id (e.g. an `active_workspace_id` pref surviving a data-dir reset) sprays an empty ghost `<dataDir>/<id>/workspace.db` per request. Regression coverage: `packages/cc_server_core/test/fresh_boot_first_workspace_test.dart` ("stale workspace id is refused without materialising a ghost database") plus the gate groups in cc_host's dispatcher/subscription-manager tests.
@@ -488,7 +490,7 @@ Persistence is **split by workspace** and this is the single most important thin
 ## Routing
 
 - **go_router** with `ShellRoute` wrapping the app shell (`ControlCenterLayout`).
-- **Every in-app destination is workspace-prefixed: `/workspaces/:workspaceId/…`.** The workspace id in the URL is the single source of truth for the active workspace (`activeWorkspaceIdProvider` is driven from the route; read it via `context.currentWorkspaceId`). Route builders take the workspace id as their first argument. Only the pre-context surfaces have no prefix: `/splash`, `/onboarding` and `/workspaces` (the picker).
+- **Every in-app destination is workspace-prefixed: `/workspaces/:workspaceId/…`.** The workspace id in the URL is the single source of truth for the active workspace (`activeWorkspaceIdProvider` is driven from the route; read it via `context.currentWorkspaceId`). Route builders take the workspace id as their first argument. Only the pre-context surfaces have no prefix: `/splash`, `/onboarding`, `/signed-out` and `/workspaces` (the picker).
 - Splash, onboarding and the re-auth screen render full-screen outside the shell. The gate is complete when at least one forge is connected FOR THE SIGNED-IN USER (by signing in to it, or by pasting a token) AND at least one workspace exists. The `gh` CLI is not an authentication method.
 - **A missing credential and a missing setup are different screens.** With no forge connected the guard picks between `/signed-out` (re-authenticate; the same `ForgeConnectionsCard` Settings renders, no step bar, no continue button — the router leaves on its own when a forge reports in) and `/onboarding`, and the discriminator is **`users.onboarding_finished_at`**, read off the caller's own `identity.me`, never "workspaces exist". That inference was wrong the moment someone is INVITED: they hold a workspace they never created and have never onboarded. The flag is monotonic, written (through `users.markOnboardingFinished` — idempotent, self-targeting, no admin gate) both when the flow ends and whenever the gate observes a complete setup (which self-heals accounts predating it), and while it is still unknown the gate holds the splash rather than guessing — the guard never redirects back out of onboarding, so a wrong guess strands the user there. **It is a column on the user with NO device-local lane**, and that is not a style preference: it used to be a synced preference read local-copy-first, and the preference sync's promotion pass seeds the server from whatever a machine already holds — so a device that had onboarded once marked a brand-new account as already set up, and the gate offered that person the re-auth screen instead of the setup they had never done. Anything an account must be _right_ about, rather than merely agree on, belongs on the entity and not in `user_preferences`.
 - **Onboarding's steps are a list, not a count.** The workspace step is dropped for someone who already belongs to one (the invited case); connect/sandbox/adapter/voice are per-person setup everyone still walks. The list is snapshotted once at flow start — deriving skips per-build from async probes made steps vanish underneath the person walking them.
@@ -497,7 +499,7 @@ Persistence is **split by workspace** and this is the single most important thin
 
 ## Networking
 
-- **All external network I/O lives in `cc_server`, never in a client.** The dio HTTP clients moved out of `lib/` into **`cc_infra`** (the server-side VM-only adapter package): `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphqlClient`, `LinearApiClient`, plus the Google Calendar REST client.
+- **All external network I/O lives in `cc_server`, never in a client.** The dio HTTP clients moved out of `lib/` into **`cc_infra`** (the server-side VM-only adapter package): `GitHubApiClient`, `GitHubPrClient`, `GitHubContentClient`, `GitHubGraphQLClient`, `GitLabApiClient`, `BitbucketApiClient`, `LinearGraphQlClient`, plus `GoogleCalendarApiClient`.
 - Auth token injection via dio interceptors; all network errors mapped to typed `AppException` subclasses (in `cc_domain`'s `src/errors`).
 - Clients (desktop/web/phone) never dial GitHub/Linear/Google directly — they call server RPC ops and even remote media is fetched through the server's `/proxy/media` endpoint (`MediaProxyConfig`). Non-ranged image fetches are served through a persistent disk cache (`MediaCache` in `cc_server_core`, under `<dataDir>/media_cache/`, keyed by `(url, w)`): TTL honors upstream `max-age` clamped to 1h-7d (24h default), expired entries revalidate with `ETag`/`Last-Modified` conditionals, a failed refresh serves stale and concurrent same-key requests single-flight. Client-side, requested widths are bucketed UP to a shared ladder (`bucketMediaWidth` in `lib/shared/utils/media_width_ladder.dart`) so nearby display sizes share one cache entry.
 
@@ -551,17 +553,17 @@ For any design work (new screens, redesigns, reviews, polish), use the `impeccab
 
 ## Domain Events
 
-- `DomainEventBus` in `packages/cc_domain/lib/core/domain/events/` enables decoupled cross-feature communication.
-- Workspace, Agent & Repo: `WorkspaceCreated` (triggers CEO seeding), `AgentRunCompleted`, `RepoAdded` (triggers code indexing)
-- PR & Review: `PullRequestPublished`, `PullRequestStatusChanged`, `PrMerged`, `ExternalPrDetected`
+- `DomainEventBus` in `packages/cc_domain/lib/core/domain/events/` enables decoupled cross-feature communication. 53 concrete classes (plus sealed `TaskLifecycleEvent`); there is no `TaskQueued`, `TicketStarted`, `PipelineRunStarted`, `UserCreated`, `UserDeviceRevoked`, or memory/orchestration event.
+- Workspace, Agent & Repo: `WorkspaceCreated` (triggers CEO seeding, pipeline templates, starter eval suites), `AgentRunCompleted`, `RepoAdded` (triggers code indexing via the `index_code` pipeline), `SkillUpdated`
+- PR & Review: `PullRequestPublished`, `PullRequestStatusChanged`, `PrMerged`, `PrReviewRequested`, `PrMentioned`, `ExternalPrMerged`, `ExternalPrDetected`, `PrHeadChanged`, `ReviewBecameStale`, plus the authored-PR watch (`PrMergeReadinessChanged`, `PrReviewDecisionChanged`, `PrChecksStatusChanged`, `PrCommentMentioned`, `PrThreadReplied`, `PrThreadResolved`)
 - Messaging: `MessageReceived`, `SpaceCreated`, `SpaceDeleted` (drives worktree GC), `SpaceProvisioningChanged` (workspace setup progress: the chat bridge narrates it on its task card)
-- Ticketing / task lifecycle (vendor-neutral): `TicketCreated`, `TicketStarted`, `TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`, `TicketAssigned` (the sole event the dispatcher consumes), `TicketReassigned`, `TicketDelegated`, `TicketCollaboratorAdded`, `TicketDetailsUpdated`, `ExternalTicketWebhookReceived`; plus the fine-grained `Task*` run signals (`TaskQueued`/`TaskDispatched`/`TaskRunning`/`TaskProgress`/`TaskMessage`/`TaskCompleted`/`TaskFailed`/`TaskCancelled`/`TaskWaitingLocalDirectory`)
-- Orchestration: `OrchestrationProposed`, `OrchestrationApproved`, `OrchestrationRevised`, `OrchestrationExecutionStarted`, `OrchestrationCompleted`, `OrchestrationFailed`, `OrchestrationCancelled`
-- Pipeline lifecycle: `PipelineRunStarted`, `PipelineStepStarted`, `PipelineStepCompleted`, `PipelineStepFailed`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`
-- Memory: `MemoryFactRecorded`, `MemoryFactUpdated`, `MemoryFactSuperseded`, `MemoryConflictDetected`, `MemoryBeliefHarmonized`, `MemoryConsolidated`
-- Calendar & Meetings: `CalendarEventsRefreshed`, `CalendarAuthExpired`, `MeetingStartingSoon`, `MeetingRecordingStopped`
-- Identity & membership: `UserCreated`, `WorkspaceMemberAdded`, `WorkspaceMemberRemoved` (live sessions must re-check access immediately), `WorkspaceMemberRoleChanged`, `UserDeviceRevoked` (terminate the session within seconds, not on next reconnect), `WorkspaceInviteRedeemed`
-- Observability: `ActivityLogged`, `WorktreeMerged`, `BudgetThresholdCrossed`.
+- Ticketing: `TicketCreated`, `TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`, `TicketAssigned` (audit/notification/pipeline trigger; team assignment also dispatches the team leader), `TicketReassigned`, `TicketDetailsUpdated`
+- Task lifecycle (one dispatched run): `TaskDispatched`, `TaskRunning`, `TaskWaitingLocalDirectory`, `TaskProgress`, `TaskMessage`, `TaskCompleted`, `TaskFailed`, `TaskCancelled`
+- Pipeline lifecycle (terminal only): `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`
+- Calendar & Meetings: `CalendarAuthExpired`, `MeetingStartingSoon`, `MeetingRecordingStopped`
+- Identity & membership: `WorkspaceMemberAdded`, `WorkspaceMemberRemoved` (session hosts drop that user's workspace subscriptions; the socket stays open), `WorkspaceMemberRoleChanged`. Device revocation watches `paired_devices` directly — there is no `UserDeviceRevoked` event.
+- Observability: `ActivityLogged`, `BudgetThresholdCrossed`
+- Rigs: `RigControlChanged`, `RigReaped`, `RigClosedEvent`
 - CEO agent seeding is event-driven (listens to `WorkspaceCreated`) instead of fire-and-forget in `build()`.
 
 ## Build and code generation
@@ -588,8 +590,8 @@ cd apps/cc_server && dart build cli
 Tell-tale sign: a change works in tests but not in the running app. The user owns running the app (`fvm flutter run`); do not start it yourself.
 
 **Native libraries are REQUIRED — there is no degraded mode.** Every native
-(`rift`, `fff`, `tree-sitter` + its five grammars, `cc_watcher`, `ccpty`,
-`aec_ffi`, `lame_ffi`, `cc_inference`) must be built and staged before
+(`rift`, `fff`, `tree-sitter` + grammars, `cc_watcher`, `ccpty`,
+`aec_ffi`, `lame_ffi`, `cc_inference`, `cc_saml`) must be built and staged before
 `dart build cli`:
 
 ```bash

@@ -69,14 +69,14 @@ jobs:
       tag: ${{ steps.v.outputs.tag }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
           allowed-endpoints: >
             github.com:443
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -107,7 +107,7 @@ jobs:
   # ---------------------------------------------------------------------------
   build-macos:
     needs: prepare
-    runs-on: macos-14 # Apple Silicon (arm64)
+    runs-on: macos-26 # Apple Silicon (arm64)
     permissions:
       contents: read
       id-token: write # OIDC for build-provenance attestation
@@ -119,12 +119,12 @@ jobs:
       - name: Harden runner
         # `block` is Linux-only in harden-runner; audit is the ceiling
         # on macOS. This job holds the Developer ID certificate.
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -175,7 +175,7 @@ jobs:
         run: bash scripts/release/cc_server_package.sh "$VERSION" macos
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             Control-Center-${{ env.VERSION }}-arm64.dmg
@@ -214,12 +214,12 @@ jobs:
       - name: Harden runner
         # `block` is Linux-only in harden-runner; audit is the ceiling
         # on Windows.
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -269,7 +269,7 @@ jobs:
         run: bash scripts/release/cc_server_package.sh "$VERSION" windows
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             dist/Control-Center-*-x64-setup.exe
@@ -294,6 +294,10 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
+  # Stay on 24.04, not 26.04: natives compiled here are copied into
+  # debian:trixie-slim (glibc 2.41). Ubuntu 26.04's newer glibc would
+  # produce binaries the container cannot load — the same ABI trap the
+  # Dockerfile documents for Debian 12.
   build-linux:
     needs: prepare
     runs-on: ubuntu-24.04
@@ -359,7 +363,7 @@ jobs:
       #                                                   artifacts — see the
       #                                                   release job's note)
       - name: Harden runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
           allowed-endpoints: >
@@ -385,7 +389,7 @@ jobs:
             wrapdb.mesonbuild.com:443
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -455,7 +459,7 @@ jobs:
         run: bash scripts/release/cc_demo_server_package.sh "$VERSION"
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             Control-Center-${{ env.VERSION }}-x86_64.AppImage
@@ -501,7 +505,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
     steps:
       - name: Harden runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: block
           # *.blob.core.windows.net: actions/download-artifact redirects to
@@ -519,7 +523,7 @@ jobs:
             *.blob.core.windows.net:443
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -588,12 +592,12 @@ jobs:
         # audit, not block: docker base-image pulls (debian / nginx) hit
         # variable Docker Hub + GHCR CDN hosts that can't be reliably
         # enumerated. harden-runner still records every egress.
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -673,18 +677,18 @@ jobs:
           cp -R apps/cc_remote/build/web/. docker/cc_remote/site/
 
       - name: Log in to GHCR
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Buildx
-        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
       - name: Build + push cc-server image
         id: cc_server
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: docker/cc_server
           push: true
@@ -697,7 +701,7 @@ jobs:
           provenance: false
 
       - name: Attest cc-server image
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-server
           subject-digest: ${{ steps.cc_server.outputs.digest }}
@@ -705,7 +709,7 @@ jobs:
 
       - name: Build + push cc-server-demo image
         id: cc_server_demo
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: docker/cc_demo_server
           # ONE Dockerfile for both server images: the demo differs only in
@@ -721,7 +725,7 @@ jobs:
           provenance: false
 
       - name: Attest cc-server-demo image
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-server-demo
           subject-digest: ${{ steps.cc_server_demo.outputs.digest }}
@@ -729,7 +733,7 @@ jobs:
 
       - name: Build + push web client image
         id: web
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: docker/web
           push: true
@@ -739,7 +743,7 @@ jobs:
           provenance: false
 
       - name: Attest web client image
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-webapp
           subject-digest: ${{ steps.web.outputs.digest }}
@@ -747,7 +751,7 @@ jobs:
 
       - name: Build + push phone PWA image
         id: remote
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: docker/cc_remote
           push: true
@@ -757,7 +761,7 @@ jobs:
           provenance: false
 
       - name: Attest phone PWA image
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-remote
           subject-digest: ${{ steps.remote.outputs.digest }}
@@ -769,7 +773,7 @@ jobs:
       # synthesizes a standalone pubspec — no monorepo context, no natives).
       - name: Build + push signaling relay image
         id: signaling
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         with:
           context: apps/cc_signaling_server
           push: true
@@ -779,7 +783,7 @@ jobs:
           provenance: false
 
       - name: Attest signaling relay image
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ghcr.io/${{ steps.ns.outputs.owner }}/cc-signaling-server
           subject-digest: ${{ steps.signaling.outputs.digest }}

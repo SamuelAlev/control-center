@@ -5,6 +5,7 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_attempt.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
+import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_status_badge.dart';
@@ -16,7 +17,6 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/artifacts/json_tree_view.dart';
-import 'package:flutter/material.dart' show SelectableText;
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -684,9 +684,11 @@ class _ReasonCallout extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.xs),
-          SelectableText(
-            text,
-            style: TextStyle(color: fg, fontSize: 12, height: 1.4),
+          CcSelectionRegion(
+            child: Text(
+              text,
+              style: TextStyle(color: fg, fontSize: 12, height: 1.4),
+            ),
           ),
         ],
       ),

@@ -54,7 +54,7 @@ void main(List<String> args) {
 String render(Directory sourceDir) {
   final runs = _readJsonDir(Directory('${sourceDir.path}/runs'));
   final pullRequests = _decode(File('${sourceDir.path}/pull_requests.json'));
-  final logo = File('${sourceDir.path}/parced.png');
+  final logo = File('${sourceDir.path}/helix.png');
   final logoBase64 = logo.existsSync()
       ? base64Encode(logo.readAsBytesSync())
       : '';
@@ -82,7 +82,7 @@ String render(Directory sourceDir) {
     ..writeln('/// The demo workspace\'s logo (PNG), base64. The seeder writes it')
     ..writeln('/// to `<dataDir>/<workspaceId>/logo.png` and points the workspace')
     ..writeln('/// row\'s `logo_path` at it, so `/workspace/logo` serves the brand')
-    ..writeln('/// with no outbound fetch. Empty when `parced.png` is missing — the')
+    ..writeln('/// with no outbound fetch. Empty when `helix.png` is missing — the')
     ..writeln('/// client then renders initials, same as any logo-less workspace.')
     ..writeln('const String kDemoLogoBase64 = ${_dartString(logoBase64)};');
   return buffer.toString();

@@ -20,8 +20,8 @@ String tidyStepLabel(String value) => value
 /// anything showing one IN THE CONTEXT OF A RUN resolves it first. Rendering
 /// the raw string puts `{{repo_name}}` on the canvas, in the waterfall and in
 /// the step panel, which reads as a broken template rather than as the step it
-/// names. The pipeline EDITOR is the deliberate exception: there the braces are
-/// the thing being edited.
+/// names. The pipeline EDITOR is the deliberate exception: there each
+/// placeholder is drawn as a variable badge, not as braces.
 ///
 /// A placeholder with no value renders empty rather than failing — a scheduled
 /// run carries no PR number, a `RepoAdded` run no repo full name — so the

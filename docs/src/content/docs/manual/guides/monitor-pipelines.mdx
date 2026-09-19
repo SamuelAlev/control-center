@@ -17,10 +17,13 @@ what each step did and getting a failed run moving again. To start one, see
    and press <kbd>Enter</kbd> to open the focused run. Clicking a row does the
    same.
 
-Each row shows a glyph for how the run started (**Manual** or **Automatic**),
-the pipeline name, a status badge, the active duration and how long ago it
-started. Active duration excludes idle stop-and-restart gaps, so it is not the
-wall-clock span.
+Each row shows a glyph for how the run started (play for manual; a file glyph
+for a code-graph watch; otherwise the automatic trigger). The tooltip names the
+trigger — **Manual**, **PR published**, **file change**, and so on — and, for
+a watch run, which files changed. Then the pipeline name, a status badge, the
+active duration (or the queue position for a `queued` run) and how long ago
+this attempt started. Active duration excludes idle stop-and-restart gaps, so
+it is not the wall-clock span.
 
 There is no filter for completed, suspended or cancelled runs, no per-template
 filter, no time window and no per-template run history view. Comparing runs of
@@ -46,20 +49,22 @@ Selecting a node opens its step panel.
 | Status        | Meaning                                           |
 | ------------- | ------------------------------------------------- |
 | **Pending**   | Created, not yet started                          |
+| **Queued**    | Admitted but held: this template's max-parallel cap is full; no step rows yet |
 | **Running**   | Executing                                         |
 | **Suspended** | Waiting on something external — normal, not stuck |
 | **Completed** | Finished successfully                             |
 | **Failed**    | Ended with an error                               |
 | **Cancelled** | Stopped by a user or by the system                |
 
-Steps have those six plus **Skipped**, for a branch a router did not take (and
-its now-unreachable descendants).
+Steps have those statuses minus **Queued**, plus **Skipped**, for a branch a
+router did not take (and its now-unreachable descendants).
 
 **Suspended** is where an agent step spends most of its life: a dispatched agent
 or an approval gate holds the step until its work lands. Two engine backstops
 fail the whole run rather than resuming: a step suspended longer than 24 hours
-(approval gates are exempt) and a non-idempotent step that was mid-flight when
-the server stopped.
+(`extras.awaitApproval` — the `orchestration.awaitApproval` body — is exempt;
+`human.gate` is not) and a non-idempotent step that was mid-flight when the
+server stopped.
 
 ## Inspect a step
 
@@ -110,9 +115,8 @@ Common causes worth checking first:
   template load and then simply never executes.
 
 :::caution[Retry only works on a failed or cancelled run]
-The **Retry** button is also shown on completed runs, but the engine returns
-immediately unless the run's status is `failed` or `cancelled`. Pressing it on a
-completed run does nothing at all, with no message.
+The **Retry** button is shown only when the run is `failed` or `cancelled`. The
+engine returns immediately for any other status.
 :::
 
 ## Stop a step that is stuck

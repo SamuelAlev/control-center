@@ -38,9 +38,7 @@ Both agents dispatch in parallel and stream into the same space, tagged by sende
 
 The built-in `pr_review` template is the shipped example of a fan-out: several reviewer nodes run concurrently off one trigger and a **Consolidate (join)** node folds their findings into one report. Run it from the pipelines screen and every reviewer dispatches in parallel.
 
-:::caution[Authoring your own fan-out does not work yet]
-A step you add downstream in the pipeline editor is not executed: the run completes as soon as the seeded first step reaches the terminal sentinel and the terminal node is filtered out of the editor canvas so it cannot be re-threaded. Parallel branches you draw yourself will not run today. Use the built-in templates, or the space recipes above.
-:::
+The pipeline editor hides the terminal sentinel and rewires it to wait on every live sink when you add or connect a step, so branches you draw yourself do run.
 
 :::caution[Assigning a ticket dispatches nothing]
 Assigning a ticket to an agent records ownership. There is no ticket dispatcher — `TicketAssigned` is an audit signal and no work starts from it. The one exception is a ticket assigned to a _team_, which wakes that team's leader.
@@ -70,7 +68,7 @@ To reduce collisions either way:
 
 Each running agent costs:
 
-- A space checkout — negligible on disk while copy-on-write is available, a full `git worktree` otherwise
+- A space checkout — negligible on disk while copy-on-write is available; on Windows a `git worktree`. A filesystem that cannot reflink fails the provision rather than copying.
 - A process on the server host
 - Model tokens, which accumulate per agent
 

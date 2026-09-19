@@ -12,18 +12,19 @@ By the end of this tutorial, you will have:
 - one user provisioned automatically on their first login and
 - a workspace membership policy you chose deliberately.
 
-You will need a server you administer (the owner of at least one workspace)
-and an IdP application you can configure. Budget 20 minutes.
+You will need a server you administer (the **server owner** — the
+install's operator) and an IdP application you can configure. Budget 20
+minutes.
 
 ## 1. Open the single sign-on settings
 
 Sign in to Control Center, then go to
-**Settings → Server → Single sign-on**. The screen shows one tab per
-protocol Control Center speaks — **SAML** and **OpenID Connect** — plus a
-**user provisioning (SCIM)** card. Stay on the SAML tab.
+**Settings → Server → Single sign-on**. The screen switches between
+**SAML** and **OpenID Connect**, plus a **User provisioning (SCIM)**
+card. Stay on SAML.
 
 Everything on this screen is server-wide: one IdP authenticates every
-workspace's humans, so only server admins can edit it.
+workspace's humans, so only the server owner can edit it.
 
 ## 2. Paste the IdP metadata
 
@@ -36,7 +37,7 @@ parsed, the certificate was read and the server can build a login request
 against it (the test exercises everything short of the browser round-trip).
 If it fails, the XML was not a complete `EntityDescriptor` (the SAML tab in
 Okta calls it "Metadata URL"; open the URL and copy what it serves). The
-same button on the **OpenID Connect** tab checks your issuer's discovery
+same button on **OpenID Connect** checks your issuer's discovery
 document instead.
 
 ## 3. Register Control Center at the IdP
@@ -49,7 +50,7 @@ Press **Copy SP metadata** and hand it to whoever configures the Okta side
 
 The URLs derive from the origin your users' browsers reach. If the server
 runs behind a tunnel or reverse proxy, make sure the origin is stable
-(Settings → Server → Sharing shows the public URL) — or pin the entity ID
+(Settings → Server → Connection & status → Share this server shows the public URL) — or pin the entity ID
 explicitly in the **SP entity ID** field.
 
 :::note[Behind NAT?]
@@ -82,18 +83,19 @@ Optionally map an attribute carrying group names (Okta's is commonly
 
 ## 5. Enable and take a login
 
-Flip **Enable this connection**, press **Save**, then open a private
-browser window at `https://<your-server>/saml/login`. Sign in at Okta and
-you land back on the web client — logged in, with your account created and
-its membership granted per the policy you chose.
+Turn on **Use SAML for sign-in**, press **Save connection**, then open a
+private browser window at `https://<your-server>/saml/login`. Sign in at
+Okta and you land back on the web client — logged in, with your account
+created and its membership granted per the policy you chose.
 
 The same entry point appears on the web connect screen (**Sign in with
-SSO**) the moment you type the server address — the form adapts to what the
-server offers. The button opens sign-in in a **new tab**; when the
-round-trip completes, the waiting tab picks the session up automatically.
-The desktop server-setup screen does the same: type the server URL, a
-**Sign in with SSO** button appears that opens your browser and the app
-logs in when the round-trip completes.
+SAML**) the moment you type the server address — the form adapts to what
+the server offers (OpenID Connect shows **Sign in with OpenID Connect**).
+The button opens sign-in in a **new tab**; when the round-trip completes,
+the waiting tab picks the session up automatically. The desktop
+server-setup screen does the same: type the server URL, a **Sign in with
+SAML** button appears that opens your browser and the app logs in when the
+round-trip completes.
 
 ## Where to go next
 

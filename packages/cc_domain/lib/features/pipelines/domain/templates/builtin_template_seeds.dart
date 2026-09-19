@@ -14,10 +14,10 @@ import 'package:cc_domain/features/teams/domain/entities/team.dart' show Team;
 
 /// Body-key constants for built-in nodes.
 class BuiltInBodyKeys {
-  /// No-op body for the mandatory [StepKind.trigger] entry node. It does no
-  /// work — it completes immediately so the engine fans out to the trigger's
-  /// downstream listeners. What actually *starts* the run (manual / event /
-  /// schedule) is tracked separately as `PipelineTrigger` rows.
+  /// No-op body for a [StepKind.trigger] start node. It does no work — it
+  /// completes immediately so the engine fans out to that start's listeners.
+  /// What actually *starts* the run (manual / event / schedule) is tracked
+  /// as `PipelineTrigger` rows, one per trigger graph node.
   static const String trigger = 'pipeline.trigger';
 
   /// Generic agentless bash-script node. Substitutes `{{key}}` placeholders
@@ -491,7 +491,7 @@ PipelineStepDefinition _spaceStep({
   bool awaitReady = false,
   String? conversationTitle,
   List<String> after = const [],
-  double x = -240,
+  double x = 0,
   double y = 0,
 }) {
   return PipelineStepDefinition(
@@ -595,7 +595,7 @@ PipelineDefinition _triggerFirst(PipelineDefinition def) {
     kind: StepKind.trigger,
     bodyKey: BuiltInBodyKeys.trigger,
     config: const PipelineNodeConfig(label: 'Trigger'),
-    x: (entry.x ?? 0) - 220,
+    x: (entry.x ?? 0) - 280,
     y: entry.y ?? 0,
   );
   final rewired = def.steps.map((s) {
@@ -818,7 +818,7 @@ PipelineDefinition _prReviewSeed({
           'You are the engineer reviewer. PR #{{pr_number}} — {{pr_title}} is '
           'checked out at the PR head in `$_worktreeHint`.\n\n'
           'Focus on implementation details, correctness and obvious bugs.',
-      x: 240,
+      x: 280,
       y: 120,
     ),
     reviewer(
@@ -833,7 +833,7 @@ PipelineDefinition _prReviewSeed({
           '- whether the change is covered by tests, missing edge-case '
           'tests and brittle assertions.\n'
           '- regression risk in adjacent code paths.',
-      x: 240,
+      x: 280,
       y: 0,
     ),
     reviewer(
@@ -847,7 +847,7 @@ PipelineDefinition _prReviewSeed({
           'Focus on code quality, layering boundaries, dead/duplicated '
           'code and missed reuse opportunities. Call out anything that '
           'violates existing patterns in the repo.',
-      x: 240,
+      x: 280,
       y: 240,
     ),
     // Specialists, thorough only. They share the architect/engineer agents
@@ -870,7 +870,7 @@ PipelineDefinition _prReviewSeed({
           'proving the caller owns it\n'
           '- dependency changes (pubspec.lock, Cargo.lock, package-lock.json)\n'
           '- input validation gaps on anything crossing a trust boundary.',
-      x: 240,
+      x: 280,
       y: 360,
     ),
     reviewer(
@@ -890,7 +890,7 @@ PipelineDefinition _prReviewSeed({
           'Quantify when you can: "per row" and "once per request" are '
           'different findings, and the number is what makes the severity '
           'defensible.',
-      x: 240,
+      x: 280,
       y: 480,
     ),
     PipelineStepDefinition(
@@ -969,7 +969,7 @@ PipelineDefinition _prReviewSeed({
             'Finally, return the same walkthrough as GitHub-flavoured '
             'Markdown — it becomes the editorial note on the verdict.',
       ),
-      x: 480,
+      x: 560,
       y: 120,
     ),
     // Deterministic close-out: the reviewers' `review_node` findings become a
@@ -993,7 +993,7 @@ PipelineDefinition _prReviewSeed({
         inputKeys: ['review_space_id', 'consolidated_findings'],
         outputKey: 'review_verdict',
       ),
-      x: 720,
+      x: 840,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1185,7 +1185,7 @@ PipelineDefinition _crossReviewSeed({
         label: label,
         prompt: prompt,
       ),
-      x: 240,
+      x: 280,
       y: y,
     );
   }
@@ -1285,7 +1285,7 @@ PipelineDefinition _crossReviewSeed({
             'De-duplicate, group by file, order by severity. Output a '
             'GitHub-flavoured Markdown comment body.',
       ),
-      x: 480,
+      x: 560,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1299,7 +1299,7 @@ PipelineDefinition _crossReviewSeed({
         inputKeys: ['consolidated_findings', 'pr_number', 'repo_full_name'],
         label: 'Post PR comment',
       ),
-      x: 720,
+      x: 840,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1379,7 +1379,7 @@ PipelineDefinition _ticketToPrSeed({
             '|| git switch "agent/\$TICKET"\n'
             'echo "on \$(git rev-parse --abbrev-ref HEAD)"',
       ),
-      x: 0,
+      x: 280,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1412,7 +1412,7 @@ PipelineDefinition _ticketToPrSeed({
             'checks, then `git add -A && git commit`. Reply with a short '
             'summary of what you changed.',
       ),
-      x: 240,
+      x: 560,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1437,7 +1437,7 @@ PipelineDefinition _ticketToPrSeed({
             '--head "agent/\$TICKET" >/dev/null\n'
             "gh pr view \"agent/\$TICKET\" --json number --jq '.number'",
       ),
-      x: 480,
+      x: 840,
       y: 0,
     ),
     PipelineStepDefinition(
@@ -1461,7 +1461,7 @@ PipelineDefinition _ticketToPrSeed({
             'Return a concise GitHub-flavoured Markdown review: correctness, '
             'missing tests and risks, with `path:line` references.',
       ),
-      x: 480,
+      x: 840,
       y: 240,
     ),
     PipelineStepDefinition(
@@ -1476,7 +1476,7 @@ PipelineDefinition _ticketToPrSeed({
         label: 'Post self-review',
         inputKeys: ['consolidated_findings', 'pr_number', 'repo_full_name'],
       ),
-      x: 720,
+      x: 1120,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1560,7 +1560,7 @@ PipelineDefinition _prTriageSeed({
         timeoutMs: 900000,
         prompt: prompt,
       ),
-      x: 720,
+      x: 840,
       y: y,
     );
   }
@@ -1581,7 +1581,7 @@ PipelineDefinition _prTriageSeed({
         label: 'Post comment',
         inputKeys: ['consolidated_findings', 'pr_number', 'repo_full_name'],
       ),
-      x: 960,
+      x: 1120,
       y: y,
     );
   }
@@ -1621,7 +1621,7 @@ PipelineDefinition _prTriageSeed({
             'network/credential handling\n'
             '- `standard` otherwise.',
       ),
-      x: 240,
+      x: 280,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1640,7 +1640,7 @@ PipelineDefinition _prTriageSeed({
           'default': 'standard',
         },
       ),
-      x: 480,
+      x: 560,
       y: 120,
     ),
     branchReview(
@@ -1769,7 +1769,7 @@ PipelineDefinition _preMergeGateSeed({
             'Review PR #{{pr_number}} — {{pr_title}} at `{{repo_local_path}}`. '
             'Summarize correctness and risk as Markdown.',
       ),
-      x: 240,
+      x: 280,
       y: 60,
     ),
     PipelineStepDefinition(
@@ -1790,7 +1790,7 @@ PipelineDefinition _preMergeGateSeed({
             '{{consolidated_findings}}\n\n'
             'Approve to squash-merge, or reject to request changes.',
       ),
-      x: 480,
+      x: 560,
       y: 60,
     ),
     PipelineStepDefinition(
@@ -1809,7 +1809,7 @@ PipelineDefinition _preMergeGateSeed({
           'default': 'rejected',
         },
       ),
-      x: 720,
+      x: 840,
       y: 60,
     ),
     PipelineStepDefinition(
@@ -1831,7 +1831,7 @@ PipelineDefinition _preMergeGateSeed({
             'gh pr merge "{{pr_number}}" --repo "{{repo_full_name}}" --squash\n'
             'echo "merged"',
       ),
-      x: 960,
+      x: 1120,
       y: 0,
     ),
     PipelineStepDefinition(
@@ -1852,7 +1852,7 @@ PipelineDefinition _preMergeGateSeed({
             '--body "Changes requested by the pre-merge gate."\n'
             'echo "notified"',
       ),
-      x: 960,
+      x: 1120,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -1921,7 +1921,7 @@ PipelineDefinition _releaseNotesSeed({
               "--jq '.title, (.commits[].messageHeadline)' 2>/dev/null "
               '|| echo "(commit log unavailable)"',
         ),
-        x: 0,
+        x: 280,
         y: 0,
       ),
     ),
@@ -1944,7 +1944,7 @@ PipelineDefinition _releaseNotesSeed({
             'Draft a changelog entry grouped into Features / Fixes / Chores '
             '(conventional-commit aware). Output GitHub-flavoured Markdown.',
       ),
-      x: 240,
+      x: 560,
       y: 0,
     ),
     PipelineStepDefinition(
@@ -2023,7 +2023,7 @@ PipelineDefinition _meetingSummarySeed({
       spaceName: 'Meeting summary · {{title}}',
       agentIds: [agentIds.ceo],
       mode: 'chat',
-      x: -760,
+      x: 0,
       y: 120,
     ),
     // Entry step: offline speaker diarization. Relabels the transcript's
@@ -2040,7 +2040,7 @@ PipelineDefinition _meetingSummarySeed({
           label: 'Identify speakers',
           inputKeys: ['meeting_id', 'transcript'],
         ),
-        x: -520,
+        x: 280,
         y: 120,
       ),
     ),
@@ -2059,7 +2059,7 @@ PipelineDefinition _meetingSummarySeed({
         label: 'Match known speakers',
         inputKeys: ['meeting_id', 'transcript'],
       ),
-      x: -260,
+      x: 560,
       y: 120,
     ),
     // Runs in PARALLEL with summarize (both fan out from diarize): re-separates
@@ -2078,7 +2078,7 @@ PipelineDefinition _meetingSummarySeed({
         inputKeys: ['meeting_id', 'diarization_spans'],
       ),
       // Same column as its sibling fan-outs off diarize, stacked above them.
-      x: -260,
+      x: 560,
       y: 0,
     ),
     // Folds the retained per-channel WAVs into mixed.wav for playback. Runs in
@@ -2095,7 +2095,7 @@ PipelineDefinition _meetingSummarySeed({
         label: 'Assemble playback audio',
         inputKeys: ['meeting_id'],
       ),
-      x: -260,
+      x: 560,
       y: -120,
     ),
     PipelineStepDefinition(
@@ -2170,7 +2170,7 @@ PipelineDefinition _meetingSummarySeed({
             '<user_notes>\n{{user_notes}}\n</user_notes>\n\n'
             '<transcript>\n{{transcript}}\n</transcript>',
       ),
-      x: 0,
+      x: 840,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -2184,7 +2184,7 @@ PipelineDefinition _meetingSummarySeed({
         label: 'Save notes',
         inputKeys: ['meeting_id', 'meeting_outcome'],
       ),
-      x: 260,
+      x: 1120,
       y: 0,
     ),
     PipelineStepDefinition(
@@ -2198,7 +2198,7 @@ PipelineDefinition _meetingSummarySeed({
         label: 'Add action items',
         inputKeys: ['meeting_id', 'meeting_outcome'],
       ),
-      x: 260,
+      x: 1120,
       y: 120,
     ),
     PipelineStepDefinition(
@@ -2212,7 +2212,7 @@ PipelineDefinition _meetingSummarySeed({
         label: 'Add decisions',
         inputKeys: ['meeting_id', 'meeting_outcome'],
       ),
-      x: 260,
+      x: 1120,
       y: 240,
     ),
     // Joins the three parallel persist steps AND the parallel transcript-update
@@ -2306,7 +2306,7 @@ PipelineDefinition _depAuditSeed({
           },
         },
       ),
-      x: 260,
+      x: 280,
       y: y,
     );
   }
@@ -2343,7 +2343,7 @@ PipelineDefinition _depAuditSeed({
             'outdated dependencies. Return findings grouped by severity with '
             'package + version.',
       ),
-      x: 520,
+      x: 560,
       y: y,
     );
   }
@@ -2471,7 +2471,7 @@ PipelineDefinition _depAuditSeed({
             '## pnpm\n{{audit_pnpm_findings}}\n\n'
             '## yarn\n{{audit_yarn_findings}}',
       ),
-      x: 800,
+      x: 840,
       y: 220,
     ),
     PipelineStepDefinition(
@@ -2538,7 +2538,7 @@ PipelineDefinition _prDigestSeed({
               '--json number,title,author,updatedAt,isDraft '
               '--limit 50 2>/dev/null || echo "[]"',
         ),
-        x: 0,
+        x: 280,
         y: 0,
       ),
     ),
@@ -2561,7 +2561,7 @@ PipelineDefinition _prDigestSeed({
             'digest — group into "Awaiting review", "Drafts" and "Stale '
             '(>3 days)". Be brief.\n\n{{pr_json}}',
       ),
-      x: 240,
+      x: 560,
       y: 0,
     ),
     PipelineStepDefinition(
@@ -2576,7 +2576,7 @@ PipelineDefinition _prDigestSeed({
         inputKeys: ['space_id', 'content'],
         outputKey: 'posted_space_id',
       ),
-      x: 480,
+      x: 840,
       y: 0,
     ),
     PipelineStepDefinition(
@@ -2722,7 +2722,7 @@ PipelineDefinition _indexCodeSeed({
         repoIds: const ['{{repo_id}}'],
         conversationTitle: _analysisConversationTitle,
         after: const [IndexCodeTemplate.indexStepId],
-        x: 260,
+        x: 280,
       ),
     );
     steps.add(
@@ -2785,7 +2785,7 @@ PipelineDefinition _indexCodeSeed({
               'workspace {{workspace_id}}. Focus on lasting, high-level '
               'understanding — not file-by-file detail.',
         ),
-        x: 520,
+        x: 560,
         y: 0,
       ),
     );

@@ -3,17 +3,14 @@ title: Configure sandbox policies
 description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and which capability settings the server actually reads.
 ---
 
-:::caution[The controls on the sandboxing settings page are still client-only]
-Whether an agent run is sandboxed is decided entirely on the server, at boot.
-The master toggle, the backend picker and the **Default capabilities** toggles
-under **Settings → Server → Diagnostics & privacy** are preferences stored on
-your device; the server never reads any of them, so changing them does not
-change how an agent runs. Only the **Backend** card's detection result comes
-from the server and it reports what the server host _could_ do.
+Whether an agent run is sandboxed is decided on the server, at boot
+(`--sandbox`). The **Enable sandboxing** toggle, the **Backend** picker and the
+**Default capabilities · new spaces** toggles under **Settings → Server →
+Diagnostics & privacy** are preferences stored on your device. The
+**Sandboxing** card's host detection reports what the server host can wrap.
 
-Two controls do reach a run and this guide covers both: the per-agent
+Two controls reach a run and this guide covers both: the per-agent
 **Sandbox permissions** below and the server's own `--sandbox` flag.
-:::
 
 ## What constrains an agent run
 
@@ -22,28 +19,29 @@ that is conditional — the other five hold on every host.
 
 | Boundary                 | What it does                                                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the external CLI transports, the ACP transport and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
+| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
 | Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
 | Brokered credentials     | The credential broker mints a per-run environment from the agent's capabilities and revokes it at teardown. No capability, no token in the environment                                            |
 | Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
-| Environment sanitization | The spawned process gets a filtered environment, not yours                                                                                                                                        |
+| Environment sanitization | ACP and the harness `bash` tool get a filtered environment. Claude Code through `NoSandboxAdapter` inherits the host environment                                                                  |
 | The mode's tool surface  | A read-only mode removes the worktree-mutating tools outright and pins the mode's own output verb so it can still deliver                                                                         |
 
 Three things stay weaker than they look:
 
 - Only the **built-in harness** enforces the tool gate, completion contracts and
-  structural mode rules. External CLI and ACP adapters do not get them. Claude
+  structural mode rules. The Claude Code adapter does not. Claude
   Code in particular is launched with `--dangerously-skip-permissions`, because a
   non-interactive `claude -p` would otherwise block forever on its own prompt —
   so Claude's own read, write, edit and bash calls are neither seen nor gated by
   Control Center. Where the sandbox is on, it is the boundary around them.
 - The harness's in-process file tools (read, write, edit, apply patch, search,
-  find) run inside the server process, so no sandbox profile constrains them.
+  find, search_files) run inside the server process, so no sandbox profile constrains them.
   Only the `bash` tool goes through the sandboxed command runner. Those tools are
   bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. The `bash` tool,
-  the external CLIs and ACP all fall back to environment sanitization plus the
-  command policy and the server says so in its startup log. Check yours below.
+- On a host with no backend the first row does not apply at all. ACP and the
+  harness `bash` tool fall back to environment sanitization plus the command
+  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
+  The server says so in its startup log. Check yours below.
 
 ## Set an agent's capabilities
 
@@ -75,11 +73,13 @@ The caption says **Use workspace default**, but there is no workspace-level
 capability setting the server reads. An agent with the switch off gets the
 built-in conservative default.
 
-Separately, a run requested by a member who has stored their own GitHub token on
-the server has that token merged in _after_ the broker's environment, so it
-arrives regardless of the GitHub capability. There is no in-app screen that
-stores a per-member token today, so on a normal install this does not fire — but
-do not treat **Allow GitHub API calls** as a hard egress boundary.
+Separately, the run's GitHub credential is only ever the broker's — a
+repo-scoped GitHub App installation token, or the environment PAT fallback —
+never the requesting member's own stored token. `actingUserId` is passed so the
+broker can *withhold* the server PAT from a member who is not the owner and has
+not connected GitHub; it does not merge a personal token over a capability
+that is off. Do not treat **Allow GitHub API calls** as a hard egress boundary
+on a host with no OS sandbox: a spawned process can still reach the network.
 :::
 
 ## Check whether your agent runs are sandboxed
@@ -88,9 +88,11 @@ Two things decide it, both on the server: whether the host offers a backend and
 whether `--sandbox` is on. Check them in that order.
 
 1. Go to **Settings → Server → Diagnostics & privacy**
-2. Read the **Backend** card. It reports the machine `cc_server` runs on, not the
-   machine you are looking at: **Native** (Seatbelt on macOS, bubblewrap on
-   Linux and WSL2) or **None**
+2. Read the **Sandboxing** card. The **Host** fact is the machine `cc_server`
+   runs on, not the machine you are looking at. The **Backend** field lists
+   **Native sandbox** (Seatbelt on macOS, bubblewrap on Linux and WSL2) or
+   **No isolation**. The **In force** fact is this device's preference, not the
+   wrap the server actually uses.
 3. Read the server's startup log. It prints exactly one of three lines:
    - `agent sandbox ON` plus the backend note — runs are wrapped
    - `no OS-native agent sandbox on this host` plus an install hint where there
@@ -104,23 +106,25 @@ the reason it exists — start the server with `--sandbox off`, or set
 `CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
 the host has one", never "require one".
 
-Two situations never get a sandbox. On **Windows** there is no backend at all:
-the probe always reports unavailable there and there is nothing to install. On
-**Linux and WSL2** both `bwrap` and `socat` must be on the `PATH`; without them
-the probe reports unavailable and names the missing packages.
+Two situations never get a native sandbox wrap. On **Windows** the native probe
+always reports unavailable and there is nothing to install — agent dispatch
+uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
+and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
+`socat` must be on the `PATH`; without them the probe reports unavailable and
+names the missing packages.
 
 ## Know what a mode already forbids
 
 Mode is stored per space and feeds the guardrail resolver as the **mode
 preset** layer. Three of the four modes are read-only and a read-only mode
-refuses ten effect classes outright:
+refuses eleven effect classes outright:
 
 | Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure |
-| **Review**         | Read-only | The same ten. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same ten                                                                                                                                                                     |
+| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
+| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
+| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
 
 Network access and secret access are deliberately _not_ refused by a read-only
 mode: research is the point of one.
@@ -145,23 +149,23 @@ Check the agent's **Sandbox permissions**. An agent with no custom capability se
 gets the conservative default, which has **Allow git push** off — so the broker
 injects no GitHub token and git has no way to authenticate.
 
-### The backend card says no native sandbox is available
+### The Sandboxing card reports no native sandbox
 
-Then agent runs on that host are not sandboxed and the remaining boundaries are
-what you have. On Linux and WSL2, install both missing tools — `sudo apt install
-bubblewrap socat` — and restart the server; the startup log should then say the
-sandbox is on. On Windows there is no backend to install, so tighten the
-guardrails instead: see
+Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
+remaining boundaries are what you have. On Linux and WSL2, install both missing
+tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
+startup log should then say the sandbox is on. On Windows there is no native
+backend to install, so tighten the guardrails instead: see
 [Configure guardrails](/manual/guides/configure-guardrails/).
 
 ### An agent reached a file outside its worktree
 
 Which tool reached it decides whether this is expected.
 
-The harness's in-process file tools (read, write, edit, apply patch, search) run
-in the server process, so no sandbox profile applies to them — their bound is
-their own path confinement plus the guardrails. A `bash` command, an external
-CLI or an ACP agent _is_ wrapped where a backend exists and your registered
+The harness's in-process file tools (read, write, edit, apply patch, search,
+find, search_files) run in the server process, so no sandbox profile applies to
+them — their bound is their own path confinement plus the guardrails. A `bash` command or the Claude Code
+CLI _is_ wrapped where a backend exists and your registered
 checkouts are deny-write inside that wrap in every mode, including their
 symlink-resolved spellings (on macOS a path reached through `/tmp` or
 `/var/folders` resolves under `/private` and both spellings are now denied). On

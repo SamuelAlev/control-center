@@ -20,19 +20,29 @@ PipelineDefinition pipelineDefinitionFromRow(PipelineTemplatesTableData row) {
   final edgesRaw = jsonDecode(row.edgesJson) as List<dynamic>;
   final inputsRaw = jsonDecode(row.inputsJson) as List<dynamic>;
 
+  final triggerIds = <String>{};
+  for (final raw in nodesRaw) {
+    final node = raw as Map<String, dynamic>;
+    if (_kindFromString(node['kind'] as String) == StepKind.trigger) {
+      triggerIds.add(node['stepId'] as String);
+    }
+  }
+
   // Group edges by target so we can assemble StepTrigger lists. An edge may
   // carry an optional `routeKey` (router branch label); such edges become
-  // their own conditional [StepTrigger] rather than being merged.
+  // their own conditional [StepTrigger] rather than being merged. Edges that
+  // leave a trigger node also stay unmerged: two starts into one body are
+  // alternative paths (OR), not an AND join.
   final unconditionalSources = <String, List<String>>{};
-  final conditionalEdges = <String, List<StepTrigger>>{};
+  final separateEdges = <String, List<StepTrigger>>{};
   for (final edge in edgesRaw) {
     final from = (edge as Map<String, dynamic>)['from'] as String;
     final to = edge['to'] as String;
     final routeKey = edge['routeKey'] as String?;
-    if (routeKey == null) {
+    if (routeKey == null && !triggerIds.contains(from)) {
       unconditionalSources.putIfAbsent(to, () => []).add(from);
     } else {
-      conditionalEdges
+      separateEdges
           .putIfAbsent(to, () => [])
           .add(StepTrigger(sourceStepIds: [from], routeKey: routeKey));
     }
@@ -48,7 +58,7 @@ PipelineDefinition pipelineDefinitionFromRow(PipelineTemplatesTableData row) {
     final sources = unconditionalSources[stepId] ?? const <String>[];
     final triggers = <StepTrigger>[
       if (sources.isNotEmpty) StepTrigger(sourceStepIds: sources),
-      ...?conditionalEdges[stepId],
+      ...?separateEdges[stepId],
     ];
 
     steps.add(

@@ -40,8 +40,8 @@ inside the editor — the launcher is the only manual entry point.
 ## Fill in a repository input
 
 An input of type **Repository** renders a picker over the workspace's registered
-repos. Choosing one populates `repoId`, `repoLocalPath`, `repoFullName` and —
-when the repo has a GitHub remote — `repoOwner` and `repoName` into the run
+repos. Choosing one populates `repo_id`, `repo_local_path`, `repo_full_name` and —
+when the repo has a GitHub remote — `repo_owner` and `repo_name` into the run
 payload, so downstream steps can read whichever they need.
 
 ## Watch it run
@@ -54,11 +54,7 @@ node opens that step's detail panel.
 [Monitor pipeline runs](/manual/guides/monitor-pipelines/) covers all of it,
 including how to read a suspended step and what to do when one fails.
 
-:::caution[There is no dry-run toggle]
-`pipeline.start` accepts a `dry_run` flag on the wire and the bash body honours
-it, but no client sets it and there is no control for it in the launcher. Every
-run you start from the app is a real one.
-:::
+Every run you start from the app is a real one.
 
 ## Related guides
 

@@ -6262,6 +6262,43 @@ class AppLocalizationsHu extends AppLocalizations {
       'Húzzon egy csomópontot a könyvtárból a kezdéshez.';
 
   @override
+  String get pipelineWhenThisHappens => 'Amikor ez történik';
+
+  @override
+  String get pipelineDoThis => 'Tegye ezt';
+
+  @override
+  String get pipelineAddStep => 'Lépés hozzáadása';
+
+  @override
+  String get pipelineTidyUp => 'Elrendezés rendezése';
+
+  @override
+  String get pipelineEditorHint =>
+      'Húzza a lépéseket az elrendezéshez · húzza a fogantyút a csatlakozáshoz';
+
+  @override
+  String get pipelineRemoveConnection => 'Kapcsolat eltávolítása';
+
+  @override
+  String get pipelineDragToConnect => 'Húzza a csatlakozáshoz';
+
+  @override
+  String get pipelineNewDefaultName => 'Új pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Triggerek';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Trigger hozzáadása';
+
+  @override
+  String get pipelineOnEvent => 'Eseményre';
+
+  @override
   String get nodeConfigTitle => 'Csomópont beállítása';
 
   @override
@@ -6509,6 +6546,9 @@ class AppLocalizationsHu extends AppLocalizations {
       'Aláírt webhook-URL jön létre. Külső rendszerek POST-olnak rá a pipeline indításához.';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook útvonal';
+
+  @override
   String get triggerEventFieldLabel => 'Esemény';
 
   @override
@@ -6636,6 +6676,87 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Jegy hozzárendelve';
+
+  @override
+  String get triggerEventTicketCreated => 'Jegy létrehozva';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Jegy állapota megváltozott';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Értekezlet-felvétel leállítva';
+
+  @override
+  String get triggerEventSkillUpdated => 'Készség frissítve';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Tér törölve';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Egy pull request, amelyet a kódhoston nyitottak, nem a Control Centerből.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Egy pull request, amelyet a Control Centerből vagy egy ügynök nyitott.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Összevonva, lezárva, megnyitva, újranyitva vagy jóváhagyva. Szűrd állapot szerint a vizsgálóban.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Csak amikor a pull request összevonásra kerül, nem lezáráskor vagy újranyitáskor.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Egy tároló kapcsolódik ehhez a munkaterülethez.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Egy fájl a kapcsolt tárolóban megváltozik a lemezen.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'Új üzenet érkezik egy térbe.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Jegyet hoznak létre ebben a munkaterületben.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Egy jegy állapotok között mozog.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Egy jegy sikeresen befejeződik.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Egy ügynökfutás meghiúsult, és a jegyet sikertelennek jelölik.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Egy jegyet törölnek, és nem folytatódik.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Egy munkaterület- vagy ügynökköltési limitet átlépnek.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Egy jegyet személyhez, ügynökhöz vagy csapathoz rendelnek.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Egy megbeszélés felvétele véget ér.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Egy készséget telepítenek vagy frissítenek.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Egy beszélgetési teret törölnek.';
 
   @override
   String get navTickets => 'Jegyek';

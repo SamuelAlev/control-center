@@ -8,7 +8,6 @@ import 'package:control_center/features/calendar/presentation/providers/calendar
 import 'package:control_center/features/calendar/presentation/utils/calendar_event_layout.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_all_day_gutter.dart';
 import 'package:control_center/features/calendar/presentation/widgets/calendar_overflow_overlay.dart';
-import 'package:flutter/material.dart' show DateTimeRange, TimeOfDay;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 // intl declares its own `TextDirection` (a bidi enum, unrelated to the layout
@@ -22,7 +21,7 @@ import 'package:kalender/kalender.dart' as k;
 const double _heightPerMinute = 1.2;
 
 /// Legibility floor for a timed tile: the height a short event may *grow into*
-/// so its title stays readable, used by [calendarEventLayoutStrategy]. A
+/// so its title stays readable, used by [CalendarEventLayoutStrategy]. A
 /// 1-minute event would otherwise collapse to ~1px. Kept at 18px (= 15 min at
 /// [_heightPerMinute]) so a real 15-minute event renders at its exact height and
 /// never appears to overrun its end time; only shorter events are grown and
@@ -60,10 +59,19 @@ const double _dayLaneMinHeight = _dayLabelsHeight;
 const double _timelineWidth = 56;
 
 /// A kalender tile that carries the originating domain [CalendarEvent].
-class _DomainTile extends k.CalendarEvent {
-  _DomainTile({required super.dateTimeRange, required this.event});
+class _DomainTile extends k.KalenderEvent {
+  _DomainTile({
+    required super.start,
+    required super.end,
+    required this.event,
+  }) : super(isAllDay: event.isAllDay);
 
   final CalendarEvent event;
+
+  @override
+  _DomainTile copyWithData({required DateTime start, required DateTime end}) {
+    return _DomainTile(start: start, end: end, event: event);
+  }
 }
 
 /// Hosts the `kalender` month / week views, fed from our domain events and
@@ -110,7 +118,7 @@ class CalendarKalenderHost extends StatefulWidget {
 
 class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   final _eventsController = k.DefaultEventsController();
-  final _calendarController = k.CalendarController();
+  final _calendarController = k.KalenderController();
 
   /// False for the one frame a timed view needs to lay its body out before
   /// [_positionOnNow] can place it; the body paints fully transparent until then.
@@ -137,7 +145,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// Null until the first `onPageChanged`, and reset whenever the view is
   /// re-framed, so the derived fallback takes over rather than a stale week
   /// sizing the strip.
-  DateTimeRange<DateTime>? _visibleRange;
+  k.KalenderDateTimeRange? _visibleRange;
 
   /// The tiles handed to kalender, kept so the strip's height can be computed
   /// from the same events kalender is about to lay out.
@@ -214,7 +222,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       end = start.add(const Duration(minutes: 30));
     }
     return _DomainTile(
-      dateTimeRange: DateTimeRange(start: start, end: end),
+      start: start,
+      end: end,
       event: event,
     );
   }
@@ -225,7 +234,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     // [_bodyPositioned]); [_positionOnNow] replaces it with the centred,
     // extent-clamped one before the body is revealed. It stays the resting
     // position if that can't run at all (e.g. the body never gets a size).
-    final nowTimeOfDay = TimeOfDay.fromDateTime(widget.now);
+    final nowTimeOfDay = k.KalenderTime.fromDateTime(widget.now);
     return switch (widget.mode) {
       CalendarViewMode.week => k.MultiDayViewConfiguration.week(
         firstDayOfWeek: DateTime.monday,
@@ -254,7 +263,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// `add(Duration(days: n))`, which is elapsed time: across a daylight saving
   /// change it lands at 23:00 or 01:00 and the range covers the wrong set of
   /// days.
-  DateTimeRange<DateTime> get _effectiveRange {
+  k.KalenderDateTimeRange get _effectiveRange {
     final tracked = _visibleRange;
     if (tracked != null) {
       return tracked;
@@ -262,7 +271,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     final focused = widget.focusedDate;
     final day = DateTime(focused.year, focused.month, focused.day);
     if (widget.mode == CalendarViewMode.day) {
-      return DateTimeRange(
+      return k.KalenderDateTimeRange(
         start: day,
         end: DateTime(day.year, day.month, day.day + 1),
       );
@@ -272,7 +281,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       day.month,
       day.day - (day.weekday - DateTime.monday),
     );
-    return DateTimeRange(
+    return k.KalenderDateTimeRange(
       start: start,
       end: DateTime(start.year, start.month, start.day + 7),
     );
@@ -286,7 +295,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// rather than measuring the laid-out header is the point: a measured strip
   /// only reports its height *after* a frame at the wrong one, which is how
   /// every late-arriving event used to shove the timed grid down.
-  int _allDayRows(DateTimeRange<DateTime> range) {
+  int _allDayRows(k.KalenderDateTimeRange range) {
     final key =
         '${range.start.toIso8601String()}|${range.end.toIso8601String()}';
     final cached = _allDayRowCache[key];
@@ -296,14 +305,14 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     // What kalender's header asks its event store for: multi-day events (by the
     // view's rule — 24 hours or longer, which is every all-day event) that
     // overlap the page.
-    final visible = <k.CalendarEvent>[
+    final visible = <k.KalenderEvent>[
       for (final tile in _tiles)
         if (tile.spansMultipleDays(
               location: null,
-              defaultRule: k.defaultMultiDayRule,
+              defaultRule: k.kDefaultMultiDayRule,
             ) &&
-            tile.dateTimeRange.start.isBefore(range.end) &&
-            tile.dateTimeRange.end.isAfter(range.start))
+            tile.start.isBefore(range.end) &&
+            tile.end.isAfter(range.start))
           tile,
     ];
     // The generator reports one row for a non-empty event list even when none
@@ -312,9 +321,9 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         ? 0
         : k
               .defaultMultiDayFrameGenerator(
-                visibleDateTimeRange: k.InternalDateTimeRange(
-                  start: k.InternalDateTime.fromDateTime(range.start),
-                  end: k.InternalDateTime.fromDateTime(range.end),
+                visibleRange: k.FloatingDateTimeRange(
+                  start: k.FloatingDateTime.fromDateTime(range.start),
+                  end: k.FloatingDateTime.fromDateTime(range.end),
                 ),
                 events: visible,
                 // The packing mirrors under RTL — same intervals, same clashes —
@@ -410,7 +419,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       // horizontal page axis), so the offset is a pure time-of-day measure and
       // holds whichever date is in view.
       final dayStart = viewController.viewConfiguration.timeOfDayRange.start;
-      final now = TimeOfDay.fromDateTime(widget.now);
+      final now = k.KalenderTime.fromDateTime(widget.now);
       final minutesIntoDay =
           (now.hour * 60 + now.minute) - (dayStart.hour * 60 + dayStart.minute);
       final target =
@@ -428,14 +437,14 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// that the remainder collapses behind the "+N more" portal, so the strip's
   /// height stays the one [_laneHeight] computed.
   Widget _calendarHeader(DesignSystemTokens t, {required int? maxRows}) {
-    return k.CalendarHeader(
+    return k.KalenderHeader(
       multiDayHeaderConfiguration: k.MultiDayHeaderConfiguration(
         maximumNumberOfVerticalEvents: maxRows,
       ),
       // Without explicit tile components the all-day header falls back to
       // kalender's default builder, which renders the literal text "Tile".
       multiDayTileComponents: k.TileComponents(
-        tileBuilder: (event, tileRange) =>
+        tileBuilder: (_, event, tileRange) =>
             _tile(t, event, dense: true, tileRange: tileRange),
       ),
     );
@@ -461,9 +470,9 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         : _laneHeight(rows, collapsed: collapsed);
     return k.KalenderTheme(
       data: _theme(t),
-      child: k.CalendarView(
+      child: k.KalenderView(
         eventsController: _eventsController,
-        calendarController: _calendarController,
+        kalenderController: _calendarController,
         viewConfiguration: _viewConfiguration,
         components: _components(
           t,
@@ -471,8 +480,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
           rows: rows,
           collapsed: collapsed,
         ),
-        callbacks: k.CalendarCallbacks(
-          onEventTapped: (event, renderBox) {
+        callbacks: k.KalenderCallbacks(
+          onEventTapped: (event) {
             if (event is _DomainTile) {
               widget.onOpenEvent(event.event);
             }
@@ -499,8 +508,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
         // Offstage: the body has to be laid out for its scroll extents to exist.
         body: Opacity(
           opacity: _bodyPositioned ? 1 : 0,
-          child: k.CalendarBody(
-            interaction: k.CalendarInteraction(
+          child: k.KalenderBody(
+            interaction: k.KalenderInteraction(
               allowResizing: false,
               allowRescheduling: false,
               allowEventCreation: false,
@@ -508,37 +517,22 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             // Overlapping events lay out side by side in equal-width columns (so
             // two conflicting tiles never paint their titles in the same band and
             // turn unreadable) and every tile gets a minimum height so short
-            // events stay legible. See [calendarEventLayoutStrategy].
+            // events stay legible. See [CalendarEventLayoutStrategy].
             multiDayBodyConfiguration: const k.MultiDayBodyConfiguration(
-              eventLayoutStrategy: calendarEventLayoutStrategy,
+              eventLayoutStrategy: CalendarEventLayoutStrategy(),
               minimumTileHeight: _minimumTileHeight,
             ),
             multiDayTileComponents: k.TileComponents(
-              tileBuilder: (event, _) => _tile(t, event, dense: false),
+              tileBuilder: (_, event, _) => _tile(t, event, dense: false),
             ),
             // Order each month day-cell's events by start time. kalender's default
             // frame generator sorts by duration (longest first), which reads as a
-            // random order for a stack of same-length meetings. The closure's
-            // parameter types are inferred from GenerateMultiDayLayoutFrame.
-            monthBodyConfiguration: k.MonthBodyConfiguration(
-              generateMultiDayLayoutFrame:
-                  ({
-                    required visibleDateTimeRange,
-                    required events,
-                    required textDirection,
-                    required location,
-                    cache,
-                  }) => k.defaultMultiDayFrameGenerator(
-                    visibleDateTimeRange: visibleDateTimeRange,
-                    events: events,
-                    textDirection: textDirection,
-                    location: location,
-                    cache: cache,
-                    eventComparator: (a, b) => a.start.compareTo(b.start),
-                  ),
+            // random order for a stack of same-length meetings.
+            monthBodyConfiguration: const k.MonthBodyConfiguration(
+              multiDayLayoutStrategy: _StartSortedMultiDayLayoutStrategy(),
             ),
             monthTileComponents: k.TileComponents(
-              tileBuilder: (event, tileRange) =>
+              tileBuilder: (_, event, tileRange) =>
                   _tile(t, event, dense: true, tileRange: tileRange),
             ),
           ),
@@ -647,7 +641,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
   /// Custom day-header builders so "today" is marked with the brand accent
   /// (kalender's default fills it with the Material `primary`, which is ink
   /// black in this design system), plus the all-day strip's gutter cell.
-  k.CalendarComponents _components(
+  k.KalenderComponents _components(
     DesignSystemTokens t, {
     required double laneHeight,
     required int rows,
@@ -684,7 +678,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       );
     }
 
-    Widget weekDayHeader(DateTime date, k.DayHeaderStyle? style) {
+    Widget weekDayHeader(BuildContext _, DateTime date) {
       final today = isToday(date);
       final header = Center(
         child: Column(
@@ -731,7 +725,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
       return header;
     }
 
-    Widget monthDayHeader(DateTime date, k.MonthDayHeaderStyle? style) {
+    Widget monthDayHeader(BuildContext _, DateTime date) {
       return Align(
         alignment: Alignment.topCenter,
         child: Padding(
@@ -745,7 +739,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
     // filled-tonal buttons) with the design-system ghost button + flyout —
     // shared by the month body and the week/day all-day strip.
     final overlayBuilders = k.OverlayBuilders(
-      multiDayPortalOverlayButtonBuilder: (portalController, hidden, _) =>
+      multiDayPortalOverlayButtonBuilder: (_, portalController, hidden) =>
           CalendarOverflowButton(
             portalController: portalController,
             hiddenCount: hidden,
@@ -754,7 +748,8 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             summarise: collapsed,
           ),
       multiDayOverlayBuilder:
-          ({
+          (
+            _, {
             required date,
             required events,
             required tileHeight,
@@ -762,7 +757,6 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
             required getMultiDayEventLayoutRenderBox,
             required getOverlayPortalRenderBox,
             required overlayTileBuilder,
-            required style,
           }) => CalendarOverflowFlyout(
             date: date,
             events: events,
@@ -774,7 +768,7 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
           ),
     );
 
-    return k.CalendarComponents(
+    return k.KalenderComponents(
       multiDayComponents: k.MultiDayComponents(
         headerComponents: k.MultiDayHeaderComponents(
           dayHeaderBuilder: weekDayHeader,
@@ -808,9 +802,9 @@ class _CalendarKalenderHostState extends State<CalendarKalenderHost> {
 
   Widget _tile(
     DesignSystemTokens t,
-    k.CalendarEvent event, {
+    k.KalenderEvent event, {
     required bool dense,
-    DateTimeRange<DateTime>? tileRange,
+    k.KalenderDateTimeRange? tileRange,
   }) {
     final domain = event is _DomainTile ? event.event : null;
     final status = domain?.status ?? CalendarEventStatus.confirmed;
@@ -1225,4 +1219,37 @@ class _DashedRRectPainter extends CustomPainter {
   @override
   bool shouldRepaint(_DashedRRectPainter old) =>
       old.color != color || old.radius != radius;
+}
+
+/// Month-cell packing that sorts by start time instead of duration.
+///
+/// kalender's default [k.MultiDayLayoutStrategy.byDuration] puts the longest
+/// events first, which reads as a random order for a stack of same-length
+/// meetings.
+class _StartSortedMultiDayLayoutStrategy extends k.MultiDayLayoutStrategy {
+  const _StartSortedMultiDayLayoutStrategy();
+
+  @override
+  k.MultiDayLayoutFrame generateFrame({
+    required k.FloatingDateTimeRange visibleRange,
+    required List<k.KalenderEvent> events,
+    required TextDirection textDirection,
+    required k.Location? location,
+    required k.MultiDayLayoutFrameCache? cache,
+  }) {
+    return k.defaultMultiDayFrameGenerator(
+      visibleRange: visibleRange,
+      events: events,
+      textDirection: textDirection,
+      location: location,
+      cache: cache,
+      eventComparator: (a, b) => a.start.compareTo(b.start),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) => other.runtimeType == runtimeType;
+
+  @override
+  int get hashCode => (_StartSortedMultiDayLayoutStrategy).hashCode;
 }

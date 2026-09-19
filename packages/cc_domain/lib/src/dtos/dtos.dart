@@ -2201,6 +2201,7 @@ class PipelineTemplateDto {
     this.inputs = const [],
     this.isBuiltIn = false,
     this.isEnabled = true,
+    this.maxParallelRuns,
     this.version = 1,
   });
 
@@ -2220,6 +2221,7 @@ class PipelineTemplateDto {
             .toList(),
         isBuiltIn: json['is_built_in'] as bool? ?? false,
         isEnabled: json['is_enabled'] as bool? ?? true,
+        maxParallelRuns: (json['max_parallel_runs'] as num?)?.toInt(),
         version: (json['version'] as num?)?.toInt() ?? 1,
       );
 
@@ -2231,6 +2233,11 @@ class PipelineTemplateDto {
   final List<Map<String, dynamic>> inputs;
   final bool isBuiltIn;
   final bool isEnabled;
+
+  /// Run-concurrency cap. Older payloads omit it (null = unlimited). Carried
+  /// on the wire so a thin-client upsert cannot silently drop a cap the
+  /// operator set in the editor.
+  final int? maxParallelRuns;
   final int version;
 
   Map<String, dynamic> toJson() => {
@@ -2242,6 +2249,7 @@ class PipelineTemplateDto {
     'inputs': inputs,
     'is_built_in': isBuiltIn,
     'is_enabled': isEnabled,
+    'max_parallel_runs': maxParallelRuns,
     'version': version,
   };
 }
@@ -2993,7 +3001,9 @@ class PrTimelineEventDto {
         reviewerIsTeam: json['reviewer_is_team'] as bool? ?? false,
         reviewerAvatarUrl: json['reviewer_avatar_url'] as String? ?? '',
         label: json['label'] is Map
-            ? PrLabelDto.fromJson((json['label'] as Map).cast<String, dynamic>())
+            ? PrLabelDto.fromJson(
+                (json['label'] as Map).cast<String, dynamic>(),
+              )
             : null,
         createdAt: json['created_at'] as String?,
       );

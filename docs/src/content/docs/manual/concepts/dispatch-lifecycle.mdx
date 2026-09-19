@@ -35,7 +35,7 @@ The prompt is built in layers, each one a labelled section:
 - **Conversation context** — recent space history, capped at 50,000 characters of verbatim window regardless of the agent's configured context size. Older history is not truncated away: the agent retrieves it on demand with `get_messages` and semantically relevant older messages still surface.
 
 :::note[Slash commands are parsed from the raw user text]
-The layered prompt starts with a context block, so it does not begin with a slash. Commands are therefore parsed from the user's message verbatim and the command is then spliced out of the tail of the layered prompt so every context layer survives. Parsing the built prompt instead is exactly the bug that once made `/plan`, `/goal`, `/loop` and `/skill:<name>` silently inert on the space path.
+The layered prompt starts with a context block, so it does not begin with a slash. Commands are parsed from the user's message verbatim and then spliced out of the tail of the layered prompt so every context layer survives.
 :::
 
 Commands are split across two places. `/todo` and `/compact` are intercepted in the composer and deliberately never persisted as messages or sent to the agent — persisting `/compact` would push the compaction cut back a turn and pollute the transcript. `/plan` is handled in both: the composer flips the space's mode, which is what makes the tool surface, guard preset and prompt agree for this turn and every turn after it. `/goal`, `/loop` and `/skill:<name>` are handled inside the run itself and only on the built-in harness — `/goal` and `/loop` start autonomous work with a cost budget, and a `skill:`-prefixed name is looked up as a skill whose `SKILL.md` body becomes the turn's directive. The namespace is what keeps the two vocabularies apart: resolving a bare name against skills meant a skill called `plan` or `compact` was permanently shadowed by the builtin. A bare non-builtin name still resolves, for messages written before the namespace existed. An unrecognized name simply falls through as plain text.
@@ -44,15 +44,15 @@ Commands are split across two places. `/todo` and `/compact` are intercepted in 
 
 Before anything runs, the conversation gets its own working root, with an isolated copy-on-write worktree per repo underneath it. By default that is every repo linked to the workspace; a PR space — or a space created with an explicit selection — provisions only the allow-listed ones and a PR-review conversation pins its one repo to the pull request's head ref while the others sit on their default branch. The source checkout is never mutated and the whole conversation directory is reclaimed when the space is deleted.
 
-Copy-on-write is the **only** implementation, backed by the bundled `rift` native. Plain `git worktree` is a second _backend_, not a degraded mode and it is reached in exactly two situations, both environmental: a filesystem that cannot do copy-on-write (not APFS or reflink-capable, or source and destination on different volumes) and Windows, where there is no copy-on-write backend to build. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
+Copy-on-write is the **only** implementation wherever `rift` ships, backed by the bundled native. A filesystem that cannot reflink — or a data dir on a different volume from the repo — fails the provision rather than falling back. `git worktree` is the backend on Windows, where there is no copy-on-write backend to build, and it is not a silent degradation on other hosts. A missing `rift` on a platform that ships it is a broken install — the server refuses to boot rather than quietly falling back, because a silent fallback hides the breakage behind a slower path forever.
 
 ## Identity and credentials
 
 Two identities are resolved per run, before any process launches.
 
-**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <slug@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
+**Git authorship.** Commits an agent makes are authored _as the agent_ — `<Name> (agent) <agentId@agents.control-center.local>` in both `GIT_AUTHOR_*` and `GIT_COMMITTER_*` — never impersonating a human. The local-part is the agent's UUID, not its name slug. The requesting human is credited with a `Co-Authored-By:` trailer, carried in the environment and instructed in the system prompt. An explicit caller-set identity always wins over both.
 
-**Forge identity.** If the requesting member stored their own GitHub token, it _overrides_ the credential broker's token in the merged environment. A member-requested run therefore acts under that member's GitHub identity, not the server owner's — which is what you want for attribution and worth knowing when a run's permissions differ from what the server itself can do.
+**Forge identity.** The run's GitHub credential is only ever the broker's — a repo-scoped App installation token, or its environment PAT fallback — never the requesting member's own stored token. `actingUserId` bounds the PAT fallback so a member who is not the server owner does not inherit the server's reach; it does not overlay a personal token onto the agent environment.
 
 **Model provider credentials** resolve in a fixed order and the order matters:
 
@@ -67,16 +67,16 @@ Capability-gated tokens (GitHub, ticketing) come from the credential broker, whi
 
 ## Launch
 
-The run is spawned with a sanitized environment, its worktree as the working directory and — for external CLIs — a generated MCP config so the agent can reach Control Center's tool surface.
+The run is spawned with its worktree as the working directory and — for Claude Code — a generated MCP config so the agent can reach Control Center's tool surface. ACP and harness `bash` get a sanitized environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
 
 :::note[The OS sandbox wraps a run only where the host has a backend]
-`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because the transports do not share one: the external CLIs (`pi`, `claude`, `codex`) go through the sandbox port and the ACP transport plus the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
+`cc_server` probes the host once at boot and, when a backend is available, wraps agent processes in it — Seatbelt on macOS, bubblewrap on Linux and WSL2. Both dispatch seams are wrapped, because they do not share one: the Claude Code CLI goes through the sandbox port; ACP adapters and the built-in harness's `bash` tool go through the sandbox manager. It is also what applies the run's protected paths: your registered repo checkouts are deny-write inside the sandbox, in every mode.
 
-Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
+Where there is no backend, the run is **not** sandboxed and nothing else changes to compensate. That means Windows always (no native wrap — `microvm` is a separate, probe-gated path for terminals and rigs) and Linux or WSL2 without `bwrap` and `socat` on the `PATH`. The server names which state it is in on its startup log line and `--sandbox off` opts out deliberately.
 
-Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
+Two gaps survive the sandbox even where it is on. The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) run inside the server process, so no profile constrains them — their bound is the tools' own path confinement plus the guardrails. And Claude Code is launched with `--dangerously-skip-permissions`, so its own file and shell calls are not gated by Control Center; the OS sandbox is the boundary around them.
 
-The remaining bounds hold on every host, sandbox or not: the run's own copy-on-write worktree, environment sanitization, capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows.
+The remaining bounds hold on every host, sandbox or not: the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), capability-gated credentials brokered per launch and revoked at teardown, the unified action guardrails (fail-closed — a `prompt` decision with no approver connected is denied) and the tool surface the conversation's mode allows. ACP and harness `bash` still sanitize the environment; Claude Code through `NoSandboxAdapter` inherits the host environment.
 :::
 
 ## Streaming
@@ -100,8 +100,8 @@ The run streams a typed event sequence back, which the stream processor persists
 There is deliberately **no turn ceiling anywhere**. A hard iteration count kills legitimate long work (migrations, fan-out cleanup) and catches nothing the guards below catch earlier. A run ends when:
 
 - **the model stops** on its own;
-- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — external CLI runs, which have no safe boundary, are stopped instead);
-- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the external CLI and ACP transports — **not** the built-in harness, which spawns nothing;
+- **a human stops it**, or takes over the conversation (which pauses the built-in harness at its next clean turn boundary — a Claude Code run, which has no safe boundary, is stopped instead);
+- **the silence watchdog fires.** No output for the threshold and the session is terminated with a `silentRun` failure. The default is 15 minutes, dropping to 10 in the read-mostly modes (review and plan); an agent may override it between 1 and 240 minutes. The watchdog is armed when a child process reports its PID, so it covers the Claude Code CLI — **not** the built-in harness, which spawns nothing;
 - **a cost cap bites** — but only for autonomous commands.
 
 The doom-loop guard is not a terminator: three identical tool calls in a row and the loop _steers_ the agent to change approach, which is the bound that replaced a turn ceiling.
@@ -112,7 +112,7 @@ The in-session cost guard is wired only for `/goal` and `/loop`; every other run
 
 Put together, an ordinary interactive turn on the built-in harness has no turn ceiling, no cost cap and no silence watchdog. It ends when the model stops or when you stop it. That is a deliberate trade — the alternatives all kill legitimate long work — but it does mean an unattended interactive run is bounded by nothing but the model's own judgement.
 
-Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; external CLI and ACP transports have none of them.
+Mid-run, a message sent to a running agent is queued as **steering** and drained at the next turn boundary, so you can nudge a run without killing it. Steering, pausing, subagents and the completion contract are built-in-harness features; Claude Code has none of them.
 
 ## How a run is recorded
 
@@ -132,19 +132,11 @@ Closing the run publishes `AgentRunCompleted` and a lot hangs off it: the notifi
 
 ## Budgets, after the fact
 
-Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused`.
-
-:::caution[Both halves of that are hard to use today]
-No dispatch path checks lifecycle status, so a `paused` agent still runs — the pause is visible in the org chart and nowhere else. The pre-dispatch budget block that _would_ stop a run exists but is called only by the orphan-run reaper and the stranded-ticket reconciler when they consider scheduling recovery. And budget incidents have no RPC operation and no screen, so a hard stop's only visible symptoms are the status change and a `BudgetThresholdCrossed` pipeline trigger.
-:::
+Budget enforcement is a _reaction_, not a gate. When a run completes, the evaluator compares the agent's month-to-date spend against its effective ceiling (a linked budget policy if there is one, otherwise the agent's own monthly figure; zero means unlimited). Crossing the soft threshold records a warning incident; exhausting the budget records a hard incident and flips the agent's lifecycle status to `paused` on the org chart. Dispatch still accepts work from that agent. A `BudgetThresholdCrossed` pipeline trigger can start follow-up work from the same event.
 
 ## Retry lineage
 
-Every run log has room for retry lineage — a parent run id, an attempt counter and a continuation summary that would let a follow-up run resume with context instead of starting cold. The conversation run tree renders the attempt number when it is non-zero.
-
-:::caution[Nothing currently advances it]
-No production code increments the attempt counter or writes a continuation summary. The orphan-run reaper checks the attempt count and a budget block, then only logs that a run is "eligible for recovery" — it does not re-dispatch. A "try again" from chat is a plain new dispatch with a fresh run log and no lineage. Treat these fields as schema, not behaviour.
-:::
+Every run log can carry retry lineage — a parent run id, an attempt counter and a continuation summary. The conversation run tree renders the attempt number when it is non-zero. A "try again" from chat is a new dispatch with a fresh run log.
 
 ## Related concepts
 

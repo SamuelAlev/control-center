@@ -19,13 +19,15 @@ A pipeline is a DAG of steps. Templates define the graph; runs are executions. F
 
 1. Go to **Settings → Workspace → Pipeline templates**
 2. Click **New template**
-3. Enter a **Template ID**: `code_quality_check`
-4. Click **Create**
 
-The editor opens. Two things differ from what "new template" usually means:
+The editor opens on a seeded skeleton named **New pipeline** (id `pipeline_N`).
+Click the title in the header and rename it — for this tutorial,
+`code_quality_check` is a good name. There is no id dialog and no description
+field.
 
-- The dialog asked for an id and nothing else. The id is also the template's name until you rename it and there is no description field.
-- The canvas is not blank. A new template comes pre-wired as **Trigger → Step → terminal**, where "Step" is a prompt-agent node and the terminal is an invisible sentinel that marks the end of the run.
+The canvas is not blank. A new template comes pre-wired as **Trigger → Step →
+terminal**, where "Step" is a prompt-agent node and the terminal is an
+invisible sentinel that the editor rewires to every reachable sink.
 
 You configure the Step that is already there.
 
@@ -45,8 +47,10 @@ Press **Save** in the editor header.
 
 ## Step 4: Allow manual runs
 
-1. Click the **Trigger** node on the canvas. Its panel is the **Triggers** panel, not the generic node config.
-2. Turn on **Manual run** — "Show on the run page and start by hand."
+1. Click the dashed **Add a trigger** tile on the canvas (or drag **Manual run**
+   from the Triggers section of the node library) and pick **Manual run**.
+2. Select that node. In the inspector on the right, turn on **Enabled** —
+   "Show on the run page and start by hand."
 
 This is not optional and it is easy to miss. A new template is created with **no trigger row at all**, so until you turn this on the run page will not list it and there is nothing to start. The switch writes the trigger immediately; it does not wait for another save.
 
@@ -76,11 +80,13 @@ Click the step in the run to open its detail panel:
 
 ## Adding more steps
 
-Nodes are added by **dragging** an entry from the node library on the left onto the canvas — there is no add-step button. Edges are made in the node's config panel, not on the canvas: select the new node and tick its upstream step under **Triggers from**. The canvas has no port dragging.
+Nodes are added by dragging an entry from the node library on the left onto
+the canvas, or by pressing **Add step** (`+`) just past a node. Drag from a
+node's output port onto another node to connect them, or select the new node
+and tick its upstream step under **Triggers from**.
 
-:::caution[Mind the terminal sentinel]
-The terminal node is not drawn on the canvas and cannot be selected, so its wiring cannot be changed from the editor. It was seeded pointing at the template's first Step and a run finishes as soon as the terminal's incoming branch completes. A node you add _downstream_ of that Step will therefore not run — the run ends first. Until the terminal is repointable from the editor, extend a pipeline by editing the stored template, or start from one of the built-in templates, which are already wired end to end.
-:::
+The terminal node is not drawn and cannot be selected. The editor rewires it
+to every reachable sink, so a node you add after the seeded Step still runs.
 
 ## Recap
 

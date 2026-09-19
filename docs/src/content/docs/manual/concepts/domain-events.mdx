@@ -26,15 +26,16 @@ have to know that notifications exist. Ticketing would import pipelines so a
 completed ticket could advance a run. The dependency graph closes into a knot,
 and the shared kernel stops being shared.
 
-Publishing an event breaks that. The notification path subscribes to eleven
+Publishing an event breaks that. The notification path subscribes to twenty-one
 event classes and imports none of the features that raise them. The pipeline
 trigger dispatcher subscribes to the whole bus and knows nothing about pull
 requests, tickets, or meetings. Observability aggregates run outcomes without
 reaching into dispatch.
 
 The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. Several event classes
-in the catalog are published today with no subscriber at all.
+and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
+is the standing example: it is declared, covered by tests, and never wired in
+production.
 
 ## What the bus is not
 
@@ -44,25 +45,27 @@ It is worth being precise about one thing the bus does _not_ own.
 operation is audited by default — `RepoOp.audited` defaults to true and an
 operation opts out only by declaring `audited: false`, a deliberate act visible
 on the operation itself. The dispatcher appends the "who did what, from where"
-row directly after a successful call. A `DomainEventAuditBridge` exists in the
-shared kernel, but it is never constructed, so nothing bridges events into that
-trail.
+row directly after a successful call. There is no `DomainEventAuditBridge`.
+`ActivityLogPersister` writes `activity_log` rows from `ActivityLogged` events;
+that is a separate feed from the RPC audit.
 
 The event bus _is_ the transport for notifications and for automation. It is not
 the bookkeeping system of record.
 
 ## What the bus does drive
 
-- **Notifications.** Eleven event classes are turned into `notifications/*` wire
-  frames by the server, recorded into a durable per-workspace feed and
-  broadcast to connected sessions. The workspace filter is applied client-side;
-  only the durable feed is structurally workspace-scoped.
+- **Notifications.** Twenty-one event classes are turned into `notifications/*`
+  wire frames by the server, recorded into a durable per-workspace feed and
+  broadcast to connected sessions. A frame whose `workspace_id` names a
+  workspace the session user is not a member of is dropped on the server; the
+  client then filters the remainder to the workspace it is looking at.
 - **Event-driven automation.** Pipeline triggers subscribe to the bus and
   auto-start matching pipelines (see below).
 - **Lifecycle reactions.** Creating a workspace seeds its CEO and specialist
-  agents plus the built-in pipeline templates. A completed agent run resumes a
-  suspended pipeline step, closes a task and feeds the goal supervisor. A merged
-  PR or a deleted space triggers worktree garbage collection.
+  agents, the built-in pipeline templates, and the starter eval suites. A
+  completed agent run resumes a suspended pipeline step, closes a task, feeds
+  the goal supervisor, can wake a named checker, and can re-trigger a team
+  leader. A merged PR or a deleted space triggers worktree garbage collection.
 - **Cross-vendor sync.** Local ticket changes are pushed out to configured
   vendors by a coordinator listening for five ticket events.
 
@@ -70,22 +73,23 @@ the bookkeeping system of record.
 
 Events span the whole product surface. At a high level:
 
-- **Workspaces, agents and repos** — workspace creation, run completion, repo registration
-- **Pull requests** — publishing, status changes, merges, review requests, mentions, externally detected PRs
-- **Messaging** — messages, spaces, conversations and space provisioning progress
-- **Tickets** — the full lifecycle plus external webhook intake
+- **Workspaces, agents and repos** — workspace creation, run completion, repo registration, skill updates
+- **Pull requests** — publishing, status changes, merges, review requests, mentions, authored-PR watch, externally detected PRs
+- **Messaging** — messages, spaces and space provisioning progress
+- **Tickets** — create, assign, reassign, details, status and the three terminal outcomes
 - **Tasks** — sequenced lifecycle frames for one dispatched run, so clients can order and de-duplicate them
-- **Pipelines** — run and step start / finish / fail, the backbone of run tracking
-- **Orchestration and plan documents** — proposals, revisions, approvals, execution
-- **Artifacts** — work products published and revised by runs
-- **Memory** — facts, beliefs and conflicts as the memory system consolidates
-- **Approvals** — escalations routed to the people who can resolve them
-- **Observability** — audit entries, worktree merges, budget thresholds
-- **Identity and membership** — users, members, roles, invites and device revocation
-- **Calendar and meetings** — syncs, auth expiry, meetings starting and recordings finishing
+- **Pipelines** — terminal run events only (completed, cancelled, failed)
+- **Observability** — activity-log entries and budget thresholds
+- **Identity and membership** — member added, removed, role changed
+- **Calendar and meetings** — auth expiry, meetings starting and recordings finishing
+- **Rigs** — take-over, reap and unexpected close
 
-For the complete catalog — all 75 concrete event classes, their payloads and
-the 19 subscribers that consume them — see the
+Memory, orchestration, plan documents, artifacts, approvals, ticket-sync intake,
+calendar refresh, worktree merges, user creation, invites and device revocation
+are not domain events; see the reference.
+
+For the complete catalog — all 53 concrete event classes, their payloads and
+the 24 subscribers that consume them — see the
 [Domain events reference](/manual/reference/domain-events/). That page is the
 inventory; this one is the model.
 
@@ -99,10 +103,13 @@ device table and drops any live session whose device left the active set, within
 seconds.
 
 **Removing a member does not close the socket.** `WorkspaceMemberRemoved` is
-published but has no subscriber. What denies the removed member is the role
-gate, which re-resolves membership on **every** call — so their next request is
-refused with "Not a member of this workspace". The effect is immediate for
-anything they try to do; it just is not achieved by hanging up on them.
+consumed: `LocalRpcServer` and `RemoteRelayHost` drop that user's attached
+workspace subscriptions, and `RemoteEventForwarder` invalidates its membership
+cache so further frames for that workspace are not pushed. What denies the next
+RPC is still the role gate, which re-resolves membership on **every** call — so
+their next request is refused with "Not a member of this workspace". The effect
+is immediate for anything they try to do; it just is not achieved by hanging up
+on them.
 
 ## Pipeline triggers
 
@@ -115,20 +122,13 @@ Pipeline triggers subscribe to domain events and auto-start matching pipelines.
 4. Starts a run for each trigger that survives
 
 The important constraint is step 1. The bus carries 53 event types; the
-add-trigger picker offers **16** of them (`EventPayloadMapper.knownEventTypes`):
+add-trigger picker starts a run for these fourteen (`EventPayloadMapper`
+payload branches):
 `ExternalPrDetected`, `PullRequestPublished`, `PullRequestStatusChanged`,
-`PrMerged`, `MessageReceived`, `TicketCreated`, `TicketAssigned`,
-`TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`,
+`PrMerged`, `MessageReceived`, `TicketAssigned`,
+`TicketCompleted`, `TicketFailed`, `TicketCancelled`,
 `BudgetThresholdCrossed`, `RepoAdded`, `MeetingRecordingStopped`, `SkillUpdated`
 and `SpaceDeleted`. Nothing else can start a pipeline.
-
-:::caution[Two of those can never fire]
-The picker's list and the payload mapper's branches are two separate lists, and
-`TicketCreated` and `TicketStatusChanged` are on the first but not the second —
-so **14 of the 16 actually carry a payload**. The dispatcher bails before it ever
-looks up triggers for the other two. A trigger on either is selectable, saveable
-and permanently inert.
-:::
 
 ## How a client sees any of this
 
@@ -145,7 +145,7 @@ into the notification feed and raise no toast.
 ## See also
 
 - [Pipelines and automation](/manual/concepts/pipelines/): what a trigger starts
-- [Tickets and delegation](/manual/concepts/tickets/): why `TicketAssigned` dispatches nothing
+- [Tickets and delegation](/manual/concepts/tickets/): assignment to an agent vs a team
 - [Architecture](/manual/concepts/architecture/): how events fit the dependency rule
 - [Domain events reference](/manual/reference/domain-events/): the complete catalog and its subscribers
 - [Set up pipeline triggers](/manual/guides/pipeline-triggers/)

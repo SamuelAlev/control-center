@@ -9,12 +9,12 @@ This guide shows you how to work with an agent in a space.
 
 1. Navigate to **Spaces** in the sidebar
 2. Click the **+** button beside the Spaces heading
-3. Type a **name** — this is required. Leaving it empty cancels the dialog
-   silently
-4. Add one or more agents from the workspace
-5. If the workspace has more than one repo, a repo picker appears. It starts with
-   every repo selected; narrow it to the repos this space should provision
-   worktrees for
+3. Type a **name** — this is required. An empty name is refused;
+   the dialog stays open
+4. Optionally add agents from the workspace
+5. If the workspace has any repo, a repo picker appears. It starts with every
+   repo selected; narrow it (including deselecting a single repo) to the repos
+   this space should provision worktrees for
 6. Confirm
 
 Control Center opens the space and starts provisioning a copy-on-write worktree
@@ -35,21 +35,24 @@ message.
 ## Steer a running agent
 
 While an agent is working, plain conversational text does **not** queue a new turn.
-It is injected into the live run at the next turn boundary and you get a
-"Sent to the running agent as steering." toast.
+It becomes a queued steering card in the strip above the composer and is injected
+into the live run at the next turn boundary. There is no toast — the card is the
+feedback.
 
 Three things change that behaviour:
 
 - A message containing an **@mention** is always sent as a message, never as
   steering
 - A message starting with a **slash command** is always handled as that command
+- A message with an **attachment** is always sent as a message — the steering
+  queue is text-only
 - If every live run has already finished, the text falls through and is sent as a
   normal message
 
 :::note[Steering needs the built-in harness]
-Only the built-in Control Center harness has a steering lane. On an external CLI
-or ACP adapter the injection is not delivered and your text is sent as an ordinary
-message instead.
+Only the built-in Control Center harness injects mid-run. On the Claude Code
+adapter the text is still queued as a steering card; when the run ends, anything
+still queued is converted to a normal message.
 :::
 
 ## Approve a blocked action

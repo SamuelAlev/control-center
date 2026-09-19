@@ -1,6 +1,6 @@
 ---
 title: Calendar and scheduling
-description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope means for RSVP.
+description: How Control Center syncs Google Calendar on the server, why sign-in is a device-code grant and what the read-only scope covers.
 ---
 
 Control Center connects to Google Calendar so your day sits alongside your
@@ -10,22 +10,13 @@ summarized [meeting](/manual/concepts/meetings/).
 
 ## What it changes on Google
 
-Almost nothing. The integration pulls events in and renders them; it never
-creates, edits, or deletes calendar entries. The one write it can make is your
-own attendance response and even that is constrained by the scope the connect
-flow requests.
+Almost nothing. The integration pulls events in and renders them. It does not
+create, edit, delete, or respond to invitations. Every device-code connect,
+built-in or bring-your-own, requests `calendar.readonly` plus `openid email`.
 
 Events are synced into the workspace's own database **on the server**
 (`<dataDir>/<workspaceId>/workspace.db`) and rendered by every client over RPC.
 No client holds a Google credential.
-
-:::caution[RSVP fails on accounts connected through the built-in flow]
-The RSVP path is wired end to end — the control appears on events you were
-invited to and the server PATCHes the response on its own token. But the
-shipped device-code OAuth scope is `calendar.readonly` and writing an RSVP
-needs `calendar.events`. Google answers **403**. Until you connect through your
-own Google client that grants the write scope, treat RSVP as unavailable.
-:::
 
 ## Per-workspace accounts
 
@@ -61,8 +52,10 @@ revoked or long-expired session), publishes `CalendarAuthExpired` and surfaces a
 A build from source ships **no** Google credentials at all — you supply your own
 client id and secret. Official release builds bake in a non-confidential
 device-code client so the connect flow works out of the box; the server stores
-only a marker referencing it, never a copy and a `--google-client-id` you
-supply always takes precedence.
+only a marker referencing it, never a copy. `GOOGLE_OAUTH_CLIENT_ID` (and its
+secret) in the environment always takes precedence over the baked-in pair.
+There is deliberately no `--google-client-id` flag: unknown flags are ignored,
+and a secret on a command line is readable through `ps`.
 
 For running your own Google project, see
 [Connect a Google Calendar](/manual/guides/connect-calendar/).

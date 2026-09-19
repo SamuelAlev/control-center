@@ -133,10 +133,10 @@ void main() {
 
     testWidgets('renders unavailable adapter', (tester) async {
       const adapter = Adapter(
-        id: 'pi',
-        name: 'Pi',
-        description: 'Pi AI',
-        cliName: 'pi',
+        id: 'missing',
+        name: 'Missing CLI',
+        description: 'A runner that is not installed',
+        cliName: 'missing',
       );
 
       await _pump(tester, [
@@ -146,16 +146,16 @@ void main() {
         ),
       ]);
 
-      expect(find.text('Pi'), findsNWidgets(2));
+      expect(find.text('Missing CLI'), findsNWidgets(2));
       expect(find.text('Unavailable'), findsOneWidget);
     });
 
     testWidgets('renders checking adapter', (tester) async {
       const adapter = Adapter(
-        id: 'oc',
-        name: 'OpenCode',
-        description: 'OpenCode CLI',
-        cliName: 'opencode',
+        id: 'checking',
+        name: 'Checking CLI',
+        description: 'A runner still being probed',
+        cliName: 'checking',
       );
 
       await _pump(tester, [
@@ -165,7 +165,7 @@ void main() {
         ),
       ]);
 
-      expect(find.text('OpenCode'), findsNWidgets(2));
+      expect(find.text('Checking CLI'), findsNWidgets(2));
       expect(find.text('Checking'), findsOneWidget);
     });
 

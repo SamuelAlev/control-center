@@ -44,7 +44,7 @@ dependencies:
   cc_markdown:
     path: ../../packages/cc_markdown
   # Routing. Workspace-pinned version.
-  go_router: ^17.3.0
+  go_router: ^18.0.1
   # State management (mirrors the desktop app).
   flutter_riverpod: ^3.3.2
   # Browser DOM/IndexedDB bindings (the pairing store + boot-fragment capture)

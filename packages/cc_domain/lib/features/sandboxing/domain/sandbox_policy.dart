@@ -286,7 +286,7 @@ class SandboxPolicyResolver {
     // chat: full bind-mount writes. review/plan/orchestrate: fully read-only
     // bind mounts (the `plans/` carve-out is gone — plan artifacts are delivered
     // by `submit_plan`, never by writing a file). HOME + /tmp + run-dir are
-    // always writable (the CLI needs ~/.pi, ~/.claude, fnm node-versions, etc.).
+    // always writable (the CLI needs ~/.claude, fnm node-versions, etc.).
     final allowWrite = <String>{};
     final readOnlyMounts = <String>{};
     // Whether the worktree is writable is NOT decided here — it is read from

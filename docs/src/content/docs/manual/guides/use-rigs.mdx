@@ -20,15 +20,15 @@ surfaces need host setup:
 | Surface | Runs on | Setup |
 |---|---|---|
 | **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
-| **Browser (VM)** | A microVM booting a pinned headless-Chromium image | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Enclosures** |
+| **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
+| **Computer (VM)** | QEMU with a Linux desktop image | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
 | **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
-| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Enclosures** |
+| **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
 
 The terminal and browser machines boot from digest-pinned images: the exact
 bytes are named in advance, fetched once on first boot, and cached — after the
 first boot of each kind, later machines skip the download entirely and come up
-in seconds. **Settings → Server → Enclosures** shows what your server can boot
+in seconds. **Settings → Server → Rigs** shows what your server can boot
 and every machine running right now.
 
 An installed desktop image stays manageable from the same page: **Import**
@@ -40,7 +40,7 @@ fresh build.
 There is no image of ours for Android or iOS, and that is not an omission.
 Android system images come from Google's SDK; iOS runtimes come from Xcode.
 For Android, install Android Studio (or the command-line SDK tools), add a
-virtual device in **Device Manager**, and start it. The Enclosures page then
+virtual device in **Device Manager**, and start it. The Rigs page then
 reports Android as available.
 
 It also tells you exactly which step you are missing — no SDK, no emulator, no
@@ -53,7 +53,7 @@ export ANDROID_HOME="$HOME/Library/Android/sdk"
 ```
 
 For iOS, the server itself must run on macOS with Xcode and an iOS Simulator
-runtime installed. Open **Settings → Server → Enclosures** and press
+runtime installed. Open **Settings → Server → Rigs** and press
 **Install iOS automation bridge**. The server fetches the checksum-pinned
 WebDriverAgent artifact, verifies it, and installs it into the server-owned
 automation store. No simulator boots during setup.
@@ -61,10 +61,10 @@ automation store. No simulator boots during setup.
 ## Open a machine
 
 Machines live as **tabs**, next to the chat and the diff — in a space or on a
-PR page, in the same `+` menu as Terminal and Browser:
+PR page, in the same `+` menu, under **Machines**:
 
-- **Computer (VM)** — a Linux desktop
-- **Browser (VM)** — Chromium, Firefox or WebKit
+- **Computer** — a Linux desktop
+- **Chromium**, **Firefox** or **WebKit** — a browser
 - **Android** — the running Android emulator
 - **iOS Simulator** — a disposable simulator created for this conversation
 
@@ -72,10 +72,10 @@ Pick one and press **Start the machine**. The tab says which stage the boot is
 in ("Starting the microVM", "Waiting for the guest to come up") rather than
 just spinning.
 
-The tab is scoped to the conversation, and so is the agent tool. A Browser
-tab and `browser_use`, Android and `mobile_use`, or iOS Simulator and
-`ios_use` address the same default machine. Additional UI slots are separate
-comparison machines; agent tools always use the default.
+The tab is scoped to the conversation, and so is the agent tool. A Chromium,
+Firefox or WebKit tab and `browser_use`, Android and `mobile_use`, or iOS
+Simulator and `ios_use` address the same default machine. Additional UI slots
+are separate comparison machines; agent tools always use the default.
 
 To build, install and start a Flutter app on Android:
 
@@ -113,14 +113,15 @@ A rig tab does not start a machine by itself, including during layout restore.
 That rule prevents an app launch from unexpectedly booting VMs or creating
 simulator devices.
 
-## Take the controls
+## Drive the machine
 
-Press **Take control** in the tab's header. The agent keeps watching and can
-still take screenshots, but it cannot type or click until you hand back. The
-status tag changes to **You have control** and everything you do is recorded
-against your name.
+The canvas is yours to type and click into whenever nobody else holds
+exclusive control — or when you do. While you hold that lock, the status tag
+reads **You have control**, the agent can still take screenshots, and the
+server refuses its mutating actions at the single chokepoint every action
+passes through. Everything you do is recorded against your name.
 
-Press **Hand back** when you are done, or the power button to stop the machine.
+Press **Stop the machine** when you are done.
 
 Control is exclusive on purpose: two actors typing into one machine produces
 input neither of them meant.
@@ -140,6 +141,11 @@ left alone.
 
 Nothing syncs in the background. A password you copy on your own machine does
 not arrive inside a VM because a timer fired; it crosses when you paste.
+
+Paste into a rig is allowed by default. Copy out of a rig prompts first — a
+ten-minute grant, or **Always allow** under **Settings → Server → Rigs →
+Clipboard access**. The two directions are independent, and they follow you,
+not the workspace.
 
 **Drag files in.** Drop them anywhere on the canvas.
 
@@ -212,7 +218,7 @@ sharing, dev domains with HTTPS — is its own guide:
 ## Custom images
 
 A workspace can point the Terminal (VM) and Browser (VM) at its own images —
-under **Settings → Server → Enclosures → Custom images**. Typical use: extend
+under **Settings → Server → Rigs → Custom images (this workspace)**. Typical use: extend
 the default image with the toolchain your project needs so every terminal
 starts ready, or reuse an image your team already publishes.
 
@@ -227,12 +233,13 @@ What an image must provide:
   and `socat` — either preinstalled, or installable on first start (any
   Debian/Ubuntu-based image works: they are installed automatically). Guest
   port `7911` is reserved for the port forwarder.
-- **Browser (VM)** — an image with the headless-shell layout: the Chromium
-  binary at `/headless-shell/headless-shell`, plus `bash` and `socat`. The
-  easiest way to get that is to build `FROM chromedp/headless-shell:stable`
-  and add what you need. The server starts the browser itself and expects its
-  DevTools endpoint to be relayed on guest port `9222` — with that layout, it
-  wires this up for you. Guest ports `9222`/`9223` are reserved.
+- **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
+  `chromium` binary. The server starts Chromium itself as
+  `chromium --headless=new` and relays DevTools from guest `9223` onto
+  `9222`. PulseAudio and ffmpeg are installed on first start. Do not build
+  `FROM chromedp/headless-shell` — that binary has no audio. The override
+  applies to Chromium rigs only; Firefox and WebKit ignore it and boot the
+  pinned Debian image. Guest ports `9222`/`9223` are reserved.
 
 Two recommendations: pin the reference by digest (`@sha256:…`) so the bytes
 cannot change under you, and host it on Docker Hub or GitHub Container
@@ -244,22 +251,25 @@ pull.
 
 Rigs are meant to be temporary:
 
-- **Idle** — after ~15 minutes with nothing happening it parks (frozen, wakes
-  instantly on the next action). After twice that, it closes.
+- **Idle** — after ~15 minutes with nothing happening a browser, desktop or
+  mobile rig parks (frozen, wakes instantly on the next action). An enclosed
+  terminal waits 45 minutes. After twice the idle window, it closes.
 - **Time limit** — every rig has a hard lifetime it cannot extend, whatever it
   is doing.
 - **Memory** — if the server needs room for a new rig it closes the
   least-recently-used one. A rig somebody is driving, watching, or has a terminal
   open in is never taken.
 
-When an enclosed rig closes, its disk is discarded. A mobile rig deletes the
-emulator device it owns. Carry anything you want to keep back first.
+When an enclosed rig closes, its disk is discarded. Closing an Android rig
+detaches from the host emulator — it does not delete it. An iOS rig deletes
+the CoreSimulator device it created. Carry anything you want to keep back first.
 
 ## What a rig can reach
 
-Enclosed terminal, browser and desktop rigs default to no outbound access. You
-grant hosts explicitly, and the guest's only route is a gate that enforces that
-list. The credential broker uses the same list.
+Enclosed terminal, browser and desktop rigs default to a deny-by-default
+egress gate: you grant hosts explicitly, and the guest's only route is a gate
+that enforces that list. A browser rig also admits the product site
+(`usectrl.dev`) out of the box. The credential broker uses the same list.
 
 Two honest caveats:
 
@@ -273,7 +283,7 @@ Two honest caveats:
   string.
 
 You can see everything running, and stop any of it, under **Settings → Server →
-Enclosures**.
+Rigs**.
 
 ## Related
 

@@ -6274,6 +6274,43 @@ class AppLocalizationsPt extends AppLocalizations {
   String get editorEmptyCanvas => 'Arraste um nó da biblioteca para começar.';
 
   @override
+  String get pipelineWhenThisHappens => 'Quando isso acontecer';
+
+  @override
+  String get pipelineDoThis => 'Fazer isso';
+
+  @override
+  String get pipelineAddStep => 'Adicionar passo';
+
+  @override
+  String get pipelineTidyUp => 'Organizar o layout';
+
+  @override
+  String get pipelineEditorHint =>
+      'Arraste os passos para organizar · arraste uma alça para conectar';
+
+  @override
+  String get pipelineRemoveConnection => 'Remover conexão';
+
+  @override
+  String get pipelineDragToConnect => 'Arraste para conectar';
+
+  @override
+  String get pipelineNewDefaultName => 'Novo pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Gatilhos';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Adicionar um gatilho';
+
+  @override
+  String get pipelineOnEvent => 'Em evento';
+
+  @override
   String get nodeConfigTitle => 'Configuração do nó';
 
   @override
@@ -6520,6 +6557,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'É gerado um URL de webhook assinado. Sistemas externos fazem POST para iniciar este pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Caminho do webhook';
+
+  @override
   String get triggerEventFieldLabel => 'Evento';
 
   @override
@@ -6647,6 +6687,87 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket atribuído';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket criado';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Status do ticket alterado';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Gravação da reunião interrompida';
+
+  @override
+  String get triggerEventSkillUpdated => 'Habilidade atualizada';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Espaço excluído';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Um pull request aberto no host de código, não no Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Um pull request aberto no Control Center ou por um agente.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Mesclado, fechado, aberto, reaberto ou aprovado. Filtre por status no inspetor.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Somente quando o pull request é mesclado, não fechado nem reaberto.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Um repositório é vinculado a este espaço de trabalho.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Um arquivo em um repositório vinculado muda no disco.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Uma nova mensagem chega em um espaço.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Um ticket é criado neste espaço de trabalho.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Um ticket muda de status.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Um ticket termina com sucesso.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Uma execução do agente falhou e o ticket é marcado como falho.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Um ticket é cancelado e não continuará.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Um limite de gasto do espaço de trabalho ou do agente é ultrapassado.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Um ticket é atribuído a uma pessoa, um agente ou uma equipe.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'A gravação de uma reunião termina.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Uma habilidade é instalada ou atualizada.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Um espaço de conversa é excluído.';
 
   @override
   String get navTickets => 'Tickets';

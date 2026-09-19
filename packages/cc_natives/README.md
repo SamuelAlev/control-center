@@ -19,12 +19,13 @@ things quietly got worse.
 | ---------------- | --------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------- |
 | **rift**         | `rift_ffi`                              | Copy-on-write git worktrees (APFS clonefile / reflink)                            | `RiftException(code: 'unavailable')`¹ |
 | **fff**          | `fff_c`                                 | Fast file search with frecency ranking                                            | `FffUnavailable`                      |
-| **tree-sitter**  | `tree-sitter` + `tree-sitter-<lang>` ×5 | Code indexing / AST extraction                                                    | `TreeSitterUnavailable`               |
+| **tree-sitter**  | `tree-sitter` + `tree-sitter-<lang>`    | Code indexing / AST extraction                                                    | `TreeSitterUnavailable`               |
 | **cc_watcher**   | `cc_watcher`                            | Recursive file watching (FSEvents / ReadDirectoryChangesW / ignore-aware inotify) | `WatcherUnavailable`                  |
 | **pty**          | `ccpty`                                 | Pseudo-terminal for the Flutter-free agent executor                               | `PtyUnavailable`                      |
 | **aec**          | `aec_ffi`                               | Acoustic echo cancellation (WebRTC AEC3) for meetings                             | `AecUnavailable`                      |
 | **lame**         | `lame_ffi`                              | MP3 encoding for the generative soundscape                                        | `LameUnavailable`                     |
 | **cc_inference** | `cc_inference`                          | Embeddings (semantic search) + transcription, diarization, VAD, dictation         | boot refused                          |
+| **cc_saml**      | `cc_saml`                               | SAML SSO: XML-DSig, canonicalization, profile validation                          | boot refused                          |
 
 ¹ rift is the **one platform exemption**: Windows has no MSVC copy-on-write
 backend, so it is deliberately not built there and plain `git worktree` is the
@@ -76,22 +77,20 @@ non-negotiable:
 
 ### Where the matrix is written down
 
-The same required set is stated four times, for four audiences. Change them
-together:
+The required set lives in **one** file, `scripts/lib/natives.sh`. Packaging
+(`verify_natives.sh`, `cc_server_package.sh`) reads it; the boot preflight in
+`packages/cc_server_core/lib/src/runtime/server_native_preflight.dart` is a
+probe-closure table that cannot be generated from the shell, so
+`test/tooling/native_matrix_test.dart` pins the two together. Grammar rows
+must also match `kLanguageByExtension` in
+`packages/cc_natives/lib/src/code_index/code_languages.dart` (20 language ids).
 
-| File                                                                                 | Audience                   |
-| ------------------------------------------------------------------------------------ | -------------------------- |
-| `packages/cc_server_core/lib/src/cc_server_runtime.dart` (`nativeRequirement` table) | the running server         |
-| `packages/cc_server_core/lib/src/native_preflight.dart`                              | how the table is evaluated |
-| `scripts/release/cc_server_package.sh` (`require_native`)                            | the server archive         |
-| `scripts/release/verify_natives.sh`                                                  | the desktop bundles        |
-
-`cc_watcher` is also the one native whose _source_ lives in this repo
-(`native/watcher/`, a Rust cdylib over the `notify` crate, cargo-built by
-`scripts/natives/build_watcher.sh`). Its `package:watcher` alternative was
-deliberately deleted rather than kept as a fallback: it scans the whole tree per
-checkout and cannot skip `node_modules`, which froze the server isolate for a
-measured 65 seconds on a real worktree fleet. See
+Three in-repo Rust crates live here: `native/watcher/` (`cc_watcher`, over
+`notify`), `native/inference/` (`cc_inference`, sherpa-onnx + ONNX Runtime)
+and `native/saml/` (`cc_saml`). `cc_watcher`'s `package:watcher` alternative
+was deliberately deleted rather than kept as a fallback: it scans the whole
+tree per checkout and cannot skip `node_modules`, which froze the server
+isolate for a measured 65 seconds on a real worktree fleet. See
 [`native/watcher/README.md`](native/watcher/README.md).
 
 ## How loading works
@@ -109,10 +108,11 @@ The single source of truth for "where might this dylib live" is
 
 There are exactly **two locations a given dylib lives**, by context:
 
-- **Dev:** the app-support root next to `control_center.db`
+- **Dev:** the app-support data dir next to `global.db`
   (`~/Library/Application Support/com.alev.control-center/` on macOS), where
   `scripts/natives/build_*.sh` installs it. This is the _only_ dev location —
-  there is no repo-local `macos/Frameworks/` copy.
+  there is no repo-local `macos/Frameworks/` copy. The historical
+  `control_center.db` name is no longer written.
 - **Release:** inside the signed app bundle's `Contents/Frameworks/` (macOS),
   `<bundle>/lib/` (Linux), or beside the exe (Windows). The release packaging
   (`scripts/release/macos_package.sh` et al.) copies the staged dylibs there
@@ -136,6 +136,7 @@ scripts/natives/build_natives.sh            # all of them → <repo>/build/nativ
 scripts/natives/build_rift.sh               # one at a time
 scripts/natives/build_watcher.sh            # the in-repo Rust watcher crate
 scripts/natives/build_inference.sh          # the in-repo Rust inference crate
+scripts/natives/build_saml.sh               # the in-repo Rust SAML crate
 ```
 
 `build_inference.sh` pre-fetches the prebuilt sherpa-onnx **static** archive,
@@ -171,7 +172,8 @@ manager via `native/watcher/Cargo.toml`.
 This is intentionally a plain Dart package, **not** an `ffiPlugin`. Converting it
 would move native compilation into `flutter build`, make cargo/meson/ninja/a
 C++ toolchain mandatory for every contributor
-and every build, collapse tree-sitter to a single build-time dylib (killing the
-runtime grammar-download feature) and destroy the fast install-to-app-support
+and every build, collapse tree-sitter to a single build-time dylib (instead of
+the per-language grammar libs the indexer resolves at boot) and destroy the
+fast install-to-app-support
 dev loop. The `architecture_constraints_test.dart` guard fails if anyone adds an
 `ffiPlugin` declaration here.

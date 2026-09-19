@@ -11,7 +11,7 @@ and review and merge what they ship, from one quiet, well-instrumented deck.
 
 [![macOS](https://img.shields.io/badge/macOS-13%2B-1f1f1f?style=flat-square&logo=apple&logoColor=white)](#install)
 [![Built with Flutter](https://img.shields.io/badge/Built%20with-Flutter-1f1f1f?style=flat-square&logo=flutter&logoColor=white)](https://flutter.dev)
-[![MCP](https://img.shields.io/badge/MCP-109%20tools-fa500f?style=flat-square)](#works-with-the-tools-you-already-run)
+[![MCP](https://img.shields.io/badge/MCP-110%20tools-fa500f?style=flat-square)](#works-with-the-tools-you-already-run)
 [![i18n](https://img.shields.io/badge/i18n-7%20languages-1f1f1f?style=flat-square)](#)
 [![Docs](https://img.shields.io/badge/docs-usectrl.dev-fa500f?style=flat-square)](https://usectrl.dev/manual)
 [![License: MIT](https://img.shields.io/badge/license-MIT-1f1f1f?style=flat-square)](LICENSE)
@@ -168,7 +168,7 @@ minted per launch and revoked on teardown and every mutating action checked.
 - Copy-on-write worktrees, so agents never touch your source checkout
 - Secrets brokered in memory, never written to disk
 - One action-guardrail policy over a closed set of action classes (allow / prompt / deny, scoped to workspace, space or agent — most specific wins) that fails closed
-- 109 typed tools over MCP / JSON-RPC for any client
+- 110 typed tools over MCP / JSON-RPC for any client
 
 [Sandbox security →](https://usectrl.dev/manual/concepts/sandbox-security/) · [MCP server →](https://usectrl.dev/manual/guides/mcp-server/)
 
@@ -253,7 +253,7 @@ A ⌘K omnibox spans every action, entity and agent. A "needs me" inbox collects
 | **Linear**                                | Bidirectional ticket sync: status, assignee and comments                                                                                                                |
 | **Slack**                                 | Chat bridge: @-mention the bot, follow a live task card in-thread, file tickets with `/cc`. Discord and Teams incoming                                                  |
 | **Google Calendar**                       | Per-workspace event sync, RSVP, "starting soon" alerts and record-and-link                                                                                              |
-| **MCP**                                   | 109 typed tools over JSON-RPC, callable by any MCP client, plus a client that bridges in external MCP servers                                                           |
+| **MCP**                                   | 110 typed tools over JSON-RPC, callable by any MCP client, plus a client that bridges in external MCP servers                                                           |
 | **Agent runtimes**                        | A built-in agent runtime (direct provider API, no external CLI), plus Claude Code, Codex and Pi auto-detected on the server host's `PATH` and any ACP-compatible runner |
 | **[Remote](https://remote.usectrl.dev/)** | The phone companion: messages, replies and ticket triage from anywhere, over a direct path or an end-to-end-sealed relay                                                |
 

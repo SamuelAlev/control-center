@@ -19,10 +19,10 @@ void main() {
   tearDown(() async => client.close());
 
   const adapter = Adapter(
-    id: 'pi',
-    name: 'Pi',
+    id: 'claude-code',
+    name: 'Claude Code',
     description: 'd',
-    cliName: 'pi',
+    cliName: 'claude',
   );
 
   group('RpcAdapterRepository.detectOne', () {
@@ -30,7 +30,7 @@ void main() {
       host.callResults['adapter.detectOne'] = {
         'status': 'found',
         'version': '1.2.3',
-        'path': '/usr/bin/pi',
+        'path': '/usr/bin/claude',
         'capabilities': {
           'supports_json_mode': true,
           'supports_model_selection': false,
@@ -40,7 +40,7 @@ void main() {
       final d = await repo.detectOne(adapter);
       expect(d.status, DetectionStatus.found);
       expect(d.version, '1.2.3');
-      expect(d.path, '/usr/bin/pi');
+      expect(d.path, '/usr/bin/claude');
       expect(d.capabilities?.supportsJsonMode, isTrue);
     });
 
@@ -64,8 +64,8 @@ void main() {
       await repo.detectOne(adapter);
       final call = host.lastCall('adapter.detectOne')!;
       final adapterArg = call.args['adapter'] as Map<String, dynamic>;
-      expect(adapterArg['id'], 'pi');
-      expect(adapterArg['cli_name'], 'pi');
+      expect(adapterArg['id'], 'claude-code');
+      expect(adapterArg['cli_name'], 'claude');
     });
   });
 
@@ -73,18 +73,18 @@ void main() {
     test('decodes a list of detected adapters', () async {
       host.callResults['adapter.detectAll'] = {
         'detected': [
-          {'adapter_id': 'pi', 'status': 'found', 'version': '1.0'},
-          {'adapter_id': 'claude', 'status': 'notFound'},
+          {'adapter_id': 'claude-code', 'status': 'found', 'version': '1.0'},
+          {'adapter_id': 'cc-harness', 'status': 'notFound'},
         ],
       };
       final repo = RpcAdapterRepository(client);
       final results = await repo.detectAll([
         adapter,
         const Adapter(
-          id: 'claude',
-          name: 'Claude',
+          id: 'cc-harness',
+          name: 'Control Center',
           description: '',
-          cliName: 'claude',
+          cliName: 'cc-harness',
         ),
       ]);
       expect(results.length, 2);

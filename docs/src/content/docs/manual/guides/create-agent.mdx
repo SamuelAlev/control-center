@@ -10,13 +10,13 @@ Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `en
 ## Before you start
 
 - You are inside a workspace. The whole surface lives at **Settings → Workspace → Agents** (`/settings/workspace/agents`).
-- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install an agent CLI on the machine hosting `cc_server`.
+- The agent will need a backend. Either connect a provider for the built-in harness under **Settings → Server → Model providers**, or install the Claude Code CLI on the machine hosting `cc_server`.
 - If you want the agent to carry skills, install them first under **Settings → Workspace → Skills**. The agent form only lets you toggle skills that already exist in the workspace.
 
 ## Add the agent
 
 1. Open **Settings → Workspace → Agents**.
-2. Click **Add agent**.
+2. Click **New agent**.
 
 There is no dialog and no role picker. An agent named "Unnamed agent" is created immediately and selected in the detail pane on the right.
 
@@ -26,26 +26,20 @@ You should now see "Unnamed agent" in the roster on the left, with the **Setting
 
 - **Name** — the short identifier used in @-mentions, for example `alice`. Mention parsing matches `@` followed by word characters, so a name containing a hyphen, a dot or a space can never be mentioned.
 - **Title** — the human-readable label, for example "Senior coder".
-- **System prompt** — optional, replaces the default instructions for this agent.
+- **System prompt** — optional extra instructions, injected as an Agent instructions section; they do not replace the rest of the assembled prompt.
 
 Click **Save changes** at the bottom of the form. Every field on this page is saved by that one button.
 
 ## Give it an adapter and a model
 
-The **Adapter** dropdown lists all eight built-in adapters, whether or not their CLI was found on the server host:
+The **Adapter** dropdown lists runners the server host actually has. The built-in adapter is always found (it is the server). Claude Code appears only when its CLI was detected on that host:
 
-| Adapter                   | Backend                                       |
-| ------------------------- | --------------------------------------------- |
-| Control Center (built-in) | The in-process agent loop — no external CLI   |
-| Pi                        | `pi` CLI                                      |
-| Claude Code               | `claude -p --output-format stream-json`       |
-| Codex                     | `codex` over the Agent Client Protocol        |
-| Gemini CLI                | `gemini` over the Agent Client Protocol       |
-| Goose                     | `goose` over the Agent Client Protocol        |
-| OpenCode                  | `opencode` over the Agent Client Protocol     |
-| Cursor                    | `cursor-agent` over the Agent Client Protocol |
+| Adapter                   | Backend                                     |
+| ------------------------- | ------------------------------------------- |
+| Control Center (built-in) | The in-process agent loop — no external CLI |
+| Claude Code               | `claude -p --output-format stream-json`     |
 
-Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Every external CLI gives you none of those.
+Only the built-in adapter enforces modes, steering, pause/resume, completion contracts and subagents. Claude Code gives you none of those. Cursor, Codex and the other model providers attach to the built-in adapter, not as separate runners.
 
 :::note[An empty adapter means the built-in loop]
 An agent whose adapter is unset is dispatched to **Control Center (built-in)**, the loop inside the server, so nothing has to be installed on the host. With no model set either it asks Anthropic for its default, so an entirely unset agent runs only if you have connected an Anthropic account. The seeded specialists ship with neither; set both on any agent you intend to use.
@@ -61,7 +55,7 @@ You do not pick a repo's own skills here. A repo that ships them (in `.agents/sk
 
 ## Set the reporting line and persona
 
-- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header and it is the roster a team leader sees when it delegates.
+- **Reports to** — pick another agent by name. This builds the reporting tree shown by the **Org chart** button in the page header. It is not the roster a team leader uses when it delegates — that comes from the team's members and their skills.
 - **Persona** — free text that shapes tone and behaviour, for example: "Prefers simple, readable solutions. Writes tests for all new code."
 
 ## Tune the run
@@ -81,13 +75,11 @@ You do not pick a repo's own skills here. A repo that ships them (in `.agents/sk
 
 Each toggle is checked by the credential broker when the run launches: a capability that is off simply means the matching token is never minted into the run's environment.
 
-:::caution[The default is conservative and it is not the setting you see]
-An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on** — the server's own conservative default. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference that the server does not read at dispatch time. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
+:::caution[Workspace default means the server's conservative set]
+An agent left on "Use workspace default" runs with git push, GitHub API and ticketing all **off** and network **on**. The capability defaults shown under Settings → Server → Diagnostics & privacy are a client-side preference. If you want an agent to push or open PRs, turn the switch on and grant the capabilities explicitly.
 
-Note also that these capabilities gate _credentials and harness tools_, which is a separate layer from the OS sandbox. `cc_server` does wrap agent runs in the host's sandbox where one exists — but Windows has no backend and Linux and WSL2 need `bwrap` and `socat`, so on those hosts the capability flags and the guardrails are what you have. See [Sandbox and security](/manual/concepts/sandbox-security/) for the full set of boundaries.
+These capabilities gate credentials and harness tools, which is a separate layer from the OS sandbox. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/manual/concepts/sandbox-security/) for the full set of boundaries.
 :::
-
-**Strict identity check** is persisted but nothing reads it today; leaving it off changes nothing.
 
 ## Verify it runs
 
@@ -99,7 +91,7 @@ If no run appears at all, work through [Run agent diagnostics](/manual/guides/ag
 
 ## Delete an agent
 
-Select it in the roster and click **Delete** in the detail pane header.
+Select it in the roster. On the **Settings** tab, scroll to the **Danger zone** at the bottom of the form and click **Delete**.
 
 ## Related guides
 

@@ -13,17 +13,6 @@ import {
   dartDependencies,
 } from "./src/data/third-party.build.mjs";
 
-/**
- * Bakes the third-party manifest into a `virtual:third-party` module.
- *
- * The acknowledgements and licenses pages are generated from
- * `scripts/lib/third_party.sh` + `third_party/licenses/`, which live OUTSIDE
- * `docs/`. They cannot be read while a page renders: the Cloudflare adapter
- * prerenders inside a sandbox whose cwd is `/bundle` and which has no
- * filesystem, so an `fs` call there fails the build. Reading them here — in the
- * config, on the real build host — and inlining the result keeps one source of
- * truth with nothing generated into the repository.
- */
 function thirdPartyManifest() {
   const id = "virtual:third-party";
   const resolved = "\0" + id;
@@ -48,21 +37,13 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "Documentation \\\\ Control Center",
-      // Match the marketing design system (see src/styles/global.css).
       customCss: ["./src/styles/starlight.css"],
       components: {
-        // Brand mark + wordmark in the header, plus a ThemeSelect override
-        // that renders the marketing site's shared system/light/dark chooser.
         SiteTitle: "./src/components/starlight/SiteTitle.astro",
         ThemeSelect: "./src/components/starlight/ThemeSelect.astro",
-        // Append per-page JSON-LD (TechArticle + BreadcrumbList) on top of
-        // Starlight's built-in head tags.
         Head: "./src/components/starlight/Head.astro",
       },
       titleDelimiter: " \\\\ ",
-      // Self-host the same fonts as the marketing site; preload to avoid FOUT.
-      // Theme is handled by Starlight's ThemeProvider (no-flash) + the
-      // ThemeSelect override; dark tokens live in src/styles/starlight.css.
       head: [
         {
           tag: "link",
@@ -85,10 +66,6 @@ export default defineConfig({
           },
         },
       ],
-      // Code blocks themed to our warm surfaces + Fira Code. Both a light
-      // and dark theme are provided so Expressive Code syncs with data-theme;
-      // the surface colors are pinned to our --cc-* tokens (which flip), so
-      // only the syntax token colors differ between the two.
       expressiveCode: {
         themes: ["github-light", "github-dark"],
         styleOverrides: {
@@ -230,8 +207,8 @@ export default defineConfig({
                   slug: "manual/concepts/memory-knowledge",
                 },
                 {
-                  label: "Evals and replay",
-                  slug: "manual/concepts/evals-replay",
+                  label: "Evals and quality",
+                  slug: "manual/concepts/evals-and-quality",
                 },
               ],
             },
@@ -337,6 +314,11 @@ export default defineConfig({
                   slug: "manual/guides/add-repos",
                 },
                 {
+                  label:
+                    "Run scripts when a space's worktree is created or destroyed",
+                  slug: "manual/guides/repo-scripts",
+                },
+                {
                   label: "Manage workspace memory",
                   slug: "manual/guides/manage-memory",
                 },
@@ -382,8 +364,8 @@ export default defineConfig({
                   slug: "manual/guides/dispatch-reviewers",
                 },
                 {
-                  label: "Review Studio (cohorts and axes)",
-                  slug: "manual/guides/review-studio",
+                  label: "Review compute (cohorts and axes)",
+                  slug: "manual/guides/review-compute",
                 },
               ],
             },
@@ -508,6 +490,10 @@ export default defineConfig({
             {
               label: "Integrations",
               items: [
+                {
+                  label: "Connect a code host",
+                  slug: "manual/guides/connect-forges",
+                },
                 {
                   label: "Set up GitHub integration",
                   slug: "manual/guides/github-integration",

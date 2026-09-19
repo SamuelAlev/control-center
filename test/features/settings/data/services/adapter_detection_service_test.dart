@@ -12,6 +12,7 @@ void main() {
           name: 'Nonexistent',
           description: 'Does not exist',
           cliName: 'nonexistent-cli-tool-xyz',
+          transport: AdapterTransport.claudeCli,
         ),
       );
       expect(result.status, DetectionStatus.notFound);
@@ -27,6 +28,7 @@ void main() {
           name: 'Empty',
           description: 'Empty path test',
           cliName: '',
+          transport: AdapterTransport.claudeCli,
         ),
       );
       expect(result.status, DetectionStatus.notFound);
@@ -40,6 +42,7 @@ void main() {
           name: 'Invalid',
           description: 'Invalid CLI',
           cliName: '/dev/null/invalid/path/tool',
+          transport: AdapterTransport.claudeCli,
         ),
       );
       expect(result.status, DetectionStatus.notFound);

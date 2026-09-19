@@ -66,7 +66,7 @@ export const aboutPage: SitePageData = {
       id: 'next',
       title: 'Where to go next',
       html: `<ul>
-<li><a href="/">The landing page</a> — the four pillars and downloads.</li>
+<li><a href="/">The landing page</a> — the five pillars and downloads.</li>
 <li><a href="/manual/">The manual</a> — tutorials, how-to guides, concepts and reference.</li>
 <li><a href="/developers">Developers</a> — the MCP server, CLI and this site's machine-readable surface.</li>
 <li><a href="/contact">Contact</a> — how to reach the maintainers.</li>
@@ -114,7 +114,7 @@ export const developersPage: SitePageData = {
   title: 'Developers \\\\ Control Center',
   heading: 'Developers',
   description:
-    'Integrate with Control Center: 103 MCP tools over Streamable HTTP, the cc_server CLI and Docker images, and this site\u2019s own machine-readable surface — llms.txt, markdown twins, an OpenAPI document and a docs MCP server.',
+    'Integrate with Control Center: 110 MCP tools over Streamable HTTP, the cc_server CLI and Docker images, and this site\u2019s own machine-readable surface — llms.txt, markdown twins, an OpenAPI document and a docs MCP server.',
   intro:
     'Two surfaces, one page: the Control Center product you integrate with (its MCP tool server, CLI and Docker images) and this website itself, which is built to be read by agents — llms.txt, per-page markdown, an OpenAPI document and a docs MCP server.',
   sections: [
@@ -132,7 +132,7 @@ export const developersPage: SitePageData = {
     {
       id: 'mcp',
       title: 'The MCP server',
-      html: `<p>Control Center registers <strong>103 typed tools</strong> and serves them over the Model Context Protocol on the main <code>cc_server</code> listener — no separate port:</p>
+      html: `<p>Control Center registers <strong>110 typed tools</strong> and serves them over the Model Context Protocol on the main <code>cc_server</code> listener — no separate port:</p>
 <ul>
 <li><code>POST /mcp</code> — Streamable HTTP transport; the one clients speak.</li>
 <li><code>GET /sse</code> — server-sent notification stream.</li>
@@ -143,8 +143,8 @@ export const developersPage: SitePageData = {
     {
       id: 'cli',
       title: 'CLI and containers',
-      html: `<p><code>cc_server</code> is scriptable: every setting takes a CLI flag or an environment variable (flag wins), and subcommands cover device pairing (<code>cc_server pair</code>), Google Calendar connect and self-update (<code>cc_server update</code>). <a href="/manual/reference/cc-server-cli/">cc_server CLI</a> is the complete reference.</p>
-<p>Each release publishes four GHCR images — <code>cc-server</code>, <code>cc-webapp</code>, <code>cc-remote</code> and <code>cc-signaling-server</code> — with a compose file in <a href="/manual/guides/run-headless-server/">the headless-server guide</a>.</p>`,
+      html: `<p><code>cc_server</code> is scriptable: boot settings take a CLI flag or an environment variable (flag wins), and subcommands cover device pairing (<code>cc_server pair</code>), Google Calendar connect and self-update (<code>cc_server update</code>). Provider credentials are environment-only, never a flag. <a href="/manual/reference/cc-server-cli/">cc_server CLI</a> is the complete reference.</p>
+<p>Each release publishes five GHCR images — <code>cc-server</code>, <code>cc-webapp</code>, <code>cc-remote</code>, <code>cc-signaling-server</code> and <code>cc-server-demo</code> — with a compose file for the self-hosted four in <a href="/manual/guides/run-headless-server/">the headless-server guide</a>.</p>`,
     },
     {
       id: 'this-site',

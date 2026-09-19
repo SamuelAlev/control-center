@@ -1,6 +1,6 @@
 ---
 /**
- * Pillars — the four headline surfaces as alternating copy/screenshot splits.
+ * Pillars — the five headline surfaces as alternating copy/screenshot splits.
  * Copy carried over from the previous capabilities/tickets/meetings bands;
  * visuals are placeholder slots awaiting real captures. The captures are
  * briefed in src/data/shots.ts, shared with the hero carousel so a screen is
@@ -28,12 +28,12 @@ const pillars = [
     id: 'rigs',
     eyebrow: 'Rigs',
     head: 'Hand an agent a whole machine, safely.',
-    body: 'When an agent needs to actually try something — load the page, click through the app, run the risky command — it opens a rig: a disposable VM with its own kernel, a throwaway disk and a network that reaches only the hosts you allowed. You watch it work live and take the controls at any time.',
+    body: 'When an agent needs to actually try something — load the page, click through the app, run the risky command — it opens a rig: a disposable machine with a throwaway disk. Enclosed VMs keep their own kernel and a network that reaches only the hosts you allowed. You watch it work live and take the controls at any time.',
     bullets: [
-      'A browser, a Linux desktop, a phone, or an enclosed terminal — booted in seconds, scoped to the conversation you share.',
+      'A Chromium, Firefox or WebKit browser, a Linux desktop, Android, an iOS Simulator, or an enclosed terminal — scoped to the conversation you share.',
       'Start a dev server inside and it is on localhost, in the agent’s browser and under https://myapp.test moments later.',
       'git push works with no credential in the VM; every input lands in an audit log with its author.',
-      'Nothing inside ever touches your machine, and the disk is destroyed on close.',
+      'An enclosed VM never touches your checkout, and the disk is destroyed on close. Android and iOS use disposable emulator devices, with the host’s network.',
     ],
     shot: shots.rigs,
   },
@@ -41,10 +41,10 @@ const pillars = [
     id: 'review',
     eyebrow: 'Review',
     head: 'Review and merge what the fleet ships.',
-    body: 'Priority pull requests surface first, from every forge at once. Read the diff, drop inline comments, dispatch reviewer agents and land a ship / hold / block verdict without leaving the deck.',
+    body: 'Priority pull requests surface first, from GitHub, GitLab and Bitbucket at once. Read the diff, drop inline comments, dispatch reviewer agents and land a ship / hold / block verdict without leaving the deck.',
     bullets: [
       'One inbox across GitHub, GitLab and Bitbucket.',
-      'Inline threads synced back to the forge, with suggested edits.',
+      'Inline threads synced back to GitHub, GitLab or Bitbucket, with suggested edits.',
       'AI reviewers with P0–P3 findings and a rolled-up verdict.',
       'An ephemeral focus mode for distraction-free review.',
     ],
@@ -54,10 +54,10 @@ const pillars = [
     id: 'meetings',
     eyebrow: 'Meetings & calendar',
     head: 'Your day and your meetings, on the same deck.',
-    body: 'Record a call and the deck transcribes it on-device, separates the speakers and writes the summary, decisions and action items. Connect Google Calendar to see your day and turn any event into a recorded, summarized meeting.',
+    body: 'Record a call and the deck transcribes it on your own cc_server, separates the speakers and writes the summary, decisions and action items. Connect Google Calendar to see your day and turn any event into a recorded, summarized meeting.',
     bullets: [
-      'On-device transcription and diarization; audio never leaves your machine.',
-      'Google Calendar in month, week and agenda views, with RSVP.',
+      'Transcription and diarization on the host; WAVs stay there, not with a speech vendor.',
+      'Google Calendar in month, week, day and agenda views.',
       'A heads-up before each meeting and record-and-link straight from an event.',
     ],
     shot: shots.meetings,

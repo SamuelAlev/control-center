@@ -6,7 +6,6 @@ import 'package:control_center/features/meetings/presentation/utils/meeting_them
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:flutter/material.dart' show DateTimeRange;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -124,17 +123,18 @@ class _LinkEventSheetState extends ConsumerState<LinkEventSheet> {
     final locale = Localizations.localeOf(context).toString();
 
     // A wide window around the meeting so events just before/after surface.
-    final range = DateTimeRange(
-      start: widget.meetingStartedAt.subtract(const Duration(days: 7)),
-      end: widget.meetingStartedAt.add(const Duration(days: 7)),
-    );
     final events =
         ref
             .watch(
-              eventsInRangeProvider((
-                workspaceId: widget.workspaceId,
-                range: range,
-              )),
+              eventsInRangeProvider(
+                calendarRangeFor(
+                  workspaceId: widget.workspaceId,
+                  start: widget.meetingStartedAt.subtract(
+                    const Duration(days: 7),
+                  ),
+                  end: widget.meetingStartedAt.add(const Duration(days: 7)),
+                ),
+              ),
             )
             .asData
             ?.value ??

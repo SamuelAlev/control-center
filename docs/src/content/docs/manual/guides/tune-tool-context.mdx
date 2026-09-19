@@ -7,7 +7,7 @@ This guide covers the practical work around the two-tier tool surface: seeing wh
 
 ## Look at what a run actually sends
 
-Open a conversation and use the **context explorer** (the context-usage indicator beside the composer). It rebuilds the exact surface the next dispatch would send, without running anything.
+Open a conversation and tap the context-usage indicator in the conversation header. It rebuilds the exact surface the next dispatch would send, without running anything. **See more** (or the `/context` command) opens the full context explorer, where you can inspect each tool.
 
 Two segments matter here:
 
@@ -63,7 +63,7 @@ Keep tools separate when they need different approval gating, different auditing
 
 ## Check the prompt cache is working
 
-Cache hit rate shows up in **Observability** as cache effectiveness. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
+Cache hit rate shows up in **Observability → Insights** as **Cache rate**. A healthy long-running conversation sits high; if it is persistently low, something is rewriting the prefix every turn.
 
 Common causes, in order of likelihood:
 

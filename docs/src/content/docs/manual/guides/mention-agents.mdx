@@ -19,9 +19,10 @@ one and dispatched with the space's context and mode. Unmentioned participants
 see the message but do not dispatch.
 
 If you send a message with no agent mention, Control Center picks a responder
-itself: the agent that last spoke in the conversation, otherwise the first
-top-level agent among the space's participants. In a one-agent space that is
-always the sole agent.
+itself: the agent that last spoke in the conversation, otherwise the
+conversation's owner when it has one, otherwise the first top-level agent
+among the space's participants. In a one-agent space that is always the sole
+agent.
 
 ## Know how a name is matched
 
@@ -73,7 +74,7 @@ A dispatched agent gets a "Summons" block in its prompt naming who summoned it a
 listing the space roster — the other agents (marked top-level or subordinate) and
 the human members — so it knows who it can hand off to. The block also tells it
 that mentioning another agent in its reply wakes that agent and that mentioning
-itself does nothing.
+itself is ignored.
 
 ## When an agent mentions an agent
 

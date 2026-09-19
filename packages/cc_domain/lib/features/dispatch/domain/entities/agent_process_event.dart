@@ -29,7 +29,7 @@ enum AgentProcessEventType {
   sandboxViolation,
 
   /// Diagnostic event from the sandbox runtime itself (lifecycle markers,
-  /// "launching pi", "exited cleanly", etc.).
+  /// "launching claude", "exited cleanly", etc.).
   debug,
 
   /// Done event.
@@ -288,7 +288,7 @@ class ErrorEvent extends AgentProcessEvent {
   /// failure classification ahead of the regex fallback.
   final String? code;
 
-  /// Where the code came from (e.g. `anthropic`, `pi`).
+  /// Where the code came from (e.g. `anthropic`).
   final String? source;
 }
 

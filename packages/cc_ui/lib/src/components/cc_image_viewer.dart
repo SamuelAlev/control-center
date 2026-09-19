@@ -659,6 +659,9 @@ class _CcExpandableImageState extends State<CcExpandableImage> {
                           tight ? AppSpacing.xs : AppSpacing.sm,
                         ),
                         child: AnimatedOpacity(
+                          key: const ValueKey<String>(
+                            'cc-expandable-image-chip',
+                          ),
                           opacity: _hovering ? 1 : 0,
                           duration: CcMotion.resolve(context, CcMotion.fast),
                           curve: CcMotion.standard,

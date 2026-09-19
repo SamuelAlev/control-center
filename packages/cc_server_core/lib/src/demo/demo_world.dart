@@ -4,10 +4,10 @@
 /// person — a public demo that looked like a real company's data would be a
 /// different kind of problem entirely.
 ///
-/// The world is **Parced**, a real-estate closing platform: properties,
-/// offers, contingencies, escrow, title and the paperwork law firms push
-/// around it. The cast is Parced's engineering team; every PR, ticket,
-/// meeting and memory fact is about that domain.
+/// The world is **Helix**, an applied LLM / data-science lab: evaluation
+/// harnesses, retrieval pipelines, a feature store and fine-tuning. The cast
+/// is Helix's engineering team; every PR, ticket, meeting and memory fact is
+/// about that domain.
 library;
 
 /// A fictional teammate.
@@ -41,14 +41,66 @@ class DemoPerson {
   final String role;
 }
 
-/// The fictional product this team works on: a real-estate closing platform.
-const String kDemoRepoOwner = 'parced';
+/// A fictional repository the demo workspace is linked to.
+///
+/// Four of these furnish the PR list and the inbox (needs-your-review, drafts,
+/// returned, approved, …). The path is inert — demo mode never touches git —
+/// but the `(owner, name)` pair is required: `resolvePrReviewRepository`
+/// looks the linked repo up by those fields.
+class DemoRepoSpec {
+  /// Creates a repo spec.
+  const DemoRepoSpec({
+    required this.id,
+    required this.name,
+    required this.summary,
+  });
 
-/// The fictional repository name — the closing/escrow workflow service.
-const String kDemoRepoName = 'closing';
+  /// Stable repo id, shared by every demo workspace.
+  final String id;
 
-/// `owner/name`, the key every PR cache row is stored under.
+  /// Repository name (the last path segment). The org is [kDemoRepoOwner].
+  final String name;
+
+  /// One-line what-this-is, used in comments and seed copy.
+  final String summary;
+
+  /// `owner/name`.
+  String get fullName => '$kDemoRepoOwner/$name';
+}
+
+/// The fictional org this team works in.
+const String kDemoRepoOwner = 'helix';
+
+/// The flagship repository — the LLM evaluation harness the tour PR lives in.
+const String kDemoRepoName = 'evalkit';
+
+/// `owner/name` of the flagship repo, the key the tour PR is stored under.
 const String kDemoRepoFullName = '$kDemoRepoOwner/$kDemoRepoName';
+
+/// The four linked repos a visitor sees. Order is the order they appear in
+/// Settings → Repositories.
+const List<DemoRepoSpec> kDemoRepos = [
+  DemoRepoSpec(
+    id: 'demo-repo-evalkit',
+    name: 'evalkit',
+    summary: 'LLM evaluation harness: budgets, graders, run groups',
+  ),
+  DemoRepoSpec(
+    id: 'demo-repo-retriever',
+    name: 'retriever',
+    summary: 'Hybrid BM25 + embedding retrieval pipeline',
+  ),
+  DemoRepoSpec(
+    id: 'demo-repo-features',
+    name: 'features',
+    summary: 'Online feature store and lineage',
+  ),
+  DemoRepoSpec(
+    id: 'demo-repo-finetune',
+    name: 'finetune',
+    summary: 'LoRA / QLoRA adapter training',
+  ),
+];
 
 /// The PROJECT's own repository (`owner/name`) — the one real thing a demo
 /// points at: what `demo.repoStars` reports the stars of and what the client's
@@ -59,14 +111,40 @@ const String kDemoRepoFullName = '$kDemoRepoOwner/$kDemoRepoName';
 const String kDemoProjectRepoFullName = 'SamuelAlev/control-center';
 
 /// The workspace name a visitor lands in.
-const String kDemoWorkspaceName = 'Parced';
+const String kDemoWorkspaceName = 'Helix';
+
+/// The team slug review requests address (`helix/ml-eng`).
+const String kDemoTeamSlug = 'ml-eng';
+
+/// Display name of the in-product agent team that slug maps onto.
+const String kDemoTeamName = 'ML eng';
+
+/// The space Wren's HX-129 plan was authored in.
+const String kDemoPlanSpaceName = 'eval-reports';
+
+/// Display name a visitor is seated as in messaging and the roster.
+///
+/// Their *handle* stays `guest-*` so isolation tests (and the reaper) can
+/// tell a session from the shared Maya fixture. The name is Maya's so the
+/// GitHub seat (`maya-ok`) and the chat identity agree.
+const String kDemoVisitorDisplayName = 'Maya Okonkwo';
+
+/// The pull request "Review a pull request" opens — the open review the whole
+/// demo narrative revolves around.
+const int kDemoReviewPrNumber = 412;
 
 /// The forge node id of the PR the demo's AI review is attached to (#412).
 ///
 /// Review rows key off `prExternalId`, which is the forge's node id and NOT
-/// the PR number — the fixtures carry it as `detail.node_id`, so a review
-/// seeded against `'412'` would write rows the review tab never looks up.
+/// the PR number — the fixtures carry it as `detail.id`, so a review seeded
+/// against `'412'` would write rows the review tab never looks up.
 const String kDemoReviewPrExternalId = '4120001';
+
+/// The space "Talk to an agent" opens.
+const String kDemoAgentSpaceName = 'eval-review';
+
+/// The ticket "Follow the work" opens.
+const String kDemoTicketId = 'HX-118';
 
 /// The cast, in roster order.
 const List<DemoPerson> kDemoCast = [
@@ -74,19 +152,19 @@ const List<DemoPerson> kDemoCast = [
     id: 'demo-person-maya',
     handle: 'maya-ok',
     displayName: 'Maya Okonkwo',
-    role: 'Staff engineer',
+    role: 'Staff ML engineer',
   ),
   DemoPerson(
     id: 'demo-person-diego',
     handle: 'dferrer',
     displayName: 'Diego Ferrer',
-    role: 'Backend',
+    role: 'Eval infrastructure',
   ),
   DemoPerson(
     id: 'demo-person-priya',
     handle: 'priya-r',
     displayName: 'Priya Raman',
-    role: 'Design engineer',
+    role: 'Retrieval',
   ),
   DemoPerson(
     id: 'demo-person-tom',
@@ -111,8 +189,7 @@ DemoPerson? demoPersonByHandle(String handle) {
 /// The cast are members of EVERY pooled workspace and survive every reaping;
 /// boot-time garbage collection uses this to avoid deleting them when it
 /// cleans up guest users discovered behind an unowned workspace.
-bool isDemoCastMember(String userId) =>
-    kDemoCast.any((p) => p.id == userId);
+bool isDemoCastMember(String userId) => kDemoCast.any((p) => p.id == userId);
 
 /// The only pipeline templates a demo workspace keeps.
 ///

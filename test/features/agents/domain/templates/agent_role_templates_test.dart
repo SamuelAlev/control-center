@@ -13,14 +13,14 @@ void main() {
           label: 'Test Role',
           persona: 'You are a test agent.',
           defaultSkills: 'testing, mocking',
-          defaultAdapter: 'pi-dev',
+          defaultAdapter: 'cc-harness',
           lenses: ['Lens A', 'Lens B'],
         );
 
         expect(template.label, 'Test Role');
         expect(template.persona, 'You are a test agent.');
         expect(template.defaultSkills, 'testing, mocking');
-        expect(template.defaultAdapter, 'pi-dev');
+        expect(template.defaultAdapter, 'cc-harness');
         expect(template.lenses, ['Lens A', 'Lens B']);
       });
     });
@@ -38,7 +38,7 @@ void main() {
             label: 'Tester',
             persona: 'You test code.',
             defaultSkills: 'testing',
-            defaultAdapter: 'pi-dev',
+            defaultAdapter: 'cc-harness',
             lenses: ['Equivalence partitioning', 'Boundary value analysis'],
           );
 
@@ -59,7 +59,7 @@ void main() {
             label: 'Checker',
             persona: 'Be methodical.',
             defaultSkills: 'checking',
-            defaultAdapter: 'pi-dev',
+            defaultAdapter: 'cc-harness',
             lenses: ['One', 'Two', 'Three'],
           );
 
@@ -79,7 +79,7 @@ void main() {
             label: 'Minimal',
             persona: 'Just do it.',
             defaultSkills: '',
-            defaultAdapter: 'pi-dev',
+            defaultAdapter: 'cc-harness',
             lenses: [],
           );
 

@@ -9,13 +9,13 @@ running on your own hardware. Think Granola, but self-hosted and wired into the
 same workspace your agents live in.
 
 :::caution[Recording needs a voice model and a server restart]
-Recording and dictation are unavailable until a speech (ASR) model is installed
-**and** the server has been restarted. The server resolves its voice-model paths
-exactly once at boot, so a model installed at runtime does not register the
-`meeting.*` recording operations until the next boot — the client fails with
-"Could not start recording on the host" until then. Pick a model at
-Settings → Server → Voice & meeting models, let it download, then restart
-`cc_server`.
+Recording and dictation start after a speech (ASR) model is on disk **and** the
+server has been restarted. A normal boot force-installs the selected model
+(Parakeet TDT 0.6B v3 by default) in the background, but the server resolves
+voice-model paths exactly once near the start of boot — minutes before that
+download can finish. After the model reports installed, restart `cc_server`.
+To pick a different build, use Settings → Server → Voice & meeting models —
+that also needs a restart.
 :::
 
 ## What a meeting is
@@ -52,13 +52,16 @@ another local server).
 Everything before the summary — capture, transcription, echo cancellation,
 diarization, voiceprint matching — runs on the server with no network call.
 
-## Which models and which are optional
+## Which models ship
 
-The **embedding and diarization** models are force-installed on first boot, so
-speaker separation works out of the box. The **speech (ASR) model is opt-in**:
-it is selectable and several hundred megabytes, so you choose one.
+The **embedding, diarization and speech (ASR)** models are force-installed on
+first boot (skipped on a demo), so speaker separation and recording exist
+without a settings visit. ASR is still **selectable** — it is several hundred
+megabytes, and four builds ship in the picker. Speech still needs one restart
+after that first download, because the transcriber resolves its model before
+the fetch can finish.
 
-Four ship in the picker, differing in size, language coverage and accuracy:
+The four picker entries, differing in size, language coverage and accuracy:
 
 - Parakeet TDT 0.6B v3 — multilingual, the recommended default (~600 MB)
 - Parakeet TDT 0.6B v2 — English (~480 MB)
@@ -180,9 +183,10 @@ streams to the same host. Three caveats apply there:
 
 - The shared surface **must** carry an audio track. Safari, Firefox and macOS
   full-screen sharing yield none and the recording refuses to start.
-- There is no signal-level AEC and no input level meter; only the host-side text
-  echo filter applies.
-- "Re-run summary" and "cancel processing" are inert on web.
+- There is no native AEC3. The browser's own echo cancellation is requested on
+  the mic; the host-side text echo filter still runs. The HUD shows an input
+  level meter driven from the mic PCM.
+- Re-run summary and cancel processing are desktop-only.
 
 The calendar's **Start recording & link** action is desktop-only and reports
 that plainly on web, even though the meetings screen's own record flow works

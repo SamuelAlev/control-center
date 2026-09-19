@@ -27,7 +27,7 @@ void main() {
     await dbs.global.workspaceRegistryDao.upsertWorkspace(
       WorkspacesTableCompanion(
         id: const Value(workspaceId),
-        name: const Value('Parced'),
+        name: const Value('Helix'),
         createdAt: Value(DateTime.now()),
         updatedAt: Value(DateTime.now()),
       ),
@@ -43,8 +43,8 @@ void main() {
 
   DemoPrReviewRepository build() => DemoPrReviewRepository(
     db: db,
-    owner: 'parced',
-    repo: 'closing',
+    owner: 'helix',
+    repo: 'evalkit',
     visitor: kDemoVisitorAuthor,
   );
 
@@ -58,7 +58,7 @@ void main() {
       await repo.markFileAsViewed(
         prNumber: 412,
         externalId: 'PR_412',
-        path: 'lib/escrow/timeline.dart',
+        path: 'evalkit/budget.py',
         viewed: true,
       );
 
@@ -70,7 +70,7 @@ void main() {
       await repo.markFileAsViewed(
         prNumber: 412,
         externalId: 'PR_412',
-        path: 'lib/escrow/timeline.dart',
+        path: 'evalkit/budget.py',
         viewed: false,
       );
       final roundTrip = await repo.watchFiles(412).first;
@@ -84,17 +84,17 @@ void main() {
       final result = await repo.postReviewComment(
         prNumber: 412,
         commitSha: 'abc',
-        path: 'lib/escrow/timeline.dart',
+        path: 'evalkit/budget.py',
         line: 42,
         side: 'RIGHT',
-        body: 'Two closings can share an acceptance date.',
+        body: 'Two run-groups can share a budget row.',
       );
       expect(result['id'], isA<int>());
 
       final comments = await repo.watchReviewComments(412).first;
       final posted = comments.singleWhere((c) => c.id == result['id']);
       expect(posted.user?.login, 'you');
-      expect(posted.body, contains('acceptance date'));
+      expect(posted.body, contains('run-group'));
     });
 
     test('replies join the parent thread', () async {
@@ -102,15 +102,15 @@ void main() {
       final parent = await repo.postReviewComment(
         prNumber: 412,
         commitSha: 'abc',
-        path: 'lib/escrow/timeline.dart',
+        path: 'evalkit/budget.py',
         line: 42,
         side: 'RIGHT',
-        body: 'Blocking: the shared timeline.',
+        body: 'Blocking: the shared run-group.',
       );
       await repo.replyToReviewComment(
         prNumber: 412,
         parentCommentId: parent['id'] as int,
-        body: 'Keying by acceptance event instead.',
+        body: 'Keying by run-group id instead.',
       );
 
       final comments = await repo.watchReviewComments(412).first;
@@ -130,17 +130,17 @@ void main() {
         body: 'One blocking concern, rest approved.',
         comments: const [
           PendingReviewComment(
-            path: 'lib/escrow/timeline.dart',
+            path: 'evalkit/budget.py',
             line: 30,
             side: 'RIGHT',
-            body: 'Name the holiday table.',
+            body: 'Name the family cap table.',
           ),
         ],
       );
 
       final comments = await repo.watchReviewComments(412).first;
       expect(
-        comments.any((c) => c.body == 'Name the holiday table.'),
+        comments.any((c) => c.body == 'Name the family cap table.'),
         isTrue,
       );
       final reviews = await repo.watchReviews(412).first;
@@ -158,7 +158,7 @@ void main() {
           repo.postReviewComment(
             prNumber: 412,
             commitSha: 'abc',
-            path: 'lib/escrow/timeline.dart',
+            path: 'evalkit/budget.py',
             line: 40 + i,
             side: 'RIGHT',
             body: 'comment $i',
@@ -205,14 +205,14 @@ void main() {
 /// the fixtures use (`PrCacheCodec` keys).
 Future<void> seedFiles(WorkspaceDatabase db) async {
   const ws = 'ws-demo-pr';
-  const key = 'parced/closing#412';
+  const key = 'helix/evalkit#412';
   await db.cacheDao.put(
     ws,
     DemoPrCacheKind.files,
     key,
     jsonEncode([
       {
-        'filename': 'lib/escrow/timeline.dart',
+        'filename': 'evalkit/budget.py',
         'status': 'modified',
         'additions': 14,
         'deletions': 6,
@@ -228,9 +228,9 @@ Future<void> seedFiles(WorkspaceDatabase db) async {
     jsonEncode([
       {
         'id': 8801,
-        'body': 'Blocking: two closings share one acceptance date.',
+        'body': 'Blocking: two evals share one run-group id.',
         'user': {'login': 'maya-ok', 'avatar_url': '', 'name': 'Maya'},
-        'path': 'lib/escrow/timeline.dart',
+        'path': 'evalkit/budget.py',
         'position': 42,
         'created_at': '2026-08-30T10:00:00Z',
         'side': 'RIGHT',

@@ -25,7 +25,7 @@ the first place. Give it one of:
 
 - a certificate directly, with `--tls-cert` and `--tls-key`
 - a TLS-terminating reverse proxy in front, with the server started `--insecure` (plaintext behind the proxy, on a trusted network only)
-- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Sharing & remote access** has the built-in tunnel opt-in.
+- a tunnel or VPN that supplies the certificate — Tailscale, cloudflared, or similar. **Settings → Server → Connection & status** has the built-in tunnel opt-in under **Share this server**.
 
 Two settings on the server side are easy to miss. Behind a proxy, NAT, or tunnel,
 set `--public-url` to the address clients should actually dial — it defaults to

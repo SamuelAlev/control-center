@@ -61,6 +61,17 @@ void main() {
     expect(seeder, contains("key: '$kDemoTicketId'"));
   });
 
+  test('the open-PR snapshot uses the prs wire key', () {
+    // RpcOpenPrListRepository._prsOf reads `prs`. Seeding `pull_requests`
+    // used to ship an authenticated-looking snapshot whose groups decoded
+    // empty, so the PR list and the inbox both rendered as a zero state.
+    expect(seeder, contains("'prs': byRepo[spec.fullName]"));
+  });
+
+  test('the merged-PR snapshot is seeded for the inbox', () {
+    expect(seeder, contains('DemoPrCacheKind.closedPrList'));
+  });
+
   test('the demo viewer is a pending reviewer in the fixtures', () {
     // The whole point of giving the demo a viewer identity is that the seeded
     // review requests address it. A login that appears nowhere in the fixtures

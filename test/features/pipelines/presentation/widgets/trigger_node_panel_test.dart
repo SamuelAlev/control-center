@@ -1,15 +1,17 @@
 import 'dart:async';
+
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/trigger_node_panel.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import '../../../../helpers/test_wrap.dart';
 
-/// Builds a [PipelineTrigger] with sensible defaults.
 PipelineTrigger _trigger({
   required String id,
   required String eventType,
@@ -17,6 +19,9 @@ PipelineTrigger _trigger({
   String workspaceId = 'ws-1',
   bool enabled = true,
   String? cronExpression,
+  String? timezone,
+  String? webhookToken,
+  CronCatchUpPolicy catchUpPolicy = CronCatchUpPolicy.catchUpLatestOnly,
   Map<String, dynamic> match = const {},
 }) {
   return PipelineTrigger(
@@ -26,479 +31,368 @@ PipelineTrigger _trigger({
     workspaceId: workspaceId,
     enabled: enabled,
     cronExpression: cronExpression,
+    timezone: timezone,
+    webhookToken: webhookToken,
+    catchUpPolicy: catchUpPolicy,
     match: match,
   );
 }
 
-/// Sets up the widget tree with a controlled stream of triggers.
+class _FakeTriggerRepo implements PipelineTriggerRepository {
+  final List<PipelineTrigger> items = [];
+  final _controller = StreamController<List<PipelineTrigger>>.broadcast();
+
+  void _emit() {
+    if (!_controller.isClosed) {
+      _controller.add(List<PipelineTrigger>.unmodifiable(items));
+    }
+  }
+
+  void dispose() {
+    if (!_controller.isClosed) {
+      _controller.close();
+    }
+  }
+
+  @override
+  Future<void> insert(PipelineTrigger trigger) async {
+    items.add(trigger);
+    _emit();
+  }
+
+  @override
+  Future<void> update(PipelineTrigger trigger) async {
+    final i = items.indexWhere((t) => t.id == trigger.id);
+    if (i >= 0) {
+      items[i] = trigger;
+    } else {
+      items.add(trigger);
+    }
+    _emit();
+  }
+
+  @override
+  Future<void> deleteById(String workspaceId, String id) async {
+    items.removeWhere((t) => t.id == id && t.workspaceId == workspaceId);
+    _emit();
+  }
+
+  @override
+  Future<List<PipelineTrigger>> forWorkspace(String workspaceId) async => [
+    for (final t in items)
+      if (t.workspaceId == workspaceId) t,
+  ];
+
+  @override
+  Future<List<PipelineTrigger>> enabledForEvent(String eventType) async => [
+    for (final t in items)
+      if (t.enabled && t.eventType == eventType) t,
+  ];
+
+  @override
+  Stream<List<PipelineTrigger>> watchForWorkspace(String workspaceId) async* {
+    yield List<PipelineTrigger>.unmodifiable(items);
+    yield* _controller.stream;
+  }
+
+  @override
+  Future<PipelineTrigger?> getById(String workspaceId, String id) async {
+    for (final t in items) {
+      if (t.id == id && t.workspaceId == workspaceId) {
+        return t;
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<List<PipelineTrigger>> scheduled() async => [
+    for (final t in items)
+      if (t.eventType == PipelineTrigger.scheduleEventType) t,
+  ];
+
+  @override
+  Future<void> markFired(String workspaceId, String id, DateTime when) async {}
+
+  @override
+  Future<void> setSchedule(
+    String workspaceId,
+    String id, {
+    DateTime? nextRunAt,
+    DateTime? lastFiredAt,
+  }) async {}
+
+  @override
+  Future<PipelineTrigger?> byWebhookToken(String token) async => null;
+}
+
 Future<void> _setupPanel(
   WidgetTester tester, {
   required List<PipelineTrigger> triggers,
+  required String triggerId,
   String workspaceId = 'ws-1',
   String templateId = 'tmpl-1',
+  _FakeTriggerRepo? repo,
+  VoidCallback? onDelete,
 }) async {
   tester.view.physicalSize = const Size(800, 900);
   tester.view.devicePixelRatio = 1.0;
-  addTearDown(() => tester.view.reset());
+  addTearDown(tester.view.reset);
 
-  final overrides = [
-    pipelineTriggersForWorkspaceProvider(
-      workspaceId,
-    ).overrideWith((ref) => Stream.value(triggers)),
-  ];
+  final triggerRepo = repo ?? _FakeTriggerRepo();
+  if (repo == null) {
+    triggerRepo.items.addAll(triggers);
+    addTearDown(triggerRepo.dispose);
+  }
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: overrides,
+      overrides: [
+        pipelineTriggerRepositoryProvider.overrideWithValue(triggerRepo),
+      ],
       child: testWrap(
-        TriggerNodePanel(workspaceId: workspaceId, templateId: templateId),
+        TriggerNodePanel(
+          workspaceId: workspaceId,
+          templateId: templateId,
+          triggerId: triggerId,
+          onDelete: onDelete ?? () {},
+        ),
       ),
     ),
   );
-  // Let the stream provider emit its value.
+  await tester.pump();
   await tester.pump();
 }
 
 void main() {
-  group('TriggerNodePanel rendering', () {
-    testWidgets('renders title with zap icon', (tester) async {
-      await _setupPanel(tester, triggers: const []);
+  group('TriggerNodePanel', () {
+    testWidgets('renders nothing when the selected trigger is missing', (
+      tester,
+    ) async {
+      await _setupPanel(tester, triggers: const [], triggerId: 'missing');
 
-      expect(find.text('Triggers'), findsOneWidget);
-      expect(find.byIcon(AppIcons.zap), findsOneWidget);
+      expect(find.byType(CcSwitch), findsNothing);
+      expect(find.text('Add trigger'), findsNothing);
+      expect(find.text('Triggers'), findsNothing);
     });
 
-    testWidgets('renders help text', (tester) async {
-      await _setupPanel(tester, triggers: const []);
+    testWidgets('inspects only the selected manual trigger', (tester) async {
+      await _setupPanel(
+        tester,
+        triggers: [
+          _trigger(
+            id: 'man-1',
+            eventType: PipelineTrigger.manualEventType,
+            enabled: true,
+          ),
+          _trigger(id: 'auto-1', eventType: 'ExternalPrDetected'),
+        ],
+        triggerId: 'man-1',
+      );
 
-      expect(find.text('What starts this pipeline.'), findsOneWidget);
-    });
-
-    testWidgets('shows empty state with manual toggle off', (tester) async {
-      await _setupPanel(tester, triggers: const []);
-
-      // One CcSwitch for the manual toggle (off by default when no manual)
+      expect(find.text('Manual run'), findsOneWidget);
+      expect(
+        find.text('Show on the run page and start by hand.'),
+        findsOneWidget,
+      );
       expect(find.byType(CcSwitch), findsOneWidget);
-      // "Add trigger" button
-      expect(find.text('Add trigger'), findsOneWidget);
-      // "No automatic triggers yet." placeholder
-      expect(find.text('No automatic triggers yet.'), findsOneWidget);
-    });
-
-    testWidgets('shows manual toggle on when manual trigger enabled', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: true,
-          ),
-        ],
-      );
-
-      final switchers = tester.widgetList<CcSwitch>(find.byType(CcSwitch));
-      expect(switchers.length, 1);
-      expect(switchers.first.value, isTrue);
-    });
-
-    testWidgets('shows manual toggle off when manual trigger disabled', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: false,
-          ),
-        ],
-      );
-
-      final switchers = tester.widgetList<CcSwitch>(find.byType(CcSwitch));
-      expect(switchers.first.value, isFalse);
-    });
-
-    testWidgets('manual toggle off when no manual trigger exists', (
-      tester,
-    ) async {
-      await _setupPanel(tester, triggers: const []);
-
-      final switchers = tester.widgetList<CcSwitch>(find.byType(CcSwitch));
-      expect(switchers.first.value, isFalse);
-    });
-
-    testWidgets('renders single automatic trigger row with toggle and delete', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'auto-1',
-            eventType: 'ExternalPrDetected',
-            enabled: true,
-          ),
-        ],
-      );
-
-      // 1 manual + 1 auto = 2 toggles
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      // Delete button (trash icon)
+      expect(tester.widget<CcSwitch>(find.byType(CcSwitch)).value, isTrue);
       expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-      // "No automatic triggers yet." absent
-      expect(find.text('No automatic triggers yet.'), findsNothing);
+      expect(find.text('Add trigger'), findsNothing);
+      expect(find.text('Automatic triggers'), findsNothing);
+      expect(find.text('External PR opened'), findsNothing);
     });
 
-    testWidgets('renders multiple automatic triggers sorted by event type', (
+    testWidgets('lets a schedule trigger change its expression', (
       tester,
     ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(id: 'a3', eventType: 'RepoAdded', enabled: true),
-          _trigger(id: 'a1', eventType: 'ExternalPrDetected', enabled: true),
-          _trigger(id: 'a2', eventType: 'PrMerged', enabled: false),
-        ],
-      );
-
-      // 1 manual + 3 auto = 4 toggles
-      expect(find.byType(CcSwitch), findsNWidgets(4));
-      // 3 delete buttons
-      expect(find.byIcon(AppIcons.trash2), findsNWidgets(3));
-    });
-
-    testWidgets('filters out triggers belonging to other templates', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'other-1',
-            eventType: 'ExternalPrDetected',
-            templateId: 'other-tmpl',
-            enabled: true,
-          ),
-        ],
-        templateId: 'tmpl-1',
-      );
-
-      // Only manual toggle visible (the other template trigger is excluded)
-      expect(find.byType(CcSwitch), findsOneWidget);
-      expect(find.byIcon(AppIcons.trash2), findsNothing);
-      expect(find.text('No automatic triggers yet.'), findsOneWidget);
-    });
-
-    testWidgets('separates manual from automatic section', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: true,
-          ),
-          _trigger(
-            id: 'auto-1',
-            eventType: 'ExternalPrDetected',
-            enabled: true,
-          ),
-        ],
-      );
-
-      // Manual section = 1 toggle (no delete). Auto section = 1 toggle + 1 delete.
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-      expect(find.text('Add trigger'), findsOneWidget);
-    });
-
-    testWidgets('renders divider between manual and automatic sections', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: true,
-          ),
-          _trigger(
-            id: 'auto-1',
-            eventType: 'ExternalPrDetected',
-            enabled: true,
-          ),
-        ],
-      );
-
-      expect(find.byType(CcDivider), findsOneWidget);
-    });
-
-    testWidgets('renders automatic section header', (tester) async {
-      await _setupPanel(tester, triggers: const []);
-
-      expect(find.text('Automatic triggers'), findsOneWidget);
-    });
-
-    testWidgets('renders schedule trigger with its detail label', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
+      final repo = _FakeTriggerRepo()
+        ..items.add(
           _trigger(
             id: 'sched-1',
             eventType: PipelineTrigger.scheduleEventType,
-            enabled: true,
-            cronExpression: 'every:3600',
+            enabled: false,
+            cronExpression: 'every:86400',
           ),
-        ],
+        );
+      addTearDown(repo.dispose);
+
+      await _setupPanel(
+        tester,
+        triggers: repo.items,
+        triggerId: 'sched-1',
+        repo: repo,
       );
 
-      // Schedule trigger renders as an automatic row
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-      expect(find.text('No automatic triggers yet.'), findsNothing);
+      expect(find.text('Schedule'), findsOneWidget);
+      expect(find.text('Schedule (cron or every:seconds)'), findsOneWidget);
+      expect(find.text('Timezone (optional)'), findsOneWidget);
+      expect(find.text('On missed runs'), findsOneWidget);
+
+      final fields = find.byType(CcTextField);
+      expect(fields, findsNWidgets(2));
+      await tester.enterText(fields.first, 'every:60');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.items.single.cronExpression, 'every:60');
     });
 
-    testWidgets('renders trigger with match filter', (tester) async {
+    testWidgets('coerces a bare number to every:N', (tester) async {
+      final repo = _FakeTriggerRepo()
+        ..items.add(
+          _trigger(
+            id: 'sched-1',
+            eventType: PipelineTrigger.scheduleEventType,
+            cronExpression: 'every:86400',
+          ),
+        );
+      addTearDown(repo.dispose);
+
+      await _setupPanel(
+        tester,
+        triggers: repo.items,
+        triggerId: 'sched-1',
+        repo: repo,
+      );
+
+      await tester.enterText(find.byType(CcTextField).first, '3600');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.items.single.cronExpression, 'every:3600');
+    });
+
+    testWidgets('shows the webhook path for a webhook trigger', (tester) async {
       await _setupPanel(
         tester,
         triggers: [
+          _trigger(
+            id: 'hook-1',
+            eventType: PipelineTrigger.webhookEventType,
+            webhookToken: 'abc123',
+          ),
+        ],
+        triggerId: 'hook-1',
+      );
+
+      expect(find.text('Webhook'), findsOneWidget);
+      expect(find.text('Webhook path'), findsOneWidget);
+      expect(find.text('/webhooks/abc123'), findsOneWidget);
+      expect(find.byIcon(AppIcons.copy), findsOneWidget);
+    });
+
+    testWidgets('edits PR status chips on the selected event trigger', (
+      tester,
+    ) async {
+      final repo = _FakeTriggerRepo()
+        ..items.add(
           _trigger(
             id: 'pr-1',
             eventType: 'PullRequestStatusChanged',
-            enabled: true,
             match: {
-              'status': ['merged', 'closed'],
+              'status': ['merged'],
             },
           ),
-        ],
-      );
+        );
+      addTearDown(repo.dispose);
 
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-    });
-
-    testWidgets('renders disabled auto trigger with toggle off', (
-      tester,
-    ) async {
       await _setupPanel(
         tester,
-        triggers: [
+        triggers: repo.items,
+        triggerId: 'pr-1',
+        repo: repo,
+      );
+
+      expect(find.text('PR status changed'), findsOneWidget);
+      expect(find.text('PullRequestStatusChanged'), findsOneWidget);
+      expect(
+        find.text(
+          'Merged, closed, opened, reopened, or approved. Filter by status in the inspector.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Only when the status is'), findsOneWidget);
+
+      final merged = tester.widget<CcChip>(
+        find.widgetWithText(CcChip, 'merged'),
+      );
+      expect(merged.selected, isTrue);
+      final closed = tester.widget<CcChip>(
+        find.widgetWithText(CcChip, 'closed'),
+      );
+      expect(closed.selected, isFalse);
+
+      await tester.tap(find.widgetWithText(CcChip, 'closed'));
+      await tester.pump();
+      await tester.pump();
+
+      final statuses = repo.items.single.match['status'] as List<dynamic>;
+      expect(statuses, containsAll(['merged', 'closed']));
+    });
+
+    testWidgets('persists the enabled switch on the selected trigger', (
+      tester,
+    ) async {
+      final repo = _FakeTriggerRepo()
+        ..items.add(
           _trigger(
             id: 'auto-1',
             eventType: 'ExternalPrDetected',
             enabled: false,
-          ),
-        ],
-      );
-
-      final toggles = tester
-          .widgetList<CcSwitch>(find.byType(CcSwitch))
-          .toList();
-      expect(toggles, hasLength(2));
-      // Manual toggle (no manual exists → off)
-      expect(toggles[0].value, isFalse);
-      // Auto trigger toggle → off
-      expect(toggles[1].value, isFalse);
-    });
-
-    testWidgets('handles mixed manual and multiple autos', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: true,
-          ),
-          _trigger(id: 'a-1', eventType: 'RepoAdded', enabled: false),
-          _trigger(id: 'a-2', eventType: 'PrMerged', enabled: false),
-        ],
-      );
-
-      // 1 manual + 2 autos = 3 toggles
-      expect(find.byType(CcSwitch), findsNWidgets(3));
-      // 2 delete buttons (autos only)
-      expect(find.byIcon(AppIcons.trash2), findsNWidgets(2));
-    });
-
-    testWidgets('add trigger button exists when empty', (tester) async {
-      await _setupPanel(tester, triggers: const []);
-
-      expect(find.text('Add trigger'), findsOneWidget);
-    });
-
-    testWidgets('auto trigger row shows toggle and delete', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'auto-1',
-            eventType: 'ExternalPrDetected',
-            enabled: true,
-          ),
-        ],
-      );
-
-      // 1 manual toggle + 1 auto toggle + 1 trash2 icon
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-    });
-
-    testWidgets('manual section label renders', (tester) async {
-      await _setupPanel(tester, triggers: const []);
-
-      expect(find.text('Manual run'), findsOneWidget);
-    });
-
-    testWidgets('pipeline name is not visible when only manual', (
-      tester,
-    ) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: true,
-          ),
-        ],
-      );
-
-      // Panel renders with title, manual section, divider, automatic header,
-      // "No automatic triggers yet." placeholder and Add trigger button.
-      // No extra pipeline name or detail sections.
-      expect(find.text('Triggers'), findsOneWidget);
-      expect(find.text('Manual run'), findsOneWidget);
-      expect(find.text('Automatic triggers'), findsOneWidget);
-      expect(find.text('No automatic triggers yet.'), findsOneWidget);
-      expect(find.text('Add trigger'), findsOneWidget);
-      expect(find.byType(CcDivider), findsOneWidget);
-    });
-  });
-
-  group('Edge cases', () {
-    testWidgets('handles unknown event type gracefully', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(id: 'u-1', eventType: 'UnknownCustomEvent', enabled: true),
-        ],
-      );
-
-      // Renders without crash — trigger label falls back to raw eventType
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-    });
-
-    testWidgets('handles trigger with empty match map', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'auto-1',
-            eventType: 'ExternalPrDetected',
-            enabled: true,
-            match: const {},
-          ),
-        ],
-      );
-
-      // Renders normally — empty match just shows the base label
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-    });
-
-    testWidgets('handles null cronExpression for schedule', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'sched-1',
-            eventType: PipelineTrigger.scheduleEventType,
-            enabled: true,
-            cronExpression: null,
-          ),
-        ],
-      );
-
-      // Renders without crash
-      expect(find.byType(CcSwitch), findsNWidgets(2));
-      expect(find.byIcon(AppIcons.trash2), findsOneWidget);
-    });
-
-    testWidgets('handles all triggers disabled', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: false,
-          ),
-          _trigger(id: 'a-1', eventType: 'RepoAdded', enabled: false),
-          _trigger(id: 'a-2', eventType: 'PrMerged', enabled: false),
-        ],
-      );
-
-      // 1 manual + 2 auto = 3 switches, all off
-      final toggles = tester
-          .widgetList<CcSwitch>(find.byType(CcSwitch))
-          .toList();
-      expect(toggles, hasLength(3));
-      for (final t in toggles) {
-        expect(t.value, isFalse);
-      }
-      expect(find.byIcon(AppIcons.trash2), findsNWidgets(2));
-    });
-
-    testWidgets('handles all triggers enabled', (tester) async {
-      await _setupPanel(
-        tester,
-        triggers: [
-          _trigger(
-            id: 'man-1',
-            eventType: PipelineTrigger.manualEventType,
-            enabled: true,
-          ),
-          _trigger(id: 'a-1', eventType: 'RepoAdded', enabled: true),
-          _trigger(id: 'a-2', eventType: 'PrMerged', enabled: true),
-        ],
-      );
-
-      final toggles = tester
-          .widgetList<CcSwitch>(find.byType(CcSwitch))
-          .toList();
-      expect(toggles, hasLength(3));
-      for (final t in toggles) {
-        expect(t.value, isTrue);
-      }
-    });
-
-    testWidgets('handles many triggers in scrollable list', (tester) async {
-      final triggers = <PipelineTrigger>[];
-      for (var i = 0; i < 10; i++) {
-        triggers.add(
-          _trigger(
-            id: 'auto-$i',
-            eventType: 'CustomEvent$i',
-            enabled: i.isEven,
           ),
         );
-      }
+      addTearDown(repo.dispose);
 
-      await _setupPanel(tester, triggers: triggers);
+      await _setupPanel(
+        tester,
+        triggers: repo.items,
+        triggerId: 'auto-1',
+        repo: repo,
+      );
 
-      // 1 manual + 10 auto = 11 toggles. ListView virtualizes so we assert
-      // at least the visible ones.
-      expect(find.byType(CcSwitch), findsAtLeastNWidgets(10));
-      expect(find.byIcon(AppIcons.trash2), findsAtLeastNWidgets(8));
+      expect(tester.widget<CcSwitch>(find.byType(CcSwitch)).value, isFalse);
+      await tester.tap(find.byType(CcSwitch));
+      await tester.pump();
+      await tester.pump();
+
+      expect(repo.items.single.enabled, isTrue);
+    });
+
+    testWidgets('delete calls onDelete for the selected trigger only', (
+      tester,
+    ) async {
+      var deleted = false;
+      await _setupPanel(
+        tester,
+        triggers: [
+          _trigger(id: 'auto-1', eventType: 'PrMerged'),
+          _trigger(id: 'auto-2', eventType: 'RepoAdded'),
+        ],
+        triggerId: 'auto-1',
+        onDelete: () => deleted = true,
+      );
+
+      expect(find.text('PR merged'), findsOneWidget);
+      expect(find.text('Repository added'), findsNothing);
+      await tester.tap(find.byIcon(AppIcons.trash2));
+      await tester.pump();
+      expect(deleted, isTrue);
+    });
+
+    testWidgets('unknown event type falls back to the raw type name', (
+      tester,
+    ) async {
+      await _setupPanel(
+        tester,
+        triggers: [_trigger(id: 'u-1', eventType: 'UnknownCustomEvent')],
+        triggerId: 'u-1',
+      );
+
+      expect(find.text('UnknownCustomEvent'), findsOneWidget);
+      expect(find.byType(CcSwitch), findsOneWidget);
     });
   });
 }

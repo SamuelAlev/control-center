@@ -12,17 +12,17 @@ By the end of this tutorial, you will have:
 - Submitted a review verdict
 - Merged the PR
 
-Prerequisites: [Dispatch your first agent](/manual/tutorials/first-agent/) completed and one open pull request on a repo registered in this workspace. Any open PR works — one you pushed from an agent's branch, or one that was already there.
+Prerequisites: [Dispatch your first agent](/manual/tutorials/first-agent/) completed and one open pull request on a repo registered in this workspace. For the review steps, pick a PR you did not open — the **Review** button is hidden on your own PRs. Merge still works on a PR you authored.
 
 ## Step 1: Open the pull request
 
 1. Click **Pull requests** in the sidebar
 2. Find your PR and click it
 
-**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions, Review — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab.
+**Checkpoint.** The PR opens as a tabbed workbench — Overview, Diff, Source control, Chat, Actions — focused on **Overview**: the title and actions, the description and activity timeline and a sidebar with status, reviewers, assignees, checks and changed files. Clicking a file there jumps to it in the Diff tab. The **PR review** tab is not open until someone asks for an AI review.
 
 :::note[Empty queue with a "connect GitHub" prompt]
-That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → You → Profile & identity → Accounts**, then refresh the list.
+That state means the _server_ holds no GitHub token — your client never holds one. Set one under **Settings → You → Profile & identity → Code hosting**, then refresh the list.
 :::
 
 ## Step 2: Read the diff
@@ -32,8 +32,8 @@ Open the **Diff** tab. A collapsible file tree sits on the left and the strip ab
 The settings button in the diff toolbar controls how it renders:
 
 - **Split** or **unified** view
-- **Wrap** or scroll long lines
-- Code-font ligatures
+- **Wrap lines** or scroll long lines
+- **Code font ligatures**
 
 Mark a file as viewed to track your progress through a large diff. Keyboard navigation is in [Keyboard shortcuts](/manual/reference/keyboard-shortcuts/).
 
@@ -41,23 +41,28 @@ Mark a file as viewed to track your progress through a large diff. Keyboard navi
 
 1. Hover a line in the diff — a small `+` pill appears in the gutter
 2. Click it to comment on that line, or drag it vertically first to select a range
-3. Type your feedback and submit
+3. Type your feedback. The composer offers two submits:
+   - **Start a review** (or **Add to review** if a review is already in progress) queues the comment. The thread shows **Pending review** until you submit a verdict in step 4.
+   - **Add single comment** posts it to GitHub right away. The thread shows **Posting…**, then **Synced**, and offers a retry if the post fails.
 
-:::caution[Inline comments post to GitHub immediately]
-An inline comment is not held back until you submit a review. Submitting it posts it to GitHub right away: the thread shows **pending**, then **synced** and offers a retry if the post fails. Only the review _body_ you write in step 4 is a local draft.
+For this tutorial, use **Start a review** so the comment goes out with the verdict.
+
+:::caution[A queued comment is not on GitHub yet]
+**Start a review** / **Add to review** hold the comment locally until you submit a verdict. Only **Add single comment** posts immediately. The review _body_ you write in step 4 is a separate draft.
 :::
 
 ## Step 4: Submit a review
 
-1. Click **Review** in the PR header — the same button also sits in the Diff tab's toolbar
+1. Click **Review** in the Overview action row — the same button also sits in the Diff tab's toolbar. It is hidden on PRs you authored and on a closed or merged PR.
 2. Write a summary in the composer. It autosaves as a draft, so you can close the overlay and come back.
 3. Choose a verdict:
-   - **Approve** (⌘↵)
-   - **Request changes** (⌘⇧↵)
+   - **Request changes**
+   - **Comment**
+   - **Approve**
 
-There is no "Comment" verdict in the overlay: those two are the only submissions it makes.
+The verdict is the button. After **Approve** or **Request changes**, the button relabels itself to **Approved** or **Requested changes**. A **Comment** verdict leaves it labelled **Review**.
 
-**Checkpoint.** The header button changes to read "Approved" or "Requested changes".
+**Checkpoint.** The button reads "Approved" or "Requested changes" if you picked one of those two.
 
 ## Step 5: Merge
 
@@ -80,13 +85,13 @@ After merging, a `PrMerged` domain event fires; analytics and notifications cons
 
 Control Center can put a reviewer pipeline on an open PR, but only when you ask: the `pr_review` template has a manual trigger and nothing else.
 
-1. Open the overflow menu in the PR header and choose **Ask AI**. Control Center starts the run and navigates to the pipeline run page, so you can watch the specialists work.
+1. Open the overflow menu in the Overview action row and choose **Ask AI**. Control Center starts the run and opens the **PR review** tab, so you can watch the specialists work.
 2. Reviewer agents record their findings as review nodes in the PR's space; a final step consolidates them into one report.
 
-The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the PR's Review tab. See [Use AI-powered review](/manual/guides/ai-review/).
+The pipeline deliberately does not post to GitHub — it ends after consolidating. Publishing is a separate step you take yourself, with the **Publish to GitHub** button on the **PR review** tab. See [Use AI-powered review](/manual/guides/ai-review/).
 
 ## Recap
 
-You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment that went straight to GitHub, submitted a verdict and merged — without leaving the app.
+You opened a PR in the workbench, read the diff with syntax highlighting, left an inline comment, submitted a verdict and merged — without leaving the app.
 
 **Next:** [Build your first pipeline](/manual/tutorials/first-pipeline/) to automate multi-step workflows.

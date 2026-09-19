@@ -480,5 +480,90 @@ void main() {
         expect(plan2.toRun, contains('c'));
       },
     );
+
+    test('skips a subgraph that belongs to another start', () {
+      final def = _def([
+        _step('manual', StepKind.trigger),
+        _step('sched', StepKind.trigger),
+        _step(
+          'cond',
+          StepKind.listen,
+          triggers: const [
+            StepTrigger(sourceStepIds: ['manual']),
+          ],
+        ),
+        _step(
+          'work',
+          StepKind.listen,
+          triggers: const [
+            StepTrigger(sourceStepIds: ['cond']),
+            StepTrigger(sourceStepIds: ['sched']),
+          ],
+        ),
+        _step(
+          'end',
+          StepKind.terminal,
+          triggers: const [
+            StepTrigger(sourceStepIds: ['work']),
+          ],
+        ),
+      ]);
+
+      final onSchedule = planDownstream(
+        definition: def,
+        completed: {'sched'},
+        skipped: {},
+        existing: {'sched'},
+        chosenRoutes: {},
+        startStepId: 'sched',
+      );
+      expect(onSchedule.toSkip, contains('cond'));
+      expect(onSchedule.toRun, contains('work'));
+
+      final onManual = planDownstream(
+        definition: def,
+        completed: {'manual'},
+        skipped: {},
+        existing: {'manual'},
+        chosenRoutes: {},
+        startStepId: 'manual',
+      );
+      expect(onManual.toSkip, isEmpty);
+      expect(onManual.toRun, contains('cond'));
+      expect(onManual.toRun, isNot(contains('work')));
+    });
+
+    test('a disconnected start still reaches the terminal via its own OR', () {
+      final def = _def([
+        _step('manual', StepKind.trigger),
+        _step('sched', StepKind.trigger),
+        _step(
+          'work',
+          StepKind.listen,
+          triggers: const [
+            StepTrigger(sourceStepIds: ['manual']),
+          ],
+        ),
+        _step(
+          'end',
+          StepKind.terminal,
+          triggers: const [
+            StepTrigger(sourceStepIds: ['work']),
+            StepTrigger(sourceStepIds: ['sched']),
+          ],
+        ),
+      ]);
+
+      final plan = planDownstream(
+        definition: def,
+        completed: {'sched'},
+        skipped: {},
+        existing: {'sched'},
+        chosenRoutes: {},
+        startStepId: 'sched',
+      );
+      expect(plan.toSkip, contains('work'));
+      expect(plan.terminalReached, isTrue);
+    });
   });
 }

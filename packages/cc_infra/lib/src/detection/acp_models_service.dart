@@ -45,7 +45,7 @@ class AcpModelsService {
   ///
   /// Reasoning levels mirror `claude --effort` (low/medium/high/xhigh/max),
   /// which is why the Claude vocabulary is used rather than the three-level
-  /// one every other adapter gets.
+  /// one.
   static const List<AcpModel> _claudeCodeCatalog = [
     AcpModel(
       id: 'opus',

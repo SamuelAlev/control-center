@@ -9,7 +9,7 @@ The `debug` tool drives a real Debug Adapter Protocol session. A stopped frame a
 
 ## Before you start
 
-The tool is offered only when an adapter is genuinely usable, which means **both** of:
+The tool stays on the surface so the agent can ask why nothing is usable, rather than guessing. An adapter can actually start only when **both** of these hold:
 
 - a project marker in the checkout, and
 - the adapter's binary resolving.
@@ -30,7 +30,7 @@ It answers with what it found, or explains that an adapter needs both halves.
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
 :::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
 :::
 
 ## Set the breakpoint first, then launch
@@ -55,7 +55,7 @@ Launched bin/main.dart on dart (session dart-1). Stopped: breakpoint. Use `stack
 ```
 
 :::caution[If it reports the program exiting instead]
-The breakpoint did not bind. `breakpoints` reports how many of the ones you set were actually placed — a line that is blank, a comment, or not compiled into the build cannot hold one, and the tool says so rather than letting the program run past it silently.
+The breakpoint did not bind. A line that is blank, a comment, or not compiled into the build cannot hold one. Calling `breakpoints` against a live session reports how many of the ones you set were actually placed.
 :::
 
 ## Read the frame

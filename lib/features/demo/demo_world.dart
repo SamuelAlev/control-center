@@ -15,14 +15,14 @@
 /// be stable.
 library;
 
-/// The space "Talk to an agent" opens: the `escrow-review` conversation, which
+/// The space "Talk to an agent" opens: the `eval-review` conversation, which
 /// pairs the visitor with Ravi (the reviewer agent) and carries the #412
 /// thread. Seeded by `DemoSeeder._seedSpaces`.
-const String kDemoAgentSpaceName = 'escrow-review';
+const String kDemoAgentSpaceName = 'eval-review';
 
-/// The repo the demo's PR world lives in (`owner/name`), mirrored from
-/// `kDemoRepoFullName` in the server's `demo_world.dart`.
-const String kDemoRepoFullName = 'parced/closing';
+/// The flagship repo the demo's PR world lives in (`owner/name`), mirrored
+/// from `kDemoRepoFullName` in the server's `demo_world.dart`.
+const String kDemoRepoFullName = 'helix/evalkit';
 
 /// The project's OWN repository (`owner/name`), mirrored from
 /// `kDemoProjectRepoFullName` in the server's `demo_world.dart`.
@@ -42,9 +42,9 @@ const String kDemoProjectRepoUrl =
 /// demo narrative revolves around. From `kDemoPullRequestsJson`.
 const int kDemoReviewPrNumber = 412;
 
-/// The ticket "Follow the work" opens — the in-progress upload bug, assigned
-/// to Juno. Its id IS its key (`PD-118`) in `DemoSeeder._seedTickets`.
-const String kDemoTicketId = 'PD-118';
+/// The ticket "Follow the work" opens — the in-progress eval-progress bug,
+/// assigned to Juno. Its id IS its key (`HX-118`) in `DemoSeeder._seedTickets`.
+const String kDemoTicketId = 'HX-118';
 
 /// The forge account a demo visitor reviews AS.
 ///
@@ -62,8 +62,8 @@ const String kDemoTicketId = 'PD-118';
 const String kDemoViewerLogin = 'maya-ok';
 
 /// The org and team the demo viewer belongs to, so a review request addressed
-/// to a TEAM (`parced/closing-eng` on PR #414) also reaches their queue.
-const String kDemoViewerOrg = 'parced';
+/// to a TEAM (`helix/ml-eng` on the retriever PR) also reaches their queue.
+const String kDemoViewerOrg = 'helix';
 
 /// The team slug of [kDemoViewerOrg] the demo viewer belongs to.
-const String kDemoViewerTeamSlug = 'closing-eng';
+const String kDemoViewerTeamSlug = 'ml-eng';

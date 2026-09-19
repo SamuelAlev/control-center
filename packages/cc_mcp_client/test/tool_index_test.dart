@@ -68,7 +68,7 @@ void main() {
 
   group('McpToolRegistry', () {
     test('tools/list advertises the FULL catalogue — no discovery gating', () {
-      // External MCP clients (pi's mcp-adapter, Claude Code) validate calls
+      // External MCP clients (Claude Code) validate calls
       // against their cached tools/list client-side; anything unlisted is
       // unreachable. The registry therefore never hides tools.
       final tools = [

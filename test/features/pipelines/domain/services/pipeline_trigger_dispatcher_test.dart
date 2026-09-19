@@ -221,21 +221,37 @@ void main() {
     );
 
     test(
-      'skips when toPayload returns null (TicketCreated in knownEventTypes but no mapping)',
+      'dispatches TicketCreated to enabled triggers',
       timeout: const Timeout.factor(2),
       () async {
+        String? capturedType;
+        triggerRepo = FakePipelineTriggerRepository(
+          onEnabledForEvent: (t) {
+            capturedType = t;
+            return [_trigger(eventType: 'TicketCreated')];
+          },
+        );
+        engine = _FakePipelineEngine(returnRun: _run('r-created'));
+        dispatcher = PipelineTriggerDispatcher(
+          eventBus: eventBus,
+          engine: engine,
+          triggerRepository: triggerRepo,
+        );
         dispatcher.start();
 
-        final event = TicketCreated(
-          ticketId: 't-1',
-          workspaceId: 'ws-1',
-          occurredAt: now,
+        eventBus.publish(
+          TicketCreated(
+            ticketId: 't-1',
+            workspaceId: 'ws-1',
+            occurredAt: now,
+          ),
         );
-        eventBus.publish(event);
-
         await Future<void>.delayed(Duration.zero);
 
-        expect(engine.calls, isEmpty);
+        expect(capturedType, 'TicketCreated');
+        expect(engine.calls, hasLength(1));
+        expect(engine.calls.single.triggerEventType, 'TicketCreated');
+        expect(engine.calls.single.dedupKey, 't-1');
       },
     );
 

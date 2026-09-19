@@ -174,6 +174,7 @@ class SandboxViolationMonitor {
   @visibleForTesting
   static const Set<String> agentProcesses = {
     'sandbox-exec',
+    'claude',
     'node',
     'python3',
     'python',

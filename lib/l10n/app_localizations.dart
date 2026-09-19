@@ -10795,6 +10795,78 @@ abstract class AppLocalizations {
   /// **'Drag a node from the library to start.'**
   String get editorEmptyCanvas;
 
+  /// Eyebrow label above the trigger node on the pipeline editor canvas
+  ///
+  /// In en, this message translates to:
+  /// **'When this happens'**
+  String get pipelineWhenThisHappens;
+
+  /// Eyebrow label above the first action nodes on the pipeline editor canvas
+  ///
+  /// In en, this message translates to:
+  /// **'Do this'**
+  String get pipelineDoThis;
+
+  /// Button/tooltip that opens the quick-insert step picker on the pipeline editor canvas
+  ///
+  /// In en, this message translates to:
+  /// **'Add step'**
+  String get pipelineAddStep;
+
+  /// Tooltip for the canvas control that auto-arranges pipeline nodes
+  ///
+  /// In en, this message translates to:
+  /// **'Tidy up layout'**
+  String get pipelineTidyUp;
+
+  /// Legend hint shown on the pipeline editor canvas
+  ///
+  /// In en, this message translates to:
+  /// **'Drag steps to arrange · drag a handle to connect'**
+  String get pipelineEditorHint;
+
+  /// Tooltip for the control that deletes an edge between two pipeline steps
+  ///
+  /// In en, this message translates to:
+  /// **'Remove connection'**
+  String get pipelineRemoveConnection;
+
+  /// Tooltip for the output handle that starts an on-canvas edge
+  ///
+  /// In en, this message translates to:
+  /// **'Drag to connect'**
+  String get pipelineDragToConnect;
+
+  /// Default name given to a newly created pipeline template
+  ///
+  /// In en, this message translates to:
+  /// **'New pipeline'**
+  String get pipelineNewDefaultName;
+
+  /// Node library category grouping the pipeline trigger entries
+  ///
+  /// In en, this message translates to:
+  /// **'Triggers'**
+  String get nodeCategoryTriggers;
+
+  /// Display label for the webhook trigger type
+  ///
+  /// In en, this message translates to:
+  /// **'Webhook'**
+  String get triggerEventWebhook;
+
+  /// Placeholder tile shown on the pipeline editor canvas when the template has no triggers yet
+  ///
+  /// In en, this message translates to:
+  /// **'Add a trigger'**
+  String get pipelineAddTrigger;
+
+  /// Node library entry for a pipeline trigger that fires on a domain event
+  ///
+  /// In en, this message translates to:
+  /// **'On event'**
+  String get pipelineOnEvent;
+
   /// Header for the node configuration panel
   ///
   /// In en, this message translates to:
@@ -11245,6 +11317,12 @@ abstract class AppLocalizations {
   /// **'A signed webhook URL is generated. External systems POST to it to start this pipeline.'**
   String get triggerWebhookHelp;
 
+  /// No description provided for @triggerWebhookPathLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Webhook path'**
+  String get triggerWebhookPathLabel;
+
   /// No description provided for @triggerEventFieldLabel.
   ///
   /// In en, this message translates to:
@@ -11472,6 +11550,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ticket assigned'**
   String get triggerEventTicketAssigned;
+
+  /// No description provided for @triggerEventTicketCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket created'**
+  String get triggerEventTicketCreated;
+
+  /// No description provided for @triggerEventTicketStatusChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Ticket status changed'**
+  String get triggerEventTicketStatusChanged;
+
+  /// No description provided for @triggerEventMeetingRecordingStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Meeting recording stopped'**
+  String get triggerEventMeetingRecordingStopped;
+
+  /// No description provided for @triggerEventSkillUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill updated'**
+  String get triggerEventSkillUpdated;
+
+  /// No description provided for @triggerEventSpaceDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Space deleted'**
+  String get triggerEventSpaceDeleted;
+
+  /// No description provided for @triggerExternalPrHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A pull request opened on the code host, not from Control Center.'**
+  String get triggerExternalPrHelp;
+
+  /// No description provided for @triggerPrPublishedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A pull request opened from Control Center or by an agent.'**
+  String get triggerPrPublishedHelp;
+
+  /// No description provided for @triggerPrStatusChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Merged, closed, opened, reopened, or approved. Filter by status in the inspector.'**
+  String get triggerPrStatusChangedHelp;
+
+  /// No description provided for @triggerPrMergedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'Only when the pull request is merged, not closed or reopened.'**
+  String get triggerPrMergedHelp;
+
+  /// No description provided for @triggerRepoAddedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A repository is linked to this workspace.'**
+  String get triggerRepoAddedHelp;
+
+  /// No description provided for @triggerCodeGraphWatchHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A file in a linked repository changes on disk.'**
+  String get triggerCodeGraphWatchHelp;
+
+  /// No description provided for @triggerMessageReceivedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A new message arrives in a space.'**
+  String get triggerMessageReceivedHelp;
+
+  /// No description provided for @triggerTicketCreatedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A ticket is created in this workspace.'**
+  String get triggerTicketCreatedHelp;
+
+  /// No description provided for @triggerTicketStatusChangedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A ticket moves between statuses.'**
+  String get triggerTicketStatusChangedHelp;
+
+  /// No description provided for @triggerTicketCompletedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A ticket finishes successfully.'**
+  String get triggerTicketCompletedHelp;
+
+  /// No description provided for @triggerTicketFailedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'An agent run failed and the ticket is marked failed.'**
+  String get triggerTicketFailedHelp;
+
+  /// No description provided for @triggerTicketCancelledHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A ticket is cancelled and will not continue.'**
+  String get triggerTicketCancelledHelp;
+
+  /// No description provided for @triggerBudgetCrossedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A workspace or agent spend limit is crossed.'**
+  String get triggerBudgetCrossedHelp;
+
+  /// No description provided for @triggerTicketAssignedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A ticket is assigned to a person, agent, or team.'**
+  String get triggerTicketAssignedHelp;
+
+  /// No description provided for @triggerMeetingRecordingStoppedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A meeting recording finishes.'**
+  String get triggerMeetingRecordingStoppedHelp;
+
+  /// No description provided for @triggerSkillUpdatedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A skill is installed or updated.'**
+  String get triggerSkillUpdatedHelp;
+
+  /// No description provided for @triggerSpaceDeletedHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'A conversation space is deleted.'**
+  String get triggerSpaceDeletedHelp;
 
   /// No description provided for @navTickets.
   ///

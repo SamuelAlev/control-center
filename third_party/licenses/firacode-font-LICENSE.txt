@@ -1,4 +1,4 @@
-Fira Code (variable font), vendored here as FiraCode-VF.ttf.
+Fira Code (variable font) 6.2, vendored here as FiraCode-VF.ttf.
 Upstream: https://github.com/tonsky/FiraCode — licensed under the SIL Open Font License, Version 1.1.
 ---
 

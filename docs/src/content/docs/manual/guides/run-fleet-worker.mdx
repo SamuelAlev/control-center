@@ -11,15 +11,12 @@ and it re-registers.
 
 You need a running `cc_server` first — see [Run a headless server](/manual/guides/run-headless-server/).
 
-:::caution[Nothing in the product submits fleet jobs yet]
-A correctly paired worker will register, heartbeat and then idle. The only way
-to create a job today is a raw `fleet.submitJob` RPC call — no screen, no MCP
-tool and no server-side producer reaches it and agent dispatch does not route
-through the fleet. The implicit "this machine" worker the server registers at
-boot is worse off still: it has an empty runner map, so a job placed on it fails
-with `No local runner for job kind …`. Treat the success signal for this guide as
-the worker appearing in the fleet panel with a fresh heartbeat.
-:::
+A paired worker registers, heartbeats and waits for leased jobs. Submit work
+with `fleet.submitJob`. Agent dispatch on this server does not route through
+the fleet; the success signal for this guide is the worker appearing in the
+fleet panel with a fresh heartbeat. The in-process worker registered at boot
+has an empty runner map, so a job placed on it returns `No local runner for
+job kind …`.
 
 ## Prerequisites
 
@@ -39,16 +36,17 @@ This produces a self-contained bundle at `./build/cli/<os_arch>/bundle/bin/cc_wo
 
 ## Step 2: Mint the worker's credential
 
-A production server only accepts a worker that presents a paired-device id and
-pre-shared key. Mint them on the **server** machine, while no server is holding
-the data directory:
+A `cc_server` only accepts a worker that presents a paired-device id and
+pre-shared key — including a loopback server. Mint them on the **server**
+machine (`pair` can run while the server is up; the new device is picked up
+without a restart):
 
 ```bash
 cc_server pair --data-dir <dir> --device my-worker --label "Build box"
 ```
 
 It prints a `Device id` and a `Pairing key` — those are what `--device-id` and
-`--psk` take. (Omit the credential only against a loopback dev server.)
+`--psk` / `--psk-file` / `CC_WORKER_PSK` take.
 
 ## Step 3: Start the worker
 
@@ -56,21 +54,31 @@ Against a paired server:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_worker \
-  --server wss://host:9030 --device-id my-worker --psk <psk>
+  --server wss://host:9030 --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-Against a loopback dev server with no auth handshake:
+Against a loopback server (still paired — `cc_server` always runs the PSK
+handshake):
 
 ```bash
-fvm dart run cc_worker --server ws://localhost:9030
+fvm dart run cc_worker --server ws://localhost:9030 \
+  --device-id my-worker --psk-file /path/to/worker.psk
 ```
 
-| Flag               | Description                                                                                      | Default     |
-| ------------------ | ------------------------------------------------------------------------------------------------ | ----------- |
-| `--server <url>`   | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
-| `--name <name>`    | Operator-facing worker name.                                                                     | host name   |
-| `--device-id <id>` | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
-| `--psk <key>`      | Paired-device pre-shared key. Omit only for a loopback dev server.                               | —           |
+| Flag                 | Description                                                                                      | Default     |
+| -------------------- | ------------------------------------------------------------------------------------------------ | ----------- |
+| `--server <url>`     | cc_server URL (`ws://`/`wss://`; `http(s)` and a missing `/rpc` path are coerced). **Required.** | —           |
+| `--name <name>`      | Operator-facing worker name.                                                                     | host name   |
+| `--device-id <id>`   | Stable paired-device id, also used as the worker id.                                             | `cc-worker` |
+| `--psk-file <path>`  | File whose first non-empty line is the pairing key. Preferred over `--psk`.                      | —           |
+| `--psk <key>`        | Pairing key on the command line. Visible in `ps` and shell history — the binary warns.           | —           |
+| `--max-jobs <n>`     | Hard ceiling on jobs this process executes concurrently (positive integer).                      | `4`         |
+
+Resolution order for the key is `--psk-file` → `CC_WORKER_PSK` → `--psk`.
+Omitting every source skips the worker's auth handshake; a real `cc_server`
+then denies the session (`auth_denied`) rather than accepting an unauthenticated
+worker. Unknown flags are a usage error (`exit 64`) — unlike `cc_server`, this
+binary uses `package:args` and does not ignore typos.
 
 `CC_WORKER_CACHE` overrides the worktree materialization cache directory
 (default: a `cc_worker_cache` directory under the system temp dir).

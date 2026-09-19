@@ -5,7 +5,7 @@ description: Install Control Center, configure one agent and watch it work on yo
 
 This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
 
-You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Kimi Code, or any provider with an API key) or an agent CLI already installed. Everything else is set up along the way.
+You need Git, a GitHub account and either a model-provider account (Anthropic, OpenAI, Codex, Cursor, Kimi Code, or any provider with an API key) or the Claude Code CLI already installed. Everything else is set up along the way.
 
 ## Step 1: Install and launch
 
@@ -34,7 +34,7 @@ Onboarding has five steps and they run in order — there is no skipping ahead.
 Control Center then opens your workspace inbox.
 
 :::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own copy-on-write worktree, credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/manual/concepts/sandbox-security/).
+Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/manual/concepts/sandbox-security/).
 :::
 
 ## Step 3: Add a repository

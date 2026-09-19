@@ -400,6 +400,21 @@ void main() {
       );
       addTearDown(router.dispose);
 
+      final host = FakeRpcHost()
+        ..onCall = (op, args) {
+          expect(op, 'workspace.create');
+          expect(args['name'], 'Acme');
+          return {
+            'workspace': {
+              'id': 'ws-acme',
+              'name': args['name'],
+              'created_at': DateTime(2024).toIso8601String(),
+              'updated_at': DateTime(2024).toIso8601String(),
+            },
+          };
+        };
+      addTearDown(host.close);
+      final client = host.client();
       final repository = FakeWorkspaceRepository();
       addTearDown(repository.dispose);
       final activeNotifier = _RecordingActiveWorkspaceIdNotifier();
@@ -409,6 +424,7 @@ void main() {
         ProviderScope(
           overrides: [
             appPreferencesProvider.overrideWithValue(AppPreferences.inMemory()),
+            rpcClientProvider.overrideWithValue(client),
             workspaceRepositoryProvider.overrideWithValue(repository),
             domainEventBusProvider.overrideWithValue(DomainEventBus()),
             workspaceFilesystemPortProvider.overrideWithValue(
@@ -432,8 +448,7 @@ void main() {
           .create(name: 'Acme');
       await tester.pump();
 
-      expect(id, isNotNull);
-      expect(repository.saved.single.name, 'Acme');
+      expect(id, 'ws-acme');
       // The active id is pre-seeded (so onboarding's finish lands on the new
       // workspace's inbox via the route sync) ...
       expect(activeNotifier.setTo, id);

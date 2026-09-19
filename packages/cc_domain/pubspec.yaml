@@ -11,11 +11,10 @@ resolution: workspace
 dependencies:
   cc_harness:
     path: ../cc_harness
-  # Pure-Dart utilities the shared-kernel entities/value-objects use. No Flutter.
   collection: ^1.19.1
   crypto: ^3.0.7
   uuid: ^4.6.0
-  html: ^0.15.6
+  html: ^0.15.7
   meta: any
 
 dev_dependencies:

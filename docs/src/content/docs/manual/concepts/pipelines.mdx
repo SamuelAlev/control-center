@@ -28,8 +28,9 @@ resuming would be worse than stopping:
 
 - A step that has been `suspended` longer than `suspendedStepTimeout` (24 hours
   by default) is waiting on tickets that will never reach a terminal state, so
-  it is failed to free the run. Approval gates are exempt — waiting days for a
-  human is their job.
+  it is failed to free the run. The exemption is `extras['awaitApproval'] ==
+  true` — that is the `orchestration.awaitApproval` partial-approval gate.
+  `human.gate` is not exempt.
 - A step declared `extras: {'idempotent': false}` that was mid-flight when the
   server stopped may already have applied its side effect (a squash merge, a
   worktree cleanup). Re-running it could double-apply, so the engine fails it
@@ -57,14 +58,16 @@ Two consequences of the registry design are worth knowing before you author a
 template by hand:
 
 - A step whose `bodyKey` is not registered produces a **warning at template
-  load** and then never executes. Nothing fails loudly at runtime. (`trigger`
-  and `terminal` steps are exempt — they are scheduler sentinels and carry no
-  body.)
+  load** and then never executes. Nothing fails loudly at runtime. `trigger`
+  and `terminal` steps are exempt from that warning: the trigger still runs the
+  no-op `pipeline.trigger` body so downstream listeners fire; a `terminal` step
+  has no body and is a scheduler sentinel.
 - Keys in a node's `extras` map are **exact-match and silently ignored
-  otherwise**. Only `extras['channelId']` (key unchanged) puts a step's work in
-  an existing conversation and only `extras['mode']` sets that conversation's
-  mode. Any other spelling gets a hidden conversation and the body's default
-  mode.
+  otherwise**. Only `extras['spaceId']` puts an agent step's work in an existing
+  conversation. `extras['mode']` (`chat` / `plan` / `review`) is read on the
+  node that *opens* the room (`messaging.createSpace`, default `review`) — a
+  later agent step cannot re-permission a conversation it joined. Any other
+  spelling of either key is ignored.
 
 ## State and data flow
 
@@ -89,10 +92,11 @@ kinds:
 | **Manual**       | You run it by hand; the presence of an enabled manual trigger is what puts the template in the run picker                 |
 | **Webhook**      | An external system POSTs to `/webhooks/<token>` on the server's HTTP port                                                 |
 
-Event triggers are a closed set: 14 event types are known to the dispatcher and
-offered in the picker and nothing else can start a pipeline. Two of those 14 —
-`TicketCreated` and `TicketStatusChanged` — have no payload mapping behind them
-yet, so a trigger on either sits enabled and never fires. See
+Event triggers are a closed set: 16 event types are known to the dispatcher and
+offered in the picker (`EventPayloadMapper.knownEventTypes`) and nothing else
+can start a pipeline. Fourteen of those 16 have a payload mapping. Two —
+`TicketCreated` and `TicketStatusChanged` — have none, so a trigger on either
+sits enabled and never fires. See
 [Domain events](/manual/concepts/domain-events/) for the full list.
 
 The webhook token doubles as the HMAC secret: the request's
@@ -114,7 +118,7 @@ ship disabled**: `external_pr_welcome`, `cross_review`, `ticket_to_pr`,
 This is the part that surprises people. Their triggers are seeded _enabled_, but
 `PipelineEngine.start` refuses a disabled template and returns null — so the
 trigger fires into nothing and no run appears. **The template, not the trigger,
-is the switch.** Enable it at Settings → Workspace → Pipelines before expecting
+is the switch.** Enable it at Settings → Workspace → Pipeline templates before expecting
 any of those eight to do anything.
 
 Re-seeding a workspace preserves whatever you chose: your `isEnabled` setting
@@ -132,10 +136,12 @@ they run.
 
 ## What the engine knows
 
-`PipelineEngine` creates the run record, schedules the trigger step and then
-walks the DAG: as steps complete it evaluates downstream triggers, resolves
-router branches, waits on joins, applies retry policies and continue-on-fail,
-and persists state, cost and errors at every step.
+`PipelineEngine` creates the run record, schedules the start node that matches
+the run's event type, and then walks the DAG: as steps complete it evaluates
+downstream triggers, resolves router branches, waits on joins, applies retry
+policies and continue-on-fail, and persists state, cost and errors at every
+step. Edges that leave another start are ignored for that run, so a schedule
+fire does not wait on a manual-only condition.
 
 What it does _not_ know is anything about ticketing, dispatch, GitHub, or
 messaging. Its only extension seam is the `PipelineBodyRegistry`. The bodies

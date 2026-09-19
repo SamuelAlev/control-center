@@ -3,6 +3,7 @@ import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/messaging/providers/repo_content_search_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_worktree_search_panel.dart';
 import 'package:control_center/features/pr_review/providers/pr_worktree_search_provider.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,17 +22,31 @@ const _outside = (
   lines: [(line: 1, text: 'needle outside')],
 );
 
+const _rootFile = (
+  repoId: 'repo',
+  relativePath: 'lock.yaml',
+  lines: [
+    (line: 10, text: 'needle a'),
+    (line: 20, text: 'needle b'),
+    (line: 30, text: 'needle c'),
+  ],
+);
+
 Widget _wrap(
   Widget child, {
   required List<FileContentMatch> Function(WorktreeContentSearchArgs args)
   search,
+  TextDirection? textDirection,
 }) {
   return ProviderScope(
     overrides: [
       codeFontFamilyProvider.overrideWithValue('Fira Code'),
       prWorktreeSearchProvider.overrideWith((ref, args) async => search(args)),
     ],
-    child: testWrap(SizedBox(width: 360, height: 640, child: child)),
+    child: testWrap(
+      SizedBox(width: 360, height: 640, child: child),
+      textDirection: textDirection,
+    ),
   );
 }
 
@@ -118,6 +133,59 @@ void main() {
 
       expect(openedPath, 'lib/in_pr.dart');
       expect(openedLine, 4);
+    });
+
+    testWidgets('file match count pins to the trailing edge in LTR and RTL', (
+      tester,
+    ) async {
+      Future<void> pump(TextDirection direction) async {
+        await tester.pumpWidget(
+          _wrap(
+            _panel(onOpenResult: (_, {int? line}) {}),
+            textDirection: direction,
+            search: (_) => const [_rootFile],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await _search(tester, 'needle');
+      }
+
+      await pump(TextDirection.ltr);
+      final ltrPanel = tester.getRect(find.byType(PrWorktreeSearchPanel));
+      final ltrCount = tester.getRect(find.text('3'));
+      // Row end inset (8) + badge horizontal padding (6).
+      expect(ltrPanel.right - ltrCount.right, lessThan(20));
+      expect(
+        ltrCount.left - tester.getTopRight(find.text('lock.yaml')).dx,
+        greaterThan(40),
+      );
+
+      await pump(TextDirection.rtl);
+      final rtlPanel = tester.getRect(find.byType(PrWorktreeSearchPanel));
+      final rtlCount = tester.getRect(find.text('3'));
+      expect(rtlCount.left - rtlPanel.left, lessThan(20));
+      expect(
+        tester.getTopLeft(find.text('lock.yaml')).dx - rtlCount.right,
+        greaterThan(40),
+      );
+    });
+
+    testWidgets('match rows start at the file icon', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          _panel(onOpenResult: (_, {int? line}) {}),
+          search: (_) => const [_rootFile],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await _search(tester, 'needle');
+
+      final icon = tester.getTopLeft(find.byIcon(AppIcons.fileCode));
+      final line = tester.getTopRight(find.text('10'));
+      final name = tester.getTopLeft(find.text('lock.yaml'));
+      // 28px line-number slot starting at the icon, just in front of the name.
+      expect(line.dx, closeTo(icon.dx + 28, 2));
+      expect(line.dx, lessThan(name.dx + 28));
     });
   });
 }

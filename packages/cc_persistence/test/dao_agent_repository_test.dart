@@ -115,7 +115,7 @@ void main() {
       final agent = _createAgent(
         name: 'New Agent',
         persona: 'Helpful assistant',
-        adapterId: 'opencode',
+        adapterId: 'claude-code',
         modelId: 'gpt-4',
         strictMode: true,
         effort: 'medium',
@@ -128,7 +128,7 @@ void main() {
       expect(row, isNotNull);
       expect(row!.name, 'New Agent');
       expect(row.persona, 'Helpful assistant');
-      expect(row.adapterId, 'opencode');
+      expect(row.adapterId, 'claude-code');
       expect(row.modelId, 'gpt-4');
       expect(row.strictMode, isTrue);
       expect(row.effort, 'medium');

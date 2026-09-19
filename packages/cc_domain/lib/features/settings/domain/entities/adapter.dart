@@ -71,8 +71,7 @@ enum DetectionStatus {
 
 /// Result of detecting a specific adapter CLI on the local machine.
 /// What an adapter's CLI supports, surfaced in Settings → Adapters and the
-/// agent doctor. Drives dispatch decisions (e.g. only append `--mode json`
-/// when the adapter supports it).
+/// agent doctor.
 class AdapterCapabilities {
   /// Creates an [AdapterCapabilities].
   const AdapterCapabilities({
@@ -438,9 +437,9 @@ class DetectedAdapter {
 /// Static capability declarations for the built-in adapters.
 ///
 /// `supportsModelSelection` is true for every adapter — all accept a model,
-/// either via ACP `session/new` or `--model`. `supportsJsonMode` is true for
-/// the built-in harness (it owns its own structured event stream); Claude
-/// Code delivers its structure via `stream-json`, not the settings JSON-mode
+/// either via `--model` or the harness provider id. `supportsJsonMode` is true
+/// for the built-in harness (it owns its own structured event stream); Claude
+/// Code delivers its structure via `stream-json`, not a settings JSON-mode
 /// flag.
 AdapterCapabilities? capabilitiesForAdapter(String adapterId) {
   switch (adapterId) {

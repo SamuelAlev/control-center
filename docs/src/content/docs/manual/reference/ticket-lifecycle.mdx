@@ -41,7 +41,7 @@ backlog ──→ open ──→ inProgress ──→ inReview ──→ done
 Any non-terminal status ──→ cancelled; inReview ──→ failed
 ```
 
-**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status, including reopening a terminal one.
+**This graph binds agents and automation only.** `TicketWorkflowService.transitionStatus` checks it when `force` is false — the MCP tools and the reconcilers. An illegal transition there is logged and ignored. Every user-driven status change in the UI passes `force: true` and bypasses the graph entirely, so a human may move a ticket to any status the picker lists (every status except `failed`), including reopening a terminal one. Agents mark `failed` with `fail_ticket`.
 
 A status may always transition to itself. Terminal states have no outgoing edges.
 
@@ -72,24 +72,26 @@ Stored as an integer on Linear's native 0–4 scale. An unknown value parses to 
 
 An unknown or null stored value parses to `local`.
 
-| Provider  | Status                                                            |
-| --------- | ----------------------------------------------------------------- |
-| `local`   | Stored entirely in the workspace database; the default            |
-| `linear`  | Remote-owned, mirrored locally                                    |
-| `jira`    | Enum value present; documented in the enum as not yet implemented |
-| `clickup` | Enum value present; documented in the enum as not yet implemented |
+| Provider | Status                                                 |
+| -------- | ------------------------------------------------------ |
+| `local`  | Stored entirely in the workspace database; the default |
+| `linear` | Remote-owned, mirrored locally                         |
 
-Sync adapters ship for Linear, GitHub Issues, Jira Cloud and ClickUp under `packages/cc_infra/lib/src/tickets/sync/`. Nothing in the product creates a `TicketSyncConfig` row, so **no vendor sync is configurable in-app**; a config row must be inserted out of band.
+Sync adapters live under `packages/cc_infra/lib/src/tickets/sync/` for Linear,
+GitHub Issues, Jira Cloud and ClickUp. GitHub Issues is a sync-adapter vendor
+(`vendorId: github`) only — it is not a `TicketProvider` value, so a pulled
+GitHub issue is stored with `originKind: externalSync` and default
+`provider: local`. The vendor mapping lives on `ticket_sync_links`.
 
 ## Ticket origin
 
-| Value             | Meaning                          |
-| ----------------- | -------------------------------- |
-| `manual`          | Created by a human (the default) |
-| `pipelineStep`    | Created by a pipeline step       |
-| `agentDelegation` | Delegated by another agent       |
-| `externalSync`    | Synced from a remote provider    |
-| `recovery`        | Created by the recovery system   |
+`createTicket` writes `manual`. A vendor pull writes `externalSync`. Delegated
+children stay `manual`.
+
+| Value          | Meaning                                                      |
+| -------------- | ------------------------------------------------------------ |
+| `manual`       | Default on `createTicket` (human, agent, and delegated rows) |
+| `externalSync` | Set by `TicketSyncEngine` on a vendor pull                   |
 
 ## Ticket fields
 
@@ -97,10 +99,10 @@ The aggregate spans two concerns on one row. The **mirror** (provider, keys, tit
 
 | Field                    | Type                       | Description                                                                                |
 | ------------------------ | -------------------------- | ------------------------------------------------------------------------------------------ |
-| `id`                     | `String`                   | UUID v4. For local tickets this is also the `externalKey`                                  |
+| `id`                     | `String`                   | UUID v4                                                                                    |
 | `workspaceId`            | `String`                   | Owning workspace                                                                           |
 | `provider`               | `TicketProvider`           | Backend owning the canonical data (default `local`)                                        |
-| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`)                                                       |
+| `externalKey`            | `String?`                  | Provider-native key (e.g. `LIN-123`). Local `createTicket` writes a *separate* UUID here, not the row `id` |
 | `url`                    | `String?`                  | Web URL on the remote provider                                                             |
 | `title`                  | `String`                   | Short summary; must not be empty                                                           |
 | `description`            | `String?`                  | Longer Markdown body                                                                       |
@@ -108,6 +110,7 @@ The aggregate spans two concerns on one row. The **mirror** (provider, keys, tit
 | `labels`                 | `List<String>`             | Free-form labels                                                                           |
 | `status`                 | `TicketStatus`             | Canonical normalized status                                                                |
 | `rawStatus`              | `String?`                  | The remote provider's native state name, kept for lossless display                         |
+| `externalSyncedAt`       | `DateTime?`                | Last multi-vendor sync; null until the first. Per-vendor mapping lives in `ticket_sync_links` |
 | `parentTicketId`         | `String?`                  | Parent in the delegation / breakdown tree                                                  |
 | `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
 | `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
@@ -133,7 +136,7 @@ The aggregate spans two concerns on one row. The **mirror** (provider, keys, tit
 | `originKind`             | `TicketOriginKind`         | How the ticket was created (default `manual`)                                              |
 | `collaborators`          | `List<TicketCollaborator>` | Hydrated by the repository on demand                                                       |
 
-Derived: `isTerminal`, `isRemote`, `isAssignedToUser` and `displayKey` (the `externalKey` when synced, else the `id`).
+Derived: `isTerminal`, `isRemote` (`provider != local`), `isAssignedToUser` and `displayKey` (`externalKey ?? id` — local tickets therefore display the separate create-time UUID, not the row `id`).
 
 ## Ticket relations
 
@@ -161,22 +164,20 @@ Parent and sub-issue links are **not** `ticket_links` rows — they live on `tic
 
 ## Domain events
 
-| Event                           | Fired when                                         |
-| ------------------------------- | -------------------------------------------------- |
-| `TicketCreated`                 | Ticket is created                                  |
-| `TicketAssigned`                | Ticket is assigned to a principal or team          |
-| `TicketStarted`                 | Work begins                                        |
-| `TicketCompleted`               | Work finishes successfully                         |
-| `TicketFailed`                  | Work fails                                         |
-| `TicketCancelled`               | Ticket is cancelled                                |
-| `TicketStatusChanged`           | Any status change                                  |
-| `TicketReassigned`              | Ticket reassigned                                  |
-| `TicketDelegated`               | A child ticket is created under a parent           |
-| `TicketCollaboratorAdded`       | Collaborator joins                                 |
-| `TicketDetailsUpdated`          | Title, description, or priority changes            |
-| `ExternalTicketWebhookReceived` | An external vendor webhook is verified and applied |
+These eight classes live in `packages/cc_domain/lib/core/domain/events/ticketing_events.dart`. There is no `TicketStarted`, `TicketDelegated`, `TicketCollaboratorAdded`, or `ExternalTicketWebhookReceived`.
 
-`TicketAssigned` is an audit and notification signal and a pipeline trigger. **It starts no agent run.** There is no ticket dispatcher: assignment records ownership and agent work happens in conversations.
+| Event                     | Fired when                                         |
+| ------------------------- | -------------------------------------------------- |
+| `TicketCreated`           | Ticket is created                                  |
+| `TicketAssigned`          | Ticket is assigned to a principal or team          |
+| `TicketCompleted`         | Work finishes successfully                         |
+| `TicketFailed`            | Work fails                                         |
+| `TicketCancelled`         | Ticket is cancelled                                |
+| `TicketStatusChanged`     | Any status change                                  |
+| `TicketReassigned`        | Ticket reassigned                                  |
+| `TicketDetailsUpdated`    | Title, description, priority, or labels change     |
+
+`TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent starts no run — there is no ticket dispatcher watching `assignedAgentId`. Assignment to a team is the exception: `TeamRoutingService` dispatches the team leader. Adding a collaborator writes a row and publishes nothing. A vendor webhook is applied through `TicketSyncEngine` without a domain event.
 
 ## Mutation chokepoint
 

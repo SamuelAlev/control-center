@@ -53,8 +53,8 @@ Each row carries a role from a five-level, rank-ordered ladder:
 | `owner`  | Full control, including workspace deletion; exactly one per workspace                                      |
 | `admin`  | Manage members, invites, settings, destructive operations                                                  |
 | `member` | Day-to-day read-write: messages, tickets, agent runs                                                       |
-| `viewer` | Read-only across the workspace                                                                             |
-| `guest`  | Read-only like viewer, plus secret-exclusion globs and per-repo grant checks on every code-bearing surface |
+| `viewer` | Read-only across the workspace; secret-exclusion globs hide matching paths on code-bearing surfaces |
+| `guest`  | Same read-only floor as viewer, at the lowest rank of the ladder |
 
 Every access decision reduces to "is the caller's role at least X". The floor
 is derived from the operation's kind unless it declares one explicitly: a read
@@ -63,13 +63,13 @@ needs `guest`, a mutation needs `member`, a destructive operation needs
 of scope.
 
 **Invites** are how membership is granted, from Settings → Workspace →
-Members & roles. An admin mints a single-use code (as a link or QR) that
+Members. An admin mints a single-use code (as a link or QR) that
 expires after seven days by default; the server stores only the code's SHA-256
 hash and the code itself is shown exactly once. Redeeming it JIT-provisions
 the user, records membership at the invite's role (never `owner` — ownership is
 transferred explicitly, never granted by invite) and hands off to device
-pairing. Device credentials minted in the app are themselves time-boxed to 30
-days, so a leaked QR is not a permanent key.
+pairing. Device credentials minted after pairing are themselves time-boxed to
+30 days, so a pairing is not a permanent key.
 
 **Repo grants** sit beneath membership. Because the server holds full
 checkouts, workspace membership alone must never out-privilege the forge:
@@ -159,8 +159,8 @@ The presence lane isn't just a roster — it drives the collaboration verbs:
   re-reads it before resuming its next turn, so you can nudge a run
   mid-flight without killing it.
 - **Take over.** Assuming control of a conversation pauses every active run
-  at its next clean turn boundary (external CLI runs, which have no safe
-  boundary, are stopped) behind a per-turn git snapshot, so the take-over is
+  at its next clean turn boundary (a Claude Code run, which has no safe
+  boundary, is stopped) behind a per-turn git snapshot, so the take-over is
   reversible. A durable marker blocks new dispatches into the space and
   survives a server restart — the server never auto-resumes into a human's
   half-finished edit. One live editor per worktree is a soft claim: a second
@@ -189,8 +189,8 @@ the effect class that verb declares. And a hard `deny` from the action
 guardrails is not overridable by `actFreely`.
 
 :::note[The dial gates the built-in harness only]
-It is consulted by the harness loop's approval callback. An agent running on an
-external CLI or ACP adapter makes its own tool calls inside its own process,
+It is consulted by the harness loop's approval callback. An agent running on the
+Claude Code adapter makes its own tool calls inside its own process,
 where Control Center has nothing to gate — see
 [The agent model](/manual/concepts/agent-model/).
 :::
@@ -201,8 +201,9 @@ All of this is additive. A solo operator's workflow is unchanged: with one
 human and no agents the presence hub has nothing to broadcast, so the lane
 emits its initial snapshot and then idles at zero traffic; the LWW and sync
 machinery is the same single-writer path it always was; and the pairing key
-remains the device credential it has always been — membership only starts
-governing access the moment a second principal joins.
+remains the device credential it has always been. Membership is already the
+access boundary — with one human there is a single owner row and no roster
+chrome.
 
 ## Related concepts
 

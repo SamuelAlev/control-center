@@ -63,7 +63,7 @@ The `%pip` cache eviction is the one that matters: installing into a live interp
 ## Calling your own tools from inside a cell
 
 ```python
-paths = tool("search", {"pattern": "TODO", "path": "lib"})
+paths = tool("find", {"pattern": "**/*.dart", "path": "lib"})
 for path in paths.splitlines()[:100]:
     contents = tool("read", {"path": path})
     ...
@@ -80,7 +80,7 @@ A bridged call **suspends the cell's timeout** while it is outstanding. The budg
 ## Starting over
 
 ```
-eval(code: "…", reset: true)
+eval(code: "…", reset: true, description: "Start a clean interpreter")
 ```
 
 Discards the interpreter and starts a clean one. Everything loaded is gone, which is the point.

@@ -353,7 +353,7 @@ _Audio _decodeWav(File file) {
 String _repoRoot() {
   var dir = Directory.current;
   for (var i = 0; i < 5; i++) {
-    if (Directory('${dir.path}/assets/models').existsSync()) {
+    if (File('${dir.path}/scripts/lib/natives.sh').existsSync()) {
       return dir.path;
     }
     dir = dir.parent;

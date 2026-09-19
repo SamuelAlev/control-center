@@ -62,6 +62,14 @@ class SelectedDateNotifier extends Notifier<DateTime> {
 /// Identifies a workspace + date range to stream events for.
 typedef CalendarRangeRef = ({String workspaceId, DateTimeRange range});
 
+/// Builds a [CalendarRangeRef] without forcing callers to import Material's
+/// [DateTimeRange].
+CalendarRangeRef calendarRangeFor({
+  required String workspaceId,
+  required DateTime start,
+  required DateTime end,
+}) => (workspaceId: workspaceId, range: DateTimeRange(start: start, end: end));
+
 /// Streams the events overlapping a range for a workspace (earliest first).
 ///
 /// Every emission refreshes the [CalendarEventCache] slice for the range, so a

@@ -32,7 +32,8 @@ class NodeConfigEditor extends StatefulWidget {
   /// The currently selected step.
   final PipelineStepDefinition step;
 
-  /// All steps in the template (used to populate the upstream picker).
+  /// All steps in the template (used to label route-key fields from
+  /// upstream routers).
   final List<PipelineStepDefinition> allSteps;
 
   /// Agents in the active workspace (for the agent autocomplete).
@@ -109,6 +110,10 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
     if (old.step.id != widget.step.id) {
       _disposeControllers();
       _initControllers();
+    } else {
+      // Canvas wiring is the source of topology; keep local route-key
+      // edits aligned when an inbound edge is added or removed there.
+      _edges = _edgesFromTriggers(widget.step.triggers);
     }
   }
 
@@ -257,7 +262,9 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
         bodyKey: widget.step.bodyKey,
         triggers: _buildTriggers(),
         waitForStepIds: widget.step.kind == StepKind.join
-            ? _edges.keys.toList(growable: false)
+            ? _buildTriggers()
+                  .expand((t) => t.sourceStepIds)
+                  .toList(growable: false)
             : const [],
         x: widget.step.x,
         y: widget.step.y,
@@ -296,7 +303,9 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
         bodyKey: widget.step.bodyKey,
         triggers: _buildTriggers(),
         waitForStepIds: kind == StepKind.join
-            ? _edges.keys.toList(growable: false)
+            ? _buildTriggers()
+                  .expand((t) => t.sourceStepIds)
+                  .toList(growable: false)
             : const [],
         x: widget.step.x,
         y: widget.step.y,
@@ -316,7 +325,8 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
     return edges;
   }
 
-  /// Emits one [StepTrigger] per edge, carrying its (optional) route key.
+  /// Emits one [StepTrigger] per inbound edge, carrying its (optional) route
+  /// key. Topology comes from the canvas; this only preserves route keys.
   List<StepTrigger> _buildTriggers() {
     return [
       for (final e in _edges.entries)
@@ -325,17 +335,6 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
           routeKey: (e.value == null || e.value!.isEmpty) ? null : e.value,
         ),
     ];
-  }
-
-  void _toggleSource(String sourceId) {
-    setState(() {
-      if (_edges.containsKey(sourceId)) {
-        _edges.remove(sourceId);
-      } else {
-        _edges[sourceId] = null;
-      }
-    });
-    _emit();
   }
 
   void _setRouteKey(String sourceId, String value) {
@@ -347,9 +346,6 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final ds = context.designSystem ?? DesignSystemTokens.light();
-    final upstreamCandidates = widget.allSteps
-        .where((s) => s.id != widget.step.id && s.kind != StepKind.terminal)
-        .toList();
     final byId = {for (final s in widget.allSteps) s.id: s};
 
     final agentItems = <String, String>{
@@ -652,36 +648,7 @@ class _NodeConfigEditorState extends State<NodeConfigEditor> {
               maxLines: 8,
             ),
           ),
-          const SizedBox(height: 20),
-          Text(
-            l10n.nodeConfigTriggers,
-            style: TextStyle(
-              color: ds.textPrimary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (upstreamCandidates.isEmpty)
-            Text(
-              l10n.nodeConfigNoUpstream,
-              style: TextStyle(color: ds.textTertiary, fontSize: 12),
-            )
-          else ...[
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final candidate in upstreamCandidates)
-                  CcChip(
-                    label: candidate.config.label ?? candidate.id,
-                    selected: _edges.containsKey(candidate.id),
-                    onPressed: () => _toggleSource(candidate.id),
-                  ),
-              ],
-            ),
-            ..._routeKeyEditors(l10n, ds, byId),
-          ],
+          ..._routeKeyEditors(l10n, ds, byId),
         ],
       ),
     );

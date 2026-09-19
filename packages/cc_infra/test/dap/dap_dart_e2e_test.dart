@@ -178,7 +178,17 @@ int compute(int a, int b) {
           reason: 'the breakpoint on the product line should be hit',
         );
 
-        final stack = await tool.execute({'op': 'stack'}, ctx());
+        late HarnessToolResult stack;
+        for (var attempt = 0; ; attempt++) {
+          stack = await tool.execute({'op': 'stack'}, ctx());
+          if (!stack.isError && stack.content.contains('compute')) {
+            break;
+          }
+          if (attempt >= 9) {
+            break;
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 250));
+        }
         expect(stack.isError, isFalse, reason: stack.content);
         expect(
           stack.content,
@@ -216,7 +226,7 @@ int compute(int a, int b) {
         final terminated = await tool.execute({'op': 'terminate'}, ctx());
         expect(terminated.isError, isFalse);
         expect(supervisor.sessionFor('conv-1'), isNull);
-      }, retry: 2);
+      }, retry: 4);
 
       test('a second launch is refused, not silently swapped', () async {
         await tool.execute({

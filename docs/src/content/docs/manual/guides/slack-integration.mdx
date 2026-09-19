@@ -58,7 +58,7 @@ Same app, no configuration token — Slack hands you its own create screen with 
    - **Install App**: install to the workspace and copy the **Bot User OAuth Token** (`xoxb-…`)
 7. Click **Paste the credentials** and continue with [Connect](#connect)
 
-Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. For the same reason **Customize bot** stays unavailable until you add a configuration token.
+Slack does not report which app it created, so Control Center does not learn the app id and the links in step 6 go to your app list rather than straight to that app. **Customize bot** needs a configuration token.
 
 ## Option C: build the app yourself
 
@@ -177,7 +177,7 @@ Space and user links deliberately survive: reconnecting the same app restores ev
 
 ### The row says "Connection error"
 
-Read the error shown next to the tag. A rejected credential (`invalid_auth`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
+Read the error shown next to the tag. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`) is terminal — the bridge stops retrying and waits for new tokens, because retrying a revoked token forever only rate-limits you. Re-paste the tokens in the connect dialog.
 
 A `missing_scope` error means the app is installed with fewer scopes than the bridge needs. Add the missing scope, reinstall the app in Slack, then reconnect.
 
@@ -186,7 +186,7 @@ Anything transient (a dropped socket, a Slack hiccup) reconnects on its own with
 ### The bot does not answer a mention
 
 - **Is the bot in the channel?** Slack only delivers channel messages to apps that are members. Run `/invite @your-bot-name`
-- **Are you linked?** An unlinked member gets a private reply explaining how to link, visible only to them. See [Link your Slack account](/manual/guides/link-chat-account/)
+- **Are you linked?** An unlinked member gets a reply in that Slack thread explaining how to link. See [Link your Slack account](/manual/guides/link-chat-account/)
 - **Are you a member of the workspace with a writing role?** A `viewer` or `guest` is told their role is read-only. The bridge never starts work on behalf of someone it cannot attribute
 - **Does the workspace have any agents?** With no agents, the message is stored but has nobody to answer it
 

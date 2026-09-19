@@ -3,11 +3,7 @@ title: Diagnose an agent
 description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
 ---
 
-This guide shows you how to find out why an agent is not running, using the surfaces that exist in the app today.
-
-:::caution[There is no agent doctor]
-Earlier documentation described an "Agent doctor" run from an agent's context menu. There is no such menu item, no diagnostics screen for an agent and no `doctor` MCP tool — the tool class was deleted, so an agent calling it gets "unknown tool". Nothing in the product produces a per-agent diagnostic report. Work through the checks below instead.
-:::
+This guide shows you how to find out why an agent is not producing runs.
 
 Work top down: the agent's own runs first, then its backend, then the server, then the host.
 
@@ -19,7 +15,7 @@ Each run shows a status badge, a duration ("Running…" while in flight), its st
 
 Read it like this:
 
-- **No runs at all** — the dispatch never happened. Check that you actually mentioned the agent by an exact name match (mention parsing matches `@` plus word characters only, so a name with a hyphen, dot or space can never be mentioned), then go to step 2.
+- **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
 - **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
 - **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
 - **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
@@ -51,7 +47,7 @@ For a headless server, `GET /healthz` is the same information without a client. 
 curl http://localhost:9030/healthz
 ```
 
-It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts.
+It returns the server's status, uptime in seconds, live connection count, bound port, build version and git SHA, workspace schema version, RPC catalog version, server id, name and identity fingerprint, whether the bind is insecure and a `codeGraph` block with `watching` / `indexing` / `pending` counts. When a cache has seen traffic it also includes a `caches` block; a demo server adds `demo: true`.
 
 Two things worth knowing when a change "works in tests but not in the app":
 
@@ -62,9 +58,9 @@ Two things worth knowing when a change "works in tests but not in the app":
 
 **Settings → Server → Diagnostics & privacy** (`/settings/server/diagnostics`) is the host-level page. It carries:
 
-- **Sandboxing** — the master toggle, the detected backend, an install hint, the default capability toggles and a reset. Only the detected backend comes from the server; see the caution below.
+- **Sandboxing** — the master toggle, the detected backend, an install hint and the default capability toggles. Only the detected backend comes from the server; see the caution below. There is no reset control.
 - **Semantic search** — the on-device embedding model's lifecycle: installed, downloading with a percentage, not installed, or an install error. Until it is installed, memory and code search stay keyword-only.
-- **System behaviour** — keep the computer awake while agents run.
+- **System behavior** — keep the computer awake while agents run.
 - **Sync engine** — per-store kill switches for tickets, messaging and notes. These are emergency escape hatches back to full-snapshot subscriptions; a change only affects new subscriptions, so it takes full effect after a reload.
 - **Log level** — raise it before reproducing a failure.
 - **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.

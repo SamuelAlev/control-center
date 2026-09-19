@@ -653,7 +653,7 @@ void main() {
 
     test('debug events are dropped', () async {
       final r = await _run([
-        DebugEvent(content: 'launching pi', timestamp: _t(1)),
+        DebugEvent(content: 'launching claude', timestamp: _t(1)),
         TextEvent(content: 'hi', timestamp: _t(2)),
         DoneEvent(timestamp: _t(3)),
       ]);

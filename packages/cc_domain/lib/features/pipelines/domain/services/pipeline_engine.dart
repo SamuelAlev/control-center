@@ -23,6 +23,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_re
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/downstream_planner.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/services/state_reducer.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_process_registry.dart';
@@ -359,7 +360,14 @@ class PipelineEngine implements PipelineEnginePort {
     }
 
     _track(
-      _runStep(run: run, definition: definition, stepDef: definition.entryStep),
+      _runStep(
+        run: run,
+        definition: definition,
+        stepDef: pipelineStartStep(
+          definition,
+          triggerEventType: run.triggerEventType,
+        ),
+      ),
     );
     return run;
   }
@@ -470,7 +478,10 @@ class PipelineEngine implements PipelineEnginePort {
               : _runStep(
                   run: started,
                   definition: definition,
-                  stepDef: definition.entryStep,
+                  stepDef: pipelineStartStep(
+                    definition,
+                    triggerEventType: started.triggerEventType,
+                  ),
                 ),
         );
         return started;
@@ -1298,7 +1309,10 @@ class PipelineEngine implements PipelineEnginePort {
         _runStep(
           run: run,
           definition: definition,
-          stepDef: definition.entryStep,
+          stepDef: pipelineStartStep(
+            definition,
+            triggerEventType: run.triggerEventType,
+          ),
         ),
       );
       return;
@@ -1946,6 +1960,10 @@ class PipelineEngine implements PipelineEnginePort {
       existing: existing,
       chosenRoutes: chosenRoutes,
       resumable: resumable.keys.toSet(),
+      startStepId: pipelineStartStep(
+        definition,
+        triggerEventType: current.triggerEventType,
+      ).id,
     );
 
     // Record branches a router bypassed (and their now-unreachable descendants)

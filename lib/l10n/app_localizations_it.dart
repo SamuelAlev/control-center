@@ -6286,6 +6286,43 @@ class AppLocalizationsIt extends AppLocalizations {
       'Trascina un nodo dalla libreria per iniziare.';
 
   @override
+  String get pipelineWhenThisHappens => 'Quando succede questo';
+
+  @override
+  String get pipelineDoThis => 'Fai questo';
+
+  @override
+  String get pipelineAddStep => 'Aggiungi passaggio';
+
+  @override
+  String get pipelineTidyUp => 'Riordina il layout';
+
+  @override
+  String get pipelineEditorHint =>
+      'Trascina i passaggi per disporli · trascina una maniglia per collegare';
+
+  @override
+  String get pipelineRemoveConnection => 'Rimuovi connessione';
+
+  @override
+  String get pipelineDragToConnect => 'Trascina per collegare';
+
+  @override
+  String get pipelineNewDefaultName => 'Nuova pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Trigger';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Aggiungi un trigger';
+
+  @override
+  String get pipelineOnEvent => 'Su evento';
+
+  @override
   String get nodeConfigTitle => 'Configurazione nodo';
 
   @override
@@ -6534,6 +6571,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Viene generato un URL webhook firmato. I sistemi esterni inviano una POST per avviare questa pipeline.';
 
   @override
+  String get triggerWebhookPathLabel => 'Percorso webhook';
+
+  @override
   String get triggerEventFieldLabel => 'Evento';
 
   @override
@@ -6662,6 +6702,89 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket assegnato';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket creato';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Stato del ticket modificato';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Registrazione della riunione interrotta';
+
+  @override
+  String get triggerEventSkillUpdated => 'Competenza aggiornata';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Spazio eliminato';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Una pull request aperta sull\'host del codice, non da Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Una pull request aperta da Control Center o da un agente.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Unita, chiusa, aperta, riaperta o approvata. Filtra per stato nell\'ispettore.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Solo quando la pull request viene unita, non chiusa o riaperta.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Un repository viene collegato a questo spazio di lavoro.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Un file in un repository collegato cambia su disco.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Un nuovo messaggio arriva in uno spazio.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Un ticket viene creato in questo spazio di lavoro.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Un ticket passa da uno stato all\'altro.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Un ticket termina correttamente.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Un\'esecuzione dell\'agente non è riuscita e il ticket è contrassegnato come non riuscito.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Un ticket viene annullato e non continuerà.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Viene superato un limite di spesa dello spazio di lavoro o dell\'agente.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Un ticket viene assegnato a una persona, un agente o un team.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'La registrazione di una riunione termina.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Una competenza viene installata o aggiornata.';
+
+  @override
+  String get triggerSpaceDeletedHelp =>
+      'Uno spazio di conversazione viene eliminato.';
 
   @override
   String get navTickets => 'Ticket';

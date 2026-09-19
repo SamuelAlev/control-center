@@ -319,7 +319,7 @@ class DispatchSession implements SteeringSessionView {
 
   /// Resolves a CLI binary name to its absolute path. Defaults to the real
   /// [resolveBinaryPath] host probe; tests inject a stub so the dispatch flow
-  /// can be exercised without the adapter binary (e.g. `pi`) installed.
+  /// can be exercised without the adapter binary (e.g. `claude`) installed.
   final Future<String?> Function(String binary) resolveBinary;
 
   /// Active ACP subprocess + client, when the resolved backend is ACP. Held so
@@ -354,7 +354,7 @@ class DispatchSession implements SteeringSessionView {
   ///
   /// Set by [_forwardSandboxEvent], reset before every `exec`. A CLI that
   /// explains itself ("Error: Unknown option: --mcp-config") and then exits 1
-  /// does not also need `[sandbox] pi exited with code 1` under it — the
+  /// does not also need `[sandbox] claude exited with code 1` under it — the
   /// generic line adds a second scary row saying strictly less than the first.
   /// It stays an [ErrorEvent] when the process died SILENTLY, because then it
   /// is the only thing the operator gets; otherwise it degrades to a
@@ -1061,9 +1061,6 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
-  /// Runs an ACP adapter: spawns
-
-
   /// This run's diagnostics ledger: what the agent has already been told
   /// about each file, so an edit reports only what it newly broke.
   final DiagnosticsLedger _diagnosticsLedger = DiagnosticsLedger();
@@ -1590,8 +1587,6 @@ class DispatchSession implements SteeringSessionView {
       ...adapterEnvOverride,
       ...capabilityEnv(caps),
       if (wakeContext != null) ...wakeContext!.toEnvironment(),
-      'CC_DISABLE_PROJECT_CONFIG': 'true',
-      'OPENCODE_DISABLE_PROJECT_CONFIG': 'true',
       // Which Claude Code account this run signs in as. It is the LAST word on
       // the config dir — an `adapterEnvOverride` naming a different one would
       // point the CLI somewhere the sandbox never made writable, which fails

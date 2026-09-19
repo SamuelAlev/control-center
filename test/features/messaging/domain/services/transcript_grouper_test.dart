@@ -128,7 +128,7 @@ void main() {
     group('debug events', () {
       test('groups >= threshold debug events into a systemGroup', () async {
         final events = [
-          DebugEvent(content: 'launching pi'),
+          DebugEvent(content: 'launching claude'),
           DebugEvent(content: 'exited cleanly'),
         ];
         final blocks = TranscriptGrouper.group(events);

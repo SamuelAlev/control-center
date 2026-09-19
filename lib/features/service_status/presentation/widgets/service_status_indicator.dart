@@ -119,18 +119,18 @@ class _ServiceStatusSidebarEntryState
       // The row is not a route, so the open flyout is the only thing it can
       // be active WITH: hold `selected` for as long as the flyout is shown
       // (the controller notifies on open AND on barrier/Escape dismissal).
-        target: ListenableBuilder(
-          listenable: _controller,
-          builder: (context, _) => CcSidebarItem(
-            icon: AppIcons.activity,
-            label: l10n.serviceStatusTitle,
-            selected: _controller.isOpen,
-            // Trailing badge (the row default): the dot anchors to the row's
-            // right edge instead of hugging the label's words.
-            badge: _StatusBadge(indicator: headline),
-            onPressed: _open,
-          ),
+      target: ListenableBuilder(
+        listenable: _controller,
+        builder: (context, _) => CcSidebarItem(
+          icon: AppIcons.activity,
+          label: l10n.serviceStatusTitle,
+          selected: _controller.isOpen,
+          // Trailing badge (the row default): the dot anchors to the row's
+          // right edge instead of hugging the label's words.
+          badge: _StatusBadge(indicator: headline),
+          onPressed: _open,
         ),
+      ),
     );
   }
 }
@@ -165,6 +165,19 @@ int _severity(GitHubStatusIndicator indicator) => switch (indicator) {
   GitHubStatusIndicator.unknown => 1,
   GitHubStatusIndicator.none => 0,
 };
+
+/// A provider that is not operational: fetch failed, or a non-`none`
+/// indicator. Loading (no snapshot yet) is not faulty.
+bool _isFaulty(AsyncValue<GitHubServiceStatus> status) {
+  if (status.hasError && status.value == null) {
+    return true;
+  }
+  final indicator = status.value?.indicator;
+  if (indicator == null) {
+    return false;
+  }
+  return indicator != GitHubStatusIndicator.none;
+}
 
 /// Short status word for the tag / provider blocks ("Operational", …). Never
 /// the API's own description string — it is English-only and verbose.
@@ -267,6 +280,46 @@ class _StatusFlyout extends StatelessWidget {
         lastChecked = fetchedAt;
       }
     }
+    final providers =
+        <
+          ({
+            String name,
+            AsyncValue<GitHubServiceStatus> status,
+            String pageUrl,
+            String openLabel,
+            String fetchFailedLabel,
+          })
+        >[
+          (
+            name: 'GitHub',
+            status: github,
+            pageUrl: _githubStatusPageUrl,
+            openLabel: l10n.githubStatusOpenInBrowser,
+            fetchFailedLabel: l10n.githubStatusFetchFailed,
+          ),
+          (
+            name: 'Claude',
+            status: claude,
+            pageUrl: _claudeStatusPageUrl,
+            openLabel: l10n.claudeStatusOpenInBrowser,
+            fetchFailedLabel: l10n.claudeStatusFetchFailed,
+          ),
+          (
+            name: 'Codex',
+            status: openai,
+            pageUrl: _openaiStatusPageUrl,
+            openLabel: l10n.openaiStatusOpenInBrowser,
+            fetchFailedLabel: l10n.openaiStatusFetchFailed,
+          ),
+          (
+            name: 'Kimi',
+            status: kimi,
+            pageUrl: _kimiStatusPageUrl,
+            openLabel: l10n.kimiStatusOpenInBrowser,
+            fetchFailedLabel: l10n.kimiStatusFetchFailed,
+          ),
+        ];
+
     // Off-Material overlay: supply a concrete text style so nothing falls
     // through to the 48px yellow error fallback (same guard as the
     // subscription usage flyout).
@@ -281,13 +334,20 @@ class _StatusFlyout extends StatelessWidget {
         // Incidents can stack up during a bad week — scroll rather than push
         // past the viewport cap imposed by [CcOverlayAnchor].
         child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 4),
-                child: Row(
+          // Same inset as the subscription-usage flyout: one pad around the
+          // whole overlay, not a second inset on every row.
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.md,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
                     Expanded(
                       child: Row(
@@ -301,7 +361,7 @@ class _StatusFlyout extends StatelessWidget {
                             ),
                           ),
                           if (lastChecked != null) ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.sm),
                             Flexible(
                               child: AppTimestamp(
                                 dateTime: lastChecked,
@@ -321,47 +381,43 @@ class _StatusFlyout extends StatelessWidget {
                         ],
                       ),
                     ),
-                    RefreshControl(
-                      onRefresh: onRefresh,
-                      lastChecked: lastChecked,
-                      isLoading: refreshing,
-                      tooltip: l10n.githubStatusRefresh,
+                    SizedBox(
+                      width: 32,
+                      height: 18,
+                      child: OverflowBox(
+                        maxWidth: 32,
+                        maxHeight: 32,
+                        child: RefreshControl(
+                          size: CcButtonSize.sm,
+                          onRefresh: onRefresh,
+                          lastChecked: lastChecked,
+                          isLoading: refreshing,
+                          tooltip: l10n.githubStatusRefresh,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-              ),
-              _ProviderBlock(
-                name: 'GitHub',
-                status: github,
-                pageUrl: _githubStatusPageUrl,
-                openLabel: l10n.githubStatusOpenInBrowser,
-                fetchFailedLabel: l10n.githubStatusFetchFailed,
-              ),
-              CcDivider(color: tokens.borderSecondary),
-              _ProviderBlock(
-                name: 'Claude',
-                status: claude,
-                pageUrl: _claudeStatusPageUrl,
-                openLabel: l10n.claudeStatusOpenInBrowser,
-                fetchFailedLabel: l10n.claudeStatusFetchFailed,
-              ),
-              CcDivider(color: tokens.borderSecondary),
-              _ProviderBlock(
-                name: 'Codex',
-                status: openai,
-                pageUrl: _openaiStatusPageUrl,
-                openLabel: l10n.openaiStatusOpenInBrowser,
-                fetchFailedLabel: l10n.openaiStatusFetchFailed,
-              ),
-              CcDivider(color: tokens.borderSecondary),
-              _ProviderBlock(
-                name: 'Kimi',
-                status: kimi,
-                pageUrl: _kimiStatusPageUrl,
-                openLabel: l10n.kimiStatusOpenInBrowser,
-                fetchFailedLabel: l10n.kimiStatusFetchFailed,
-              ),
-            ],
+                const SizedBox(height: AppSpacing.sm),
+                for (var i = 0; i < providers.length; i++) ...[
+                  if (i > 0) ...[
+                    if (_isFaulty(providers[i - 1].status)) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      CcDivider(color: tokens.borderSecondary),
+                      const SizedBox(height: AppSpacing.sm),
+                    ] else
+                      const SizedBox(height: AppSpacing.md),
+                  ],
+                  _ProviderBlock(
+                    name: providers[i].name,
+                    status: providers[i].status,
+                    pageUrl: providers[i].pageUrl,
+                    openLabel: providers[i].openLabel,
+                    fetchFailedLabel: providers[i].fetchFailedLabel,
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
@@ -395,121 +451,114 @@ class _ProviderBlock extends StatelessWidget {
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: status.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.symmetric(vertical: 12),
-          child: Center(child: CcSpinner(size: 14)),
-        ),
-        error: (_, _) => Column(
+    return status.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 12),
+        child: Center(child: CcSpinner(size: 14)),
+      ),
+      error: (_, _) => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(AppIcons.circleAlert, size: 14, color: tokens.textTertiary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  fetchFailedLabel,
+                  style: TextStyle(color: tokens.textTertiary, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // The status page is most useful exactly when the fetch failed —
+          // offer the same link button the data state has.
+          _pageLinkButton(),
+        ],
+      ),
+      data: (s) {
+        final degraded = s.components
+            .where(
+              (c) =>
+                  c.status != GitHubComponentStatus.operational &&
+                  c.status != GitHubComponentStatus.unknown,
+            )
+            .toList();
+        return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Icon(
-                  AppIcons.circleAlert,
-                  size: 14,
-                  color: tokens.textTertiary,
+                _StatusDot(
+                  color: _indicatorColor(tokens, s.indicator),
+                  size: 10,
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    fetchFailedLabel,
-                    style: TextStyle(color: tokens.textTertiary, fontSize: 12),
+                Text(
+                  name,
+                  style: TextStyle(
+                    color: tokens.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  serviceStatusWord(l10n, s.indicator),
+                  style: TextStyle(
+                    color: _indicatorColor(tokens, s.indicator),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            // The status page is most useful exactly when the fetch failed —
-            // offer the same link button the data state has.
-            _pageLinkButton(),
-          ],
-        ),
-        data: (s) {
-          final degraded = s.components
-              .where(
-                (c) =>
-                    c.status != GitHubComponentStatus.operational &&
-                    c.status != GitHubComponentStatus.unknown,
-              )
-              .toList();
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _StatusDot(
-                    color: _indicatorColor(tokens, s.indicator),
-                    size: 10,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: tokens.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    serviceStatusWord(l10n, s.indicator),
-                    style: TextStyle(
-                      color: _indicatorColor(tokens, s.indicator),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              if (s.incidents.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                for (var i = 0; i < s.incidents.length; i++) ...[
-                  _IncidentTile(incident: s.incidents[i]),
-                  if (i < s.incidents.length - 1) const SizedBox(height: 6),
-                ],
+            if (s.incidents.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              for (var i = 0; i < s.incidents.length; i++) ...[
+                _IncidentTile(incident: s.incidents[i]),
+                if (i < s.incidents.length - 1) const SizedBox(height: 6),
               ],
-              if (degraded.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                for (final c in degraded)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2),
-                    child: Row(
-                      children: [
-                        _StatusDot(
-                          color: _componentColor(tokens, c.status),
-                          size: 7,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            c.name,
-                            style: TextStyle(
-                              color: tokens.textPrimary,
-                              fontSize: 12,
-                              height: 1.3,
-                            ),
+            ],
+            if (degraded.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              for (final c in degraded)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      _StatusDot(
+                        color: _componentColor(tokens, c.status),
+                        size: 7,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          c.name,
+                          style: TextStyle(
+                            color: tokens.textPrimary,
+                            fontSize: 12,
+                            height: 1.3,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-              ],
-              // No status-page button in the data state, incident or not: the
-              // incident tiles above ARE the links (each one opens its own
-              // incident page, which is more specific than the landing page),
-              // so a second button would be a duplicate affordance stacked
-              // under the ones that already work. The error state keeps its
-              // link — see [_pageLinkButton] — because there are no tiles
-              // there to click.
+                ),
             ],
-          );
-        },
-      ),
+            // No status-page button in the data state, incident or not: the
+            // incident tiles above ARE the links (each one opens its own
+            // incident page, which is more specific than the landing page),
+            // so a second button would be a duplicate affordance stacked
+            // under the ones that already work. The error state keeps its
+            // link — see [_pageLinkButton] — because there are no tiles
+            // there to click.
+          ],
+        );
+      },
     );
   }
 

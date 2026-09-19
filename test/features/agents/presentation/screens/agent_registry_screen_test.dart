@@ -521,7 +521,7 @@ void main() {
       completedAt: DateTime(2025, 1, 1, 10, 5),
       status: RunStatus.completed,
       pid: 99999,
-      adapter: 'opencode',
+      adapter: 'claude-code',
     );
 
     await tester.pumpWidget(
@@ -554,7 +554,7 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 5));
 
     expect(find.textContaining('99999'), findsOneWidget);
-    expect(find.textContaining('opencode'), findsOneWidget);
+    expect(find.textContaining('claude-code'), findsOneWidget);
   });
 
   testWidgets('shows error log entry', (tester) async {

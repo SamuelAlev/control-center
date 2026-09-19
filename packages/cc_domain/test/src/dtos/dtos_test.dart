@@ -1011,12 +1011,21 @@ void main() {
       expect(dto.steps.first, {'id': 's'});
       expect(dto.isBuiltIn, isTrue);
       expect(dto.version, 4);
+      expect(dto.maxParallelRuns, isNull);
+      final capped = PipelineTemplateDto.fromJson({
+        'template_id': 't',
+        'workspace_id': 'w',
+        'name': 'n',
+        'max_parallel_runs': 2.0,
+      });
+      expect(capped.maxParallelRuns, 2);
       final d = PipelineTemplateDto.fromJson({
         'template_id': 't',
         'workspace_id': 'w',
       });
       expect(d.steps, isEmpty);
       expect(d.version, 1);
+      expect(d.maxParallelRuns, isNull);
     });
   });
 
@@ -2107,6 +2116,14 @@ void main() {
       expect(out['is_built_in'], true);
       expect(out['is_enabled'], false);
       expect(out['version'], 3);
+      expect(out['max_parallel_runs'], isNull);
+      final capped = PipelineTemplateDto.fromJson(const {
+        'template_id': 't',
+        'workspace_id': 'w',
+        'name': 'n',
+        'max_parallel_runs': 3,
+      }).toJson();
+      expect(capped['max_parallel_runs'], 3);
     });
 
     test('PipelineTriggerDto emits nullable schedule fields', () {

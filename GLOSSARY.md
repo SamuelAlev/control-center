@@ -42,7 +42,7 @@ Immutable metadata about a locally-checked-out Git repository, parsed by inspect
 
 ### IsolatedRepo
 
-A workspace-scoped copy-on-write worktree of a registered repo, provisioned per space and checked out on its own branch. Backed by the bundled `rift` FFI, which is the SOLE backend wherever it ships precisely so agents never mutate the source checkout — a CoW failure fails the provision rather than degrading to `git worktree` on the source.
+A workspace-scoped worktree of a registered repo, provisioned per space and checked out on its own branch. Backed by the bundled `rift` FFI, which is the SOLE backend wherever it ships — a CoW failure fails the provision rather than degrading to `git worktree` on the source. On Windows there is no CoW native, so `git worktree` is the backend rather than a fallback.
 
 **Key attributes:** `id`, `workspaceId`, `spaceId`, `repoId`, `path`, `branch`, `backend` (RepoIsolationBackend), `sourcePath`, `ticketId`, `createdAt`
 
@@ -846,7 +846,7 @@ A one-time invite code (hash-stored) granting a role on redemption. Drives the i
 
 ### UserDevice
 
-A per-user device credential (a paired client). Revocation is live: a revoked device's sessions terminate within seconds (`UserDeviceRevoked` event), not on next reconnect. Per-principal rate limits aggregate across a user's devices (one budget for N devices).
+A per-user device credential (a paired client). Revocation is live: a revoked device's sessions terminate within seconds (the server watches the `paired_devices` table directly; there is no `UserDeviceRevoked` event), not on next reconnect. Per-principal rate limits aggregate across a user's devices (one budget for N devices).
 
 **Key attributes:** `userId`, `platform`, `credentialRef`, `label`, `lastSeenAt`, `revokedAt`
 
@@ -1139,9 +1139,9 @@ The unified allow/prompt/deny engine that generalizes the former bash-only `Comm
 
 ### ActionClass
 
-A closed set of ~12 effect classes: `fileDelete`, `fileWriteOutsideWorktree`, `gitCommit`, `gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`, `secretAccess`, `packageInstall`, `processSpawn`, `workspaceMutation`. Every mutating tool declares its ActionClass(es); an undeclared new tool fails the ratchet test. Deliberately small — "taxonomy sprawl is the death of this feature."
+A closed set of 13 effect classes: `fileDelete`, `fileWriteOutsideWorktree`, `gitCommit`, `gitPush`, `prCreate`, `prPublish`, `vendorSyncWrite`, `networkEgress`, `secretAccess`, `packageInstall`, `processSpawn`, `workspaceMutation`, `enclosureControl`. Every mutating tool declares its ActionClass(es); an undeclared new tool fails the ratchet test. Deliberately small — "taxonomy sprawl is the death of this feature."
 
-**Location:** `packages/cc_domain/lib/features/guardrails/domain/value_objects/action_class.dart`
+**Location:** `packages/cc_harness/lib/src/tools/action_class.dart`
 
 ### ActionPolicyRule
 
@@ -1425,65 +1425,65 @@ An in-process broadcast publish/subscribe bus for cross-feature decoupling. Feat
 
 **Location:** `packages/cc_domain/lib/core/domain/events/domain_event_bus.dart`
 
-**Key events by category:**
+**Key events by category** (53 concrete classes under `packages/cc_domain/lib/core/domain/events/`; there is no `TicketStarted`, `TaskQueued`, `PipelineRunStarted`, `UserCreated`, `UserDeviceRevoked`, or memory/orchestration event):
 
 **Workspace, Agent & Repo:**
 
-- `WorkspaceCreated`, triggers CEO agent seeding
-- `AgentRunCompleted`, triggers notifications, cost rollups, recovery
-- `RepoAdded`, triggers background code indexing
+- `WorkspaceCreated`, triggers CEO agent seeding, built-in pipeline templates, and starter eval suites
+- `AgentRunCompleted`, triggers notifications, cost rollups, pipeline step resume, goal supervision, checker dispatch, team-leader re-wake
+- `RepoAdded`, triggers background code indexing via the `index_code` pipeline
+- `SkillUpdated`, drives the `skill_analysis` pipeline trigger
 
 **PR & Review:**
 
 - `PullRequestPublished`, PR opened by an agent
-- `PullRequestStatusChanged`, merged/closed/opened/reopened; the signal pipeline triggers subscribe to (with optional status filter)
-- `PrMerged`, narrow merge-only signal for notifications
-- `ExternalPrDetected`, PR by a non-agent author found via polling
+- `PullRequestStatusChanged`, merged/closed/opened/reopened/approved; a pipeline-trigger signal (with optional status filter)
+- `PrMerged`, narrow merge-only signal for notifications and worktree GC
+- `PrReviewRequested`, `PrMentioned`, GitHub notification-poll signals
+- `ExternalPrMerged`, `ExternalPrDetected`, non-agent PRs (merged via poll; detected via open-PR poll)
+- `PrHeadChanged`, the PR's head SHA moved; `StaleReviewWatcher` may then publish `ReviewBecameStale`
+- Authored-PR watch: `PrMergeReadinessChanged`, `PrReviewDecisionChanged`, `PrChecksStatusChanged`, `PrCommentMentioned`, `PrThreadReplied`, `PrThreadResolved`
 
 **Messaging:**
 
 - `MessageReceived`, triggers desktop notifications
+- `SpaceCreated`, kicks off conversation-workspace provisioning
 - `SpaceDeleted`, drives worktree GC for per-space resources
+- `SpaceProvisioningChanged`, the chat bridge narrates setup on its task card
 
-**Ticketing / Task lifecycle** (vendor-neutral; replaced the old task/linear events):
+**Ticketing / task lifecycle:**
 
-- `TicketCreated`, `TicketStarted`, `TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`
-- `TicketAssigned`, the sole event the dispatcher consumes
-- `TicketReassigned`, `TicketDelegated`, `TicketCollaboratorAdded`, `TicketDetailsUpdated`
+- `TicketCreated`, `TicketCompleted`, `TicketFailed`, `TicketCancelled`, `TicketStatusChanged`
+- `TicketAssigned`, audit/notification/pipeline trigger; team assignment also dispatches the team leader
+- `TicketReassigned`, `TicketDetailsUpdated`
+- Task frames (one dispatched run): `TaskDispatched`, `TaskRunning`, `TaskWaitingLocalDirectory`, `TaskProgress`, `TaskMessage`, `TaskCompleted`, `TaskFailed`, `TaskCancelled`
 
-**Pipeline lifecycle:**
+**Pipeline lifecycle** (terminal only):
 
-- `PipelineRunStarted`, `PipelineStepStarted`, `PipelineStepCompleted`, `PipelineStepFailed`, `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`
-
-**Orchestration:**
-
-- `OrchestrationProposed`, `OrchestrationApproved`, `OrchestrationRevised`, `OrchestrationExecutionStarted`, `OrchestrationCompleted`, `OrchestrationFailed`, `OrchestrationCancelled` — the one-goal-to-whole-team-plan lifecycle
-
-**Memory:**
-
-- `MemoryFactRecorded`, `MemoryFactUpdated`, `MemoryFactSuperseded`, `MemoryConflictDetected`, `MemoryBeliefHarmonized`, `MemoryConsolidated` — the memory-intelligence lifecycle
+- `PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`
 
 **Observability:**
 
-- `ActivityLogged`, audit trail entry created
-- `WorktreeMerged`, worktree merge completed
+- `ActivityLogged`, audit trail entry created (`ActivityLogPersister` writes the row)
 - `BudgetThresholdCrossed`, spend threshold exceeded
 
 **Identity & membership:**
 
-- `UserCreated`, a new user was provisioned (bootstrap, invite redemption, or OIDC JIT)
 - `WorkspaceMemberAdded`, a user joined a workspace (invite redemption or admin add)
-- `WorkspaceMemberRemoved`, a member was removed — live sessions of that user scoped to the workspace must re-check access immediately
+- `WorkspaceMemberRemoved`, a member was removed — session hosts drop that user's workspace subscriptions; the socket stays open
 - `WorkspaceMemberRoleChanged`, a member's role changed
-- `UserDeviceRevoked`, a device credential was revoked — its session must terminate within seconds, not on next reconnect
-- `WorkspaceInviteRedeemed`, an invite was redeemed (user exists, membership recorded, pairing begun)
 
 **Calendar & Meetings:**
 
-- `CalendarEventsRefreshed`, a calendar sync upserted events for a workspace
 - `CalendarAuthExpired`, a connected account's OAuth refresh token is permanently invalid; drives the "reconnect calendar" notification (published once per disconnection episode)
 - `MeetingStartingSoon`, a calendar event is starting within the configured lead window; drives the "meeting starting soon" notification
 - `MeetingRecordingStopped`, a meeting recording finished and is ready to summarize; triggers the built-in `meeting_summary` pipeline
+
+**Rigs:**
+
+- `RigControlChanged`, a human took exclusive control or handed it back
+- `RigReaped`, idle / TTL / memory-pressure eviction
+- `RigClosedEvent`, the rig went away (notification wire acts only on `backendFailure`)
 
 ---
 
@@ -1507,16 +1507,16 @@ An in-process broadcast publish/subscribe bus for cross-feature decoupling. Feat
 - **PipelineEngine** (pipelines), `PipelineEnginePort` impl orchestrating run execution: starts runs, schedules steps, persists state, handles routers/continue-on-fail and resumes in-flight runs after restart.
 - **PipelineTriggerDispatcher** (pipelines), subscribes to domain events and auto-starts runs for each enabled matching trigger.
 - **DownstreamPlanner / StateReducer / TemplateRenderer** (pipelines), pure helpers for skip-propagation, concurrent-write reduction and `{{...}}` placeholder substitution.
-- **CostTracker** (agents), computes per-run token cost and persists it onto the run log.
+- **HarnessCostCalculator** (dispatch), prices built-in harness token usage into a `RunCost` from the models.dev catalog; dispatch persists that tally onto the run log.
 - **BudgetEnforcementService** (agents), enforces per-scope monthly spend budgets, blocking invocations when exhausted and publishing `BudgetThresholdCrossed`.
 - **DoctorService** (agents), runs environment diagnostics (sandbox backend, database, CLI tools, disk, network).
-- **DefaultCodeIndexer** (code_graph), parses changed files with tree-sitter in worker isolates, ingests symbols/edges, prunes deletions, resolves cross-file references; degrades gracefully when natives are missing.
+- **DefaultCodeIndexer** (code_graph), parses changed files with tree-sitter in worker isolates, ingests symbols/edges, prunes deletions, resolves cross-file references. Tree-sitter natives are required: a missing grammar throws rather than skipping the language.
 - **RepoWorkspaceProvisioner / WorktreeGcListener** (repos), provision per-space CoW worktree roots and GC them when a unit ends.
 - **DispatchReviewersService** (pr_review), `DispatchReviewersPort` impl that fans out PR review to matched reviewer agents.
 - **ReviewerMatchingService** (pr_review), picks the best `Agent` for a desired specialist role label.
 - **PrPollingService** (pr_review), polls GitHub for new external PRs and emits `ExternalPrDetected`.
 - **TicketSyncService / TicketRemoteSyncHandler** (ticketing), pull remote tickets into the local mirror and mirror local state back, keeping the workflow service free of infrastructure.
-- **CalendarSyncService / MeetingAlertScheduler** (calendar), `CalendarSyncService` periodically pulls each connected account's events into the local store (publishing `CalendarEventsRefreshed`) and lazily loads on-demand ranges; `MeetingAlertScheduler` scans per-minute for events inside the lead window and publishes `MeetingStartingSoon`, persisting `alertedAt` so an alert never fires twice.
+- **CalendarSyncService / MeetingAlertScheduler** (calendar), `CalendarSyncService` periodically pulls each connected account's events into the local store (no `CalendarEventsRefreshed` event — clients re-read) and lazily loads on-demand ranges; `MeetingAlertScheduler` scans per-minute for events inside the lead window and publishes `MeetingStartingSoon`, persisting `alertedAt` so an alert never fires twice.
 - **MeetingTranscriptionService / MeetingDiarizationService** (meetings), `MeetingTranscriptionService` decodes rolling Whisper windows off the UI thread (silent-window skip); `MeetingDiarizationService` clusters the recording into individual speakers offline (sherpa-onnx) after the recording stops.
 - **MeetingSummaryReconciler** (meetings), listens for the `meeting_summary` pipeline's terminal events and finalizes the meeting `processing → done`, falling back to the raw transcript when the agent produced no structured notes.
 
@@ -1526,13 +1526,13 @@ An in-process broadcast publish/subscribe bus for cross-feature decoupling. Feat
 
 ### AppNotification
 
-A structured desktop notification payload with category, title, body and navigation route/space. Mapped from domain events by `NotificationEventMapper`.
+A structured desktop notification payload with category, title, body and navigation route/space. Live mapping is `notifications/*` frames → `mapNotificationFrame` (`RpcNotificationMapper`). The older `NotificationEventMapper` is test-only.
 
 **Location:** `packages/cc_domain/lib/core/domain/notifications/notification_category.dart`
 
 ### NotificationCategory
 
-Enumerates desktop notification types, each independently toggleable: `agentRunCompleted`, `pullRequestPublished`, `prMerged`, `newMessage`, `prMentioned`, `ticketAssigned`, `ticketStatusChanged`, `meetingStartsSoon`, `calendarAuthExpired`.
+Enumerates desktop notification types, each independently toggleable: `agentRunCompleted`, `pullRequestPublished`, `prMerged`, `newMessage`, `prMentioned`, `reviewRequested`, `reviewStale`, `prMergeReadiness`, `prReviewDecision`, `prChecksStatus`, `prThreadActivity`, `ticketAssigned`, `ticketStatusChanged`, `meetingStartsSoon`, `calendarAuthExpired`, `rigStatusChanged` (sixteen).
 
 **Location:** `packages/cc_domain/lib/core/domain/notifications/notification_category.dart`
 
@@ -1544,7 +1544,7 @@ Built-in notification sounds bundled as MP3 assets under `assets/sounds/`, organ
 
 ### NotificationEventMapper
 
-Subscribes to `DomainEventBus` and maps domain events to `AppNotification` instances. The single place that decides which events produce user-visible notifications.
+Test-only remnant of the pre-split in-process path. Subscribes to a client-side `DomainEventBus` that no server event reaches. Live notifications come from `notifications/*` wire frames through `mapNotificationFrame`.
 
 **Location:** `lib/core/notifications/notification_event_mapper.dart`
 

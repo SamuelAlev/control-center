@@ -3,6 +3,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_confi
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
+import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_validator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -114,18 +115,24 @@ void main() {
       );
     });
 
-    test('flags multiple trigger steps', timeout: const Timeout.factor(2), () {
+    test('allows multiple trigger steps with distinct start events', () {
       final issues = validator.validate(
         _def([
           PipelineStepDefinition(
-            id: 's1',
+            id: 'manual',
             kind: StepKind.trigger,
             bodyKey: 'b',
+            config: const PipelineNodeConfig(
+              extras: {kPipelineStartEventTypeKey: 'manual'},
+            ),
           ),
           PipelineStepDefinition(
-            id: 's2',
+            id: 'sched',
             kind: StepKind.trigger,
             bodyKey: 'b',
+            config: const PipelineNodeConfig(
+              extras: {kPipelineStartEventTypeKey: 'schedule'},
+            ),
           ),
           PipelineStepDefinition(
             id: 'end',
@@ -135,7 +142,39 @@ void main() {
         ]),
       );
       expect(
-        issues.any((i) => i.isError && i.message.contains('2 trigger')),
+        issues.any((i) => i.isError && i.message.contains('trigger steps')),
+        isFalse,
+      );
+    });
+
+    test('flags a duplicated start event type', () {
+      final issues = validator.validate(
+        _def([
+          PipelineStepDefinition(
+            id: 'a',
+            kind: StepKind.trigger,
+            bodyKey: 'b',
+            config: const PipelineNodeConfig(
+              extras: {kPipelineStartEventTypeKey: 'manual'},
+            ),
+          ),
+          PipelineStepDefinition(
+            id: 'b',
+            kind: StepKind.trigger,
+            bodyKey: 'b',
+            config: const PipelineNodeConfig(
+              extras: {kPipelineStartEventTypeKey: 'manual'},
+            ),
+          ),
+          PipelineStepDefinition(
+            id: 'end',
+            kind: StepKind.terminal,
+            bodyKey: '_t',
+          ),
+        ]),
+      );
+      expect(
+        issues.any((i) => i.isError && i.message.contains('wired twice')),
         isTrue,
       );
     });
@@ -1940,29 +1979,27 @@ void main() {
           ],
           config: PipelineNodeConfig(label: 'Room', outputKey: outputKey),
         );
-    PipelineStepDefinition agent({
-      String? room,
-      String source = 'space',
-    }) => PipelineStepDefinition(
-      id: 'work',
-      kind: StepKind.listen,
-      bodyKey: 'conversation.promptAgent',
-      triggers: [
-        StepTrigger(sourceStepIds: [source]),
-      ],
-      config: PipelineNodeConfig(
-        label: 'Work',
-        outputKey: 'result',
-        prompt: 'Do it',
-        extras: room == null ? const {} : {'spaceId': room},
-      ),
-    );
+    PipelineStepDefinition agent({String? room, String source = 'space'}) =>
+        PipelineStepDefinition(
+          id: 'work',
+          kind: StepKind.listen,
+          bodyKey: 'conversation.promptAgent',
+          triggers: [
+            StepTrigger(sourceStepIds: [source]),
+          ],
+          config: PipelineNodeConfig(
+            label: 'Work',
+            outputKey: 'result',
+            prompt: 'Do it',
+            extras: room == null ? const {} : {'spaceId': room},
+          ),
+        );
 
-    List<PipelineIssue> errorsFor(PipelineDefinition def) => const
-            PipelineValidator()
-        .validate(def)
-        .where((i) => i.isError)
-        .toList();
+    List<PipelineIssue> errorsFor(PipelineDefinition def) =>
+        const PipelineValidator()
+            .validate(def)
+            .where((i) => i.isError)
+            .toList();
 
     test('accepts an agent step pointed at a space node', () {
       final def = _def([

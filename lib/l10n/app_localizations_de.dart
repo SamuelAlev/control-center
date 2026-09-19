@@ -6284,6 +6284,43 @@ class AppLocalizationsDe extends AppLocalizations {
       'Ziehe einen Knoten aus der Bibliothek, um zu beginnen.';
 
   @override
+  String get pipelineWhenThisHappens => 'Wenn dies passiert';
+
+  @override
+  String get pipelineDoThis => 'Dies tun';
+
+  @override
+  String get pipelineAddStep => 'Schritt hinzufügen';
+
+  @override
+  String get pipelineTidyUp => 'Layout aufräumen';
+
+  @override
+  String get pipelineEditorHint =>
+      'Schritte zum Anordnen ziehen · Anfasser zum Verbinden ziehen';
+
+  @override
+  String get pipelineRemoveConnection => 'Verbindung entfernen';
+
+  @override
+  String get pipelineDragToConnect => 'Ziehen zum Verbinden';
+
+  @override
+  String get pipelineNewDefaultName => 'Neue Pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Auslöser';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Auslöser hinzufügen';
+
+  @override
+  String get pipelineOnEvent => 'Bei Ereignis';
+
+  @override
   String get nodeConfigTitle => 'Knoten-Konfiguration';
 
   @override
@@ -6530,6 +6567,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Eine signierte Webhook-URL wird erzeugt. Externe Systeme senden ein POST, um diese Pipeline zu starten.';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook-Pfad';
+
+  @override
   String get triggerEventFieldLabel => 'Ereignis';
 
   @override
@@ -6658,6 +6698,88 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Ticket zugewiesen';
+
+  @override
+  String get triggerEventTicketCreated => 'Ticket erstellt';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Ticket-Status geändert';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'Meeting-Aufnahme beendet';
+
+  @override
+  String get triggerEventSkillUpdated => 'Fähigkeit aktualisiert';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Bereich gelöscht';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Ein Pull Request, der auf dem Code-Host geöffnet wurde, nicht in Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Ein Pull Request, der in Control Center oder von einem Agenten geöffnet wurde.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Zusammengeführt, geschlossen, geöffnet, erneut geöffnet oder genehmigt. Status im Inspektor filtern.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Nur wenn der Pull Request zusammengeführt wird, nicht bei Schließen oder erneutem Öffnen.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Ein Repository wird mit diesem Arbeitsbereich verknüpft.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Eine Datei in einem verknüpften Repository ändert sich auf der Festplatte.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Eine neue Nachricht trifft in einem Bereich ein.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Ein Ticket wird in diesem Arbeitsbereich erstellt.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Ein Ticket wechselt den Status.';
+
+  @override
+  String get triggerTicketCompletedHelp =>
+      'Ein Ticket wird erfolgreich abgeschlossen.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Ein Agentenlauf ist fehlgeschlagen und das Ticket wird als fehlgeschlagen markiert.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Ein Ticket wird abgebrochen und läuft nicht weiter.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Ein Ausgabenlimit für Arbeitsbereich oder Agenten wird überschritten.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Ein Ticket wird einer Person, einem Agenten oder einem Team zugewiesen.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Eine Meetingaufnahme endet.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Eine Fähigkeit wird installiert oder aktualisiert.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Ein Gesprächsbereich wird gelöscht.';
 
   @override
   String get navTickets => 'Tickets';

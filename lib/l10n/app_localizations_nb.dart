@@ -6242,6 +6242,43 @@ class AppLocalizationsNb extends AppLocalizations {
   String get editorEmptyCanvas => 'Dra en node fra biblioteket for å starte.';
 
   @override
+  String get pipelineWhenThisHappens => 'Når dette skjer';
+
+  @override
+  String get pipelineDoThis => 'Gjør dette';
+
+  @override
+  String get pipelineAddStep => 'Legg til steg';
+
+  @override
+  String get pipelineTidyUp => 'Rydd opp i oppsettet';
+
+  @override
+  String get pipelineEditorHint =>
+      'Dra steg for å ordne · dra et håndtak for å koble';
+
+  @override
+  String get pipelineRemoveConnection => 'Fjern tilkobling';
+
+  @override
+  String get pipelineDragToConnect => 'Dra for å koble';
+
+  @override
+  String get pipelineNewDefaultName => 'Ny pipeline';
+
+  @override
+  String get nodeCategoryTriggers => 'Utløsere';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Legg til en utløser';
+
+  @override
+  String get pipelineOnEvent => 'Ved hendelse';
+
+  @override
   String get nodeConfigTitle => 'Nodekonfig';
 
   @override
@@ -6487,6 +6524,9 @@ class AppLocalizationsNb extends AppLocalizations {
       'En signert webhook-URL genereres. Eksterne systemer POSTer til den for å starte denne pipelinen.';
 
   @override
+  String get triggerWebhookPathLabel => 'Webhook-sti';
+
+  @override
   String get triggerEventFieldLabel => 'Hendelse';
 
   @override
@@ -6614,6 +6654,85 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Sak tildelt';
+
+  @override
+  String get triggerEventTicketCreated => 'Sak opprettet';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Sakstatus endret';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'Møteopptak stoppet';
+
+  @override
+  String get triggerEventSkillUpdated => 'Ferdighet oppdatert';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Område slettet';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'En pull-forespørsel åpnet på kodeverten, ikke fra Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'En pull-forespørsel åpnet fra Control Center eller av en agent.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Flettet, lukket, åpnet, gjenåpnet eller godkjent. Filtrer etter status i inspektøren.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Bare når pull-forespørselen flettes, ikke når den lukkes eller gjenåpnes.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Et depot knyttes til dette arbeidsområdet.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'En fil i et tilknyttet depot endres på disken.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'En ny melding kommer i et område.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'En sak opprettes i dette arbeidsområdet.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'En sak flytter mellom statuser.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'En sak fullføres uten feil.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Et agentkjøring mislyktes, og saken merkes som mislykket.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'En sak avbrytes og fortsetter ikke.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'En utgiftsgrense for arbeidsområde eller agent overskrides.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'En sak tildeles en person, agent eller et team.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'Et møteopptak avsluttes.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'En ferdighet installeres eller oppdateres.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Et samtalerom slettes.';
 
   @override
   String get navTickets => 'Saker';

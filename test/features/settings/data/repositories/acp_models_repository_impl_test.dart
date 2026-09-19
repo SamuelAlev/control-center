@@ -10,7 +10,7 @@ class _FakeAcpModelsService implements AcpModelsService {
   int listModelsCallCount = 0;
 
   @override
-  Future<List<AcpModel>> listModels(String adapterId, {String? cliPath}) async {
+  Future<List<AcpModel>> listModels(String adapterId) async {
     listModelsCallCount++;
     return _models[adapterId] ?? [];
   }
@@ -20,14 +20,14 @@ void main() {
   group('AcpModelRepositoryImpl', () {
     test('delegates listModels to service', () async {
       final service = _FakeAcpModelsService({
-        'opencode': [
+        'claude-code': [
           const AcpModel(id: 'm1', name: 'Claude Opus'),
           const AcpModel(id: 'm2', name: 'Claude Sonnet'),
         ],
       });
       final repo = AcpModelRepositoryImpl(service);
 
-      final models = await repo.listModels('opencode');
+      final models = await repo.listModels('claude-code');
 
       expect(models.length, 2);
       expect(models[0].id, 'm1');
@@ -44,23 +44,11 @@ void main() {
       expect(models, isEmpty);
     });
 
-    test('passes cliPath through to service', () async {
-      final service = _FakeAcpModelsService({
-        'pi': [const AcpModel(id: 'p1', name: 'Pi Model')],
-      });
-      final repo = AcpModelRepositoryImpl(service);
-
-      final models = await repo.listModels('pi', cliPath: '/usr/local/bin/pi');
-
-      expect(models.length, 1);
-      expect(models[0].id, 'p1');
-    });
-
     test('returns empty list when service returns empty', () async {
-      final service = _FakeAcpModelsService({'opencode': []});
+      final service = _FakeAcpModelsService({'claude-code': []});
       final repo = AcpModelRepositoryImpl(service);
 
-      final models = await repo.listModels('opencode');
+      final models = await repo.listModels('claude-code');
 
       expect(models, isEmpty);
     });

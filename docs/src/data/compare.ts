@@ -86,7 +86,7 @@ export const tools: CompareTool[] = [
     kind: 'Developer operations deck',
     price: 'Free · self-hosted',
     blurb:
-      'One native app for the whole operation: a fleet of agents (built-in runtime plus eight CLI adapters) across copy-on-write worktrees, a PR review cockpit, tickets with Linear sync, DAG pipelines, meetings, calendar, memory and a code graph — with multiplayer roles, presence and per-space autonomy. One cc_server you own; desktop, web and phone as thin clients.',
+      'One native app for the whole operation: a fleet of agents (built-in runtime plus a Claude Code adapter) across copy-on-write worktrees, a PR review cockpit, tickets with Linear sync, DAG pipelines, meetings, calendar, memory and a code graph — with multiplayer roles, presence and per-space autonomy. One cc_server you own; desktop, web and phone as thin clients.',
     bestFor:
       'You want the agents and the operation around them — review, tickets, pipelines, meetings — on one deck you host yourself, on every screen you own.',
     cells: {
@@ -309,8 +309,8 @@ export const tools: CompareTool[] = [
     blurb:
       'The Apache-2.0 developer agent born at Block and handed to the Linux Foundation’s Agentic AI Foundation in April 2026: one highly extensible agent with native desktop apps on all three platforms, a CLI, 70+ MCP extensions and 15+ model providers. Subagents fan a task out, but it is a single pair-programmer you teach tricks, not a fleet.',
     bestFor: 'You want one teachable agent and an MCP extension ecosystem, without fleet orchestration.',
-    verdict: 'Goose and Control Center solve different sizes of the same problem: Goose is one excellent extensible agent, Control Center runs many — including Goose itself, via its runner adapters. Pick Goose for a single teachable pair-programmer; pick Control Center when one agent becomes a fleet.',
-    ccEdge: 'N-to-N instead of one-to-one: many agents in isolated worktrees, agent-to-agent delegation under autonomy guardrails, review and tickets and pipelines — with Goose still in the loop as one runner among eight.',
+    verdict: 'Goose and Control Center solve different sizes of the same problem: Goose is one excellent extensible agent, Control Center runs a fleet. Pick Goose for a single teachable pair-programmer; pick Control Center when one agent becomes many, with review, tickets and pipelines around them.',
+    ccEdge: 'N-to-N instead of one-to-one: many agents in isolated worktrees, agent-to-agent delegation under autonomy guardrails, plus review, tickets and pipelines. Goose stays a single pair-programmer you teach tricks.',
     cells: {
       openSource: 'yes',
       desktop: 'yes',

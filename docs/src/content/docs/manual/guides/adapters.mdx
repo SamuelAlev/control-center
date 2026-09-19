@@ -11,43 +11,39 @@ sub-sidebar entry reads "Model providers"; the page heading reads "Adapters".
 
 ## What an adapter is
 
-An adapter is the _runner_ that executes an agent turn. There are eight and the
-list is fixed — you cannot add a ninth.
+An adapter is the _runner_ that executes an agent turn. There are two and the
+list is fixed — you cannot add a third.
 
-| Adapter                   | CLI            | Transport                                           |
-| ------------------------- | -------------- | --------------------------------------------------- |
-| Control Center (built-in) | none           | In-process agent loop, talks to providers over HTTP |
-| Pi                        | `pi`           | Structured JSON CLI                                 |
-| Claude Code               | `claude`       | `claude -p --output-format stream-json`             |
-| OpenCode                  | `opencode`     | Agent Client Protocol (`opencode acp`)              |
-| Gemini CLI                | `gemini`       | Agent Client Protocol (`gemini --acp`)              |
-| Goose                     | `goose`        | Agent Client Protocol (`goose acp`)                 |
-| Cursor                    | `cursor-agent` | Agent Client Protocol (`cursor-agent --acp`)        |
-| Codex                     | `codex`        | Agent Client Protocol, via the `acpx` bridge        |
+| Adapter                   | CLI      | Transport                                           |
+| ------------------------- | -------- | --------------------------------------------------- |
+| Control Center (built-in) | none     | In-process agent loop, talks to providers over HTTP |
+| Claude Code               | `claude` | `claude -p --output-format stream-json`             |
 
-What you _can_ add is a **provider** for the built-in adapter — any
+Cursor, Codex, Anthropic, OpenAI and the rest are **providers** on the built-in
+adapter, not separate CLIs. What you _can_ add is another provider — any
 OpenAI- or Anthropic-compatible endpoint. That is the next section.
 
 :::note[Detection probes the server, not your machine]
 The **Detected runners** card lists what `cc_server` found on the _server host's_
 `PATH`. On a thin or web client that is a different machine from the one you are
-looking at. Installing a CLI on your laptop does nothing for a remote server.
+looking at. Install the CLI on the machine that runs `cc_server`.
 :::
 
 ## Connect a model provider
 
 The built-in adapter needs at least one connected provider before it can run.
-Eleven ship in the catalogue.
+Fourteen ship in the catalogue.
 
 1. Go to **Settings → Server → Model providers**
 2. Scroll to **Providers & models**
 3. Find your provider and connect it:
 
-| Provider                                                                           | How to connect                                                                                |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Anthropic, OpenAI                                                                  | Browser OAuth login (PKCE with a loopback callback), or an API key                            |
-| Kimi Code                                                                          | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price |
-| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                       |
+| Provider                                                                                                 | How to connect                                                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Anthropic                                                                                                | API key. A Claude Pro/Max subscription is not an Anthropic API login — use the Claude Code adapter for that plan              |
+| OpenAI, Codex, Cursor                                                                                    | Browser OAuth login, or an API key. Codex is ChatGPT Plus/Pro via the Codex Responses backend, not a CLI spawn                |
+| Kimi Code                                                                                                | Browser OAuth only — a device-code flow. It is a flat-rate plan, so it has no per-token price                                 |
+| OpenRouter, Groq, Google Gemini, DeepSeek, Mistral, xAI, z.ai, z.ai GLM Coding Plan, Moonshot (Kimi API) | API key                                                                                                                       |
 
 Checkpoint: the row's badge changes to connected and expanding it lists the
 models that provider serves, each with its price per million tokens and context
@@ -102,20 +98,20 @@ With no model either, the built-in loop asks Anthropic for its default model. An
 agent left entirely unset therefore runs if you have connected an Anthropic
 account, and otherwise fails with `No credential for provider "anthropic"`.
 
-The one exception: leaving onboarding's adapter step back-patches any agent named
-`ceo` whose adapter or model is unset, so the first workspace's CEO gets one. The
-four specialists never do and every workspace created later has all five unset.
-Set the adapter and model explicitly on every agent you intend to use.
+Finishing onboarding's adapter step back-patches **every** agent that is still
+missing an adapter or a model — CEO and specialists, across every workspace that
+exists at that moment — with the pair you picked. Workspaces created later still
+seed all five unset. Set the adapter and model explicitly on every agent you
+intend to use.
 :::
 
 ## Install a runner CLI
 
-The built-in adapter needs no installation. For any other adapter, install its
+The built-in adapter needs no installation. For Claude Code, install its
 CLI **on the server host** with that tool's own package manager, for example:
 
 ```bash
 npm install -g @anthropic-ai/claude-code
-npm install -g @openai/codex
 ```
 
 Then press **Refresh** at the top of the page. Each detected row shows the
@@ -125,12 +121,11 @@ selection.
 An external CLI keeps its own credentials, in its own configuration, on the
 server host. Control Center does not manage them.
 
-:::caution[The per-adapter Arguments and Environment variables fields do not reach the server]
+:::caution[Adapter Arguments and Environment variables stay on this device]
 Each adapter row offers an **Arguments** field and an **Environment variables**
-dialog. The server does read per-adapter argv and env overrides at launch — but
-it reads them from its own settings store and the client writes them to your
-device instead. Nothing bridges the two and there is no client call that writes
-the server's copy. Do not put an API key there and expect a run to see it.
+dialog. Those values are stored on your device. The server reads launch argv
+and env from its own settings store. Put provider keys on the server (OAuth or
+the key field on the Model providers page), not in those two fields.
 :::
 
 ## Restrict which providers a workspace may use

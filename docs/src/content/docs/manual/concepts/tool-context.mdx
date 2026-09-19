@@ -32,6 +32,8 @@ The agent sees the name in its prompt. If it calls that name directly, the harne
 
 When the agent knows the task but not the name, `search_tools` takes a plain-language description ("assign a ticket to someone"), ranks the run's whole surface, and returns the matches *with their schemas already loaded*, so the very next turn can call one. If a search finds nothing, it says so plainly and suggests different wording or a wider search — deliberately, because an agent that reads an empty search as "this capability does not exist" will invent a substitute instead of looking again.
 
+`search_tools` exists only in the built-in harness. External MCP clients have `search_tool_bm25` instead, which ranks the same index but only describes matches — those clients already received every schema from `tools/list`, so there is nothing to load.
+
 ### What deferral never does
 
 Deferral is applied **after** the mode's tool filter, never instead of it. It hides a schema; it cannot reveal a tool the mode denied. An activated tool still passes the approval prompt and the [action guardrails](/manual/concepts/guardrails) exactly as a resident one would, and a tool cannot load a name that was not on the run's surface to begin with.
@@ -52,7 +54,9 @@ Caching works on an exact prefix match, which yields one governing rule.
 
 Any byte that changes invalidates the cache from that point onward. So the harness only ever **appends**: new messages at the end, and newly activated tool schemas *after* the cached tool block rather than merged into it. That ordering is the reason activation is cheap — the cached prefix stays identical and the run pays only for the schemas it just loaded.
 
-The same rule reshaped an existing behaviour. The loop trims stale tool output from older turns to reclaim context; it used to do that on *every* tool-bearing turn, editing the middle of the conversation each time. That reclaimed a few dozen tokens and invalidated the cache for everything after the edit, permanently. It now waits until there is enough to reclaim to be worth the rewrite, making it a rare deep trim instead of a continuous leak.
+The loop also trims stale tool output from older turns to reclaim context. It
+waits until there is enough to reclaim to be worth the rewrite, so a trim is a
+rare deep rewrite instead of a continuous cache miss.
 
 ### Where the breakpoints go
 
@@ -81,4 +85,4 @@ Both halves are observable rather than assumed:
 
 - The **context explorer** on a conversation reports the resident tools, the deferred index and what each withheld schema *would* cost, built from the same code path a real run uses.
 - Each run records which deferred tools it loaded and what triggered it, so a search that finds nothing is visible as a retrieval miss rather than disappearing into an agent quietly doing something adjacent.
-- Observability reports cache effectiveness as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.
+- Observability reports **Cache rate** as cache reads over all prompt tokens processed, cache writes included — a run that keeps rebuilding its prefix scores low, instead of scoring like one that never needed a cache.

@@ -19,7 +19,7 @@ crate-type = ["cdylib"]
 # PINNED EXACTLY. The archive it links is pinned by sha256 in
 # scripts/lib/native_pins.env; the two must be bumped together and
 # src/ort_sys.rs regenerated if the bundled ONNX Runtime version moves.
-sherpa-onnx-sys = "=1.13.5"
+sherpa-onnx-sys = "=1.13.8"
 
 # Parses the recognizer's result JSON (`SherpaOnnxGetOfflineStreamResultAsJson`).
 # That documented JSON is a stabler contract than the result *struct*, whose

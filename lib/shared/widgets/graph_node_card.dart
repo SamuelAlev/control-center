@@ -17,6 +17,7 @@ class GraphNodeCard extends StatelessWidget {
     required this.glyph,
     required this.title,
     required this.selected,
+    this.titleChild,
     this.subtitle,
     this.subtitleColor,
     this.trailing,
@@ -29,8 +30,15 @@ class GraphNodeCard extends StatelessWidget {
   /// Leading status glyph (icon or spinner), sized by the caller.
   final Widget glyph;
 
-  /// Node display name (bold, up to two lines, ellipsized).
+  /// Node display name (bold, up to two lines, ellipsized). Used as the
+  /// title when [titleChild] is null, and kept as the semantic name either
+  /// way.
   final String title;
+
+  /// Optional title override (e.g. a label with inline variable badges).
+  /// When set, drawn instead of a plain [Text] of [title]; [title] is
+  /// still the name callers measure and tests read.
+  final Widget? titleChild;
 
   /// Optional second line under the title (a status word, a job count).
   final String? subtitle;
@@ -106,12 +114,13 @@ class GraphNodeCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  title,
-                  style: titleStyle(color: tokens.textPrimary),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                titleChild ??
+                    Text(
+                      title,
+                      style: titleStyle(color: tokens.textPrimary),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 3),
                   Text(

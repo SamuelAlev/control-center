@@ -6227,6 +6227,43 @@ class AppLocalizationsVi extends AppLocalizations {
   String get editorEmptyCanvas => 'Kéo một nút từ thư viện để bắt đầu.';
 
   @override
+  String get pipelineWhenThisHappens => 'Khi việc này xảy ra';
+
+  @override
+  String get pipelineDoThis => 'Làm điều này';
+
+  @override
+  String get pipelineAddStep => 'Thêm bước';
+
+  @override
+  String get pipelineTidyUp => 'Sắp xếp bố cục';
+
+  @override
+  String get pipelineEditorHint =>
+      'Kéo các bước để sắp xếp · kéo tay cầm để nối';
+
+  @override
+  String get pipelineRemoveConnection => 'Xóa kết nối';
+
+  @override
+  String get pipelineDragToConnect => 'Kéo để kết nối';
+
+  @override
+  String get pipelineNewDefaultName => 'Quy trình mới';
+
+  @override
+  String get nodeCategoryTriggers => 'Bộ kích hoạt';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Thêm bộ kích hoạt';
+
+  @override
+  String get pipelineOnEvent => 'Khi có sự kiện';
+
+  @override
   String get nodeConfigTitle => 'Cấu hình nút';
 
   @override
@@ -6472,6 +6509,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Một URL webhook đã ký được tạo. Hệ thống bên ngoài POST tới đó để khởi chạy quy trình này.';
 
   @override
+  String get triggerWebhookPathLabel => 'Đường dẫn webhook';
+
+  @override
   String get triggerEventFieldLabel => 'Sự kiện';
 
   @override
@@ -6599,6 +6639,85 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Phiếu được gán';
+
+  @override
+  String get triggerEventTicketCreated => 'Phiếu được tạo';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Trạng thái phiếu đã đổi';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'Đã dừng ghi cuộc họp';
+
+  @override
+  String get triggerEventSkillUpdated => 'Kỹ năng đã cập nhật';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Không gian đã xóa';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Một pull request được mở trên máy chủ mã, không phải từ Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Một pull request được mở từ Control Center hoặc bởi một tác nhân.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Đã hợp nhất, đóng, mở, mở lại hoặc phê duyệt. Lọc theo trạng thái trong trình kiểm tra.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Chỉ khi pull request được hợp nhất, không phải khi đóng hoặc mở lại.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Một kho được liên kết với không gian làm việc này.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Một tệp trong kho đã liên kết thay đổi trên đĩa.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Một tin nhắn mới đến trong một không gian.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Một phiếu được tạo trong không gian làm việc này.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Một phiếu chuyển giữa các trạng thái.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Một phiếu kết thúc thành công.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Một lần chạy tác nhân thất bại và phiếu được đánh dấu thất bại.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Một phiếu bị hủy và sẽ không tiếp tục.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Vượt giới hạn chi tiêu của không gian làm việc hoặc tác nhân.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Một phiếu được gán cho người, tác nhân hoặc nhóm.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'Bản ghi cuộc họp kết thúc.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'Một kỹ năng được cài hoặc cập nhật.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Một không gian hội thoại bị xóa.';
 
   @override
   String get navTickets => 'Phiếu';

@@ -110,30 +110,6 @@ void main() {
       },
     );
 
-    test('writes a pi-specific twin with an eager lifecycle', () async {
-      final target = File('${tmp.path}/agent/.mcp.json');
-      await control.writeAgentMcpConfig(
-        target,
-        workspaceId: 'ws-1',
-        agentId: 'agent-1',
-        conversationId: 'conv-1',
-      );
-
-      // pi merges `<cwd>/.pi/mcp.json` last (it wins per-server), so this twin
-      // makes pi connect at session start and re-list tools fresh instead of
-      // trusting its 7-day disk cache.
-      final piConfig = File('${tmp.path}/agent/.pi/mcp.json');
-      expect(piConfig.existsSync(), isTrue);
-      final json =
-          jsonDecode(piConfig.readAsStringSync()) as Map<String, dynamic>;
-      final server = ((json['mcpServers'] as Map)['control-center'] as Map)
-          .cast<String, dynamic>();
-      expect(server['lifecycle'], 'eager');
-      final headers = (server['headers'] as Map).cast<String, String>();
-      expect(headers['X-CC-Workspace-Id'], 'ws-1');
-      expect(headers['X-CC-Toolset-Rev'], registry.toolsetRevision);
-    });
-
     test('omits identity headers when no scope is supplied', () async {
       final target = File('${tmp.path}/agent/.mcp.json');
       await control.writeAgentMcpConfig(target);

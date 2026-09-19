@@ -29,7 +29,7 @@ descriptor it gets back. **No client changes are needed to connect.**
    failure shape because it still looks like it booted. A runtime
    `if (demoMode)` branch inside `runCcServer` is reachable code, so nothing
    could be tree-shaken. Measured, with the separate entrypoint:
-   `Parced`, `escrow-review`, `EscrowTimeline` and `demo-person-maya` all
+   `Helix`, `eval-review`, `EvalBudget` and `demo-person-maya` all
    appear in `cc_demo_server` and **zero times** in `cc_server`.
 2. **A flag can be forgotten.** A public endpoint whose lockdown depends on
    `CC_SERVER_DEMO=1` becomes a fully armed server the first time a deployment
@@ -161,7 +161,8 @@ showing up as an inbox that is merely empty.
 
 ```
 demo_fixtures/runs/*.json        # agent run scripts
-demo_fixtures/pull_requests.json # the PR world, in the real PrCacheCodec shape
+demo_fixtures/pull_requests.json # four helix/* repos + Maya's inbox PRs
+demo_fixtures/helix.png          # workspace logo the seeder writes
 fvm dart run tool/gen_demo_fixtures.dart
 ```
 

@@ -35,8 +35,8 @@ Each row offers two actions.
 
 The old continuation is still in the tree; `/tree` will now show two paths from that point, and you can switch between them freely.
 
-:::note[The transcript follows the pointer]
-The conversation shows the branch you are on. The other one is not gone — it is one `/tree` away.
+:::note[The path you left is still there]
+Branching does not hide or delete anything. `/tree` lists every path, marks the current one **On this branch**, and is how you switch.
 :::
 
 ## Fork: take it somewhere else
@@ -53,7 +53,7 @@ They are different tools and the difference matters.
 | ------------------- | -------------------------------------------------- | ------------------------------- |
 | The later messages  | Hidden from the transcript                          | Still visible in `/tree`         |
 | The **worktree**    | Rolled back to that turn's snapshot                 | Untouched                        |
-| Undo                | `unrevert` restores the batch                       | Move the pointer back            |
+| Undo                | **Undo revert** restores the batch                  | Move the pointer back            |
 
 Revert is what you want when the agent changed *files* you want back. Branch is what you want when the conversation went the wrong way but the files are fine.
 

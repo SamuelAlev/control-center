@@ -1,7 +1,7 @@
 ---
 title: Curate your newsfeed
 description: Add and manage RSS/Atom feeds, read articles with content blocking and know that your feeds follow you across every workspace.
-dateModified: 2026-09-10
+dateModified: 2026-09-19
 ---
 
 This guide shows you how to shape the newsfeed: which sources it pulls, how
@@ -38,13 +38,13 @@ The layout choice persists across launches.
 5. Press **Add feed**
 
 Checkpoint: the feed appears in the **Feeds** list and its articles land after the
-first fetch. A URL that is already subscribed is refused with "feed already
-exists".
+first fetch. A URL that is already subscribed is refused with "A feed with this
+URL already exists."
 
-Thirteen feeds are seeded for every user on first use: The Verge, TechCrunch,
-Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The Pragmatic
-Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The Engineering
-Manager, Lea Verou and CSS-Tricks.
+Fourteen feeds are seeded for every user on first use: Control Center, The Verge,
+TechCrunch, Hacker News, ByteByteGo, Product Hunt, TLDR AI, Import AI, The
+Pragmatic Engineer, Martin Fowler, Will Larson's Irrational Exuberance, The
+Engineering Manager, Lea Verou and CSS-Tricks.
 
 ## Manage feeds
 
@@ -74,12 +74,14 @@ for accounts created later), then every 30 minutes.
    hand articles to your system browser
 3. Leave **Block ads, trackers & cookie banners** on
 
-Blocking is on by default. The reader is desktop-only: on the web build the
-browser _is_ the reader and an article opens in a new tab.
+Blocking is on by default. The embedded reader is macOS and Windows only: on
+the web build and on Linux the system browser _is_ the reader and an article
+opens there (a new tab on web). On web the blocking toggle, **Filter lists**
+card and **Trusted sites** card are hidden.
 
-Control Center does not reformat the article. It renders the publisher's page in
-an embedded webview and suppresses ads, trackers and cookie banners using cached
-filter lists.
+The in-app reader does not reformat the article. It renders the publisher's page
+in an embedded webview and suppresses ads, trackers and cookie banners using
+cached filter lists.
 
 ### Check or update the filter lists
 
@@ -89,7 +91,9 @@ the lists were last updated. Press **Check for updates** to refresh them.
 
 Sources are EasyList, i-dont-care-about-cookies, Fanboy Cookiemonster, several
 uBlock Origin lists and uBO's tracking-parameter list. Until a download succeeds
-the app runs on the bundled defaults, which the card labels as never updated.
+the card labels the lists as bundled defaults that were never updated — ad,
+cookie and network rule counts stay at zero; tracking-parameter stripping still
+uses a built-in default set.
 
 ### Allowlist a site
 

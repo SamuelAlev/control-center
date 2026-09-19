@@ -39,18 +39,30 @@ class DownstreamPlan {
 /// exempt from the [existing] veto and judged on readiness like any other step,
 /// so the caller can re-fire them on the row they already own.
 ///
+/// [startStepId] is the [StepKind.trigger] node this run entered. Incoming
+/// edges from other trigger nodes are ignored for this run so a Schedule
+/// start does not wait on a Manual-only Condition, and a body wired only to
+/// another start is skipped rather than hung.
+///
 /// Branching rules:
-/// - A non-join step fires when **every** trigger is satisfied: all of a
+/// - A non-join step fires when **every** *work* trigger is satisfied: all of a
 ///   trigger's sources have *completed* (skipped does not count) and, for a
 ///   routed edge, the source router chose exactly this key.
+/// - Incoming edges whose sources include a trigger node are *start-bound*.
+///   Start-bound edges that do not name [startStepId] do not apply. When a
+///   step has both start-bound and work inbounds, it is ready if **either**
+///   side is satisfied (`Manual → Condition → Work` plus `Schedule → Work`
+///   still runs Work on a schedule start after Condition is skipped).
 /// - A join fires when **all** its `waitForStepIds` have reached a terminal
 ///   state (completed *or* skipped) — so a gated branch that was skipped does
 ///   not stall the join.
-/// - A step is *dead* (→ skipped) when any of its triggers can never be
-///   satisfied: a source was skipped, or a routed source router chose a
-///   different key. Skipping one step can kill its descendants, so skip
-///   detection iterates to a fixpoint. Joins are never killed this way (a
-///   skipped wait-for source still counts as terminal for them).
+/// - A step is *dead* (→ skipped) when any of its *applicable work* triggers
+///   can never be satisfied, and (when it has start-bound inbounds) every
+///   applicable start-bound trigger is dead too. A step whose only inbounds
+///   belong to another start is skipped. Skipping one step can kill its
+///   descendants, so skip detection iterates to a fixpoint. Joins are never
+///   killed this way (a skipped wait-for source still counts as terminal for
+///   them).
 /// - A terminal is "reached" only via a branch that actually *completed*; an
 ///   all-skipped incoming edge does not finish the run.
 DownstreamPlan planDownstream({
@@ -60,10 +72,27 @@ DownstreamPlan planDownstream({
   required Set<String> existing,
   required Map<String, String> chosenRoutes,
   Set<String> resumable = const {},
+  String? startStepId,
 }) {
   final skip = <String>{...skipped};
   final existSet = <String>{...existing};
   final toSkip = <String>[];
+
+  final triggerIds = {
+    for (final step in definition.steps)
+      if (step.kind == StepKind.trigger) step.id,
+  };
+  final startId =
+      startStepId ?? (triggerIds.length == 1 ? triggerIds.single : null);
+
+  bool isStartBound(StepTrigger t) => t.sourceStepIds.any(triggerIds.contains);
+
+  bool appliesToRun(StepTrigger t) {
+    if (startId == null || !isStartBound(t)) {
+      return true;
+    }
+    return t.sourceStepIds.contains(startId);
+  }
 
   bool triggerDead(StepTrigger t) {
     for (final src in t.sourceStepIds) {
@@ -88,7 +117,30 @@ DownstreamPlan planDownstream({
     if (s.triggers.isEmpty) {
       return false;
     }
-    return s.triggers.any(triggerDead);
+    final applicable = [
+      for (final t in s.triggers)
+        if (appliesToRun(t)) t,
+    ];
+    if (applicable.isEmpty) {
+      return true;
+    }
+    final startBound = [
+      for (final t in applicable)
+        if (isStartBound(t)) t,
+    ];
+    final work = [
+      for (final t in applicable)
+        if (!isStartBound(t)) t,
+    ];
+    final startDead = startBound.isEmpty || startBound.every(triggerDead);
+    final workDead = work.any(triggerDead);
+    if (startBound.isEmpty) {
+      return workDead;
+    }
+    if (work.isEmpty) {
+      return startBound.every(triggerDead);
+    }
+    return workDead && startDead;
   }
 
   var changed = true;
@@ -151,9 +203,37 @@ DownstreamPlan planDownstream({
     if (s.triggers.isEmpty) {
       continue;
     }
-    final ready = s.kind == StepKind.join
-        ? s.waitForStepIds.every(terminalSet.contains)
-        : s.triggers.every(triggerSatisfied);
+    final bool ready;
+    if (s.kind == StepKind.join) {
+      ready = s.waitForStepIds.every(terminalSet.contains);
+    } else {
+      final applicable = [
+        for (final t in s.triggers)
+          if (appliesToRun(t)) t,
+      ];
+      if (applicable.isEmpty) {
+        ready = false;
+      } else {
+        final startBound = [
+          for (final t in applicable)
+            if (isStartBound(t)) t,
+        ];
+        final work = [
+          for (final t in applicable)
+            if (!isStartBound(t)) t,
+        ];
+        final startOk =
+            startBound.isNotEmpty && startBound.any(triggerSatisfied);
+        final workOk = work.isNotEmpty && work.every(triggerSatisfied);
+        if (startBound.isEmpty) {
+          ready = workOk;
+        } else if (work.isEmpty) {
+          ready = startOk;
+        } else {
+          ready = startOk || workOk;
+        }
+      }
+    }
     if (ready) {
       toRun.add(s.id);
     }

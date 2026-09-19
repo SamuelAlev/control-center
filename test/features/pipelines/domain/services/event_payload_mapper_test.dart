@@ -274,10 +274,46 @@ void main() {
     );
 
     test(
-      'toPayload returns null for unmapped event',
+      'toPayload maps TicketCreated',
       timeout: const Timeout.factor(2),
       () {
         final event = TicketCreated(
+          ticketId: 't-1',
+          workspaceId: 'ws-1',
+          occurredAt: now,
+        );
+        final payload = EventPayloadMapper.toPayload(event)!;
+        expect(payload['ticket_id'], 't-1');
+        expect(payload['workspace_id'], 'ws-1');
+        expect(EventPayloadMapper.dedupKeyFor(event), 't-1');
+      },
+    );
+
+    test(
+      'toPayload maps TicketStatusChanged',
+      timeout: const Timeout.factor(2),
+      () {
+        final event = TicketStatusChanged(
+          ticketId: 't-1',
+          from: 'open',
+          to: 'in_progress',
+          workspaceId: 'ws-1',
+          occurredAt: now,
+        );
+        final payload = EventPayloadMapper.toPayload(event)!;
+        expect(payload['ticket_id'], 't-1');
+        expect(payload['workspace_id'], 'ws-1');
+        expect(payload['from'], 'open');
+        expect(payload['to'], 'in_progress');
+        expect(EventPayloadMapper.dedupKeyFor(event), 't-1:in_progress');
+      },
+    );
+
+    test(
+      'toPayload returns null for unmapped event',
+      timeout: const Timeout.factor(2),
+      () {
+        final event = TicketDetailsUpdated(
           ticketId: 't-1',
           workspaceId: 'ws-1',
           occurredAt: now,
@@ -331,6 +367,8 @@ void main() {
             'PullRequestStatusChanged',
             'PrMerged',
             'MessageReceived',
+            'TicketCreated',
+            'TicketStatusChanged',
             'TicketCompleted',
             'TicketFailed',
             'TicketCancelled',
@@ -520,7 +558,7 @@ void main() {
       'unmapped event returns null dedup key',
       timeout: const Timeout.factor(2),
       () {
-        final event = TicketCreated(
+        final event = TicketDetailsUpdated(
           ticketId: 't-1',
           workspaceId: 'ws-1',
           occurredAt: now,

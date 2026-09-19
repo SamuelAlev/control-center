@@ -11,10 +11,11 @@ runs the agents and makes every external API call; the clients only render.
 
 ## Run in Docker (prebuilt images)
 
-Every release publishes four images to GHCR — the backend, the two static thin
-clients and the optional pairing relay — so a self-hosted stack needs no source
-checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`) or ride
-`latest`.
+Every release publishes a self-hosted stack of four GHCR images — the backend,
+the two static thin clients and the optional pairing relay — plus a separate
+`cc-server-demo` image for the public demo host. A self-hosted install needs
+no source checkout. Pin a version tag (`ghcr.io/samuelalev/<image>:v0.0.1-rc.1`)
+or ride `latest`.
 
 | Image                                             | What it is                                   | Publishes        |
 | ------------------------------------------------- | -------------------------------------------- | ---------------- |
@@ -126,7 +127,8 @@ system SQLite and no Flutter engine needed. The executable lands at
 
 A fresh data directory has no paired device and no pre-shared key, so a client's
 pairing-key prompt cannot be satisfied yet. Mint one with the `pair` subcommand.
-It opens the database directly, so run it **before** starting the server:
+It writes `global.db` and `secrets.json` directly; a server that is already
+serving that data dir picks the new device up without a restart:
 
 ```bash
 ./build/cli/<os_arch>/bundle/bin/cc_server pair --data-dir ./data --port 9030
@@ -142,11 +144,12 @@ Connect a thin client (paste into its connect form):
 ```
 
 Useful flags: `--device` (default `web-client`; the id also picks the device
-tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`,
-`--host` (the host to print in the URL, since loopback is not reachable from
-another machine) and `--client-url`. Re-running `pair` rotates that device's key.
-Pairing never creates a workspace: the connecting client's onboarding names and
-creates the first one.
+tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
+(defaults to the platform name plus this machine's hostname), `--host` (the host
+to print in the URL, since loopback is not reachable from another machine) and
+`--client-url`. Re-running `pair` rotates that device's key and drops its live
+sessions. Pairing never creates a workspace: the connecting client's onboarding
+names and creates the first one.
 
 With `--client-url` it also prints a terminal-scannable QR that opens the web
 client already filled in:
@@ -223,15 +226,15 @@ allowed.
 To sync a workspace's calendar with no GUI attached, use the device-code flow:
 
 ```bash
-./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
-  --data-dir ./data --workspace <workspace-id> \
-  --google-client-id <id> --google-client-secret <secret>
+GOOGLE_OAUTH_CLIENT_ID=<id> GOOGLE_OAUTH_CLIENT_SECRET=<secret> \
+  ./build/cli/<os_arch>/bundle/bin/cc_server calendar connect \
+  --data-dir ./data --workspace <workspace-id>
 ```
 
 It prints a code and a URL to approve on another device, stores the refresh token
 server-side and exits. A source build ships no Google client, so the id and
-secret (or their environment variables) are required — see
-[Connect a Google Calendar](/manual/guides/connect-calendar/).
+secret environment variables are required — there is no `--google-client-id`
+flag. See [Connect a Google Calendar](/manual/guides/connect-calendar/).
 
 ## Configuration
 

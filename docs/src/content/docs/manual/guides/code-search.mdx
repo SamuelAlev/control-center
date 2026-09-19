@@ -5,13 +5,11 @@ description: Index a repo and use the code-graph tools to find symbols and see w
 
 This guide shows you how to get a repo into the code graph and then use it to answer the question you actually have before a refactor: what depends on this?
 
-The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent, not from a code-graph screen. There is no human-facing view of the graph at all today: the blast-radius pane that was one went with Review Studio.
+The code graph is a symbol-and-edge database built by parsing your registered checkouts with tree-sitter. Its tools are **agent-facing** — you reach them by asking an agent.
 
 ## Before you start
 
-:::caution[Five languages only]
-The graph indexes **Dart, JavaScript, TypeScript, TSX and PHP** and nothing else. Files in any other language are never parsed, so they will never appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`. This is the shipped grammar set, not a configuration.
-:::
+The graph indexes Dart, JavaScript, TypeScript, TSX, PHP, Python, Rust, Zig, C, C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB and Ada. Files in any other language are not parsed, so they do not appear in `search_code`, `code_symbol`, `code_callers`, `code_callees` or `code_impact`.
 
 Two more things shape what gets indexed:
 
@@ -28,15 +26,15 @@ To re-index by hand:
 2. Click the **Index code** button on the repo's row.
 3. While it runs the button shows files done over total, with a cancel control. When it finishes it settles into a check with the symbol count.
 
-The graph is partitioned by workspace and repo, so each workspace-plus-repo pair has its own graph.
+The graph is partitioned by workspace, repo and checkout: the linked checkout is one partition, and each space worktree gets its own (keyed by its isolated-repo id).
 
 Two throttles are worth knowing about, because they explain a wait that looks like a hang:
 
-- Only **one** index run may be in flight at a time across all workspaces. A second repo queues.
-- Worktrees belonging to **dormant spaces** are neither watched nor indexed. The judgement is re-evaluated every five minutes, so a space that becomes active again gets picked up.
+- The file watcher admits only **one** index run at a time on the host — a second checkout waits. The `index_code` pipeline is separately capped at one run per workspace, so two repos in the same workspace queue; different workspaces can index in parallel. The indexer itself serializes two runs of the **same** checkout so a pipeline start and a watcher sweep cannot double-parse it.
+- Worktrees belonging to **dormant spaces** (no message in the last week) are neither watched nor indexed. Linked checkouts stay watched. A skip decision is re-checked after five minutes, so a space that becomes active again gets picked up.
 
 :::caution[A missing grammar stops the server, not the search]
-Tree-sitter and its five grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
+Tree-sitter and its grammars are required natives. If one is missing, `cc_server` refuses to boot and names the missing dylib — the symptom is a server that will not start, never a degraded search. Stage them with `scripts/natives/build_natives.sh` and rebuild the server binary.
 :::
 
 ## Find a symbol
@@ -76,33 +74,29 @@ This is the tool the whole page exists for:
 code_impact(workspace_id: "...", symbol_id: "...", depth: 3)
 ```
 
-It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol. `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
+It computes the **reverse**-dependency radius: everything that directly or transitively depends on the symbol along `calls`, `extends` and `implements` edges (imports, mixes-in and generic references are stored in the graph but are not walked here). `depth` is the maximum number of hops, between 1 and 6, defaulting to 2.
 
 The result is three fields:
 
 - `root` — the symbol you asked about
-- `impacted` — every dependent symbol, each carrying its `depth` from the root
+- `impacted` — the reachable set, including the root at depth 0, each carrying its `depth` from the root
 - `edgeCount` — how many edges the traversal crossed, as a count rather than the edges themselves
 
 Run it before you rename or change a signature and give the agent the impacted list as its scope.
 
 ## Results are checked against the caller's own working copy
 
-For an agent caller, the conversation id is injected automatically and results are verified against **that conversation's** checkout. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
+For an agent caller, the space id is injected automatically and results are verified against **that space's** working copy. A symbol whose file no longer exists in the caller's tree is omitted and the response carries a `staleOmitted` count plus a note saying the index is stale for those symbols.
 
-This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Verification fails open: a stale answer is preferred to an empty one.
+This is why you and an agent can get different answers to the same query and why an agent in one space can get a different answer from an agent in another. Every conversation in a space shares that one worktree. Verification fails open: a stale answer is preferred to an empty one.
 
-## See the graph as a human
-
-You cannot, today. The blast-radius pane lived in Review Studio, and that surface was folded into the PR's review artifact tab — the graph view went with it. `review_studio.blastRadius` still answers over RPC and the cohort grouping still falls back to plain paths on an unindexed repo, but nothing in the app draws either. See [Review Studio](/manual/guides/review-studio/).
+Ask an agent to run `code_impact` (or `review_studio.blastRadius`) when you want the blast radius of a change. See [Review compute](/manual/guides/review-compute/).
 
 ## Semantic search needs the embedding model
 
 Symbols and facts are embedded at write time and only when the on-device embedding model is installed. Until then, `mode: "semantic"` and the semantic half of hybrid have nothing to match against and search is effectively keyword-only.
 
-:::caution[Rows written before the model was installed stay keyword-only]
-The embedding backfill job is a stub that always returns zero, so there is no retroactive pass — and re-running the index does not help either, because a file whose content hash has not moved is skipped before it reaches the ingest that would embed it. Only a symbol whose file actually changes gains a vector. Install the model first — **Settings → Server → Diagnostics & privacy → Semantic search** — and index afterwards.
-:::
+Install the model at **Settings → Server → Diagnostics & privacy → Semantic search** before you index. Symbols pick up a vector when their file is ingested.
 
 Note also that any rebuild of the server binary re-stages the grammar dylibs and changes their mtimes, which invalidates every index checkpoint and forces one full re-walk of every checkout on the next run. It re-hashes, but it does not re-extract unchanged files.
 
@@ -117,7 +111,7 @@ The canonical signatures for these tools live in [MCP tools](/manual/reference/m
 ## Related guides
 
 - [Add repos to a workspace](/manual/guides/add-repos/)
-- [Review Studio (cohorts and axes)](/manual/guides/review-studio/)
+- [Review compute (cohorts and axes)](/manual/guides/review-compute/)
 - [Use the MCP server](/manual/guides/mcp-server/)
 
 ## Related concepts

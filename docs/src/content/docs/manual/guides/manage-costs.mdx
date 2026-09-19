@@ -3,23 +3,19 @@ title: Manage costs
 description: See what your agents are spending, cap an autonomous run and cut token use.
 ---
 
-This guide shows you how to see what agent runs cost and what you can actually do to bring the number down.
-
-:::caution[There is no per-agent budget you can set]
-An agent row carries `monthlyBudgetCents` and `budgetPolicyId` and a governance service enforces them — but neither field has a UI control, an MCP tool or a dedicated RPC op and there are no RPC ops for budget-policy rows at all. There is also no surface that lists budget incidents. Nothing on this page asks you to set a budget, because you cannot. What you _can_ cap is an autonomous run; see [Cap an autonomous run](#cap-an-autonomous-run).
-:::
+This guide shows you how to see what agent runs cost and how to cap an autonomous run.
 
 ## How costs are recorded
 
 Every agent run writes a run log carrying its input tokens, output tokens, reasoning tokens, cached read and cached write tokens, an estimated cost in cents and the cost of any subagents it spawned.
 
-Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the usage summary. A local Ollama model or a flat-rate plan such as kimi-code therefore shows no spend at all, though its token counts are still recorded. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
+Pricing comes from the models.dev catalogue, which is used only to enrich the model list with price and context window — never as a source of model ids. A model the catalogue cannot price records **$0** and zero-cost runs are excluded from the **Usage & cost** summary. A local Ollama model therefore shows no spend at all, though its token counts are still recorded. A flat-rate plan (kimi-code, a Claude subscription) is the same only when the catalogue has no price for the served model; if it does, the run is estimated at those rates anyway. Under a fallback chain the run is priced against the model that actually served it, not the one requested.
 
 ## See what you are spending
 
 ### Observability → Insights
 
-Reach it from the sidebar footer → **Observability**. The **Insights** tab opens by default and is the main cost surface for the workspace:
+Reach it from the sidebar footer → **Observability**. The **Usage** tab opens first (lifetime token totals); switch to **Insights** — the second tab — for the main cost surface:
 
 - A time-range picker: last 24 hours, last 7 days, last 30 days, or all time
 - Faceted filters over agent, model, status and role, as dismissible chips
@@ -56,9 +52,7 @@ Two slash commands, typed in a space's composer, are the only runs with a spend 
 
 Because the cap is priced, a model the catalogue cannot price never reaches it. Such a run is bounded instead by the doom-loop repetition guard, the supervisor's give-up after three consecutive failures and you.
 
-:::caution[A normal turn has no cost cap]
-Every other run — a message in a space, an @-mention, a pipeline step — is unbounded. There is no turn ceiling in the harness either. A run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
-:::
+A message in a space, an @-mention, or a pipeline step has no spend cap. The run ends when the model stops, when you stop it, or when the doom-loop guard steers it.
 
 ## Cut token use
 
@@ -78,7 +72,7 @@ Model is a per-agent field, so a formatting or triage agent can run on a cheap m
 
 ### Look for runs with outsized token counts
 
-Sort the Insights run log and open the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
+Open the Insights run log (the newest 50 filtered runs) and the transcript drawer on anything unusual. The common causes are an over-long system prompt or persona, context that should have been compacted and a task that should have been several smaller ones.
 
 ## What happens if a budget is set out of band
 

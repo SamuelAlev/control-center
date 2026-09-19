@@ -6224,6 +6224,42 @@ class AppLocalizationsHe extends AppLocalizations {
   String get editorEmptyCanvas => 'גררו צומת מהספרייה כדי להתחיל.';
 
   @override
+  String get pipelineWhenThisHappens => 'כשזה קורה';
+
+  @override
+  String get pipelineDoThis => 'עשה זאת';
+
+  @override
+  String get pipelineAddStep => 'הוספת שלב';
+
+  @override
+  String get pipelineTidyUp => 'סידור הפריסה';
+
+  @override
+  String get pipelineEditorHint => 'גררו שלבים כדי לסדר · גררו ידית כדי לחבר';
+
+  @override
+  String get pipelineRemoveConnection => 'הסר חיבור';
+
+  @override
+  String get pipelineDragToConnect => 'גררו כדי לחבר';
+
+  @override
+  String get pipelineNewDefaultName => 'פייפליין חדש';
+
+  @override
+  String get nodeCategoryTriggers => 'טריגרים';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'הוספת טריגר';
+
+  @override
+  String get pipelineOnEvent => 'באירוע';
+
+  @override
   String get nodeConfigTitle => 'הגדרות צומת';
 
   @override
@@ -6468,6 +6504,9 @@ class AppLocalizationsHe extends AppLocalizations {
       'נוצר URL חתום של webhook. מערכות חיצוניות שולחות אליו POST כדי להתחיל את הפייפליין הזה.';
 
   @override
+  String get triggerWebhookPathLabel => 'נתיב ה-webhook';
+
+  @override
   String get triggerEventFieldLabel => 'אירוע';
 
   @override
@@ -6596,6 +6635,77 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'כרטיס הוקצה';
+
+  @override
+  String get triggerEventTicketCreated => 'כרטיס נוצר';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'סטטוס הכרטיס השתנה';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'הקלטת הפגישה הופסקה';
+
+  @override
+  String get triggerEventSkillUpdated => 'המיומנות עודכנה';
+
+  @override
+  String get triggerEventSpaceDeleted => 'המרחב נמחק';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'בקשת משיכה שנפתחה במארח הקוד, לא מ-Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'בקשת משיכה שנפתחה מ-Control Center או על ידי סוכן.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'מוזגה, נסגרה, נפתחה, נפתחה מחדש או אושרה. סננו לפי סטטוס בלוח.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'רק כשבקשת המשיכה ממוזגת, לא כשהיא נסגרת או נפתחת מחדש.';
+
+  @override
+  String get triggerRepoAddedHelp => 'מאגר מקושר למרחב העבודה הזה.';
+
+  @override
+  String get triggerCodeGraphWatchHelp => 'קובץ במאגר מקושר משתנה בדיסק.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'הודעה חדשה מגיעה למרחב.';
+
+  @override
+  String get triggerTicketCreatedHelp => 'כרטיס נוצר במרחב העבודה הזה.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'כרטיס עובר בין סטטוסים.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'כרטיס מסתיים בהצלחה.';
+
+  @override
+  String get triggerTicketFailedHelp => 'ריצת סוכן נכשלה והכרטיס מסומן כנכשל.';
+
+  @override
+  String get triggerTicketCancelledHelp => 'כרטיס מבוטל ולא ימשיך.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'חריגה ממגבלת הוצאה של מרחב עבודה או סוכן.';
+
+  @override
+  String get triggerTicketAssignedHelp => 'כרטיס מוקצה לאדם, לסוכן או לצוות.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'הקלטת פגישה מסתיימת.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'מיומנות מותקנת או מתעדכנת.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'מרחב שיחה נמחק.';
 
   @override
   String get navTickets => 'כרטיסים';

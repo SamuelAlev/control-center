@@ -6305,6 +6305,42 @@ class AppLocalizationsAr extends AppLocalizations {
   String get editorEmptyCanvas => 'اسحب عقدة من المكتبة للبدء.';
 
   @override
+  String get pipelineWhenThisHappens => 'عندما يحدث هذا';
+
+  @override
+  String get pipelineDoThis => 'نفّذ هذا';
+
+  @override
+  String get pipelineAddStep => 'إضافة خطوة';
+
+  @override
+  String get pipelineTidyUp => 'ترتيب التخطيط';
+
+  @override
+  String get pipelineEditorHint => 'اسحب الخطوات للترتيب · اسحب مقبضًا للربط';
+
+  @override
+  String get pipelineRemoveConnection => 'إزالة الاتصال';
+
+  @override
+  String get pipelineDragToConnect => 'اسحب للربط';
+
+  @override
+  String get pipelineNewDefaultName => 'خط أنابيب جديد';
+
+  @override
+  String get nodeCategoryTriggers => 'المشغّلات';
+
+  @override
+  String get triggerEventWebhook => 'ويب هوك';
+
+  @override
+  String get pipelineAddTrigger => 'إضافة مشغّل';
+
+  @override
+  String get pipelineOnEvent => 'عند حدث';
+
+  @override
   String get nodeConfigTitle => 'إعدادات العقدة';
 
   @override
@@ -6550,6 +6586,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'يُنشأ عنوان URL موقّع للويب هوك. ترسل الأنظمة الخارجية طلب POST إليه لبدء خط الأنابيب هذا.';
 
   @override
+  String get triggerWebhookPathLabel => 'مسار الويب هوك';
+
+  @override
   String get triggerEventFieldLabel => 'الحدث';
 
   @override
@@ -6680,6 +6719,79 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'إسناد تذكرة';
+
+  @override
+  String get triggerEventTicketCreated => 'تم إنشاء تذكرة';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'تغيرت حالة التذكرة';
+
+  @override
+  String get triggerEventMeetingRecordingStopped => 'توقف تسجيل الاجتماع';
+
+  @override
+  String get triggerEventSkillUpdated => 'تم تحديث المهارة';
+
+  @override
+  String get triggerEventSpaceDeleted => 'تم حذف المساحة';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'طلب سحب فُتح على مضيف الشفرة، وليس من Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'طلب سحب فُتح من Control Center أو بواسطة وكيل.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'دُمج أو أُغلق أو فُتح أو أُعيد فتحه أو وُوفق عليه. صفِّ حسب الحالة في اللوحة.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'فقط عند دمج طلب السحب، وليس عند إغلاقه أو إعادة فتحه.';
+
+  @override
+  String get triggerRepoAddedHelp => 'يُربط مستودع بهذا مساحة العمل.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'يتغيّر ملف في مستودع مرتبط على القرص.';
+
+  @override
+  String get triggerMessageReceivedHelp => 'تصل رسالة جديدة في مساحة.';
+
+  @override
+  String get triggerTicketCreatedHelp => 'يُنشأ تذكرة في مساحة العمل هذه.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'تنتقل تذكرة بين الحالات.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'تكتمل تذكرة بنجاح.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'فشل تشغيل وكيل وتُعلَّم التذكرة كفاشلة.';
+
+  @override
+  String get triggerTicketCancelledHelp => 'تُلغى تذكرة ولن تُتابع.';
+
+  @override
+  String get triggerBudgetCrossedHelp => 'يُتجاوز حد إنفاق لمساحة عمل أو وكيل.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'تُسند تذكرة إلى شخص أو وكيل أو فريق.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp => 'ينتهي تسجيل اجتماع.';
+
+  @override
+  String get triggerSkillUpdatedHelp => 'يُثبَّت مهارة أو تُحدَّث.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'تُحذف مساحة محادثة.';
 
   @override
   String get navTickets => 'التذاكر';

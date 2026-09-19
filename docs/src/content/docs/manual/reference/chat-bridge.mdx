@@ -85,7 +85,7 @@ Structural settings Control Center asserts when it creates or edits the app: Soc
 | Live             | `connected`    | Transport up and receiving events                               |
 | Connection error | `error`        | Stored but failing; the provider's own error is shown alongside |
 
-Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
+Reconnection is exponential backoff with jitter, capped at 30 seconds. A provider-initiated socket rotation reconnects promptly without escalating backoff. A rejected credential (`invalid_auth`, `not_authed`, `token_revoked`, `account_inactive`, `token_expired`, `invalid_app_id`) or a missing scope is terminal: the bridge stops retrying until new credentials arrive.
 
 ## Provider capabilities (Slack)
 
@@ -143,16 +143,18 @@ See [Chat bridges](/manual/concepts/chat-bridges/) for why the payload is split 
 
 The card opens when a mention is accepted, before clone and before the first token; the turn that follows adopts the same card and stream. Narration after that comes from `SpaceProvisioningChanged` on the domain event bus — the same progress the desktop's provisioning banner reads off the space row.
 
-| Provisioning state          | Narration                                                 |
-| --------------------------- | --------------------------------------------------------- |
-| Mention accepted            | `Working on it…`                                          |
-| Step `repo`                 | `Cloning <repo>…`                                         |
-| Step `prCheckout`           | `Checking out the pull request in <repo>…`                |
-| Step `agent`                | `Setting up <agent>…`                                     |
-| `provisioning`, no step yet | `Preparing the workspace…`                                |
-| `ready`                     | `Starting the agent…`                                     |
-| Agent reasoning             | `Thinking…`                                               |
-| `failed`                    | `Workspace setup failed — details are in Control Center.` |
+| Provisioning state          | Narration                                                      |
+| --------------------------- | -------------------------------------------------------------- |
+| Mention accepted            | `Working on it…`                                               |
+| Step `repo`                 | `Cloning <repo>…`                                              |
+| Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
+| Step `script`               | `Running the setup script for <repo>…`                         |
+| Step `agent`                | `Setting up <agent>…`                                          |
+| `provisioning`, no step yet | `Preparing the workspace…`                                     |
+| `ready`                     | `Starting the agent…`                                          |
+| Agent reasoning             | `Thinking…`                                                    |
+| `failed`                    | `Workspace setup failed — details are in Control Center.`      |
+| `cancelled`                 | `Workspace setup was stopped — details are in Control Center.` |
 
 Setup narration requires all four conditions:
 

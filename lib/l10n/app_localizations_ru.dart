@@ -6305,6 +6305,43 @@ class AppLocalizationsRu extends AppLocalizations {
       'Перетащите узел из библиотеки, чтобы начать.';
 
   @override
+  String get pipelineWhenThisHappens => 'Когда это происходит';
+
+  @override
+  String get pipelineDoThis => 'Сделать это';
+
+  @override
+  String get pipelineAddStep => 'Добавить шаг';
+
+  @override
+  String get pipelineTidyUp => 'Упорядочить схему';
+
+  @override
+  String get pipelineEditorHint =>
+      'Перетащите шаги, чтобы расставить · перетащите маркер, чтобы соединить';
+
+  @override
+  String get pipelineRemoveConnection => 'Удалить соединение';
+
+  @override
+  String get pipelineDragToConnect => 'Перетащите, чтобы соединить';
+
+  @override
+  String get pipelineNewDefaultName => 'Новый конвейер';
+
+  @override
+  String get nodeCategoryTriggers => 'Триггеры';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Добавить триггер';
+
+  @override
+  String get pipelineOnEvent => 'По событию';
+
+  @override
   String get nodeConfigTitle => 'Настройки узла';
 
   @override
@@ -6552,6 +6589,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Создаётся подписанный URL webhook. Внешние системы отправляют на него POST, чтобы запустить этот конвейер.';
 
   @override
+  String get triggerWebhookPathLabel => 'Путь вебхука';
+
+  @override
   String get triggerEventFieldLabel => 'Событие';
 
   @override
@@ -6681,6 +6721,87 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Тикет назначен';
+
+  @override
+  String get triggerEventTicketCreated => 'Тикет создан';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Статус тикета изменён';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Запись встречи остановлена';
+
+  @override
+  String get triggerEventSkillUpdated => 'Навык обновлён';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Пространство удалено';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Pull request, открытый на хосте кода, а не из Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Pull request, открытый из Control Center или агентом.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Слит, закрыт, открыт, заново открыт или одобрен. Фильтруйте по статусу в инспекторе.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Только когда pull request сливают, не когда закрывают или открывают заново.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Репозиторий связывается с этим рабочим пространством.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Файл в связанном репозитории меняется на диске.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'В пространство приходит новое сообщение.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'В этом рабочем пространстве создаётся тикет.';
+
+  @override
+  String get triggerTicketStatusChangedHelp =>
+      'Тикет переходит между статусами.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Тикет успешно завершается.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Запуск агента не удался, и тикет помечается как неудачный.';
+
+  @override
+  String get triggerTicketCancelledHelp => 'Тикет отменяется и не продолжится.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Превышен лимит расходов рабочего пространства или агента.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Тикет назначается человеку, агенту или команде.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Запись встречи заканчивается.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Навык устанавливается или обновляется.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Пространство беседы удаляется.';
 
   @override
   String get navTickets => 'Тикеты';

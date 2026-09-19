@@ -196,7 +196,7 @@ A 404 is never an empty body:
 const PRODUCT_MCP: SkillSource = {
   name: 'control-center-mcp-tools',
   description:
-    "Call Control Center's own MCP tool server, which runs inside the self-hosted cc_server and not on usectrl.dev: the endpoint and protocol version, the mandatory workspace_id on every workspace-scoped tool, bearer-token auth beyond loopback, what the surface refuses, and the tool classes that ship but are not registered.",
+    "Call Control Center's own MCP tool server, which runs inside the self-hosted cc_server and not on usectrl.dev: the endpoint and protocol version, the mandatory workspace_id on every workspace-scoped tool, bearer-token auth beyond loopback, what the surface refuses, and names that return unknown tool because they were deleted.",
   body: `# Use Control Center's MCP tool server
 
 ## This does not run on usectrl.dev
@@ -258,9 +258,9 @@ possible at all.
 2. Send \`Authorization: Bearer <token>\` on every \`POST /mcp\` request. Token
    changes apply immediately, with no restart.
 
-One caveat worth internalising: \`GET /sse\` deliberately skips the bearer check,
-because a browser \`EventSource\` cannot send headers. Treat exposing the MCP
-port off-host as exposing that notification stream.
+The notification stream is token-checked like every other route. A browser
+\`EventSource\` cannot send an \`Authorization\` header, so \`GET /sse\` also
+accepts the token as \`?token=<token>\`. Without one it answers 401.
 
 ## Discover tools
 
@@ -275,7 +275,7 @@ abstract:
 - \`list_my_tools\` - the tools callable right now in this conversation,
   filtered by its mode.
 
-Roughly 103 typed tools are registered, grouped into families: agents and peer
+110 typed tools are registered, grouped into families: agents and peer
 messaging (\`send_to_agent\`, \`ask_agent\`, \`delegate_task\`, \`consult_agent\`),
 tickets, spaces and messaging, memory, review, governance, skills, plans and
 artifacts, teams and pipelines, and the code graph. The authoritative catalogue
@@ -284,9 +284,9 @@ approximate and call \`tools/list\` for the truth.
 
 Two absences are worth knowing up front: there are no meeting or calendar tools
 and no project tools. The code graph tools (\`search_code\`, \`code_symbol\`,
-\`code_callers\`, \`code_callees\`, \`code_impact\`) index Dart, JavaScript,
-TypeScript, TSX and PHP only, so symbols in any other language are simply not
-present.
+\`code_callers\`, \`code_callees\`, \`code_impact\`) index the shipped grammar
+set (Dart, JS/TS, PHP, Python, Rust, Zig, C/C++, Go, Java, Ruby, C#, Swift, Kotlin, R, Assembly, MATLAB, Ada), so
+symbols in any other language are simply not present.
 
 ## Know what the surface will refuse
 
@@ -298,14 +298,10 @@ present.
 - **Confirmation.** Some destructive tools build a confirmation payload that has
   to be approved before the call proceeds.
 
-## A tool you read about may not exist
+## The catalogue is \`tools/list\`
 
-A set of tool classes ship in the codebase but are constructed in no registry,
-so calling one returns "unknown tool" rather than failing usefully. Named
-examples: \`create_workspace\`, the project tools, \`hire_agent\`, \`fire_agent\`,
-\`doctor\`, \`ask_user_question\` and \`start_ai_review\`. If \`tools/list\` does
-not name it, it is not callable, whatever the documentation of some other
-version said.
+Every tool class is registered; a ratchet test fails the build otherwise.
+Call the name exactly as \`tools/list\` returns it.
 
 ## Connecting Claude Code
 
@@ -338,7 +334,7 @@ not also discovered from the project and registered twice.
 | Client sees no tools | MCP server card is not running, or the port does not match \`cc_server\` |
 | 403 from a machine that is not the server | No bearer token configured; set one and send it |
 | "Missing or invalid argument: workspace_id" | Add \`workspace_id\`; there is no implicit workspace |
-| "unknown tool" | The tool class ships but is registered nowhere; check \`tools/list\` |
+| "unknown tool" | The name was deleted or never registered; check \`tools/list\` |
 
 Full documentation: \`https://usectrl.dev/manual/guides/mcp-server/\` and
 \`https://usectrl.dev/manual/reference/mcp-tools/\`.
@@ -348,7 +344,7 @@ Full documentation: \`https://usectrl.dev/manual/guides/mcp-server/\` and
 const SELF_HOSTING: SkillSource = {
   name: 'control-center-self-hosting',
   description:
-    'Run and reach a Control Center cc_server instance: the binary and the four GHCR images, the flag and environment surface with its silent-typo trap, loopback and TLS rules, device pairing, the data-directory layout, and why the native libraries are required rather than optional.',
+    'Run and reach a Control Center cc_server instance: the binary and the GHCR images (self-hosted stack plus cc-server-demo), the flag and environment surface with its silent-typo trap, loopback and TLS rules, device pairing, the data-directory layout, and why the native libraries are required rather than optional.',
   body: `# Run a Control Center server
 
 \`cc_server\` is the whole product. It is a pure-Dart native binary with no
@@ -368,8 +364,8 @@ client is correct for free.
 
 ## Configure it
 
-Every setting takes a CLI flag or an environment variable. Precedence is flag,
-then environment, then default.
+Every boot setting takes a CLI flag or an environment variable. Precedence is
+flag, then environment, then default.
 
 | Flag | Environment variable | Meaning |
 | --- | --- | --- |
@@ -382,8 +378,8 @@ then environment, then default.
 | \`--insecure\` | \`CC_SERVER_INSECURE\` | Allow a plaintext non-loopback bind |
 | \`--public-url\` | \`CC_SERVER_PUBLIC_URL\` | The RPC URL advertised to paired clients |
 | \`--allowed-origins\` | \`CC_SERVER_ALLOWED_ORIGINS\` | Browser origins allowed to dial \`/rpc\` cross-origin |
-| \`--sandbox\` | \`CC_SERVER_SANDBOX\` | Opt out of the OS-native sandbox wrapper |
-| \`--code-index\` | \`CC_SERVER_CODE_INDEX\` | Kill switch for background code-graph indexing |
+| \`--sandbox\` | \`CC_SERVER_SANDBOX\` | \`on\` (default) or \`off\`; \`off\` disables the OS-native sandbox wrapper |
+| \`--code-index\` | \`CC_SERVER_CODE_INDEX\` | \`on\` (default) or \`off\`; \`off\` kills background code-graph indexing |
 
 **The trap: unknown flags are ignored silently.** The argument parser is
 hand-rolled and skips anything it does not recognise, so \`--tls-key-file\` or
@@ -402,7 +398,8 @@ Two more rules that bite in practice:
 
 ## Run it in Docker
 
-Every release publishes four images to GHCR. Pin a version tag or ride
+Every release publishes a self-hosted stack of four GHCR images plus a
+separate \`cc-server-demo\` image. Pin a version tag or ride
 \`latest\`.
 
 | Image | What it is | Container port |
@@ -431,8 +428,9 @@ Things to know before exposing any of it:
 cc_server pair
 \`\`\`
 
-It provisions a device and prints its id and pairing key. Run it while no
-server holds the data directory. In Docker, run it against the same volume with
+It provisions a device and prints its id and pairing key. It is safe to run
+against a data dir a server is already serving: the live process picks the new
+device up with no restart. In Docker, run it against the same volume with
 \`--entrypoint /app/bin/cc_server\`.
 
 - \`--device\` defaults to \`web-client\`; the platform is inferred from the id,

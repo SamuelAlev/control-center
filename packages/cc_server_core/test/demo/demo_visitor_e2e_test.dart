@@ -116,11 +116,11 @@ void main() {
       final spaceNames = [
         for (final s in spaces['spaces'] as List) (s as Map)['name'],
       ];
-      expect(spaceNames, contains('escrow-review'));
+      expect(spaceNames, contains('eval-review'));
 
       // Messages, in the space the review script is about.
       final reviewSpace = (spaces['spaces'] as List).firstWhere(
-        (s) => (s as Map)['name'] == 'escrow-review',
+        (s) => (s as Map)['name'] == 'eval-review',
       ) as Map;
       final messages = await client.call('messaging.getMessages', {
         'space_id': reviewSpace['space_id'] ?? reviewSpace['id'],
@@ -137,8 +137,71 @@ void main() {
       expect(ticketList, isNotEmpty);
       expect(
         ticketList.map((t) => t['key']),
-        contains('PD-124'),
+        contains('HX-118'),
         reason: 'the seeded triage ticket the demo script resolves',
+      );
+
+      // Linked repos + the open-PR snapshot the list and inbox both read.
+      // The wire key is `prs` (not `pull_requests`): a snapshot that used the
+      // wrong key decoded as empty groups, and the client skipped them, so
+      // the PR list and Maya's inbox both rendered as a zero state.
+      final linkedRepos = await client
+          .subscribe('repos.watchAll', const {})
+          .first
+          .timeout(const Duration(seconds: 20));
+      final repoRows =
+          (linkedRepos['repos'] as List).cast<Map<String, dynamic>>();
+      expect(
+        repoRows,
+        hasLength(4),
+        reason: 'Helix ships four linked data-science repos',
+      );
+      expect(
+        {
+          for (final r in repoRows)
+            '${r['remote_owner']}/${r['remote_name']}',
+        },
+        {
+          'helix/evalkit',
+          'helix/retriever',
+          'helix/features',
+          'helix/finetune',
+        },
+      );
+
+      final openPrs = await client
+          .subscribe('pr.watchOpenForWorkspace', const {})
+          .first
+          .timeout(const Duration(seconds: 20));
+      expect(
+        openPrs['authenticated'],
+        isTrue,
+        reason: 'a demo visitor must not land on the signed-out PR empty state',
+      );
+      final groups =
+          (openPrs['repos'] as List).cast<Map<String, dynamic>>();
+      expect(groups, hasLength(4));
+      final numbers = <int>{};
+      for (final group in groups) {
+        expect(
+          group.containsKey('prs'),
+          isTrue,
+          reason: 'the list client reads `prs`, not `pull_requests`',
+        );
+        expect(group['repo_id'], isNotEmpty);
+        final prs = (group['prs'] as List).cast<Map<String, dynamic>>();
+        expect(
+          prs,
+          isNotEmpty,
+          reason: '${group['repo_full_name']} would vanish from the list',
+        );
+        for (final pr in prs) {
+          numbers.add((pr['number'] as num).toInt());
+        }
+      }
+      expect(
+        numbers,
+        containsAll({412, 409, 88, 81, 54, 49, 23, 19}),
       );
 
       // Calendar, meetings and memory: seeded pillars whose READS must stay
@@ -271,17 +334,17 @@ void main() {
       expect(
         File('$tmpPath/$workspaceId/logo.png').existsSync(),
         isTrue,
-        reason: 'the Parced logo is part of the furnished workspace',
+        reason: 'the Helix logo is part of the furnished workspace',
       );
 
-      // The workspace a visitor lands in IS Parced, branded, and the logo is
+      // The workspace a visitor lands in IS Helix, branded, and the logo is
       // a real file the signed `/workspace/logo` route can serve — not a
       // remote URL, which would be the one thing that broke zero-egress.
       final logo = File('${tmp.path}/$workspaceId/logo.png');
       expect(
         logo.existsSync(),
         isTrue,
-        reason: 'the Parced logo is written beside the workspace database',
+        reason: 'the Helix logo is written beside the workspace database',
       );
       expect(logo.lengthSync(), greaterThan(0));
 
@@ -438,8 +501,8 @@ void main() {
     // a demo and only the watches are admitted.
     final axes = await client
         .subscribe('review_studio.watchAxisResults', const {
-          'owner': 'parced',
-          'repo': 'closing',
+          'owner': 'helix',
+          'repo': 'evalkit',
           'pr_number': 412,
         })
         .first
@@ -463,8 +526,8 @@ void main() {
 
     final cohorts = await client
         .subscribe('review_studio.watchCohorts', const {
-          'owner': 'parced',
-          'repo': 'closing',
+          'owner': 'helix',
+          'repo': 'evalkit',
           'pr_number': 412,
         })
         .first

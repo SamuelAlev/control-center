@@ -7,8 +7,8 @@ third-party components that are **statically linked** into the shipped dylib.
 
 | Component                  | Version | License    | Where it comes from                                               |
 | -------------------------- | ------- | ---------- | ----------------------------------------------------------------- |
-| sherpa-onnx (C API + core) | 1.13.5  | Apache-2.0 | k2-fsa/sherpa-onnx prebuilt `*-static-lib` release archive        |
-| ONNX Runtime               | 1.27.1  | MIT        | bundled inside that same sherpa-onnx archive (`libonnxruntime.a`) |
+| sherpa-onnx (C API + core) | 1.13.8  | Apache-2.0 | k2-fsa/sherpa-onnx prebuilt `*-static-lib` release archive        |
+| ONNX Runtime               | 1.28.2  | MIT        | bundled inside that same sherpa-onnx archive (`libonnxruntime.a`) |
 
 Both arrive in ONE archive, so there is exactly one ONNX Runtime in the process.
 That matters on Windows in particular, where the loader satisfies a DLL
@@ -40,7 +40,7 @@ machine needs bindgen. Header version must match the ONNX Runtime inside the
 sherpa archive (check with `strings libonnxruntime.a | grep -E '^1\.[0-9]+\.[0-9]+$'`).
 
 ```sh
-V=1.27.1   # the ONNX Runtime version bundled by the pinned sherpa archive
+V=1.28.2   # the ONNX Runtime version bundled by the pinned sherpa archive
 base="https://raw.githubusercontent.com/microsoft/onnxruntime/v$V/include/onnxruntime/core/session"
 curl -sLO "$base/onnxruntime_c_api.h"
 curl -sLO "$base/onnxruntime_ep_c_api.h"     # included by the above

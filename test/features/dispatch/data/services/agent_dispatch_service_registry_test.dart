@@ -176,7 +176,7 @@ PreparedDispatch _prepared({Agent? agent}) => PreparedDispatch(
   agent: agent,
   mode: Mode.chat,
   resolvedAdapterId: null,
-  cliName: 'pi',
+  cliName: 'claude',
 );
 
 void main() {

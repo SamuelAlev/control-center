@@ -6327,6 +6327,43 @@ class AppLocalizationsPl extends AppLocalizations {
   String get editorEmptyCanvas => 'Przeciągnij węzeł z biblioteki, aby zacząć.';
 
   @override
+  String get pipelineWhenThisHappens => 'Gdy to się zdarzy';
+
+  @override
+  String get pipelineDoThis => 'Zrób to';
+
+  @override
+  String get pipelineAddStep => 'Dodaj krok';
+
+  @override
+  String get pipelineTidyUp => 'Uporządkuj układ';
+
+  @override
+  String get pipelineEditorHint =>
+      'Przeciągnij kroki, aby ułożyć · przeciągnij uchwyt, aby połączyć';
+
+  @override
+  String get pipelineRemoveConnection => 'Usuń połączenie';
+
+  @override
+  String get pipelineDragToConnect => 'Przeciągnij, aby połączyć';
+
+  @override
+  String get pipelineNewDefaultName => 'Nowy potok';
+
+  @override
+  String get nodeCategoryTriggers => 'Wyzwalacze';
+
+  @override
+  String get triggerEventWebhook => 'Webhook';
+
+  @override
+  String get pipelineAddTrigger => 'Dodaj wyzwalacz';
+
+  @override
+  String get pipelineOnEvent => 'Przy zdarzeniu';
+
+  @override
   String get nodeConfigTitle => 'Konfiguracja węzła';
 
   @override
@@ -6574,6 +6611,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Generowany jest podpisany adres URL webhooka. Systemy zewnętrzne wysyłają do niego POST, aby uruchomić ten potok.';
 
   @override
+  String get triggerWebhookPathLabel => 'Ścieżka webhooka';
+
+  @override
   String get triggerEventFieldLabel => 'Zdarzenie';
 
   @override
@@ -6704,6 +6744,87 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get triggerEventTicketAssigned => 'Przypisano zgłoszenie';
+
+  @override
+  String get triggerEventTicketCreated => 'Utworzono zgłoszenie';
+
+  @override
+  String get triggerEventTicketStatusChanged => 'Zmieniono status zgłoszenia';
+
+  @override
+  String get triggerEventMeetingRecordingStopped =>
+      'Zatrzymano nagranie spotkania';
+
+  @override
+  String get triggerEventSkillUpdated => 'Zaktualizowano umiejętność';
+
+  @override
+  String get triggerEventSpaceDeleted => 'Przestrzeń usunięta';
+
+  @override
+  String get triggerExternalPrHelp =>
+      'Pull request otwarty na hoście kodu, nie z Control Center.';
+
+  @override
+  String get triggerPrPublishedHelp =>
+      'Pull request otwarty z Control Center lub przez agenta.';
+
+  @override
+  String get triggerPrStatusChangedHelp =>
+      'Scalony, zamknięty, otwarty, ponownie otwarty lub zatwierdzony. Filtruj według statusu w inspektorze.';
+
+  @override
+  String get triggerPrMergedHelp =>
+      'Tylko gdy pull request zostanie scalony, nie zamknięty ani ponownie otwarty.';
+
+  @override
+  String get triggerRepoAddedHelp =>
+      'Repozytorium jest łączone z tą przestrzenią roboczą.';
+
+  @override
+  String get triggerCodeGraphWatchHelp =>
+      'Plik w połączonym repozytorium zmienia się na dysku.';
+
+  @override
+  String get triggerMessageReceivedHelp =>
+      'Nowa wiadomość pojawia się w przestrzeni.';
+
+  @override
+  String get triggerTicketCreatedHelp =>
+      'Zgłoszenie jest tworzone w tej przestrzeni roboczej.';
+
+  @override
+  String get triggerTicketStatusChangedHelp => 'Zgłoszenie zmienia status.';
+
+  @override
+  String get triggerTicketCompletedHelp => 'Zgłoszenie kończy się pomyślnie.';
+
+  @override
+  String get triggerTicketFailedHelp =>
+      'Uruchomienie agenta nie powiodło się, a zgłoszenie jest oznaczone jako nieudane.';
+
+  @override
+  String get triggerTicketCancelledHelp =>
+      'Zgłoszenie jest anulowane i nie będzie kontynuowane.';
+
+  @override
+  String get triggerBudgetCrossedHelp =>
+      'Przekroczono limit wydatków przestrzeni roboczej lub agenta.';
+
+  @override
+  String get triggerTicketAssignedHelp =>
+      'Zgłoszenie jest przypisywane do osoby, agenta lub zespołu.';
+
+  @override
+  String get triggerMeetingRecordingStoppedHelp =>
+      'Nagranie spotkania się kończy.';
+
+  @override
+  String get triggerSkillUpdatedHelp =>
+      'Umiejętność jest instalowana lub aktualizowana.';
+
+  @override
+  String get triggerSpaceDeletedHelp => 'Przestrzeń rozmowy jest usuwana.';
 
   @override
   String get navTickets => 'Zgłoszenia';

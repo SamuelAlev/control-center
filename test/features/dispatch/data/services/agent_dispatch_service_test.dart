@@ -346,7 +346,7 @@ PreparedDispatch _cannedDispatch() => const PreparedDispatch(
   agent: null,
   mode: Mode.chat,
   resolvedAdapterId: null,
-  cliName: 'pi',
+  cliName: 'claude',
 );
 
 AgentRunLog _pendingRunLog({String id = 'run-1', String agentId = 'agent-1'}) =>
@@ -790,7 +790,7 @@ void main() {
             agent: agent,
             mode: Mode.chat,
             resolvedAdapterId: 'claude',
-            cliName: 'pi',
+            cliName: 'claude',
           ),
         );
         final service = createService();

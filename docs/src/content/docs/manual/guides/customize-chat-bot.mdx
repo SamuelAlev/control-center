@@ -39,12 +39,10 @@ After saving, Control Center re-reads the bot's identity so the name in settings
 
 ## Reinstall when permissions change
 
-:::caution[A permission change is inert until you reinstall]
-Slack applies the new app definition immediately but keeps the _installed grant_
-exactly as it was, so an edit that changes permissions does nothing at all until
-the app is reinstalled. The bridge keeps running on the old grant in the
-meantime — the connection is not broken, it is simply not using what you asked
-for and nothing else will tell you.
+:::caution[Reinstall after a permission change]
+Slack applies the new app definition immediately but keeps the installed grant
+as it was. Reinstall the app for a permission change to take effect. The bridge
+keeps running on the previous grant until you do.
 :::
 
 When a save changes permissions, the dialog stays open and says "Slack changed
