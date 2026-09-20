@@ -262,7 +262,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Crea un simulatore iOS temporaneo sul Mac del server. Viene eliminato alla chiusura dell’ambiente di test; l’accesso alla rete non è isolato.';
+      'Crea un simulatore iOS temporaneo su un server macOS. Viene eliminato alla chiusura dell’ambiente di test; l’accesso alla rete non è isolato.';
 
   @override
   String get rigTechnicalDetails => 'Dettagli tecnici';
@@ -3260,7 +3260,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get egControlCenter => 'es: control-center';
 
   @override
-  String get egPlatform => 'es: macOS';
+  String get egPlatform => 'es: Platform';
 
   @override
   String get egSamuelAlev => 'es: SamuelAlev';
@@ -4951,7 +4951,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Mostra notifiche native macOS per gli eventi.';
+      'Mostra notifiche di sistema per gli eventi.';
 
   @override
   String get showSuperseded => 'Mostra sostituiti';

@@ -109,7 +109,7 @@
   "rigStartMachine": "Avvia la macchina",
   "rigStartHint": "Avvia una VM usa e getta condivisa con i tuoi agenti per questa conversazione. Viene distrutta alla chiusura e nulla di ciò che accade al suo interno tocca il tuo computer.",
   "rigStartAndroidHint": "Si connette a un emulatore Android già in esecuzione sul server. L’accesso alla rete non è isolato.",
-  "rigStartIosHint": "Crea un simulatore iOS temporaneo sul Mac del server. Viene eliminato alla chiusura dell’ambiente di test; l’accesso alla rete non è isolato.",
+  "rigStartIosHint": "Crea un simulatore iOS temporaneo su un server macOS. Viene eliminato alla chiusura dell’ambiente di test; l’accesso alla rete non è isolato.",
   "rigTechnicalDetails": "Dettagli tecnici",
   "rigStopMachine": "Ferma la macchina",
   "rigHomeButton": "Home",
@@ -1363,7 +1363,7 @@
   "@egControlCenter": {
     "description": "e.g. control-center"
   },
-  "egPlatform": "es: macOS",
+  "egPlatform": "es: Platform",
   "@egPlatform": {
     "description": "Locale string for egPlatform"
   },
@@ -2646,7 +2646,7 @@
   "settingsLanguage": "Lingua",
   "settingsLanguageDescription": "Scegli la lingua dell'app.",
   "shortTask": "Attività breve",
-  "showNativeNotifications": "Mostra notifiche native macOS per gli eventi.",
+  "showNativeNotifications": "Mostra notifiche di sistema per gli eventi.",
   "showSuperseded": "Mostra sostituiti",
   "@showSuperseded": {
     "description": "Checkbox label to show superseded facts"

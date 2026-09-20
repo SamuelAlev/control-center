@@ -255,7 +255,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'ينشئ محاكي iOS مؤقتًا على جهاز Mac الخادم. يُحذف عند إغلاق بيئة الاختبار؛ الوصول إلى الشبكة غير معزول.';
+      'ينشئ محاكي iOS مؤقتًا على خادم macOS. يُحذف عند إغلاق بيئة الاختبار؛ الوصول إلى الشبكة غير معزول.';
 
   @override
   String get rigTechnicalDetails => 'التفاصيل التقنية';
@@ -3265,7 +3265,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get egControlCenter => 'مثال: control-center';
 
   @override
-  String get egPlatform => 'مثال: macOS';
+  String get egPlatform => 'مثال: Platform';
 
   @override
   String get egSamuelAlev => 'مثال: SamuelAlev';
@@ -4960,7 +4960,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get shortTask => 'مهمة قصيرة';
 
   @override
-  String get showNativeNotifications => 'عرض إشعارات macOS الأصلية للأحداث.';
+  String get showNativeNotifications => 'عرض إشعارات النظام للأحداث.';
 
   @override
   String get showSuperseded => 'عرض المستبدَلة';

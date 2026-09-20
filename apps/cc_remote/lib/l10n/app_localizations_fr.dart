@@ -85,14 +85,14 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Scannez le QR code de votre Mac pour associer ce téléphone.';
+      'Scannez le QR code de Control Center pour associer ce téléphone.';
 
   @override
   String get scanQrHelp =>
-      'Ouvrez l’appareil photo et pointez-le vers le QR affiché dans Control Center sur votre Mac. Ce téléphone se connecte directement à votre Mac via un lien privé.';
+      'Ouvrez l’appareil photo et pointez-le vers le QR affiché dans Control Center. Ce téléphone se connecte directement via un lien privé.';
 
   @override
-  String get connectingToMac => 'Connexion à votre Mac…';
+  String get connectingToMac => 'Connexion à Control Center…';
 
   @override
   String get connectingDetail =>
@@ -103,7 +103,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Ce serveur ne correspond plus à l’identité enregistrée lors de l’association. Cela peut indiquer une réinstallation du serveur — ou qu’une tierce partie intercepte la connexion. Par sécurité, cet appareil ne se connectera pas. Supprimez l’association, puis scannez un nouveau QR code depuis votre Mac pour réassocier.';
+      'Ce serveur ne correspond plus à l’identité enregistrée lors de l’association. Cela peut indiquer une réinstallation du serveur — ou qu’une tierce partie intercepte la connexion. Par sécurité, cet appareil ne se connectera pas. Supprimez l’association, puis scannez un nouveau QR code depuis Control Center pour réassocier.';
 
   @override
   String get removePairing => 'Supprimer l’association';
@@ -123,7 +123,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Non associé — scannez le QR code depuis votre Mac';
+      'Non associé — scannez le QR code depuis Control Center';
 
   @override
   String get failureUnreachable =>
@@ -135,7 +135,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Le serveur a refusé cet appareil — réassociez-le depuis votre Mac';
+      'Le serveur a refusé cet appareil — réassociez-le depuis Control Center';
 
   @override
   String get failureUnknown => 'Connexion impossible — appuyez pour réessayer';
@@ -215,7 +215,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Appuyez de nouveau pour déconnecter cet appareil de votre Mac';
+      'Appuyez de nouveau pour déconnecter cet appareil de Control Center';
 
   @override
   String get disconnectDevice => 'Déconnecter cet appareil';
@@ -867,15 +867,15 @@ class AppLocalizationsFrCa extends AppLocalizationsFr {
 
   @override
   String get scanQrPrompt =>
-      'Scannez le code QR de votre Mac pour associer ce téléphone.';
+      'Scannez le code QR de Control Center pour associer ce téléphone.';
 
   @override
   String get identityChangedBody =>
-      'Ce serveur ne correspond plus à l’identité enregistrée lors de l’association. Cela peut indiquer une réinstallation du serveur — ou qu’une tierce partie intercepte la connexion. Par sécurité, cet appareil ne se connectera pas. Supprimez l’association, puis scannez un nouveau code QR depuis votre Mac pour réassocier.';
+      'Ce serveur ne correspond plus à l’identité enregistrée lors de l’association. Cela peut indiquer une réinstallation du serveur — ou qu’une tierce partie intercepte la connexion. Par sécurité, cet appareil ne se connectera pas. Supprimez l’association, puis scannez un nouveau code QR depuis Control Center pour réassocier.';
 
   @override
   String get failureNotPaired =>
-      'Non associé — scannez le code QR depuis votre Mac';
+      'Non associé — scannez le code QR depuis Control Center';
 
   @override
   String get tabNews => 'Fil de nouvelles';

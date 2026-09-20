@@ -1,7 +1,7 @@
 {
   "@@locale": "fr_CA",
-  "scanQrPrompt": "Scannez le code QR de votre Mac pour associer ce téléphone.",
-  "identityChangedBody": "Ce serveur ne correspond plus à l’identité enregistrée lors de l’association. Cela peut indiquer une réinstallation du serveur — ou qu’une tierce partie intercepte la connexion. Par sécurité, cet appareil ne se connectera pas. Supprimez l’association, puis scannez un nouveau code QR depuis votre Mac pour réassocier.",
-  "failureNotPaired": "Non associé — scannez le code QR depuis votre Mac",
+  "scanQrPrompt": "Scannez le code QR de Control Center pour associer ce téléphone.",
+  "identityChangedBody": "Ce serveur ne correspond plus à l’identité enregistrée lors de l’association. Cela peut indiquer une réinstallation du serveur — ou qu’une tierce partie intercepte la connexion. Par sécurité, cet appareil ne se connectera pas. Supprimez l’association, puis scannez un nouveau code QR depuis Control Center pour réassocier.",
+  "failureNotPaired": "Non associé — scannez le code QR depuis Control Center",
   "tabNews": "Fil de nouvelles"
 }

@@ -85,14 +85,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Scan de QR-code op je Mac om deze telefoon te koppelen.';
+      'Scan de QR-code in Control Center om deze telefoon te koppelen.';
 
   @override
   String get scanQrHelp =>
-      'Open je camera en richt die op de QR in Control Center op je Mac. Deze telefoon maakt rechtstreeks via een privéverbinding contact met je Mac.';
+      'Open je camera en richt die op de QR in Control Center. Deze telefoon maakt rechtstreeks via een privéverbinding contact.';
 
   @override
-  String get connectingToMac => 'Verbinden met je Mac…';
+  String get connectingToMac => 'Verbinden met Control Center…';
 
   @override
   String get connectingDetail =>
@@ -103,7 +103,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Deze server komt niet meer overeen met de identiteit die bij het koppelen is opgeslagen. Dat kan betekenen dat de server opnieuw is geïnstalleerd — of dat iets de verbinding onderschept. Voor je veiligheid maakt dit apparaat geen verbinding. Verwijder de koppeling en scan daarna een nieuwe QR-code op je Mac om opnieuw te koppelen.';
+      'Deze server komt niet meer overeen met de identiteit die bij het koppelen is opgeslagen. Dat kan betekenen dat de server opnieuw is geïnstalleerd — of dat iets de verbinding onderschept. Voor je veiligheid maakt dit apparaat geen verbinding. Verwijder de koppeling en scan daarna een nieuwe QR-code in Control Center om opnieuw te koppelen.';
 
   @override
   String get removePairing => 'Koppeling verwijderen';
@@ -122,7 +122,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get connect => 'Verbinden';
 
   @override
-  String get failureNotPaired => 'Niet gekoppeld — scan de QR-code op je Mac';
+  String get failureNotPaired =>
+      'Niet gekoppeld — scan de QR-code in Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +135,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'De server wees dit apparaat af — koppel het opnieuw vanaf je Mac';
+      'De server wees dit apparaat af — koppel het opnieuw vanaf Control Center';
 
   @override
   String get failureUnknown => 'Verbinden mislukt — tik om opnieuw te proberen';
@@ -213,7 +214,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Tik nogmaals om dit apparaat van je Mac te ontkoppelen';
+      'Tik nogmaals om dit apparaat van Control Center te ontkoppelen';
 
   @override
   String get disconnectDevice => 'Dit apparaat ontkoppelen';

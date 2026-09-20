@@ -264,7 +264,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Δημιουργεί έναν προσωρινό προσομοιωτή iOS στον Mac του διακομιστή. Διαγράφεται όταν κλείσει το περιβάλλον δοκιμών· η πρόσβαση στο δίκτυο δεν είναι απομονωμένη.';
+      'Δημιουργεί έναν προσωρινό προσομοιωτή iOS σε διακομιστή macOS. Διαγράφεται όταν κλείσει το περιβάλλον δοκιμών· η πρόσβαση στο δίκτυο δεν είναι απομονωμένη.';
 
   @override
   String get rigTechnicalDetails => 'Τεχνικές λεπτομέρειες';
@@ -3261,7 +3261,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get egControlCenter => 'π.χ. ⁨control-center⁩';
 
   @override
-  String get egPlatform => 'π.χ. macOS';
+  String get egPlatform => 'π.χ. Platform';
 
   @override
   String get egSamuelAlev => 'π.χ. SamuelAlev';
@@ -4957,7 +4957,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Εμφάνιση εγγενών ειδοποιήσεων macOS για γεγονότα.';
+      'Εμφάνιση ειδοποιήσεων συστήματος για γεγονότα.';
 
   @override
   String get showSuperseded => 'Εμφάνιση αντικατασταθέντων';

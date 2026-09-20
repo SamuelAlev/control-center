@@ -85,14 +85,14 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Scansiona il QR dal Mac per associare questo telefono.';
+      'Scansiona il QR da Control Center per associare questo telefono.';
 
   @override
   String get scanQrHelp =>
-      'Apri la fotocamera e inquadra il QR mostrato in Control Center sul Mac. Questo telefono si collega direttamente al Mac su un collegamento privato.';
+      'Apri la fotocamera e inquadra il QR mostrato in Control Center. Questo telefono si collega direttamente su un collegamento privato.';
 
   @override
-  String get connectingToMac => 'Connessione al Mac…';
+  String get connectingToMac => 'Connessione a Control Center…';
 
   @override
   String get connectingDetail =>
@@ -103,7 +103,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Questo server non corrisponde più all’identità salvata al momento dell’associazione. Potrebbe essere stato reinstallato — oppure qualcosa sta intercettando la connessione. Per sicurezza, questo dispositivo non si connette. Rimuovi l’associazione, poi scansiona un nuovo QR dal Mac per associarti di nuovo.';
+      'Questo server non corrisponde più all’identità salvata al momento dell’associazione. Potrebbe essere stato reinstallato — oppure qualcosa sta intercettando la connessione. Per sicurezza, questo dispositivo non si connette. Rimuovi l’associazione, poi scansiona un nuovo QR da Control Center per associarti di nuovo.';
 
   @override
   String get removePairing => 'Rimuovi associazione';
@@ -122,7 +122,8 @@ class AppLocalizationsIt extends AppLocalizations {
   String get connect => 'Connetti';
 
   @override
-  String get failureNotPaired => 'Non associato — scansiona il QR dal Mac';
+  String get failureNotPaired =>
+      'Non associato — scansiona il QR da Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +135,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Il server ha rifiutato questo dispositivo — riassocialo dal Mac';
+      'Il server ha rifiutato questo dispositivo — riassocialo da Control Center';
 
   @override
   String get failureUnknown => 'Impossibile connettersi — tocca per riprovare';
@@ -213,7 +214,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Tocca di nuovo per disconnettere questo dispositivo dal Mac';
+      'Tocca di nuovo per disconnettere questo dispositivo da Control Center';
 
   @override
   String get disconnectDevice => 'Disconnetti questo dispositivo';

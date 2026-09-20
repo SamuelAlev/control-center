@@ -100,7 +100,7 @@ void main() {
     expect(find.text('iOS Simulator'), findsOneWidget);
     expect(
       find.text(
-        'Creates a disposable iOS Simulator on the server Mac. '
+        'Creates a disposable iOS Simulator on a macOS server. '
         'It is deleted when the rig closes; network access is not enclosed.',
       ),
       findsOneWidget,

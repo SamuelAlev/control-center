@@ -255,7 +255,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'یک شبیه‌ساز موقت iOS روی Mac سرور ایجاد می‌کند. با بسته‌شدن محیط آزمایش حذف می‌شود؛ دسترسی به شبکه ایزوله نیست.';
+      'یک شبیه‌ساز موقت iOS روی سرور macOS ایجاد می‌کند. با بسته‌شدن محیط آزمایش حذف می‌شود؛ دسترسی به شبکه ایزوله نیست.';
 
   @override
   String get rigTechnicalDetails => 'جزئیات فنی';
@@ -3217,7 +3217,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get egControlCenter => 'مثلاً ⁨control-center⁩';
 
   @override
-  String get egPlatform => 'مثلاً macOS';
+  String get egPlatform => 'مثلاً Platform';
 
   @override
   String get egSamuelAlev => 'مثلاً ⁨SamuelAlev⁩';
@@ -4886,7 +4886,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'اعلان‌های بومی macOS را برای رویدادها نشان بده.';
+      'اعلان‌های سیستم را برای رویدادها نشان بده.';
 
   @override
   String get showSuperseded => 'نمایش منسوخ‌شده‌ها';

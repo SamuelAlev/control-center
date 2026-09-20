@@ -85,14 +85,14 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Відскануйте QR-код на Mac, щоб під’єднати цей телефон.';
+      'Відскануйте QR-код у Control Center, щоб під’єднати цей телефон.';
 
   @override
   String get scanQrHelp =>
-      'Відкрийте камеру й наведіть її на QR у Control Center на Mac. Телефон з’єднується з Mac напряму через приватне посилання.';
+      'Відкрийте камеру й наведіть її на QR у Control Center. Телефон з’єднується напряму через приватне посилання.';
 
   @override
-  String get connectingToMac => 'Підключення до Mac…';
+  String get connectingToMac => 'Підключення до Control Center…';
 
   @override
   String get connectingDetail => 'Налагоджуємо захищене пряме з’єднання.';
@@ -102,7 +102,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Цей сервер більше не відповідає ідентичності, збереженій під час підключення. Можливо, сервер перевстановили — або хтось перехоплює з’єднання. З міркувань безпеки цей пристрій не підключиться. Видаліть підключення, потім відскануйте новий QR-код на Mac, щоб під’єднатися знову.';
+      'Цей сервер більше не відповідає ідентичності, збереженій під час підключення. Можливо, сервер перевстановили — або хтось перехоплює з’єднання. З міркувань безпеки цей пристрій не підключиться. Видаліть підключення, потім відскануйте новий QR-код у Control Center, щоб під’єднатися знову.';
 
   @override
   String get removePairing => 'Видалити підключення';
@@ -121,7 +121,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get connect => 'Під’єднатися';
 
   @override
-  String get failureNotPaired => 'Не підключено — відскануйте QR-код на Mac';
+  String get failureNotPaired =>
+      'Не підключено — відскануйте QR-код у Control Center';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Сервер відхилив цей пристрій — підключіть його знову з Mac';
+      'Сервер відхилив цей пристрій — підключіть його знову з Control Center';
 
   @override
   String get failureUnknown =>
@@ -213,7 +214,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Натисніть ще раз, щоб від’єднати цей пристрій від Mac';
+      'Натисніть ще раз, щоб від’єднати цей пристрій від Control Center';
 
   @override
   String get disconnectDevice => 'Від’єднати цей пристрій';

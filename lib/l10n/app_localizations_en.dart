@@ -256,7 +256,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.';
+      'Creates a disposable iOS Simulator on a macOS server. It is deleted when the rig closes; network access is not enclosed.';
 
   @override
   String get rigTechnicalDetails => 'Technical details';
@@ -3222,7 +3222,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get egControlCenter => 'e.g. control-center';
 
   @override
-  String get egPlatform => 'e.g. macOS';
+  String get egPlatform => 'e.g. Platform';
 
   @override
   String get egSamuelAlev => 'e.g. SamuelAlev';
@@ -4891,8 +4891,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shortTask => 'Short task';
 
   @override
-  String get showNativeNotifications =>
-      'Show native macOS notifications for events.';
+  String get showNativeNotifications => 'Show system notifications for events.';
 
   @override
   String get showSuperseded => 'Show superseded';

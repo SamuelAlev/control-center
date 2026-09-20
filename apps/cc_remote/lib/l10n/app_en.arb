@@ -79,15 +79,15 @@
     "description": "Image viewer zoom-reset control."
   },
 
-  "scanQrPrompt": "Scan the QR code from your Mac to pair this phone.",
+  "scanQrPrompt": "Scan the QR code from Control Center to pair this phone.",
   "@scanQrPrompt": {
     "description": "Connect screen: primary instruction when the phone is not paired."
   },
-  "scanQrHelp": "Open your camera and point it at the QR shown in Control Center on your Mac. This phone connects directly to your Mac over a private link.",
+  "scanQrHelp": "Open your camera and point it at the QR shown in Control Center. This phone connects directly over a private link.",
   "@scanQrHelp": {
     "description": "Connect screen: secondary help text under the pairing instruction."
   },
-  "connectingToMac": "Connecting to your Mac…",
+  "connectingToMac": "Connecting to Control Center…",
   "@connectingToMac": {
     "description": "Connect screen: title while the phone resolves a path and authenticates."
   },
@@ -99,7 +99,7 @@
   "@identityChangedTitle": {
     "description": "Connect screen: title of the terminal identity-mismatch stop."
   },
-  "identityChangedBody": "This server no longer matches the identity saved when you paired. That can mean the server was reinstalled — or that something is intercepting the connection. To stay safe, this device will not connect. Remove the pairing, then scan a fresh QR code from your Mac to pair again.",
+  "identityChangedBody": "This server no longer matches the identity saved when you paired. That can mean the server was reinstalled — or that something is intercepting the connection. To stay safe, this device will not connect. Remove the pairing, then scan a fresh QR code from Control Center to pair again.",
   "@identityChangedBody": {
     "description": "Connect screen: explanation of the identity-mismatch stop and the way forward."
   },
@@ -124,7 +124,7 @@
     "description": "Button confirming a pending pairing offer."
   },
 
-  "failureNotPaired": "Not paired — scan the QR code from your Mac",
+  "failureNotPaired": "Not paired — scan the QR code from Control Center",
   "@failureNotPaired": {
     "description": "Connection-failure reason: no pairing record exists."
   },
@@ -136,7 +136,7 @@
   "@failureIdentityChanged": {
     "description": "Connection-failure reason: the server's identity no longer matches the pinned fingerprint."
   },
-  "failureAuthRejected": "The server rejected this device — re-pair it from your Mac",
+  "failureAuthRejected": "The server rejected this device — re-pair it from Control Center",
   "@failureAuthRejected": {
     "description": "Connection-failure reason: the device credential was rejected."
   },
@@ -244,7 +244,7 @@
   "@languageSystem": {
     "description": "Language option: follow the platform locale."
   },
-  "disconnectTapAgain": "Tap again to disconnect this device from your Mac",
+  "disconnectTapAgain": "Tap again to disconnect this device from Control Center",
   "@disconnectTapAgain": {
     "description": "Armed state of the disconnect card, asking for a confirming second tap."
   },

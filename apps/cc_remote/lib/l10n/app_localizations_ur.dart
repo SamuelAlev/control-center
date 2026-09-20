@@ -85,14 +85,14 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'اس فون کو پیئر کرنے کے لیے اپنے Mac سے QR کوڈ اسکین کریں۔';
+      'اس فون کو پیئر کرنے کے لیے Control Center سے QR کوڈ اسکین کریں۔';
 
   @override
   String get scanQrHelp =>
-      'کیمرہ کھولیں اور اسے اپنے Mac پر Control Center میں دکھائے گئے QR کی طرف پوائنٹ کریں۔ یہ فون پرائیویٹ لنک پر براہِ راست آپ کے Mac سے جڑتا ہے۔';
+      'کیمرہ کھولیں اور اسے Control Center میں دکھائے گئے QR کی طرف پوائنٹ کریں۔ یہ فون پرائیویٹ لنک پر براہِ راست جڑتا ہے۔';
 
   @override
-  String get connectingToMac => 'آپ کے Mac سے منسلک ہو رہا ہے…';
+  String get connectingToMac => 'Control Center سے منسلک ہو رہا ہے…';
 
   @override
   String get connectingDetail => 'محفوظ، براہِ راست لنک قائم ہو رہا ہے۔';
@@ -102,7 +102,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'یہ سرور اب اس شناخت سے مماثل نہیں جو پیئرنگ کے وقت محفوظ ہوئی۔ اس کا مطلب ہو سکتا ہے کہ سرور دوبارہ انسٹال ہوا — یا کوئی چیز کنکشن کو روک رہی ہے۔ حفاظت کے لیے یہ ڈیوائس منسلک نہیں ہوگی۔ پیئرنگ ہٹائیں، پھر دوبارہ پیئر کرنے کے لیے اپنے Mac سے تازہ QR کوڈ اسکین کریں۔';
+      'یہ سرور اب اس شناخت سے مماثل نہیں جو پیئرنگ کے وقت محفوظ ہوئی۔ اس کا مطلب ہو سکتا ہے کہ سرور دوبارہ انسٹال ہوا — یا کوئی چیز کنکشن کو روک رہی ہے۔ حفاظت کے لیے یہ ڈیوائس منسلک نہیں ہوگی۔ پیئرنگ ہٹائیں، پھر دوبارہ پیئر کرنے کے لیے Control Center سے تازہ QR کوڈ اسکین کریں۔';
 
   @override
   String get removePairing => 'پیئرنگ ہٹائیں';
@@ -121,7 +121,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get connect => 'منسلک ہوں';
 
   @override
-  String get failureNotPaired => 'پیئر نہیں — اپنے Mac سے QR کوڈ اسکین کریں';
+  String get failureNotPaired =>
+      'پیئر نہیں — Control Center سے QR کوڈ اسکین کریں';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'سرور نے اس ڈیوائس کو مسترد کر دیا — اسے اپنے Mac سے دوبارہ پیئر کریں';
+      'سرور نے اس ڈیوائس کو مسترد کر دیا — اسے Control Center سے دوبارہ پیئر کریں';
 
   @override
   String get failureUnknown =>
@@ -213,7 +214,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'اس ڈیوائس کو اپنے Mac سے منقطع کرنے کے لیے دوبارہ ٹیپ کریں';
+      'اس ڈیوائس کو Control Center سے منقطع کرنے کے لیے دوبارہ ٹیپ کریں';
 
   @override
   String get disconnectDevice => 'اس ڈیوائس کو منقطع کریں';

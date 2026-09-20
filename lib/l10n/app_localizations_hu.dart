@@ -262,7 +262,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Létrehoz egy ideiglenes iOS-szimulátort a szerver Mac gépén. A tesztkörnyezet bezárásakor törlődik; a hálózati hozzáférés nincs elkülönítve.';
+      'Létrehoz egy ideiglenes iOS-szimulátort egy macOS-kiszolgálón. A tesztkörnyezet bezárásakor törlődik; a hálózati hozzáférés nincs elkülönítve.';
 
   @override
   String get rigTechnicalDetails => 'Műszaki részletek';
@@ -3239,7 +3239,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get egControlCenter => 'pl. control-center';
 
   @override
-  String get egPlatform => 'pl. macOS';
+  String get egPlatform => 'pl. Platform';
 
   @override
   String get egSamuelAlev => 'pl. SamuelAlev';
@@ -4926,7 +4926,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Natív macOS-értesítések megjelenítése az eseményekhez.';
+      'Rendszerértesítések megjelenítése az eseményekhez.';
 
   @override
   String get showSuperseded => 'Felülírtak megjelenítése';

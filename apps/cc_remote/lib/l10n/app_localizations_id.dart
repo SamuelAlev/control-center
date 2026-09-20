@@ -85,14 +85,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Pindai kode QR dari Mac Anda untuk menyandingkan ponsel ini.';
+      'Pindai kode QR dari Control Center untuk menyandingkan ponsel ini.';
 
   @override
   String get scanQrHelp =>
-      'Buka kamera dan arahkan ke QR yang ditampilkan di Control Center di Mac Anda. Ponsel ini terhubung langsung ke Mac Anda lewat tautan privat.';
+      'Buka kamera dan arahkan ke QR yang ditampilkan di Control Center. Ponsel ini terhubung langsung lewat tautan privat.';
 
   @override
-  String get connectingToMac => 'Menghubungkan ke Mac Anda…';
+  String get connectingToMac => 'Menghubungkan ke Control Center…';
 
   @override
   String get connectingDetail => 'Menjalin tautan langsung yang aman.';
@@ -102,7 +102,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Server ini tidak lagi cocok dengan identitas yang disimpan saat penyandingan. Itu bisa berarti server diinstal ulang — atau ada yang menyadap koneksi. Demi keamanan, perangkat ini tidak akan terhubung. Hapus penyandingan, lalu pindai kode QR baru dari Mac Anda untuk menyandingkan lagi.';
+      'Server ini tidak lagi cocok dengan identitas yang disimpan saat penyandingan. Itu bisa berarti server diinstal ulang — atau ada yang menyadap koneksi. Demi keamanan, perangkat ini tidak akan terhubung. Hapus penyandingan, lalu pindai kode QR baru dari Control Center untuk menyandingkan lagi.';
 
   @override
   String get removePairing => 'Hapus penyandingan';
@@ -122,7 +122,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Belum disandingkan — pindai kode QR dari Mac Anda';
+      'Belum disandingkan — pindai kode QR dari Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +134,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Server menolak perangkat ini — sandingkan ulang dari Mac Anda';
+      'Server menolak perangkat ini — sandingkan ulang dari Control Center';
 
   @override
   String get failureUnknown =>
@@ -214,7 +214,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Ketuk lagi untuk memutus perangkat ini dari Mac Anda';
+      'Ketuk lagi untuk memutus perangkat ini dari Control Center';
 
   @override
   String get disconnectDevice => 'Putuskan perangkat ini';

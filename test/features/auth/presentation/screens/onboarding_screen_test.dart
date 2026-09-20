@@ -340,8 +340,7 @@ void main() {
   testWidgets('workspace step shows workspace name hint', (tester) async {
     await pumpOnboarding(tester, authenticated: true);
     await advanceToWorkspaceStep(tester);
-    // The hint is l10n.egPlatform = 'e.g. macOS'.
-    expect(find.text('e.g. macOS'), findsOneWidget);
+    expect(find.text('e.g. Platform'), findsOneWidget);
   });
 
   testWidgets('workspace step Cancel returns to step 1', (tester) async {

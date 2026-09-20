@@ -259,7 +259,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Maakt een tijdelijke iOS-simulator op de Mac van de server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.';
+      'Maakt een tijdelijke iOS-simulator op een macOS-server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.';
 
   @override
   String get rigTechnicalDetails => 'Technische details';
@@ -3240,7 +3240,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get egControlCenter => 'bijv. control-center';
 
   @override
-  String get egPlatform => 'bijv. macOS';
+  String get egPlatform => 'bijv. Platform';
 
   @override
   String get egSamuelAlev => 'bijv. SamuelAlev';
@@ -4925,7 +4925,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Systeemmeldingen van macOS tonen voor gebeurtenissen.';
+      'Systeemmeldingen tonen voor gebeurtenissen.';
 
   @override
   String get showSuperseded => 'Vervangen tonen';

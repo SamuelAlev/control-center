@@ -85,14 +85,14 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Σαρώστε τον κωδικό QR από το Mac σας για να συζεύξετε αυτό το τηλέφωνο.';
+      'Σαρώστε τον κωδικό QR από το Control Center για να συζεύξετε αυτό το τηλέφωνο.';
 
   @override
   String get scanQrHelp =>
-      'Ανοίξτε την κάμερα και στρέψτε την στον QR που εμφανίζεται στο Control Center στο Mac. Αυτό το τηλέφωνο συνδέεται απευθείας με το Mac μέσω ιδιωτικής σύνδεσης.';
+      'Ανοίξτε την κάμερα και στρέψτε την στον QR που εμφανίζεται στο Control Center. Αυτό το τηλέφωνο συνδέεται απευθείας μέσω ιδιωτικής σύνδεσης.';
 
   @override
-  String get connectingToMac => 'Σύνδεση με το Mac σας…';
+  String get connectingToMac => 'Σύνδεση με το Control Center…';
 
   @override
   String get connectingDetail => 'Δημιουργία ασφαλούς, άμεσης σύνδεσης.';
@@ -102,7 +102,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Αυτός ο διακομιστής δεν ταιριάζει πλέον με την ταυτότητα που αποθηκεύτηκε κατά τη σύζευξη. Μπορεί να σημαίνει ότι ο διακομιστής επανεγκαταστάθηκε — ή ότι κάτι παρεμβαίνει στη σύνδεση. Για ασφάλεια, αυτή η συσκευή δεν θα συνδεθεί. Αφαιρέστε τη σύζευξη και σαρώστε έναν νέο κωδικό QR από το Mac για να συζεύξετε ξανά.';
+      'Αυτός ο διακομιστής δεν ταιριάζει πλέον με την ταυτότητα που αποθηκεύτηκε κατά τη σύζευξη. Μπορεί να σημαίνει ότι ο διακομιστής επανεγκαταστάθηκε — ή ότι κάτι παρεμβαίνει στη σύνδεση. Για ασφάλεια, αυτή η συσκευή δεν θα συνδεθεί. Αφαιρέστε τη σύζευξη και σαρώστε έναν νέο κωδικό QR από το Control Center για να συζεύξετε ξανά.';
 
   @override
   String get removePairing => 'Αφαίρεση σύζευξης';
@@ -122,7 +122,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Χωρίς σύζευξη — σαρώστε τον κωδικό QR από το Mac';
+      'Χωρίς σύζευξη — σαρώστε τον κωδικό QR από το Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +134,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Ο διακομιστής απέρριψε αυτή τη συσκευή — συζεύξτε την ξανά από το Mac';
+      'Ο διακομιστής απέρριψε αυτή τη συσκευή — συζεύξτε την ξανά από το Control Center';
 
   @override
   String get failureUnknown =>
@@ -214,7 +214,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Πατήστε ξανά για να αποσυνδέσετε αυτή τη συσκευή από το Mac';
+      'Πατήστε ξανά για να αποσυνδέσετε αυτή τη συσκευή από το Control Center';
 
   @override
   String get disconnectDevice => 'Αποσύνδεση αυτής της συσκευής';

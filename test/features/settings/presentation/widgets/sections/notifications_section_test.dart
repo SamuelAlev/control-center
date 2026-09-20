@@ -167,7 +167,7 @@ void main() {
 
       expect(find.text('Enable notifications'), findsOneWidget);
       expect(
-        find.text('Show native macOS notifications for events.'),
+        find.text('Show system notifications for events.'),
         findsOneWidget,
       );
       expect(find.byType(CcSwitch), findsWidgets);

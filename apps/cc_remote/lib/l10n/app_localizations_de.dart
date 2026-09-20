@@ -85,14 +85,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Scanne den QR-Code auf deinem Mac, um dieses Handy zu koppeln.';
+      'Scanne den QR-Code in Control Center, um dieses Handy zu koppeln.';
 
   @override
   String get scanQrHelp =>
-      'Öffne die Kamera und richte sie auf den QR in Control Center auf deinem Mac. Dieses Handy verbindet sich direkt über eine private Verbindung mit deinem Mac.';
+      'Öffne die Kamera und richte sie auf den QR in Control Center. Dieses Handy verbindet sich direkt über eine private Verbindung.';
 
   @override
-  String get connectingToMac => 'Verbindung mit deinem Mac wird hergestellt…';
+  String get connectingToMac =>
+      'Verbindung mit Control Center wird hergestellt…';
 
   @override
   String get connectingDetail => 'Sichere, direkte Verbindung wird aufgebaut.';
@@ -102,7 +103,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Dieser Server stimmt nicht mehr mit der Identität überein, die beim Koppeln gespeichert wurde. Das kann bedeuten, dass der Server neu installiert wurde — oder dass etwas die Verbindung abfängt. Aus Sicherheitsgründen verbindet sich dieses Gerät nicht. Entferne die Kopplung und scanne dann einen neuen QR-Code auf deinem Mac, um erneut zu koppeln.';
+      'Dieser Server stimmt nicht mehr mit der Identität überein, die beim Koppeln gespeichert wurde. Das kann bedeuten, dass der Server neu installiert wurde — oder dass etwas die Verbindung abfängt. Aus Sicherheitsgründen verbindet sich dieses Gerät nicht. Entferne die Kopplung und scanne dann einen neuen QR-Code in Control Center, um erneut zu koppeln.';
 
   @override
   String get removePairing => 'Kopplung entfernen';
@@ -122,7 +123,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Nicht gekoppelt — scanne den QR-Code auf deinem Mac';
+      'Nicht gekoppelt — scanne den QR-Code in Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +135,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Der Server hat dieses Gerät abgelehnt — kople es erneut von deinem Mac';
+      'Der Server hat dieses Gerät abgelehnt — kople es erneut von Control Center';
 
   @override
   String get failureUnknown =>
@@ -214,7 +215,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Nochmal tippen, um dieses Gerät von deinem Mac zu trennen';
+      'Nochmal tippen, um dieses Gerät von Control Center zu trennen';
 
   @override
   String get disconnectDevice => 'Dieses Gerät trennen';

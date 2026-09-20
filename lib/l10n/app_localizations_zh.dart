@@ -246,7 +246,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      '在服务器 Mac 上创建一个用完即弃的 iOS 模拟器。测试环境关闭时会将其删除；网络访问未隔离。';
+      '在 macOS 服务器上创建一个用完即弃的 iOS 模拟器。测试环境关闭时会将其删除；网络访问未隔离。';
 
   @override
   String get rigTechnicalDetails => '技术详情';
@@ -3136,7 +3136,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get egControlCenter => '例如 control-center';
 
   @override
-  String get egPlatform => '例如 macOS';
+  String get egPlatform => '例如 Platform';
 
   @override
   String get egSamuelAlev => '例如 SamuelAlev';
@@ -4747,7 +4747,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get shortTask => '短任务';
 
   @override
-  String get showNativeNotifications => '为事件显示 macOS 系统通知。';
+  String get showNativeNotifications => '为事件显示系统通知。';
 
   @override
   String get showSuperseded => '显示已替代';
@@ -14428,7 +14428,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rigStartIosHint =>
-      '在伺服器 Mac 上建立一個用完即棄的 iOS 模擬器。測試環境關閉時會將其刪除；網路存取未隔離。';
+      '在 macOS 伺服器上建立一個用完即棄的 iOS 模擬器。測試環境關閉時會將其刪除；網路存取未隔離。';
 
   @override
   String get rigTechnicalDetails => '技術詳情';
@@ -17318,7 +17318,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get egControlCenter => '例如 control-center';
 
   @override
-  String get egPlatform => '例如 macOS';
+  String get egPlatform => '例如 Platform';
 
   @override
   String get egSamuelAlev => '例如 SamuelAlev';
@@ -18928,7 +18928,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get shortTask => '簡短任務';
 
   @override
-  String get showNativeNotifications => '事件發生時顯示 macOS 原生通知。';
+  String get showNativeNotifications => '事件發生時顯示系統通知。';
 
   @override
   String get showSuperseded => '顯示已被取代者';

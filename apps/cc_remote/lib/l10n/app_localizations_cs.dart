@@ -85,14 +85,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Naskenujte QR kód z Macu a spárujte tento telefon.';
+      'Naskenujte QR kód z Control Center a spárujte tento telefon.';
 
   @override
   String get scanQrHelp =>
-      'Otevřete fotoaparát a namířte ho na QR kód zobrazený v Control Center na Macu. Tento telefon se k Macu připojí přímo přes soukromé spojení.';
+      'Otevřete fotoaparát a namířte ho na QR kód zobrazený v Control Center. Tento telefon se připojí přímo přes soukromé spojení.';
 
   @override
-  String get connectingToMac => 'Připojování k Macu…';
+  String get connectingToMac => 'Připojování k Control Center…';
 
   @override
   String get connectingDetail => 'Navazuje se zabezpečené, přímé spojení.';
@@ -102,7 +102,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Tento server už neodpovídá identitě uložené při párování. Může to znamenat, že byl server přeinstalován — nebo že něco odposlouchává připojení. Pro jistotu se toto zařízení nepřipojí. Odstraňte párování a pak naskenujte nový QR kód z Macu.';
+      'Tento server už neodpovídá identitě uložené při párování. Může to znamenat, že byl server přeinstalován — nebo že něco odposlouchává připojení. Pro jistotu se toto zařízení nepřipojí. Odstraňte párování a pak naskenujte nový QR kód z Control Center.';
 
   @override
   String get removePairing => 'Odstranit párování';
@@ -121,7 +121,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get connect => 'Připojit';
 
   @override
-  String get failureNotPaired => 'Nespárováno — naskenujte QR kód z Macu';
+  String get failureNotPaired =>
+      'Nespárováno — naskenujte QR kód z Control Center';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Server toto zařízení odmítl — spárujte ho znovu z Macu';
+      'Server toto zařízení odmítl — spárujte ho znovu z Control Center';
 
   @override
   String get failureUnknown =>
@@ -213,7 +214,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Klepněte znovu a odpojte toto zařízení od Macu';
+      'Klepněte znovu a odpojte toto zařízení od Control Center';
 
   @override
   String get disconnectDevice => 'Odpojit toto zařízení';

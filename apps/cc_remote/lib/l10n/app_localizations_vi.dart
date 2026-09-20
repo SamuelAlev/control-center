@@ -84,14 +84,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String get resetZoom => 'Đặt lại thu phóng';
 
   @override
-  String get scanQrPrompt => 'Quét mã QR trên Mac để ghép nối điện thoại này.';
+  String get scanQrPrompt =>
+      'Quét mã QR trên Control Center để ghép nối điện thoại này.';
 
   @override
   String get scanQrHelp =>
-      'Mở camera và hướng vào mã QR trong Control Center trên Mac. Điện thoại này kết nối trực tiếp với Mac qua liên kết riêng.';
+      'Mở camera và hướng vào mã QR trong Control Center. Điện thoại này kết nối trực tiếp qua liên kết riêng.';
 
   @override
-  String get connectingToMac => 'Đang kết nối với Mac…';
+  String get connectingToMac => 'Đang kết nối với Control Center…';
 
   @override
   String get connectingDetail => 'Đang thiết lập liên kết trực tiếp, bảo mật.';
@@ -101,7 +102,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Máy chủ này không còn khớp danh tính đã lưu khi ghép nối. Có thể máy chủ đã được cài lại — hoặc có thứ đang xen giữa kết nối. Để an toàn, thiết bị này sẽ không kết nối. Gỡ ghép nối, rồi quét mã QR mới từ Mac để ghép nối lại.';
+      'Máy chủ này không còn khớp danh tính đã lưu khi ghép nối. Có thể máy chủ đã được cài lại — hoặc có thứ đang xen giữa kết nối. Để an toàn, thiết bị này sẽ không kết nối. Gỡ ghép nối, rồi quét mã QR mới từ Control Center để ghép nối lại.';
 
   @override
   String get removePairing => 'Gỡ ghép nối';
@@ -120,7 +121,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get connect => 'Kết nối';
 
   @override
-  String get failureNotPaired => 'Chưa ghép nối — quét mã QR từ Mac';
+  String get failureNotPaired => 'Chưa ghép nối — quét mã QR từ Control Center';
 
   @override
   String get failureUnreachable =>
@@ -132,7 +133,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Máy chủ từ chối thiết bị này — ghép nối lại từ Mac';
+      'Máy chủ từ chối thiết bị này — ghép nối lại từ Control Center';
 
   @override
   String get failureUnknown => 'Không thể kết nối — chạm để thử lại';
@@ -211,7 +212,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Chạm lần nữa để ngắt kết nối thiết bị này khỏi Mac';
+      'Chạm lần nữa để ngắt kết nối thiết bị này khỏi Control Center';
 
   @override
   String get disconnectDevice => 'Ngắt kết nối thiết bị này';

@@ -84,14 +84,15 @@ class AppLocalizationsTh extends AppLocalizations {
   String get resetZoom => 'รีเซ็ตซูม';
 
   @override
-  String get scanQrPrompt => 'สแกนรหัส QR จาก Mac เพื่อจับคู่โทรศัพท์นี้';
+  String get scanQrPrompt =>
+      'สแกนรหัส QR จาก Control Center เพื่อจับคู่โทรศัพท์นี้';
 
   @override
   String get scanQrHelp =>
-      'เปิดกล้องแล้วเล็งไปที่ QR ที่แสดงใน Control Center บน Mac โทรศัพท์นี้เชื่อมต่อกับ Mac โดยตรงผ่านลิงก์ส่วนตัว';
+      'เปิดกล้องแล้วเล็งไปที่ QR ที่แสดงใน Control Center โทรศัพท์นี้เชื่อมต่อโดยตรงผ่านลิงก์ส่วนตัว';
 
   @override
-  String get connectingToMac => 'กำลังเชื่อมต่อกับ Mac…';
+  String get connectingToMac => 'กำลังเชื่อมต่อกับ Control Center…';
 
   @override
   String get connectingDetail => 'กำลังสร้างลิงก์โดยตรงที่ปลอดภัย';
@@ -101,7 +102,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'เซิร์ฟเวอร์นี้ไม่ตรงกับตัวตนที่บันทึกตอนจับคู่ อาจหมายความว่าเซิร์ฟเวอร์ถูกติดตั้งใหม่ — หรือมีสิ่งใดกำลังดักการเชื่อมต่อ เพื่อความปลอดภัย อุปกรณ์นี้จะไม่เชื่อมต่อ ลบการจับคู่ แล้วสแกนรหัส QR ใหม่จาก Mac เพื่อจับคู่อีกครั้ง';
+      'เซิร์ฟเวอร์นี้ไม่ตรงกับตัวตนที่บันทึกตอนจับคู่ อาจหมายความว่าเซิร์ฟเวอร์ถูกติดตั้งใหม่ — หรือมีสิ่งใดกำลังดักการเชื่อมต่อ เพื่อความปลอดภัย อุปกรณ์นี้จะไม่เชื่อมต่อ ลบการจับคู่ แล้วสแกนรหัส QR ใหม่จาก Control Center เพื่อจับคู่อีกครั้ง';
 
   @override
   String get removePairing => 'ลบการจับคู่';
@@ -120,7 +121,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String get connect => 'เชื่อมต่อ';
 
   @override
-  String get failureNotPaired => 'ยังไม่ได้จับคู่ — สแกนรหัส QR จาก Mac';
+  String get failureNotPaired =>
+      'ยังไม่ได้จับคู่ — สแกนรหัส QR จาก Control Center';
 
   @override
   String get failureUnreachable =>
@@ -132,7 +134,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'เซิร์ฟเวอร์ปฏิเสธอุปกรณ์นี้ — จับคู่ใหม่จาก Mac';
+      'เซิร์ฟเวอร์ปฏิเสธอุปกรณ์นี้ — จับคู่ใหม่จาก Control Center';
 
   @override
   String get failureUnknown => 'เชื่อมต่อไม่ได้ — แตะเพื่อลองใหม่';
@@ -211,7 +213,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'แตะอีกครั้งเพื่อยกเลิกการเชื่อมต่ออุปกรณ์นี้จาก Mac';
+      'แตะอีกครั้งเพื่อยกเลิกการเชื่อมต่ออุปกรณ์นี้จาก Control Center';
 
   @override
   String get disconnectDevice => 'ยกเลิกการเชื่อมต่ออุปกรณ์นี้';

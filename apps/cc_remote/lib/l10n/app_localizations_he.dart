@@ -84,14 +84,15 @@ class AppLocalizationsHe extends AppLocalizations {
   String get resetZoom => 'איפוס זום';
 
   @override
-  String get scanQrPrompt => 'סרקו את קוד ה-QR מה-Mac כדי לצמד את הטלפון הזה.';
+  String get scanQrPrompt =>
+      'סרקו את קוד ה-QR מ-Control Center כדי לצמד את הטלפון הזה.';
 
   @override
   String get scanQrHelp =>
-      'פתחו את המצלמה וכוונו אותה אל קוד ה-QR שמוצג ב-Control Center ב-Mac. הטלפון הזה מתחבר ישירות ל-Mac שלכם בקישור פרטי.';
+      'פתחו את המצלמה וכוונו אותה אל קוד ה-QR שמוצג ב-Control Center. הטלפון הזה מתחבר ישירות בקישור פרטי.';
 
   @override
-  String get connectingToMac => 'מתחבר ל-Mac…';
+  String get connectingToMac => 'מתחבר ל-Control Center…';
 
   @override
   String get connectingDetail => 'יוצר חיבור ישיר ומאובטח.';
@@ -101,7 +102,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'השרת הזה כבר לא תואם את הזהות שנשמרה בעת הצימוד. ייתכן שהשרת הותקן מחדש — או שמשהו מיירט את החיבור. ליתר ביטחון, המכשיר הזה לא יתחבר. הסירו את הצימוד, ואז סרקו קוד QR חדש מה-Mac כדי לצמד מחדש.';
+      'השרת הזה כבר לא תואם את הזהות שנשמרה בעת הצימוד. ייתכן שהשרת הותקן מחדש — או שמשהו מיירט את החיבור. ליתר ביטחון, המכשיר הזה לא יתחבר. הסירו את הצימוד, ואז סרקו קוד QR חדש מ-Control Center כדי לצמד מחדש.';
 
   @override
   String get removePairing => 'הסרת הצימוד';
@@ -120,7 +121,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get connect => 'התחברות';
 
   @override
-  String get failureNotPaired => 'אין צימוד — סרקו את קוד ה-QR מה-Mac';
+  String get failureNotPaired =>
+      'אין צימוד — סרקו את קוד ה-QR מ-Control Center';
 
   @override
   String get failureUnreachable =>
@@ -132,7 +134,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'השרת דחה את המכשיר הזה — צמדו אותו מחדש מה-Mac';
+      'השרת דחה את המכשיר הזה — צמדו אותו מחדש מ-Control Center';
 
   @override
   String get failureUnknown => 'לא ניתן להתחבר — הקישו כדי לנסות שוב';
@@ -210,7 +212,8 @@ class AppLocalizationsHe extends AppLocalizations {
   String get languageSystem => 'מערכת';
 
   @override
-  String get disconnectTapAgain => 'הקישו שוב כדי לנתק את המכשיר הזה מה-Mac';
+  String get disconnectTapAgain =>
+      'הקישו שוב כדי לנתק את המכשיר הזה מ-Control Center';
 
   @override
   String get disconnectDevice => 'ניתוק המכשיר הזה';

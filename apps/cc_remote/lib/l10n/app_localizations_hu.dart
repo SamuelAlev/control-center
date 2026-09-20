@@ -85,14 +85,14 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Olvassa be a QR-kódot a Macről, hogy párosítsa ezt a telefont.';
+      'Olvassa be a QR-kódot a Control Centerben, hogy párosítsa ezt a telefont.';
 
   @override
   String get scanQrHelp =>
-      'Nyissa meg a kamerát, és irányítsa a Control Centerben a Macen megjelenő QR-kódra. Ez a telefon közvetlenül, privát kapcsolaton csatlakozik a Machez.';
+      'Nyissa meg a kamerát, és irányítsa a Control Centerben megjelenő QR-kódra. Ez a telefon közvetlenül, privát kapcsolaton csatlakozik.';
 
   @override
-  String get connectingToMac => 'Csatlakozás a Machez…';
+  String get connectingToMac => 'Csatlakozás a Control Centerhez…';
 
   @override
   String get connectingDetail =>
@@ -103,7 +103,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Ez a szerver már nem egyezik a párosításkor mentett identitással. Ez azt jelentheti, hogy a szervert újratelepítették — vagy hogy valami közbeékelődik a kapcsolatba. Biztonságból ez az eszköz nem csatlakozik. Távolítsa el a párosítást, majd olvasson be egy új QR-kódot a Macről az újbóli párosításhoz.';
+      'Ez a szerver már nem egyezik a párosításkor mentett identitással. Ez azt jelentheti, hogy a szervert újratelepítették — vagy hogy valami közbeékelődik a kapcsolatba. Biztonságból ez az eszköz nem csatlakozik. Távolítsa el a párosítást, majd olvasson be egy új QR-kódot a Control Centerben az újbóli párosításhoz.';
 
   @override
   String get removePairing => 'Párosítás eltávolítása';
@@ -123,7 +123,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Nincs párosítva — olvassa be a QR-kódot a Macről';
+      'Nincs párosítva — olvassa be a QR-kódot a Control Centerben';
 
   @override
   String get failureUnreachable =>
@@ -135,7 +135,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'A szerver elutasította ezt az eszközt — párosítsa újra a Macről';
+      'A szerver elutasította ezt az eszközt — párosítsa újra a Control Centerben';
 
   @override
   String get failureUnknown =>
@@ -215,7 +215,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Koppintson újra, hogy leválassza ezt az eszközt a Macről';
+      'Koppintson újra, hogy leválassza ezt az eszközt a Control Centerről';
 
   @override
   String get disconnectDevice => 'Eszköz leválasztása';

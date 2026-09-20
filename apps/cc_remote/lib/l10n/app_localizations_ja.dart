@@ -84,14 +84,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get resetZoom => 'ズームをリセット';
 
   @override
-  String get scanQrPrompt => 'このスマートフォンをペアリングするには、MacのQRコードをスキャンしてください。';
+  String get scanQrPrompt =>
+      'このスマートフォンをペアリングするには、Control CenterのQRコードをスキャンしてください。';
 
   @override
   String get scanQrHelp =>
-      'カメラを開いて、MacのControl Centerに表示されたQRに向けてください。このスマートフォンは非公開のリンクでMacに直接接続します。';
+      'カメラを開いて、Control Centerに表示されたQRに向けてください。このスマートフォンは非公開のリンクで直接接続します。';
 
   @override
-  String get connectingToMac => 'Macに接続しています…';
+  String get connectingToMac => 'Control Centerに接続しています…';
 
   @override
   String get connectingDetail => '安全な直接リンクを確立しています。';
@@ -101,7 +102,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'このサーバーは、ペアリング時に保存された識別情報と一致しなくなりました。サーバーが再インストールされたか、接続が傍受されている可能性があります。安全のため、このデバイスは接続しません。ペアリングを削除してから、Macの新しいQRコードをスキャンして再度ペアリングしてください。';
+      'このサーバーは、ペアリング時に保存された識別情報と一致しなくなりました。サーバーが再インストールされたか、接続が傍受されている可能性があります。安全のため、このデバイスは接続しません。ペアリングを削除してから、Control Centerの新しいQRコードをスキャンして再度ペアリングしてください。';
 
   @override
   String get removePairing => 'ペアリングを削除';
@@ -120,7 +121,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get connect => '接続';
 
   @override
-  String get failureNotPaired => '未ペアリング — MacのQRコードをスキャンしてください';
+  String get failureNotPaired => '未ペアリング — Control CenterのQRコードをスキャンしてください';
 
   @override
   String get failureUnreachable =>
@@ -131,7 +132,8 @@ class AppLocalizationsJa extends AppLocalizations {
       'サーバーの識別情報が変わりました — 再インストールした場合は、このデバイスを再ペアリングしてください';
 
   @override
-  String get failureAuthRejected => 'サーバーがこのデバイスを拒否しました — Macから再ペアリングしてください';
+  String get failureAuthRejected =>
+      'サーバーがこのデバイスを拒否しました — Control Centerから再ペアリングしてください';
 
   @override
   String get failureUnknown => '接続できませんでした — タップして再試行';
@@ -209,7 +211,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get languageSystem => 'システム';
 
   @override
-  String get disconnectTapAgain => 'もう一度タップすると、このデバイスをMacから切断します';
+  String get disconnectTapAgain => 'もう一度タップすると、このデバイスをControl Centerから切断します';
 
   @override
   String get disconnectDevice => 'このデバイスを切断';

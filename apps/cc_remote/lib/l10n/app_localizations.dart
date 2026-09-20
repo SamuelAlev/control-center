@@ -309,19 +309,19 @@ abstract class AppLocalizations {
   /// Connect screen: primary instruction when the phone is not paired.
   ///
   /// In en, this message translates to:
-  /// **'Scan the QR code from your Mac to pair this phone.'**
+  /// **'Scan the QR code from Control Center to pair this phone.'**
   String get scanQrPrompt;
 
   /// Connect screen: secondary help text under the pairing instruction.
   ///
   /// In en, this message translates to:
-  /// **'Open your camera and point it at the QR shown in Control Center on your Mac. This phone connects directly to your Mac over a private link.'**
+  /// **'Open your camera and point it at the QR shown in Control Center. This phone connects directly over a private link.'**
   String get scanQrHelp;
 
   /// Connect screen: title while the phone resolves a path and authenticates.
   ///
   /// In en, this message translates to:
-  /// **'Connecting to your Mac…'**
+  /// **'Connecting to Control Center…'**
   String get connectingToMac;
 
   /// Connect screen: subtitle while connecting.
@@ -339,7 +339,7 @@ abstract class AppLocalizations {
   /// Connect screen: explanation of the identity-mismatch stop and the way forward.
   ///
   /// In en, this message translates to:
-  /// **'This server no longer matches the identity saved when you paired. That can mean the server was reinstalled — or that something is intercepting the connection. To stay safe, this device will not connect. Remove the pairing, then scan a fresh QR code from your Mac to pair again.'**
+  /// **'This server no longer matches the identity saved when you paired. That can mean the server was reinstalled — or that something is intercepting the connection. To stay safe, this device will not connect. Remove the pairing, then scan a fresh QR code from Control Center to pair again.'**
   String get identityChangedBody;
 
   /// Button that forgets the stored pairing (identity-mismatch recovery).
@@ -375,7 +375,7 @@ abstract class AppLocalizations {
   /// Connection-failure reason: no pairing record exists.
   ///
   /// In en, this message translates to:
-  /// **'Not paired — scan the QR code from your Mac'**
+  /// **'Not paired — scan the QR code from Control Center'**
   String get failureNotPaired;
 
   /// Connection-failure reason: no connection path reached the server.
@@ -393,7 +393,7 @@ abstract class AppLocalizations {
   /// Connection-failure reason: the device credential was rejected.
   ///
   /// In en, this message translates to:
-  /// **'The server rejected this device — re-pair it from your Mac'**
+  /// **'The server rejected this device — re-pair it from Control Center'**
   String get failureAuthRejected;
 
   /// Connection-failure reason: fallback when the cause is unknown.
@@ -543,7 +543,7 @@ abstract class AppLocalizations {
   /// Armed state of the disconnect card, asking for a confirming second tap.
   ///
   /// In en, this message translates to:
-  /// **'Tap again to disconnect this device from your Mac'**
+  /// **'Tap again to disconnect this device from Control Center'**
   String get disconnectTapAgain;
 
   /// Label of the disconnect-device card.

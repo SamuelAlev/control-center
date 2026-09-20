@@ -263,7 +263,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Crea un simulador de iOS desechable en el Mac del servidor. Se elimina cuando se cierra el entorno de pruebas; el acceso a la red no está aislado.';
+      'Crea un simulador de iOS desechable en un servidor macOS. Se elimina cuando se cierra el entorno de pruebas; el acceso a la red no está aislado.';
 
   @override
   String get rigTechnicalDetails => 'Detalles técnicos';
@@ -3255,7 +3255,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get egControlCenter => 'ej: control-center';
 
   @override
-  String get egPlatform => 'ej: macOS';
+  String get egPlatform => 'ej: Platform';
 
   @override
   String get egSamuelAlev => 'ej: SamuelAlev';
@@ -4947,7 +4947,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Mostrar notificaciones nativas de macOS para eventos.';
+      'Mostrar notificaciones del sistema para eventos.';
 
   @override
   String get showSuperseded => 'Mostrar sustituidos';

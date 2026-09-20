@@ -84,14 +84,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get resetZoom => 'إعادة تعيين التكبير';
 
   @override
-  String get scanQrPrompt => 'امسح رمز QR من جهاز Mac لإقران هذا الهاتف.';
+  String get scanQrPrompt => 'امسح رمز QR من Control Center لإقران هذا الهاتف.';
 
   @override
   String get scanQrHelp =>
-      'افتح الكاميرا ووجّهها نحو رمز QR المعروض في Control Center على جهاز Mac. يتصل هذا الهاتف مباشرة بجهاز Mac عبر رابط خاص.';
+      'افتح الكاميرا ووجّهها نحو رمز QR المعروض في Control Center. يتصل هذا الهاتف مباشرة عبر رابط خاص.';
 
   @override
-  String get connectingToMac => 'جارٍ الاتصال بجهاز Mac…';
+  String get connectingToMac => 'جارٍ الاتصال بـ Control Center…';
 
   @override
   String get connectingDetail => 'جارٍ إنشاء رابط آمن ومباشر.';
@@ -101,7 +101,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'لم يعد هذا الخادم يطابق الهوية المحفوظة عند الإقران. قد يعني ذلك أن الخادم أُعيد تثبيته — أو أن شيئًا ما يعترض الاتصال. حفاظًا على أمانك، لن يتصل هذا الجهاز. أزل الإقران، ثم امسح رمز QR جديدًا من جهاز Mac لإعادة الإقران.';
+      'لم يعد هذا الخادم يطابق الهوية المحفوظة عند الإقران. قد يعني ذلك أن الخادم أُعيد تثبيته — أو أن شيئًا ما يعترض الاتصال. حفاظًا على أمانك، لن يتصل هذا الجهاز. أزل الإقران، ثم امسح رمز QR جديدًا من Control Center لإعادة الإقران.';
 
   @override
   String get removePairing => 'إزالة الإقران';
@@ -120,7 +120,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get connect => 'اتصال';
 
   @override
-  String get failureNotPaired => 'غير مقترن — امسح رمز QR من جهاز Mac';
+  String get failureNotPaired => 'غير مقترن — امسح رمز QR من Control Center';
 
   @override
   String get failureUnreachable =>
@@ -132,7 +132,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'رفض الخادم هذا الجهاز — أعد إقرانه من جهاز Mac';
+      'رفض الخادم هذا الجهاز — أعد إقرانه من Control Center';
 
   @override
   String get failureUnknown => 'تعذّر الاتصال — انقر لإعادة المحاولة';
@@ -210,7 +210,8 @@ class AppLocalizationsAr extends AppLocalizations {
   String get languageSystem => 'النظام';
 
   @override
-  String get disconnectTapAgain => 'انقر مرة أخرى لفصل هذا الجهاز عن جهاز Mac';
+  String get disconnectTapAgain =>
+      'انقر مرة أخرى لفصل هذا الجهاز عن Control Center';
 
   @override
   String get disconnectDevice => 'فصل هذا الجهاز';

@@ -603,7 +603,7 @@ abstract class AppLocalizations {
   /// No description provided for @rigStartIosHint.
   ///
   /// In en, this message translates to:
-  /// **'Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.'**
+  /// **'Creates a disposable iOS Simulator on a macOS server. It is deleted when the rig closes; network access is not enclosed.'**
   String get rigStartIosHint;
 
   /// Disclosure label on a rig start screen that hides a failed boot's stdout/stderr dump.
@@ -5685,7 +5685,7 @@ abstract class AppLocalizations {
   /// Locale string for egPlatform
   ///
   /// In en, this message translates to:
-  /// **'e.g. macOS'**
+  /// **'e.g. Platform'**
   String get egPlatform;
 
   /// e.g. SamuelAlev
@@ -8518,7 +8518,7 @@ abstract class AppLocalizations {
   /// No description provided for @showNativeNotifications.
   ///
   /// In en, this message translates to:
-  /// **'Show native macOS notifications for events.'**
+  /// **'Show system notifications for events.'**
   String get showNativeNotifications;
 
   /// Checkbox label to show superseded facts

@@ -261,7 +261,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Oppretter en midlertidig iOS-simulator på serverens Mac. Den slettes når testmiljøet lukkes; nettverkstilgangen er ikke isolert.';
+      'Oppretter en midlertidig iOS-simulator på en macOS-server. Den slettes når testmiljøet lukkes; nettverkstilgangen er ikke isolert.';
 
   @override
   String get rigTechnicalDetails => 'Tekniske detaljer';
@@ -3234,7 +3234,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get egControlCenter => 'f.eks. control-center';
 
   @override
-  String get egPlatform => 'f.eks. macOS';
+  String get egPlatform => 'f.eks. Platform';
 
   @override
   String get egSamuelAlev => 'f.eks. SamuelAlev';
@@ -4909,8 +4909,7 @@ class AppLocalizationsNb extends AppLocalizations {
   String get shortTask => 'Kort oppgave';
 
   @override
-  String get showNativeNotifications =>
-      'Vis native macOS-varslinger for hendelser.';
+  String get showNativeNotifications => 'Vis systemvarslinger for hendelser.';
 
   @override
   String get showSuperseded => 'Vis erstattede';

@@ -85,14 +85,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Scanează codul QR de pe Mac ca să asociezi telefonul acesta.';
+      'Scanează codul QR din Control Center ca să asociezi telefonul acesta.';
 
   @override
   String get scanQrHelp =>
-      'Deschide camera și îndreapt-o spre QR-ul afișat în Control Center pe Mac. Telefonul acesta se conectează direct la Mac printr-o legătură privată.';
+      'Deschide camera și îndreapt-o spre QR-ul afișat în Control Center. Telefonul acesta se conectează direct printr-o legătură privată.';
 
   @override
-  String get connectingToMac => 'Se conectează la Mac…';
+  String get connectingToMac => 'Se conectează la Control Center…';
 
   @override
   String get connectingDetail => 'Se stabilește o legătură sigură și directă.';
@@ -102,7 +102,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Serverul acesta nu mai corespunde identității salvate la asociere. Poate însemna că serverul a fost reinstalat — sau că ceva interceptează conexiunea. Ca să rămâi în siguranță, dispozitivul acesta nu se va conecta. Elimină asocierea, apoi scanează un QR nou de pe Mac ca să asociezi din nou.';
+      'Serverul acesta nu mai corespunde identității salvate la asociere. Poate însemna că serverul a fost reinstalat — sau că ceva interceptează conexiunea. Ca să rămâi în siguranță, dispozitivul acesta nu se va conecta. Elimină asocierea, apoi scanează un QR nou din Control Center ca să asociezi din nou.';
 
   @override
   String get removePairing => 'Elimină asocierea';
@@ -121,7 +121,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get connect => 'Conectează';
 
   @override
-  String get failureNotPaired => 'Neasociat — scanează codul QR de pe Mac';
+  String get failureNotPaired =>
+      'Neasociat — scanează codul QR din Control Center';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Serverul a respins dispozitivul acesta — asociază-l din nou de pe Mac';
+      'Serverul a respins dispozitivul acesta — asociază-l din nou din Control Center';
 
   @override
   String get failureUnknown => 'Nu s-a putut conecta — atinge ca să reîncerci';
@@ -212,7 +213,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Atinge din nou ca să deconectezi dispozitivul acesta de la Mac';
+      'Atinge din nou ca să deconectezi dispozitivul acesta de la Control Center';
 
   @override
   String get disconnectDevice => 'Deconectează dispozitivul acesta';

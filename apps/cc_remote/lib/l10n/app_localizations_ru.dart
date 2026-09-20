@@ -85,14 +85,14 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Отсканируйте QR-код с Mac, чтобы связать этот телефон.';
+      'Отсканируйте QR-код в Control Center, чтобы связать этот телефон.';
 
   @override
   String get scanQrHelp =>
-      'Откройте камеру и наведите её на QR в Control Center на Mac. Телефон подключается к Mac напрямую по закрытому каналу.';
+      'Откройте камеру и наведите её на QR в Control Center. Телефон подключается напрямую по закрытому каналу.';
 
   @override
-  String get connectingToMac => 'Подключение к Mac…';
+  String get connectingToMac => 'Подключение к Control Center…';
 
   @override
   String get connectingDetail =>
@@ -103,7 +103,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Этот сервер больше не совпадает с идентичностью, сохранённой при сопряжении. Возможно, сервер переустановили — или соединение перехватывают. В целях безопасности устройство не подключится. Удалите сопряжение и отсканируйте новый QR-код с Mac.';
+      'Этот сервер больше не совпадает с идентичностью, сохранённой при сопряжении. Возможно, сервер переустановили — или соединение перехватывают. В целях безопасности устройство не подключится. Удалите сопряжение и отсканируйте новый QR-код в Control Center.';
 
   @override
   String get removePairing => 'Удалить сопряжение';
@@ -122,7 +122,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get connect => 'Подключить';
 
   @override
-  String get failureNotPaired => 'Нет сопряжения — отсканируйте QR-код с Mac';
+  String get failureNotPaired =>
+      'Нет сопряжения — отсканируйте QR-код в Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +135,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Сервер отклонил это устройство — сопрягите его заново с Mac';
+      'Сервер отклонил это устройство — сопрягите его заново из Control Center';
 
   @override
   String get failureUnknown =>
@@ -214,7 +215,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Нажмите ещё раз, чтобы отключить это устройство от Mac';
+      'Нажмите ещё раз, чтобы отключить это устройство от Control Center';
 
   @override
   String get disconnectDevice => 'Отключить это устройство';

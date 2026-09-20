@@ -251,7 +251,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'サーバーの Mac 上に使い捨ての iOS Simulator を作成します。テスト環境を閉じると削除されます。ネットワークアクセスは隔離されません。';
+      'macOS サーバー上に使い捨ての iOS Simulator を作成します。テスト環境を閉じると削除されます。ネットワークアクセスは隔離されません。';
 
   @override
   String get rigTechnicalDetails => '技術的な詳細';
@@ -3173,7 +3173,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get egControlCenter => '例: control-center';
 
   @override
-  String get egPlatform => '例: macOS';
+  String get egPlatform => '例: Platform';
 
   @override
   String get egSamuelAlev => '例: SamuelAlev';
@@ -4803,7 +4803,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get shortTask => '短いタスク';
 
   @override
-  String get showNativeNotifications => 'イベントのネイティブmacOS通知を表示します。';
+  String get showNativeNotifications => 'イベントのシステム通知を表示します。';
 
   @override
   String get showSuperseded => '置き換え済みを表示';

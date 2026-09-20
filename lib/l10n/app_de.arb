@@ -109,7 +109,7 @@
   "rigStartMachine": "Maschine starten",
   "rigStartHint": "Startet eine Wegwerf-VM, die du dir mit deinen Agenten für diese Unterhaltung teilst. Sie wird beim Schließen zerstört, und nichts darin berührt deinen Rechner.",
   "rigStartAndroidHint": "Stellt eine Verbindung zu einem Android-Emulator her, der bereits auf dem Server ausgeführt wird. Der Netzwerkzugriff ist nicht isoliert.",
-  "rigStartIosHint": "Erstellt einen temporären iOS-Simulator auf dem Server-Mac. Er wird gelöscht, wenn das Rig geschlossen wird; der Netzwerkzugriff ist nicht isoliert.",
+  "rigStartIosHint": "Erstellt einen temporären iOS-Simulator auf einem macOS-Server. Er wird gelöscht, wenn das Rig geschlossen wird; der Netzwerkzugriff ist nicht isoliert.",
   "rigTechnicalDetails": "Technische Details",
   "rigStopMachine": "Maschine stoppen",
   "rigHomeButton": "Home",
@@ -1349,7 +1349,7 @@
   "@egControlCenter": {
     "description": "e.g. control-center"
   },
-  "egPlatform": "z.B. macOS",
+  "egPlatform": "z.B. Platform",
   "@egPlatform": {
     "description": "Locale string for egPlatform"
   },
@@ -2643,7 +2643,7 @@
   "settingsLanguage": "Sprache",
   "settingsLanguageDescription": "Wähle die App-Sprache.",
   "shortTask": "Kurze Aufgabe",
-  "showNativeNotifications": "Native macOS-Benachrichtigungen für Ereignisse anzeigen.",
+  "showNativeNotifications": "Systembenachrichtigungen für Ereignisse anzeigen.",
   "showSuperseded": "Ersetzte anzeigen",
   "@showSuperseded": {
     "description": "Checkbox label to show superseded facts"

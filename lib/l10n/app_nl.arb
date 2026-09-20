@@ -109,7 +109,7 @@
   "rigStartMachine": "Machine starten",
   "rigStartHint": "Start een wegwerp-VM die je met je agents deelt voor dit gesprek. Hij wordt bij het sluiten vernietigd en niets erin raakt jouw computer.",
   "rigStartAndroidHint": "Maakt verbinding met een Android-emulator die al op de server wordt uitgevoerd. De netwerktoegang is niet geïsoleerd.",
-  "rigStartIosHint": "Maakt een tijdelijke iOS-simulator op de Mac van de server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.",
+  "rigStartIosHint": "Maakt een tijdelijke iOS-simulator op een macOS-server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.",
   "rigTechnicalDetails": "Technische details",
   "rigStopMachine": "Machine stoppen",
   "rigHomeButton": "Home",
@@ -1360,7 +1360,7 @@
   "@egControlCenter": {
     "description": "e.g. control-center"
   },
-  "egPlatform": "bijv. macOS",
+  "egPlatform": "bijv. Platform",
   "@egPlatform": {
     "description": "Locale string for egPlatform"
   },
@@ -2649,7 +2649,7 @@
   "settingsLanguage": "Taal",
   "settingsLanguageDescription": "Kies de taal van de app.",
   "shortTask": "Korte taak",
-  "showNativeNotifications": "Systeemmeldingen van macOS tonen voor gebeurtenissen.",
+  "showNativeNotifications": "Systeemmeldingen tonen voor gebeurtenissen.",
   "showSuperseded": "Vervangen tonen",
   "@showSuperseded": {
     "description": "Checkbox label to show superseded facts"

@@ -254,7 +254,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'สร้าง iOS Simulator ชั่วคราวบน Mac ของเซิร์ฟเวอร์ โดยจะถูกลบเมื่อปิดสภาพแวดล้อมการทดสอบ และการเข้าถึงเครือข่ายไม่ได้แยกออกจากกัน';
+      'สร้าง iOS Simulator ชั่วคราวบนเซิร์ฟเวอร์ macOS โดยจะถูกลบเมื่อปิดสภาพแวดล้อมการทดสอบ และการเข้าถึงเครือข่ายไม่ได้แยกออกจากกัน';
 
   @override
   String get rigTechnicalDetails => 'รายละเอียดทางเทคนิค';
@@ -3206,7 +3206,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get egControlCenter => 'เช่น control-center';
 
   @override
-  String get egPlatform => 'เช่น macOS';
+  String get egPlatform => 'เช่น Platform';
 
   @override
   String get egSamuelAlev => 'เช่น SamuelAlev';
@@ -4866,7 +4866,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'แสดงการแจ้งเตือนเนทีฟของ macOS สำหรับเหตุการณ์';
+      'แสดงการแจ้งเตือนของระบบสำหรับเหตุการณ์';
 
   @override
   String get showSuperseded => 'แสดงที่ถูกแทนที่';

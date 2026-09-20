@@ -85,14 +85,14 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Skann QR-koden fra Macen din for å pare denne telefonen.';
+      'Skann QR-koden fra Control Center for å pare denne telefonen.';
 
   @override
   String get scanQrHelp =>
-      'Åpne kameraet og pek det mot QR-koden som vises i Control Center på Macen. Denne telefonen kobler seg direkte til Macen over en privat lenke.';
+      'Åpne kameraet og pek det mot QR-koden som vises i Control Center. Denne telefonen kobler seg direkte over en privat lenke.';
 
   @override
-  String get connectingToMac => 'Kobler til Macen din…';
+  String get connectingToMac => 'Kobler til Control Center…';
 
   @override
   String get connectingDetail => 'Oppretter en sikker, direkte lenke.';
@@ -102,7 +102,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Denne serveren samsvarer ikke lenger med identiteten som ble lagret da du paret. Det kan bety at serveren ble installert på nytt — eller at noe avlytter tilkoblingen. For sikkerhets skyld kobler ikke denne enheten til. Fjern paringen, og skann deretter en ny QR-kode fra Macen for å pare på nytt.';
+      'Denne serveren samsvarer ikke lenger med identiteten som ble lagret da du paret. Det kan bety at serveren ble installert på nytt — eller at noe avlytter tilkoblingen. For sikkerhets skyld kobler ikke denne enheten til. Fjern paringen, og skann deretter en ny QR-kode fra Control Center for å pare på nytt.';
 
   @override
   String get removePairing => 'Fjern paring';
@@ -121,7 +121,8 @@ class AppLocalizationsNb extends AppLocalizations {
   String get connect => 'Koble til';
 
   @override
-  String get failureNotPaired => 'Ikke paret — skann QR-koden fra Macen';
+  String get failureNotPaired =>
+      'Ikke paret — skann QR-koden fra Control Center';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Serveren avviste denne enheten — par den på nytt fra Macen';
+      'Serveren avviste denne enheten — par den på nytt fra Control Center';
 
   @override
   String get failureUnknown =>
@@ -213,7 +214,7 @@ class AppLocalizationsNb extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Trykk igjen for å koble denne enheten fra Macen';
+      'Trykk igjen for å koble denne enheten fra Control Center';
 
   @override
   String get disconnectDevice => 'Koble fra denne enheten';

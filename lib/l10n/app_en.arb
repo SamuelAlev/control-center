@@ -129,7 +129,7 @@
   "rigStartMachine": "Start the machine",
   "rigStartHint": "Starts a disposable VM you and your agents share for this conversation. It is destroyed when it closes, and nothing in it touches your computer.",
   "rigStartAndroidHint": "Connects to an Android emulator already running on the server. Network access is not enclosed.",
-  "rigStartIosHint": "Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.",
+  "rigStartIosHint": "Creates a disposable iOS Simulator on a macOS server. It is deleted when the rig closes; network access is not enclosed.",
   "rigTechnicalDetails": "Technical details",
   "@rigTechnicalDetails": {
     "description": "Disclosure label on a rig start screen that hides a failed boot's stdout/stderr dump."
@@ -2534,7 +2534,7 @@
   "@egControlCenter": {
     "description": "e.g. control-center"
   },
-  "egPlatform": "e.g. macOS",
+  "egPlatform": "e.g. Platform",
   "@egPlatform": {
     "description": "Locale string for egPlatform"
   },
@@ -4236,7 +4236,7 @@
   "@shortTask": {
     "description": "Short task"
   },
-  "showNativeNotifications": "Show native macOS notifications for events.",
+  "showNativeNotifications": "Show system notifications for events.",
   "showSuperseded": "Show superseded",
   "@showSuperseded": {
     "description": "Checkbox label to show superseded facts"

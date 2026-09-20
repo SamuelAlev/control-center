@@ -11,7 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Coarse connection status the UI binds to the connection chip / connect screen.
 enum RemoteStatus {
-  /// No pairing record — show "Scan the QR code from your Mac".
+  /// No pairing record — show "Scan the QR code from Control Center".
   notPaired,
 
   /// Resolving the best path + authenticating (or auto-reconnecting).

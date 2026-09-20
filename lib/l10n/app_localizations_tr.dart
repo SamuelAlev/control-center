@@ -259,7 +259,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Sunucu Mac’inde geçici bir iOS Simülatörü oluşturur. Test ortamı kapatıldığında silinir; ağ erişimi yalıtılmamıştır.';
+      'Bir macOS sunucusunda geçici bir iOS Simülatörü oluşturur. Test ortamı kapatıldığında silinir; ağ erişimi yalıtılmamıştır.';
 
   @override
   String get rigTechnicalDetails => 'Teknik ayrıntılar';
@@ -3232,7 +3232,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get egControlCenter => 'ör. control-center';
 
   @override
-  String get egPlatform => 'ör. macOS';
+  String get egPlatform => 'ör. Platform';
 
   @override
   String get egSamuelAlev => 'ör. SamuelAlev';
@@ -4906,7 +4906,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Olaylar için yerel macOS bildirimlerini göster.';
+      'Olaylar için sistem bildirimlerini göster.';
 
   @override
   String get showSuperseded => 'Geçersiz kılınanları göster';

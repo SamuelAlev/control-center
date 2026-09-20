@@ -85,14 +85,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Zeskanuj kod QR z Twojego Mac, aby sparować ten telefon.';
+      'Zeskanuj kod QR z Control Center, aby sparować ten telefon.';
 
   @override
   String get scanQrHelp =>
-      'Otwórz aparat i skieruj go na QR wyświetlony w Control Center na Twoim Mac. Ten telefon łączy się bezpośrednio z Twoim Mac przez prywatne łącze.';
+      'Otwórz aparat i skieruj go na QR wyświetlony w Control Center. Ten telefon łączy się bezpośrednio przez prywatne łącze.';
 
   @override
-  String get connectingToMac => 'Łączenie z Twoim Mac…';
+  String get connectingToMac => 'Łączenie z Control Center…';
 
   @override
   String get connectingDetail =>
@@ -103,7 +103,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Ten serwer nie pasuje już do tożsamości zapisanej przy parowaniu. To może oznaczać, że serwer został zainstalowany ponownie — albo że coś przechwytuje połączenie. Dla bezpieczeństwa to urządzenie się nie połączy. Usuń parowanie, a następnie zeskanuj nowy kod QR z Twojego Mac, aby sparować ponownie.';
+      'Ten serwer nie pasuje już do tożsamości zapisanej przy parowaniu. To może oznaczać, że serwer został zainstalowany ponownie — albo że coś przechwytuje połączenie. Dla bezpieczeństwa to urządzenie się nie połączy. Usuń parowanie, a następnie zeskanuj nowy kod QR z Control Center, aby sparować ponownie.';
 
   @override
   String get removePairing => 'Usuń parowanie';
@@ -123,7 +123,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Brak parowania — zeskanuj kod QR z Twojego Mac';
+      'Brak parowania — zeskanuj kod QR z Control Center';
 
   @override
   String get failureUnreachable =>
@@ -135,7 +135,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Serwer odrzucił to urządzenie — sparuj je ponownie z Twojego Mac';
+      'Serwer odrzucił to urządzenie — sparuj je ponownie z Control Center';
 
   @override
   String get failureUnknown =>
@@ -215,7 +215,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Stuknij ponownie, aby odłączyć to urządzenie od Twojego Mac';
+      'Stuknij ponownie, aby odłączyć to urządzenie od Control Center';
 
   @override
   String get disconnectDevice => 'Odłącz to urządzenie';

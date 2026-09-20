@@ -255,7 +255,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'سرور کے Mac پر ایک عارضی iOS Simulator بناتا ہے۔ ٹیسٹ ماحول بند ہونے پر اسے حذف کر دیا جاتا ہے؛ نیٹ ورک تک رسائی الگ تھلگ نہیں ہے۔';
+      'macOS سرور پر ایک عارضی iOS Simulator بناتا ہے۔ ٹیسٹ ماحول بند ہونے پر اسے حذف کر دیا جاتا ہے؛ نیٹ ورک تک رسائی الگ تھلگ نہیں ہے۔';
 
   @override
   String get rigTechnicalDetails => 'تکنیکی تفصیلات';
@@ -3214,7 +3214,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get egControlCenter => 'مثال: ⁨control-center⁩';
 
   @override
-  String get egPlatform => 'مثال: macOS';
+  String get egPlatform => 'مثال: Platform';
 
   @override
   String get egSamuelAlev => 'مثال: ⁨SamuelAlev⁩';
@@ -4884,8 +4884,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get shortTask => 'مختصر کام';
 
   @override
-  String get showNativeNotifications =>
-      'ایونٹس کے لیے نیٹو macOS اطلاعات دکھائیں۔';
+  String get showNativeNotifications => 'ایونٹس کے لیے سسٹم اطلاعات دکھائیں۔';
 
   @override
   String get showSuperseded => 'منسوخ شدہ دکھائیں';

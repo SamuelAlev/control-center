@@ -84,14 +84,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get resetZoom => '重置缩放';
 
   @override
-  String get scanQrPrompt => '扫描 Mac 上的 QR 码以配对此手机。';
+  String get scanQrPrompt => '扫描 Control Center 上的 QR 码以配对此手机。';
 
   @override
-  String get scanQrHelp =>
-      '打开相机，对准 Mac 上 Control Center 显示的 QR 码。此手机会通过私有链路直接连接到你的 Mac。';
+  String get scanQrHelp => '打开相机，对准 Control Center 显示的 QR 码。此手机通过私有链路直接连接。';
 
   @override
-  String get connectingToMac => '正在连接到你的 Mac…';
+  String get connectingToMac => '正在连接到 Control Center…';
 
   @override
   String get connectingDetail => '正在建立安全的直连链路。';
@@ -101,7 +100,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      '此服务器与配对时保存的身份不再匹配。这可能意味着服务器已重装，或有人在拦截连接。为安全起见，此设备将不会连接。请移除配对，然后扫描 Mac 上的新 QR 码重新配对。';
+      '此服务器与配对时保存的身份不再匹配。这可能意味着服务器已重装，或有人在拦截连接。为安全起见，此设备将不会连接。请移除配对，然后扫描 Control Center 上的新 QR 码重新配对。';
 
   @override
   String get removePairing => '移除配对';
@@ -119,7 +118,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get connect => '连接';
 
   @override
-  String get failureNotPaired => '未配对 — 请扫描 Mac 上的 QR 码';
+  String get failureNotPaired => '未配对 — 请扫描 Control Center 上的 QR 码';
 
   @override
   String get failureUnreachable => '无法通过任何路径访问你的服务器 — 请确认它正在运行，或尝试同一网络';
@@ -128,7 +127,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get failureIdentityChanged => '服务器身份已更改 — 如果已重装，请重新配对此设备';
 
   @override
-  String get failureAuthRejected => '服务器拒绝了此设备 — 请从 Mac 重新配对';
+  String get failureAuthRejected => '服务器拒绝了此设备 — 请从 Control Center 重新配对';
 
   @override
   String get failureUnknown => '无法连接 — 点按重试';
@@ -205,7 +204,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get languageSystem => '系统';
 
   @override
-  String get disconnectTapAgain => '再次点按以断开此设备与 Mac 的连接';
+  String get disconnectTapAgain => '再次点按以断开此设备与 Control Center 的连接';
 
   @override
   String get disconnectDevice => '断开此设备';
@@ -918,14 +917,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get resetZoom => '重設縮放';
 
   @override
-  String get scanQrPrompt => '掃描 Mac 上的 QR code，以配對此手機。';
+  String get scanQrPrompt => '掃描 Control Center 上的 QR code，以配對此手機。';
 
   @override
-  String get scanQrHelp =>
-      '開啟相機，對準 Mac 上 Control Center 顯示的 QR。此手機會透過私人連線直接連到你的 Mac。';
+  String get scanQrHelp => '開啟相機，對準 Control Center 顯示的 QR。此手機會透過私人連線直接連線。';
 
   @override
-  String get connectingToMac => '正在連線到你的 Mac…';
+  String get connectingToMac => '正在連線到 Control Center…';
 
   @override
   String get connectingDetail => '正在建立安全的直接連線。';
@@ -935,7 +933,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get identityChangedBody =>
-      '此伺服器與配對時儲存的身分不符。這可能表示伺服器已重新安裝，或連線遭到攔截。為了安全起見，此裝置將不會連線。請移除配對，然後從 Mac 掃描新的 QR code 再次配對。';
+      '此伺服器與配對時儲存的身分不符。這可能表示伺服器已重新安裝，或連線遭到攔截。為了安全起見，此裝置將不會連線。請移除配對，然後從 Control Center 掃描新的 QR code 再次配對。';
 
   @override
   String get removePairing => '移除配對';
@@ -954,7 +952,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get connect => '連線';
 
   @override
-  String get failureNotPaired => '尚未配對 — 請掃描 Mac 上的 QR code';
+  String get failureNotPaired => '尚未配對 — 請掃描 Control Center 上的 QR code';
 
   @override
   String get failureUnreachable => '無法透過任何路徑連到你的伺服器 — 請確認伺服器正在執行，或改用相同網路再試';
@@ -963,7 +961,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get failureIdentityChanged => '伺服器身分已變更 — 若已重新安裝，請重新配對此裝置';
 
   @override
-  String get failureAuthRejected => '伺服器已拒絕此裝置 — 請從 Mac 重新配對';
+  String get failureAuthRejected => '伺服器已拒絕此裝置 — 請從 Control Center 重新配對';
 
   @override
   String get failureUnknown => '無法連線 — 點一下即可重試';
@@ -1040,7 +1038,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get languageSystem => '系統';
 
   @override
-  String get disconnectTapAgain => '再點一次即可將此裝置從 Mac 中斷連線';
+  String get disconnectTapAgain => '再點一次即可將此裝置從 Control Center 中斷連線';
 
   @override
   String get disconnectDevice => '中斷此裝置連線';

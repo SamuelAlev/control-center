@@ -85,14 +85,14 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Imbas kod QR dari Mac anda untuk pasangkan telefon ini.';
+      'Imbas kod QR dari Control Center untuk pasangkan telefon ini.';
 
   @override
   String get scanQrHelp =>
-      'Buka kamera dan halakannya ke QR yang dipaparkan dalam Control Center pada Mac anda. Telefon ini bersambung terus ke Mac anda melalui pautan peribadi.';
+      'Buka kamera dan halakannya ke QR yang dipaparkan dalam Control Center. Telefon ini bersambung terus melalui pautan peribadi.';
 
   @override
-  String get connectingToMac => 'Menyambung ke Mac anda…';
+  String get connectingToMac => 'Menyambung ke Control Center…';
 
   @override
   String get connectingDetail => 'Menjalin pautan langsung yang selamat.';
@@ -102,7 +102,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Pelayan ini tidak lagi sepadan dengan identiti yang disimpan semasa pemasangan. Itu boleh bermaksud pelayan dipasang semula — atau sesuatu memintas sambungan. Demi keselamatan, peranti ini tidak akan bersambung. Buang pasangan, kemudian imbas kod QR baharu dari Mac anda untuk pasangkan semula.';
+      'Pelayan ini tidak lagi sepadan dengan identiti yang disimpan semasa pemasangan. Itu boleh bermaksud pelayan dipasang semula — atau sesuatu memintas sambungan. Demi keselamatan, peranti ini tidak akan bersambung. Buang pasangan, kemudian imbas kod QR baharu dari Control Center untuk pasangkan semula.';
 
   @override
   String get removePairing => 'Buang pasangan';
@@ -122,7 +122,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Belum berpasangan — imbas kod QR dari Mac anda';
+      'Belum berpasangan — imbas kod QR dari Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +134,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Pelayan menolak peranti ini — pasangkan semula dari Mac anda';
+      'Pelayan menolak peranti ini — pasangkan semula dari Control Center';
 
   @override
   String get failureUnknown =>
@@ -214,7 +214,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Ketik lagi untuk putuskan peranti ini dari Mac anda';
+      'Ketik lagi untuk putuskan peranti ini dari Control Center';
 
   @override
   String get disconnectDevice => 'Putuskan peranti ini';

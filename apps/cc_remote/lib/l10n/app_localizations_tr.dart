@@ -85,14 +85,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Bu telefonu eşlemek için Mac’inizdeki QR kodunu tarayın.';
+      'Bu telefonu eşlemek için Control Center’daki QR kodunu tarayın.';
 
   @override
   String get scanQrHelp =>
-      'Kamerayı açıp Mac’inizdeki Control Center’da görünen QR koduna tutun. Bu telefon, özel bir bağlantıyla doğrudan Mac’inize bağlanır.';
+      'Kamerayı açıp Control Center’da görünen QR koduna tutun. Bu telefon, özel bir bağlantıyla doğrudan bağlanır.';
 
   @override
-  String get connectingToMac => 'Mac’inize bağlanılıyor…';
+  String get connectingToMac => 'Control Center’a bağlanılıyor…';
 
   @override
   String get connectingDetail => 'Güvenli, doğrudan bir bağlantı kuruluyor.';
@@ -102,7 +102,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Bu sunucu, eşleme sırasında kaydedilen kimlikle artık eşleşmiyor. Sunucu yeniden kurulmuş olabilir — veya bağlantıya müdahale ediliyor olabilir. Güvenlik için bu cihaz bağlanmayacak. Eşlemeyi kaldırın, ardından Mac’inizden yeni bir QR kodu tarayarak yeniden eşleyin.';
+      'Bu sunucu, eşleme sırasında kaydedilen kimlikle artık eşleşmiyor. Sunucu yeniden kurulmuş olabilir — veya bağlantıya müdahale ediliyor olabilir. Güvenlik için bu cihaz bağlanmayacak. Eşlemeyi kaldırın, ardından Control Center’dan yeni bir QR kodu tarayarak yeniden eşleyin.';
 
   @override
   String get removePairing => 'Eşlemeyi kaldır';
@@ -121,7 +121,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get connect => 'Bağlan';
 
   @override
-  String get failureNotPaired => 'Eşlenmedi — Mac’inizdeki QR kodunu tarayın';
+  String get failureNotPaired =>
+      'Eşlenmedi — Control Center’daki QR kodunu tarayın';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'Sunucu bu cihazı reddetti — Mac’inizden yeniden eşleyin';
+      'Sunucu bu cihazı reddetti — Control Center’dan yeniden eşleyin';
 
   @override
   String get failureUnknown => 'Bağlanılamadı — yeniden denemek için dokunun';
@@ -212,7 +213,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Bu cihazın Mac’inizle bağlantısını kesmek için tekrar dokunun';
+      'Bu cihazın Control Center ile bağlantısını kesmek için tekrar dokunun';
 
   @override
   String get disconnectDevice => 'Bu cihazın bağlantısını kes';

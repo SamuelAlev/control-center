@@ -258,7 +258,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Mencipta Simulator iOS sementara pada Mac pelayan. Simulator dipadamkan apabila rig ditutup; akses rangkaian tidak diasingkan.';
+      'Mencipta Simulator iOS sementara pada pelayan macOS. Simulator dipadamkan apabila rig ditutup; akses rangkaian tidak diasingkan.';
 
   @override
   String get rigTechnicalDetails => 'Butiran teknikal';
@@ -3231,7 +3231,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get egControlCenter => 'e.g. control-center';
 
   @override
-  String get egPlatform => 'e.g. macOS';
+  String get egPlatform => 'e.g. Platform';
 
   @override
   String get egSamuelAlev => 'e.g. SamuelAlev';
@@ -4912,7 +4912,7 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Tunjukkan pemberitahuan natif macOS untuk peristiwa.';
+      'Tunjukkan pemberitahuan sistem untuk peristiwa.';
 
   @override
   String get showSuperseded => 'Tunjuk yang diganti';

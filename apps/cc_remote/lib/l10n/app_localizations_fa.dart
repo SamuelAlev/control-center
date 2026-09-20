@@ -85,14 +85,14 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'کد ⁨QR⁩ را از ⁨Mac⁩ اسکن کنید تا این تلفن جفت شود.';
+      'کد ⁨QR⁩ را از ⁨Control Center⁩ اسکن کنید تا این تلفن جفت شود.';
 
   @override
   String get scanQrHelp =>
-      'دوربین را باز کنید و به‌سمت کد ⁨QR⁩ نشان‌داده‌شده در ⁨Control Center⁩ روی ⁨Mac⁩ بگیرید. این تلفن مستقیم از طریق یک پیوند خصوصی به ⁨Mac⁩ وصل می‌شود.';
+      'دوربین را باز کنید و به‌سمت کد ⁨QR⁩ نشان‌داده‌شده در ⁨Control Center⁩ بگیرید. این تلفن مستقیم از طریق یک پیوند خصوصی وصل می‌شود.';
 
   @override
-  String get connectingToMac => 'در حال اتصال به ⁨Mac⁩…';
+  String get connectingToMac => 'در حال اتصال به ⁨Control Center⁩…';
 
   @override
   String get connectingDetail => 'در حال برقراری پیوند امن و مستقیم.';
@@ -102,7 +102,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'این سرور دیگر با هویت ذخیره‌شده هنگام جفت‌سازی مطابقت ندارد. ممکن است سرور از نو نصب شده باشد — یا چیزی در حال رهگیری اتصال باشد. برای ایمنی، این دستگاه وصل نخواهد شد. جفت‌سازی را بردارید، سپس یک کد ⁨QR⁩ تازه از ⁨Mac⁩ اسکن کنید تا دوباره جفت شود.';
+      'این سرور دیگر با هویت ذخیره‌شده هنگام جفت‌سازی مطابقت ندارد. ممکن است سرور از نو نصب شده باشد — یا چیزی در حال رهگیری اتصال باشد. برای ایمنی، این دستگاه وصل نخواهد شد. جفت‌سازی را بردارید، سپس یک کد ⁨QR⁩ تازه از ⁨Control Center⁩ اسکن کنید تا دوباره جفت شود.';
 
   @override
   String get removePairing => 'برداشتن جفت‌سازی';
@@ -121,7 +121,8 @@ class AppLocalizationsFa extends AppLocalizations {
   String get connect => 'اتصال';
 
   @override
-  String get failureNotPaired => 'جفت نشده — کد ⁨QR⁩ را از ⁨Mac⁩ اسکن کنید';
+  String get failureNotPaired =>
+      'جفت نشده — کد ⁨QR⁩ را از ⁨Control Center⁩ اسکن کنید';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'سرور این دستگاه را نپذیرفت — دوباره از ⁨Mac⁩ جفتش کنید';
+      'سرور این دستگاه را نپذیرفت — دوباره از ⁨Control Center⁩ جفتش کنید';
 
   @override
   String get failureUnknown => 'اتصال ممکن نشد — برای تلاش مجدد ضربه بزنید';
@@ -212,7 +213,7 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'دوباره ضربه بزنید تا این دستگاه از ⁨Mac⁩ قطع شود';
+      'دوباره ضربه بزنید تا این دستگاه از ⁨Control Center⁩ قطع شود';
 
   @override
   String get disconnectDevice => 'قطع اتصال این دستگاه';

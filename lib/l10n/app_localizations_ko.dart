@@ -251,7 +251,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      '서버의 Mac에 일회용 iOS Simulator를 생성합니다. 테스트 환경을 닫으면 삭제되며 네트워크 액세스는 격리되지 않습니다.';
+      'macOS 서버에 일회용 iOS Simulator를 생성합니다. 테스트 환경을 닫으면 삭제되며 네트워크 액세스는 격리되지 않습니다.';
 
   @override
   String get rigTechnicalDetails => '기술 세부 정보';
@@ -3176,7 +3176,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get egControlCenter => '예: control-center';
 
   @override
-  String get egPlatform => '예: macOS';
+  String get egPlatform => '예: Platform';
 
   @override
   String get egSamuelAlev => '예: SamuelAlev';
@@ -4804,7 +4804,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get shortTask => '짧은 작업';
 
   @override
-  String get showNativeNotifications => '이벤트에 대해 네이티브 macOS 알림을 표시합니다.';
+  String get showNativeNotifications => '이벤트에 대해 시스템 알림을 표시합니다.';
 
   @override
   String get showSuperseded => '대체된 항목 표시';

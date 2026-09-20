@@ -260,7 +260,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Tạo một Trình mô phỏng iOS tạm thời trên máy Mac của máy chủ. Trình mô phỏng sẽ bị xóa khi môi trường kiểm thử đóng; quyền truy cập mạng không được cô lập.';
+      'Tạo một Trình mô phỏng iOS tạm thời trên máy chủ macOS. Trình mô phỏng sẽ bị xóa khi môi trường kiểm thử đóng; quyền truy cập mạng không được cô lập.';
 
   @override
   String get rigTechnicalDetails => 'Chi tiết kỹ thuật';
@@ -3225,7 +3225,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get egControlCenter => 'vd. control-center';
 
   @override
-  String get egPlatform => 'vd. macOS';
+  String get egPlatform => 'vd. Platform';
 
   @override
   String get egSamuelAlev => 'vd. SamuelAlev';
@@ -4902,7 +4902,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get shortTask => 'Tác vụ ngắn';
 
   @override
-  String get showNativeNotifications => 'Hiện thông báo gốc macOS cho sự kiện.';
+  String get showNativeNotifications => 'Hiện thông báo hệ thống cho sự kiện.';
 
   @override
   String get showSuperseded => 'Hiện bản bị thay thế';

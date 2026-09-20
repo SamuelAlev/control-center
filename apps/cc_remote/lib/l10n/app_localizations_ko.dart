@@ -84,14 +84,14 @@ class AppLocalizationsKo extends AppLocalizations {
   String get resetZoom => '줌 재설정';
 
   @override
-  String get scanQrPrompt => 'Mac의 QR 코드를 스캔해 이 폰을 페어링하세요.';
+  String get scanQrPrompt => 'Control Center의 QR 코드를 스캔해 이 폰을 페어링하세요.';
 
   @override
   String get scanQrHelp =>
-      '카메라를 열어 Mac의 Control Center에 표시된 QR을 비추세요. 이 폰은 비공개 링크로 Mac에 직접 연결됩니다.';
+      '카메라를 열어 Control Center에 표시된 QR을 비추세요. 이 폰은 비공개 링크로 직접 연결됩니다.';
 
   @override
-  String get connectingToMac => 'Mac에 연결하는 중…';
+  String get connectingToMac => 'Control Center에 연결하는 중…';
 
   @override
   String get connectingDetail => '보안 직접 연결을 설정하는 중입니다.';
@@ -101,7 +101,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      '이 서버는 페어링 당시 저장된 ID와 더 이상 일치하지 않습니다. 서버가 재설치되었거나 연결이 가로채졌을 수 있습니다. 안전을 위해 이 기기는 연결하지 않습니다. 페어링을 삭제한 뒤 Mac에서 새 QR 코드를 스캔해 다시 페어링하세요.';
+      '이 서버는 페어링 당시 저장된 ID와 더 이상 일치하지 않습니다. 서버가 재설치되었거나 연결이 가로채졌을 수 있습니다. 안전을 위해 이 기기는 연결하지 않습니다. 페어링을 삭제한 뒤 Control Center에서 새 QR 코드를 스캔해 다시 페어링하세요.';
 
   @override
   String get removePairing => '페어링 삭제';
@@ -120,7 +120,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get connect => '연결';
 
   @override
-  String get failureNotPaired => '페어링되지 않음 — Mac의 QR 코드를 스캔하세요';
+  String get failureNotPaired => '페어링되지 않음 — Control Center의 QR 코드를 스캔하세요';
 
   @override
   String get failureUnreachable =>
@@ -130,7 +130,8 @@ class AppLocalizationsKo extends AppLocalizations {
   String get failureIdentityChanged => '서버 ID가 변경됨 — 재설치했다면 이 기기를 다시 페어링하세요';
 
   @override
-  String get failureAuthRejected => '서버가 이 기기를 거부함 — Mac에서 다시 페어링하세요';
+  String get failureAuthRejected =>
+      '서버가 이 기기를 거부함 — Control Center에서 다시 페어링하세요';
 
   @override
   String get failureUnknown => '연결할 수 없음 — 눌러서 다시 시도';
@@ -208,7 +209,7 @@ class AppLocalizationsKo extends AppLocalizations {
   String get languageSystem => '시스템';
 
   @override
-  String get disconnectTapAgain => '다시 눌러 이 기기를 Mac에서 연결 해제';
+  String get disconnectTapAgain => '다시 눌러 이 기기를 Control Center에서 연결 해제';
 
   @override
   String get disconnectDevice => '이 기기 연결 해제';

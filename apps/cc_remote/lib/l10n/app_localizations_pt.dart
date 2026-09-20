@@ -85,14 +85,14 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Escaneie o QR do seu Mac para emparelhar este celular.';
+      'Escaneie o QR do Control Center para emparelhar este celular.';
 
   @override
   String get scanQrHelp =>
-      'Abra a câmera e aponte para o QR exibido no Control Center no seu Mac. Este celular se conecta diretamente ao Mac por um link privado.';
+      'Abra a câmera e aponte para o QR exibido no Control Center. Este celular se conecta diretamente por um link privado.';
 
   @override
-  String get connectingToMac => 'Conectando ao seu Mac…';
+  String get connectingToMac => 'Conectando ao Control Center…';
 
   @override
   String get connectingDetail => 'Estabelecendo um link direto e seguro.';
@@ -102,7 +102,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Este servidor não corresponde mais à identidade salva no emparelhamento. Isso pode significar que o servidor foi reinstalado — ou que algo está interceptando a conexão. Por segurança, este dispositivo não vai conectar. Remova o emparelhamento e escaneie um QR novo no seu Mac para emparelhar de novo.';
+      'Este servidor não corresponde mais à identidade salva no emparelhamento. Isso pode significar que o servidor foi reinstalado — ou que algo está interceptando a conexão. Por segurança, este dispositivo não vai conectar. Remova o emparelhamento e escaneie um QR novo no Control Center para emparelhar de novo.';
 
   @override
   String get removePairing => 'Remover emparelhamento';
@@ -121,7 +121,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get connect => 'Conectar';
 
   @override
-  String get failureNotPaired => 'Não emparelhado — escaneie o QR do seu Mac';
+  String get failureNotPaired =>
+      'Não emparelhado — escaneie o QR do Control Center';
 
   @override
   String get failureUnreachable =>
@@ -133,7 +134,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'O servidor rejeitou este dispositivo — emparelhe de novo pelo Mac';
+      'O servidor rejeitou este dispositivo — emparelhe de novo pelo Control Center';
 
   @override
   String get failureUnknown =>
@@ -214,7 +215,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Toque de novo para desconectar este dispositivo do seu Mac';
+      'Toque de novo para desconectar este dispositivo do Control Center';
 
   @override
   String get disconnectDevice => 'Desconectar este dispositivo';
@@ -862,14 +863,14 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get scanQrHelp =>
-      'Abra a câmera e aponte para o QR exibido no Control Center no seu Mac. Este celular liga-se diretamente ao Mac por um link privado.';
+      'Abra a câmera e aponte para o QR exibido no Control Center. Este celular liga-se diretamente por um link privado.';
 
   @override
-  String get connectingToMac => 'A ligar ao seu Mac…';
+  String get connectingToMac => 'A ligar ao Control Center…';
 
   @override
   String get identityChangedBody =>
-      'Este servidor não corresponde mais à identidade guardada no emparelhamento. Isso pode significar que o servidor foi reinstalado — ou que algo está interceptando a ligação. Por segurança, este dispositivo não vai ligar. Remova o emparelhamento e escaneie um QR novo no seu Mac para emparelhar de novo.';
+      'Este servidor não corresponde mais à identidade guardada no emparelhamento. Isso pode significar que o servidor foi reinstalado — ou que algo está interceptando a ligação. Por segurança, este dispositivo não vai ligar. Remova o emparelhamento e escaneie um QR novo no Control Center para emparelhar de novo.';
 
   @override
   String get couldntConnect => 'Não foi possível ligar';
@@ -899,7 +900,7 @@ class AppLocalizationsPtPt extends AppLocalizationsPt {
 
   @override
   String get disconnectTapAgain =>
-      'Toque de novo para desligar este dispositivo do seu Mac';
+      'Toque de novo para desligar este dispositivo do Control Center';
 
   @override
   String get disconnectDevice => 'Desligar este dispositivo';

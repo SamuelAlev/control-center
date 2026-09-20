@@ -85,14 +85,14 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scanQrPrompt =>
-      'Escanea el código QR de tu Mac para emparejar este teléfono.';
+      'Escanea el código QR de Control Center para emparejar este teléfono.';
 
   @override
   String get scanQrHelp =>
-      'Abre la cámara y apunta al QR que aparece en Control Center en tu Mac. Este teléfono se conecta directamente a tu Mac por un enlace privado.';
+      'Abre la cámara y apunta al QR que aparece en Control Center. Este teléfono se conecta directamente por un enlace privado.';
 
   @override
-  String get connectingToMac => 'Conectando a tu Mac…';
+  String get connectingToMac => 'Conectando a Control Center…';
 
   @override
   String get connectingDetail => 'Estableciendo un enlace directo y seguro.';
@@ -102,7 +102,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get identityChangedBody =>
-      'Este servidor ya no coincide con la identidad guardada al emparejar. Puede deberse a que se ha reinstalado, o a que algo intercepta la conexión. Por seguridad, este dispositivo no se conectará. Quita el emparejamiento y escanea un código QR nuevo de tu Mac para volver a emparejar.';
+      'Este servidor ya no coincide con la identidad guardada al emparejar. Puede deberse a que se ha reinstalado, o a que algo intercepta la conexión. Por seguridad, este dispositivo no se conectará. Quita el emparejamiento y escanea un código QR nuevo de Control Center para volver a emparejar.';
 
   @override
   String get removePairing => 'Quitar emparejamiento';
@@ -122,7 +122,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get failureNotPaired =>
-      'Sin emparejar: escanea el código QR de tu Mac';
+      'Sin emparejar: escanea el código QR de Control Center';
 
   @override
   String get failureUnreachable =>
@@ -134,7 +134,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get failureAuthRejected =>
-      'El servidor ha rechazado este dispositivo: vuelve a emparejarlo desde tu Mac';
+      'El servidor ha rechazado este dispositivo: vuelve a emparejarlo desde Control Center';
 
   @override
   String get failureUnknown => 'No se ha podido conectar: toca para reintentar';
@@ -213,7 +213,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get disconnectTapAgain =>
-      'Toca de nuevo para desconectar este dispositivo de tu Mac';
+      'Toca de nuevo para desconectar este dispositivo de Control Center';
 
   @override
   String get disconnectDevice => 'Desconectar este dispositivo';
@@ -866,9 +866,9 @@ class AppLocalizationsEsMx extends AppLocalizationsEs {
 
   @override
   String get scanQrPrompt =>
-      'Escanea el código QR de tu Mac para emparejar este celular.';
+      'Escanea el código QR de Control Center para emparejar este celular.';
 
   @override
   String get scanQrHelp =>
-      'Abre la cámara y apunta al QR que aparece en Control Center en tu Mac. Este celular se conecta directamente a tu Mac por un enlace privado.';
+      'Abre la cámara y apunta al QR que aparece en Control Center. Este celular se conecta directamente por un enlace privado.';
 }

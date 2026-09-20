@@ -253,7 +253,7 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'יוצר סימולטור iOS זמני ב-Mac של השרת. הוא נמחק כשסביבת הבדיקה נסגרת; הגישה לרשת אינה מבודדת.';
+      'יוצר סימולטור iOS זמני בשרת macOS. הוא נמחק כשסביבת הבדיקה נסגרת; הגישה לרשת אינה מבודדת.';
 
   @override
   String get rigTechnicalDetails => 'פרטים טכניים';
@@ -3220,7 +3220,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get egControlCenter => 'למשל control-center';
 
   @override
-  String get egPlatform => 'למשל macOS';
+  String get egPlatform => 'למשל Platform';
 
   @override
   String get egSamuelAlev => 'למשל SamuelAlev';
@@ -4893,8 +4893,7 @@ class AppLocalizationsHe extends AppLocalizations {
   String get shortTask => 'משימה קצרה';
 
   @override
-  String get showNativeNotifications =>
-      'הצג התראות מקוריות של macOS על אירועים.';
+  String get showNativeNotifications => 'הצג התראות מערכת על אירועים.';
 
   @override
   String get showSuperseded => 'הצג עובדות שהוחלפו';

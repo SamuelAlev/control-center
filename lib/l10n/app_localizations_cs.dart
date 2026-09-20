@@ -261,7 +261,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Vytvoří dočasný simulátor iOS na serverovém Macu. Po ukončení testovacího prostředí bude odstraněn; přístup k síti není izolovaný.';
+      'Vytvoří dočasný simulátor iOS na serveru s macOS. Po ukončení testovacího prostředí bude odstraněn; přístup k síti není izolovaný.';
 
   @override
   String get rigTechnicalDetails => 'Technické podrobnosti';
@@ -3258,7 +3258,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get egControlCenter => 'např. control-center';
 
   @override
-  String get egPlatform => 'např. macOS';
+  String get egPlatform => 'např. Platform';
 
   @override
   String get egSamuelAlev => 'např. SamuelAlev';
@@ -4957,7 +4957,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Zobrazovat nativní oznámení macOS u událostí.';
+      'Zobrazovat systémová oznámení u událostí.';
 
   @override
   String get showSuperseded => 'Zobrazit nahrazené';

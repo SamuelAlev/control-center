@@ -263,7 +263,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Creează un simulator iOS temporar pe computerul Mac al serverului. Acesta este șters când mediul de testare se închide; accesul la rețea nu este izolat.';
+      'Creează un simulator iOS temporar pe un server macOS. Acesta este șters când mediul de testare se închide; accesul la rețea nu este izolat.';
 
   @override
   String get rigTechnicalDetails => 'Detalii tehnice';
@@ -3261,7 +3261,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get egControlCenter => 'de ex. control-center';
 
   @override
-  String get egPlatform => 'de ex. macOS';
+  String get egPlatform => 'de ex. Platform';
 
   @override
   String get egSamuelAlev => 'de ex. SamuelAlev';
@@ -4957,7 +4957,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Afișează notificări native macOS pentru evenimente.';
+      'Afișează notificări de sistem pentru evenimente.';
 
   @override
   String get showSuperseded => 'Afișează înlocuite';

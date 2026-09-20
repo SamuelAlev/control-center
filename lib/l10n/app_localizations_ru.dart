@@ -261,7 +261,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rigStartIosHint =>
-      'Создает временный симулятор iOS на сервере Mac. Он удаляется при закрытии тестовой среды; доступ к сети не изолирован.';
+      'Создает временный симулятор iOS на сервере macOS. Он удаляется при закрытии тестовой среды; доступ к сети не изолирован.';
 
   @override
   String get rigTechnicalDetails => 'Технические сведения';
@@ -3259,7 +3259,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get egControlCenter => 'напр. control-center';
 
   @override
-  String get egPlatform => 'напр. macOS';
+  String get egPlatform => 'напр. Platform';
 
   @override
   String get egSamuelAlev => 'напр. SamuelAlev';
@@ -4961,7 +4961,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get showNativeNotifications =>
-      'Показывать системные уведомления macOS для событий.';
+      'Показывать системные уведомления для событий.';
 
   @override
   String get showSuperseded => 'Показывать заменённые';
