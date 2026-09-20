@@ -9,6 +9,8 @@ import 'package:cc_data/cc_data.dart' show RigBackendView;
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
+import 'package:control_center/features/rigs/presentation/rig_boot_failure.dart';
+import 'package:control_center/features/rigs/presentation/rig_boot_mark.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -60,71 +62,69 @@ class RigStart extends ConsumerWidget {
           return RigUnavailable(backends: backends, surface: surface);
         }
         return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 380),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // A browser surface shows its engine's mark — the same logo
-                // the tab strip and the guest's own new-tab page carry — so
-                // "what will start when I press this" is never in doubt.
-                if (engine case final engine?)
-                  BrowserEngineLogo(
-                    engine: engine,
-                    size: 28,
-                    color: t.fgQuaternary,
-                  )
-                else
-                  Icon(
-                    RigTabSurfaces.iconFor(surface),
-                    size: 28,
-                    color: t.fgQuaternary,
-                  ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  RigTabSurfaces.labelFor(l10n, surface, engine: engine),
-                  style: CcTypography.body.copyWith(
-                    color: t.textPrimary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  engine != null
-                      ? l10n.rigBrowserEngineHint(engine!.label)
-                      : switch (surface) {
-                          RigTabSurfaces.mobile =>
-                            l10n.rigStartAndroidHint,
-                          RigTabSurfaces.ios => l10n.rigStartIosHint,
-                          _ => l10n.rigStartHint,
-                        },
-                  textAlign: TextAlign.center,
-                  style: CcTypography.caption.copyWith(color: t.textTertiary),
-                ),
-                if (!hosting.enforcedEgress) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    l10n.rigEgressNotEnforced,
-                    textAlign: TextAlign.center,
-                    style: CcTypography.caption.copyWith(color: t.warn),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.lg),
-                CcButton(
-                  loading: starting,
-                  onPressed: onStart,
-                  icon: AppIcons.play,
-                  child: Text(l10n.rigStartMachine),
-                ),
-                if (error != null) ...[
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.xl),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 380),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // A browser surface shows its engine's mark — the same logo
+                  // the tab strip and the guest's own new-tab page carry — so
+                  // "what will start when I press this" is never in doubt.
+                  if (engine case final engine?)
+                    BrowserEngineLogo(
+                      engine: engine,
+                      size: 28,
+                      color: t.fgQuaternary,
+                    )
+                  else
+                    Icon(
+                      RigTabSurfaces.iconFor(surface),
+                      size: 28,
+                      color: t.fgQuaternary,
+                    ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
-                    error!,
-                    textAlign: TextAlign.center,
-                    style: CcTypography.caption.copyWith(color: t.danger),
+                    RigTabSurfaces.labelFor(l10n, surface, engine: engine),
+                    style: CcTypography.body.copyWith(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    engine != null
+                        ? l10n.rigBrowserEngineHint(engine!.label)
+                        : switch (surface) {
+                            RigTabSurfaces.mobile => l10n.rigStartAndroidHint,
+                            RigTabSurfaces.ios => l10n.rigStartIosHint,
+                            _ => l10n.rigStartHint,
+                          },
+                    textAlign: TextAlign.center,
+                    style: CcTypography.caption.copyWith(color: t.textTertiary),
+                  ),
+                  if (!hosting.enforcedEgress) ...[
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      l10n.rigEgressNotEnforced,
+                      textAlign: TextAlign.center,
+                      style: CcTypography.caption.copyWith(color: t.warn),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.lg),
+                  CcButton(
+                    loading: starting,
+                    onPressed: onStart,
+                    icon: AppIcons.play,
+                    child: Text(l10n.rigStartMachine),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    RigBootFailure(error: error!),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -271,14 +271,11 @@ class RigProgress extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // A browser machine boots under its own flag: the engine's mark
-            // breathing here settles into the identical mark on the guest's
-            // new-tab page once the stream connects. Non-browser surfaces
-            // keep the spinner.
-            if (engine == null)
-              const CcSpinner()
-            else
-              BrowserEngineBootMark(engine: engine!),
+            // The machine's own mark breathing here is the same presence
+            // a browser already had: Firefox's logo, Android's robot, the
+            // Apple glyph. The desktop has no brand of its own, so it
+            // keeps the spinner.
+            RigBootMark(surface: surface, engine: engine),
             const SizedBox(height: AppSpacing.md),
             Text(
               // NOT `'\${label} — \${l10n.rigPhaseStarting.toLowerCase()}'`:

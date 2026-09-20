@@ -223,6 +223,15 @@ abstract final class RigTabSurfaces {
   static IconData iconFor(String surface) =>
       rigSurfaceIcon(RigSurface.fromWire(surface));
 
+  /// The tab-strip icon for a rig tab, from the args it carries.
+  ///
+  /// Kind-only maps (`MessagingTabKinds.iconFor`, `PrTabKinds.iconFor`) see
+  /// `rig` and fall through to the desktop glyph. The surface lives in
+  /// args, and that is what tells an iOS tab from a computer tab — the
+  /// `[+]` menu already used [iconFor] when it opened the tab.
+  static IconData iconForArgs(Map<String, Object?> args) =>
+      iconFor(args['surface'] as String? ?? computer);
+
   /// The localized tab label for [surface], naming [engine] when there is one
   /// and numbering the conversation's extra machines by [slotId].
   static String labelFor(

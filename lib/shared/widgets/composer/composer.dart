@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/infrastructure/clipboard/host_clipboard.dart';
 import 'package:control_center/core/infrastructure/speech/dictation_controller.dart';
-
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -22,8 +21,8 @@ import 'package:control_center/shared/widgets/composer/mention/mention_source.da
 import 'package:control_center/shared/widgets/composer/mention/mention_trigger.dart';
 import 'package:control_center/shared/widgets/composer/voice/voice_button.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 

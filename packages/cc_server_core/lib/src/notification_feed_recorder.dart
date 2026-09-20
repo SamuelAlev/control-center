@@ -32,10 +32,9 @@ import 'package:cc_server_core/src/notification_wire.dart';
 class NotificationFeedRecorder {
   /// Creates a [NotificationFeedRecorder].
   NotificationFeedRecorder({
-    required DomainEventBus eventBus,
-    required DaoNotificationFeedRepository repository,
-  }) : _eventBus = eventBus,
-       _repository = repository;
+    required this._eventBus,
+    required this._repository,
+  });
 
   final DomainEventBus _eventBus;
   final DaoNotificationFeedRepository _repository;

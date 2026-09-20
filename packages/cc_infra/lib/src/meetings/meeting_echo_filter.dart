@@ -74,7 +74,7 @@ class MeetingEchoFilter {
   /// enough to span the lag between a short, early "me" echo and its long, late
   /// "them" source. [similarityThreshold] and [minTokens] govern the text match.
   MeetingEchoFilter({
-    required OnAccepted onAccepted,
+    required this._onAccepted,
     this.idleHoldMs = 700,
     this.activeHoldMs = 7000,
     this.activeWindowMs = 2500,
@@ -82,7 +82,7 @@ class MeetingEchoFilter {
     this.matchWindowMs = 7000,
     this.similarityThreshold = 0.6,
     this.minTokens = 3,
-  }) : _onAccepted = onAccepted {
+  }) {
     if (activeHoldMs < matchWindowMs) {
       throw ArgumentError(
         'activeHoldMs must be >= matchWindowMs so a held "me" cannot commit '

@@ -17,17 +17,15 @@ import 'package:cc_natives/cc_natives.dart' show Mp3Encoder;
 /// a [Stopwatch], keeping a small look-ahead buffer so clients never underrun,
 /// and stops itself when the last listener detaches (the hub then reaps it).
 class SoundscapeSession {
-  /// Creates a session rendering [context] at [sampleRate] through [encoder].
-  /// [onEmpty] fires when the last listener leaves so the hub can dispose it.
+  /// Creates a session rendering [context] at [sampleRate] through [_encoder].
+  /// [_onEmpty] fires when the last listener leaves so the hub can dispose it.
   SoundscapeSession({
     required this.key,
     required SoundscapeContext context,
     required this.sampleRate,
-    required Mp3Encoder encoder,
-    required void Function() onEmpty,
-  }) : _encoder = encoder,
-       _onEmpty = onEmpty,
-       _composer = SoundscapeComposer(sampleRate: sampleRate, context: context),
+    required this._encoder,
+    required this._onEmpty,
+  }) : _composer = SoundscapeComposer(sampleRate: sampleRate, context: context),
        _block = Float32List(_blockFrames * 2),
        _pcm = Int16List(_blockFrames * 2);
 

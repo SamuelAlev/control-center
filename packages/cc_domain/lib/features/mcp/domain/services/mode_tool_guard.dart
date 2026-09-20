@@ -26,8 +26,7 @@ import 'package:cc_domain/features/mcp/domain/value_objects/mode_tool_policy.dar
 /// the tool is rejected in that mode.
 class ModeToolGuard {
   /// Creates a new [ModeToolGuard].
-  ModeToolGuard(this._resolver, {AgentRunLogRepository? runLogs})
-    : _runLogs = runLogs;
+  ModeToolGuard(this._resolver, {this._runLogs});
 
   final ModeResolver _resolver;
   final AgentRunLogRepository? _runLogs;

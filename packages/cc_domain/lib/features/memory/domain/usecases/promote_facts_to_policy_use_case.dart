@@ -12,14 +12,11 @@ import 'package:uuid/uuid.dart';
 class PromoteFactsToPolicyUseCase {
   /// Creates a [PromoteFactsToPolicyUseCase].
   PromoteFactsToPolicyUseCase({
-    required MemoryFactRepository factRepository,
-    required MemoryPolicyRepository policyRepository,
-    required MemoryAccessGrantRepository grantRepository,
-    required MemoryAccessPolicy accessPolicy,
-  }) : _factRepository = factRepository,
-       _policyRepository = policyRepository,
-       _grantRepository = grantRepository,
-       _accessPolicy = accessPolicy;
+    required this._factRepository,
+    required this._policyRepository,
+    required this._grantRepository,
+    required this._accessPolicy,
+  });
 
   final MemoryFactRepository _factRepository;
   final MemoryPolicyRepository _policyRepository;

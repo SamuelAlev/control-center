@@ -120,16 +120,12 @@ class SsoProvisioningPolicy {
 class SsoProvisioner {
   /// Creates a [SsoProvisioner].
   SsoProvisioner({
-    required UserRepository users,
-    required WorkspaceMembershipRepository members,
-    required WorkspaceRepository workspaces,
-    DomainEventBus? eventBus,
+    required this._users,
+    required this._members,
+    required this._workspaces,
+    this._eventBus,
     DateTime Function()? now,
-  }) : _users = users,
-       _members = members,
-       _workspaces = workspaces,
-       _eventBus = eventBus,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final UserRepository _users;
   final WorkspaceMembershipRepository _members;

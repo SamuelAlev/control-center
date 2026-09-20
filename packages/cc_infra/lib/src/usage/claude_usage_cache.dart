@@ -25,14 +25,13 @@ import 'package:cc_domain/features/subscriptions/subscriptions.dart';
 ///   half: retrying a 429 immediately is what turns a brief throttle into a
 ///   sustained one.
 class ClaudeUsageCache {
-  /// Creates a [ClaudeUsageCache] over [fetch].
+  /// Creates a [ClaudeUsageCache] over [_fetch].
   ClaudeUsageCache({
-    required Future<SubscriptionUsage> Function(String configDir) fetch,
+    required this._fetch,
     this.ttl = const Duration(minutes: 5),
     this.errorTtl = const Duration(minutes: 2),
     DateTime Function()? now,
-  }) : _fetch = fetch,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final Future<SubscriptionUsage> Function(String configDir) _fetch;
   final DateTime Function() _now;

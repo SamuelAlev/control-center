@@ -38,20 +38,16 @@ class FleetSchedulerService {
   FleetSchedulerService({
     required FleetRepository repository,
     required JobExecutorResolver executorResolver,
-    JobScheduler scheduler = const JobScheduler(),
+    this._scheduler = const JobScheduler(),
     DateTime Function()? now,
     String Function()? newId,
-    Duration leaseTtl = const Duration(minutes: 2),
-    Duration renewInterval = const Duration(seconds: 30),
-    void Function(AgentProcessEvent event, Job job)? onJobEvent,
+    this._leaseTtl = const Duration(minutes: 2),
+    this._renewInterval = const Duration(seconds: 30),
+    this._onJobEvent,
   }) : _repo = repository,
        _resolveExecutor = executorResolver,
-       _scheduler = scheduler,
        _now = now ?? DateTime.now,
-       _newId = newId ?? _defaultId,
-       _leaseTtl = leaseTtl,
-       _renewInterval = renewInterval,
-       _onJobEvent = onJobEvent;
+       _newId = newId ?? _defaultId;
 
   final FleetRepository _repo;
   final JobExecutorResolver _resolveExecutor;

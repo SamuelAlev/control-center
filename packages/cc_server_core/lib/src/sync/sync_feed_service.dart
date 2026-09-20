@@ -37,15 +37,14 @@ typedef SyncRowLoader =
 /// misapplying.
 class SyncFeedService {
   /// Creates the feed over the per-workspace databases in [workspaces], with
-  /// per-table row [loaders].
+  /// per-table row [_loaders].
   SyncFeedService({
     required WorkspaceDatabaseManager workspaces,
-    required Map<String, SyncRowLoader> loaders,
+    required this._loaders,
     this.retention = const Duration(days: 7),
     this.pollInterval = const Duration(seconds: 3),
   }) : _dbs = workspaces,
-       _cross = CrossWorkspaceQueries(workspaces),
-       _loaders = loaders;
+       _cross = CrossWorkspaceQueries(workspaces);
 
   /// Delta wire-format version (PRD 16 §6: versioned deltas).
   static const int wireVersion = 1;

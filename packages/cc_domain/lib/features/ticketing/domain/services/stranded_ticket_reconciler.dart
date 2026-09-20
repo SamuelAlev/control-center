@@ -13,16 +13,12 @@ import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_ser
 class StrandedTicketReconciler {
   /// Creates a reconciler with the repositories and services needed to repair stranded tickets.
   StrandedTicketReconciler({
-    required TicketRepository ticketRepo,
-    required AgentRepository agentRepo,
-    required AgentRunLogRepository runLogRepo,
-    required TicketWorkflowService ticketWorkflow,
-    BudgetEnforcementService? budgetEnforcement,
-  }) : _ticketRepo = ticketRepo,
-       _agentRepo = agentRepo,
-       _runLogRepo = runLogRepo,
-       _ticketWorkflow = ticketWorkflow,
-       _budgetEnforcement = budgetEnforcement;
+    required this._ticketRepo,
+    required this._agentRepo,
+    required this._runLogRepo,
+    required this._ticketWorkflow,
+    this._budgetEnforcement,
+  });
 
   final TicketRepository _ticketRepo;
   final AgentRepository _agentRepo;

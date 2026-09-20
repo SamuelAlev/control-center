@@ -202,13 +202,12 @@ class VoiceModelInfo {
 /// (`voiceModelManagerProvider` reads `selectedVoiceModelProvider`).
 class VoiceModelManager {
   /// Creates a manager for [model] (defaults to Parakeet TDT v3), rooted at
-  /// [paths] (the app/server on-disk layout that supplies the `models/` dir).
+  /// [_paths] (the app/server on-disk layout that supplies the `models/` dir).
   VoiceModelManager({
-    required CcPaths paths,
+    required this._paths,
     Dio? dio,
     this.model = VoiceModelInfo.parakeetTdtV3,
-  }) : _paths = paths,
-       _dio = dio ?? createDio();
+  }) : _dio = dio ?? createDio();
 
   final CcPaths _paths;
   final Dio _dio;

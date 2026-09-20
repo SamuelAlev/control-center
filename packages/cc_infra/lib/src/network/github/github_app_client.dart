@@ -81,13 +81,11 @@ class GitHubAppClient {
   /// [dio] is injected by tests; production builds get an `api.github.com`
   /// client.
   GitHubAppClient({
-    required String appId,
-    required String privateKeyPem,
+    required this._appId,
+    required this._privateKeyPem,
     Dio? dio,
     DateTime Function()? now,
-  }) : _appId = appId,
-       _privateKeyPem = privateKeyPem,
-       _dio = dio ?? createDio(baseUrl: 'https://api.github.com'),
+  }) : _dio = dio ?? createDio(baseUrl: 'https://api.github.com'),
        _now = now ?? (() => DateTime.now().toUtc());
 
   /// Builds a client, or null when the credentials are absent or the private

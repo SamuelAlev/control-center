@@ -36,14 +36,13 @@ typedef WorkspaceMembershipChecker = Future<bool> Function(String workspaceId);
 class RemoteEventForwarder {
   /// Creates a [RemoteEventForwarder].
   RemoteEventForwarder({
-    required DomainEventBus eventBus,
-    required RemoteRpcChannelPort space,
+    required this._eventBus,
+    required this._space,
     required this.deviceId,
     required this.userId,
     this.isMember,
     this.resolveTicketWorkspace,
-  }) : _eventBus = eventBus,
-       _space = space;
+  });
 
   final DomainEventBus _eventBus;
   final RemoteRpcChannelPort _space;

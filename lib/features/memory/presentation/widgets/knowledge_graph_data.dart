@@ -4,8 +4,14 @@ import 'package:flutter/widgets.dart';
 
 /// Node sizes. Sized so labels stay legible without zooming.
 const domainNodeSize = Size(148, 86);
+
+/// Size of a topic node on the knowledge graph canvas.
 const topicNodeSize = Size(152, 64);
+
+/// Size of a fact node on the knowledge graph canvas.
 const factNodeSize = Size(184, 116);
+
+/// Size of a policy node on the knowledge graph canvas.
 const policyNodeSize = Size(168, 96);
 
 /// Slack between a cluster's outermost card and its hull.

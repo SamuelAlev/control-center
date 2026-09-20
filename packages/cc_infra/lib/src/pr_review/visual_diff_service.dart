@@ -46,13 +46,11 @@ class VisualDiffOutcome {
 class VisualDiffService {
   /// Creates a [VisualDiffService].
   VisualDiffService({
-    required VisualDiffRepository repository,
-    required CcPaths paths,
-    String? flutterBinary,
+    required this._repository,
+    required this._paths,
+    this._flutterBinary,
     this.testTimeout = const Duration(minutes: 8),
-  }) : _repository = repository,
-       _paths = paths,
-       _flutterBinary = flutterBinary;
+  });
 
   final VisualDiffRepository _repository;
   final CcPaths _paths;

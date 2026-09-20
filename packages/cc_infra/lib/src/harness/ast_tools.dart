@@ -186,10 +186,9 @@ String spliceUtf8Range(String text, int start, int end, String replacement) {
 class AstGrepTool extends HarnessTool {
   /// Creates an [AstGrepTool].
   AstGrepTool({
-    required TreeSitterParser parser,
-    required String workingDirectory,
-  }) : _parser = parser,
-       _workingDirectory = workingDirectory;
+    required this._parser,
+    required this._workingDirectory,
+  });
 
   final TreeSitterParser _parser;
   final String _workingDirectory;
@@ -297,12 +296,10 @@ class AstGrepTool extends HarnessTool {
 class AstEditTool extends HarnessTool {
   /// Creates an [AstEditTool].
   AstEditTool({
-    required TreeSitterParser parser,
-    required String workingDirectory,
-    required StagedEditStore store,
-  }) : _parser = parser,
-       _workingDirectory = workingDirectory,
-       _store = store;
+    required this._parser,
+    required this._workingDirectory,
+    required this._store,
+  });
 
   final TreeSitterParser _parser;
   final String _workingDirectory;

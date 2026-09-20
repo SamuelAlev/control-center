@@ -9,9 +9,8 @@ import 'package:dio/dio.dart';
 /// have no `planUsage` there and answer instead at `GET /auth/usage`.
 class CursorUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [CursorUsageStrategy].
-  CursorUsageStrategy({required Dio dio})
-    : _dio = dio,
-      super(providerId: 'cursor', displayName: 'Cursor');
+  CursorUsageStrategy({required this._dio})
+    : super(providerId: 'cursor', displayName: 'Cursor');
 
   final Dio _dio;
 

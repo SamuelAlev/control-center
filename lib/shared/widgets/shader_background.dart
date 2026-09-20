@@ -1,9 +1,9 @@
 import 'dart:ui' as ui;
 
-import 'package:control_center/core/utils/app_log.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/widgets.dart';
+import 'package:control_center/core/utils/app_log.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:flutter/widgets.dart';
 
 /// Asset path for the dark-mode fluted-glass cloudscape shader.
 const String _darkShaderAsset = 'assets/shaders/login_background_dark.frag';
@@ -17,7 +17,7 @@ const String _lightShaderAsset = 'assets/shaders/login_background_light.frag';
 /// ticker that updates the `u_time` uniform every frame.
 ///
 /// When [shaderAsset] is omitted the asset is chosen from the ambient
-/// [Theme.of] brightness — light theme gets the morning-mist cloudscape, dark
+/// `Theme.of` brightness — light theme gets the morning-mist cloudscape, dark
 /// theme gets the ember cloudscape.
 ///
 /// When [animate] is false the shader is rendered once at `u_time = 0` and no
@@ -97,7 +97,9 @@ class _ShaderBackgroundState extends State<ShaderBackground>
     if (widget.shaderAsset != null) {
       return widget.shaderAsset!;
     }
-    final brightness = (context.ccTheme?.brightness == CcBrightness.dark ? Brightness.dark : Brightness.light);
+    final brightness = (context.ccTheme?.brightness == CcBrightness.dark
+        ? Brightness.dark
+        : Brightness.light);
     return brightness == Brightness.light
         ? _lightShaderAsset
         : _darkShaderAsset;

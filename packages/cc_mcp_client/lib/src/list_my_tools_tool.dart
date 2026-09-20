@@ -17,10 +17,8 @@ import 'package:cc_domain/features/mcp/domain/services/mode_tool_guard.dart';
 ///
 /// `read`-tier — inspection only, never prompts.
 class ListMyToolsTool extends McpTool {
-  /// Creates a [ListMyToolsTool] over [catalog], classified by [modeGuard].
-  ListMyToolsTool({required ToolCatalog catalog, ModeToolGuard? modeGuard})
-    : _catalog = catalog,
-      _modeGuard = modeGuard;
+  /// Creates a [ListMyToolsTool] over [_catalog], classified by [_modeGuard].
+  ListMyToolsTool({required this._catalog, this._modeGuard});
 
   final ToolCatalog _catalog;
   final ModeToolGuard? _modeGuard;

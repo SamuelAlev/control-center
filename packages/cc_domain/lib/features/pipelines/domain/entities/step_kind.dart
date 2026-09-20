@@ -7,7 +7,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart'
 ///
 /// Determines how the engine schedules the step relative to its triggers.
 enum StepKind {
-  /// A start node. A template has one per [PipelineTrigger] row; each owns
+  /// A start node. A template has one per `PipelineTrigger` row; each owns
   /// its own outgoing wires. A trigger node does no work itself — it
   /// completes immediately so the engine fans out to *this start's*
   /// listeners. Which start a run enters is selected by the run's

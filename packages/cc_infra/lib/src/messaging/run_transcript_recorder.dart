@@ -18,15 +18,13 @@ import 'package:cc_infra/src/messaging/transcript_folder.dart';
 class RunTranscriptRecorder {
   /// Creates a [RunTranscriptRecorder].
   ///
-  /// [repo] is optional: without it a run still streams live but nothing is
+  /// [_repo] is optional: without it a run still streams live but nothing is
   /// persisted, so reopening it later shows "no activity recorded".
   RunTranscriptRecorder({
-    required ActiveStreamRegistry registry,
-    RunTranscriptRepository? repo,
-    void Function(String message)? onWarn,
-  }) : _registry = registry,
-       _repo = repo,
-       _onWarn = onWarn;
+    required this._registry,
+    this._repo,
+    this._onWarn,
+  });
 
   final ActiveStreamRegistry _registry;
   final RunTranscriptRepository? _repo;
@@ -67,12 +65,10 @@ class RunTranscriptRecording {
     required this.runId,
     required this.workspaceId,
     required this.startedAt,
-    required ActiveStreamRegistry registry,
-    required RunTranscriptRepository? repo,
-    void Function(String message)? onWarn,
-  }) : _registry = registry,
-       _repo = repo,
-       _onWarn = onWarn {
+    required this._registry,
+    required this._repo,
+    this._onWarn,
+  }) {
     _folder = TranscriptFolder(
       onUpdate: (update, {required structural}) {
         _registry.apply(runId, update);

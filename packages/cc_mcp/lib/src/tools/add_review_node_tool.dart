@@ -14,15 +14,14 @@ import 'package:uuid/uuid.dart';
 class AddReviewNodeTool extends McpTool {
   /// Creates a new [AddReviewNodeTool].
   ///
-  /// [runLogs] resolves which conversation the finding is filed into — see
+  /// [_runLogs] resolves which conversation the finding is filed into — see
   /// [run]. Null keeps the pre-thread behavior (the space's standing
   /// conversation), which is what the tool did before reviewers had streams of
   /// their own.
   AddReviewNodeTool({
-    required MessagingRepository repository,
-    AgentRunLogRepository? runLogs,
-  }) : _repository = repository,
-       _runLogs = runLogs;
+    required this._repository,
+    this._runLogs,
+  });
 
   final MessagingRepository _repository;
   final AgentRunLogRepository? _runLogs;

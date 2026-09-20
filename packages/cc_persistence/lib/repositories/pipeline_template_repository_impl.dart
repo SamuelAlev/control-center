@@ -15,8 +15,8 @@ class PipelineTemplateRepositoryImpl implements PipelineTemplateRepository {
   /// databases.
   PipelineTemplateRepositoryImpl(
     this._dbs, {
-    PipelineValidator validator = const PipelineValidator(),
-  }) : _validator = validator;
+    this._validator = const PipelineValidator(),
+  });
 
   final WorkspaceDatabaseManager _dbs;
   final PipelineValidator _validator;

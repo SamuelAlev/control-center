@@ -6,8 +6,7 @@ import 'package:cc_infra/cc_infra.dart';
 /// MCP tool that lists all skill slugs available in a workspace.
 class ListSkillsTool extends McpTool {
   /// Creates a [ListSkillsTool].
-  ListSkillsTool({required WorkspaceFilesystemPort filesystem})
-    : _filesystem = filesystem;
+  ListSkillsTool({required this._filesystem});
 
   final WorkspaceFilesystemPort _filesystem;
 

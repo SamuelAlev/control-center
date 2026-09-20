@@ -29,7 +29,7 @@ import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 
-/// Shared dependencies for a [DispatchSession].
+/// Shared dependencies for a `DispatchSession`.
 class SandboxDispatchDeps {
   /// Creates [SandboxDispatchDeps].
   SandboxDispatchDeps({
@@ -242,7 +242,7 @@ class SandboxDispatchDeps {
   final AgentQuestionPort? agentQuestionPort;
 
   /// The shared PRD 24 action-guardrail service. When set, the built-in harness
-  /// loop resolves each tool's declared [HarnessTool.actionClasses] against the
+  /// loop resolves each tool's declared `HarnessTool.actionClasses` against the
   /// workspace policy before dispatch — the effect net that finally covers the
   /// built-in agent loop (bridged MCP tools call `McpTool.call()` directly, so
   /// the MCP dispatcher's guard never sees them). Null skips the gate; the

@@ -15,8 +15,7 @@ import 'package:cc_harness/tools.dart';
 /// a finding is posted only after a second agent confirmed it.
 class PublishReviewToGithubTool extends McpTool {
   /// Creates a [PublishReviewToGithubTool].
-  PublishReviewToGithubTool({required ReviewPublisherPort service})
-    : _service = service;
+  PublishReviewToGithubTool({required this._service});
 
   final ReviewPublisherPort _service;
 

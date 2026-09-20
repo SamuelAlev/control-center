@@ -9,10 +9,9 @@ class MemoryConsolidationService {
   /// Creates a [MemoryConsolidationService].
   const MemoryConsolidationService({
     required WorkingMemoryItemRepository workingMemory,
-    required RecordMemoryFactUseCase recordFact,
+    required this._recordFact,
     this.maxItemsPerAgent = 50,
-  }) : _working = workingMemory,
-       _recordFact = recordFact;
+  }) : _working = workingMemory;
 
   final WorkingMemoryItemRepository _working;
   final RecordMemoryFactUseCase _recordFact;

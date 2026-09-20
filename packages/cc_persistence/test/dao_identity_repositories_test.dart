@@ -1,10 +1,10 @@
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/entities/user_activity_entry.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/entities/workspace_invite.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';

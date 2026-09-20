@@ -12,8 +12,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 /// runtime liveness.
 class AgentHeartbeatTool extends McpTool {
   /// Creates an [AgentHeartbeatTool].
-  AgentHeartbeatTool({required HeartbeatMonitorService service})
-    : _service = service;
+  AgentHeartbeatTool({required this._service});
 
   final HeartbeatMonitorService _service;
 
@@ -73,8 +72,7 @@ class AgentHeartbeatTool extends McpTool {
 /// Lists the derived runtime health of every agent in a workspace.
 class ListRuntimeHealthTool extends McpTool {
   /// Creates a [ListRuntimeHealthTool].
-  ListRuntimeHealthTool({required AgentRuntimeStateRepository repository})
-    : _repository = repository;
+  ListRuntimeHealthTool({required this._repository});
 
   final AgentRuntimeStateRepository _repository;
 
@@ -125,8 +123,7 @@ class ListRuntimeHealthTool extends McpTool {
 /// queued / capacity counts.
 class ListAgentPresenceTool extends McpTool {
   /// Creates a [ListAgentPresenceTool].
-  ListAgentPresenceTool({required AgentPresenceService service})
-    : _service = service;
+  ListAgentPresenceTool({required this._service});
 
   final AgentPresenceService _service;
 
@@ -178,7 +175,7 @@ class ListAgentPresenceTool extends McpTool {
 /// Returns the agent org chart as a nested reporting tree.
 class GetOrgChartTool extends McpTool {
   /// Creates a [GetOrgChartTool].
-  GetOrgChartTool({required OrgChartService service}) : _service = service;
+  GetOrgChartTool({required this._service});
 
   final OrgChartService _service;
 

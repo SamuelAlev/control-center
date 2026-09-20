@@ -25,21 +25,19 @@ import 'package:cc_natives/cc_natives.dart' show Mp3Encoder;
 /// behavioural cases (the hub is disposed, or the [maxSessions] cap is reached),
 /// which the routes render as 404.
 class SoundscapeHub {
-  /// Creates a hub reading location/weather from [weather].
+  /// Creates a hub reading location/weather from [_weather].
   ///
-  /// [encoderLibraryPaths] are the caller-resolved candidate paths for the
+  /// [_encoderLibraryPaths] are the caller-resolved candidate paths for the
   /// libmp3lame FFI dylib (dev app-support / release bundle); pass
   /// `CcPaths(dataDir).lameFfiDylibCandidatePaths()`. Without them the encoder
   /// only finds a release-bundled dylib, so audio is unavailable in dev.
   SoundscapeHub({
-    required WeatherRepository weather,
+    required this._weather,
     this.sampleRate = 48000,
     this.maxSessions = 4,
-    List<String> encoderLibraryPaths = const [],
-    SoundscapeContextBuilder contextBuilder = const SoundscapeContextBuilder(),
-  }) : _weather = weather,
-       _encoderLibraryPaths = encoderLibraryPaths,
-       _contextBuilder = contextBuilder;
+    this._encoderLibraryPaths = const [],
+    this._contextBuilder = const SoundscapeContextBuilder(),
+  });
 
   /// Render sample rate in Hz.
   final int sampleRate;

@@ -117,6 +117,7 @@
   "rigStartHint": "Starter en engangs-VM som du og agentene dine deler for denne samtalen. Den slettes når den lukkes, og ingenting i den rører datamaskinen din.",
   "rigStartAndroidHint": "Kobler til en Android-emulator som allerede kjører på serveren. Nettverkstilgangen er ikke isolert.",
   "rigStartIosHint": "Oppretter en midlertidig iOS-simulator på serverens Mac. Den slettes når testmiljøet lukkes; nettverkstilgangen er ikke isolert.",
+  "rigTechnicalDetails": "Tekniske detaljer",
   "rigStopMachine": "Stopp maskinen",
   "rigSurfaceUnavailable": "Denne serveren kan ikke kjøre denne typen maskin.",
   "rigTabNeedsConversation": "Åpne en samtale først — en maskin tilhører én, slik at du og agentene dine ser samme skjerm.",

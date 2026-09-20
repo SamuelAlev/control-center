@@ -31,12 +31,10 @@ class ForgeDioFactory {
   /// [bitbucketUsername] supplies the username half of Bitbucket's basic auth
   /// (its account email); it is read lazily for the same reason as the token.
   ForgeDioFactory({
-    required ForgeTokenLookup tokenLookup,
+    required this._tokenLookup,
     String Function()? bitbucketUsername,
-    Duration timeout = const Duration(seconds: 12),
-  }) : _tokenLookup = tokenLookup,
-       _bitbucketUsername = bitbucketUsername ?? (() => ''),
-       _timeout = timeout;
+    this._timeout = const Duration(seconds: 12),
+  }) : _bitbucketUsername = bitbucketUsername ?? (() => '');
 
   final ForgeTokenLookup _tokenLookup;
   final String Function() _bitbucketUsername;

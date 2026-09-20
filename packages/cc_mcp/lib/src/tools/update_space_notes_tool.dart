@@ -14,10 +14,9 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 class UpdateSpaceNotesTool extends McpTool {
   /// Creates an [UpdateSpaceNotesTool].
   UpdateSpaceNotesTool({
-    required SpaceNotesPort notesPort,
+    required this._notesPort,
     required MessagingRepository messagingRepository,
-  }) : _notesPort = notesPort,
-       _messaging = messagingRepository;
+  }) : _messaging = messagingRepository;
 
   final SpaceNotesPort _notesPort;
   final MessagingRepository _messaging;

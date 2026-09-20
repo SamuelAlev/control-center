@@ -6,8 +6,7 @@ import 'package:cc_domain/features/memory/domain/repositories/agent_working_memo
 /// MCP tool that retrieves the agent's private working memory notes.
 class GetMyNotesTool extends McpTool {
   /// Creates a [GetMyNotesTool].
-  GetMyNotesTool({required AgentWorkingMemoryRepository repository})
-    : _repository = repository;
+  GetMyNotesTool({required this._repository});
 
   final AgentWorkingMemoryRepository _repository;
 

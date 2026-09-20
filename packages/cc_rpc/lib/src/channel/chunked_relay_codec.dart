@@ -70,24 +70,21 @@ class RelayTransferProgress {
 class ChunkedRelaySession {
   /// Creates one side of a relay link.
   ///
-  /// [sendPayload] hands a wire payload to the transport (a broker `signal`
-  /// send). [onFrame] receives each fully reassembled, authenticated JSON-RPC
-  /// frame. [onProgress] (optional) observes multi-chunk transfers.
+  /// [_sendPayload] hands a wire payload to the transport (a broker `signal`
+  /// send). [_onFrame] receives each fully reassembled, authenticated JSON-RPC
+  /// frame. [_onProgress] (optional) observes multi-chunk transfers.
   ChunkedRelaySession({
-    required String psk,
-    required void Function(Map<String, dynamic> payload) sendPayload,
-    required void Function(Map<String, dynamic> frame) onFrame,
-    void Function(RelayTransferProgress progress)? onProgress,
+    required this._psk,
+    required this._sendPayload,
+    required this._onFrame,
+    this._onProgress,
     this.maxChunkChars = 16 * 1024,
     this.windowChunks = 64,
     this.creditEvery = 16,
     this.maxAssemblyChars = 128 * 1024 * 1024,
     this.maxConcurrentAssemblies = 8,
     this.sendStallTimeout = const Duration(seconds: 30),
-  }) : _psk = psk,
-       _sendPayload = sendPayload,
-       _onFrame = onFrame,
-       _onProgress = onProgress;
+  });
 
   /// Maximum sealed characters per relayed piece (~16 KB SCTP-friendly).
   final int maxChunkChars;

@@ -6,8 +6,7 @@ import 'package:cc_domain/features/memory/domain/usecases/supersede_fact_use_cas
 /// MCP tool that marks a memory fact as superseded by another fact.
 class SupersedeFactTool extends McpTool {
   /// Creates a [SupersedeFactTool].
-  SupersedeFactTool({required SupersedeFactUseCase useCase})
-    : _useCase = useCase;
+  SupersedeFactTool({required this._useCase});
 
   final SupersedeFactUseCase _useCase;
 

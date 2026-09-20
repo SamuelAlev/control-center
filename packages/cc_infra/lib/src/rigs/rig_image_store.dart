@@ -181,10 +181,9 @@ class RigImageStore {
   /// Creates a [RigImageStore] rooted at [dataDir].
   RigImageStore({
     required String dataDir,
-    List<RigImageSpec> catalog = kRigImageCatalog,
+    this._catalog = kRigImageCatalog,
     HttpClient Function()? httpClientFactory,
   }) : _root = p.join(dataDir, 'rigs', 'images'),
-       _catalog = catalog,
        _httpClientFactory = httpClientFactory ?? HttpClient.new;
 
   final String _root;

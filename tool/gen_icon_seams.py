@@ -27,7 +27,9 @@ MAPPING = {
     'alertCircle': ('warningCircle', 0xe4e2),
     'alertTriangle': ('warning', 0xe4e0),
     'alignJustify': ('textAlignJustify', 0xe482),
+    'androidLogo': ('androidLogo', 0xe008),
     'appWindow': ('appWindow', 0xe5da),
+    'appleLogo': ('appleLogo', 0xe516),
     'archive': ('archive', 0xe00c),
     'archiveRestore': ('archiveBox', 0xe00e),
     'arrowDown': ('arrowDown', 0xe03e),
@@ -301,7 +303,7 @@ MAPPING = {
 }
 
 ROOT_MEMBERS = {
-    'activity', 'alertCircle', 'alertTriangle', 'alignJustify', 'appWindow', 'archive',
+    'activity', 'alertCircle', 'alertTriangle', 'alignJustify', 'androidLogo', 'appleLogo', 'appWindow', 'archive',
     'archiveRestore', 'arrowDown', 'arrowLeft', 'arrowRight', 'arrowUp', 'arrowUpRight',
     'atSign', 'audioLines', 'audioWaveform', 'award', 'ban', 'barChart2',
     'bell', 'bellOff', 'bold', 'bookMarked', 'bookmark', 'bookmarkCheck',

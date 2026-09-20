@@ -9,8 +9,7 @@ import 'package:uuid/uuid.dart';
 /// memory.
 class RecordObservationTool extends McpTool {
   /// Creates a [RecordObservationTool].
-  RecordObservationTool({required AgentWorkingMemoryRepository repository})
-    : _repository = repository;
+  RecordObservationTool({required this._repository});
 
   final AgentWorkingMemoryRepository _repository;
 

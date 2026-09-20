@@ -12,8 +12,8 @@ import 'package:control_center/features/pipelines/providers/pipeline_providers.d
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/graph_node_card.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Renders a [PipelineDefinition] as a pannable, centered node graph. When

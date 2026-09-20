@@ -30,14 +30,11 @@ import 'package:cc_server_core/src/skill_quarantine_guard.dart';
 class SkillReVerifyService {
   /// Creates a [SkillReVerifyService].
   SkillReVerifyService({
-    required WorkspaceRepository workspaces,
-    required SkillBundlePort bundles,
-    SkillQuarantineGuard? quarantineGuard,
-    void Function(String message)? onError,
-  }) : _workspaces = workspaces,
-       _bundles = bundles,
-       _quarantineGuard = quarantineGuard,
-       _onError = onError;
+    required this._workspaces,
+    required this._bundles,
+    this._quarantineGuard,
+    this._onError,
+  });
 
   final WorkspaceRepository _workspaces;
   final SkillBundlePort _bundles;

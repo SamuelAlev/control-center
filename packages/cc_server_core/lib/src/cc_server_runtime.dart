@@ -1473,11 +1473,11 @@ Future<CcServer> runCcServer({
             : canonicalHash({'command': a.command}),
       );
       unawaited(
-        guardDecisionRepository
-            .append(decision)
-            .catchError(
-              (Object e) => CcHostLog.warning('guard audit append failed: $e'),
-            ),
+        guardDecisionRepository.append(decision).catchError((Object e) {
+          // Block body: `=> log(...)` returns `void` and catchError then
+          // throws "must return a value of the future's type".
+          CcHostLog.warning('guard audit append failed: $e');
+        }),
       );
       // A COPY to the operator's SIEM, when one is configured. Never gates
       // the decision: the durable, verifiable record is the local chain.
@@ -6293,10 +6293,9 @@ Future<CcServer> runCcServer({
                     correlationId: correlationId,
                   ),
                 )
-                .catchError(
-                  (Object e) =>
-                      CcHostLog.warning('guard audit append failed: $e'),
-                ),
+                .catchError((Object e) {
+                  CcHostLog.warning('guard audit append failed: $e');
+                }),
           );
         },
     // The membership chokepoint: every workspace-scoped op resolves the
@@ -7770,13 +7769,15 @@ Future<CcServer> runCcServer({
       await rigService.start();
     } on Object catch (e, st) {
       // A host with no hypervisor is the common case, not an error: rigs are
-      // simply unavailable and every surface says so. One INFO line, and the
-      // stack trace only for the failures that are NOT that case — a full
-      // trace at warning on every boot of every hypervisor-less host is how a
-      // log stops being read.
-      CcHostLog.info('cc_server: enclosures unavailable ($e)');
-      if (e is! RigLaunchException) {
-        CcHostLog.warning('cc_server: enclosure start trace: $st');
+      // simply unavailable and every surface says so. That stays INFO —
+      // a full trace at warning on every boot of every hypervisor-less host
+      // is how a log stops being read. Anything else must name the failure
+      // at warning: the default `--log-level` hides info, and a stack with
+      // no exception is unreadable.
+      if (e is RigLaunchException) {
+        CcHostLog.info('cc_server: enclosures unavailable ($e)');
+      } else {
+        CcHostLog.warning('cc_server: enclosure start failed: $e\n$st');
       }
     }
   }());

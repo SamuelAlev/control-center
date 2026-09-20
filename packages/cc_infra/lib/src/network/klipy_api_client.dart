@@ -12,11 +12,10 @@ const _kPerPage = 30;
 /// (`CcServerConfig.klipyAppKey`), embedded in the request path as Klipy
 /// expects.
 class KlipyApiClient {
-  /// Creates a [KlipyApiClient] for [appKey], optionally backed by a custom
+  /// Creates a [KlipyApiClient] for [_appKey], optionally backed by a custom
   /// [dio] (defaults to the shared `createDio` with Klipy's base URL).
-  KlipyApiClient({required String appKey, Dio? dio})
-    : _appKey = appKey,
-      _dio =
+  KlipyApiClient({required this._appKey, Dio? dio})
+    : _dio =
           dio ??
           (createDio(baseUrl: _kKlipyBaseUrl)
             ..options.connectTimeout = const Duration(seconds: 5)

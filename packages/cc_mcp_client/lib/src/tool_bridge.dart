@@ -37,11 +37,9 @@ class BridgedMcpTool extends McpTool {
   BridgedMcpTool({
     required this.serverName,
     required this.remoteTool,
-    required RemoteToolInvoker invoker,
-    BridgedTierResolver? tierResolver,
-  }) : _invoker = invoker,
-       _tierResolver = tierResolver,
-       name = bridgedName(serverName, remoteTool.name);
+    required this._invoker,
+    this._tierResolver,
+  }) : name = bridgedName(serverName, remoteTool.name);
 
   final RemoteToolInvoker _invoker;
   final BridgedTierResolver? _tierResolver;

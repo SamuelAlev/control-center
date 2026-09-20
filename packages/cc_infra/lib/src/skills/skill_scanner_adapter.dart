@@ -31,12 +31,10 @@ typedef SkillReviewRunner =
 class SkillScannerAdapter implements SkillScanPort {
   /// Creates a [SkillScannerAdapter].
   SkillScannerAdapter({
-    required SkillScanner scanner,
-    required SkillScanRepository cache,
-    SkillReviewRunner? llmReview,
-  }) : _scanner = scanner,
-       _cache = cache,
-       _llmReview = llmReview;
+    required this._scanner,
+    required this._cache,
+    this._llmReview,
+  });
 
   final SkillScanner _scanner;
   final SkillScanRepository _cache;

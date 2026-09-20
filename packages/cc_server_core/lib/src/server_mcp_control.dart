@@ -61,17 +61,15 @@ abstract interface class McpHostServer {
 /// toggle), the ONLY thing that writes the flag: [start]/[stop] are session
 /// controls, so neither they nor shutdown rewrite the user's choice.
 class ServerMcpControl implements McpServerControl {
-  /// Creates a control bound to [dispatcher], persisting config under [dataDir].
+  /// Creates a control bound to [_dispatcher], persisting config under [dataDir].
   ///
-  /// [companionPort] overrides the companion listener's port — a test seam so
+  /// [_companionPort] overrides the companion listener's port — a test seam so
   /// suites never collide with a running instance on [loopbackPort].
   ServerMcpControl({
-    required McpToolDispatcher dispatcher,
+    required this._dispatcher,
     required String dataDir,
-    int companionPort = loopbackPort,
-  }) : _dispatcher = dispatcher,
-       _companionPort = companionPort,
-       _file = File(p.join(dataDir, 'mcp_config.json'));
+    this._companionPort = loopbackPort,
+  }) : _file = File(p.join(dataDir, 'mcp_config.json'));
 
   /// The loopback port the companion listener binds when one is needed (TLS
   /// in-process, or no main listener). The historic MCP default, so configs

@@ -117,6 +117,7 @@
   "rigStartHint": "이 대화에서 사용자와 에이전트가 공유하는 일회용 VM을 시작합니다. 닫으면 삭제되며, 그 안의 어떤 것도 컴퓨터에 영향을 주지 않습니다.",
   "rigStartAndroidHint": "서버에서 이미 실행 중인 Android 에뮬레이터에 연결합니다. 네트워크 액세스는 격리되지 않습니다.",
   "rigStartIosHint": "서버의 Mac에 일회용 iOS Simulator를 생성합니다. 테스트 환경을 닫으면 삭제되며 네트워크 액세스는 격리되지 않습니다.",
+  "rigTechnicalDetails": "기술 세부 정보",
   "rigStopMachine": "머신 중지",
   "rigSurfaceUnavailable": "이 서버는 이 종류의 머신을 호스팅할 수 없습니다.",
   "rigTabNeedsConversation": "먼저 대화를 여세요 — 머신은 하나의 대화에 속하므로 사용자와 에이전트가 같은 화면을 보게 됩니다.",

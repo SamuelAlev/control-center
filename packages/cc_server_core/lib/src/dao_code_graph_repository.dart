@@ -29,8 +29,7 @@ import 'package:drift/drift.dart';
 /// already carries picks the file before any SQL runs.
 class DaoCodeGraphRepository implements CodeGraphRepository {
   /// Creates a [DaoCodeGraphRepository] over the per-workspace databases.
-  DaoCodeGraphRepository(this._dbs, {EmbeddingPort? embeddingService})
-    : _embeddingService = embeddingService;
+  DaoCodeGraphRepository(this._dbs, {this._embeddingService});
 
   final WorkspaceDatabaseManager _dbs;
   final EmbeddingPort? _embeddingService;

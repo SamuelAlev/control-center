@@ -18,10 +18,9 @@ class ReviewAxisService {
   ReviewAxisService({
     required ApiContractDiffService contractService,
     required VisualDiffService visualService,
-    required ReviewAxisResultRepository axisResults,
+    required this._axisResults,
   }) : _contract = contractService,
-       _visual = visualService,
-       _axisResults = axisResults;
+       _visual = visualService;
 
   final ApiContractDiffService _contract;
   final VisualDiffService _visual;

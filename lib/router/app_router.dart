@@ -97,8 +97,8 @@ bool get _platformWantsNoTransition {
 
 /// A go_router [Page] that adapts transitions to the platform.
 ///
-/// On web/desktop it behaves like [NoTransitionPage] (instant). On iOS/Android
-/// it builds a [MaterialPageRoute], whose transitions come from the theme's
+/// On web/desktop it behaves like `NoTransitionPage` (instant). On iOS/Android
+/// it builds a `MaterialPageRoute`, whose transitions come from the theme's
 /// `appPageTransitionsTheme` (Cupertino swipe on iOS, zoom on Android). Routes
 /// are built with [buildPage] so call sites stay platform-agnostic.
 class AdaptivePage<T> extends Page<T> {
@@ -134,7 +134,7 @@ class AdaptivePage<T> extends Page<T> {
   }
 }
 
-/// A page-based [PageRoute] mirroring [MaterialPageRoute] (theme-driven
+/// A page-based `PageRoute` mirroring `MaterialPageRoute` (theme-driven
 /// transitions: Cupertino swipe on iOS, zoom on Android) but reading its content
 /// from the owning [AdaptivePage] via `settings`, so reused-key pages update in
 /// place. See [AdaptivePage.createRoute].

@@ -460,11 +460,10 @@ class GuestReverseTunnel {
   /// Creates a [GuestReverseTunnel].
   GuestReverseTunnel({
     required this.guestPort,
-    required GuestChannelStart startChannel,
-    required Future<Socket?> Function() dialTarget,
+    required this._startChannel,
+    required this._dialTarget,
     this.slots = 2,
-  }) : _startChannel = startChannel,
-       _dialTarget = dialTarget;
+  });
 
   /// The guest loopback port to listen on.
   final int guestPort;
@@ -632,9 +631,8 @@ String? hostHeaderOf(List<int> head) {
 /// dev server. Nothing here terminates TLS — this is a dev convenience for
 /// plain HTTP, which is what dev servers speak.
 class RigDomainRouter {
-  /// Creates a [RigDomainRouter]. [muxPortOf] resolves a rig's mux forward.
-  RigDomainRouter({required int? Function(String rigId) muxPortOf})
-    : _muxPortOf = muxPortOf;
+  /// Creates a [RigDomainRouter]. [_muxPortOf] resolves a rig's mux forward.
+  RigDomainRouter({required this._muxPortOf});
 
   final int? Function(String rigId) _muxPortOf;
   final Map<String, ({String rigId, int guestPort})> _routes = {};

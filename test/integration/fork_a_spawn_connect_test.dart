@@ -6,11 +6,12 @@ import 'dart:io';
 
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
+import 'package:cc_infra/src/process/cc_server_process.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
-import 'package:cc_infra/src/process/cc_server_process.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import '../helpers/seed_databases.dart';
 import '../helpers/stage_server_natives.dart';
 

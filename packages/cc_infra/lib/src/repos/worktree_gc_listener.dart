@@ -28,16 +28,12 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 class WorktreeGcListener {
   /// Creates a [WorktreeGcListener].
   WorktreeGcListener({
-    required DomainEventBus eventBus,
-    required RepoWorkspaceProvisionerPort provisioner,
-    required ReviewSpaceRepository reviewSpaces,
-    required PrWorktreePort prWorktrees,
-    ConversationRepository? conversations,
-  }) : _eventBus = eventBus,
-       _provisioner = provisioner,
-       _reviewSpaces = reviewSpaces,
-       _prWorktrees = prWorktrees,
-       _conversations = conversations;
+    required this._eventBus,
+    required this._provisioner,
+    required this._reviewSpaces,
+    required this._prWorktrees,
+    this._conversations,
+  });
 
   final DomainEventBus _eventBus;
   final RepoWorkspaceProvisionerPort _provisioner;

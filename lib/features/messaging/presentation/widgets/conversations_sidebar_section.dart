@@ -165,7 +165,7 @@ class ConversationsSidebarSection extends ConsumerWidget {
             )),
           ),
         );
-    final onPress = () => _selectAndNavigate(context, ref, space.id);
+    void onPress() => _selectAndNavigate(context, ref, space.id);
     final row = SpaceSidebarItem(
       space: space,
       selected: selected,

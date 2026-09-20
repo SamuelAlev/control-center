@@ -57,13 +57,11 @@ class GuidedGoalStep {
 class GuidedGoalService {
   /// Creates a [GuidedGoalService].
   GuidedGoalService({
-    required AdapterOneShotRunner runner,
-    required WorkspaceSettingsRepository settings,
+    required this._runner,
+    required this._settings,
     this.maxTurns = 6,
-    Duration timeout = const Duration(minutes: 2),
-  }) : _runner = runner,
-       _settings = settings,
-       _timeout = timeout;
+    this._timeout = const Duration(minutes: 2),
+  });
 
   final AdapterOneShotRunner _runner;
   final WorkspaceSettingsRepository _settings;

@@ -82,7 +82,7 @@ class CcIcon extends StatelessWidget {
     // sidebar chip, a 32 px [CcIconButton]). Filling the parent would
     // scale the SVG with the chip instead of matching sibling 16 px
     // glyphs.
-    Widget glyph = SizedBox(
+    final Widget glyph = SizedBox(
       width: layoutSize,
       height: layoutSize,
       child: Center(

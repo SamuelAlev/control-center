@@ -8,8 +8,10 @@ library;
 import 'dart:async';
 
 import 'package:cc_data/cc_data.dart' show RigView;
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
+import 'package:control_center/features/rigs/presentation/rig_boot_mark.dart';
 import 'package:control_center/features/rigs/presentation/rig_labels.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -161,10 +163,22 @@ class RigHeader extends StatelessWidget {
   }
 }
 
-/// The booting state: a spinner and the server's own description of the step.
+/// The booting state: the machine's mark and the server's own description
+/// of the step.
 class RigStarting extends StatelessWidget {
   /// Creates a [RigStarting].
-  const RigStarting({super.key, this.detail});
+  const RigStarting({
+    super.key,
+    required this.surface,
+    this.engine,
+    this.detail,
+  });
+
+  /// Which machine is coming up.
+  final String surface;
+
+  /// Which browser, when the surface is one.
+  final RigBrowserEngine? engine;
 
   /// The current boot step, when the server reported one.
   final String? detail;
@@ -177,7 +191,7 @@ class RigStarting extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CcSpinner(),
+          RigBootMark(surface: surface, engine: engine),
           const SizedBox(height: AppSpacing.sm),
           // The boot step verbatim. A two-minute silent wait and a hang look
           // identical from here, so the panel says which stage it is in.

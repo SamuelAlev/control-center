@@ -56,19 +56,25 @@ void main() {
     actionClasses: const ['gitPush'],
   );
 
-  test('append allocates a monotonic seq and links each row to the last',
-      () async {
-    await repo.append(decision('d1'));
-    await repo.append(decision('d2'));
-    await repo.append(decision('d3'));
+  test(
+    'append allocates a monotonic seq and links each row to the last',
+    () async {
+      await repo.append(decision('d1'));
+      await repo.append(decision('d2'));
+      await repo.append(decision('d3'));
 
-    final rows = await repo.pageFrom(ws, 1);
-    expect(rows.map((r) => r.seq), [1, 2, 3]);
-    expect(rows.first.prevHash, isEmpty, reason: 'genesis has no predecessor');
-    expect(rows[1].prevHash, rows[0].entryHash);
-    expect(rows[2].prevHash, rows[1].entryHash);
-    expect(rows.map((r) => r.entryHash).toSet(), hasLength(3));
-  });
+      final rows = await repo.pageFrom(ws, 1);
+      expect(rows.map((r) => r.seq), [1, 2, 3]);
+      expect(
+        rows.first.prevHash,
+        isEmpty,
+        reason: 'genesis has no predecessor',
+      );
+      expect(rows[1].prevHash, rows[0].entryHash);
+      expect(rows[2].prevHash, rows[1].entryHash);
+      expect(rows.map((r) => r.entryHash).toSet(), hasLength(3));
+    },
+  );
 
   test('a fresh chain verifies', () async {
     for (var i = 1; i <= 5; i++) {
@@ -134,19 +140,21 @@ void main() {
     expect(result.intact, isTrue, reason: result.reason);
   });
 
-  test('the chain is per workspace — no cross-workspace interleaving',
-      () async {
-    await repo.append(decision('a1'));
-    await repo.append(decision('b1', workspaceId: 'ws-2'));
-    await repo.append(decision('a2'));
+  test(
+    'the chain is per workspace — no cross-workspace interleaving',
+    () async {
+      await repo.append(decision('a1'));
+      await repo.append(decision('b1', workspaceId: 'ws-2'));
+      await repo.append(decision('a2'));
 
-    final a = await repo.pageFrom(ws, 1);
-    final b = await repo.pageFrom('ws-2', 1);
-    expect(a.map((r) => r.id), ['a1', 'a2']);
-    expect(a.map((r) => r.seq), [1, 2]);
-    expect(b.map((r) => r.id), ['b1']);
-    expect(b.single.seq, 1, reason: 'each workspace has its own chain');
-  });
+      final a = await repo.pageFrom(ws, 1);
+      final b = await repo.pageFrom('ws-2', 1);
+      expect(a.map((r) => r.id), ['a1', 'a2']);
+      expect(a.map((r) => r.seq), [1, 2]);
+      expect(b.map((r) => r.id), ['b1']);
+      expect(b.single.seq, 1, reason: 'each workspace has its own chain');
+    },
+  );
 
   test('a forged checkpoint does not launder a deleted stretch', () async {
     for (var i = 1; i <= 6; i++) {
@@ -160,20 +168,23 @@ void main() {
     await dbs
         .of(ws)
         .customStatement('DELETE FROM guard_decisions WHERE seq <= 3');
-    await dbs.of(ws).customStatement(
-      "INSERT INTO guard_decisions (id, workspace_id, seq, occurred_at, "
-      "actor_type, actor_id, surface, action_name, action_classes, decision, "
-      "prompted, prev_hash, entry_hash, kind) VALUES "
-      "('forged', '$ws', 3, 0, 'system', 'retention', 'audit', "
-      "'audit.truncate', '[]', 'allow', 0, '$survivorPrevHash', "
-      "'not-a-real-hash', 'checkpoint')",
-    );
+    await dbs
+        .of(ws)
+        .customStatement(
+          'INSERT INTO guard_decisions (id, workspace_id, seq, occurred_at, '
+          'actor_type, actor_id, surface, action_name, action_classes, decision, '
+          'prompted, prev_hash, entry_hash, kind) VALUES '
+          "('forged', '$ws', 3, 0, 'system', 'retention', 'audit', "
+          "'audit.truncate', '[]', 'allow', 0, '$survivorPrevHash', "
+          "'not-a-real-hash', 'checkpoint')",
+        );
 
     final result = await repo.verifyChain(ws);
     expect(
       result.intact,
       isFalse,
-      reason: 'a checkpoint whose own hash is unverified would be a way to '
+      reason:
+          'a checkpoint whose own hash is unverified would be a way to '
           'erase history and still pass verification',
     );
     expect(result.brokenAtSeq, 3);

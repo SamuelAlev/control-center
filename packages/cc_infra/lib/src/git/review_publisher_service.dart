@@ -31,13 +31,11 @@ class ReviewPublisherService implements ReviewPublisherPort {
   /// auto-publishes under the server's — one captured client cannot be both.
   ReviewPublisherService({
     required GitHubPrClient Function(String? actingUserId) githubPrClientFor,
-    required MessagingRepository messaging,
-    required ReviewSpaceRepository reviewSpaces,
+    required this._messaging,
+    required this._reviewSpaces,
     BuildGitHubReviewUseCase? buildReview,
     ComputeReviewVerdictUseCase? computeVerdict,
   }) : _githubFor = githubPrClientFor,
-       _messaging = messaging,
-       _reviewSpaces = reviewSpaces,
        _buildReview = buildReview ?? const BuildGitHubReviewUseCase(),
        _computeVerdict = computeVerdict ?? const ComputeReviewVerdictUseCase();
 

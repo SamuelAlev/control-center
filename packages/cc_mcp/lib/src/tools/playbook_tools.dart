@@ -14,10 +14,9 @@ import 'package:uuid/uuid.dart';
 class CreatePlaybookTool extends McpTool {
   /// Creates a [CreatePlaybookTool].
   CreatePlaybookTool({
-    required PlaybookRepository playbooks,
-    required OrchestrationRepository orchestrations,
-  }) : _playbooks = playbooks,
-       _orchestrations = orchestrations;
+    required this._playbooks,
+    required this._orchestrations,
+  });
 
   final PlaybookRepository _playbooks;
   final OrchestrationRepository _orchestrations;
@@ -167,10 +166,9 @@ class RunPlaybookTool extends McpTool {
   /// [ProposeOrchestrationTool] so validation, ticket parking, the proposal
   /// message, revision recording and events stay one code path.
   RunPlaybookTool({
-    required PlaybookRepository playbooks,
-    required ProposeOrchestrationTool propose,
-  }) : _playbooks = playbooks,
-       _propose = propose;
+    required this._playbooks,
+    required this._propose,
+  });
 
   final PlaybookRepository _playbooks;
   final ProposeOrchestrationTool _propose;

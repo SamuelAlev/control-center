@@ -13,14 +13,11 @@ import 'package:cc_domain/features/memory/domain/value_objects/memory_domain_sco
 class ListMemoryDomainsTool extends McpTool {
   /// Creates a [ListMemoryDomainsTool].
   ListMemoryDomainsTool({
-    required MemoryDomainRepository domainRepository,
-    required MemoryFactRepository factRepository,
-    required MemoryPolicyRepository policyRepository,
-    required MemoryRepoScopeResolver repoScope,
-  }) : _domainRepository = domainRepository,
-       _factRepository = factRepository,
-       _policyRepository = policyRepository,
-       _repoScope = repoScope;
+    required this._domainRepository,
+    required this._factRepository,
+    required this._policyRepository,
+    required this._repoScope,
+  });
 
   final MemoryDomainRepository _domainRepository;
   final MemoryFactRepository _factRepository;

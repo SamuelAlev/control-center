@@ -42,16 +42,12 @@ class RecordedSkillAnalysis {
 class SkillAnalysisService implements SkillAnalysisPort {
   /// Creates a [SkillAnalysisService].
   SkillAnalysisService({
-    required SkillBundlePort bundles,
-    required SkillQuarantineGuard quarantineGuard,
-    required SkillAnalysisRunReporter reporter,
-    required PipelineTemplateRepository templates,
-    required PipelineRunRepository runs,
-  }) : _bundles = bundles,
-       _quarantineGuard = quarantineGuard,
-       _reporter = reporter,
-       _templates = templates,
-       _runs = runs;
+    required this._bundles,
+    required this._quarantineGuard,
+    required this._reporter,
+    required this._templates,
+    required this._runs,
+  });
 
   final SkillBundlePort _bundles;
   final SkillQuarantineGuard _quarantineGuard;

@@ -265,6 +265,9 @@ class AppLocalizationsHu extends AppLocalizations {
       'Létrehoz egy ideiglenes iOS-szimulátort a szerver Mac gépén. A tesztkörnyezet bezárásakor törlődik; a hálózati hozzáférés nincs elkülönítve.';
 
   @override
+  String get rigTechnicalDetails => 'Műszaki részletek';
+
+  @override
   String get rigStopMachine => 'Gép leállítása';
 
   @override

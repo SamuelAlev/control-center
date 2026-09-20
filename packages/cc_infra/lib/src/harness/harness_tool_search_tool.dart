@@ -51,12 +51,11 @@ const double _minRelativeScore = 0.25;
 /// admitted, and activation only ever reveals a schema the run was always
 /// allowed to call. Approval and the action guard are untouched.
 class HarnessToolSearchTool extends HarnessTool {
-  /// Creates a search tool over [catalog], reporting residency per [residency].
+  /// Creates a search tool over [catalog], reporting residency per [_residency].
   HarnessToolSearchTool({
     required List<HarnessTool> catalog,
-    required ToolResidencySpec residency,
+    required this._residency,
   }) : _catalog = catalog,
-       _residency = residency,
        _index = ToolIndex.build([
          for (final t in catalog)
            ToolDef(

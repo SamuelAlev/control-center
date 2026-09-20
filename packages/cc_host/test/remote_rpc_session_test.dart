@@ -1185,7 +1185,7 @@ Future<Map<String, dynamic>> _emptyHandler(RepoOpContext ctx) async => {
 /// A controllable [RemoteRpcChannelPort]: tests inject inbound frames and read
 /// outbound frames and can force `isOpen` / a throwing `send`.
 class _FakeChannel implements RemoteRpcChannelPort {
-  _FakeChannel({bool open = true, this.throwOnSend = false}) : _open = open;
+  _FakeChannel({this._open = true, this.throwOnSend = false});
 
   final bool throwOnSend;
   final StreamController<Map<String, dynamic>> _incoming =

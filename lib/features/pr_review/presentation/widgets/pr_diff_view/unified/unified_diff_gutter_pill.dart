@@ -10,6 +10,7 @@ const double kGutterAddPillSize = 20;
 /// cursor reads as an open hand (grab) on hover and a closed hand (grabbing)
 /// while a range drag is in progress.
 class GutterAddPill extends StatelessWidget {
+  /// Creates a [GutterAddPill].
   const GutterAddPill({
     super.key,
     required this.dragging,
@@ -19,10 +20,19 @@ class GutterAddPill extends StatelessWidget {
     required this.onDragEnd,
   });
 
+  /// Whether a range drag is in progress.
   final bool dragging;
+
+  /// Starts a single-line comment at this row.
   final VoidCallback onTap;
+
+  /// Begins a vertical range drag.
   final VoidCallback onDragStart;
+
+  /// Reports pointer Y as the drag moves.
   final ValueChanged<double> onDragUpdate;
+
+  /// Completes the range drag.
   final VoidCallback onDragEnd;
 
   @override
@@ -61,6 +71,7 @@ class GutterAddPill extends StatelessWidget {
 /// coordinates, so overlay affordances cut at the same edges as the sliver's
 /// text.
 class FixedRectClipper extends CustomClipper<Rect> {
+  /// Creates a clipper for [rect].
   const FixedRectClipper(this.rect);
 
   /// The visible area to clip to.

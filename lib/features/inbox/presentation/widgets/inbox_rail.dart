@@ -32,7 +32,7 @@ class InboxRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final sections = PrInboxSection.values;
+    const sections = PrInboxSection.values;
 
     return CcFluidHover(
       itemCount: sections.length,

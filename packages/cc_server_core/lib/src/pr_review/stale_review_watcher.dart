@@ -22,14 +22,11 @@ import 'package:cc_host/cc_host.dart';
 class StaleReviewWatcher {
   /// Creates a [StaleReviewWatcher].
   StaleReviewWatcher({
-    required DomainEventBus eventBus,
-    required ReviewSpaceRepository reviewSpaces,
-    required ReviewRunSnapshotRepository runSnapshots,
+    required this._eventBus,
+    required this._reviewSpaces,
+    required this._runSnapshots,
     DateTime Function()? now,
-  }) : _eventBus = eventBus,
-       _reviewSpaces = reviewSpaces,
-       _runSnapshots = runSnapshots,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final DomainEventBus _eventBus;
   final ReviewSpaceRepository _reviewSpaces;

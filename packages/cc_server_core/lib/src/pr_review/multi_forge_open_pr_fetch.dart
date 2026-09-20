@@ -239,12 +239,9 @@ class MultiForgeMergedHistory {
   /// user both fall to the server chain — the pre-multiplayer behavior, only
   /// right for a surface with no caller.
   const MultiForgeMergedHistory({
-    required ForgePrClient Function(Repo repo, {String? actingUserId})
-    clientFor,
-    required Future<String> Function(ForgeHost forge, {String? userId})
-    viewerLoginFor,
-  }) : _clientFor = clientFor,
-       _viewerLoginFor = viewerLoginFor;
+    required this._clientFor,
+    required this._viewerLoginFor,
+  });
 
   final ForgePrClient Function(Repo repo, {String? actingUserId}) _clientFor;
   final Future<String> Function(ForgeHost forge, {String? userId})

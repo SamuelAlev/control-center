@@ -35,15 +35,11 @@ class SandboxManager {
   /// the caller supplies pre-built proxies, monitor and profiles dir.
   @visibleForTesting
   SandboxManager.test({
-    SandboxHttpProxy? httpProxy,
-    SandboxSocksProxy? socksProxy,
-    SandboxViolationMonitor? violationMonitor,
-    Directory? profilesDir,
-  }) : _httpProxy = httpProxy,
-       _socksProxy = socksProxy,
-       _violationMonitor = violationMonitor,
-       _profilesDir = profilesDir,
-       _initFuture = Future.value();
+    this._httpProxy,
+    this._socksProxy,
+    this._violationMonitor,
+    this._profilesDir,
+  }) : _initFuture = Future.value();
 
   /// Test-injected proxies. In production these stay null: proxies are
   /// per-session (see [wrap]). `SandboxManager.test` keeps them so a test can

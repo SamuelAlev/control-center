@@ -102,9 +102,9 @@ import 'package:drift/drift.dart' as drift;
 class DemoSeeder {
   /// Creates a seeder over the server's repositories.
   DemoSeeder({
-    required GlobalDatabase globalDb,
+    required this._globalDb,
     required WorkspaceDatabaseManager workspaceDbs,
-    required String dataDir,
+    required this._dataDir,
     required UserRepository userRepository,
     required WorkspaceMembershipRepository membershipRepository,
     required WorkspaceRepository workspaceRepository,
@@ -126,14 +126,12 @@ class DemoSeeder {
     required OrchestrationRepository orchestrationRepository,
     required PlanDocumentRepository planDocumentRepository,
     required IsolatedRepoRepository isolatedRepoRepository,
-    Future<void> Function(String workspaceId)? baseSeed,
-    void Function(ConfirmationRequest request)? registerConfirmation,
-    Future<void> Function(String userId)? refreshNewsfeed,
+    this._baseSeed,
+    this._registerConfirmation,
+    this._refreshNewsfeed,
     void Function(String message)? log,
     DateTime Function()? now,
-  }) : _globalDb = globalDb,
-       _dbs = workspaceDbs,
-       _dataDir = dataDir,
+  }) : _dbs = workspaceDbs,
        _users = userRepository,
        _members = membershipRepository,
        _workspaces = workspaceRepository,
@@ -155,9 +153,6 @@ class DemoSeeder {
        _orchestrations = orchestrationRepository,
        _planDocuments = planDocumentRepository,
        _isolatedRepos = isolatedRepoRepository,
-       _baseSeed = baseSeed,
-       _registerConfirmation = registerConfirmation,
-       _refreshNewsfeed = refreshNewsfeed,
        _log = log ?? _noop,
        _now = now ?? DateTime.now;
 

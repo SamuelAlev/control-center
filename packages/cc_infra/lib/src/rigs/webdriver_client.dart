@@ -48,12 +48,11 @@ class WebDriverException extends BrowserEngineException {
 /// Drives one WebKit window over classic W3C WebDriver.
 class WebDriverClient extends ScriptedBrowserEngineClient {
   WebDriverClient._({
-    required HttpClient http,
+    required this._http,
     required this.host,
     required this.port,
-    required String sessionId,
-  }) : _http = http,
-       _sessionId = sessionId;
+    required this._sessionId,
+  });
 
   /// The driver's host.
   final String host;

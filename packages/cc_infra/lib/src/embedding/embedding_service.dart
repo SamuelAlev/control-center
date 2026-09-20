@@ -27,19 +27,17 @@ import 'package:cc_natives/cc_natives.dart';
 /// cc_domain (the port), cc_infra (the model manager) and cc_natives (the
 /// ONNX/FFI runtime), never on Flutter.
 class EmbeddingService implements EmbeddingPort {
-  /// Creates an [EmbeddingService]. The [paths] are typically supplied
+  /// Creates an [EmbeddingService]. The [_paths] are typically supplied
   /// by [EmbeddingModelManager.resolve] once the model is installed.
-  /// [libPath] is the absolute path of the `cc_inference` dylib, forwarded to
+  /// [_libPath] is the absolute path of the `cc_inference` dylib, forwarded to
   /// the worker isolate: it cannot see this isolate's loader state and a
   /// hardened `dart build cli` binary rejects leaf-name dlopens.
   EmbeddingService({
-    required EmbeddingModelInfo modelInfo,
-    EmbeddingModelPaths? paths,
-    String? libPath,
+    required this._modelInfo,
+    this._paths,
+    this._libPath,
     this.idleUnloadAfter = const Duration(minutes: 5),
-  }) : _modelInfo = modelInfo,
-       _libPath = libPath,
-       _paths = paths;
+  });
 
   /// How long the loaded ONNX session survives without an [embed] call before
   /// it is released. Embeds arrive in bursts (backfill, search, message

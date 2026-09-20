@@ -11,8 +11,7 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repo
 /// `rule://` references survive.
 class SupersedePolicyUseCase {
   /// Creates a [SupersedePolicyUseCase].
-  SupersedePolicyUseCase({required MemoryPolicyRepository policyRepository})
-    : _policyRepository = policyRepository;
+  SupersedePolicyUseCase({required this._policyRepository});
 
   final MemoryPolicyRepository _policyRepository;
 

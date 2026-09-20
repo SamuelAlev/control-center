@@ -55,16 +55,12 @@ class RedeemedInvite {
 class WorkspaceInviteService {
   /// Creates a [WorkspaceInviteService].
   WorkspaceInviteService({
-    required WorkspaceInviteRepository invites,
-    required WorkspaceMembershipRepository members,
-    required UserRepository users,
-    DomainEventBus? eventBus,
+    required this._invites,
+    required this._members,
+    required this._users,
+    this._eventBus,
     DateTime Function()? now,
-  }) : _invites = invites,
-       _members = members,
-       _users = users,
-       _eventBus = eventBus,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final WorkspaceInviteRepository _invites;
   final WorkspaceMembershipRepository _members;

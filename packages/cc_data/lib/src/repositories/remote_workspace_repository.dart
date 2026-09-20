@@ -33,7 +33,7 @@ class RemoteWorkspaceRepository {
       _client.subscribe('workspace.watchAll', const {}).map(_workspaces);
 
   /// Creates a workspace on the host. Id minting, owner membership and
-  /// [WorkspaceCreated] seeding run server-side (`workspace.create`).
+  /// `WorkspaceCreated` seeding run server-side (`workspace.create`).
   Future<WorkspaceDto> create({required String name}) async {
     final data = await _client.call('workspace.create', {'name': name});
     final workspace = data['workspace'];

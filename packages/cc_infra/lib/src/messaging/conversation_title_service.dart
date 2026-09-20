@@ -33,18 +33,13 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 class ConversationTitleService {
   /// Creates a [ConversationTitleService].
   ConversationTitleService({
-    required AdapterOneShotRunner runner,
-    required WorkspaceSettingsRepository settings,
-    required ConversationRepository conversationRepo,
-    required MessagingRepository messagingRepo,
-    Duration timeout = const Duration(seconds: 20),
-    int maxTokens = 128,
-  }) : _runner = runner,
-       _settings = settings,
-       _conversationRepo = conversationRepo,
-       _messagingRepo = messagingRepo,
-       _timeout = timeout,
-       _maxTokens = maxTokens;
+    required this._runner,
+    required this._settings,
+    required this._conversationRepo,
+    required this._messagingRepo,
+    this._timeout = const Duration(seconds: 20),
+    this._maxTokens = 128,
+  });
 
   final AdapterOneShotRunner _runner;
   final WorkspaceSettingsRepository _settings;

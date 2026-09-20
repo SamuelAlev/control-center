@@ -36,7 +36,7 @@ import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 ///     (Seatbelt profiles, Linux socket bridges) and closes the stream.
 class NativeSandboxAdapter implements SandboxPort {
   /// Creates a [NativeSandboxAdapter] bound to [_manager].
-  NativeSandboxAdapter({required SandboxManager manager}) : _manager = manager {
+  NativeSandboxAdapter({required this._manager}) {
     _violationSub = _manager.violations.listen(_dispatchViolation);
   }
 

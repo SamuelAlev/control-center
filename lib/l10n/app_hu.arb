@@ -117,6 +117,7 @@
   "rigStartHint": "Eldobható VM-et indít, amelyet Ön és az ügynökei megosztanak ehhez a beszélgetéshez. Bezáráskor megsemmisül, és semmi benne nem érinti a számítógépét.",
   "rigStartAndroidHint": "Csatlakozik egy, a szerveren már futó Android-emulátorhoz. A hálózati hozzáférés nincs elkülönítve.",
   "rigStartIosHint": "Létrehoz egy ideiglenes iOS-szimulátort a szerver Mac gépén. A tesztkörnyezet bezárásakor törlődik; a hálózati hozzáférés nincs elkülönítve.",
+  "rigTechnicalDetails": "Műszaki részletek",
   "rigStopMachine": "Gép leállítása",
   "rigSurfaceUnavailable": "Ez a szerver nem tud ilyen gépet futtatni.",
   "rigTabNeedsConversation": "Először nyisson beszélgetést — a gép egyhez tartozik, így Ön és az ügynökei ugyanazt a képernyőt látják.",

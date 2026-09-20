@@ -76,8 +76,8 @@ class HostFfmpeg {
   /// Creates a [HostFfmpeg] over an already-resolved binary.
   const HostFfmpeg({
     required this.path,
-    HostProcessSpawn spawn = spawnHostProcess,
-  }) : _spawn = spawn;
+    this._spawn = spawnHostProcess,
+  });
 
   /// Absolute path to the `ffmpeg` binary.
   final String path;

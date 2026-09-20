@@ -24,15 +24,12 @@ final _resourceExhausted = RegExp(r'resource.?exhausted', caseSensitive: false);
 class CursorProvider implements LlmProviderPort {
   /// Creates a [CursorProvider].
   CursorProvider({
-    String? accessToken,
-    ProviderTokenResolver? tokenResolver,
+    this._accessToken,
+    this._tokenResolver,
     String? baseUrl,
-    String defaultModel = 'auto',
+    this._defaultModel = 'auto',
     CursorAgentTransport? transport,
-  }) : _accessToken = accessToken,
-       _tokenResolver = tokenResolver,
-       _baseUrl = Uri.parse(baseUrl ?? CursorOAuth.defaultApiBase),
-       _defaultModel = defaultModel,
+  }) : _baseUrl = Uri.parse(baseUrl ?? CursorOAuth.defaultApiBase),
        _transport = transport ?? const Http2CursorAgentTransport();
 
   final String? _accessToken;

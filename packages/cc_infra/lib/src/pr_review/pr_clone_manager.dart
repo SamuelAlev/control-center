@@ -58,24 +58,16 @@ class PrCloneProgress {
 class PrCloneManager {
   /// Creates a [PrCloneManager] for the given repository.
   PrCloneManager({
-    required GitCommandPort git,
-    required WorkspaceFilesystemPort filesystem,
-    required String workspaceId,
-    required String owner,
-    required String repo,
-    required String githubToken,
-    String? localCheckoutPath,
-    RiftClient? rift,
+    required this._git,
+    required this._filesystem,
+    required this._workspaceId,
+    required this._owner,
+    required this._repo,
+    required this._githubToken,
+    this._localCheckoutPath,
+    this._rift,
     bool? missingRiftIsExpected,
-  }) : _git = git,
-       _filesystem = filesystem,
-       _workspaceId = workspaceId,
-       _owner = owner,
-       _repo = repo,
-       _githubToken = githubToken,
-       _localCheckoutPath = localCheckoutPath,
-       _rift = rift,
-       _missingRiftIsExpected = missingRiftIsExpected ?? Platform.isWindows;
+  }) : _missingRiftIsExpected = missingRiftIsExpected ?? Platform.isWindows;
 
   final GitCommandPort _git;
   final WorkspaceFilesystemPort _filesystem;

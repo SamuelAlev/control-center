@@ -47,18 +47,15 @@ import 'package:cc_natives/cc_natives.dart';
 class DefaultCodeIndexer implements CodeIndexer {
   /// Creates a [DefaultCodeIndexer].
   DefaultCodeIndexer({
-    required CodeGraphRepository repository,
-    required GrammarManager grammarManager,
-    Future<String> Function(String queryId)? queryLoader,
+    required this._repository,
+    required this._grammarManager,
+    this._queryLoader,
     SourceFileWalker? walker,
     RepoStateProbe? probe,
     Future<ExtractionResult> Function(ExtractionRequest request)? extractor,
     Future<ExtractionWorker> Function()? extractionWorkerFactory,
-  }) : _repository = repository,
-       _grammarManager = grammarManager,
-       _walker = walker ?? const SourceFileWalker(),
+  }) : _walker = walker ?? const SourceFileWalker(),
        _probe = probe ?? const RepoStateProbe(),
-       _queryLoader = queryLoader,
        _extractOverride = extractor,
        _workerFactory = extractionWorkerFactory ?? ExtractionWorker.spawn;
 

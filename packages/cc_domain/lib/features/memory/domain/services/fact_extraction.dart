@@ -202,7 +202,7 @@ ExtractionResult heuristicExtract(String text) {
 /// host → heuristic).
 class MemoryExtractor {
   /// Creates a [MemoryExtractor] with an optional LLM extractor `port`.
-  const MemoryExtractor({FactExtractorPort? port}) : _port = port;
+  const MemoryExtractor({this._port});
 
   final FactExtractorPort? _port;
 

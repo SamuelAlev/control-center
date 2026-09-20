@@ -56,18 +56,17 @@ import 'package:drift/drift.dart';
 class WorkspaceDatabaseManager {
   /// Creates a manager rooted at [dataDir].
   ///
-  /// [global] supplies the install id stamped into each new workspace database
+  /// [_global] supplies the install id stamped into each new workspace database
   /// and is the registry consulted by [allWorkspaceIds]. [executorFactory] defaults
   /// to [openWorkspaceDatabase] and exists so tests can hand out in-memory
   /// executors (and so a future shared-isolate strategy is a one-line swap).
   WorkspaceDatabaseManager({
     required String dataDir,
-    required GlobalDatabase global,
+    required this._global,
     QueryExecutor Function(String workspaceId)? executorFactory,
     this.onWarn,
     this.onError,
   }) : _dataDir = dataDir,
-       _global = global,
        executorFactory =
            executorFactory ??
            ((workspaceId) => openWorkspaceDatabase(

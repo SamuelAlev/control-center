@@ -23,14 +23,11 @@ class LocalGitPrDiffSource implements PrDiffSource {
   /// Creates a [LocalGitPrDiffSource] used when a PR exceeds a forge cap,
   /// falling back to a local blobless clone for diffs.
   const LocalGitPrDiffSource({
-    required GitCommandPort git,
-    required WorkspaceFilesystemPort filesystem,
-    required String githubToken,
-    RiftClient? rift,
-  }) : _git = git,
-       _filesystem = filesystem,
-       _githubToken = githubToken,
-       _rift = rift;
+    required this._git,
+    required this._filesystem,
+    required this._githubToken,
+    this._rift,
+  });
 
   final GitCommandPort _git;
   final WorkspaceFilesystemPort _filesystem;

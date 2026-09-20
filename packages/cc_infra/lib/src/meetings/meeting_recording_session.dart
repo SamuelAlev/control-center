@@ -76,21 +76,17 @@ enum RecordingChannel {
 class MeetingRecordingService {
   /// Creates a [MeetingRecordingService].
   ///
-  /// [transcriber] is the shared speech recognizer (one worker isolate); every
+  /// [_transcriber] is the shared speech recognizer (one worker isolate); every
   /// session's per-channel [MeetingTranscriptionService] decodes through it, so
   /// decodes serialize across channels and meetings — fine for the low
   /// concurrency a single host sees.
   MeetingRecordingService({
-    required MeetingRepository repository,
-    required SpeechTranscriber transcriber,
-    required DomainEventBus eventBus,
-    required CcPaths paths,
-    void Function()? onIdle,
-  }) : _repository = repository,
-       _transcriber = transcriber,
-       _eventBus = eventBus,
-       _paths = paths,
-       _onIdle = onIdle;
+    required this._repository,
+    required this._transcriber,
+    required this._eventBus,
+    required this._paths,
+    this._onIdle,
+  });
 
   final MeetingRepository _repository;
   final SpeechTranscriber _transcriber;
@@ -289,14 +285,11 @@ class _RecordingSession {
   _RecordingSession({
     required this.workspaceId,
     required this.meetingId,
-    required MeetingRepository repository,
-    required MeetingTranscriptionPort transcription,
-    WavStreamWriter? meWav,
-    WavStreamWriter? themWav,
-  }) : _repository = repository,
-       _transcription = transcription,
-       _meWav = meWav,
-       _themWav = themWav;
+    required this._repository,
+    required this._transcription,
+    this._meWav,
+    this._themWav,
+  });
 
   /// System-channel peak (normalized 0–1) above which the remote is considered
   /// actively playing — fed to [MeetingEchoFilter.noteSystemActivity] so a

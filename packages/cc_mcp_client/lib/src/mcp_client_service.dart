@@ -21,14 +21,13 @@ import 'package:cc_mcp_client/src/transport_factory.dart';
 class McpClientService {
   /// Creates an [McpClientService].
   McpClientService({
-    required McpToolRegistry registry,
+    required this._registry,
     McpOAuthTokenStore? tokenStore,
     BrowserLauncher? launchBrowser,
     McpClientLogSink? log,
     NeedsAuthCallback? onNeedsAuth,
     String? toolCachePath,
-  }) : _registry = registry,
-       _tokenStore = tokenStore ?? InMemoryOAuthTokenStore(),
+  }) : _tokenStore = tokenStore ?? InMemoryOAuthTokenStore(),
        _launchBrowser = launchBrowser {
     final factory = DefaultMcpTransportFactory(
       tokenStore: _tokenStore,

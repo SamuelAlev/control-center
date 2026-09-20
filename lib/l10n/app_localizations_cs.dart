@@ -264,6 +264,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vytvoří dočasný simulátor iOS na serverovém Macu. Po ukončení testovacího prostředí bude odstraněn; přístup k síti není izolovaný.';
 
   @override
+  String get rigTechnicalDetails => 'Technické podrobnosti';
+
+  @override
   String get rigStopMachine => 'Zastavit stroj';
 
   @override

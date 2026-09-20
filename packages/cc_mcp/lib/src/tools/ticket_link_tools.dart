@@ -37,10 +37,9 @@ String _relationName(TicketRelationKind kind) =>
 class TicketRelationTool extends McpTool {
   /// Creates a [TicketRelationTool].
   TicketRelationTool({
-    required TicketLinkService linkService,
-    required TicketWorkflowService workflow,
-  }) : _linkService = linkService,
-       _workflow = workflow;
+    required this._linkService,
+    required this._workflow,
+  });
 
   final TicketLinkService _linkService;
   final TicketWorkflowService _workflow;
@@ -163,10 +162,9 @@ class TicketRelationTool extends McpTool {
 class ListTicketRelationsTool extends McpTool {
   /// Creates a [ListTicketRelationsTool].
   ListTicketRelationsTool({
-    required TicketLinkRepository linkRepository,
-    required TicketRepository ticketRepository,
-  }) : _linkRepository = linkRepository,
-       _ticketRepository = ticketRepository;
+    required this._linkRepository,
+    required this._ticketRepository,
+  });
 
   final TicketLinkRepository _linkRepository;
   final TicketRepository _ticketRepository;

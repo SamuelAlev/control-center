@@ -1,8 +1,8 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/soundscape/providers/soundscape_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// 2D tune pad: drag the puck to shape the running mix.

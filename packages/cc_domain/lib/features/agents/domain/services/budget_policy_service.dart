@@ -175,12 +175,10 @@ class BudgetEnforcementService {
   /// Creates a budget enforcement service with the required repositories
   /// and event bus.
   BudgetEnforcementService({
-    required AgentRunLogRepository agentRunLogRepository,
-    required AgentRepository agentRepository,
-    required DomainEventBus eventBus,
-  }) : _agentRunLogRepository = agentRunLogRepository,
-       _agentRepository = agentRepository,
-       _eventBus = eventBus;
+    required this._agentRunLogRepository,
+    required this._agentRepository,
+    required this._eventBus,
+  });
 
   final AgentRunLogRepository _agentRunLogRepository;
   final AgentRepository _agentRepository;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cc_infra/src/rigs/wda_client.dart';
 import 'package:test/test.dart';
@@ -27,7 +28,12 @@ void main() {
       if (request.uri.path == '/session') {
         value = {'sessionId': 'session-1', 'capabilities': <String, Object?>{}};
       } else if (request.uri.path.endsWith('/wda/screen')) {
-        value = {'width': 390, 'height': 844, 'scale': 3};
+        value = {
+          'screenSize': {'width': 390, 'height': 844},
+          'statusBarSize': {'width': 390, 'height': 47},
+          'displayId': 1,
+          'scale': 3,
+        };
       } else if (request.uri.path.endsWith('/screenshot')) {
         value = base64Encode([1, 2, 3, 4]);
       } else if (request.uri.path.endsWith('/source')) {
@@ -182,5 +188,67 @@ void main() {
   test('relays the native MJPEG response body', () async {
     final bytes = await client.openMjpeg().expand((chunk) => chunk).toList();
     expect(bytes, [0xff, 0xd8, 0xff, 0xd9]);
+  });
+
+  test('never sends Transfer-Encoding (WDA rejects chunked bodies)', () async {
+    final seen = <String>[];
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(server.close);
+    server.listen((socket) async {
+      final builder = BytesBuilder(copy: false);
+      await for (final chunk in socket) {
+        builder.add(chunk);
+        final raw = utf8.decode(builder.toBytes());
+        final headerEnd = raw.indexOf('\r\n\r\n');
+        if (headerEnd < 0) {
+          continue;
+        }
+        final headers = raw.substring(0, headerEnd);
+        seen.add(headers);
+        final chunked = RegExp(
+          r'transfer-encoding:\s*chunked',
+          caseSensitive: false,
+        ).hasMatch(headers);
+        final payload = chunked
+            ? '{"value":{"error":"invalid argument",'
+                  '"message":"Transfer-Encoding is not supported"}}'
+            : headers.startsWith('POST')
+            ? '{"value":{"sessionId":"session-1","capabilities":{}}}'
+            : '{"value":{"ready":true,"message":"WebDriverAgent is ready to go"}}';
+        final payloadBytes = utf8.encode(payload);
+        socket.add(
+          utf8.encode(
+            'HTTP/1.1 ${chunked ? '400 Bad Request' : '200 OK'}\r\n'
+            'Content-Type: application/json\r\n'
+            'Content-Length: ${payloadBytes.length}\r\n'
+            'Connection: close\r\n'
+            '\r\n',
+          ),
+        );
+        socket.add(payloadBytes);
+        await socket.close();
+        break;
+      }
+    });
+
+    final rawClient = WdaClient(
+      baseUri: Uri.parse('http://127.0.0.1:${server.port}/'),
+      mjpegUri: Uri.parse('http://127.0.0.1:${server.port}/'),
+    );
+    await rawClient.status();
+    expect(await rawClient.createSession(), 'session-1');
+    expect(seen, hasLength(2));
+    for (final headers in seen) {
+      expect(
+        headers.toLowerCase(),
+        isNot(contains('transfer-encoding')),
+        reason: headers,
+      );
+    }
+    expect(
+      seen.last.toLowerCase(),
+      contains('content-length:'),
+      reason: seen.last,
+    );
   });
 }

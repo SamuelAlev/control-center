@@ -38,11 +38,11 @@ import 'package:cc_server_core/src/pr_review/pr_cache_codec.dart';
 class DemoPrReviewRepository extends EmptyPrReviewRepository {
   /// Creates a repository over one workspace database and one `owner/repo`.
   DemoPrReviewRepository({
-    required WorkspaceDatabase db,
+    required this._db,
     required this.owner,
     required this.repo,
     required this.visitor,
-  }) : _db = db;
+  });
 
   final WorkspaceDatabase _db;
 

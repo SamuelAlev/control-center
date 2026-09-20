@@ -425,7 +425,11 @@ class _RigPanelState extends ConsumerState<RigPanel> {
             ),
           Expanded(
             child: rig.isStarting
-                ? RigStarting(detail: rig.detail)
+                ? RigStarting(
+                    surface: rig.surface,
+                    engine: rig.browserEngine,
+                    detail: rig.detail,
+                  )
                 : rig.isFailed
                 ? RigFailed(detail: rig.detail)
                 : LayoutBuilder(

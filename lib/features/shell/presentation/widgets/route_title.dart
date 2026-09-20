@@ -1,7 +1,7 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/shell/breadcrumbs/current_route_match_provider.dart';
 import 'package:control_center/features/shell/route_titles/route_title_registry.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

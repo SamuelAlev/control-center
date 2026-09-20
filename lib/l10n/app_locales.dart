@@ -1,6 +1,5 @@
-import 'package:flutter/widgets.dart';
-
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:flutter/widgets.dart';
 
 /// One locale variant the app ships, as a BCP 47 `language-COUNTRY` pair.
 ///
@@ -157,7 +156,7 @@ Locale remapTranslationLocale(Locale locale) {
   return locale;
 }
 
-/// [MaterialApp.localeResolutionCallback] that applies
+/// `MaterialApp.localeResolutionCallback` that applies
 /// [remapTranslationLocale] then Flutter's default matching.
 Locale? resolveAppLocale(Locale? locale, Iterable<Locale> supportedLocales) {
   final requested = locale == null

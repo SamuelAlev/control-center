@@ -59,16 +59,14 @@ class SlackAppCreation {
 class SlackManifestService {
   /// Creates a [SlackManifestService].
   ///
-  /// [readRefreshToken] and [writeRefreshToken] are the persistence seam: the
+  /// [_readRefreshToken] and [_writeRefreshToken] are the persistence seam: the
   /// service never decides *where* the token lives (that is the workspace's
   /// credentials file), only that a rotation is saved immediately.
   SlackManifestService({
-    required SlackApiClient api,
-    required Future<String?> Function() readRefreshToken,
-    required Future<void> Function(String refreshToken) writeRefreshToken,
-  }) : _api = api,
-       _readRefreshToken = readRefreshToken,
-       _writeRefreshToken = writeRefreshToken;
+    required this._api,
+    required this._readRefreshToken,
+    required this._writeRefreshToken,
+  });
 
   final SlackApiClient _api;
   final Future<String?> Function() _readRefreshToken;

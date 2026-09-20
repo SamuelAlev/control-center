@@ -112,18 +112,15 @@ class _BrowserPorts {
 class RigPortsService {
   /// Creates a [RigPortsService].
   ///
-  /// [tlsContext] supplies the dev-domain TLS material, resolved lazily when
+  /// [_tlsContext] supplies the dev-domain TLS material, resolved lazily when
   /// the first browser rig attaches. Null (or a provider returning null)
   /// leaves the HTTPS lane un-armed and dev domains route over plain HTTP.
   RigPortsService({
-    required RigGuestRun runInGuest,
-    required RigGuestStart startInGuest,
-    SecurityContext? Function()? tlsContext,
-    Duration pollInterval = const Duration(seconds: 4),
-  }) : _runInGuest = runInGuest,
-       _startInGuest = startInGuest,
-       _tlsContext = tlsContext,
-       _pollInterval = pollInterval {
+    required this._runInGuest,
+    required this._startInGuest,
+    this._tlsContext,
+    this._pollInterval = const Duration(seconds: 4),
+  }) {
     _router = RigDomainRouter(muxPortOf: (rigId) => _execs[rigId]?.muxHostPort);
   }
 

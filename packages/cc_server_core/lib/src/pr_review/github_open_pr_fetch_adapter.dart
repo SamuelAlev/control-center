@@ -20,14 +20,14 @@ import 'package:cc_server_core/src/pr_review/open_pr_fetch_port.dart';
 class GitHubOpenPrFetchAdapter implements OpenPrFetchPort {
   /// Creates a [GitHubOpenPrFetchAdapter] resolving a client per repo owner.
   ///
-  /// [app] is the server's GitHub App identity. When an installation covering
+  /// [_app] is the server's GitHub App identity. When an installation covering
   /// the repo's owner is suspended, a failed probe is remapped to
   /// [kGitHubInstallationSuspendedCode] so the poller parks immediately with
   /// the resume-or-token notice instead of treating it as a generic 404.
   GitHubOpenPrFetchAdapter(
     this._clientForOwner, {
-    Future<GitHubAppClient?> Function()? app,
-  }) : _app = app;
+    this._app,
+  });
 
   final GitHubApiClient Function(String owner) _clientForOwner;
   final Future<GitHubAppClient?> Function()? _app;

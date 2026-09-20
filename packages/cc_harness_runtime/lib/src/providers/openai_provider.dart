@@ -13,28 +13,18 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 class OpenAiProvider implements LlmProviderPort {
   /// Creates an [OpenAiProvider].
   OpenAiProvider({
-    String? apiKey,
-    ProviderTokenResolver? tokenResolver,
-    String baseUrl = 'https://api.openai.com/v1',
-    String defaultModel = 'gpt-4o',
-    String providerName = 'OpenAI',
-    bool extractThinkTags = false,
-    bool supportsReasoningEffort = false,
-    bool supportsPromptCacheKey = false,
-    Set<String>? servesOnlyModels,
-    Map<String, String> extraHeaders = const {},
+    this._apiKey,
+    this._tokenResolver,
+    this._baseUrl = 'https://api.openai.com/v1',
+    this._defaultModel = 'gpt-4o',
+    this._providerName = 'OpenAI',
+    this._extractThinkTags = false,
+    this._supportsReasoningEffort = false,
+    this._supportsPromptCacheKey = false,
+    this._servesOnlyModels,
+    this._extraHeaders = const {},
     ProviderHttp? http,
-  }) : _apiKey = apiKey,
-       _servesOnlyModels = servesOnlyModels,
-       _tokenResolver = tokenResolver,
-       _baseUrl = baseUrl,
-       _defaultModel = defaultModel,
-       _providerName = providerName,
-       _extractThinkTags = extractThinkTags,
-       _supportsReasoningEffort = supportsReasoningEffort,
-       _supportsPromptCacheKey = supportsPromptCacheKey,
-       _extraHeaders = extraHeaders,
-       _http = http ?? ProviderHttp.shared;
+  }) : _http = http ?? ProviderHttp.shared;
 
   final String? _apiKey;
 

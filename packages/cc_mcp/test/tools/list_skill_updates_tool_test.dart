@@ -23,16 +23,13 @@ void main() {
 
   test('returns upstream updates', () async {
     bundles.updates = const [
-      SkillUpdateCandidate(
-        slug: 'demo',
-        currentRef: 'aaa',
-        latestRef: 'bbb',
-      ),
+      SkillUpdateCandidate(slug: 'demo', currentRef: 'aaa', latestRef: 'bbb'),
     ];
     final result = await tool.run({'workspace_id': 'ws-1'});
     expect(result.isError, isFalse);
     final body = jsonDecode(result.content.first.text) as Map<String, dynamic>;
-    expect((body['updates'] as List).single['slug'], 'demo');
-    expect((body['updates'] as List).single['latest_ref'], 'bbb');
+    final update = (body['updates'] as List).single as Map;
+    expect(update['slug'], 'demo');
+    expect(update['latest_ref'], 'bbb');
   });
 }

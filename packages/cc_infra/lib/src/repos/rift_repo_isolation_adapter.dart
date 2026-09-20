@@ -63,20 +63,17 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
   /// documents why: no MSVC CoW backend). Injectable so both branches are
   /// testable from any host.
   ///
-  /// [wipRescueDir] is where the pre-teardown WIP capture is written — a
+  /// [_wipRescueDir] is where the pre-teardown WIP capture is written — a
   /// directory OUTSIDE any checkout, normally under the server data dir. When
   /// it is null the capture is skipped entirely: see
   /// [_rescueUncommittedWork] for why there is no improvised fallback
   /// location.
   RiftRepoIsolationAdapter({
-    required RiftClient rift,
-    required GitCommandPort git,
+    required this._rift,
+    required this._git,
     bool? missingRiftIsExpected,
-    String? wipRescueDir,
-  }) : _rift = rift,
-       _git = git,
-       _wipRescueDir = wipRescueDir,
-       _missingRiftIsExpected = missingRiftIsExpected ?? Platform.isWindows;
+    this._wipRescueDir,
+  }) : _missingRiftIsExpected = missingRiftIsExpected ?? Platform.isWindows;
 
   final RiftClient _rift;
   final GitCommandPort _git;

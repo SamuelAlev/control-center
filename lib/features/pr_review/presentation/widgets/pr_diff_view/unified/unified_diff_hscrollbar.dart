@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 /// overlay rebuilds after every paint) and reports pans via [onPan]; drag delta
 /// is accumulated from the drag's start offset to avoid stale-value jitter.
 class DiffHScrollbar extends StatefulWidget {
+  /// Creates a [DiffHScrollbar].
   const DiffHScrollbar({
     super.key,
     required this.offset,
@@ -30,10 +31,10 @@ class DiffHScrollbar extends StatefulWidget {
   final ValueChanged<double> onPan;
 
   @override
-  State<DiffHScrollbar> createState() => DiffHScrollbarState();
+  State<DiffHScrollbar> createState() => _DiffHScrollbarState();
 }
 
-class DiffHScrollbarState extends State<DiffHScrollbar> {
+class _DiffHScrollbarState extends State<DiffHScrollbar> {
   double _dragStartOffset = 0;
   double _dragAccum = 0;
   bool _hovered = false;

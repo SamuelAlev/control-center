@@ -28,11 +28,11 @@ final Random _jitter = Random();
 class RetryInterceptor extends Interceptor {
   /// Creates a [RetryInterceptor] with the given [Dio] instance.
   RetryInterceptor({
-    required Dio dio,
+    required this._dio,
     this.maxRetries = 3,
     this.baseDelay = const Duration(seconds: 1),
     this.maxRetryAfter = const Duration(seconds: 10),
-  }) : _dio = dio;
+  });
 
   final Dio _dio;
 

@@ -129,20 +129,23 @@ class WdaClient {
         message: 'WebDriverAgent returned malformed screen geometry.',
       );
     }
-    final width = _positiveInt(value['width']);
-    final height = _positiveInt(value['height']);
+    // WDA's /wda/screen (v16.12.8 handleGetScreen) returns
+    // `{screenSize:{width,height}, statusBarSize:{…}, scale, displayId}`.
+    // Top-level width/height is the W3C /window/size shape, accepted so a
+    // test double and that route parse the same way.
+    final size = _sizeMap(value['screenSize']) ?? _sizeMap(value);
     final scale = switch (value['scale']) {
       final num number => number.toDouble(),
       final String text => double.tryParse(text),
       _ => null,
     };
-    if (width == null || height == null || scale == null || scale <= 0) {
-      throw const WdaException(
+    if (size == null || scale == null || scale <= 0) {
+      throw WdaException(
         code: 'invalid response',
-        message: 'WebDriverAgent returned invalid screen geometry.',
+        message: 'WebDriverAgent returned invalid screen geometry: $value',
       );
     }
-    return WdaScreen(size: RigDisplaySize(width, height), scale: scale);
+    return WdaScreen(size: size, scale: scale);
   }
 
   /// Performs a W3C pointer tap in logical simulator points.
@@ -363,9 +366,17 @@ class WdaClient {
     final client = _httpClientFactory()..connectionTimeout = requestTimeout;
     try {
       final request = await client.openUrl(method, uri).timeout(requestTimeout);
-      request.headers.contentType = ContentType.json;
       if (body != null) {
-        request.add(utf8.encode(jsonEncode(body)));
+        final bytes = utf8.encode(jsonEncode(body));
+        request.headers.contentType = ContentType.json;
+        // An explicit Content-Length, never chunked: without it dart:io
+        // sends Transfer-Encoding: chunked, and WebDriverAgent's
+        // RoutingHTTPServer answers HTTP 400 "Transfer-Encoding is not
+        // supported" — the same trap as GuestAgentClient._postJson.
+        request.contentLength = bytes.length;
+        request.add(bytes);
+      } else {
+        request.contentLength = 0;
       }
       final response = await request.close().timeout(requestTimeout);
       final bytes = await _readBounded(response, responseLimit, uri)
@@ -455,6 +466,18 @@ class WdaClient {
       );
     }
     return decoded.cast<String, dynamic>();
+  }
+
+  static RigDisplaySize? _sizeMap(Object? value) {
+    if (value is! Map) {
+      return null;
+    }
+    final width = _positiveInt(value['width']);
+    final height = _positiveInt(value['height']);
+    if (width == null || height == null) {
+      return null;
+    }
+    return RigDisplaySize(width, height);
   }
 
   static int? _positiveInt(Object? value) {

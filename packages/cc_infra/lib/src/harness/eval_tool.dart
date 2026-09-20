@@ -23,9 +23,9 @@ import 'package:cc_infra/src/eval/eval_kernel.dart';
 class EvalTool extends HarnessTool {
   /// Creates an [EvalTool].
   EvalTool({
-    required EvalKernel Function(KernelLanguage language) kernelFor,
+    required this._kernelFor,
     this.maxImages = 4,
-  }) : _kernelFor = kernelFor;
+  });
 
   final EvalKernel Function(KernelLanguage language) _kernelFor;
 

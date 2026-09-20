@@ -20,11 +20,10 @@ import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.
 class AcpClient {
   /// Creates an [AcpClient].
   ///
-  /// [send] writes one JSON-RPC line to the agent's stdin. [onDone] is
+  /// [_send] writes one JSON-RPC line to the agent's stdin. [onDone] is
   /// invoked once the turn is over (the `session/prompt` result arrived),
   /// allowing the host to tear the process down.
-  AcpClient({required void Function(String line) send, this.onDone})
-    : _send = send;
+  AcpClient({required this._send, this.onDone});
 
   final void Function(String line) _send;
 

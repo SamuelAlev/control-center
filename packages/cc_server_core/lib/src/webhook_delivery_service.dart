@@ -46,11 +46,10 @@ class WebhookDeliveryService {
   WebhookDeliveryService({
     required PipelineTriggerRepository triggerRepository,
     required WebhookDeliveryRepository deliveryRepository,
-    required WebhookPipelineStarter startRun,
+    required this._startRun,
     String Function()? idGenerator,
   }) : _triggers = triggerRepository,
        _deliveries = deliveryRepository,
-       _startRun = startRun,
        _id = idGenerator ?? (() => const Uuid().v4());
 
   final PipelineTriggerRepository _triggers;

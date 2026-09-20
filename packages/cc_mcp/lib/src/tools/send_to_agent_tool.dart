@@ -24,17 +24,15 @@ class SendToAgentTool extends McpTool {
   SendToAgentTool({
     required AgentRepository agents,
     required MessagingRepository messaging,
-    required MessagingPort messagingPort,
-    required PairRateLimiter rateLimiter,
+    required this._messagingPort,
+    required this._rateLimiter,
     DomainEventBus? eventBus,
   }) : _peers = PeerAgentMessaging(
          agents: agents,
          messaging: messaging,
          eventBus: eventBus,
        ),
-       _messaging = messaging,
-       _messagingPort = messagingPort,
-       _rateLimiter = rateLimiter;
+       _messaging = messaging;
 
   final PeerAgentMessaging _peers;
   final MessagingRepository _messaging;

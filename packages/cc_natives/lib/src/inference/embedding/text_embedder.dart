@@ -24,12 +24,10 @@ class TextEmbedder {
   TextEmbedder._({
     required this.dimension,
     required this.maxSequenceLength,
-    required CcInferenceBindings bindings,
-    required Pointer<Void> handle,
-    required WordPieceTokenizer tokenizer,
-  }) : _bindings = bindings,
-       _handle = handle,
-       _tokenizer = tokenizer;
+    required this._bindings,
+    required this._handle,
+    required this._tokenizer,
+  });
 
   /// Output vector size produced by [embed].
   final int dimension;

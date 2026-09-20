@@ -117,6 +117,7 @@
   "rigStartHint": "Khởi động VM dùng một lần mà bạn và các agent chia sẻ cho cuộc hội thoại này. Máy bị hủy khi đóng, và không gì trong đó chạm tới máy tính của bạn.",
   "rigStartAndroidHint": "Kết nối với trình giả lập Android đang chạy sẵn trên máy chủ. Quyền truy cập mạng không được cô lập.",
   "rigStartIosHint": "Tạo một Trình mô phỏng iOS tạm thời trên máy Mac của máy chủ. Trình mô phỏng sẽ bị xóa khi môi trường kiểm thử đóng; quyền truy cập mạng không được cô lập.",
+  "rigTechnicalDetails": "Chi tiết kỹ thuật",
   "rigStopMachine": "Dừng máy",
   "rigSurfaceUnavailable": "Máy chủ này không thể chạy loại máy này.",
   "rigTabNeedsConversation": "Hãy mở cuộc hội thoại trước — máy thuộc về một cuộc hội thoại, nên bạn và các agent nhìn cùng một màn hình.",

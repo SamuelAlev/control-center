@@ -1,13 +1,13 @@
 import 'dart:async';
 
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/provider_bindings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
-import 'package:cc_data/cc_data.dart';
-import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// shared_preferences key for the last-active workspace id. Public so the web

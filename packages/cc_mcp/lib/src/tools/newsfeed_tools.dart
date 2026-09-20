@@ -30,13 +30,12 @@ Map<String, dynamic> _articleJson(RssArticle a) => {
 /// `workspace_id`); agents ride the server owner's feed list, so the owner's
 /// user id is bound at construction.
 class ListFeedsTool extends McpTool {
-  /// Creates a [ListFeedsTool] backed by [repository] (list the owner's RSS
+  /// Creates a [ListFeedsTool] backed by [_repository] (list the owner's RSS
   /// feeds).
   ListFeedsTool({
-    required NewsfeedRepository repository,
-    required String userId,
-  }) : _repository = repository,
-       _userId = userId;
+    required this._repository,
+    required this._userId,
+  });
 
   final NewsfeedRepository _repository;
   final String _userId;
@@ -74,13 +73,12 @@ class ListFeedsTool extends McpTool {
 
 /// MCP tool to list articles, optionally filtered by feed / unread / saved.
 class ListArticlesTool extends McpTool {
-  /// Creates a [ListArticlesTool] backed by [repository] (list the owner's
+  /// Creates a [ListArticlesTool] backed by [_repository] (list the owner's
   /// RSS articles).
   ListArticlesTool({
-    required NewsfeedRepository repository,
-    required String userId,
-  }) : _repository = repository,
-       _userId = userId;
+    required this._repository,
+    required this._userId,
+  });
 
   final NewsfeedRepository _repository;
   final String _userId;
@@ -148,13 +146,12 @@ class ListArticlesTool extends McpTool {
 
 /// MCP tool to fetch a single article by id.
 class GetArticleTool extends McpTool {
-  /// Creates a [GetArticleTool] backed by [repository] (fetch one of the
+  /// Creates a [GetArticleTool] backed by [_repository] (fetch one of the
   /// owner's articles).
   GetArticleTool({
-    required NewsfeedRepository repository,
-    required String userId,
-  }) : _repository = repository,
-       _userId = userId;
+    required this._repository,
+    required this._userId,
+  });
 
   final NewsfeedRepository _repository;
   final String _userId;
@@ -192,13 +189,12 @@ class GetArticleTool extends McpTool {
 
 /// MCP tool to mark an article read or unread.
 class SetArticleReadTool extends McpTool {
-  /// Creates a [SetArticleReadTool] backed by [repository] (mark one of the
+  /// Creates a [SetArticleReadTool] backed by [_repository] (mark one of the
   /// owner's articles read/unread).
   SetArticleReadTool({
-    required NewsfeedRepository repository,
-    required String userId,
-  }) : _repository = repository,
-       _userId = userId;
+    required this._repository,
+    required this._userId,
+  });
 
   final NewsfeedRepository _repository;
   final String _userId;
@@ -241,13 +237,12 @@ class SetArticleReadTool extends McpTool {
 
 /// MCP tool to bookmark or unbookmark an article.
 class SetArticleSavedTool extends McpTool {
-  /// Creates a [SetArticleSavedTool] backed by [repository] (save/unsave one
+  /// Creates a [SetArticleSavedTool] backed by [_repository] (save/unsave one
   /// of the owner's articles).
   SetArticleSavedTool({
-    required NewsfeedRepository repository,
-    required String userId,
-  }) : _repository = repository,
-       _userId = userId;
+    required this._repository,
+    required this._userId,
+  });
 
   final NewsfeedRepository _repository;
   final String _userId;
@@ -290,13 +285,12 @@ class SetArticleSavedTool extends McpTool {
 
 /// MCP tool to re-fetch every enabled feed.
 class RefreshFeedsTool extends McpTool {
-  /// Creates a [RefreshFeedsTool] backed by [repository] (refresh the
+  /// Creates a [RefreshFeedsTool] backed by [_repository] (refresh the
   /// owner's feeds).
   RefreshFeedsTool({
-    required NewsfeedRepository repository,
-    required String userId,
-  }) : _repository = repository,
-       _userId = userId;
+    required this._repository,
+    required this._userId,
+  });
 
   final NewsfeedRepository _repository;
   final String _userId;

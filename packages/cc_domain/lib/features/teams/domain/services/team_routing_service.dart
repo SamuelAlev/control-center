@@ -30,15 +30,14 @@ import 'package:cc_domain/features/ticketing/domain/repositories/ticket_reposito
 class TeamRoutingService {
   /// Creates a [TeamRoutingService].
   TeamRoutingService({
-    required DomainEventBus eventBus,
+    required this._eventBus,
     required TeamRepository teamRepository,
     required AgentRepository agentRepository,
     required TicketRepository ticketRepository,
     required AgentRunLogRepository runLogRepository,
     required TeamActivityRepository activityRepository,
     required TeamLeaderDispatchPort leaderDispatch,
-  }) : _eventBus = eventBus,
-       _teams = teamRepository,
+  }) : _teams = teamRepository,
        _agents = agentRepository,
        _tickets = ticketRepository,
        _runLogs = runLogRepository,

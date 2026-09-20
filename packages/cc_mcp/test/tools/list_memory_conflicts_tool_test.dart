@@ -36,7 +36,8 @@ void main() {
     });
     expect(result.isError, isFalse);
     final body = jsonDecode(result.content.first.text) as Map<String, dynamic>;
-    expect((body['conflicts'] as List).single['id'], 'c1');
+    expect(body['conflicts'] as List, hasLength(1));
+    expect(((body['conflicts'] as List).single as Map)['id'], 'c1');
   });
 }
 

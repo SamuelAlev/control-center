@@ -255,7 +255,7 @@ class PhonesSection extends ConsumerWidget {
                       slotId: rig.slotId,
                     ),
                     logo: Icon(
-                      AppIcons.smartphone,
+                      rigSurfaceIcon(rig.surfaceKind),
                       size: 14,
                       color: t.textSecondary,
                     ),

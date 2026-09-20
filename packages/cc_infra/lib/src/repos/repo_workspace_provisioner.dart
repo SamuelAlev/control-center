@@ -68,25 +68,16 @@ class SpaceCheckoutScope {
 class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
   /// Creates a [RepoWorkspaceProvisioner].
   RepoWorkspaceProvisioner({
-    required WorkspaceFilesystemPort filesystem,
-    required RepoIsolationPort isolation,
-    required IsolatedRepoRepository registry,
-    required WorkspaceRepository workspaces,
-    required Future<String?> Function() githubToken,
-    required Future<String> Function(String workspaceId) branchTemplate,
-    Future<bool> Function(String workspaceId, String spaceId)? spaceExists,
-    Future<SpaceCheckoutScope?> Function(String workspaceId, String spaceId)?
-    spaceCheckoutScope,
-    RepoScriptPort? scripts,
-  }) : _filesystem = filesystem,
-       _isolation = isolation,
-       _registry = registry,
-       _workspaces = workspaces,
-       _githubToken = githubToken,
-       _branchTemplate = branchTemplate,
-       _spaceExists = spaceExists,
-       _spaceCheckoutScope = spaceCheckoutScope,
-       _scripts = scripts;
+    required this._filesystem,
+    required this._isolation,
+    required this._registry,
+    required this._workspaces,
+    required this._githubToken,
+    required this._branchTemplate,
+    this._spaceExists,
+    this._spaceCheckoutScope,
+    this._scripts,
+  });
 
   final WorkspaceFilesystemPort _filesystem;
   final RepoIsolationPort _isolation;

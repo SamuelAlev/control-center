@@ -131,15 +131,12 @@ Future<DemoWiring> buildDemoWiring(DemoRuntimeContext context) async {
 class _DemoWiring implements DemoWiring {
   _DemoWiring({
     required List<DemoRunScript> scripts,
-    required DemoVisitorService visitors,
+    required this._visitors,
     required this.repoStats,
     required this.poller,
-    required DemoMergedHistory mergedHistory,
-    required ForgeProviderRegistry forgeRegistry,
-  }) : _visitors = visitors,
-       _mergedHistory = mergedHistory,
-       _forgeRegistry = forgeRegistry,
-       agentLoop = ScriptedAgentLoop(scripts: scripts);
+    required this._mergedHistory,
+    required this._forgeRegistry,
+  }) : agentLoop = ScriptedAgentLoop(scripts: scripts);
 
   final DemoVisitorService _visitors;
   final DemoMergedHistory _mergedHistory;

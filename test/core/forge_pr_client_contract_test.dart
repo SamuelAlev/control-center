@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Source-level contract: each forge PR client implements [ForgePrClient]
+/// Source-level contract: each forge PR client implements `ForgePrClient`
 /// (QUALITY.md R13). Behavioral HTTP coverage lives next to each client.
 void main() {
   test('github, gitlab and bitbucket forge clients implement ForgePrClient', () {

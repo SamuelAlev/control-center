@@ -15,7 +15,7 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 class AnthropicProvider implements LlmProviderPort {
   /// Creates an [AnthropicProvider].
   ///
-  /// Authenticates with an [apiKey] (`x-api-key`) and nothing else. A Claude
+  /// Authenticates with an [_apiKey] (`x-api-key`) and nothing else. A Claude
   /// Pro/Max subscription is NOT an authentication method here: reaching it
   /// would mean minting a token against Claude Code's OAuth client and sending
   /// the `claude-code-20250219` beta plus Claude Code's system identity — that
@@ -23,16 +23,12 @@ class AnthropicProvider implements LlmProviderPort {
   /// the `claude-code` ADAPTER when you want to run on the subscription; it is
   /// Claude Code, driving its own login.
   AnthropicProvider({
-    String? apiKey,
-    String baseUrl = 'https://api.anthropic.com',
-    String defaultModel = 'claude-opus-4-8',
-    String anthropicVersion = '2023-06-01',
+    this._apiKey,
+    this._baseUrl = 'https://api.anthropic.com',
+    this._defaultModel = 'claude-opus-4-8',
+    this._anthropicVersion = '2023-06-01',
     ProviderHttp? http,
-  }) : _apiKey = apiKey,
-       _baseUrl = baseUrl,
-       _defaultModel = defaultModel,
-       _anthropicVersion = anthropicVersion,
-       _http = http ?? ProviderHttp.shared;
+  }) : _http = http ?? ProviderHttp.shared;
 
   final String? _apiKey;
   final String _baseUrl;

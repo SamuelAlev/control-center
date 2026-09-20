@@ -25,7 +25,7 @@ const Map<String, String> embeddedTreeSitterQueries = {
   'ada': _$ada,
   'asm': _$asm,
   'c': _$c,
-  'c_sharp': _$c_sharp,
+  'c_sharp': _$cSharp,
   'cpp': _$cpp,
   'dart': _$dart,
   'go': _$go,
@@ -106,7 +106,7 @@ const String _$c = r'''
 (call_expression function: (field_expression field: (field_identifier) @call.name))
 ''';
 
-const String _$c_sharp = r'''
+const String _$cSharp = r'''
 ; Tree-sitter query for C# code indexing.
 ;
 ; Same capture-name contract as dart.scm. Patterns are `;;;`-separated so the

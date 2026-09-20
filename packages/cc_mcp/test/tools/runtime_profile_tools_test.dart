@@ -47,8 +47,11 @@ void main() {
     final result = await tool.run({'workspace_id': 'ws-1'});
     expect(result.isError, isFalse);
     final body = jsonDecode(result.content.first.text) as Map<String, dynamic>;
-    expect((body['runtime_profiles'] as List), hasLength(1));
-    expect((body['runtime_profiles'] as List).single['name'], 'claude');
+    expect(body['runtime_profiles'] as List, hasLength(1));
+    expect(
+      ((body['runtime_profiles'] as List).single as Map)['name'],
+      'claude',
+    );
   });
 }
 

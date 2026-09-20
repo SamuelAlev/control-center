@@ -215,13 +215,12 @@ class RemoteConfirmationPort implements ConfirmationPort {
 /// still works) while ADDING the phone as an approver — the desktop user can
 /// approve locally, or step away and approve from the phone.
 class RemoteAwareConfirmationPort implements ConfirmationPort {
-  /// Creates a [RemoteAwareConfirmationPort] over [local], publishing pending
-  /// requests to [registry].
+  /// Creates a [RemoteAwareConfirmationPort] over [_local], publishing pending
+  /// requests to [_registry].
   RemoteAwareConfirmationPort({
-    required ConfirmationPort local,
-    required PendingConfirmationRegistry registry,
-  }) : _local = local,
-       _registry = registry;
+    required this._local,
+    required this._registry,
+  });
 
   final ConfirmationPort _local;
   final PendingConfirmationRegistry _registry;

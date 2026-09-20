@@ -18,24 +18,18 @@ class PlanDocumentApprovalService {
   /// Creates the service. [approveOrchestration] is the
   /// `ApproveOrchestrationUseCase.approve` entry point.
   PlanDocumentApprovalService({
-    required PlanDocumentRepository plans,
-    required OrchestrationRepository orchestrations,
-    required OrchestrationRevisionRepository revisions,
-    required OrchestrationProposalValidator validator,
+    required this._plans,
+    required this._orchestrations,
+    required this._revisions,
+    required this._validator,
     required Future<void> Function({
       required String workspaceId,
       required String orchestrationId,
       Set<String>? approvedNodeKeys,
     })
     approveOrchestration,
-    Future<void> Function(PlanDocument plan, String orchestrationId)?
-    onApproved,
-  }) : _plans = plans,
-       _orchestrations = orchestrations,
-       _revisions = revisions,
-       _validator = validator,
-       _approve = approveOrchestration,
-       _onApproved = onApproved;
+    this._onApproved,
+  }) : _approve = approveOrchestration;
 
   final PlanDocumentRepository _plans;
   final OrchestrationRepository _orchestrations;

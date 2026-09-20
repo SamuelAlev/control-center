@@ -6,8 +6,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 /// List agents tool.
 class ListAgentsTool extends McpTool {
   /// Creates a new [List agents tool].
-  ListAgentsTool({required AgentRepository repository})
-    : _repository = repository;
+  ListAgentsTool({required this._repository});
 
   final AgentRepository _repository;
 

@@ -264,6 +264,9 @@ class AppLocalizationsUk extends AppLocalizations {
       'Створює тимчасовий симулятор iOS на сервері Mac. Він видаляється після закриття тестового середовища; доступ до мережі не ізольовано.';
 
   @override
+  String get rigTechnicalDetails => 'Технічні деталі';
+
+  @override
   String get rigStopMachine => 'Зупинити машину';
 
   @override

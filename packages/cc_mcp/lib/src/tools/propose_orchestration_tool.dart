@@ -24,19 +24,14 @@ import 'package:uuid/uuid.dart';
 class ProposeOrchestrationTool extends McpTool {
   /// Creates a [ProposeOrchestrationTool].
   ProposeOrchestrationTool({
-    required OrchestrationRepository orchestrations,
-    required OrchestrationProposalValidator validator,
-    required TicketRepository tickets,
-    required TicketWorkflowService ticketWorkflow,
-    required MessagingRepository messaging,
-    OrchestrationRevisionRepository? revisions,
+    required this._orchestrations,
+    required this._validator,
+    required this._tickets,
+    required this._ticketWorkflow,
+    required this._messaging,
+    this._revisions,
     this.revisionCooldown = const Duration(minutes: 2),
-  }) : _orchestrations = orchestrations,
-       _validator = validator,
-       _tickets = tickets,
-       _ticketWorkflow = ticketWorkflow,
-       _messaging = messaging,
-       _revisions = revisions;
+  });
 
   final OrchestrationRepository _orchestrations;
   final OrchestrationProposalValidator _validator;

@@ -414,12 +414,12 @@ String? firstUpstreamHeaderValue(HttpHeaders headers, String name) {
 
 /// The upstream's combined `Cache-Control` value. It is list-valued per
 /// RFC 9111 §5.2 and some origins (e.g. news.ycombinator.com) send it as
-/// several header lines — `headers.value()` throws [HttpException] on those,
+/// several header lines — `headers.value()` throws `HttpException` on those,
 /// so comma-join (the spec-defined combination) instead.
 String? upstreamCacheControlValue(HttpHeaders headers) =>
     headers[HttpHeaders.cacheControlHeader]?.join(', ');
 
-/// Result of [LocalRpcServer._openUpstream]: the final response after the
+/// Result of `LocalRpcServer._openUpstream`: the final response after the
 /// SSRF-checked redirect walk, a revalidation `304`, or a failure carrying
 /// the status the proxy should answer with.
 sealed class _UpstreamOpen {

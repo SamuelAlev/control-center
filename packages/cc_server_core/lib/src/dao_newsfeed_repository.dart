@@ -16,11 +16,10 @@ import 'package:uuid/uuid.dart';
 class DaoNewsfeedRepository implements NewsfeedRepository {
   /// Creates a new [Dao newsfeed repository].
   ///
-  /// [siteIcons] resolves a site's favicon from its HTML when a feed
+  /// [_siteIcons] resolves a site's favicon from its HTML when a feed
   /// advertises no space image of its own; when null that fallback is
   /// skipped (tests).
-  DaoNewsfeedRepository(this._dao, this._fetcher, {SiteIconResolver? siteIcons})
-    : _siteIcons = siteIcons;
+  DaoNewsfeedRepository(this._dao, this._fetcher, {this._siteIcons});
 
   final RssDao _dao;
   final RssFetcherService _fetcher;

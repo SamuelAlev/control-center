@@ -2,7 +2,6 @@ import 'package:control_center/core/theme/diff_colors.dart';
 import 'package:control_center/features/pr_review/presentation/utils/word_diff.dart'
     show kAdditionWordBgKey, kDeletionWordBgKey;
 import 'package:control_center/shared/utils/syntax_palette.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// Resolved color palette for the diff viewer — addition/deletion backgrounds,

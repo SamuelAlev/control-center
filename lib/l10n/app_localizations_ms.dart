@@ -261,6 +261,9 @@ class AppLocalizationsMs extends AppLocalizations {
       'Mencipta Simulator iOS sementara pada Mac pelayan. Simulator dipadamkan apabila rig ditutup; akses rangkaian tidak diasingkan.';
 
   @override
+  String get rigTechnicalDetails => 'Butiran teknikal';
+
+  @override
   String get rigStopMachine => 'Hentikan mesin';
 
   @override

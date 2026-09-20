@@ -34,18 +34,14 @@ const String oidcClientSecretKey = 'oidc_client_secret';
 class SsoSettingsService {
   /// Creates an [SsoSettingsService].
   SsoSettingsService({
-    required SsoConnectionRepository connections,
-    required FileSecretsStore secrets,
+    required this._connections,
+    required this._secrets,
     required this.saml,
     required this.oidc,
-    ServerSettingDao? settings,
-    Future<String?> Function()? canonicalOrigin,
+    this._settings,
+    this._canonicalOrigin,
     DateTime Function()? now,
-  }) : _connections = connections,
-       _secrets = secrets,
-       _settings = settings,
-       _canonicalOrigin = canonicalOrigin,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final SsoConnectionRepository _connections;
   final FileSecretsStore _secrets;

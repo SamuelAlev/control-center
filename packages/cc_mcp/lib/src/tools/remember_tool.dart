@@ -17,9 +17,8 @@ class RememberTool extends McpTool {
   /// Creates a [RememberTool].
   RememberTool({
     required WorkingMemoryItemRepository workingMemory,
-    ExtractMemoryUseCase? extractMemory,
-  }) : _working = workingMemory,
-       _extractMemory = extractMemory;
+    this._extractMemory,
+  }) : _working = workingMemory;
 
   final WorkingMemoryItemRepository _working;
   final ExtractMemoryUseCase? _extractMemory;

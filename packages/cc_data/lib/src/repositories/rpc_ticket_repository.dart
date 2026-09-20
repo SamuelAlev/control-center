@@ -21,15 +21,14 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// write/collaborator mutations are intentionally not exposed to a remote
 /// client (the host owns them) and throw [UnsupportedError].
 class RpcTicketRepository implements TicketRepository {
-  /// Creates an [RpcTicketRepository] over [client]. When [sync] is supplied
+  /// Creates an [RpcTicketRepository] over [client]. When [_sync] is supplied
   /// and its `tickets` kill-switch is on, [watchForWorkspace] (and the
   /// `watchByStatus`/`watchByAssignee`/`forAgent`/`childrenOf` methods that
   /// delegate to it) adopt the deterministic sync engine (PRD 16 §6) instead
   /// of re-querying the legacy full-snapshot `tickets.watchForWorkspace`
   /// subscription on every change.
-  RpcTicketRepository(RemoteRpcClient client, {ClientSyncEngine? sync})
-    : _remote = RemoteTicketRepository(client),
-      _sync = sync;
+  RpcTicketRepository(RemoteRpcClient client, {this._sync})
+    : _remote = RemoteTicketRepository(client);
 
   final RemoteTicketRepository _remote;
   final ClientSyncEngine? _sync;

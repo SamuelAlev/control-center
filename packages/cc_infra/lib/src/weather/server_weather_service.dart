@@ -26,12 +26,10 @@ typedef _Location = ({double latitude, double longitude, String? label});
 class ServerWeatherService implements WeatherRepository {
   /// Creates a [ServerWeatherService] and loads any persisted manual locations.
   ServerWeatherService({
-    required WeatherApiClient client,
+    required this._client,
     required String dataDir,
-    Duration refreshInterval = const Duration(minutes: 15),
-  }) : _client = client,
-       _refreshInterval = refreshInterval,
-       _locationsFile = File(p.join(dataDir, 'weather_locations.json')) {
+    this._refreshInterval = const Duration(minutes: 15),
+  }) : _locationsFile = File(p.join(dataDir, 'weather_locations.json')) {
     _loadManualLocations();
   }
 

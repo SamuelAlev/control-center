@@ -7,8 +7,7 @@ import 'package:cc_domain/features/memory/domain/usecases/supersede_policy_use_c
 /// reflects the current state of the workspace.
 class SupersedePolicyTool extends McpTool {
   /// Creates a [SupersedePolicyTool].
-  SupersedePolicyTool({required SupersedePolicyUseCase useCase})
-    : _useCase = useCase;
+  SupersedePolicyTool({required this._useCase});
 
   final SupersedePolicyUseCase _useCase;
 

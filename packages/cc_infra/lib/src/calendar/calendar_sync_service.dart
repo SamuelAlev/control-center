@@ -23,22 +23,15 @@ import 'package:uuid/uuid.dart';
 class CalendarSyncService {
   /// Creates a [CalendarSyncService].
   CalendarSyncService({
-    required GoogleCalendarApiClient apiClient,
-    required CalendarRepository repository,
-    required String? Function() activeWorkspaceId,
-    Duration interval = const Duration(minutes: 2),
-    Duration lookBack = const Duration(days: 60),
-    Duration lookAhead = const Duration(days: 90),
-    Duration reAnchorAfter = const Duration(hours: 24),
+    required this._apiClient,
+    required this._repository,
+    required this._activeWorkspaceId,
+    this._interval = const Duration(minutes: 2),
+    this._lookBack = const Duration(days: 60),
+    this._lookAhead = const Duration(days: 90),
+    this._reAnchorAfter = const Duration(hours: 24),
     Uuid? uuid,
-  }) : _apiClient = apiClient,
-       _repository = repository,
-       _activeWorkspaceId = activeWorkspaceId,
-       _interval = interval,
-       _lookBack = lookBack,
-       _lookAhead = lookAhead,
-       _reAnchorAfter = reAnchorAfter,
-       _uuid = uuid ?? const Uuid();
+  }) : _uuid = uuid ?? const Uuid();
 
   final GoogleCalendarApiClient _apiClient;
   final CalendarRepository _repository;

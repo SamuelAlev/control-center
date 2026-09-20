@@ -56,7 +56,7 @@ class PipelineRunFilterRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final filters = PipelineRunFilter.values;
+    const filters = PipelineRunFilter.values;
 
     return CcFluidHover(
       itemCount: filters.length,

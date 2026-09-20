@@ -257,6 +257,9 @@ class AppLocalizationsTh extends AppLocalizations {
       'สร้าง iOS Simulator ชั่วคราวบน Mac ของเซิร์ฟเวอร์ โดยจะถูกลบเมื่อปิดสภาพแวดล้อมการทดสอบ และการเข้าถึงเครือข่ายไม่ได้แยกออกจากกัน';
 
   @override
+  String get rigTechnicalDetails => 'รายละเอียดทางเทคนิค';
+
+  @override
   String get rigStopMachine => 'หยุดเครื่อง';
 
   @override

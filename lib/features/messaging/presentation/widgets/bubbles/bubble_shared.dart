@@ -27,6 +27,6 @@ DesignSystemTokens resolveTokens(BuildContext context) {
   if (tokens != null) {
     return tokens;
   }
-  final isDark = (context.ccTheme?.isDark ?? false);
+  final isDark = context.ccTheme?.isDark ?? false;
   return isDark ? DesignSystemTokens.dark() : DesignSystemTokens.light();
 }

@@ -100,29 +100,21 @@ class GitHubViewerActivityPollingService {
   /// Creates a [GitHubViewerActivityPollingService].
   GitHubViewerActivityPollingService({
     required GitHubApiClient githubClient,
-    required DomainEventBus eventBus,
+    required this._eventBus,
     required PrChangeSignals changeSignals,
-    required Future<List<String>> Function(String repoFullName)
-    workspacesForRepo,
-    void Function(String workspaceId)? onWorkspaceTouched,
-    Future<bool> Function()? shouldPoll,
-    Future<String> Function()? viewerLogin,
-    ViewerCommentFetchPort? commentFetch,
-    String? forUserId,
+    required this._workspacesForRepo,
+    this._onWorkspaceTouched,
+    this._shouldPoll,
+    this._viewerLogin,
+    this._commentFetch,
+    this._forUserId,
     this.minInterval = const Duration(seconds: 60),
     this.idleInterval = const Duration(minutes: 5),
     this.loadDedupeState,
     this.saveDedupeState,
     DateTime Function()? now,
   }) : _client = githubClient,
-       _shouldPoll = shouldPoll,
-       _eventBus = eventBus,
        _signals = changeSignals,
-       _workspacesForRepo = workspacesForRepo,
-       _onWorkspaceTouched = onWorkspaceTouched,
-       _viewerLogin = viewerLogin,
-       _commentFetch = commentFetch,
-       _forUserId = forUserId,
        _now = now ?? DateTime.now;
 
   final GitHubApiClient _client;

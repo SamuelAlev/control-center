@@ -1,6 +1,6 @@
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
-import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/live_transcript_controller.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_flow.dart';

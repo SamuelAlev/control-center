@@ -25,11 +25,10 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 class AgentRunTaskCompleter {
   /// Creates an [AgentRunTaskCompleter].
   AgentRunTaskCompleter({
-    required DomainEventBus eventBus,
+    required this._eventBus,
     required AgentRunLogRepository runLogRepository,
     required MessagingRepository messagingRepository,
-  }) : _eventBus = eventBus,
-       _runLogs = runLogRepository,
+  }) : _runLogs = runLogRepository,
        _messaging = messagingRepository;
 
   final DomainEventBus _eventBus;

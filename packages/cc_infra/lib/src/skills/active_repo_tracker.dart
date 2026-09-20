@@ -26,14 +26,13 @@ class ActiveRepoTracker {
   /// Creates an [ActiveRepoTracker] for the space whose worktrees live in
   /// [reposDir].
   ///
-  /// [knownRepos], when non-empty, is the set of directory names actually
+  /// [_knownRepos], when non-empty, is the set of directory names actually
   /// checked out. A slug outside it is ignored, so a typo, a stale path or a
   /// `repos/../..` traversal attempt cannot name a repo that does not exist.
   ActiveRepoTracker({
     required String reposDir,
-    Set<String> knownRepos = const {},
-  }) : _reposDir = _normalize(reposDir),
-       _knownRepos = knownRepos;
+    this._knownRepos = const {},
+  }) : _reposDir = _normalize(reposDir);
 
   final String _reposDir;
   final Set<String> _knownRepos;

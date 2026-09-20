@@ -39,10 +39,9 @@ class RpcPrReviewRepository implements PrReviewRepository {
   RpcPrReviewRepository(
     this._client, {
     required this.workspaceId,
-    required String owner,
-    required String repo,
-  }) : _owner = owner,
-       _repo = repo;
+    required this._owner,
+    required this._repo,
+  });
 
   final RemoteRpcClient _client;
 

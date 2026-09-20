@@ -54,9 +54,8 @@ class GoalBudget {
     this.tokenBudget,
     this.timeBudget,
     DateTime? startedAt,
-    int tokensUsed = 0,
-  }) : _startedAt = startedAt ?? DateTime.now(),
-       _tokensUsed = tokensUsed;
+    this._tokensUsed = 0,
+  }) : _startedAt = startedAt ?? DateTime.now();
 
   /// Token ceiling, or null for unbounded.
   final int? tokenBudget;

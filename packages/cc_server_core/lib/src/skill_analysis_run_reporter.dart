@@ -33,11 +33,10 @@ class SkillAnalysisRunReporter {
   /// reporting failures, which are never surfaced to the scan itself.
   SkillAnalysisRunReporter(
     this._runs, {
-    void Function(String message)? onError,
+    this._onError,
     String Function()? idFactory,
     DateTime Function()? now,
-  }) : _onError = onError,
-       _idFactory = idFactory ?? (() => const Uuid().v4()),
+  }) : _idFactory = idFactory ?? (() => const Uuid().v4()),
        _now = now ?? DateTime.now;
 
   final PipelineRunRepository _runs;
@@ -122,18 +121,15 @@ class SkillAnalysisRunReporter {
 class SkillAnalysisRun {
   /// Creates the in-flight run (via [SkillAnalysisRunReporter.begin] only).
   SkillAnalysisRun._({
-    required PipelineRunRepository runs,
-    required void Function(String message)? onError,
-    required String Function() idFactory,
+    required this._runs,
+    required this._onError,
+    required this._idFactory,
     required DateTime Function() now,
     required this.workspaceId,
     required this.slugs,
     required this.triggerEventType,
     this.triggerPayload,
-  }) : _runs = runs,
-       _onError = onError,
-       _idFactory = idFactory,
-       _now = now,
+  }) : _now = now,
        _startedAt = now();
 
   final PipelineRunRepository _runs;

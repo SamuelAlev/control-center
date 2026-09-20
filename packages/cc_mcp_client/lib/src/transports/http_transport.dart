@@ -24,8 +24,7 @@ typedef AuthHeaderProvider = Future<Map<String, String>> Function();
 /// `needs_auth`.
 class StreamableHttpTransport implements McpTransport {
   /// Creates a [StreamableHttpTransport] for [config] (http config).
-  StreamableHttpTransport(this.config, {AuthHeaderProvider? authHeaderProvider})
-    : _authHeaderProvider = authHeaderProvider {
+  StreamableHttpTransport(this.config, {this._authHeaderProvider}) {
     if (!(config.transport == McpTransportKind.http)) {
       throw ArgumentError('StreamableHttpTransport requires an http config');
     }
@@ -235,8 +234,7 @@ class StreamableHttpTransport implements McpTransport {
 /// resolves once the `endpoint` event arrives.
 class SseTransport implements McpTransport {
   /// Creates an [SseTransport] for [config] (sse config).
-  SseTransport(this.config, {AuthHeaderProvider? authHeaderProvider})
-    : _authHeaderProvider = authHeaderProvider {
+  SseTransport(this.config, {this._authHeaderProvider}) {
     if (!(config.transport == McpTransportKind.sse)) {
       throw ArgumentError('SseTransport requires an sse config');
     }

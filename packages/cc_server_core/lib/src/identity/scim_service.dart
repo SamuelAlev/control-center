@@ -30,20 +30,14 @@ import 'package:uuid/uuid.dart';
 class ScimService {
   /// Creates a [ScimService].
   ScimService({
-    required Future<bool> Function(String presented) verifyScimToken,
-    required UserRepository users,
-    required WorkspaceMembershipRepository members,
-    required PairedDeviceDao devices,
-    required FileSecretsStore secrets,
-    DomainEventBus? eventBus,
+    required this._verifyScimToken,
+    required this._users,
+    required this._members,
+    required this._devices,
+    required this._secrets,
+    this._eventBus,
     DateTime Function()? now,
-  }) : _verifyScimToken = verifyScimToken,
-       _users = users,
-       _members = members,
-       _devices = devices,
-       _secrets = secrets,
-       _eventBus = eventBus,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   /// The issuer namespace pinned onto SCIM-provisioned users' subject ids.
   static const scimIssuer = 'scim';

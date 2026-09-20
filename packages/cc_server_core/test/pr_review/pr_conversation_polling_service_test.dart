@@ -267,15 +267,17 @@ void main() {
   });
 
   test('comment sweeps skip a suspended owner', () async {
+    // Matching is the owner half of `owner/name`, lowercased, against the
+    // suspended-login set — not a substring of the repo name.
     gateway.suspendedOwnerLogins = {'suspended'};
     associated = [
       const AssociatedPullRequest(
         workspaceId: 'ws-a',
-        repoFullName: 'SuspensedOrg/suspended-repo',
+        repoFullName: 'suspended/app',
         prNumber: 414,
       ),
     ];
-    gateway.setIssue('SuspensedOrg', 'suspended-repo', 414, [
+    gateway.setIssue('suspended', 'app', 414, [
       _issue(11, '@$_botLogin hello?'),
     ]);
 

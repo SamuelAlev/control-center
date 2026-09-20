@@ -14,17 +14,14 @@ import 'package:cc_infra/src/network/github_api_client.dart';
 class PrPollingService {
   /// Creates a [PrPollingService].
   ///
-  /// [repos] is a list of `(owner, name)` tuples for repos to poll.
-  /// [interval] defaults to 3 minutes.
+  /// [_repos] is a list of `(owner, name)` tuples for repos to poll.
+  /// [_interval] defaults to 3 minutes.
   PrPollingService({
-    required GitHubApiClient githubClient,
-    required DomainEventBus eventBus,
-    required List<({String owner, String name})> repos,
-    Duration interval = const Duration(minutes: 3),
-  }) : _githubClient = githubClient,
-       _eventBus = eventBus,
-       _repos = repos,
-       _interval = interval;
+    required this._githubClient,
+    required this._eventBus,
+    required this._repos,
+    this._interval = const Duration(minutes: 3),
+  });
 
   final GitHubApiClient _githubClient;
   final DomainEventBus _eventBus;

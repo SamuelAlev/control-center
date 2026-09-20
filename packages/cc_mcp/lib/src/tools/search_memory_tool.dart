@@ -16,14 +16,11 @@ import 'package:cc_mcp/src/tools/memory_repo_scope_arg.dart';
 class SearchMemoryTool extends McpTool {
   /// Creates a [SearchMemoryTool].
   SearchMemoryTool({
-    required MemoryFactRepository factRepository,
-    required MemoryPolicyRepository policyRepository,
-    required MemoryRepoScopeResolver repoScope,
-    EmbeddingPort? embeddingService,
-  }) : _factRepository = factRepository,
-       _policyRepository = policyRepository,
-       _repoScope = repoScope,
-       _embeddingService = embeddingService;
+    required this._factRepository,
+    required this._policyRepository,
+    required this._repoScope,
+    this._embeddingService,
+  });
 
   final MemoryFactRepository _factRepository;
   final MemoryPolicyRepository _policyRepository;

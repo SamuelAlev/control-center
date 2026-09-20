@@ -45,16 +45,12 @@ class SideChannelResult {
 class ConversationSideChannelService {
   /// Creates a [ConversationSideChannelService].
   ConversationSideChannelService({
-    required MessagingRepository repo,
-    required AdapterOneShotRunner runner,
-    required WorkspaceSettingsRepository settings,
-    Duration timeout = const Duration(minutes: 2),
-    int maxPromptChars = 60000,
-  }) : _repo = repo,
-       _runner = runner,
-       _settings = settings,
-       _timeout = timeout,
-       _maxPromptChars = maxPromptChars;
+    required this._repo,
+    required this._runner,
+    required this._settings,
+    this._timeout = const Duration(minutes: 2),
+    this._maxPromptChars = 60000,
+  });
 
   final MessagingRepository _repo;
   final AdapterOneShotRunner _runner;

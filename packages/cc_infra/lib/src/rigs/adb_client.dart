@@ -49,8 +49,7 @@ class AdbDeviceGoneException extends AdbException {
 /// mark with everything else looking healthy.
 class AdbScreenSegment {
   /// Creates an [AdbScreenSegment].
-  AdbScreenSegment({required this.bytes, required Future<void> Function() stop})
-    : _stop = stop;
+  AdbScreenSegment({required this.bytes, required this._stop});
 
   /// The raw H.264 Annex-B bytes, ending when the segment does.
   final Stream<List<int>> bytes;
@@ -91,8 +90,8 @@ class AdbClient {
     this.commandTimeout = defaultCommandTimeout,
     this.installTimeout = defaultInstallTimeout,
     this.captureTimeout = defaultCaptureTimeout,
-    HostProcessSpawn spawn = spawnHostProcess,
-  }) : _spawn = spawn;
+    this._spawn = spawnHostProcess,
+  });
 
   /// The device serial, e.g. `emulator-5554`.
   final String serial;

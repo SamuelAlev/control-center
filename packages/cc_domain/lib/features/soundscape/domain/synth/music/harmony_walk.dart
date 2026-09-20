@@ -33,18 +33,17 @@ class HarmonyChange {
 /// register read as roughness). The walk is a pure function of its
 /// [SeededPrng] and the sample clock, so renders stay deterministic.
 class HarmonyWalk {
-  /// Creates a walk over [voices] stepping every [intervalSeconds] at
-  /// [sampleRate]. An [intervalSeconds] `<= 0` freezes the harmony.
+  /// Creates a walk over [voices] stepping every [_intervalSeconds] at
+  /// [sampleRate]. An [_intervalSeconds] `<= 0` freezes the harmony.
   HarmonyWalk(
     double sampleRate,
     SeededPrng prng, {
     required List<HarmonyVoicePlan> voices,
-    required double intervalSeconds,
+    required this._intervalSeconds,
     double jitter = 0.25,
   }) : _sampleRate = sampleRate,
        _prng = prng,
        _plans = List<HarmonyVoicePlan>.unmodifiable(voices),
-       _intervalSeconds = intervalSeconds,
        _jitter = jitter.clamp(0.0, 0.9),
        _currentMidi = <int>[for (final v in voices) v.initialMidi] {
     _untilNext = _intervalSeconds <= 0 ? -1 : _drawIntervalSamples();

@@ -20,14 +20,11 @@ import 'package:uuid/uuid.dart';
 class PrWorktreeService implements PrWorktreePort {
   /// Creates a [PrWorktreeService].
   PrWorktreeService({
-    required WorkspaceFilesystemPort filesystem,
-    required RepoIsolationPort isolation,
-    required IsolatedRepoRepository registry,
-    required Future<String?> Function() githubToken,
-  }) : _filesystem = filesystem,
-       _isolation = isolation,
-       _registry = registry,
-       _githubToken = githubToken;
+    required this._filesystem,
+    required this._isolation,
+    required this._registry,
+    required this._githubToken,
+  });
 
   final WorkspaceFilesystemPort _filesystem;
   final RepoIsolationPort _isolation;

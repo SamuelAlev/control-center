@@ -24,7 +24,11 @@ void main() {
   test('renovate.json is valid and names every custom manager', () {
     expect(managers, isNotEmpty);
     for (final manager in managers) {
-      expect(manager['customType'], 'regex', reason: '${manager['description']}');
+      expect(
+        manager['customType'],
+        'regex',
+        reason: '${manager['description']}',
+      );
       expect(manager['depNameTemplate'], isNotEmpty);
       expect(manager['datasourceTemplate'], isNotEmpty);
       expect(manager['matchStrings'], isNotEmpty);
@@ -104,15 +108,12 @@ void main() {
       'phosphor-icons/core': 'packages/cc_ui/fonts/Phosphor-LICENSE.txt',
       'sharanda/manrope': 'packages/cc_ui/fonts/Manrope-LICENSE.txt',
       'tonsky/FiraCode': 'packages/cc_ui/fonts/FiraCode-LICENSE.txt',
-      'cadsondemak/Sarabun':
-          'packages/cc_ui/fonts/scripts/Sarabun-LICENSE.txt',
+      'cadsondemak/Sarabun': 'packages/cc_ui/fonts/scripts/Sarabun-LICENSE.txt',
       'googlefonts/rubik': 'packages/cc_ui/fonts/scripts/Rubik-LICENSE.txt',
       'flutter_pty': 'packages/cc_natives/native/pty/PROVENANCE.md',
       'flutter/flutter': '.fvmrc',
-      'ubuntu':
-          'packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart',
-      'debian':
-          'packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart',
+      'ubuntu': 'packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart',
+      'debian': 'packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart',
       'dart': 'apps/cc_signaling_server/Dockerfile',
     };
 
@@ -141,8 +142,7 @@ void main() {
         expect(
           File('$root/$path').existsSync(),
           isTrue,
-          reason:
-              '$depName ($description) targets $path, which does not exist',
+          reason: '$depName ($description) targets $path, which does not exist',
         );
       }
     }
@@ -152,10 +152,7 @@ void main() {
     final codeServer = File(
       '$root/packages/cc_infra/lib/src/ide/code_server_service.dart',
     ).readAsStringSync();
-    expect(
-      codeServer,
-      contains("const String codeServerVersion = '"),
-    );
+    expect(codeServer, contains("const String codeServerVersion = '"));
     expect(
       codeServer,
       contains("publisher: 'Dart-Code', name: 'dart-code', version: '"),
@@ -169,7 +166,7 @@ void main() {
     // Renovate bump would download a different zip than the one checksummed.
     expect(wda, contains(r'$kIosAutomationVersion'));
     expect(
-      wda.contains("releases/download/v"),
+      wda.contains('releases/download/v'),
       isFalse,
       reason:
           'WebDriverAgent URLs hardcode a tag instead of interpolating '

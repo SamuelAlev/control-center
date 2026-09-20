@@ -10,15 +10,14 @@ import 'package:cc_infra/cc_infra.dart';
 class CreateSkillTool extends McpTool {
   /// Creates a [CreateSkillTool].
   ///
-  /// [scanner] is the lighter create-time gate (PRD 23 §2): Layers 1–2 only, no
+  /// [_scanner] is the lighter create-time gate (PRD 23 §2): Layers 1–2 only, no
   /// Layer-3 LLM review. It is OPTIONAL only so pre-scanner callers/tests still
   /// compile — when null the gate is skipped. When wired it is fail-closed: a
   /// quarantine verdict (or a scanner error) blocks the write.
   CreateSkillTool({
-    required WorkspaceFilesystemPort filesystem,
-    SkillScanPort? scanner,
-  }) : _filesystem = filesystem,
-       _scanner = scanner;
+    required this._filesystem,
+    this._scanner,
+  });
 
   final WorkspaceFilesystemPort _filesystem;
   final SkillScanPort? _scanner;

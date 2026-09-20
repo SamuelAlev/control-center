@@ -21,12 +21,12 @@ const String kQuestionAnswerKey = 'answer';
 /// Both the MCP server and the UI resolve the same singleton instance from the
 /// provider, so the pending-question map is shared across them.
 class AgentQuestionService implements AgentQuestionPort {
-  /// Creates an [AgentQuestionService]. [timeout] bounds how long the asking
+  /// Creates an [AgentQuestionService]. [_timeout] bounds how long the asking
   /// agent waits for an answer (`Duration.zero` waits indefinitely).
   AgentQuestionService(
     this._messaging, {
-    Duration timeout = const Duration(hours: 1),
-  }) : _timeout = timeout;
+    this._timeout = const Duration(hours: 1),
+  });
 
   final MessagingRepository _messaging;
   final Duration _timeout;

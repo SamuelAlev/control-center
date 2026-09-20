@@ -6,8 +6,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 /// Declares the calling agent's durable goal achieved.
 class CompleteGoalTool extends McpTool {
   /// Creates a [CompleteGoalTool].
-  CompleteGoalTool({required GoalSupervisionPort supervisionPort})
-    : _supervisionPort = supervisionPort;
+  CompleteGoalTool({required this._supervisionPort});
 
   final GoalSupervisionPort _supervisionPort;
 

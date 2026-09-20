@@ -7,8 +7,7 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_conflict_re
 /// in a workspace.
 class ListMemoryConflictsTool extends McpTool {
   /// Creates a [ListMemoryConflictsTool].
-  ListMemoryConflictsTool({required MemoryConflictRepository repository})
-    : _repository = repository;
+  ListMemoryConflictsTool({required this._repository});
 
   final MemoryConflictRepository _repository;
 

@@ -11,7 +11,7 @@ import 'package:cc_harness/tools.dart';
 /// in place (PRD 23 §4).
 class UpdateSkillTool extends McpTool {
   /// Creates an [UpdateSkillTool].
-  UpdateSkillTool({required SkillBundlePort bundles}) : _bundles = bundles;
+  UpdateSkillTool({required this._bundles});
 
   final SkillBundlePort _bundles;
 

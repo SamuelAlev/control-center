@@ -40,17 +40,16 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// compaction — throws [UnsupportedError] or returns an empty fallback.
 class RpcMessagingRepository
     implements MessagingRepository, SpaceTurnRelayPort, MessagingSummariesPort {
-  /// Creates an [RpcMessagingRepository] over [client]. When [sync] is
+  /// Creates an [RpcMessagingRepository] over [client]. When [_sync] is
   /// supplied and its `messaging` kill-switch is on, [watchSpaces] /
   /// [watchSpacesByWorkspace] / [watchParticipants] adopt the deterministic
   /// sync engine (PRD 16 §6) instead of re-querying their legacy
   /// full-snapshot subscriptions on every change. Message-body watches
   /// (`watchMessages`/windows/turns) are unaffected — they keep their own
   /// streaming pipeline.
-  RpcMessagingRepository(RemoteRpcClient client, {ClientSyncEngine? sync})
+  RpcMessagingRepository(RemoteRpcClient client, {this._sync})
     : _remote = RemoteMessagingRepository(client),
-      _client = client,
-      _sync = sync;
+      _client = client;
 
   final RemoteMessagingRepository _remote;
   final RemoteRpcClient _client;

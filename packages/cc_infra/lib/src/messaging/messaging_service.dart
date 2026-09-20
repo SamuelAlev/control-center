@@ -44,51 +44,24 @@ class MessagingService implements MessagingPort {
   /// Creates a [MessagingService].
   MessagingService(
     this._repo, {
-    AgentRepository? agentRepo,
-    ConversationRepository? conversationRepo,
-    required AgentDispatchService agentDispatchService,
+    this._agentRepo,
+    this._conversationRepo,
+    required this._agentDispatchService,
     required this.streamRegistry,
-    required AgentStreamProcessor streamProcessor,
-    EmbeddingPort? embeddingPort,
-    DomainEventBus? eventBus,
-    Future<String?> Function()? resolveDefaultUserId,
-    Future<bool> Function(String workspaceId, String spaceId)? dispatchBlocked,
-    Future<List<MentionableMember>> Function(String workspaceId)? listMembers,
-    Future<String?> Function({
-      required String workspaceId,
-      required String spaceId,
-      required String agentId,
-      required String prompt,
-      String? conversationId,
-      String? requestedByUserId,
-    })?
-    goalCommandHandler,
-    ConversationCompactionService? compactionService,
-    ConversationSideChannelService? sideChannelService,
-    GuidedGoalService? guidedGoalService,
-    ConversationTitleService? titleService,
-    PromptAttachmentResolver? promptAttachments,
-    Future<void> Function({
-      required String workspaceId,
-      required String spaceId,
-    })?
-    cancelProvisioning,
-  }) : _agentRepo = agentRepo,
-       _promptAttachments = promptAttachments,
-       _cancelProvisioning = cancelProvisioning,
-       _conversationRepo = conversationRepo,
-       _agentDispatchService = agentDispatchService,
-       _embeddingPort = embeddingPort,
-       _eventBus = eventBus,
-       _resolveDefaultUserId = resolveDefaultUserId,
-       _dispatchBlocked = dispatchBlocked,
-       _listMembers = listMembers,
-       _goalCommandHandler = goalCommandHandler,
-       _compactionService = compactionService,
-       _sideChannelService = sideChannelService,
-       _guidedGoalService = guidedGoalService,
-       _titleService = titleService,
-       _streamProcessor = streamProcessor;
+    required this._streamProcessor,
+    this._embeddingPort,
+    this._eventBus,
+    this._resolveDefaultUserId,
+    this._dispatchBlocked,
+    this._listMembers,
+    this._goalCommandHandler,
+    this._compactionService,
+    this._sideChannelService,
+    this._guidedGoalService,
+    this._titleService,
+    this._promptAttachments,
+    this._cancelProvisioning,
+  });
 
   final MessagingRepository _repo;
   final AgentRepository? _agentRepo;

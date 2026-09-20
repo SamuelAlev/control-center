@@ -114,7 +114,7 @@ class WorktreeRevertResult {
 class RepoIdeDataService {
   /// Creates a [RepoIdeDataService].
   ///
-  /// [fileSearch] is REQUIRED: the server injects its shared [FffFileSearch] so
+  /// [_fileSearch] is REQUIRED: the server injects its shared [FffFileSearch] so
   /// the Explorer shares fff's per-root scan caches with the harness tools. It
   /// used to default to [DartFileSearch], which quietly turned a missing
   /// `libfff_c` into a slow pure-Dart walk — exactly the degrade the native
@@ -126,15 +126,13 @@ class RepoIdeDataService {
     required RepoRepository repoRepository,
     required WorkspaceRepository workspaceRepository,
     required IsolatedRepoRepository isolatedRepoRepository,
-    required FileSearch fileSearch,
+    required this._fileSearch,
     SessionDiffPort? diff,
-    Future<String?> Function({String? actingUserId})? githubToken,
+    this._githubToken,
   }) : _repos = repoRepository,
        _workspaces = workspaceRepository,
        _isolated = isolatedRepoRepository,
-       _diff = diff ?? const ProcessSessionDiffAdapter(),
-       _fileSearch = fileSearch,
-       _githubToken = githubToken;
+       _diff = diff ?? const ProcessSessionDiffAdapter();
 
   final RepoRepository _repos;
   final WorkspaceRepository _workspaces;

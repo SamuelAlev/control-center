@@ -22,24 +22,21 @@ import 'package:dio/dio.dart';
 /// animating progress and snaps to the new model's status the instant the user
 /// picks a different one.
 class SelectableVoiceModelControl implements SelectableModelControl {
-  /// Creates a control rooted at [paths].
+  /// Creates a control rooted at [_paths].
   ///
   /// [initialId] is the persisted selection to restore on boot (defaults to the
   /// recommended model when null/unknown). [persistSelection] is invoked with
   /// the new id on every [select] so the choice survives a restart (and the
-  /// meeting-recording stack can resolve the selected model first). [onLog]
+  /// meeting-recording stack can resolve the selected model first). [_onLog]
   /// receives the install lifecycle of whichever model is currently selected
   /// (see [ModelLogLevel]).
   SelectableVoiceModelControl({
-    required CcPaths paths,
-    Dio? dio,
+    required this._paths,
+    this._dio,
     String? initialId,
     void Function(String modelId)? persistSelection,
-    void Function(ModelLogLevel level, String message)? onLog,
-  }) : _paths = paths,
-       _dio = dio,
-       _persist = persistSelection,
-       _onLog = onLog,
+    this._onLog,
+  }) : _persist = persistSelection,
        _selected = VoiceModelInfo.byId(initialId) {
     _inner = _buildInner();
     _subscribe();

@@ -6,19 +6,33 @@ sealed class FeedItem {
   const FeedItem();
 }
 
+/// A feed row that renders one [Message].
 class MessageItem extends FeedItem {
+  /// Creates a message row, optionally collapsing a consecutive sender header.
   const MessageItem(this.message, {this.collapseHeader = false});
+
+  /// The message to render.
   final Message message;
+
+  /// Whether to hide the avatar/name because the previous row is the same sender.
   final bool collapseHeader;
 }
 
+/// A feed row that separates messages from different local calendar days.
 class DayItem extends FeedItem {
+  /// Creates a day-separator row for [day].
   const DayItem(this.day);
+
+  /// Local calendar day this separator marks.
   final DateTime day;
 }
 
+/// A feed row marking the unread frontier.
 class UnreadItem extends FeedItem {
+  /// Creates the unread divider, optionally with a remaining [count].
   const UnreadItem({this.count});
+
+  /// Unread count shown on the divider, when known.
   final int? count;
 }
 

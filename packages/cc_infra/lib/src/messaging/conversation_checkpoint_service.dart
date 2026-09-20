@@ -27,10 +27,9 @@ class RevertOutcome {
 class ConversationCheckpointService {
   /// Creates a [ConversationCheckpointService].
   ConversationCheckpointService({
-    required MessagingRepository repo,
-    GitSnapshotPort? git,
-  }) : _repo = repo,
-       _git = git;
+    required this._repo,
+    this._git,
+  });
 
   final MessagingRepository _repo;
   final GitSnapshotPort? _git;

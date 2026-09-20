@@ -4,8 +4,7 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_fact_reposi
 /// Supersedes one fact with another, marking the original as outdated.
 class SupersedeFactUseCase {
   /// Creates a [SupersedeFactUseCase].
-  SupersedeFactUseCase({required MemoryFactRepository factRepository})
-    : _factRepository = factRepository;
+  SupersedeFactUseCase({required this._factRepository});
 
   final MemoryFactRepository _factRepository;
 

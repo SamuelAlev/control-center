@@ -606,6 +606,12 @@ abstract class AppLocalizations {
   /// **'Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.'**
   String get rigStartIosHint;
 
+  /// Disclosure label on a rig start screen that hides a failed boot's stdout/stderr dump.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical details'**
+  String get rigTechnicalDetails;
+
   /// No description provided for @rigStopMachine.
   ///
   /// In en, this message translates to:

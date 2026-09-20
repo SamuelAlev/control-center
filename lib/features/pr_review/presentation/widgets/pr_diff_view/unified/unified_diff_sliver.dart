@@ -314,6 +314,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   double get _effectiveHScroll =>
       _horizontalScrollOffset.clamp(0.0, maxHorizontalScrollExtent);
 
+  /// Applies a pan to the code column's horizontal scroll offset.
   void applyHorizontalPan(double offset) {
     final double clamped = offset.clamp(0.0, maxHorizontalScrollExtent);
     if (clamped == _horizontalScrollOffset) {
@@ -389,6 +390,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
         _config.topInset,
   );
 
+  /// Whether the sticky file header is currently pinned under the tab strip.
   bool get stickyHeaderPinned => _stickyPinned;
 
   Set<int> _lastTokenSet = const {};
@@ -403,6 +405,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// is clipped so it sits flush under the tab strip.
   bool _stickyPinned = false;
 
+  /// Drops the per-line layout cache so the next pass remeasures wrapping.
   void clearLineCache() {
     lineCache.clear();
     _lastTokenSet = const {};

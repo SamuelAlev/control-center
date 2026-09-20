@@ -8,7 +8,7 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// `auth.openai.com`, with a form-encoded token exchange and account identity
 /// decoded from the JWT access token.
 ///
-/// [CodexOAuth] is the same client with extra authorize params and a device
+/// `CodexOAuth` is the same client with extra authorize params and a device
 /// fallback; this class stays the metered OpenAI tile.
 class OpenAiOAuth extends HarnessOAuthProvider {
   /// Creates an [OpenAiOAuth].
@@ -69,7 +69,7 @@ class OpenAiOAuth extends HarnessOAuthProvider {
     return Uri.parse(authorizeUrl).replace(queryParameters: params).toString();
   }
 
-  /// HTTP client used for token exchange (and by [CodexOAuth]'s device poll).
+  /// HTTP client used for token exchange (and by `CodexOAuth`'s device poll).
   ProviderHttp get http => _http;
 
   @override
@@ -130,10 +130,11 @@ class OpenAiOAuth extends HarnessOAuthProvider {
     final idAuth = idClaims['https://api.openai.com/auth'];
     final profile = claims['https://api.openai.com/profile'];
     final idProfile = idClaims['https://api.openai.com/profile'];
-    final accountId = _claimString(auth, 'chatgpt_account_id') ??
+    final accountId =
+        _claimString(auth, 'chatgpt_account_id') ??
         _claimString(idAuth, 'chatgpt_account_id');
-    final email = _claimString(profile, 'email') ??
-        _claimString(idProfile, 'email');
+    final email =
+        _claimString(profile, 'email') ?? _claimString(idProfile, 'email');
     return ProviderCredential(
       providerId: providerId,
       method: HarnessAuthMethod.oauth,
@@ -142,8 +143,7 @@ class OpenAiOAuth extends HarnessOAuthProvider {
       expiresAt: DateTime.now().add(Duration(seconds: expiresIn - 300)),
       email: email ?? previous?.email,
       accountId: accountId ?? previous?.accountId,
-      accountLabel:
-          email ?? previous?.accountLabel ?? fallbackAccountLabel,
+      accountLabel: email ?? previous?.accountLabel ?? fallbackAccountLabel,
     );
   }
 

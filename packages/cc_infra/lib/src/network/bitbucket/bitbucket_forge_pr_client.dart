@@ -47,12 +47,12 @@ import 'package:dio/dio.dart';
 /// [owner] is the Bitbucket **workspace slug** — the first path segment of a
 /// repository URL, the same position GitHub's owner occupies.
 class BitbucketForgePrClient implements ForgePrClient {
-  /// Creates a [BitbucketForgePrClient] for `owner/repo` over [client].
+  /// Creates a [BitbucketForgePrClient] for `owner/repo` over [_client].
   BitbucketForgePrClient({
-    required BitbucketApiClient client,
+    required this._client,
     required this.owner,
     required this.repo,
-  }) : _client = client {
+  }) {
     if (owner.isEmpty || repo.isEmpty) {
       throw ArgumentError('owner and repo must not be empty');
     }

@@ -28,11 +28,10 @@ class SandboxExecGrantService {
   SandboxExecGrantService({
     required SandboxExecGrantRepository repository,
     ConfirmationPort? confirmationPort,
-    required String Function() idFactory,
+    required this._idFactory,
     DateTime Function()? clock,
   }) : _repo = repository,
        _confirm = confirmationPort,
-       _idFactory = idFactory,
        _clock = clock ?? DateTime.now;
 
   final SandboxExecGrantRepository _repo;

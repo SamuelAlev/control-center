@@ -31,11 +31,10 @@ class ReviewCohortService {
   /// Creates a [ReviewCohortService] over the per-workspace databases.
   ReviewCohortService({
     required WorkspaceDatabaseManager workspaceDbs,
-    required ReviewCohortRepository cohorts,
+    required this._cohorts,
     required String Function() idFactory,
     this.impactDepth = 2,
   }) : _dbs = workspaceDbs,
-       _cohorts = cohorts,
        _newId = idFactory;
 
   final WorkspaceDatabaseManager _dbs;

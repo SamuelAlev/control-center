@@ -440,22 +440,20 @@ class QemuMachine implements RigMachine {
 class QemuEnclosureBackend {
   /// Creates a [QemuEnclosureBackend].
   ///
-  /// [processProbe], [socketRoots] and [ladder] are seams: production uses the
+  /// [processProbe], [socketRoots] and [_ladder] are seams: production uses the
   /// defaults, tests substitute fakes so the paths that decide whether to kill
   /// a pid or delete a directory can be exercised without a hypervisor.
   QemuEnclosureBackend({
     required String dataDir,
-    required RigImageStore images,
+    required this._images,
     this.credentialPort,
     RigProcessProbe? processProbe,
     List<String>? socketRoots,
-    RigTeardownLadder ladder = const RigTeardownLadder(),
+    this._ladder = const RigTeardownLadder(),
   }) : _runtimeRoot = p.join(dataDir, 'rigs', 'run'),
-       _images = images,
        _processes = processProbe ?? const SystemRigProcessProbe(),
        _socketRoots =
-           socketRoots ?? defaultRigSocketRoots(Platform.environment),
-       _ladder = ladder;
+           socketRoots ?? defaultRigSocketRoots(Platform.environment);
 
   final String _runtimeRoot;
   final RigImageStore _images;

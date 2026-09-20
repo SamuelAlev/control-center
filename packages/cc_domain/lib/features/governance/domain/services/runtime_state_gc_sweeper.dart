@@ -6,8 +6,7 @@ import 'package:cc_domain/features/governance/domain/repositories/agent_runtime_
 /// orphan-run reaper.
 class RuntimeStateGcSweeper {
   /// Creates a [RuntimeStateGcSweeper].
-  RuntimeStateGcSweeper({required AgentRuntimeStateRepository repository})
-    : _repository = repository;
+  RuntimeStateGcSweeper({required this._repository});
 
   final AgentRuntimeStateRepository _repository;
 

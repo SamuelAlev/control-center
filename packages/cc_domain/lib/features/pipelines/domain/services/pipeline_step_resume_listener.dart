@@ -19,25 +19,17 @@ import 'package:cc_domain/features/pipelines/domain/services/pipeline_engine.dar
 class PipelineStepResumeListener {
   /// Creates a [PipelineStepResumeListener].
   ///
-  /// [driftGate] (PRD 17 §6) runs after every run of a step is terminal and
+  /// [_driftGate] (PRD 17 §6) runs after every run of a step is terminal and
   /// BEFORE the engine harvests/advances. Returning true HOLDS the step —
   /// used by plan-drift stop-and-ask: the node's divergence is surfaced and
   /// the operator explicitly resumes (`orchestration.continueNode`) or
   /// cancels. Null / false → today's behavior.
   PipelineStepResumeListener({
-    required DomainEventBus eventBus,
+    required this._eventBus,
     required AgentRunLogRepository runLogRepository,
-    required PipelineEngine engine,
-    Future<bool> Function({
-      required String workspaceId,
-      required String pipelineRunId,
-      required String stepId,
-    })?
-    driftGate,
-  }) : _eventBus = eventBus,
-       _runLogs = runLogRepository,
-       _engine = engine,
-       _driftGate = driftGate;
+    required this._engine,
+    this._driftGate,
+  }) : _runLogs = runLogRepository;
 
   final DomainEventBus _eventBus;
   final AgentRunLogRepository _runLogs;

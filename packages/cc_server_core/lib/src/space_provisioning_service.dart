@@ -40,50 +40,20 @@ typedef PrProvisionContext = ({
 class SpaceProvisioningService {
   /// Creates a [SpaceProvisioningService].
   SpaceProvisioningService({
-    required RepoWorkspaceProvisionerPort provisioner,
-    required Future<void> Function(
-      String cwd, {
-      String? workspaceId,
-      String? agentId,
-      String? conversationId,
-    })
-    writeMcpConfig,
-    required AgentRepository agentRepository,
-    required MessagingRepository messagingRepository,
-    required WorkspaceRepository workspaceRepository,
-    required IsolatedRepoRepository isolatedRepoRepository,
-    required Future<void> Function(
-      String workspaceId,
-      String spaceId,
-      SpaceProvisioningStatus status,
-    )
-    setProvisioningStatus,
-    Future<void> Function(
-      String workspaceId,
-      String spaceId,
-      SpaceProvisioningStep step,
-    )?
-    setProvisioningStep,
-    Future<PrProvisionContext?> Function(String workspaceId, String spaceId)?
-    resolvePrContext,
-    Future<List<String>?> Function(String workspaceId, String spaceId)?
-    spaceRepoIds,
-    DomainEventBus? eventBus,
-    Duration timeout = const Duration(minutes: 10),
-    Future<int> Function(String workspaceId)? setupScriptedRepoCount,
-  }) : _provisioner = provisioner,
-       _writeMcpConfig = writeMcpConfig,
-       _agentRepository = agentRepository,
-       _messagingRepository = messagingRepository,
-       _workspaceRepository = workspaceRepository,
-       _isolatedRepoRepository = isolatedRepoRepository,
-       _setProvisioningStatus = setProvisioningStatus,
-       _setProvisioningStep = setProvisioningStep,
-       _resolvePrContext = resolvePrContext,
-       _spaceRepoIds = spaceRepoIds,
-       _eventBus = eventBus,
-       _timeout = timeout,
-       _setupScriptedRepoCount = setupScriptedRepoCount;
+    required this._provisioner,
+    required this._writeMcpConfig,
+    required this._agentRepository,
+    required this._messagingRepository,
+    required this._workspaceRepository,
+    required this._isolatedRepoRepository,
+    required this._setProvisioningStatus,
+    this._setProvisioningStep,
+    this._resolvePrContext,
+    this._spaceRepoIds,
+    this._eventBus,
+    this._timeout = const Duration(minutes: 10),
+    this._setupScriptedRepoCount,
+  });
 
   final RepoWorkspaceProvisionerPort _provisioner;
   final Future<void> Function(

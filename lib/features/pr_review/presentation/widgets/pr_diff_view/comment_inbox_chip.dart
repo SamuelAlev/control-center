@@ -1,5 +1,6 @@
 part of 'toolbar_chips.dart';
 
+/// Toolbar chip that opens the PR comment inbox overlay.
 class CommentInboxChip extends StatefulWidget {
   /// Creates a [CommentInboxChip].
   const CommentInboxChip({

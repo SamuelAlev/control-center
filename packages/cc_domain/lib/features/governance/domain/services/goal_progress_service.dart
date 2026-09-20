@@ -14,10 +14,9 @@ import 'package:uuid/uuid.dart';
 class GoalProgressService {
   /// Creates a [GoalProgressService].
   GoalProgressService({
-    required GoalRepository repository,
+    required this._repository,
     ActivityLogger? activityLogger,
-  }) : _repository = repository,
-       _audit = activityLogger;
+  }) : _audit = activityLogger;
 
   final GoalRepository _repository;
   final ActivityLogger? _audit;

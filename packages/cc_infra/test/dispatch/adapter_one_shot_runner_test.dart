@@ -218,9 +218,7 @@ class _RecordingLauncher {
 }
 
 class _FakeProcess implements OneShotProcess {
-  _FakeProcess({required int exitCode, required bool acpScript})
-    : _exitCode = exitCode,
-      _acpScript = acpScript;
+  _FakeProcess({required this._exitCode, required this._acpScript});
 
   final int _exitCode;
   final bool _acpScript;

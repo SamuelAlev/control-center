@@ -130,6 +130,10 @@
   "rigStartHint": "Starts a disposable VM you and your agents share for this conversation. It is destroyed when it closes, and nothing in it touches your computer.",
   "rigStartAndroidHint": "Connects to an Android emulator already running on the server. Network access is not enclosed.",
   "rigStartIosHint": "Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.",
+  "rigTechnicalDetails": "Technical details",
+  "@rigTechnicalDetails": {
+    "description": "Disclosure label on a rig start screen that hides a failed boot's stdout/stderr dump."
+  },
   "rigStopMachine": "Stop the machine",
   "rigSurfaceUnavailable": "This server cannot host this kind of machine.",
   "rigTabNeedsConversation": "Open a conversation first — a machine belongs to one, so you and your agents are looking at the same screen.",

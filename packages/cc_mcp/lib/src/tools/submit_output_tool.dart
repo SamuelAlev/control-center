@@ -23,9 +23,8 @@ class SubmitOutputTool extends McpTool {
   /// Creates a [SubmitOutputTool].
   SubmitOutputTool({
     required AgentRunLogRepository runLogRepository,
-    SchemaValidatorPort? schemaValidator,
-  }) : _runLogs = runLogRepository,
-       _schemaValidator = schemaValidator;
+    this._schemaValidator,
+  }) : _runLogs = runLogRepository;
 
   final AgentRunLogRepository _runLogs;
   final SchemaValidatorPort? _schemaValidator;

@@ -26,13 +26,18 @@ void main() {
 
     for (final dir in arbDirs) {
       for (final file in dir.listSync().whereType<File>()) {
-        if (!file.path.endsWith('.arb')) continue;
-        final data = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+        if (!file.path.endsWith('.arb')) {
+          continue;
+        }
+        final data =
+            jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
         final rel = file.path.substring(root.path.length + 1);
         for (final entry in data.entries) {
           final key = entry.key;
           final value = entry.value;
-          if (key.startsWith('@') || value is! String) continue;
+          if (key.startsWith('@') || value is! String) {
+            continue;
+          }
           for (final block in _icuBlocks(value)) {
             if (block.selector == 'plural') {
               offenders.add(
@@ -79,7 +84,9 @@ void main() {
         final body = match.group(3)!;
         for (final raw in params.split(',')) {
           final parts = raw.trim().split(RegExp(r'\s+'));
-          if (parts.length < 2) continue;
+          if (parts.length < 2) {
+            continue;
+          }
           final param = parts.last;
           if (!RegExp(
             '(?<![A-Za-z0-9_])${RegExp.escape(param)}(?![A-Za-z0-9_])',
@@ -128,17 +135,26 @@ Iterable<_IcuBlock> _icuBlocks(String message) sync* {
   var i = 0;
   while (true) {
     final match = _icuHeader.firstMatch(message.substring(i));
-    if (match == null) return;
+    if (match == null) {
+      return;
+    }
     final start = i + match.end;
     var depth = 1;
     var j = start;
     while (j < message.length && depth > 0) {
       final ch = message[j];
-      if (ch == '{') depth++;
-      if (ch == '}') depth--;
+      if (ch == '{') {
+        depth++;
+      }
+      if (ch == '}') {
+        depth--;
+      }
       j++;
     }
-    yield _IcuBlock(selector: match.group(1)!, inner: message.substring(start, j - 1));
+    yield _IcuBlock(
+      selector: match.group(1)!,
+      inner: message.substring(start, j - 1),
+    );
     i = i + match.start + 1;
   }
 }
@@ -149,20 +165,28 @@ Iterable<_IcuForm> _icuForms(String inner) sync* {
     while (i < inner.length && inner[i].trim().isEmpty) {
       i++;
     }
-    if (i >= inner.length) return;
+    if (i >= inner.length) {
+      return;
+    }
     final nameStart = i;
     while (i < inner.length && inner[i] != '{') {
       i++;
     }
-    if (i >= inner.length) return;
+    if (i >= inner.length) {
+      return;
+    }
     final name = inner.substring(nameStart, i).trim();
     i++;
     var depth = 1;
     final bodyStart = i;
     while (i < inner.length && depth > 0) {
       final ch = inner[i];
-      if (ch == '{') depth++;
-      if (ch == '}') depth--;
+      if (ch == '{') {
+        depth++;
+      }
+      if (ch == '}') {
+        depth--;
+      }
       i++;
     }
     yield _IcuForm(name: name, body: inner.substring(bodyStart, i - 1));

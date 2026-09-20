@@ -118,10 +118,10 @@ class OpenPrPollingService {
     required WorkspaceRepository workspaceRepository,
     required WorkspaceDatabaseManager workspaceDbs,
     required PrChangeSignals changeSignals,
-    required Map<String, dynamic> Function(PullRequest pr) prToWire,
-    DomainEventBus? eventBus,
-    Future<String> Function(ForgeHost forge)? viewerLoginFor,
-    String? forUserId,
+    required this._prToWire,
+    this._eventBus,
+    this._viewerLoginFor,
+    this._forUserId,
     this.fastInterval = const Duration(seconds: 60),
     this.idleInterval = const Duration(minutes: 2),
     this.checksEvery = 2,
@@ -132,10 +132,6 @@ class OpenPrPollingService {
        _workspaces = workspaceRepository,
        _dbs = workspaceDbs,
        _signals = changeSignals,
-       _prToWire = prToWire,
-       _eventBus = eventBus,
-       _viewerLoginFor = viewerLoginFor,
-       _forUserId = forUserId,
        _now = now ?? DateTime.now;
 
   /// Cache kind for the persisted per-workspace snapshot.

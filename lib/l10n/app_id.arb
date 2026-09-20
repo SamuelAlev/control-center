@@ -117,6 +117,7 @@
   "rigStartHint": "Memulai VM sekali pakai yang Anda dan agen bagikan untuk percakapan ini. VM dihancurkan saat ditutup, dan isinya tidak menyentuh komputer Anda.",
   "rigStartAndroidHint": "Menghubungkan ke emulator Android yang sudah berjalan di server. Akses jaringan tidak diisolasi.",
   "rigStartIosHint": "Membuat Simulator iOS sementara di Mac server. Simulator dihapus saat rig ditutup; akses jaringan tidak diisolasi.",
+  "rigTechnicalDetails": "Detail teknis",
   "rigStopMachine": "Hentikan mesin",
   "rigSurfaceUnavailable": "Server ini tidak dapat menampung jenis mesin ini.",
   "rigTabNeedsConversation": "Buka percakapan dulu — mesin terikat ke satu percakapan, agar Anda dan agen melihat layar yang sama.",

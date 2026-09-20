@@ -30,25 +30,18 @@ import 'package:cc_domain/features/governance/domain/value_objects/approval_rout
 class ApprovalEscalationSweeper {
   /// Creates an [ApprovalEscalationSweeper].
   ApprovalEscalationSweeper({
-    required ApprovalRepository approvals,
-    required WorkspaceRepository workspaces,
-    required WorkspaceMembershipRepository members,
-    required CacheRepository cache,
-    required ApprovalRoutingPolicyRepository policies,
-    required ApprovalWorkflowService workflow,
+    required this._approvals,
+    required this._workspaces,
+    required this._members,
+    required this._cache,
+    required this._policies,
+    required this._workflow,
     DomainEventBus? eventBus,
     this.interval = const Duration(minutes: 5),
     DateTime Function()? now,
-    void Function(String message)? onError,
-  }) : _approvals = approvals,
-       _workspaces = workspaces,
-       _members = members,
-       _cache = cache,
-       _policies = policies,
-       _workflow = workflow,
-       _activity = ActivityLogger(eventBus: eventBus),
-       _now = now ?? DateTime.now,
-       _onError = onError;
+    this._onError,
+  }) : _activity = ActivityLogger(eventBus: eventBus),
+       _now = now ?? DateTime.now;
 
   /// Cache kind holding per-approval sweep STATE (escalation tiers). The
   /// POLICY no longer lives here: `caches` rows are pruned by `updatedAt`

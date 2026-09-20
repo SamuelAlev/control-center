@@ -25,14 +25,12 @@ import 'package:cc_persistence/cc_persistence.dart';
 /// it somewhere would be a silent cross-workspace write; dropping it with a
 /// warning is honest and leaves the audit trail's gaps visible.
 class ActivityLogPersister {
-  /// Creates an [ActivityLogPersister] over the per-workspace databases [dbs].
+  /// Creates an [ActivityLogPersister] over the per-workspace databases [_dbs].
   ActivityLogPersister({
-    required DomainEventBus eventBus,
-    required WorkspaceDatabaseManager dbs,
-    WorkspaceExistsChecker? workspaceExists,
-  }) : _eventBus = eventBus,
-       _dbs = dbs,
-       _workspaceExists = workspaceExists;
+    required this._eventBus,
+    required this._dbs,
+    this._workspaceExists,
+  });
 
   final DomainEventBus _eventBus;
   final WorkspaceDatabaseManager _dbs;

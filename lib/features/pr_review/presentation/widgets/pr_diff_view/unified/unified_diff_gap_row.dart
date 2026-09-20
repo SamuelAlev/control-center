@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 // RTL carve-out: diff canvas — gap rows align to the LTR code gutter and the
 // h-scrollbar/overlays position in pixel space.
 class GapRow extends StatefulWidget {
+  /// Creates a [GapRow].
   const GapRow({
     super.key,
     required this.label,
@@ -17,22 +18,31 @@ class GapRow extends StatefulWidget {
     this.showBottomBorder = true,
   });
 
+  /// Button label (`Show N lines` / `Show end of file`).
   final String label;
+
+  /// Trailing expand icon.
   final IconData icon;
+
+  /// Expands the collapsed hunk.
   final VoidCallback onTap;
+
+  /// Whether the row can be activated.
   final bool enabled;
 
   /// Drop the top/bottom hairline when this gap abuts a file header, whose own
   /// 1px border already separates them — otherwise the gap's 0.5px line stacks
   /// with it and reads as a doubled border.
   final bool showTopBorder;
+
+  /// See [showTopBorder].
   final bool showBottomBorder;
 
   @override
-  State<GapRow> createState() => GapRowState();
+  State<GapRow> createState() => _GapRowState();
 }
 
-class GapRowState extends State<GapRow> {
+class _GapRowState extends State<GapRow> {
   bool _hovered = false;
 
   @override

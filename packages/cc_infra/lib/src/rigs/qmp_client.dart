@@ -146,8 +146,7 @@ class IoQmpSocket implements QmpSocket {
 /// root, and a compromised guest cannot fabricate input to itself from a
 /// process we granted privileges to.
 class QmpClient {
-  QmpClient._(this._socket, {QmpReconnectPolicy? reconnect})
-    : _reconnect = reconnect {
+  QmpClient._(this._socket, {this._reconnect}) {
     _bind();
   }
 

@@ -42,60 +42,57 @@ void main() {
   });
 
   group('packCursorHistory', () {
-    test('puts the system prompt in its own blob and holds back the live user', () {
-      final packed = packCursorHistory(
-        [
+    test(
+      'puts the system prompt in its own blob and holds back the live user',
+      () {
+        final packed = packCursorHistory([
           HarnessMessage.user('hello'),
-        ],
-        systemPrompt: 'Be brief.',
-      );
-      expect(packed.liveUserText, 'hello');
-      expect(packed.blobIds, hasLength(1));
-      final json = jsonDecode(
-        utf8.decode(packed.store[blobIdHex(packed.blobIds.first)]!),
-      ) as Map<String, dynamic>;
-      expect(json['role'], 'system');
-      expect(json['content'], 'Be brief.');
-    });
+        ], systemPrompt: 'Be brief.');
+        expect(packed.liveUserText, 'hello');
+        expect(packed.blobIds, hasLength(1));
+        final json =
+            jsonDecode(
+                  utf8.decode(packed.store[blobIdHex(packed.blobIds.first)]!),
+                )
+                as Map<String, dynamic>;
+        expect(json['role'], 'system');
+        expect(json['content'], 'Be brief.');
+      },
+    );
 
-    test('a tool-result follow-up is a resume: history keeps the user turn', () {
-      final packed = packCursorHistory([
-        HarnessMessage.user('run it'),
-        HarnessMessage(
-          role: HarnessRole.assistant,
-          content: [
-            HarnessToolUseBlock(
-              id: 'call/1',
-              name: 'bash',
-              input: {'command': 'ls'},
-            ),
-          ],
-        ),
-        HarnessMessage.toolResults([
-          const HarnessToolResultBlock(
-            toolUseId: 'call/1',
-            content: 'a.txt',
+    test(
+      'a tool-result follow-up is a resume: history keeps the user turn',
+      () {
+        final packed = packCursorHistory([
+          HarnessMessage.user('run it'),
+          const HarnessMessage(
+            role: HarnessRole.assistant,
+            content: [
+              HarnessToolUseBlock(
+                id: 'call/1',
+                name: 'bash',
+                input: {'command': 'ls'},
+              ),
+            ],
           ),
-        ]),
-      ]);
-      expect(packed.liveUserText, isNull);
-      expect(packed.blobIds.length, greaterThan(2));
-      final blobs = [
-        for (final id in packed.blobIds)
-          jsonDecode(utf8.decode(packed.store[blobIdHex(id)]!)),
-      ];
-      expect(
-        blobs.any(
-          (b) => b is Map && b['role'] == 'user',
-        ),
-        isTrue,
-      );
-      final assistant = blobs.whereType<Map>().firstWhere(
-        (b) => b['role'] == 'assistant',
-      );
-      final call = (assistant['content'] as List).first as Map;
-      expect(call['toolCallId'], 'call_1');
-    });
+          HarnessMessage.toolResults([
+            const HarnessToolResultBlock(toolUseId: 'call/1', content: 'a.txt'),
+          ]),
+        ]);
+        expect(packed.liveUserText, isNull);
+        expect(packed.blobIds.length, greaterThan(2));
+        final blobs = [
+          for (final id in packed.blobIds)
+            jsonDecode(utf8.decode(packed.store[blobIdHex(id)]!)),
+        ];
+        expect(blobs.any((b) => b is Map && b['role'] == 'user'), isTrue);
+        final assistant = blobs.whereType<Map>().firstWhere(
+          (b) => b['role'] == 'assistant',
+        );
+        final call = (assistant['content'] as List).first as Map;
+        expect(call['toolCallId'], 'call_1');
+      },
+    );
 
     test('sanitizes tool-call ids outside Cursor\'s charset', () {
       expect(normalizeCursorToolCallId('abc|def'), 'abc_def');
@@ -108,15 +105,15 @@ void main() {
         _interaction(1, 'Hello'),
         _interaction(14),
       ]);
-      final provider = CursorProvider(
-        accessToken: 'tok',
-        transport: transport,
-      );
+      final provider = CursorProvider(accessToken: 'tok', transport: transport);
       final events = await provider
           .complete(messages: [HarnessMessage.user('hi')])
           .toList();
       expect(events.whereType<LlmTextDelta>().single.text, 'Hello');
-      expect(events.whereType<LlmDone>().single.stopReason, LlmStopReason.endTurn);
+      expect(
+        events.whereType<LlmDone>().single.stopReason,
+        LlmStopReason.endTurn,
+      );
       expect(transport.sent, isNotEmpty);
     });
 
@@ -124,12 +121,14 @@ void main() {
       final transport = _ScriptedTransport([
         _exec(id: 1, caseNumber: 10),
         _exec(id: 2, caseNumber: 7),
-        _mcpCall(id: 3, name: 'bash', toolCallId: 'c1', args: {'command': 'ls'}),
+        _mcpCall(
+          id: 3,
+          name: 'bash',
+          toolCallId: 'c1',
+          args: {'command': 'ls'},
+        ),
       ]);
-      final provider = CursorProvider(
-        accessToken: 'tok',
-        transport: transport,
-      );
+      final provider = CursorProvider(accessToken: 'tok', transport: transport);
       final events = await provider
           .complete(
             messages: [HarnessMessage.user('list files')],
@@ -146,7 +145,10 @@ void main() {
       expect(tool.name, 'bash');
       expect(tool.id, 'c1');
       expect(jsonDecode(tool.argumentsJson), {'command': 'ls'});
-      expect(events.whereType<LlmDone>().single.stopReason, LlmStopReason.toolUse);
+      expect(
+        events.whereType<LlmDone>().single.stopReason,
+        LlmStopReason.toolUse,
+      );
 
       final sent = transport.sent;
       expect(
@@ -167,23 +169,20 @@ void main() {
     });
 
     test('GetUsableModels maps catalog rows', () async {
-      final modelsPayload = (ProtoWriter()
-            ..message(
-              1,
-              (ProtoWriter()
-                    ..string(1, 'composer-2')
-                    ..string(4, 'Composer 2'))
-                  .take(),
-            ))
-          .take();
+      final modelsPayload =
+          (ProtoWriter()..message(
+                1,
+                (ProtoWriter()
+                      ..string(1, 'composer-2')
+                      ..string(4, 'Composer 2'))
+                    .take(),
+              ))
+              .take();
       final transport = _ScriptedTransport(
         const [],
         usableModels: modelsPayload,
       );
-      final provider = CursorProvider(
-        accessToken: 'tok',
-        transport: transport,
-      );
+      final provider = CursorProvider(accessToken: 'tok', transport: transport);
       final models = await provider.listModels();
       expect(models.single.id, 'composer-2');
       expect(models.single.displayName, 'Composer 2');

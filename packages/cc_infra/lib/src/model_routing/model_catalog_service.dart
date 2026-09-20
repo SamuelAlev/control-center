@@ -19,14 +19,12 @@ class ModelCatalogService {
   /// auth-service name for providers backed by a logged-in account / detected
   /// adapter (resolved as `enabled: via account`).
   ModelCatalogService({
-    required ModelsDevSource source,
+    required this._source,
     Set<String> Function()? presentEnvKeys,
     Map<String, String> Function()? accountProviders,
-    Duration backgroundRefreshInterval = const Duration(hours: 1),
-  }) : _source = source,
-       _presentEnvKeys = presentEnvKeys ?? (() => const <String>{}),
-       _accountProviders = accountProviders ?? (() => const <String, String>{}),
-       _backgroundRefreshInterval = backgroundRefreshInterval;
+    this._backgroundRefreshInterval = const Duration(hours: 1),
+  }) : _presentEnvKeys = presentEnvKeys ?? (() => const <String>{}),
+       _accountProviders = accountProviders ?? (() => const <String, String>{});
 
   final ModelsDevSource _source;
   final Set<String> Function() _presentEnvKeys;

@@ -27,12 +27,10 @@ typedef DiagramCorroborator =
 class AddReviewDiagramTool extends McpTool {
   /// Creates an [AddReviewDiagramTool].
   AddReviewDiagramTool({
-    required ReviewCohortRepository cohorts,
-    required DiagramCorroborator corroborate,
-    ReviewPrExternalIdResolver? resolvePrExternalId,
-  }) : _cohorts = cohorts,
-       _corroborate = corroborate,
-       _resolvePrExternalId = resolvePrExternalId;
+    required this._cohorts,
+    required this._corroborate,
+    this._resolvePrExternalId,
+  });
 
   final ReviewCohortRepository _cohorts;
   final DiagramCorroborator _corroborate;

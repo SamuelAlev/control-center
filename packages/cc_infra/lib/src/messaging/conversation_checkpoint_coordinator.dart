@@ -25,10 +25,9 @@ class ConversationCheckpointCoordinator {
   /// inject a fake in tests.
   ConversationCheckpointCoordinator({
     required MessagingRepository messaging,
-    required AgentRepository agents,
+    required this._agents,
     GitSnapshotPort git = const ProcessGitSnapshotAdapter(),
   }) : _messaging = messaging,
-       _agents = agents,
        _service = ConversationCheckpointService(repo: messaging, git: git);
 
   final MessagingRepository _messaging;

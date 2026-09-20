@@ -20,15 +20,13 @@ import 'package:cc_domain/features/mcp/domain/services/tool_index.dart';
 ///
 /// This is `read`-tier (it only inspects the catalogue) and never prompts.
 class SearchToolBm25 extends McpTool {
-  /// Creates a [SearchToolBm25] over [catalog].
+  /// Creates a [SearchToolBm25] over [_catalog].
   ///
-  /// [modeGuard] is optional: when supplied, hits are annotated with their
+  /// [_modeGuard] is optional: when supplied, hits are annotated with their
   /// callable/restricted status for the caller's conversation mode. Without it
   /// (e.g. the MCP Inspector, or a non-scoped transport), every hit is reported
   /// as callable.
-  SearchToolBm25({required ToolCatalog catalog, ModeToolGuard? modeGuard})
-    : _catalog = catalog,
-      _modeGuard = modeGuard;
+  SearchToolBm25({required this._catalog, this._modeGuard});
 
   final ToolCatalog _catalog;
   final ModeToolGuard? _modeGuard;

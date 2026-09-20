@@ -1,8 +1,8 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/agent_turn.dart';

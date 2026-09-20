@@ -6,8 +6,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 /// List spaces tool.
 class ListSpacesTool extends McpTool {
   /// Creates a new [List spaces tool].
-  ListSpacesTool({required MessagingRepository repository})
-    : _repository = repository;
+  ListSpacesTool({required this._repository});
 
   final MessagingRepository _repository;
 

@@ -119,7 +119,7 @@ extension _AcpMethods on DispatchSession {
         .listen((line) => addEvent(ErrorEvent(content: '[acp] $line')));
 
     // Forward structured events to the session stream.
-    _acpEventsSub = client.events.listen(addEvent);
+    final acpEventsSub = client.events.listen(addEvent);
 
     try {
       await client.initialize();
@@ -136,8 +136,7 @@ extension _AcpMethods on DispatchSession {
       unawaited(_closeRunLog(exitCode: 1, error: e));
     } finally {
       await stdoutSub.cancel();
-      await _acpEventsSub?.cancel();
-      _acpEventsSub = null;
+      await acpEventsSub.cancel();
       await client.close();
       _acpProcess?.kill();
       _acpProcess = null;

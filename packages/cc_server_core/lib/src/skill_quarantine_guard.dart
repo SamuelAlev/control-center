@@ -18,12 +18,10 @@ import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
 class SkillQuarantineGuard {
   /// Creates a [SkillQuarantineGuard].
   SkillQuarantineGuard({
-    required AgentRepository agents,
-    required SkillBundlePort bundles,
-    required WorkspaceFilesystemPort filesystem,
-  }) : _agents = agents,
-       _bundles = bundles,
-       _filesystem = filesystem;
+    required this._agents,
+    required this._bundles,
+    required this._filesystem,
+  });
 
   final AgentRepository _agents;
   final SkillBundlePort _bundles;

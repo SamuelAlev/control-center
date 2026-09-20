@@ -13,11 +13,10 @@ import 'package:dio/dio.dart';
 /// knows Linear specifics (status names, the GraphQL client, priority numbers,
 /// the required team id). Construct from an authorized [Dio].
 class LinearTicketSyncAdapter implements TicketSyncAdapter {
-  /// Creates a [LinearTicketSyncAdapter]. [defaultTeamId] is used as the create
+  /// Creates a [LinearTicketSyncAdapter]. [_defaultTeamId] is used as the create
   /// target when a config's `vendorProjectId` is empty.
-  LinearTicketSyncAdapter(Dio dio, {String? defaultTeamId})
-    : _client = LinearGraphQlClient(dio),
-      _defaultTeamId = defaultTeamId;
+  LinearTicketSyncAdapter(Dio dio, {this._defaultTeamId})
+    : _client = LinearGraphQlClient(dio);
 
   final LinearGraphQlClient _client;
   final String? _defaultTeamId;

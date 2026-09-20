@@ -31,6 +31,7 @@ import 'package:cc_domain/core/domain/ports/notification_preferences_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/core/domain/ports/run_transcript_relay_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
@@ -39,6 +40,7 @@ import 'package:cc_domain/core/domain/repositories/repo_script_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/agent_mention_parser.dart';
+import 'package:cc_domain/core/domain/services/json_schema_validator.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_port.dart';
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
@@ -57,6 +59,7 @@ import 'package:cc_domain/features/messaging/domain/ports/space_turn_relay_port.
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
+import 'package:cc_domain/features/model_routing/domain/services/model_catalog_service.dart';
 import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_lifecycle_repository.dart';
 import 'package:cc_domain/features/sandboxing/domain/ports/sandbox_detector_port.dart';
@@ -64,9 +67,6 @@ import 'package:cc_domain/features/settings/domain/repositories/acp_model_reposi
 import 'package:cc_domain/features/settings/domain/repositories/adapter_repository.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/weather/domain/repositories/weather_repository.dart';
-import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
-import 'package:cc_domain/core/domain/services/json_schema_validator.dart';
-import 'package:cc_domain/features/model_routing/domain/services/model_catalog_service.dart';
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/core/notifications/notification_preferences.dart';
 import 'package:control_center/core/notifications/notification_sound_service.dart';
@@ -77,7 +77,6 @@ import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/provider_bindings.dart';
 import 'package:control_center/features/demo/demo_world.dart';
-
 import 'package:control_center/features/settings/data/privacy_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -118,8 +117,6 @@ final runTranscriptRelayPortProvider = Provider<RunTranscriptRelayPort>((ref) {
   return RpcAgentRunLogRepository(ref.watch(rpcClientProvider));
 });
 
-
-
 /// Provides the durable-goal (`AgentGoalRun`, `/goal` + `/loop`) read/control
 /// surface — the `agentGoalRuns.*` ops. Standalone like
 /// [agentPresenceReaderProvider]: the domain port is the host supervisor's,
@@ -129,7 +126,6 @@ final agentGoalRunRepositoryProvider = Provider<RpcAgentGoalRunRepository>((
 ) {
   return RpcAgentGoalRunRepository(ref.watch(rpcClientProvider));
 });
-
 
 /// Reads computed agent presence (availability × workload) over RPC, keyed by
 /// agent id — the `agent_presence.forWorkspace` op (PRD 09).
@@ -286,7 +282,6 @@ final workspaceFilesystemPortProvider = Provider<WorkspaceFilesystemPort>(
 final processDetectionServiceProvider = Provider<ProcessDetectionPort>(
   buildProcessDetectionService,
 );
-
 
 /// Provides the [AdapterRepository] (settings → adapters; desktop detection).
 final adapterRepositoryProvider = Provider<AdapterRepository>(

@@ -10,18 +10,14 @@ import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_ser
 /// and reaps them by marking them failed and scheduling recovery.
 class OrphanRunReaper {
   /// Creates an orphan reaper with the required repositories,
-  /// [ticketWorkflow], [processControl] and optional [budgetEnforcement].
+  /// [_ticketWorkflow], [_processControl] and optional [_budgetEnforcement].
   OrphanRunReaper({
-    required AgentRunLogRepository runLogRepo,
-    required TicketRepository ticketRepo,
-    required TicketWorkflowService ticketWorkflow,
-    required ProcessControlPort processControl,
-    BudgetEnforcementService? budgetEnforcement,
-  }) : _runLogRepo = runLogRepo,
-       _ticketRepo = ticketRepo,
-       _ticketWorkflow = ticketWorkflow,
-       _processControl = processControl,
-       _budgetEnforcement = budgetEnforcement;
+    required this._runLogRepo,
+    required this._ticketRepo,
+    required this._ticketWorkflow,
+    required this._processControl,
+    this._budgetEnforcement,
+  });
 
   final AgentRunLogRepository _runLogRepo;
   final TicketRepository _ticketRepo;

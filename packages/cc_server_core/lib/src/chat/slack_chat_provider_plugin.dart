@@ -14,10 +14,9 @@ import 'package:dio/dio.dart';
 /// identity is proven, that the app is reshaped through the App Manifest API —
 /// is stated here instead. That is what makes the layers above provider-blind.
 class SlackChatProviderPlugin implements ChatProviderPlugin {
-  /// Creates the Slack plugin. [dioFactory] hands out a configured HTTP client
+  /// Creates the Slack plugin. [_dioFactory] hands out a configured HTTP client
   /// per call site, so a probe never shares state with a live connection.
-  SlackChatProviderPlugin({required Dio Function() dioFactory})
-    : _dioFactory = dioFactory;
+  SlackChatProviderPlugin({required this._dioFactory});
 
   /// The credential field holding the bot user OAuth token.
   static const botTokenField = 'botToken';

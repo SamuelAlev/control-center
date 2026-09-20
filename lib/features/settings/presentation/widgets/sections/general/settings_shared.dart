@@ -128,7 +128,9 @@ class _LanguagePickerState extends ConsumerState<_LanguagePicker> {
         // Defer: writing during build notifies the autocomplete, which would
         // try to show its overlay in the persistent-callbacks phase.
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted || _focus.hasFocus) return;
+          if (!mounted || _focus.hasFocus) {
+            return;
+          }
           if (_controller.text != label) {
             _controller.text = label;
           }

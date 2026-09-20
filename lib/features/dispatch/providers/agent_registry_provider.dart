@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Work-aware roster for one workspace, derived from durable agents + run logs.
 ///
-/// Dispatch writes the in-process [AgentRegistry] **inside `cc_server`**. A
+/// Dispatch writes the in-process `AgentRegistry` **inside `cc_server`**. A
 /// client that watched `AgentRegistryImpl.global()` in the Flutter isolate
 /// always saw an empty map. The live tab reads the same RPC streams the rest
 /// of the app already uses (`agents.watchForWorkspace` + recent run logs).
@@ -19,18 +19,13 @@ final workspaceAgentRosterProvider =
     Provider.family<AsyncValue<List<AgentRef>>, String>((ref, workspaceId) {
       final agentsAsync = ref.watch(workspaceAgentsProvider(workspaceId));
       final runs = ref.watch(workspaceRunLogsProvider);
-      return agentsAsync.whenData(
-        (agents) => mapAgentsToRoster(agents, runs),
-      );
+      return agentsAsync.whenData((agents) => mapAgentsToRoster(agents, runs));
     });
 
 /// Maps durable [Agent] rows plus recent run logs into roster [AgentRef]s.
 ///
 /// Exposed for tests; the provider is the production call site.
-List<AgentRef> mapAgentsToRoster(
-  List<Agent> agents,
-  List<AgentRunLog> runs,
-) {
+List<AgentRef> mapAgentsToRoster(List<Agent> agents, List<AgentRunLog> runs) {
   final latestRun = <String, AgentRunLog>{};
   final activeRun = <String, AgentRunLog>{};
   for (final run in runs) {

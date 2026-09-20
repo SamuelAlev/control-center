@@ -28,11 +28,10 @@ import 'package:drift/drift.dart';
 class DaoMemoryFactRepository implements MemoryFactRepository {
   /// Creates a [DaoMemoryFactRepository] over the per-workspace databases.
   ///
-  /// [embeddingService] is optional: with none wired (or its model not yet
+  /// [_embeddingService] is optional: with none wired (or its model not yet
   /// installed) facts are stored without a vector and search degrades to the
   /// lexical voice.
-  DaoMemoryFactRepository(this._dbs, {EmbeddingPort? embeddingService})
-    : _embeddingService = embeddingService;
+  DaoMemoryFactRepository(this._dbs, {this._embeddingService});
 
   final WorkspaceDatabaseManager _dbs;
   final EmbeddingPort? _embeddingService;

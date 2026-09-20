@@ -11,15 +11,13 @@ import 'package:uuid/uuid.dart';
 class AddRepoFromPathUseCase {
   /// Creates an [AddRepoFromPathUseCase].
   ///
-  /// When [eventBus] is provided, publishes a [RepoAdded] event after the repo
+  /// When [_eventBus] is provided, publishes a [RepoAdded] event after the repo
   /// is persisted so the background code indexer can run.
   const AddRepoFromPathUseCase({
-    required RepoRepository repository,
-    required GitRepoInspectorPort inspector,
-    DomainEventBus? eventBus,
-  }) : _repository = repository,
-       _inspector = inspector,
-       _eventBus = eventBus;
+    required this._repository,
+    required this._inspector,
+    this._eventBus,
+  });
 
   final RepoRepository _repository;
   final GitRepoInspectorPort _inspector;

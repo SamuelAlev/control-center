@@ -197,26 +197,17 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   /// Creates a [GitHubPrConversationBridge]. Call [start] to arm the
   /// outbound listener.
   GitHubPrConversationBridge({
-    required GitHubPrConversationGateway gateway,
-    required GitHubLoginDirectory loginDirectory,
-    required MessagingPort messaging,
-    required MessagingRepository messagingRepository,
-    required WorkspaceDatabaseManager workspaceDbs,
-    required StartAiReview startReview,
-    required EnsurePrReviewSpace ensureSpace,
-    required DefaultAnswererResolver defaultAnswerer,
-    required DomainEventBus eventBus,
-    void Function(String message)? onWarning,
-  }) : _gateway = gateway,
-       _loginDirectory = loginDirectory,
-       _messaging = messaging,
-       _messagingRepository = messagingRepository,
-       _workspaceDbs = workspaceDbs,
-       _startReview = startReview,
-       _ensureSpace = ensureSpace,
-       _defaultAnswerer = defaultAnswerer,
-       _eventBus = eventBus,
-       _onWarning = onWarning;
+    required this._gateway,
+    required this._loginDirectory,
+    required this._messaging,
+    required this._messagingRepository,
+    required this._workspaceDbs,
+    required this._startReview,
+    required this._ensureSpace,
+    required this._defaultAnswerer,
+    required this._eventBus,
+    this._onWarning,
+  });
 
   /// The caches kind holding a pending outbound reply, keyed by the agent
   /// run-log id (= the agent turn's message id).

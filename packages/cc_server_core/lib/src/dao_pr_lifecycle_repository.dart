@@ -20,8 +20,8 @@ class DaoPrLifecycleRepository implements PrLifecycleRepository {
   DaoPrLifecycleRepository(
     this._dbs,
     this._forgeClientFor, {
-    DomainEventBus? eventBus,
-  }) : _eventBus = eventBus;
+    this._eventBus,
+  });
 
   final WorkspaceDatabaseManager _dbs;
 

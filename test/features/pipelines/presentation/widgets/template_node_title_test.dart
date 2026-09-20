@@ -69,10 +69,10 @@ void main() {
   ) async {
     await tester.pumpWidget(
       testWrap(
-        GraphNodeCard(
-          glyph: const SizedBox(width: 14, height: 14),
+        const GraphNodeCard(
+          glyph: SizedBox(width: 14, height: 14),
           title: 'Cross-review #{{pr_number}}',
-          titleChild: const TemplateNodeTitle('Cross-review #{{pr_number}}'),
+          titleChild: TemplateNodeTitle('Cross-review #{{pr_number}}'),
           selected: false,
         ),
       ),

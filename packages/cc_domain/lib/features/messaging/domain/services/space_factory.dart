@@ -26,17 +26,16 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dar
 /// space's first conversation all belong to the callers that know about them.
 /// This exists to make one invariant unbreakable, not to become a god object.
 class SpaceFactory {
-  /// Creates a [SpaceFactory] over [repository], announcing on [eventBus].
+  /// Creates a [SpaceFactory] over [_repository], announcing on [_eventBus].
   ///
-  /// [eventBus] is nullable for hosts with no event-driven background work
+  /// [_eventBus] is nullable for hosts with no event-driven background work
   /// (tests, a client-side composition with no provisioner). A null bus means
   /// nothing provisions, which is the correct behaviour there — not a silently
   /// skipped step on a host that does.
   const SpaceFactory({
-    required MessagingRepository repository,
-    DomainEventBus? eventBus,
-  }) : _repository = repository,
-       _eventBus = eventBus;
+    required this._repository,
+    this._eventBus,
+  });
 
   final MessagingRepository _repository;
   final DomainEventBus? _eventBus;

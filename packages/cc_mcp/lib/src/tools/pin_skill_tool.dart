@@ -9,7 +9,7 @@ import 'package:cc_harness/tools.dart';
 /// so it becomes a content-addressed, verifiable pin.
 class PinSkillTool extends McpTool {
   /// Creates a [PinSkillTool].
-  PinSkillTool({required SkillBundlePort bundles}) : _bundles = bundles;
+  PinSkillTool({required this._bundles});
 
   final SkillBundlePort _bundles;
 

@@ -25,12 +25,11 @@ import 'package:cc_natives/cc_natives.dart';
 /// loader reports the runtime is unavailable, or the grammar for the inferred
 /// language cannot be loaded, [resolveBlock] throws [TreeSitterUnavailable].
 class TreeSitterBlockResolver implements BlockResolver {
-  /// Creates a [TreeSitterBlockResolver] backed by [parser] and [loader].
+  /// Creates a [TreeSitterBlockResolver] backed by [_parser] and [_loader].
   TreeSitterBlockResolver({
-    required TreeSitterParser parser,
-    required TreeSitterLoader loader,
-  }) : _parser = parser,
-       _loader = loader;
+    required this._parser,
+    required this._loader,
+  });
 
   final TreeSitterParser _parser;
   final TreeSitterLoader _loader;

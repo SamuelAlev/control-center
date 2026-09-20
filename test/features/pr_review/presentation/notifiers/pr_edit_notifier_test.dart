@@ -39,11 +39,7 @@ class _RecordingRepo extends EmptyPrReviewRepository {
 }
 
 void main() {
-  const prRef = (
-    workspaceId: 'ws',
-    repoFullName: 'acme/cc',
-    number: 42,
-  );
+  const prRef = (workspaceId: 'ws', repoFullName: 'acme/cc', number: 42);
 
   late _RecordingRepo repo;
   late ProviderContainer container;
@@ -60,42 +56,51 @@ void main() {
       ],
     );
     // autoDispose: keep the notifier alive across async gaps.
-    container.listen(prEditProvider(prRef), (_, __) {});
+    container.listen(prEditProvider(prRef), (_, _) {});
   });
 
   tearDown(() => container.dispose());
 
-  test('toggleTaskListItem PATCHes the box and keeps the HTML comment', () async {
-    final notifier = container.read(prEditProvider(prRef).notifier);
-    const body =
-        ' - [ ] <!-- rebase-check -->If you want to rebase/retry this PR, '
-        'check this box';
-    final error = await notifier.toggleTaskListItem(
-      currentBody: body,
-      index: 0,
-    );
-    expect(error, isNull);
-    expect(repo.lastPrBody, contains('[x]'));
-    expect(repo.lastPrBody, contains('<!-- rebase-check -->'));
-    expect(container.read(prEditProvider(prRef)).optimisticBody, repo.lastPrBody);
-  });
+  test(
+    'toggleTaskListItem PATCHes the box and keeps the HTML comment',
+    () async {
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      const body =
+          ' - [ ] <!-- rebase-check -->If you want to rebase/retry this PR, '
+          'check this box';
+      final error = await notifier.toggleTaskListItem(
+        currentBody: body,
+        index: 0,
+      );
+      expect(error, isNull);
+      expect(repo.lastPrBody, contains('[x]'));
+      expect(repo.lastPrBody, contains('<!-- rebase-check -->'));
+      expect(
+        container.read(prEditProvider(prRef)).optimisticBody,
+        repo.lastPrBody,
+      );
+    },
+  );
 
-  test('toggleTaskListItem is ignored while a body save is in flight', () async {
-    repo.gate = Completer<void>();
-    final notifier = container.read(prEditProvider(prRef).notifier);
-    const body = '- [ ] one\n- [ ] two';
-    final first = notifier.toggleTaskListItem(currentBody: body, index: 0);
-    await Future<void>.delayed(Duration.zero);
-    final second = await notifier.toggleTaskListItem(
-      currentBody: body,
-      index: 1,
-    );
-    expect(second, isNull);
-    expect(repo.updatePrCalls, 1);
-    repo.gate!.complete();
-    await first;
-    expect(repo.updatePrCalls, 1);
-  });
+  test(
+    'toggleTaskListItem is ignored while a body save is in flight',
+    () async {
+      repo.gate = Completer<void>();
+      final notifier = container.read(prEditProvider(prRef).notifier);
+      const body = '- [ ] one\n- [ ] two';
+      final first = notifier.toggleTaskListItem(currentBody: body, index: 0);
+      await Future<void>.delayed(Duration.zero);
+      final second = await notifier.toggleTaskListItem(
+        currentBody: body,
+        index: 1,
+      );
+      expect(second, isNull);
+      expect(repo.updatePrCalls, 1);
+      repo.gate!.complete();
+      await first;
+      expect(repo.updatePrCalls, 1);
+    },
+  );
 
   test('toggleCommentTaskListItem PATCHes the named comment', () async {
     final notifier = container.read(prEditProvider(prRef).notifier);

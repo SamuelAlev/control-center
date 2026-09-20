@@ -29,8 +29,8 @@ import 'package:control_center/shared/widgets/app_timestamp.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:file_selector/file_selector.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -410,9 +410,7 @@ class _TabCount extends StatelessWidget {
     final ds = context.ds;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-      decoration: BoxDecoration(
-        color: ds.hoverStrong,
-      ),
+      decoration: BoxDecoration(color: ds.hoverStrong),
       child: Text(
         '$count',
         style: meetingMono(context, fontSize: 11, color: ds.muted),

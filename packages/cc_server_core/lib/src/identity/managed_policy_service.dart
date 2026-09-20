@@ -29,12 +29,10 @@ import 'package:uuid/uuid.dart';
 class ManagedPolicyService {
   /// Creates a [ManagedPolicyService].
   ManagedPolicyService({
-    required GlobalDatabase global,
-    String? policyFilePath,
-    void Function(String message)? onWarn,
-  }) : _global = global,
-       _policyFilePath = policyFilePath,
-       _onWarn = onWarn;
+    required this._global,
+    this._policyFilePath,
+    this._onWarn,
+  });
 
   /// The environment variable naming a pinned policy file.
   static const envVar = 'CC_SERVER_MANAGED_POLICY';

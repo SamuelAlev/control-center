@@ -6,6 +6,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.d
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
+import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/rigs/ios_automation_store.dart';
 import 'package:cc_infra/src/rigs/wda_client.dart';
 import 'package:crypto/crypto.dart';
@@ -624,6 +625,12 @@ class IosSimulatorBackend {
   }
 
   /// Resolves every registry-owned or pending device left by a previous run.
+  ///
+  /// A single undeletable simulator is logged and left in the registry for
+  /// the next pass. Throwing here used to abort `RigService.start` entirely,
+  /// so a leftover from a crashed boot skipped the reaper and left QEMU and
+  /// smolvm unarmed. QEMU's orphan sweep already steps over one failure the
+  /// same way — this runs on every boot.
   Future<void> sweepOrphanedDevices() => _withRegistry(() async {
     final records = await _readRegistry();
     if (records.isEmpty) {
@@ -638,16 +645,15 @@ class IosSimulatorBackend {
       }
       try {
         await _shutdownAndDelete(udid);
-      } on Object {
+      } on Object catch (error) {
         remaining.add(record);
+        CcInfraLog.warning(
+          'rig: could not sweep owned iOS Simulator $udid '
+          '(${record.name}): $error',
+        );
       }
     }
     await _writeRegistry(remaining);
-    if (remaining.isNotEmpty) {
-      throw IosSimulatorException(
-        'Could not remove ${remaining.length} registry-owned iOS simulator(s).',
-      );
-    }
   });
 
   Future<IosSimulatorSelection?> _currentSelection() async {

@@ -19,12 +19,11 @@ import 'package:path/path.dart' as p;
 class KimiOAuth implements HarnessDeviceOAuthProvider {
   /// Creates a [KimiOAuth].
   ///
-  /// [dataDir] is where the stable device id is persisted; when null (or
+  /// [_dataDir] is where the stable device id is persisted; when null (or
   /// unwritable) the id is per-process, which still authenticates but makes the
   /// server look like a new device on every restart.
-  KimiOAuth({String? dataDir, ProviderHttp? http, String? oauthHost})
-    : _dataDir = dataDir,
-      _http = http ?? ProviderHttp.shared,
+  KimiOAuth({this._dataDir, ProviderHttp? http, String? oauthHost})
+    : _http = http ?? ProviderHttp.shared,
       _host =
           oauthHost ??
           Platform.environment['KIMI_CODE_OAUTH_HOST'] ??

@@ -63,9 +63,8 @@ class _RigCredentialGrant {
 /// allowlist. A real forge token sitting in `~/.git-credentials` inside the
 /// guest would be none of those things.
 class GuestCredentialService {
-  /// Creates a [GuestCredentialService] over [broker].
-  GuestCredentialService({required CredentialBrokerPort broker})
-    : _broker = broker;
+  /// Creates a [GuestCredentialService] over [_broker].
+  GuestCredentialService({required this._broker});
 
   final CredentialBrokerPort _broker;
   final Map<String, _RigCredentialGrant> _grants = {};

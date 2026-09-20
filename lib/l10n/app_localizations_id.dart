@@ -259,6 +259,9 @@ class AppLocalizationsId extends AppLocalizations {
       'Membuat Simulator iOS sementara di Mac server. Simulator dihapus saat rig ditutup; akses jaringan tidak diisolasi.';
 
   @override
+  String get rigTechnicalDetails => 'Detail teknis';
+
+  @override
   String get rigStopMachine => 'Hentikan mesin';
 
   @override

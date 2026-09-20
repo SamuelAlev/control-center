@@ -48,21 +48,16 @@ typedef GoalSystemMessageSender =
 class GoalSupervisor implements GoalSupervisionPort {
   /// Creates a [GoalSupervisor]. When [eventBus] is supplied, the supervisor
   /// subscribes to [AgentRunCompleted] and drives the continue/stop decision
-  /// after every finished run. [now] and [backoff] are test seams.
+  /// after every finished run. [_now] and [backoff] are test seams.
   GoalSupervisor({
-    required AgentGoalRunRepository goalRepository,
-    required AgentRunLogRepository runLogRepository,
-    required GoalDispatcher dispatcher,
-    required GoalSystemMessageSender systemMessageSender,
+    required this._goalRepository,
+    required this._runLogRepository,
+    required this._dispatcher,
+    required this._systemMessageSender,
     DomainEventBus? eventBus,
-    DateTime Function() now = DateTime.now,
+    this._now = DateTime.now,
     Duration Function(int consecutiveFailures)? backoff,
-  }) : _goalRepository = goalRepository,
-       _runLogRepository = runLogRepository,
-       _dispatcher = dispatcher,
-       _systemMessageSender = systemMessageSender,
-       _now = now,
-       _backoff = backoff ?? _defaultBackoff {
+  }) : _backoff = backoff ?? _defaultBackoff {
     _subscription = eventBus?.on<AgentRunCompleted>().listen(
       (event) => unawaited(_onRunCompletedSafely(event)),
     );

@@ -13,12 +13,10 @@ import 'package:cc_mcp/src/tools/memory_repo_scope_arg.dart';
 class ProposePolicyTool extends McpTool {
   /// Creates a [ProposePolicyTool].
   ProposePolicyTool({
-    required PromoteFactsToPolicyUseCase useCase,
-    required ResolveOrCreateDomainUseCase resolveDomainUseCase,
-    required MemoryRepoScopeResolver repoScope,
-  }) : _useCase = useCase,
-       _resolveDomainUseCase = resolveDomainUseCase,
-       _repoScope = repoScope;
+    required this._useCase,
+    required this._resolveDomainUseCase,
+    required this._repoScope,
+  });
 
   final PromoteFactsToPolicyUseCase _useCase;
   final ResolveOrCreateDomainUseCase _resolveDomainUseCase;

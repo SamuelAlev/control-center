@@ -27,13 +27,11 @@ class EvalRunner {
   /// Creates an [EvalRunner].
   EvalRunner({
     required EvalsRepository repository,
-    required EvalTaskExecutor executor,
-    JudgeGraderRunner? judgeRunner,
+    required this._executor,
+    this._judgeRunner,
     DateTime Function()? now,
     String Function()? newId,
   }) : _repo = repository,
-       _executor = executor,
-       _judgeRunner = judgeRunner,
        _now = now ?? DateTime.now,
        _newId = newId ?? _defaultId;
 

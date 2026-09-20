@@ -12,10 +12,9 @@ import 'package:uuid/uuid.dart';
 class HireAgentUseCase {
   /// Creates a [HireAgentUseCase].
   const HireAgentUseCase({
-    required AgentRepository repository,
-    required WorkspaceFilesystemPort filesystem,
-  }) : _repository = repository,
-       _filesystem = filesystem;
+    required this._repository,
+    required this._filesystem,
+  });
 
   final AgentRepository _repository;
   final WorkspaceFilesystemPort _filesystem;

@@ -47,8 +47,18 @@ abstract final class AppIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData androidLogo = IconData(
+    0xe008,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData appWindow = IconData(
     0xe5da,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData appleLogo = IconData(
+    0xe516,
     fontFamily: _family,
     fontPackage: _package,
   );

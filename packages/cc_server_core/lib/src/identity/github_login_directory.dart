@@ -24,13 +24,11 @@ import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 class GitHubLoginDirectory {
   /// Creates a [GitHubLoginDirectory].
   GitHubLoginDirectory({
-    required WorkspaceMembershipRepository members,
-    required UserCredentialsStore credentials,
+    required this._members,
+    required this._credentials,
     this.ttl = const Duration(minutes: 5),
     DateTime Function()? now,
-  }) : _members = members,
-       _credentials = credentials,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final WorkspaceMembershipRepository _members;
   final UserCredentialsStore _credentials;

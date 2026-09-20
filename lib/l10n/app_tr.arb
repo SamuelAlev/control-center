@@ -117,6 +117,7 @@
   "rigStartHint": "Bu konuşma için sizin ve ajanlarınızın paylaştığı tek kullanımlık bir sanal makine başlatır. Kapandığında yok edilir; içindeki hiçbir şey bilgisayarınıza dokunmaz.",
   "rigStartAndroidHint": "Sunucuda zaten çalışan bir Android emülatörüne bağlanır. Ağ erişimi yalıtılmamıştır.",
   "rigStartIosHint": "Sunucu Mac’inde geçici bir iOS Simülatörü oluşturur. Test ortamı kapatıldığında silinir; ağ erişimi yalıtılmamıştır.",
+  "rigTechnicalDetails": "Teknik ayrıntılar",
   "rigStopMachine": "Makineyi durdur",
   "rigSurfaceUnavailable": "Bu sunucu bu tür bir makine barındıramaz.",
   "rigTabNeedsConversation": "Önce bir konuşma açın — makine bir konuşmaya aittir, böylece siz ve ajanlarınız aynı ekrana bakarsınız.",

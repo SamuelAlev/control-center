@@ -59,16 +59,15 @@ class RepoSkillEntry {
 class RepoSkillCatalog {
   /// Creates a [RepoSkillCatalog].
   ///
-  /// [scanner] is the mandatory gate: a repo is cloned content and its skills
+  /// [_scanner] is the mandatory gate: a repo is cloned content and its skills
   /// reach a prompt, so they pass the same verdict an installed skill does.
   /// Null yields nothing at all rather than ungated content.
   RepoSkillCatalog({
     required this.workspaceId,
     required this.reposDir,
-    SkillScanPort? scanner,
-    void Function(String message)? onWarning,
-  }) : _scanner = scanner,
-       _onWarning = onWarning;
+    this._scanner,
+    this._onWarning,
+  });
 
   /// The workspace the space belongs to; scopes the scanner's result cache.
   final String workspaceId;

@@ -30,10 +30,10 @@ class ReviewSuppressionMatcher {
   /// before it is set aside — more than one, so a single stubborn rejection
   /// cannot suppress a whole class of finding on its own.
   const ReviewSuppressionMatcher({
-    required EmbeddingPort embedder,
+    required this._embedder,
     this.similarityThreshold = 0.86,
     this.minMatches = 2,
-  }) : _embedder = embedder;
+  });
 
   final EmbeddingPort _embedder;
 

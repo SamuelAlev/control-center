@@ -68,6 +68,7 @@ linter:
     prefer_const_declarations: true
     prefer_final_fields: true
     prefer_final_locals: true
+    prefer_initializing_formals: true
     prefer_interpolation_to_compose_strings: true
     prefer_single_quotes: true
     sort_constructors_first: true

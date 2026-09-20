@@ -8,8 +8,7 @@ import 'package:uuid/uuid.dart';
 /// MCP tool that updates the agent's private working memory notes.
 class UpdateMyNotesTool extends McpTool {
   /// Creates a [UpdateMyNotesTool].
-  UpdateMyNotesTool({required AgentWorkingMemoryRepository repository})
-    : _repository = repository;
+  UpdateMyNotesTool({required this._repository});
 
   final AgentWorkingMemoryRepository _repository;
 

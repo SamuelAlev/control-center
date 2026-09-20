@@ -117,6 +117,7 @@
   "rigStartHint": "Startar en tillfällig VM som du och dina agenter delar för det här samtalet. Den tas bort när den stängs, och ingenting i den rör din dator.",
   "rigStartAndroidHint": "Ansluter till en Android-emulator som redan körs på servern. Nätverksåtkomsten är inte isolerad.",
   "rigStartIosHint": "Skapar en tillfällig iOS-simulator på serverns Mac. Den tas bort när testmiljön stängs; nätverksåtkomsten är inte isolerad.",
+  "rigTechnicalDetails": "Tekniska detaljer",
   "rigStopMachine": "Stoppa maskinen",
   "rigSurfaceUnavailable": "Den här servern kan inte köra den här typen av maskin.",
   "rigTabNeedsConversation": "Öppna ett samtal först – en maskin hör till ett, så att du och dina agenter tittar på samma skärm.",

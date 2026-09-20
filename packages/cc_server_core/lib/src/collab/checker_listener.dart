@@ -20,22 +20,13 @@ import 'package:cc_persistence/database/workspace_database_manager.dart';
 class CheckerDispatchListener {
   /// Creates the listener. Call [start].
   CheckerDispatchListener({
-    required DomainEventBus eventBus,
+    required this._eventBus,
     required WorkspaceDatabaseManager workspaceDbs,
-    required AgentRunLogRepository runLogs,
-    required Future<void> Function({
-      required String spaceId,
-      required String agentId,
-      required String prompt,
-      required String workspaceId,
-    })
-    dispatchChecker,
+    required this._runLogs,
+    required this._dispatchChecker,
     this.cooldown = const Duration(minutes: 2),
     DateTime Function()? now,
-  }) : _eventBus = eventBus,
-       _dbs = workspaceDbs,
-       _runLogs = runLogs,
-       _dispatchChecker = dispatchChecker,
+  }) : _dbs = workspaceDbs,
        _now = now ?? DateTime.now;
 
   /// The Caches kind naming a space's checker agent.

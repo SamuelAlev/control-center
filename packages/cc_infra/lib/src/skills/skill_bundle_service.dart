@@ -55,27 +55,21 @@ typedef GitHubDefaultBranchResolver =
 class SkillBundleService implements SkillBundlePort {
   /// Creates a [SkillBundleService].
   ///
-  /// [scanner] is the mandatory install-gate (PRD 23 §2). It is OPTIONAL only so
+  /// [_scanner] is the mandatory install-gate (PRD 23 §2). It is OPTIONAL only so
   /// pre-scanner callers/tests still compile — when null the gate is a no-op and
   /// behavior is unchanged. The server ALWAYS wires it; a wired scanner is
   /// fail-closed (a quarantine verdict or a scanner error aborts before write).
   SkillBundleService({
     required WorkspaceFilesystemPort filesystem,
     required GitHubSkillFilesFetcher fetchGitHubSkill,
-    SkillScanPort? scanner,
-    SkillScanRepository? scanCache,
-    ActionGuardService? actionGuard,
-    GitHubLatestCommitResolver? latestCommit,
-    GitHubDefaultBranchResolver? defaultBranch,
-    DomainEventBus? eventBus,
+    this._scanner,
+    this._scanCache,
+    this._actionGuard,
+    this._latestCommit,
+    this._defaultBranch,
+    this._eventBus,
   }) : _fs = filesystem,
-       _fetch = fetchGitHubSkill,
-       _scanner = scanner,
-       _scanCache = scanCache,
-       _actionGuard = actionGuard,
-       _latestCommit = latestCommit,
-       _defaultBranch = defaultBranch,
-       _eventBus = eventBus;
+       _fetch = fetchGitHubSkill;
 
   final WorkspaceFilesystemPort _fs;
   final GitHubSkillFilesFetcher _fetch;

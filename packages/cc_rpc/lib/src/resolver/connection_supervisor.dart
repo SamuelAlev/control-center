@@ -83,24 +83,19 @@ class ServerConnectionStatus {
 class ServerConnectionSupervisor {
   /// Creates a supervisor. Call [start] to connect.
   ServerConnectionSupervisor({
-    required ConnectionDescriptor descriptor,
+    required this._descriptor,
     required this.deviceId,
-    required String psk,
+    required this._psk,
     String? pinnedFingerprint,
     ReachabilityResolver? resolver,
     this.pingInterval = const Duration(seconds: 10),
     this.maxMissedPings = 3,
     this.descriptorRefreshInterval = const Duration(minutes: 5),
-    Future<void> Function()? beforeReconnect,
-    void Function(ConnectionDescriptor descriptor)? onDescriptorUpdated,
-    void Function(String fingerprint)? onFingerprintPinned,
-  }) : _descriptor = descriptor,
-       _psk = psk,
-       _pin = pinnedFingerprint ?? '',
-       _resolver = resolver ?? ReachabilityResolver(),
-       _beforeReconnect = beforeReconnect,
-       _onDescriptorUpdated = onDescriptorUpdated,
-       _onFingerprintPinned = onFingerprintPinned;
+    this._beforeReconnect,
+    this._onDescriptorUpdated,
+    this._onFingerprintPinned,
+  }) : _pin = pinnedFingerprint ?? '',
+       _resolver = resolver ?? ReachabilityResolver();
 
   /// The paired device credential id.
   final String deviceId;

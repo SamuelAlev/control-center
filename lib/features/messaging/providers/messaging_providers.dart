@@ -1,16 +1,16 @@
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
+import 'package:cc_domain/features/messaging/domain/services/agent_question_service.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_step.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/thread_summary.dart';
-import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
-import 'package:cc_domain/features/messaging/domain/services/agent_question_service.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/agents/providers/conversation_run_tree_provider.dart';
@@ -891,4 +891,3 @@ final spaceThreadSummariesProvider = StreamProvider.autoDispose
           .watchThreadSummaries(workspaceId: workspaceId, spaceId: spaceId)
           .map((list) => {for (final t in list) t.anchorMessageId: t});
     });
-

@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/services.dart';
 
 /// iOS key name for a Flutter logical key, or null when WebDriverAgent has no

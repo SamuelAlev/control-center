@@ -17,12 +17,10 @@ import 'package:cc_infra/src/pr_review/api_contract_diff_service.dart';
 class ReviewDependencyService {
   /// Creates a [ReviewDependencyService].
   ReviewDependencyService({
-    required ReviewDependencyDiffRepository repository,
+    required this._repository,
     required String Function() idFactory,
-    LockfileDiffer differ = const LockfileDiffer(),
-  }) : _repository = repository,
-       _newId = idFactory,
-       _differ = differ;
+    this._differ = const LockfileDiffer(),
+  }) : _newId = idFactory;
 
   final ReviewDependencyDiffRepository _repository;
   final String Function() _newId;

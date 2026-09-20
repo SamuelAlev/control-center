@@ -72,11 +72,10 @@ class SteeringQueueService {
   SteeringQueueService({
     required MessagingRepository messagingRepository,
     required AgentRunLogRepository runLogRepository,
-    required DispatchResponder dispatchResponder,
+    required this._dispatchResponder,
     required SteeringSessionsFor sessionsForConversation,
   }) : _messaging = messagingRepository,
        _runLogs = runLogRepository,
-       _dispatchResponder = dispatchResponder,
        _sessionsFor = sessionsForConversation;
 
   final MessagingRepository _messaging;

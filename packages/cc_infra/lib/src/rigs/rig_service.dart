@@ -31,9 +31,9 @@ import 'package:cc_infra/src/rigs/adb_client.dart';
 import 'package:cc_infra/src/rigs/browser_engine_attach.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
 import 'package:cc_infra/src/rigs/guest_agent_client.dart';
+import 'package:cc_infra/src/rigs/guest_credential_service.dart';
 import 'package:cc_infra/src/rigs/ios_rig_driver.dart';
 import 'package:cc_infra/src/rigs/ios_simulator_backend.dart';
-import 'package:cc_infra/src/rigs/guest_credential_service.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart';
 import 'package:cc_infra/src/rigs/rig_dev_tls.dart';
 import 'package:cc_infra/src/rigs/rig_drivers.dart';
@@ -300,31 +300,20 @@ class _LiveRig {
 class RigService implements RigPort, RigPortsPort {
   /// Creates a [RigService].
   RigService({
-    required RigRepository repository,
-    required QemuEnclosureBackend qemu,
-    required SmolvmEnclosureBackend smolvm,
-    required RigImageStore images,
-    IosSimulatorBackend? ios,
-    GuestCredentialService? credentials,
-    DomainEventBus? eventBus,
+    required this._repository,
+    required this._qemu,
+    required this._smolvm,
+    required this._images,
+    this._ios,
+    this._credentials,
+    this._eventBus,
     String? dataDir,
-    RigSmolvmImageResolver? smolvmImageOverride,
-    RigBrowserEgressResolver? browserEgressHosts,
-    int maxResidentMb = 12288,
-    Duration reapInterval = const Duration(seconds: 30),
-  }) : _repository = repository,
-       _qemu = qemu,
-       _smolvm = smolvm,
-       _images = images,
-       _ios = ios,
-       _credentials = credentials,
-       _eventBus = eventBus,
-       _dataDir = dataDir,
-       _smolvmImageOverride = smolvmImageOverride,
-       _browserEgressHosts = browserEgressHosts,
-       _devTls = dataDir == null ? null : RigDevTlsMaterial(dataDir: dataDir),
-       _maxResidentMb = maxResidentMb,
-       _reapInterval = reapInterval;
+    this._smolvmImageOverride,
+    this._browserEgressHosts,
+    this._maxResidentMb = 12288,
+    this._reapInterval = const Duration(seconds: 30),
+  }) : _dataDir = dataDir,
+       _devTls = dataDir == null ? null : RigDevTlsMaterial(dataDir: dataDir);
 
   final RigRepository _repository;
   final QemuEnclosureBackend _qemu;
@@ -431,7 +420,14 @@ class RigService implements RigPort, RigPortsPort {
   Future<void> start() async {
     await _qemu.sweepOrphanedRuntimes();
     await _smolvm.sweepOrphanedRuntimes();
-    await _ios?.sweepOrphanedDevices();
+    try {
+      await _ios?.sweepOrphanedDevices();
+    } on Object catch (e) {
+      // Fail-closed iOS registry errors must not skip the reaper or leave
+      // QEMU/smolvm unarmed. Leftover simulators stay in the registry for
+      // the next boot.
+      CcInfraLog.warning('rig: iOS orphan sweep failed: $e');
+    }
     await _markStrandedSessionsFailed();
     // Dev-domain TLS: mint (or load) the local CA + leaf, then hand the
     // leaf's PUBLIC-key fingerprint to the browser workload builder so the
@@ -703,6 +699,12 @@ class RigService implements RigPort, RigPortsPort {
         'The rig service is shutting down, so no new machine was opened.',
       );
     }
+    // A failed boot leaves a terminal `failed` row on purpose so the tab
+    // that started it can show why. Those rows must not outlive a retry:
+    // `watchSessions` still streams them, and the tab treated the newest
+    // non-closed row as "this machine", so a later successful start-and-stop
+    // resurrected the old dump.
+    await _dismissFailedSiblings(workspaceId, spec);
     final now = DateTime.now();
     final rig = Rig(
       id: _uuid.v4(),
@@ -1522,7 +1524,11 @@ class RigService implements RigPort, RigPortsPort {
       // Closing a dead row must still close it, or the panel shows a machine
       // with a stop button that silently does nothing, forever.
       final stale = await _repository.getById(workspaceId, rigId);
-      if (stale != null && !stale.status.phase.isTerminal) {
+      // `failed` is terminal for reuse (no machine to tear down) but the
+      // row is still what the tab renders as "why this didn't start".
+      // Closing it is how a person dismisses that dump — including when
+      // they close the tab or stop a later successful machine.
+      if (stale != null && stale.status.phase != RigPhase.closed) {
         await _repository.save(
           workspaceId,
           stale.copyWith(
@@ -2292,6 +2298,37 @@ class RigService implements RigPort, RigPortsPort {
     return null;
   }
 
+  /// Closes leftover `failed` rows that occupy the same tab slot as [spec].
+  ///
+  /// A failed boot is terminal for reuse but still visible to the tab: the
+  /// watch includes every phase, and the tab treats the newest non-closed
+  /// row as "this machine". Without this, retrying — or stopping a later
+  /// successful machine — resurrected the dump from the attempt that died.
+  Future<void> _dismissFailedSiblings(String workspaceId, RigSpec spec) async {
+    final conversationId = spec.conversationId;
+    if (conversationId == null) {
+      return;
+    }
+    final now = DateTime.now();
+    for (final row in await _repository.list(workspaceId)) {
+      if (row.conversationId != conversationId ||
+          row.surface != spec.surface ||
+          row.spec.isExec != spec.isExec ||
+          !_sameEngine(row.spec, spec) ||
+          row.spec.slotId != spec.slotId ||
+          row.status.phase != RigPhase.failed) {
+        continue;
+      }
+      await _repository.save(
+        workspaceId,
+        row.copyWith(
+          status: const RigClosed(RigCloseReason.requested),
+          closedAt: now,
+        ),
+      );
+    }
+  }
+
   /// Whether [live] is still the registered session for its id.
   ///
   /// Teardown removes from `_live` FIRST and then awaits several teardown
@@ -2670,6 +2707,7 @@ class RigService implements RigPort, RigPortsPort {
         closedAt: DateTime.now(),
       );
       await _repository.save(live.rig.workspaceId, live.rig);
+      await _dismissFailedSiblings(live.rig.workspaceId, live.rig.spec);
     }
     _eventBus?.publish(
       RigClosedEvent(

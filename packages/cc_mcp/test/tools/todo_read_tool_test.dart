@@ -16,10 +16,7 @@ void main() {
   setUp(() {
     todos = _FakeTodos();
     messaging = _FakeMessaging();
-    tool = TodoReadTool(
-      todoRepository: todos,
-      messagingRepository: messaging,
-    );
+    tool = TodoReadTool(todoRepository: todos, messagingRepository: messaging);
   });
 
   test('missing workspace_id is refused', () async {
@@ -57,7 +54,7 @@ void main() {
     final body = jsonDecode(result.content.first.text) as Map<String, dynamic>;
     expect(body['total'], 1);
     expect(body['completed'], 1);
-    expect((body['todos'] as List).single['content'], 'Ship it');
+    expect(((body['todos'] as List).single as Map)['content'], 'Ship it');
   });
 }
 

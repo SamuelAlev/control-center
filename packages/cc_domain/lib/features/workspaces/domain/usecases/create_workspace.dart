@@ -31,12 +31,10 @@ class CreateWorkspaceUseCase {
   /// the workspace owns its asset — the persisted [Workspace.logoPath]
   /// points at the copy, not at the user-picked file.
   const CreateWorkspaceUseCase({
-    required WorkspaceRepository repository,
-    DomainEventBus? eventBus,
-    WorkspaceFilesystemPort? filesystem,
-  }) : _repository = repository,
-       _eventBus = eventBus,
-       _filesystem = filesystem;
+    required this._repository,
+    this._eventBus,
+    this._filesystem,
+  });
 
   final WorkspaceRepository _repository;
   final DomainEventBus? _eventBus;

@@ -1,8 +1,8 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
 import 'package:cc_host/cc_host.dart';
-
-import 'catalog_wire.dart' show agentGoalRunToWire;
+import 'package:cc_server_core/src/catalog/catalog_wire.dart'
+    show agentGoalRunToWire;
 
 /// One durable-goal lifecycle control (`pause` / `resume` / `cancel`), wired
 /// by the caller to the server's `GoalSupervisor` (tear-offs keep this file

@@ -34,11 +34,12 @@ String withRenderableFrontmatter(String content) {
 /// Content is fetched lazily but seeded from [cachedContent] (the view's
 /// per-file cache) when available, so a recycled preview re-renders
 /// synchronously — no loader frame, no re-fetch — which keeps the
-/// [HeightReporter]-measured height stable as you scroll near it. On a refresh
+/// `HeightReporter`-measured height stable as you scroll near it. On a refresh
 /// that invalidates the cache, the previously-rendered content stays visible
 /// until the new fetch resolves, so the body never collapses to the loader and
 /// the diff doesn't jump.
 class MarkdownPreviewBody extends StatefulWidget {
+  /// Creates a [MarkdownPreviewBody].
   const MarkdownPreviewBody({
     super.key,
     required this.path,
@@ -60,10 +61,10 @@ class MarkdownPreviewBody extends StatefulWidget {
   final ValueChanged<String> onLoaded;
 
   @override
-  State<MarkdownPreviewBody> createState() => MarkdownPreviewBodyState();
+  State<MarkdownPreviewBody> createState() => _MarkdownPreviewBodyState();
 }
 
-class MarkdownPreviewBodyState extends State<MarkdownPreviewBody> {
+class _MarkdownPreviewBodyState extends State<MarkdownPreviewBody> {
   String? _content;
   Object? _error;
 
@@ -123,9 +124,7 @@ class MarkdownPreviewBodyState extends State<MarkdownPreviewBody> {
           constraints: const BoxConstraints(maxWidth: 900),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: StyledMarkdownBody(
-              data: withRenderableFrontmatter(content),
-            ),
+            child: StyledMarkdownBody(data: withRenderableFrontmatter(content)),
           ),
         ),
       );

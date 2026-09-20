@@ -409,7 +409,10 @@ class _FakeCreateWorkspaceNotifier extends CreateWorkspaceNotifier {
 class _FakeDetectedAdapters extends AdapterDetectionNotifier {
   @override
   List<DetectedAdapter> build() => [
-    DetectedAdapter(adapter: builtInAdapter, status: DetectionStatus.found),
+    const DetectedAdapter(
+      adapter: builtInAdapter,
+      status: DetectionStatus.found,
+    ),
   ];
 }
 
@@ -419,7 +422,10 @@ class _FakeDetectedAdapters extends AdapterDetectionNotifier {
 class _HarnessReadyWhileClaudeChecks extends AdapterDetectionNotifier {
   @override
   List<DetectedAdapter> build() => [
-    DetectedAdapter(adapter: builtInAdapter, status: DetectionStatus.found),
+    const DetectedAdapter(
+      adapter: builtInAdapter,
+      status: DetectionStatus.found,
+    ),
     DetectedAdapter(
       adapter: predefinedAdapters.firstWhere((a) => a.id == 'claude-code'),
       status: DetectionStatus.checking,

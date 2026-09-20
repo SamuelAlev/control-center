@@ -262,6 +262,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Maakt een tijdelijke iOS-simulator op de Mac van de server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.';
 
   @override
+  String get rigTechnicalDetails => 'Technische details';
+
+  @override
   String get rigStopMachine => 'Machine stoppen';
 
   @override

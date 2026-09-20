@@ -127,13 +127,11 @@ class ActionGuardService {
   ActionGuardService({
     required ActionPolicyRepository repository,
     ConfirmationPort? confirmationPort,
-    PolicyResolver resolver = const PolicyResolver(),
-    void Function(GuardAudit audit)? onAudit,
+    this._resolver = const PolicyResolver(),
+    this._onAudit,
     Future<List<ActionPolicyRule>> Function()? managedRules,
   }) : _repo = repository,
        _confirm = confirmationPort,
-       _resolver = resolver,
-       _onAudit = onAudit,
        _managed = managedRules;
 
   final ActionPolicyRepository _repo;

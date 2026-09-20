@@ -77,18 +77,16 @@ class GrammarInstallException implements Exception {
 class GrammarManager {
   /// Creates a [GrammarManager].
   ///
-  /// [dio] downloads grammar natives; [grammarsDir] resolves the install
+  /// [_dio] downloads grammar natives; [_grammarsDir] resolves the install
   /// directory (`<app-support>/grammars`, populated by
   /// `scripts/natives/build_tree_sitter.sh` in dev or by [install] when
   /// downloaded). [onLog] receives diagnostics; defaults to silent. The host
   /// injects all three so `cc_natives` stays a leaf package.
   GrammarManager({
-    required Dio dio,
-    required NativeDirResolver grammarsDir,
+    required this._dio,
+    required this._grammarsDir,
     NativeLog? onLog,
-  }) : _dio = dio,
-       _grammarsDir = grammarsDir,
-       _log = onLog;
+  }) : _log = onLog;
 
   final Dio _dio;
   final NativeDirResolver _grammarsDir;

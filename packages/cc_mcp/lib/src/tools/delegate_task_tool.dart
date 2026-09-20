@@ -14,8 +14,7 @@ import 'package:cc_harness/tools.dart';
 /// surfaces the guard's reason verbatim as a tool error.
 class DelegateTaskTool extends McpTool {
   /// Creates a [DelegateTaskTool].
-  DelegateTaskTool({required TicketWorkflowService service})
-    : _service = service;
+  DelegateTaskTool({required this._service});
 
   final TicketWorkflowService _service;
 

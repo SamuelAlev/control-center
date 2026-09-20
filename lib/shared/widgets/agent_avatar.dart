@@ -1,6 +1,6 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 /// Builder type for constructing a hover card widget for an agent.
 typedef HoverCardBuilder =

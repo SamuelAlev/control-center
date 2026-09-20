@@ -96,16 +96,25 @@ final conversationPendingRigProvider =
       final sessions = ref.watch(rigSessionsProvider(key.workspaceId));
       return sessions.maybeWhen(
         data: (rigs) {
+          RigView? failed;
           for (final rig in rigs) {
-            if (rig.conversationId == key.conversationId &&
-                rig.surface == key.surface &&
-                _matchesEngine(rig, key.engine) &&
-                _matchesSlot(rig, key.slotId) &&
-                rig.phaseKind != RigPhase.closed) {
-              return rig;
+            if (rig.conversationId != key.conversationId ||
+                rig.surface != key.surface ||
+                !_matchesEngine(rig, key.engine) ||
+                !_matchesSlot(rig, key.slotId) ||
+                rig.phaseKind == RigPhase.closed) {
+              continue;
             }
+            // A boot in flight (or a live machine) must win over an older
+            // failed row even if the watch order ever disagrees with
+            // createdAt. The failed dump is the fallback, not a rival.
+            if (rig.isFailed) {
+              failed ??= rig;
+              continue;
+            }
+            return rig;
           }
-          return null;
+          return failed;
         },
         orElse: () => null,
       );

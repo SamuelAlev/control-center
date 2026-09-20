@@ -16,9 +16,8 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 ///   browser. The broker prefers browser and falls back to this.
 class CodexOAuth extends OpenAiOAuth implements HarnessDeviceOAuthProvider {
   /// Creates a [CodexOAuth].
-  CodexOAuth({ProviderHttp? http})
+  CodexOAuth({super.http})
     : super(
-        http: http,
         providerId: id,
         extraAuthorizeParams: const {
           'codex_cli_simplified_flow': 'true',
@@ -160,10 +159,7 @@ class CodexOAuth extends OpenAiOAuth implements HarnessDeviceOAuthProvider {
       json = await http.postJson(
         Uri.parse(_deviceTokenUrl),
         headers: const {'Accept': 'application/json'},
-        body: {
-          'device_auth_id': deviceAuthId,
-          'user_code': userCode,
-        },
+        body: {'device_auth_id': deviceAuthId, 'user_code': userCode},
       );
     } on ProviderHttpException catch (e) {
       // 403/404 = authorization still pending.

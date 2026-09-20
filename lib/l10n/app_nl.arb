@@ -110,6 +110,7 @@
   "rigStartHint": "Start een wegwerp-VM die je met je agents deelt voor dit gesprek. Hij wordt bij het sluiten vernietigd en niets erin raakt jouw computer.",
   "rigStartAndroidHint": "Maakt verbinding met een Android-emulator die al op de server wordt uitgevoerd. De netwerktoegang is niet geïsoleerd.",
   "rigStartIosHint": "Maakt een tijdelijke iOS-simulator op de Mac van de server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.",
+  "rigTechnicalDetails": "Technische details",
   "rigStopMachine": "Machine stoppen",
   "rigSurfaceUnavailable": "Deze server kan dit soort machine niet draaien.",
   "rigTabNeedsConversation": "Open eerst een gesprek — een machine hoort bij één gesprek, zodat jij en je agents naar hetzelfde scherm kijken.",

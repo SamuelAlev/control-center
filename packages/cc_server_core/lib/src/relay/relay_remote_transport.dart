@@ -15,16 +15,16 @@ import 'package:cc_rpc/cc_rpc.dart';
 ///
 /// [close] stops bridging without dropping the room membership.
 class RelayRemoteTransport implements RemoteRpcChannelPort {
-  /// Wraps the already-joined [signaling] owner space for [peer], sealing
+  /// Wraps the already-joined [_signaling] owner space for [peer], sealing
   /// with [psk]. [replay] carries payloads that arrived between the client's
   /// hello and this transport's construction — they are fed through the
   /// codec in arrival order before live traffic.
   RelayRemoteTransport({
-    required RelaySignalingChannel signaling,
+    required this._signaling,
     required this.peer,
     required String psk,
     List<Map<String, dynamic>> replay = const [],
-  }) : _signaling = signaling {
+  }) {
     _session = ChunkedRelaySession(
       psk: psk,
       sendPayload: (payload) {

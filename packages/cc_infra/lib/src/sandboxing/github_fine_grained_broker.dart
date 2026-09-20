@@ -23,21 +23,20 @@ import 'package:cc_infra/src/network/github/github_app_client.dart';
 class GitHubFineGrainedTokenBroker implements CredentialBrokerPort {
   /// Creates a [GitHubFineGrainedTokenBroker].
   ///
-  /// [app] resolves the server's GitHub App at mint time rather than at
+  /// [_app] resolves the server's GitHub App at mint time rather than at
   /// construction, so an operator who configures (or changes) it in Settings
   /// does not have to restart for the next run to use it. Returning null there
   /// means "no app", and every launch falls back to the PAT.
   ///
-  /// [serverOwnerUserId] identifies the operator. It exists so the raw-PAT
+  /// [_serverOwnerUserId] identifies the operator. It exists so the raw-PAT
   /// fallback can be withheld from a run acting for somebody ELSE: that PAT is
   /// the SERVER's credential, so handing it to a member's run would give them
   /// the server's whole reach rather than access bounded by their own.
   GitHubFineGrainedTokenBroker(
     this._credentials, {
-    Future<GitHubAppClient?> Function()? app,
-    Future<String?> Function()? serverOwnerUserId,
-  }) : _app = app,
-       _serverOwnerUserId = serverOwnerUserId;
+    this._app,
+    this._serverOwnerUserId,
+  });
 
   final CredentialsRepository _credentials;
   final Future<GitHubAppClient?> Function()? _app;

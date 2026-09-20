@@ -21,15 +21,13 @@ import 'package:path/path.dart' as p;
 /// A remote headless `cc_server` has no browser launcher, so `authorize`
 /// surfaces a [StateError] the caller relays as "authorize on the host".
 class ServerMcpClientControl implements McpClientControl {
-  /// Creates a control over [service], updating [dispatcher]'s approval mode and
+  /// Creates a control over [_service], updating [_dispatcher]'s approval mode and
   /// persisting the posture under [dataDir].
   ServerMcpClientControl({
-    required McpClientService service,
-    required McpToolDispatcher dispatcher,
+    required this._service,
+    required this._dispatcher,
     required String dataDir,
-  }) : _service = service,
-       _dispatcher = dispatcher,
-       _file = File(p.join(dataDir, 'mcp_client_config.json'));
+  }) : _file = File(p.join(dataDir, 'mcp_client_config.json'));
 
   final McpClientService _service;
   final McpToolDispatcher _dispatcher;

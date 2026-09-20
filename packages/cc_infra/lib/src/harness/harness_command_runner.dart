@@ -28,8 +28,8 @@ import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// Creates a [SandboxedHarnessCommandRunner].
   SandboxedHarnessCommandRunner({
-    required Mode mode,
-    required AgentCapabilities capabilities,
+    required this._mode,
+    required this._capabilities,
     this.sandboxManager,
     this.confirmationPort,
     this.execGrantService,
@@ -37,14 +37,10 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     this.workspaceId,
     this.agentId,
     this.conversationId,
-    Future<List<String>> Function()? protectedPaths,
-    Map<String, String> baseEnv = const {},
-    int maxOutputChars = 16000,
-  }) : _mode = mode,
-       _capabilities = capabilities,
-       _protectedPaths = protectedPaths,
-       _baseEnv = baseEnv,
-       _maxOutputChars = maxOutputChars;
+    this._protectedPaths,
+    this._baseEnv = const {},
+    this._maxOutputChars = 16000,
+  });
 
   /// The OS sandbox manager, or null to run with env sanitization only.
   final SandboxManager? sandboxManager;

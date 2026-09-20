@@ -133,14 +133,11 @@ class FileGoogleCredentialsStore {
 class ServerGoogleTokenManager {
   /// Creates a [ServerGoogleTokenManager].
   ServerGoogleTokenManager({
-    required FileGoogleCredentialsStore store,
-    GoogleOAuthClient serverClient = const GoogleOAuthClient.none(),
-    Future<void> Function(String accountId)? onInvalidGrant,
-    Dio Function()? dioFactory,
-  }) : _store = store,
-       _serverClient = serverClient,
-       _onInvalidGrant = onInvalidGrant,
-       _dioFactory = dioFactory;
+    required this._store,
+    this._serverClient = const GoogleOAuthClient.none(),
+    this._onInvalidGrant,
+    this._dioFactory,
+  });
 
   final FileGoogleCredentialsStore _store;
   final GoogleOAuthClient _serverClient;
@@ -312,17 +309,11 @@ class _ServerGoogleAuthInterceptor extends QueuedInterceptor {
 class ServerCalendarSync {
   /// Creates a [ServerCalendarSync].
   ServerCalendarSync({
-    required CalendarRepository calendarRepository,
-    required GoogleCalendarApiClient apiClient,
-    required WorkspaceRepository workspaceRepository,
-    // Short cadence is affordable because the underlying sweep is
-    // incremental (per-calendar sync tokens): an unchanged calendar costs one
-    // near-empty response, not a 150-day window re-fetch.
-    Duration interval = const Duration(minutes: 2),
-  }) : _calendarRepository = calendarRepository,
-       _apiClient = apiClient,
-       _workspaceRepository = workspaceRepository,
-       _interval = interval;
+    required this._calendarRepository,
+    required this._apiClient,
+    required this._workspaceRepository,
+    this._interval = const Duration(minutes: 2),
+  });
 
   final CalendarRepository _calendarRepository;
   final GoogleCalendarApiClient _apiClient;
@@ -590,19 +581,15 @@ class CalendarConnectPoll {
 /// can refresh later. Pending flows live in memory keyed by an opaque handle — a
 /// short-lived connect is fine to lose on a server restart (just re-initiate).
 class CalendarConnectService {
-  /// Creates a [CalendarConnectService]. [onConnected] (optional) fires after a
+  /// Creates a [CalendarConnectService]. [_onConnected] (optional) fires after a
   /// successful connect so the caller can kick an immediate sync.
   CalendarConnectService({
-    required FileGoogleCredentialsStore store,
-    required CalendarRepository calendarRepository,
-    GoogleOAuthClient serverClient = const GoogleOAuthClient.none(),
-    Future<void> Function(String workspaceId)? onConnected,
-    Dio Function()? dioFactory,
-  }) : _store = store,
-       _calendarRepository = calendarRepository,
-       _serverClient = serverClient,
-       _onConnected = onConnected,
-       _dioFactory = dioFactory;
+    required this._store,
+    required this._calendarRepository,
+    this._serverClient = const GoogleOAuthClient.none(),
+    this._onConnected,
+    this._dioFactory,
+  });
 
   final FileGoogleCredentialsStore _store;
   final CalendarRepository _calendarRepository;
@@ -768,9 +755,8 @@ class ServerCalendarRsvp {
   /// Creates a [ServerCalendarRsvp].
   ServerCalendarRsvp({
     required CalendarRepository calendarRepository,
-    required GoogleCalendarApiClient apiClient,
-  }) : _repository = calendarRepository,
-       _apiClient = apiClient;
+    required this._apiClient,
+  }) : _repository = calendarRepository;
 
   final CalendarRepository _repository;
   final GoogleCalendarApiClient _apiClient;

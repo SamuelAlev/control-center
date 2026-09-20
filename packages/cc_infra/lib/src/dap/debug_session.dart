@@ -40,11 +40,10 @@ class DebugSession {
   DebugSession({
     required this.id,
     required this.adapter,
-    required DapClient client,
+    required this._client,
     required this.workingDirectory,
     this.ttl = const Duration(minutes: 30),
-  }) : _client = client,
-       startedAt = DateTime.now() {
+  }) : startedAt = DateTime.now() {
     _eventSub = _client.events.listen(_onEvent);
     // The adapter asks US to do things — `runInTerminal` above all. An
     // unanswered reverse request is how a launch silently never starts: the

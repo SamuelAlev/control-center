@@ -582,13 +582,12 @@ class _FffWorker {
 class FffFileSearch implements FileSearch {
   /// Creates an [FffFileSearch].
   ///
-  /// [appSupportRoot] resolves the directory where `scripts/natives/build_fff.sh`
+  /// [_appSupportRoot] resolves the directory where `scripts/natives/build_fff.sh`
   /// installs `libfff_c` at dev time (the app-support root, next to
   /// `control_center.db`). When omitted, only the bundle-relative release paths
   /// are tried. [onLog] receives error diagnostics; defaults to silent.
-  FffFileSearch({NativeDirResolver? appSupportRoot, NativeLog? onLog})
-    : _appSupportRoot = appSupportRoot,
-      _log = onLog;
+  FffFileSearch({this._appSupportRoot, NativeLog? onLog})
+    : _log = onLog;
 
   final NativeDirResolver? _appSupportRoot;
   final NativeLog? _log;

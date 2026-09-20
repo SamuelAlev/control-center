@@ -6,8 +6,8 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_status
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The PR title in the content header. Renders [PrTitle] in read mode with a

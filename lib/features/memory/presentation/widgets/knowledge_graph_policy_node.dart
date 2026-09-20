@@ -6,9 +6,13 @@ import 'package:flutter/widgets.dart';
 
 /// Policy node — neutral card marked by the scale glyph, not a colored border.
 class PolicyNode extends StatelessWidget {
+  /// Creates a [PolicyNode].
   const PolicyNode({super.key, required this.policy, required this.onTap});
 
+  /// The policy rendered on this card.
   final MemoryPolicy policy;
+
+  /// Opens the policy's detail sheet.
   final VoidCallback onTap;
 
   @override

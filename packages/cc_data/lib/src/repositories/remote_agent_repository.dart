@@ -61,14 +61,14 @@ class RemoteAgentRepository {
       'name': name,
       'title': title,
       'skills': skills,
-      if (reportsTo != null) 'reportsTo': reportsTo,
-      if (persona != null) 'persona': persona,
-      if (systemPrompt != null) 'systemPrompt': systemPrompt,
-      if (adapterId != null) 'adapterId': adapterId,
-      if (modelId != null) 'modelId': modelId,
+      'reportsTo': ?reportsTo,
+      'persona': ?persona,
+      'systemPrompt': ?systemPrompt,
+      'adapterId': ?adapterId,
+      'modelId': ?modelId,
       'strictMode': strictMode,
-      if (effort != null) 'effort': effort,
-      if (contextSize != null) 'contextSize': contextSize,
+      'effort': ?effort,
+      'contextSize': ?contextSize,
     });
     final agent = data['agent'];
     if (agent is! Map) {

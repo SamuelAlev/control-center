@@ -14,11 +14,10 @@ import 'package:dio/dio.dart';
 /// client, priority numbering and the required team id. Construct it from a
 /// [Dio] so the transport client stays sealed inside this folder.
 class LinearTicketAdapter implements TicketProviderPort {
-  /// Creates a [LinearTicketAdapter] over an authorized [Dio]. [defaultTeamId]
+  /// Creates a [LinearTicketAdapter] over an authorized [Dio]. [_defaultTeamId]
   /// is used when a create draft does not carry a `teamId` in its extras.
-  LinearTicketAdapter(Dio dio, {String? defaultTeamId})
-    : _client = LinearGraphQlClient(dio),
-      _defaultTeamId = defaultTeamId;
+  LinearTicketAdapter(Dio dio, {this._defaultTeamId})
+    : _client = LinearGraphQlClient(dio);
 
   final LinearGraphQlClient _client;
   final String? _defaultTeamId;

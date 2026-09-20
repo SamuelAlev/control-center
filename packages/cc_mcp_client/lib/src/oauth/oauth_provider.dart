@@ -80,15 +80,13 @@ class McpOAuthProvider {
   /// Creates an [McpOAuthProvider].
   McpOAuthProvider({
     required this.serverUrl,
-    required McpOAuthTokenStore tokenStore,
-    required BrowserLauncher launchBrowser,
+    required this._tokenStore,
+    required this._launchBrowser,
     this.scopes = const [],
     this.callbackPort = 33418,
     this.callbackPath = '/callback',
     HttpClient? httpClient,
-  }) : _tokenStore = tokenStore,
-       _launchBrowser = launchBrowser,
-       _http = httpClient ?? HttpClient();
+  }) : _http = httpClient ?? HttpClient();
 
   /// The MCP server URL (its origin keys the stored token + scopes discovery).
   final String serverUrl;

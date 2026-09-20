@@ -265,6 +265,9 @@ class AppLocalizationsPl extends AppLocalizations {
       'Tworzy tymczasowy symulator iOS na serwerowym Macu. Jest usuwany po zamknięciu środowiska testowego; dostęp do sieci nie jest odizolowany.';
 
   @override
+  String get rigTechnicalDetails => 'Szczegóły techniczne';
+
+  @override
   String get rigStopMachine => 'Zatrzymaj maszynę';
 
   @override

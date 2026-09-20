@@ -117,6 +117,7 @@
   "rigStartHint": "Spustí jednorázové VM, které v této konverzaci sdílíte s agenty. Po zavření se zničí a nic v něm se nedotkne vašeho počítače.",
   "rigStartAndroidHint": "Připojí se k emulátoru Androidu, který je již spuštěný na serveru. Přístup k síti není izolovaný.",
   "rigStartIosHint": "Vytvoří dočasný simulátor iOS na serverovém Macu. Po ukončení testovacího prostředí bude odstraněn; přístup k síti není izolovaný.",
+  "rigTechnicalDetails": "Technické podrobnosti",
   "rigStopMachine": "Zastavit stroj",
   "rigSurfaceUnavailable": "Tento server nemůže hostovat tento druh stroje.",
   "rigTabNeedsConversation": "Nejprve otevřete konverzaci — stroj k ní patří, abyste vy i agenti viděli stejnou obrazovku.",

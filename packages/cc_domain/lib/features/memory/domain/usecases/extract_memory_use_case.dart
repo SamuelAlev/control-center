@@ -10,10 +10,9 @@ import 'package:cc_domain/features/memory/domain/value_objects/memory_veracity.d
 class ExtractMemoryUseCase {
   /// Creates an [ExtractMemoryUseCase].
   const ExtractMemoryUseCase({
-    required MemoryExtractor extractor,
-    required RecordMemoryFactUseCase recordFact,
-  }) : _extractor = extractor,
-       _recordFact = recordFact;
+    required this._extractor,
+    required this._recordFact,
+  });
 
   final MemoryExtractor _extractor;
   final RecordMemoryFactUseCase _recordFact;

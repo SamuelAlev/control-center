@@ -103,20 +103,14 @@ class _StreamContext {
 class AgentStreamProcessor {
   /// Creates an [AgentStreamProcessor].
   AgentStreamProcessor({
-    required AgentDispatchService agentDispatchService,
-    required MessagingRepository repo,
-    required ActiveStreamRegistry streamRegistry,
-    EmbeddingPort? embeddingPort,
-    DomainEventBus? eventBus,
-    ConversationCompactionService? compactionService,
-    GitSnapshotPort? snapshotPort,
-  }) : _agentDispatchService = agentDispatchService,
-       _repo = repo,
-       _streamRegistry = streamRegistry,
-       _embeddingPort = embeddingPort,
-       _eventBus = eventBus,
-       _compactionService = compactionService,
-       _snapshotPort = snapshotPort;
+    required this._agentDispatchService,
+    required this._repo,
+    required this._streamRegistry,
+    this._embeddingPort,
+    this._eventBus,
+    this._compactionService,
+    this._snapshotPort,
+  });
 
   final AgentDispatchService _agentDispatchService;
   final MessagingRepository _repo;

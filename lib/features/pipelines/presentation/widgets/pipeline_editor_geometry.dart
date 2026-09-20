@@ -144,7 +144,7 @@ List<PipelineGraphEdge> pipelineGraphEdges(List<PipelineStepDefinition> steps) {
 /// Shift + scene size for [nodes] so negative stored coordinates land inside
 /// the viewer and chrome (eyebrows, ports) is not clipped.
 ///
-/// [extraTopLeft] may grow [PipelineEditorScene.size] but never [shift] —
+/// [extraTopLeft] may grow [PipelineEditorScene]'s size but never the shift —
 /// rebasing minX/minY under a live pointer makes the graph jump.
 /// [shiftOverride] freezes shift for an in-flight connect-drag.
 PipelineEditorScene computePipelineEditorScene({

@@ -24,15 +24,12 @@ import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.d
 class PlanEstimateService {
   /// Creates the service.
   PlanEstimateService({
-    required OrchestrationRepository orchestrations,
+    required this._orchestrations,
     required PlanDocumentRepository planDocuments,
-    required AgentRunLogRepository runLogs,
-    required CodeGraphRepository codeGraph,
+    required this._runLogs,
+    required this._codeGraph,
     this.historyCap = 50,
-  }) : _orchestrations = orchestrations,
-       _plans = planDocuments,
-       _runLogs = runLogs,
-       _codeGraph = codeGraph;
+  }) : _plans = planDocuments;
 
   final OrchestrationRepository _orchestrations;
   final PlanDocumentRepository _plans;

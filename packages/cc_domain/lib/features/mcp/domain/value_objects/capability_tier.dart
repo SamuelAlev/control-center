@@ -47,7 +47,7 @@ enum ApprovalMode {
   write,
 
   /// Auto-approve everything. No prompts (the "trust this session" escape
-  /// hatch). A tool that forces approval via [ToolApproval.override] still
+  /// hatch). A tool that forces approval via [ToolApproval.forcePrompt] still
   /// prompts.
   yolo;
 
@@ -78,12 +78,12 @@ enum ApprovalMode {
 
 /// A tool's capability decision for a specific set of arguments.
 ///
-/// Either a bare [tier], or a tier with a forced-prompt [override] (e.g. a
+/// Either a bare [tier], or a tier with a forced-prompt [forcePrompt] (e.g. a
 /// destructive argument pattern that should always confirm regardless of mode)
 /// and an optional [reason] surfaced in the prompt.
 class ToolApproval {
   /// Creates a [ToolApproval].
-  const ToolApproval(this.tier, {this.override = false, this.reason});
+  const ToolApproval(this.tier, {this.forcePrompt = false, this.reason});
 
   /// A `read`-tier approval (convenience).
   static const ToolApproval read = ToolApproval(CapabilityTier.read);
@@ -98,21 +98,21 @@ class ToolApproval {
   final CapabilityTier tier;
 
   /// When true, the gate prompts even if the mode would auto-approve [tier].
-  final bool override;
+  final bool forcePrompt;
 
   /// Optional human-readable reason shown in the confirmation prompt.
   final String? reason;
 
-  // `@override` cannot be used in this class: the field is named `override`,
-  // so the annotation would bind to the instance field (not dart:core).
+  @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ToolApproval &&
           tier == other.tier &&
-          override == other.override &&
+          forcePrompt == other.forcePrompt &&
           reason == other.reason;
 
-  int get hashCode => Object.hash(tier, override, reason);
+  @override
+  int get hashCode => Object.hash(tier, forcePrompt, reason);
 }
 
 /// The resolved approval decision the gate acts on.
@@ -134,9 +134,11 @@ enum ApprovalDecision {
 ApprovalDecision resolveApproval(ToolApproval approval, ApprovalMode mode) {
   // yolo auto-approves everything unless the tool forces a prompt.
   if (mode == ApprovalMode.yolo) {
-    return approval.override ? ApprovalDecision.prompt : ApprovalDecision.allow;
+    return approval.forcePrompt
+        ? ApprovalDecision.prompt
+        : ApprovalDecision.allow;
   }
-  if (approval.override) {
+  if (approval.forcePrompt) {
     return ApprovalDecision.prompt;
   }
   return mode.approves(approval.tier)

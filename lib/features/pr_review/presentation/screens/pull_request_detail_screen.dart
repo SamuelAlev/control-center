@@ -1035,7 +1035,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
             child: EditorWorkspace(
               layout: _layout,
               chrome: EditorChrome(
-                iconFor: (tab) => PrTabKinds.iconFor(tab.kind),
+                iconFor: (tab) => tab.kind == PrTabKinds.rig
+                    ? RigTabSurfaces.iconForArgs(tab.args)
+                    : PrTabKinds.iconFor(tab.kind),
                 // A browser-rig tab leads with its engine's monochrome logo,
                 // so "Firefox (VM)" and "Chromium (VM)" are told apart at a
                 // glance — the job the generic globe could not do.
@@ -1256,7 +1258,9 @@ class _PrDetailLoadingBodyState extends State<_PrDetailLoadingBody> {
     return EditorWorkspace(
       layout: _layout,
       chrome: EditorChrome(
-        iconFor: (tab) => PrTabKinds.iconFor(tab.kind),
+        iconFor: (tab) => tab.kind == PrTabKinds.rig
+            ? RigTabSurfaces.iconForArgs(tab.args)
+            : PrTabKinds.iconFor(tab.kind),
         labelFor: (tab) => _PrDetailBodyState._label(tab.kind, l10n),
       ),
       buildBody: (tab, {required isVisible}) => switch (tab.kind) {

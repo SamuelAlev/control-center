@@ -42,23 +42,16 @@ typedef ReviewChangedFilesLookup =
 class DispatchReviewersService implements DispatchReviewersPort {
   /// Creates a [DispatchReviewersService].
   DispatchReviewersService({
-    required AgentRepository agents,
-    required MessagingRepository messaging,
-    required ReviewSpaceRepository reviewSpaces,
-    required MessagingPort messagingPort,
-    required WorkspaceRepository workspaces,
+    required this._agents,
+    required this._messaging,
+    required this._reviewSpaces,
+    required this._messagingPort,
+    required this._workspaces,
     required WorkspaceFilesystemPort filesystemPort,
     ReviewerMatchingService? matching,
-    ReviewGuidelineLookup? guidelineLookup,
-    ReviewChangedFilesLookup? changedFilesLookup,
-  }) : _agents = agents,
-       _messaging = messaging,
-       _reviewSpaces = reviewSpaces,
-       _messagingPort = messagingPort,
-       _workspaces = workspaces,
-       _fs = filesystemPort,
-       _guidelineLookup = guidelineLookup,
-       _changedFilesLookup = changedFilesLookup,
+    this._guidelineLookup,
+    this._changedFilesLookup,
+  }) : _fs = filesystemPort,
        _matching = matching ?? const ReviewerMatchingService();
 
   final AgentRepository _agents;

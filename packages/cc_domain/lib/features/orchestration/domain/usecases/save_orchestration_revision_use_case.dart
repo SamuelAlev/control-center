@@ -33,12 +33,10 @@ class StaleRevisionException implements Exception {
 class SaveOrchestrationRevisionUseCase {
   /// Creates the use case.
   SaveOrchestrationRevisionUseCase({
-    required OrchestrationRepository orchestrations,
-    required OrchestrationRevisionRepository revisions,
-    required OrchestrationProposalValidator validator,
-  }) : _orchestrations = orchestrations,
-       _revisions = revisions,
-       _validator = validator;
+    required this._orchestrations,
+    required this._revisions,
+    required this._validator,
+  });
 
   final OrchestrationRepository _orchestrations;
   final OrchestrationRevisionRepository _revisions;

@@ -20,8 +20,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_pa
 /// future reviewer except to keep reporting it.
 class ResolveReviewNodeTool extends McpTool {
   /// Creates a new [ResolveReviewNodeTool].
-  ResolveReviewNodeTool({required ReviewFindingStatusPort status})
-    : _status = status;
+  ResolveReviewNodeTool({required this._status});
 
   final ReviewFindingStatusPort _status;
 

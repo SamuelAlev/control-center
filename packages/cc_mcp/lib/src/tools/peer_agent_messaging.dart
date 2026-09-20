@@ -42,16 +42,14 @@ class UnresolvedRecipient extends RecipientResolution {
 /// place. Workspace isolation is honoured: only agents in the caller's
 /// workspace are eligible and spaces are searched within the workspace.
 class PeerAgentMessaging {
-  /// Creates a [PeerAgentMessaging] over the given repositories. [eventBus]
+  /// Creates a [PeerAgentMessaging] over the given repositories. [_eventBus]
   /// (when wired) receives [SpaceCreated] for a freshly minted DM space so
   /// the background provisioner flips it out of its born-`provisioning` state.
   const PeerAgentMessaging({
-    required AgentRepository agents,
-    required MessagingRepository messaging,
-    DomainEventBus? eventBus,
-  }) : _agents = agents,
-       _messaging = messaging,
-       _eventBus = eventBus;
+    required this._agents,
+    required this._messaging,
+    this._eventBus,
+  });
 
   final AgentRepository _agents;
   final MessagingRepository _messaging;

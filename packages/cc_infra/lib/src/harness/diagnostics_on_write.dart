@@ -29,17 +29,14 @@ const List<String> _pathKeys = ['path', 'file_path', 'filename', 'file'];
 ///    indexing simply contributes nothing this time. A successful edit must
 ///    never fail because a language server was slow.
 class DiagnosticsOnWriteTool extends HarnessTool {
-  /// Wraps [inner], reporting diagnostics for whatever file it wrote.
+  /// Wraps [_inner], reporting diagnostics for whatever file it wrote.
   DiagnosticsOnWriteTool({
-    required HarnessTool inner,
-    required LspSupervisor supervisor,
-    required DiagnosticsLedger ledger,
-    required String workingDirectory,
+    required this._inner,
+    required this._supervisor,
+    required this._ledger,
+    required this._workingDirectory,
     this.budget = const Duration(seconds: 5),
-  }) : _inner = inner,
-       _supervisor = supervisor,
-       _ledger = ledger,
-       _workingDirectory = workingDirectory;
+  });
 
   final HarnessTool _inner;
   final LspSupervisor _supervisor;

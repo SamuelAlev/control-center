@@ -6,8 +6,7 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 /// List workspaces tool.
 class ListWorkspacesTool extends McpTool {
   /// Creates a new [List workspaces tool].
-  ListWorkspacesTool({required WorkspaceRepository repository})
-    : _repository = repository;
+  ListWorkspacesTool({required this._repository});
 
   final WorkspaceRepository _repository;
 

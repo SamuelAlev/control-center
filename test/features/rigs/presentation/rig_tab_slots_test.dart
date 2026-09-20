@@ -10,6 +10,7 @@
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:control_center/features/rigs/presentation/rig_labels.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -256,6 +257,35 @@ void main() {
       expect(
         targets.any((target) => target.surface == RigTabSurfaces.ios),
         isFalse,
+      );
+    });
+  });
+
+  group('tab-strip icons', () {
+    test('iOS and Android wear their platform marks, not the desktop', () {
+      // Kind-only maps (`MessagingTabKinds.iconFor`) see `rig` and paint a
+      // monitor. The surface lives in args — that is what the strip must
+      // resolve, or every phone tab looks like a computer.
+      expect(RigTabSurfaces.iconFor(RigTabSurfaces.ios), AppIcons.appleLogo);
+      expect(
+        RigTabSurfaces.iconFor(RigTabSurfaces.mobile),
+        AppIcons.androidLogo,
+      );
+      expect(RigTabSurfaces.iconFor(RigTabSurfaces.computer), AppIcons.monitor);
+      expect(
+        RigTabSurfaces.iconForArgs(const {'surface': 'ios'}),
+        isNot(AppIcons.monitor),
+      );
+      expect(
+        RigTabSurfaces.iconForArgs(const {'surface': 'mobile'}),
+        isNot(AppIcons.monitor),
+      );
+    });
+
+    test('iOS and Android are not the same mark', () {
+      expect(
+        RigTabSurfaces.iconFor(RigTabSurfaces.ios),
+        isNot(RigTabSurfaces.iconFor(RigTabSurfaces.mobile)),
       );
     });
   });

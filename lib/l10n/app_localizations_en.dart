@@ -259,6 +259,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Creates a disposable iOS Simulator on the server Mac. It is deleted when the rig closes; network access is not enclosed.';
 
   @override
+  String get rigTechnicalDetails => 'Technical details';
+
+  @override
   String get rigStopMachine => 'Stop the machine';
 
   @override

@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 /// dragging it rebuilds only this widget (and repaints the edge layer) rather
 /// than the whole graph.
 class GraphNode extends StatelessWidget {
+  /// Creates a [GraphNode].
   const GraphNode({
     required this.position,
     required this.size,
@@ -17,11 +18,16 @@ class GraphNode extends StatelessWidget {
     super.key,
   });
 
+  /// Live canvas position of this node.
   final ValueNotifier<Offset> position;
+
+  /// Layout size of the card.
   final Size size;
 
   /// Called on every drag update so the host can stop re-flowing this node.
   final VoidCallback onMoved;
+
+  /// The card widget placed at [position].
   final Widget child;
 
   @override
@@ -78,16 +84,22 @@ enum EdgeRole {
 
 /// One node inside a cluster hull, held by its live position notifier.
 class HullMember {
+  /// Creates a hull member from its live [position] and [size].
   const HullMember(this.position, this.size);
 
+  /// Live canvas position of the card.
   final ValueNotifier<Offset> position;
+
+  /// Layout size of the card.
   final Size size;
 }
 
 /// The live bounding box of one domain's cards.
 class ClusterHull {
+  /// Creates a hull around [members].
   const ClusterHull(this.members);
 
+  /// Cards that belong to this cluster.
   final List<HullMember> members;
 
   /// The box enclosing every member at its CURRENT position, so dragging a
@@ -111,6 +123,7 @@ class ClusterHull {
 /// An edge between two nodes. Holds references to the endpoints' live position
 /// notifiers so the painter always reads their current positions.
 class GraphEdge {
+  /// Creates an edge between [src] and [dest].
   const GraphEdge({
     required this.src,
     required this.srcSize,
@@ -119,10 +132,19 @@ class GraphEdge {
     required this.role,
   });
 
+  /// Live position of the source card.
   final ValueNotifier<Offset> src;
+
+  /// Size of the source card, used to pick the anchor.
   final Size srcSize;
+
+  /// Live position of the destination card.
   final ValueNotifier<Offset> dest;
+
+  /// Size of the destination card, used to pick the anchor.
   final Size destSize;
+
+  /// Visual role of this edge.
   final EdgeRole role;
 }
 
@@ -130,6 +152,7 @@ class GraphEdge {
 /// node anchors. Repaints whenever any node position notifier fires (passed as
 /// `repaint`), which is what keeps both live under a drag.
 class EdgePainter extends CustomPainter {
+  /// Creates an edge painter that redraws when [repaint] notifies.
   EdgePainter({
     required this.edges,
     required this.hulls,
@@ -140,11 +163,22 @@ class EdgePainter extends CustomPainter {
     required this.hullFillColor,
   }) : super(repaint: repaint);
 
+  /// Edges to paint.
   final List<GraphEdge> edges;
+
+  /// Cluster hulls to paint behind the edges.
   final List<ClusterHull> hulls;
+
+  /// Color for topic→fact edges.
   final Color edgeColor;
+
+  /// Color for policy→fact edges.
   final Color factEdgeColor;
+
+  /// Stroke color of each cluster hull.
   final Color hullBorderColor;
+
+  /// Fill color of each cluster hull.
   final Color hullFillColor;
 
   @override
@@ -259,7 +293,9 @@ class EdgePainter extends CustomPainter {
       old.hullFillColor != hullFillColor;
 }
 
+/// One row in the knowledge-graph legend.
 class LegendItem extends StatelessWidget {
+  /// Creates a [LegendItem].
   const LegendItem({
     super.key,
     required this.icon,
@@ -267,8 +303,13 @@ class LegendItem extends StatelessWidget {
     required this.label,
   });
 
+  /// Glyph shown beside [label].
   final IconData icon;
+
+  /// Color of the glyph.
   final Color color;
+
+  /// Legend text.
   final String label;
 
   @override

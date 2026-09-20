@@ -21,10 +21,9 @@ typedef ContentReader =
 class ApiContractDiffService {
   /// Creates an [ApiContractDiffService].
   ApiContractDiffService({
-    required ApiContractDiffRepository repository,
+    required this._repository,
     List<String>? specGlobs,
-  }) : _repository = repository,
-       _specGlobs = specGlobs ?? defaultSpecGlobs;
+  }) : _specGlobs = specGlobs ?? defaultSpecGlobs;
 
   final ApiContractDiffRepository _repository;
   final List<String> _specGlobs;

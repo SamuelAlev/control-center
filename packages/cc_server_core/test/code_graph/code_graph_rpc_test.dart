@@ -57,8 +57,16 @@ void main() {
   });
 
   test('returns definitions, caller counts, and implementors', () async {
-    final animal = _symbol(id: 'cls-1', name: 'Animal', kind: CodeSymbolKind.classKind);
-    final dog = _symbol(id: 'cls-2', name: 'Dog', kind: CodeSymbolKind.classKind);
+    final animal = _symbol(
+      id: 'cls-1',
+      name: 'Animal',
+      kind: CodeSymbolKind.classKind,
+    );
+    final dog = _symbol(
+      id: 'cls-2',
+      name: 'Dog',
+      kind: CodeSymbolKind.classKind,
+    );
     final caller = _symbol(id: 'fn-1', name: 'walk');
     graph.byName['Animal'] = [animal];
     graph.callersById[animal.id] = [caller];
@@ -81,7 +89,7 @@ void main() {
     expect(def['name'], 'Animal');
     expect(def['caller_count'], 1);
     expect(def['file_path'], 'lib/animal.dart');
-    expect((def['implementors'] as List).single['name'], 'Dog');
+    expect(((def['implementors'] as List).single as Map)['name'], 'Dog');
   });
 
   test('fails open to the base partition when the worktree is empty', () async {
@@ -99,7 +107,7 @@ void main() {
 
     expect(data['from_base'], isTrue);
     expect(graph.lastCheckoutId, isNull);
-    expect((data['definitions'] as List).single['name'], 'Foo');
+    expect(((data['definitions'] as List).single as Map)['name'], 'Foo');
   });
 }
 

@@ -39,12 +39,12 @@ import 'package:dio/dio.dart';
 /// One instance serves exactly one `owner/repo` pair; the coordinate is fixed
 /// at construction and no method takes it again.
 class GitHubForgePrClient implements ForgePrClient {
-  /// Creates a [GitHubForgePrClient] for [owner]/[repo] over [client].
+  /// Creates a [GitHubForgePrClient] for [owner]/[repo] over [_client].
   GitHubForgePrClient({
-    required GitHubApiClient client,
+    required this._client,
     required this.owner,
     required this.repo,
-  }) : _client = client;
+  });
 
   final GitHubApiClient _client;
 

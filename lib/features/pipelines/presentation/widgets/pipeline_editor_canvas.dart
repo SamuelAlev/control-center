@@ -65,7 +65,7 @@ class PipelineEditorCanvas extends ConsumerStatefulWidget {
   /// A trigger entry was dropped from the sidebar or picked from the ghost
   /// tile's picker. `eventType` is PipelineTrigger.manualEventType,
   /// .scheduleEventType, .webhookEventType, or a domain event type name.
-  /// [canvasOffset] is the drop's definition-space top-left when the entry
+  /// `canvasOffset` is the drop's definition-space top-left when the entry
   /// came from the palette; omitted for the ghost picker.
   final void Function(String eventType, [Offset? canvasOffset]) onAddTrigger;
 

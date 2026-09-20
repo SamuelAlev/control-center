@@ -264,6 +264,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Создает временный симулятор iOS на сервере Mac. Он удаляется при закрытии тестовой среды; доступ к сети не изолирован.';
 
   @override
+  String get rigTechnicalDetails => 'Технические сведения';
+
+  @override
   String get rigStopMachine => 'Остановить машину';
 
   @override

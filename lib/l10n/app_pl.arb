@@ -117,6 +117,7 @@
   "rigStartHint": "Uruchamia jednorazową maszynę wirtualną współdzieloną przez Ciebie i Twoich agentów w tej rozmowie. Jest niszczona po zamknięciu, a nic w niej nie ma dostępu do Twojego komputera.",
   "rigStartAndroidHint": "Łączy się z emulatorem Androida, który jest już uruchomiony na serwerze. Dostęp do sieci nie jest odizolowany.",
   "rigStartIosHint": "Tworzy tymczasowy symulator iOS na serwerowym Macu. Jest usuwany po zamknięciu środowiska testowego; dostęp do sieci nie jest odizolowany.",
+  "rigTechnicalDetails": "Szczegóły techniczne",
   "rigStopMachine": "Zatrzymaj maszynę",
   "rigSurfaceUnavailable": "Ten serwer nie może hostować tego rodzaju maszyny.",
   "rigTabNeedsConversation": "Najpierw otwórz rozmowę — maszyna należy do rozmowy, dzięki czemu Ty i Twoi agenci widzicie ten sam ekran.",

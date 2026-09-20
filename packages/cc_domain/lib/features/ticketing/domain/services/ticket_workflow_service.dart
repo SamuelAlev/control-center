@@ -47,10 +47,10 @@ class TicketWorkflowService {
     required this.repository,
     required this.eventBus,
     this.onWarn,
-    DelegationGuards guards = const DelegationGuards(),
+    this._guards = const DelegationGuards(),
     this.resolveEffectiveAutonomy,
     this.resolveRemainingBudgetCents,
-  }) : _guards = guards;
+  });
 
   /// Local persistence (mirror + overlay).
   final TicketRepository repository;

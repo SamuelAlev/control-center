@@ -9,7 +9,7 @@ import 'package:cc_harness/tools.dart';
 /// workspace's `skills-lock.json`.
 class InstallSkillTool extends McpTool {
   /// Creates an [InstallSkillTool].
-  InstallSkillTool({required SkillBundlePort bundles}) : _bundles = bundles;
+  InstallSkillTool({required this._bundles});
 
   final SkillBundlePort _bundles;
 

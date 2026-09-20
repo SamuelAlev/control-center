@@ -17,8 +17,7 @@ import 'package:cc_infra/cc_infra.dart';
 /// same deterministic finalize; this class is only the MCP surface.
 class FinalizeReviewTool extends McpTool {
   /// Creates a new [FinalizeReviewTool].
-  FinalizeReviewTool({required ReviewFinalizer finalizer})
-    : _finalizer = finalizer;
+  FinalizeReviewTool({required this._finalizer});
 
   final ReviewFinalizer _finalizer;
 

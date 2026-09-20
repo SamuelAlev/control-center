@@ -13,9 +13,8 @@ import 'package:cc_harness_runtime/src/tools/workspace_file_search.dart';
 /// worktrees), because the production engine does not descend the overlay's
 /// `repos` symlink — see [searchWorkspaceFiles].
 class FileSearchTool extends HarnessTool {
-  /// Creates a [FileSearchTool] over [fileSearch].
-  FileSearchTool({required FileSearchPort fileSearch, this.maxResults = 25})
-    : _fileSearch = fileSearch;
+  /// Creates a [FileSearchTool] over [_fileSearch].
+  FileSearchTool({required this._fileSearch, this.maxResults = 25});
 
   final FileSearchPort _fileSearch;
 

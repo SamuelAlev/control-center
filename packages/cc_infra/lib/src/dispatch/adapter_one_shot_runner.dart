@@ -75,14 +75,12 @@ class AdapterOneShotRunner {
   /// Creates an [AdapterOneShotRunner].
   AdapterOneShotRunner({
     required ProviderCredentialStore credentials,
-    HarnessProviderFactory factory = const HarnessProviderFactory(),
-    ProviderCredentialRefresher? refresher,
+    this._factory = const HarnessProviderFactory(),
+    this._refresher,
     Future<String?> Function(String cliName)? resolveBinary,
     OneShotLauncher? launcher,
     Iterable<Adapter>? adapters,
   }) : _creds = credentials,
-       _factory = factory,
-       _refresher = refresher,
        _resolveBinary = resolveBinary ?? resolveBinaryPath,
        _launch = launcher ?? _spawnIoProcess,
        _adapters = adapters ?? predefinedAdapters;

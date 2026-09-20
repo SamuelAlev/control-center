@@ -8,8 +8,7 @@ import 'package:cc_harness/tools.dart';
 /// delegating agent + optional pipeline coupling).
 class DelegateTicketTool extends McpTool {
   /// Creates a [DelegateTicketTool].
-  DelegateTicketTool({required TicketWorkflowService service})
-    : _service = service;
+  DelegateTicketTool({required this._service});
   final TicketWorkflowService _service;
 
   @override
@@ -93,7 +92,7 @@ class DelegateTicketTool extends McpTool {
 /// MCP tool to mark a ticket failed with an error message.
 class FailTicketTool extends McpTool {
   /// Creates a [FailTicketTool].
-  FailTicketTool({required TicketWorkflowService service}) : _service = service;
+  FailTicketTool({required this._service});
   final TicketWorkflowService _service;
 
   @override

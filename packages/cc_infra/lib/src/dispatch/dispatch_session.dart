@@ -314,8 +314,7 @@ class DispatchSession implements SteeringSessionView {
   /// Checked inside the Claude transport only, so a workspace whose pool is
   /// spent can still run an agent on a different adapter — the pool describes
   /// one runner's credentials, not the workspace's ability to work.
-  final ClaudeAccountRefusal?
-  claudeAccountsSpent;
+  final ClaudeAccountRefusal? claudeAccountsSpent;
 
   /// Resolves a CLI binary name to its absolute path. Defaults to the real
   /// [resolveBinaryPath] host probe; tests inject a stub so the dispatch flow
@@ -326,7 +325,6 @@ class DispatchSession implements SteeringSessionView {
   /// the session can tear them down on terminate / silence timeout.
   Process? _acpProcess;
   AcpClient? _acpClient;
-  StreamSubscription<AgentProcessEvent>? _acpEventsSub;
 
   /// Stream controller for [AgentProcessEvent]s emitted by this session.
   final StreamController<AgentProcessEvent> controller =
@@ -1795,11 +1793,8 @@ class DispatchSession implements SteeringSessionView {
   Future<void> _teardownAcp() async {
     final client = _acpClient;
     final process = _acpProcess;
-    final sub = _acpEventsSub;
     _acpClient = null;
     _acpProcess = null;
-    _acpEventsSub = null;
-    await sub?.cancel();
     await client?.close();
     process?.kill();
   }

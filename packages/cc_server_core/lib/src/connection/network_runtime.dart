@@ -26,8 +26,8 @@ class NetworkRuntime {
     required this.config,
     required this.descriptorService,
     required this.boundPort,
-    RemoteRelayHost? relayHost,
-  }) : _relayHost = relayHost;
+    this._relayHost,
+  });
 
   /// Server config (flags/env defaults).
   final CcServerConfig config;

@@ -22,22 +22,15 @@ import 'package:uuid/uuid.dart';
 class ApproveOrchestrationUseCase {
   /// Creates an [ApproveOrchestrationUseCase].
   ApproveOrchestrationUseCase({
-    required OrchestrationRepository orchestrations,
-    required HireAgentUseCase hireAgent,
-    required TeamRepository teams,
-    required ProjectService projects,
-    required TicketWorkflowService ticketWorkflow,
-    required PipelineTemplateRepository templates,
-    required PipelineEngine engine,
-    OrchestrationMaterializer materializer = const OrchestrationMaterializer(),
-  }) : _orchestrations = orchestrations,
-       _hireAgent = hireAgent,
-       _teams = teams,
-       _projects = projects,
-       _ticketWorkflow = ticketWorkflow,
-       _templates = templates,
-       _engine = engine,
-       _materializer = materializer;
+    required this._orchestrations,
+    required this._hireAgent,
+    required this._teams,
+    required this._projects,
+    required this._ticketWorkflow,
+    required this._templates,
+    required this._engine,
+    this._materializer = const OrchestrationMaterializer(),
+  });
 
   final OrchestrationRepository _orchestrations;
   final HireAgentUseCase _hireAgent;

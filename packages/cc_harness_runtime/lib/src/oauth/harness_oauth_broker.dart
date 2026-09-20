@@ -26,24 +26,18 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 /// before expiry. Clients only open the returned URL and poll status (or paste
 /// a code, for the redirect flows' web/remote fallback).
 class HarnessOAuthBroker implements ProviderCredentialRefresher {
-  /// Creates a [HarnessOAuthBroker] persisting into [store].
+  /// Creates a [HarnessOAuthBroker] persisting into [_store].
   ///
   /// [dataDir] is handed to flows that need to persist device identity across
   /// restarts; null is valid and degrades to per-process identity.
   HarnessOAuthBroker({
-    required ProviderCredentialStore store,
+    required this._store,
     List<HarnessOAuthProvider>? providers,
     List<HarnessDeviceOAuthProvider>? deviceProviders,
     String? dataDir,
     ProviderHttp? http,
-    Duration minPollInterval = const Duration(seconds: 1),
-  }) : _store = store,
-       _minPollInterval = minPollInterval,
-       // Anthropic is deliberately absent: its browser login existed only by
-       // minting a token against Claude Code's own OAuth client, which
-       // presents this app as Claude Code. `supports('anthropic')` is now
-       // false, so `oauth.begin` refuses it even from a stale client.
-       _providers = {
+    this._minPollInterval = const Duration(seconds: 1),
+  }) : _providers = {
          for (final p
              in providers ?? [OpenAiOAuth(http: http), CodexOAuth(http: http)])
            p.providerId: p,

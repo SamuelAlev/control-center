@@ -19,13 +19,13 @@
 library;
 
 import 'dart:async';
+
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/infrastructure/clipboard/host_clipboard.dart';
 import 'package:control_center/core/keybindings/text_input_surface.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
-
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/rigs/presentation/rig_ports_panel.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
@@ -37,8 +37,8 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:xterm/xterm.dart';
@@ -480,12 +480,9 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
     final tokens = context.designSystem;
     final codeFont = ref.watch(codeFontFamilyProvider);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final isDark = (context.ccTheme?.isDark ?? false);
+    final isDark = context.ccTheme?.isDark ?? false;
 
-    final bg =
-        widget.backgroundColor ??
-        tokens?.bgPrimaryAlt ??
-        t.surface;
+    final bg = widget.backgroundColor ?? tokens?.bgPrimaryAlt ?? t.surface;
     final termTheme = isDark ? _darkTerminalTheme : _lightTerminalTheme;
 
     return ListenableBuilder(

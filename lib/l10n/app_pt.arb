@@ -110,6 +110,7 @@
   "rigStartHint": "Inicia uma VM descartável que partilha com os seus agentes nesta conversa. É destruída ao fechar e nada do que lá acontece toca no seu computador.",
   "rigStartAndroidHint": "Liga-se a um emulador Android que já está em execução no servidor. O acesso à rede não está isolado.",
   "rigStartIosHint": "Cria um simulador iOS temporário no Mac do servidor. É eliminado quando o ambiente de testes é fechado; o acesso à rede não está isolado.",
+  "rigTechnicalDetails": "Detalhes técnicos",
   "rigStopMachine": "Parar a máquina",
   "rigSurfaceUnavailable": "Este servidor não consegue alojar este tipo de máquina.",
   "rigTabNeedsConversation": "Abra primeiro uma conversa — uma máquina pertence a uma delas, para que você e os seus agentes vejam o mesmo ecrã.",

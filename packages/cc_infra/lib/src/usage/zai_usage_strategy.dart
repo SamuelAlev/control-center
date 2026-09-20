@@ -10,9 +10,8 @@ import 'package:dio/dio.dart';
 /// z.ai / Zhipu host.
 class ZaiUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [ZaiUsageStrategy].
-  ZaiUsageStrategy({required Dio dio})
-    : _dio = dio,
-      super(providerId: 'zai', displayName: 'z.ai');
+  ZaiUsageStrategy({required this._dio})
+    : super(providerId: 'zai', displayName: 'z.ai');
 
   final Dio _dio;
 

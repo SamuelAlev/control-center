@@ -28,19 +28,15 @@ import 'package:uuid/uuid.dart';
 /// file. Step 4 therefore reads the user set from `global.db` once and then
 /// visits each workspace database in turn.
 class IdentityBootstrap {
-  /// Creates an [IdentityBootstrap] over the global database [global] and the
-  /// per-workspace databases [workspaces].
+  /// Creates an [IdentityBootstrap] over the global database [_global] and the
+  /// per-workspace databases [_workspaces].
   IdentityBootstrap({
-    required GlobalDatabase global,
-    required WorkspaceDatabaseManager workspaces,
+    required this._global,
+    required this._workspaces,
     Map<String, String> environment = const {},
-    DomainEventBus? eventBus,
-    void Function(String message)? log,
-  }) : _global = global,
-       _workspaces = workspaces,
-       _env = environment,
-       _eventBus = eventBus,
-       _log = log;
+    this._eventBus,
+    this._log,
+  }) : _env = environment;
 
   final GlobalDatabase _global;
   final WorkspaceDatabaseManager _workspaces;

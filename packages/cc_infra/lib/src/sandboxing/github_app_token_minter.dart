@@ -52,10 +52,8 @@ class MintedToken {
 /// requested `repositories` + `permissions` and return the scoped token.
 /// Revocation is `DELETE /installation/token` authed with the token itself.
 class GitHubAppTokenMinter {
-  /// Creates a minter over an [dio] based at `https://api.github.com`.
-  GitHubAppTokenMinter({required Dio dio, required GitHubAppConfig config})
-    : _dio = dio,
-      _config = config;
+  /// Creates a minter over an [_dio] based at `https://api.github.com`.
+  GitHubAppTokenMinter({required this._dio, required this._config});
 
   final Dio _dio;
   final GitHubAppConfig _config;

@@ -111,16 +111,12 @@ class SlackSocketModeClient {
   SlackSocketModeClient({
     required this.workspaceId,
     required this.appToken,
-    required SlackApiClient api,
-    required SlackEnvelopeHandler onEnvelope,
+    required this._api,
+    required this._onEnvelope,
     SlackSocketConnector? connector,
-    void Function(ChatConnectionState state, String? error)? onStateChanged,
-    bool debugReconnects = false,
-  }) : _api = api,
-       _onEnvelope = onEnvelope,
-       _connector = connector ?? connectSlackSocket,
-       _onStateChanged = onStateChanged,
-       _debugReconnects = debugReconnects;
+    this._onStateChanged,
+    this._debugReconnects = false,
+  }) : _connector = connector ?? connectSlackSocket;
 
   /// The Control Center workspace this connection serves.
   final String workspaceId;

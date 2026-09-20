@@ -18,15 +18,14 @@ enum LfoShape {
 class Lfo {
   /// Creates an oscillator at [freqHz] for the given [sampleRate].
   ///
-  /// [phase] is the initial phase in `[0, 1)`; [shape] selects the waveform.
+  /// [phase] is the initial phase in `[0, 1)`; [_shape] selects the waveform.
   Lfo(
     double sampleRate,
     double freqHz, {
     double phase = 0.0,
-    LfoShape shape = LfoShape.sine,
+    this._shape = LfoShape.sine,
   }) : _increment = freqHz / sampleRate,
-       _phase = phase % 1.0,
-       _shape = shape;
+       _phase = phase % 1.0;
 
   final double _increment;
   final LfoShape _shape;

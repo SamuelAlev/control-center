@@ -266,6 +266,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează un simulator iOS temporar pe computerul Mac al serverului. Acesta este șters când mediul de testare se închide; accesul la rețea nu este izolat.';
 
   @override
+  String get rigTechnicalDetails => 'Detalii tehnice';
+
+  @override
   String get rigStopMachine => 'Oprește mașina';
 
   @override

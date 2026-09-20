@@ -867,17 +867,15 @@ class SmolvmEnclosureBackend {
   ///
   /// [binaryPath] overrides resolution (tests, packaged installs); when null
   /// the probe searches PATH and the two well-known install locations.
-  /// [runFn] is the test seam for the CLI's run-shaped calls.
+  /// [_runFn] is the test seam for the CLI's run-shaped calls.
   SmolvmEnclosureBackend({
     required String dataDir,
     String? binaryPath,
-    SmolvmRunFn? runFn,
-    Duration runtimeDirGrace = _defaultRuntimeDirGrace,
+    this._runFn,
+    this._runtimeDirGrace = _defaultRuntimeDirGrace,
   }) : _runtimeRoot = p.join(dataDir, 'rigs', 'smolvm'),
        _dataDir = dataDir,
-       _binaryOverride = binaryPath,
-       _runFn = runFn,
-       _runtimeDirGrace = runtimeDirGrace;
+       _binaryOverride = binaryPath;
 
   final String _runtimeRoot;
   final String _dataDir;

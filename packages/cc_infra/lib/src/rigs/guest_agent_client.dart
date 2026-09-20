@@ -96,10 +96,9 @@ class GuestAgentClient {
   GuestAgentClient({
     required this.port,
     required this.token,
-    String host = '127.0.0.1',
+    this._host = '127.0.0.1',
     HttpClient? httpClient,
-  }) : _host = host,
-       _client = httpClient ?? (HttpClient()..idleTimeout = _idleTimeout);
+  }) : _client = httpClient ?? (HttpClient()..idleTimeout = _idleTimeout);
 
   /// The host-side forwarded port.
   final int port;

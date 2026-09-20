@@ -6,8 +6,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 /// Send space message tool.
 class SendSpaceMessageTool extends McpTool {
   /// Creates a new [Send space message tool].
-  SendSpaceMessageTool({required MessagingRepository repository})
-    : _repository = repository;
+  SendSpaceMessageTool({required this._repository});
 
   final MessagingRepository _repository;
 

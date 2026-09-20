@@ -26,12 +26,10 @@ import 'package:path/path.dart' as p;
 class LspTool extends HarnessTool {
   /// Creates an [LspTool].
   LspTool({
-    required LspSupervisor supervisor,
-    required DiagnosticsLedger ledger,
-    required String workingDirectory,
-  }) : _supervisor = supervisor,
-       _ledger = ledger,
-       _workingDirectory = workingDirectory;
+    required this._supervisor,
+    required this._ledger,
+    required this._workingDirectory,
+  });
 
   final LspSupervisor _supervisor;
   final DiagnosticsLedger _ledger;

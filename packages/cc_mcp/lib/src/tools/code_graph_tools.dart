@@ -195,14 +195,11 @@ Map<String, dynamic> _symbolJson(CodeSymbol s, {int? depth}) => {
 class SearchCodeTool extends McpTool {
   /// Creates a [SearchCodeTool].
   SearchCodeTool({
-    required CodeGraphRepository repository,
-    required WorkspaceRepository workspaceRepository,
-    EmbeddingPort? embeddingService,
-    CodeGraphTreePort? tree,
-  }) : _repository = repository,
-       _workspaceRepository = workspaceRepository,
-       _embeddingService = embeddingService,
-       _tree = tree;
+    required this._repository,
+    required this._workspaceRepository,
+    this._embeddingService,
+    this._tree,
+  });
 
   final CodeGraphRepository _repository;
   final WorkspaceRepository _workspaceRepository;
@@ -317,12 +314,10 @@ class SearchCodeTool extends McpTool {
 class CodeSymbolTool extends McpTool {
   /// Creates a [CodeSymbolTool].
   CodeSymbolTool({
-    required CodeGraphRepository repository,
-    required WorkspaceRepository workspaceRepository,
-    CodeGraphTreePort? tree,
-  }) : _repository = repository,
-       _workspaceRepository = workspaceRepository,
-       _tree = tree;
+    required this._repository,
+    required this._workspaceRepository,
+    this._tree,
+  });
 
   final CodeGraphRepository _repository;
   final WorkspaceRepository _workspaceRepository;
@@ -413,10 +408,9 @@ class CodeSymbolTool extends McpTool {
 class CodeCallersTool extends McpTool {
   /// Creates a [CodeCallersTool].
   CodeCallersTool({
-    required CodeGraphRepository repository,
-    CodeGraphTreePort? tree,
-  }) : _repository = repository,
-       _tree = tree;
+    required this._repository,
+    this._tree,
+  });
 
   final CodeGraphRepository _repository;
   final CodeGraphTreePort? _tree;
@@ -512,10 +506,9 @@ class CodeCallersTool extends McpTool {
 class CodeCalleesTool extends McpTool {
   /// Creates a [CodeCalleesTool].
   CodeCalleesTool({
-    required CodeGraphRepository repository,
-    CodeGraphTreePort? tree,
-  }) : _repository = repository,
-       _tree = tree;
+    required this._repository,
+    this._tree,
+  });
 
   final CodeGraphRepository _repository;
   final CodeGraphTreePort? _tree;
@@ -611,10 +604,9 @@ class CodeCalleesTool extends McpTool {
 class CodeImpactTool extends McpTool {
   /// Creates a [CodeImpactTool].
   CodeImpactTool({
-    required CodeGraphRepository repository,
-    CodeGraphTreePort? tree,
-  }) : _repository = repository,
-       _tree = tree;
+    required this._repository,
+    this._tree,
+  });
 
   final CodeGraphRepository _repository;
   final CodeGraphTreePort? _tree;

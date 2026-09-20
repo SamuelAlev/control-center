@@ -9,13 +9,12 @@ import 'package:cc_domain/features/pr_review/domain/repositories/review_studio_r
 /// summary that the context rail renders (and auto-scrolls to). Workspace-
 /// scoped: the summary only lands on a cohort the caller's workspace owns.
 class SetCohortSummaryTool extends McpTool {
-  /// Creates a [SetCohortSummaryTool]. [resolvePrExternalId] resolves the PR's real
+  /// Creates a [SetCohortSummaryTool]. [_resolvePrExternalId] resolves the PR's real
   /// GitHub node-id key; when null the tool falls back to the synthetic key.
   SetCohortSummaryTool({
-    required ReviewCohortRepository cohorts,
-    ReviewPrExternalIdResolver? resolvePrExternalId,
-  }) : _cohorts = cohorts,
-       _resolvePrExternalId = resolvePrExternalId;
+    required this._cohorts,
+    this._resolvePrExternalId,
+  });
 
   final ReviewCohortRepository _cohorts;
   final ReviewPrExternalIdResolver? _resolvePrExternalId;

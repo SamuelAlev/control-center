@@ -32,23 +32,16 @@ import 'package:uuid/uuid.dart';
 class RepoScriptService implements RepoScriptPort {
   /// Creates a [RepoScriptService].
   RepoScriptService({
-    required RepoScriptRepository scripts,
-    required RepoScriptRunRecorder runs,
-    RepoRepository? repos,
-    Future<String?> Function(String workspaceId, String spaceId)?
-    spaceNameResolver,
-    RepoIsolationPort? repoIsolation,
-    Future<String> Function(String workspaceId)? testCloneParentDir,
-    Uuid uuid = const Uuid(),
+    required this._scripts,
+    required this._runs,
+    this._repos,
+    this._spaceNameResolver,
+    this._repoIsolation,
+    this._testCloneParentDir,
+    this._uuid = const Uuid(),
     this.setupTimeout = defaultSetupTimeout,
     this.archiveTimeout = defaultArchiveTimeout,
-  }) : _scripts = scripts,
-       _runs = runs,
-       _repos = repos,
-       _spaceNameResolver = spaceNameResolver,
-       _repoIsolation = repoIsolation,
-       _testCloneParentDir = testCloneParentDir,
-       _uuid = uuid;
+  });
 
   /// Default ceiling for setup scripts — long enough for a cold dependency
   /// install, short enough that a wedged one fails the provisioning visibly

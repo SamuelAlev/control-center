@@ -258,6 +258,9 @@ class AppLocalizationsAr extends AppLocalizations {
       'ينشئ محاكي iOS مؤقتًا على جهاز Mac الخادم. يُحذف عند إغلاق بيئة الاختبار؛ الوصول إلى الشبكة غير معزول.';
 
   @override
+  String get rigTechnicalDetails => 'التفاصيل التقنية';
+
+  @override
   String get rigStopMachine => 'إيقاف الجهاز';
 
   @override

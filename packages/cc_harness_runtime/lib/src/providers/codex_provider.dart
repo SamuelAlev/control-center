@@ -23,23 +23,19 @@ import 'package:cc_harness_runtime/src/providers/provider_http.dart';
 class CodexProvider implements LlmProviderPort {
   /// Creates a [CodexProvider].
   CodexProvider({
-    String? apiKey,
-    ProviderTokenResolver? tokenResolver,
-    String? accountId,
+    this._apiKey,
+    this._tokenResolver,
+    this._accountId,
     String? baseUrl,
     this.chatgpt = true,
-    String defaultModel = 'gpt-5.5',
+    this._defaultModel = 'gpt-5.5',
     ProviderHttp? http,
-  }) : _apiKey = apiKey,
-       _tokenResolver = tokenResolver,
-       _accountId = accountId,
-       _baseUrl = _normalizeBase(
+  }) : _baseUrl = _normalizeBase(
          baseUrl,
          chatgpt
              ? CodexOAuth.backendApi
              : CodexOAuth.apiKeyBase,
        ),
-       _defaultModel = defaultModel,
        _http = http ?? ProviderHttp.shared;
 
   final String? _apiKey;

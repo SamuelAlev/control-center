@@ -17,8 +17,8 @@ class PipelineContext {
     required this.state,
     this.triggerPayload,
     this.dryRun = false,
-    Future<T> Function<T>(Future<T> Function() action)? idleRunner,
-  }) : _idleRunner = idleRunner;
+    this._idleRunner,
+  });
 
   /// Supplied by the engine so [whileWaiting] can hand the step's concurrency
   /// permit back. Null when a body runs outside an engine (tests, direct

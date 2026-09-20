@@ -60,14 +60,12 @@ class BudgetGovernanceService {
   /// Creates a [BudgetGovernanceService].
   BudgetGovernanceService({
     required AgentRepository agentRepository,
-    required BudgetEnforcementService enforcement,
+    required this._enforcement,
     required BudgetPolicyRepository budgetRepository,
-    DomainEventBus? eventBus,
+    this._eventBus,
     ActivityLogger? activityLogger,
   }) : _agents = agentRepository,
-       _enforcement = enforcement,
        _budgets = budgetRepository,
-       _eventBus = eventBus,
        _audit = activityLogger;
 
   final AgentRepository _agents;

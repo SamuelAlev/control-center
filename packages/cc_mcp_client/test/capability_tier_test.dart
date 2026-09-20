@@ -20,22 +20,22 @@ void main() {
       expect(resolveApproval(ToolApproval.exec, mode), ApprovalDecision.prompt);
     });
 
-    test('yolo: everything auto-approves unless override', () {
+    test('yolo: everything auto-approves unless forcePrompt', () {
       const mode = ApprovalMode.yolo;
       expect(resolveApproval(ToolApproval.exec, mode), ApprovalDecision.allow);
       expect(
         resolveApproval(
-          const ToolApproval(CapabilityTier.exec, override: true),
+          const ToolApproval(CapabilityTier.exec, forcePrompt: true),
           mode,
         ),
         ApprovalDecision.prompt,
       );
     });
 
-    test('override forces a prompt even when the mode would allow', () {
+    test('forcePrompt forces a prompt even when the mode would allow', () {
       expect(
         resolveApproval(
-          const ToolApproval(CapabilityTier.read, override: true),
+          const ToolApproval(CapabilityTier.read, forcePrompt: true),
           ApprovalMode.alwaysAsk,
         ),
         ApprovalDecision.prompt,

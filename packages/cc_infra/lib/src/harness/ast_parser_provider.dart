@@ -25,8 +25,8 @@ typedef GrammarPathResolver = Future<GrammarPaths?> Function(String languageId);
 /// banner: the desktop parses that banner under a hard 20s timeout and kills
 /// the child on expiry, so nothing that touches disk belongs before it.
 class AstParserProvider {
-  /// Creates an [AstParserProvider] over [resolve].
-  AstParserProvider({required GrammarPathResolver resolve}) : _resolve = resolve;
+  /// Creates an [AstParserProvider] over [_resolve].
+  AstParserProvider({required this._resolve});
 
   final GrammarPathResolver _resolve;
   TreeSitterParser? _parser;

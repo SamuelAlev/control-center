@@ -35,28 +35,18 @@ import 'package:path/path.dart' as p;
 class ContextInspectionService {
   /// Creates a [ContextInspectionService].
   const ContextInspectionService({
-    required AgentRepository agentRepository,
-    required MessagingRepository messagingRepository,
-    required ModeResolver modeResolver,
-    required WorkspaceFilesystemPort filesystem,
-    required McpToolRegistry mcpRegistry,
-    required FileSearchPort fileSearch,
-    BuildMemoryContextUseCase? memoryContextUseCase,
-    SandboxManager? sandboxManager,
-    ConfirmationPort? confirmationPort,
-    Future<List<String>> Function(String workspaceId)? protectedPathsResolver,
-    bool toolDeferralEnabled = true,
-  }) : _toolDeferralEnabled = toolDeferralEnabled,
-       _agentRepository = agentRepository,
-       _messagingRepository = messagingRepository,
-       _modeResolver = modeResolver,
-       _filesystem = filesystem,
-       _mcpRegistry = mcpRegistry,
-       _fileSearch = fileSearch,
-       _memoryContextUseCase = memoryContextUseCase,
-       _sandboxManager = sandboxManager,
-       _confirmationPort = confirmationPort,
-       _protectedPathsResolver = protectedPathsResolver;
+    required this._agentRepository,
+    required this._messagingRepository,
+    required this._modeResolver,
+    required this._filesystem,
+    required this._mcpRegistry,
+    required this._fileSearch,
+    this._memoryContextUseCase,
+    this._sandboxManager,
+    this._confirmationPort,
+    this._protectedPathsResolver,
+    this._toolDeferralEnabled = true,
+  });
 
   final AgentRepository _agentRepository;
   final MessagingRepository _messagingRepository;

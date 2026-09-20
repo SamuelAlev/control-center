@@ -1,7 +1,7 @@
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 /// Shared chrome for the reviewer/assignee picker flyouts: a dismiss barrier, a
 /// panel anchored under the section header (via [link]), a title, a search

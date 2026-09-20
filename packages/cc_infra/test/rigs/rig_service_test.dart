@@ -517,6 +517,96 @@ void main() {
   });
 
   group('closing', () {
+    test(
+      'closing a failed row dismisses it so a tab cannot resurrect it',
+      () async {
+        // `failed` is terminal for reuse, so close() used to no-op — the next
+        // open of the tab matched the leftover dump as "this machine".
+        final failed = Rig(
+          id: 'failed',
+          workspaceId: 'ws1',
+          surface: RigSurface.ios,
+          backend: EnclosureBackend.iosSimulator,
+          status: const RigFailed('IosSimulatorException: boom\nstdout:\nxx'),
+          spec: RigSpec(surface: RigSurface.ios, conversationId: 'c1'),
+          createdBy: const UserPrincipal('u1'),
+          conversationId: 'c1',
+          createdAt: DateTime.now(),
+          lastActivityAt: DateTime.now(),
+        );
+        repository.rigs[failed.id] = failed;
+        await service.close(workspaceId: 'ws1', rigId: failed.id);
+        expect(repository.rigs[failed.id]!.status.phase, RigPhase.closed);
+      },
+    );
+
+    test(
+      'opening a machine dismisses a failed sibling in the same slot',
+      () async {
+        repository.rigs['failed'] = Rig(
+          id: 'failed',
+          workspaceId: 'ws1',
+          surface: RigSurface.computer,
+          backend: EnclosureBackend.qemuHvf,
+          status: const RigFailed('boom\nstdout:\nxx'),
+          spec: RigSpec(surface: RigSurface.computer, conversationId: 'c1'),
+          createdBy: const UserPrincipal('u1'),
+          conversationId: 'c1',
+          createdAt: DateTime.now(),
+          lastActivityAt: DateTime.now(),
+        );
+        await service.open(
+          workspaceId: 'ws1',
+          spec: RigSpec(surface: RigSurface.computer, conversationId: 'c1'),
+          openedBy: const UserPrincipal('u1'),
+        );
+        expect(repository.rigs['failed']!.status.phase, RigPhase.closed);
+      },
+    );
+
+    test('closing a live machine dismisses leftover failed siblings', () async {
+      repository.rigs['failed'] = Rig(
+        id: 'failed',
+        workspaceId: 'ws1',
+        surface: RigSurface.computer,
+        backend: EnclosureBackend.qemuHvf,
+        status: const RigFailed('boom\nstdout:\nxx'),
+        spec: RigSpec(surface: RigSurface.computer, conversationId: 'c1'),
+        createdBy: const UserPrincipal('u1'),
+        conversationId: 'c1',
+        createdAt: DateTime.now(),
+        lastActivityAt: DateTime.now(),
+      );
+      seed(conversationId: 'c1');
+      await service.close(workspaceId: 'ws1', rigId: 'r1');
+      expect(repository.rigs['failed']!.status.phase, RigPhase.closed);
+    });
+
+    test('a failed row in another slot survives a retry', () async {
+      repository.rigs['failed'] = Rig(
+        id: 'failed',
+        workspaceId: 'ws1',
+        surface: RigSurface.computer,
+        backend: EnclosureBackend.qemuHvf,
+        status: const RigFailed('boom'),
+        spec: RigSpec(
+          surface: RigSurface.computer,
+          conversationId: 'c1',
+          slotId: 's2',
+        ),
+        createdBy: const UserPrincipal('u1'),
+        conversationId: 'c1',
+        createdAt: DateTime.now(),
+        lastActivityAt: DateTime.now(),
+      );
+      await service.open(
+        workspaceId: 'ws1',
+        spec: RigSpec(surface: RigSurface.computer, conversationId: 'c1'),
+        openedBy: const UserPrincipal('u1'),
+      );
+      expect(repository.rigs['failed']!.status.phase, RigPhase.failed);
+    });
+
     test('closing a rig with no live machine still closes its row', () async {
       // The regression this pins: a `ready` row left by a previous server
       // process (or another server sharing the database) has no `_live`

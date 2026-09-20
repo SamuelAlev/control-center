@@ -32,22 +32,18 @@ import 'package:uuid/uuid.dart';
 class ReviewFindingStatusService implements ReviewFindingStatusPort {
   /// Creates a [ReviewFindingStatusService].
   ///
-  /// Every collaborator but [messaging] is optional, and each one lost costs
-  /// something specific rather than the operation: without [reviewSpaces] and
-  /// [runSnapshots] the decision never reaches the finalized pass's counters,
-  /// and without [memoryFacts] + [resolveDomain] a dismissal still lands, it
+  /// Every collaborator but [_messaging] is optional, and each one lost costs
+  /// something specific rather than the operation: without [_reviewSpaces] and
+  /// [_runSnapshots] the decision never reaches the finalized pass's counters,
+  /// and without [_memoryFacts] + [_resolveDomain] a dismissal still lands, it
   /// just teaches nothing.
   ReviewFindingStatusService({
-    required MessagingRepository messaging,
-    ReviewSpaceRepository? reviewSpaces,
-    ReviewRunSnapshotRepository? runSnapshots,
-    MemoryFactRepository? memoryFacts,
-    ResolveOrCreateDomainUseCase? resolveDomain,
-  }) : _messaging = messaging,
-       _reviewSpaces = reviewSpaces,
-       _runSnapshots = runSnapshots,
-       _memoryFacts = memoryFacts,
-       _resolveDomain = resolveDomain;
+    required this._messaging,
+    this._reviewSpaces,
+    this._runSnapshots,
+    this._memoryFacts,
+    this._resolveDomain,
+  });
 
   final MessagingRepository _messaging;
   final ReviewSpaceRepository? _reviewSpaces;

@@ -267,6 +267,9 @@ class AppLocalizationsEl extends AppLocalizations {
       'Δημιουργεί έναν προσωρινό προσομοιωτή iOS στον Mac του διακομιστή. Διαγράφεται όταν κλείσει το περιβάλλον δοκιμών· η πρόσβαση στο δίκτυο δεν είναι απομονωμένη.';
 
   @override
+  String get rigTechnicalDetails => 'Τεχνικές λεπτομέρειες';
+
+  @override
   String get rigStopMachine => 'Διακοπή της μηχανής';
 
   @override

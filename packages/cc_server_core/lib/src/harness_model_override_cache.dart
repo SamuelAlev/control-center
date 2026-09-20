@@ -12,9 +12,8 @@ import 'package:cc_harness/provider.dart';
 /// [setEntry], and reloaded wholesale by [refresh] when the provider set itself
 /// changes (a custom provider added or removed).
 class HarnessModelOverrideCache {
-  /// Creates a cache over [credentials].
-  HarnessModelOverrideCache({required ProviderCredentialStore credentials})
-    : _credentials = credentials;
+  /// Creates a cache over [_credentials].
+  HarnessModelOverrideCache({required this._credentials});
 
   final ProviderCredentialStore _credentials;
 

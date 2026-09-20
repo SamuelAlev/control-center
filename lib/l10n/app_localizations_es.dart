@@ -266,6 +266,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Crea un simulador de iOS desechable en el Mac del servidor. Se elimina cuando se cierra el entorno de pruebas; el acceso a la red no está aislado.';
 
   @override
+  String get rigTechnicalDetails => 'Detalles técnicos';
+
+  @override
   String get rigStopMachine => 'Detener la máquina';
 
   @override

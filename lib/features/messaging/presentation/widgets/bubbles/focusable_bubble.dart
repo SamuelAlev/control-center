@@ -9,8 +9,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// A bubble wrapper that shows a focus outline and a hover toolbar
@@ -350,8 +350,9 @@ class _HoverIconButton extends StatelessWidget {
         child: Icon(
           icon,
           size: 14,
-          color:
-              states.contains(WidgetState.hovered) ? tokens.fg : tokens.fgTertiary,
+          color: states.contains(WidgetState.hovered)
+              ? tokens.fg
+              : tokens.fgTertiary,
         ),
       ),
     );

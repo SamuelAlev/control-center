@@ -69,7 +69,7 @@ class StoredBlob {
 /// repeats actually are (an agent screenshotting an unchanged screen).
 class BlobStore {
   /// Creates a [BlobStore] whose per-workspace directory comes from
-  /// [workspaceDir].
+  /// [_workspaceDir].
   ///
   /// The layout is deliberately NOT computed here: `cc_infra` does not depend
   /// on `cc_persistence`, and the workspace directory convention belongs to
@@ -80,9 +80,9 @@ class BlobStore {
   /// [maxBytes] bounds a single blob; anything larger is refused rather than
   /// stored, because the caller has a text fallback and the store does not.
   BlobStore({
-    required String Function(String workspaceId) workspaceDir,
+    required this._workspaceDir,
     this.maxBytes = 24 * 1024 * 1024,
-  }) : _workspaceDir = workspaceDir;
+  });
 
   final String Function(String workspaceId) _workspaceDir;
 

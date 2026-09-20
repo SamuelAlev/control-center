@@ -18,14 +18,13 @@ typedef _ExecOutcome = ({bool success, String? error, String? resultJson});
 /// [DoneEvent] and sends a [JobCompletionReport]. Holds no durable state — the
 /// event buffer and any subprocess live only for the job's lifetime.
 class JobExecutor {
-  /// Creates a [JobExecutor] for [lease], reporting through [client] and
-  /// materializing worktrees under [cacheDir].
+  /// Creates a [JobExecutor] for [lease], reporting through [_client] and
+  /// materializing worktrees under [_cacheDir].
   JobExecutor({
     required this.lease,
-    required FleetClient client,
-    required String cacheDir,
-  })  : _client = client,
-        _cacheDir = cacheDir;
+    required this._client,
+    required this._cacheDir,
+  });
 
   static const Duration _flushInterval = Duration(milliseconds: 250);
   static const int _flushThreshold = 32;

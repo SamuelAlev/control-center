@@ -21,12 +21,10 @@ import 'package:crypto/crypto.dart';
 class TicketSyncWebhookHandler {
   /// Creates a [TicketSyncWebhookHandler].
   TicketSyncWebhookHandler({
-    required TicketSyncEngine engine,
+    required this._engine,
     required TicketSyncConfigRepository configRepository,
-    VendorWebhookParser parser = const VendorWebhookParser(),
-  }) : _engine = engine,
-       _configs = configRepository,
-       _parser = parser;
+    this._parser = const VendorWebhookParser(),
+  }) : _configs = configRepository;
 
   final TicketSyncEngine _engine;
   final TicketSyncConfigRepository _configs;

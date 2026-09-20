@@ -30,11 +30,11 @@ import 'package:drift/drift.dart';
 /// why direct WebSocket auth only ever needed the PSK cache fixed (see
 /// `FileSecretsStore`).
 class PairedDeviceRegistryWatch {
-  /// Watches [global]'s device registry, polling every [interval].
+  /// Watches [_global]'s device registry, polling every [interval].
   PairedDeviceRegistryWatch({
-    required GlobalDatabase global,
+    required this._global,
     this.interval = const Duration(seconds: 10),
-  }) : _global = global;
+  });
 
   final GlobalDatabase _global;
 

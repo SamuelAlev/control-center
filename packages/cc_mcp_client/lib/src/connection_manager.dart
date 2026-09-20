@@ -41,7 +41,7 @@ typedef NeedsAuthCallback = void Function(McpServerConfig config);
 class ConnectionManager {
   /// Creates a [ConnectionManager].
   ConnectionManager({
-    required McpTransportFactory transportFactory,
+    required this._transportFactory,
     this.onToolsChanged,
     this.onNeedsAuth,
     this.log,
@@ -55,8 +55,7 @@ class ConnectionManager {
       Duration(seconds: 2),
       Duration(seconds: 4),
     ],
-  }) : _transportFactory = transportFactory,
-       _toolCache = toolCache ?? const NoopMcpToolListCache();
+  }) : _toolCache = toolCache ?? const NoopMcpToolListCache();
 
   final McpTransportFactory _transportFactory;
 

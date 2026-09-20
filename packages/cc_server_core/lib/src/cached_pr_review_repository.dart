@@ -111,23 +111,16 @@ class _SwrState {
 class CachedPrReviewRepository implements PrReviewRepository {
   /// Creates a new `CachedPrReviewRepository` over one workspace's database.
   CachedPrReviewRepository({
-    required WorkspaceDatabase db,
+    required this._db,
     required ForgePrClient forgeClient,
-    required String owner,
-    required String repo,
-    required PrDiffSource apiDiffSource,
-    required PrDiffSource localDiffSource,
-    String? localCheckoutPath,
-    DomainEventBus? eventBus,
+    required this._owner,
+    required this._repo,
+    required this._apiDiffSource,
+    required this._localDiffSource,
+    this._localCheckoutPath,
+    this._eventBus,
     PrChangeSignals? changeSignals,
-  }) : _db = db,
-       _client = forgeClient,
-       _owner = owner,
-       _repo = repo,
-       _apiDiffSource = apiDiffSource,
-       _localDiffSource = localDiffSource,
-       _localCheckoutPath = localCheckoutPath,
-       _eventBus = eventBus,
+  }) : _client = forgeClient,
        _signals = changeSignals;
 
   final WorkspaceDatabase _db;

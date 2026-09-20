@@ -16,8 +16,7 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_pa
 /// hiding a row — it is the clearest feedback a reviewer ever receives.
 class DismissReviewNodeTool extends McpTool {
   /// Creates a new [DismissReviewNodeTool].
-  DismissReviewNodeTool({required ReviewFindingStatusPort status})
-    : _status = status;
+  DismissReviewNodeTool({required this._status});
 
   final ReviewFindingStatusPort _status;
 

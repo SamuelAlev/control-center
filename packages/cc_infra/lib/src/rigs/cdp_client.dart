@@ -277,12 +277,11 @@ class CdpDialogRecord {
 class CdpClient implements BrowserEngineClient {
   CdpClient._(
     this._socket, {
-    CdpReconnectPolicy? reconnect,
+    this._reconnect,
     String? targetId,
     this.autoDismissDialogs = true,
     this.requestTimeout = const Duration(seconds: 30),
-  }) : _reconnect = reconnect,
-       _currentTargetId = targetId {
+  }) : _currentTargetId = targetId {
     _bind();
   }
 

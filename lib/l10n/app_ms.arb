@@ -117,6 +117,7 @@
   "rigStartHint": "Memulakan VM pakai buang yang anda dan ejen kongsikan untuk perbualan ini. Ia dimusnahkan apabila ditutup, dan tiada apa-apa di dalamnya menyentuh komputer anda.",
   "rigStartAndroidHint": "Menyambung kepada emulator Android yang sudah berjalan pada pelayan. Akses rangkaian tidak diasingkan.",
   "rigStartIosHint": "Mencipta Simulator iOS sementara pada Mac pelayan. Simulator dipadamkan apabila rig ditutup; akses rangkaian tidak diasingkan.",
+  "rigTechnicalDetails": "Butiran teknikal",
   "rigStopMachine": "Hentikan mesin",
   "rigSurfaceUnavailable": "Pelayan ini tidak dapat mengehos jenis mesin ini.",
   "rigTabNeedsConversation": "Buka perbualan dahulu — mesin milik satu perbualan, supaya anda dan ejen melihat skrin yang sama.",

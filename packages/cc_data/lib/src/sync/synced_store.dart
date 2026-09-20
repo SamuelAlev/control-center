@@ -47,15 +47,14 @@ class OptimisticHandle {
 /// mode when deltas cannot be trusted (gap past retention, unknown wire
 /// version, or subscription failure).
 class SyncedStore {
-  /// Creates a store for [store] in [workspaceId] over [client].
+  /// Creates a store for [store] in [workspaceId] over [_client].
   SyncedStore({
-    required RemoteRpcClient client,
+    required this._client,
     required this.store,
     required this.workspaceId,
     this.onDemoted,
-    Set<String>? mirroredTables,
-  }) : _client = client,
-       _mirroredTables = mirroredTables;
+    this._mirroredTables,
+  });
 
   /// Supported delta wire version (must match the server's).
   static const int wireVersion = 1;
@@ -448,12 +447,11 @@ Set<String>? mirroredTablesFor(String store) => switch (store) {
 /// lazily and only when the per-store kill-switch flag allows delta mode
 /// (PRD 16 §6 staged adoption: the OFF position is today's snapshot mode).
 class ClientSyncEngine {
-  /// Creates the engine. [storeEnabled] is the per-store kill-switch.
+  /// Creates the engine. [_storeEnabled] is the per-store kill-switch.
   ClientSyncEngine({
-    required RemoteRpcClient client,
-    required bool Function(String store) storeEnabled,
-  }) : _client = client,
-       _storeEnabled = storeEnabled;
+    required this._client,
+    required this._storeEnabled,
+  });
 
   final RemoteRpcClient _client;
   final bool Function(String store) _storeEnabled;

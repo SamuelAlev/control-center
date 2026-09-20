@@ -10,8 +10,7 @@ import 'package:cc_harness/tools.dart';
 /// MCP tool to assign a ticket to an agent and/or team.
 class AssignTicketTool extends McpTool {
   /// Creates an [AssignTicketTool].
-  AssignTicketTool({required TicketWorkflowService service})
-    : _service = service;
+  AssignTicketTool({required this._service});
   final TicketWorkflowService _service;
 
   @override
@@ -74,8 +73,7 @@ class AssignTicketTool extends McpTool {
 /// MCP tool to reassign a ticket to another agent.
 class ReassignTicketTool extends McpTool {
   /// Creates a [ReassignTicketTool].
-  ReassignTicketTool({required TicketWorkflowService service})
-    : _service = service;
+  ReassignTicketTool({required this._service});
   final TicketWorkflowService _service;
 
   @override
@@ -137,8 +135,7 @@ class ReassignTicketTool extends McpTool {
 /// MCP tool to invite a collaborator onto a ticket.
 class AddTicketCollaboratorTool extends McpTool {
   /// Creates an [AddTicketCollaboratorTool].
-  AddTicketCollaboratorTool({required TicketWorkflowService service})
-    : _service = service;
+  AddTicketCollaboratorTool({required this._service});
   final TicketWorkflowService _service;
 
   @override
@@ -191,10 +188,9 @@ class AddTicketCollaboratorTool extends McpTool {
 class CommentOnTicketTool extends McpTool {
   /// Creates a [CommentOnTicketTool].
   CommentOnTicketTool({
-    required TicketRepository repository,
-    required MessagingPort messagingPort,
-  }) : _repository = repository,
-       _messagingPort = messagingPort;
+    required this._repository,
+    required this._messagingPort,
+  });
 
   final TicketRepository _repository;
   final MessagingPort _messagingPort;
@@ -268,8 +264,7 @@ class CommentOnTicketTool extends McpTool {
 /// degrades tool-selection accuracy.
 class TicketPrLinkTool extends McpTool {
   /// Creates a [TicketPrLinkTool].
-  TicketPrLinkTool({required TicketWorkflowService service})
-    : _service = service;
+  TicketPrLinkTool({required this._service});
   final TicketWorkflowService _service;
 
   @override
@@ -338,8 +333,7 @@ class TicketPrLinkTool extends McpTool {
 /// MCP tool to close (complete) a ticket.
 class CloseTicketTool extends McpTool {
   /// Creates a [CloseTicketTool].
-  CloseTicketTool({required TicketWorkflowService service})
-    : _service = service;
+  CloseTicketTool({required this._service});
   final TicketWorkflowService _service;
 
   @override

@@ -263,6 +263,9 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tạo một Trình mô phỏng iOS tạm thời trên máy Mac của máy chủ. Trình mô phỏng sẽ bị xóa khi môi trường kiểm thử đóng; quyền truy cập mạng không được cô lập.';
 
   @override
+  String get rigTechnicalDetails => 'Chi tiết kỹ thuật';
+
+  @override
   String get rigStopMachine => 'Dừng máy';
 
   @override

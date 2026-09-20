@@ -701,7 +701,7 @@ void main() {
       final forbidden = <RegExp>[
         RegExp(r'\bLinearGraphQlClient\b'),
         RegExp(r'\bLinearIssueDto\b'),
-        RegExp(r"package:cc_infra/src/tickets/linear"),
+        RegExp(r'package:cc_infra/src/tickets/linear'),
       ];
 
       final violations = <String>[];

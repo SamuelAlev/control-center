@@ -10,12 +10,10 @@ import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 class ProcessDetectionService implements ProcessDetectionPort {
   /// Creates a [ProcessDetectionService] backed by the given repositories.
   ProcessDetectionService({
-    required AgentRunLogRepository runLogRepo,
-    required AgentRepository agentRepo,
-    required WorkspaceRepository workspaceRepo,
-  }) : _runLogRepo = runLogRepo,
-       _agentRepo = agentRepo,
-       _workspaceRepo = workspaceRepo;
+    required this._runLogRepo,
+    required this._agentRepo,
+    required this._workspaceRepo,
+  });
 
   final AgentRunLogRepository _runLogRepo;
   final AgentRepository _agentRepo;

@@ -23,8 +23,7 @@ Map<String, dynamic> _approvalJson(Approval a) => {
 /// Opens a board approval — a durable governance gate with a comment history.
 class CreateApprovalTool extends McpTool {
   /// Creates a [CreateApprovalTool].
-  CreateApprovalTool({required ApprovalWorkflowService service})
-    : _service = service;
+  CreateApprovalTool({required this._service});
 
   final ApprovalWorkflowService _service;
 
@@ -97,8 +96,7 @@ class CreateApprovalTool extends McpTool {
 /// Lists approvals in a workspace, optionally filtered by status.
 class ListApprovalsTool extends McpTool {
   /// Creates a [ListApprovalsTool].
-  ListApprovalsTool({required ApprovalRepository repository})
-    : _repository = repository;
+  ListApprovalsTool({required this._repository});
 
   final ApprovalRepository _repository;
 
@@ -146,8 +144,7 @@ class ListApprovalsTool extends McpTool {
 /// Records a decision on an approval, enforcing the state machine.
 class DecideApprovalTool extends McpTool {
   /// Creates a [DecideApprovalTool].
-  DecideApprovalTool({required ApprovalWorkflowService service})
-    : _service = service;
+  DecideApprovalTool({required this._service});
 
   final ApprovalWorkflowService _service;
 
@@ -214,8 +211,7 @@ class DecideApprovalTool extends McpTool {
 /// Adds a comment to an approval's review discussion.
 class CommentApprovalTool extends McpTool {
   /// Creates a [CommentApprovalTool].
-  CommentApprovalTool({required ApprovalWorkflowService service})
-    : _service = service;
+  CommentApprovalTool({required this._service});
 
   final ApprovalWorkflowService _service;
 

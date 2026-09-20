@@ -79,11 +79,9 @@ class PublishArtifactTool extends McpTool {
   /// Creates a [PublishArtifactTool].
   PublishArtifactTool({
     required AgentRunLogRepository runLogRepository,
-    required WorkProductService workProducts,
-    MessagingRepository? messaging,
-  }) : _runLogs = runLogRepository,
-       _workProducts = workProducts,
-       _messaging = messaging;
+    required this._workProducts,
+    this._messaging,
+  }) : _runLogs = runLogRepository;
 
   final AgentRunLogRepository _runLogs;
   final WorkProductService _workProducts;
@@ -239,11 +237,9 @@ class ReviseArtifactTool extends McpTool {
   /// Creates a [ReviseArtifactTool].
   ReviseArtifactTool({
     required AgentRunLogRepository runLogRepository,
-    required WorkProductService workProducts,
-    required WorkProductRepository repository,
-  }) : _runLogs = runLogRepository,
-       _workProducts = workProducts,
-       _repository = repository;
+    required this._workProducts,
+    required this._repository,
+  }) : _runLogs = runLogRepository;
 
   final AgentRunLogRepository _runLogs;
   final WorkProductService _workProducts;
@@ -387,8 +383,7 @@ class ReviseArtifactTool extends McpTool {
 /// read or revise.
 class ListArtifactsTool extends McpTool {
   /// Creates a [ListArtifactsTool].
-  ListArtifactsTool({required WorkProductRepository repository})
-    : _repository = repository;
+  ListArtifactsTool({required this._repository});
 
   final WorkProductRepository _repository;
 
@@ -455,8 +450,7 @@ class ListArtifactsTool extends McpTool {
 /// Returns one artifact's decoded blocks, plus its revision history.
 class GetArtifactTool extends McpTool {
   /// Creates a [GetArtifactTool].
-  GetArtifactTool({required WorkProductRepository repository})
-    : _repository = repository;
+  GetArtifactTool({required this._repository});
 
   final WorkProductRepository _repository;
 

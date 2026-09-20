@@ -26,10 +26,9 @@ import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 class ListReposTool extends McpTool {
   /// Creates a new [ListReposTool].
   ListReposTool({
-    required RepoRepository repoRepository,
-    required IsolatedRepoRepository isolatedRepoRepository,
-  }) : _repoRepository = repoRepository,
-       _isolatedRepoRepository = isolatedRepoRepository;
+    required this._repoRepository,
+    required this._isolatedRepoRepository,
+  });
 
   final RepoRepository _repoRepository;
   final IsolatedRepoRepository _isolatedRepoRepository;

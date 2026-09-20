@@ -143,7 +143,7 @@ void main() {
 }
 
 class _TestTool extends McpTool {
-  _TestTool(this.name, {bool? approval}) : _approval = approval;
+  _TestTool(this.name, {this._approval});
   final bool? _approval;
   @override
   final String name;

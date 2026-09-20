@@ -2,10 +2,12 @@ import 'package:cc_data/cc_data.dart' show RigBackendView;
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
+import 'package:control_center/features/rigs/presentation/rig_boot_mark.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_states.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -109,5 +111,69 @@ void main() {
       ),
       findsOneWidget,
     );
+    expect(find.byIcon(AppIcons.appleLogo), findsOneWidget);
+    expect(find.byIcon(AppIcons.monitor), findsNothing);
+  });
+
+  testWidgets('Android start state shows the Android mark, not the desktop', (
+    tester,
+  ) async {
+    await pumpStart(tester, surface: RigTabSurfaces.mobile);
+    expect(find.byIcon(AppIcons.androidLogo), findsOneWidget);
+    expect(find.byIcon(AppIcons.monitor), findsNothing);
+  });
+
+  Future<void> pumpProgress(
+    WidgetTester tester, {
+    required String surface,
+    RigBrowserEngine? engine,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: CcTheme(
+          data: CcThemeData(
+            tokens: DesignSystemTokens.light(),
+            brightness: CcBrightness.light,
+          ),
+          child: Scaffold(
+            body: RigProgress(
+              surface: surface,
+              engine: engine,
+              detail: 'Booting',
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
+  testWidgets('iOS boot screen breathes the Apple mark, not a spinner', (
+    tester,
+  ) async {
+    await pumpProgress(tester, surface: RigTabSurfaces.ios);
+    expect(find.byIcon(AppIcons.appleLogo), findsOneWidget);
+    expect(find.byType(RigBootBreath), findsOneWidget);
+    expect(find.byType(CcSpinner), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('Android boot screen breathes the Android mark, not a spinner', (
+    tester,
+  ) async {
+    await pumpProgress(tester, surface: RigTabSurfaces.mobile);
+    expect(find.byIcon(AppIcons.androidLogo), findsOneWidget);
+    expect(find.byType(RigBootBreath), findsOneWidget);
+    expect(find.byType(CcSpinner), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('computer boot screen keeps the spinner', (tester) async {
+    await pumpProgress(tester, surface: RigTabSurfaces.computer);
+    expect(find.byType(CcSpinner), findsOneWidget);
+    expect(find.byType(RigBootBreath), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

@@ -50,37 +50,24 @@ import 'package:path/path.dart' as p;
 class CodeGraphWatchService {
   /// Creates the service. [watcherFactory] is a test hook (production uses
   /// [_defaultWatcherFactory], the required native `cc_watcher`).
-  /// [armStagger] spaces out arming consecutive checkouts; zero by default
+  /// [_armStagger] spaces out arming consecutive checkouts; zero by default
   /// because a native watch costs O(1) to create.
   CodeGraphWatchService({
-    required CodeIndexer indexer,
-    required WorkspaceRepository workspaces,
-    required IsolatedRepoRepository isolatedRepos,
-    CodeIndexRunReporter? runReporter,
-    Duration debounce = const Duration(seconds: 2),
-    Duration maxDebounce = const Duration(seconds: 15),
-    Duration linkedDebounce = const Duration(seconds: 10),
-    Duration linkedMaxDebounce = const Duration(seconds: 90),
-    Duration reconcileInterval = const Duration(minutes: 1),
-    Duration initialDelay = Duration.zero,
-    Duration armStagger = Duration.zero,
-    int maxConcurrentRuns = 1,
-    Future<bool> Function(String workspaceId, String spaceId)? shouldWatchSpace,
+    required this._indexer,
+    required this._workspaces,
+    required this._isolatedRepos,
+    this._runReporter,
+    this._debounce = const Duration(seconds: 2),
+    this._maxDebounce = const Duration(seconds: 15),
+    this._linkedDebounce = const Duration(seconds: 10),
+    this._linkedMaxDebounce = const Duration(seconds: 90),
+    this._reconcileInterval = const Duration(minutes: 1),
+    this._initialDelay = Duration.zero,
+    this._armStagger = Duration.zero,
+    this._maxConcurrentRuns = 1,
+    this._shouldWatchSpace,
     DirectoryChangeWatcherFactory? watcherFactory,
-  }) : _indexer = indexer,
-       _runReporter = runReporter,
-       _shouldWatchSpace = shouldWatchSpace,
-       _maxConcurrentRuns = maxConcurrentRuns,
-       _workspaces = workspaces,
-       _isolatedRepos = isolatedRepos,
-       _debounce = debounce,
-       _maxDebounce = maxDebounce,
-       _linkedDebounce = linkedDebounce,
-       _linkedMaxDebounce = linkedMaxDebounce,
-       _reconcileInterval = reconcileInterval,
-       _initialDelay = initialDelay,
-       _armStagger = armStagger,
-       _watcherFactory = watcherFactory ?? _defaultWatcherFactory;
+  }) : _watcherFactory = watcherFactory ?? _defaultWatcherFactory;
 
   final CodeIndexer _indexer;
 

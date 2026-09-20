@@ -26,7 +26,7 @@ class DemoRepoStats {
     Dio? dio,
     this.ttl = const Duration(minutes: 30),
     this.failureCooldown = const Duration(minutes: 5),
-    void Function(String message)? onLog,
+    this._onLog,
   }) : _dio =
            dio ??
            Dio(
@@ -34,8 +34,7 @@ class DemoRepoStats {
                connectTimeout: const Duration(seconds: 5),
                receiveTimeout: const Duration(seconds: 5),
              ),
-           ),
-       _onLog = onLog;
+           );
 
   /// How long a successful fetch is trusted before the next call refreshes.
   final Duration ttl;

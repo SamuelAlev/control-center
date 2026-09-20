@@ -254,6 +254,9 @@ class AppLocalizationsJa extends AppLocalizations {
       'サーバーの Mac 上に使い捨ての iOS Simulator を作成します。テスト環境を閉じると削除されます。ネットワークアクセスは隔離されません。';
 
   @override
+  String get rigTechnicalDetails => '技術的な詳細';
+
+  @override
   String get rigStopMachine => 'マシンを停止';
 
   @override

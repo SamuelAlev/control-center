@@ -16,8 +16,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_text_field.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_toolbar.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Statuses a ticket can be created in, in display order. Started/terminal

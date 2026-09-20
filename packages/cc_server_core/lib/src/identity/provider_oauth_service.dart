@@ -115,13 +115,11 @@ class _OAuthWiring {
 class ProviderOAuthService {
   /// Creates a [ProviderOAuthService].
   ProviderOAuthService({
-    required ProviderAppSettings apps,
-    required UserCredentialsStore users,
+    required this._apps,
+    required this._users,
     HttpClient? httpClient,
     DateTime Function()? now,
-  }) : _apps = apps,
-       _users = users,
-       _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
+  }) : _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
        _now = now ?? (() => DateTime.now().toUtc());
 
   /// Bound on every provider round-trip. A wedged provider must not pin the

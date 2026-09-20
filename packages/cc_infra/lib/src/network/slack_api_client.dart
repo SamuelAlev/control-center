@@ -182,11 +182,9 @@ class SlackStreamHandle {
 /// Outbound HTTPS works from anywhere, including a laptop behind NAT with no
 /// public endpoint — which is the whole premise of the Socket Mode bridge.
 class SlackApiClient {
-  /// Creates a [SlackApiClient]. [botToken] is the default authorization for
+  /// Creates a [SlackApiClient]. [_botToken] is the default authorization for
   /// every call that does not name its own token.
-  SlackApiClient({required Dio dio, required String botToken})
-    : _dio = dio,
-      _botToken = botToken;
+  SlackApiClient({required this._dio, required this._botToken});
 
   final Dio _dio;
   final String _botToken;

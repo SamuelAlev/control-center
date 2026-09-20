@@ -15,8 +15,8 @@ import 'package:control_center/features/messaging/presentation/widgets/message_f
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
-import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';
 import 'package:control_center/features/messaging/presentation/widgets/takeover_banner.dart';
+import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/pending_space_sends_provider.dart';
 import 'package:control_center/features/presence/presentation/widgets/spotlight_banner.dart';

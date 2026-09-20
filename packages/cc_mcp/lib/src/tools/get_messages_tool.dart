@@ -6,8 +6,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 /// Get space messages tool.
 class GetSpaceMessagesTool extends McpTool {
   /// Creates a new [Get space messages tool].
-  GetSpaceMessagesTool({required MessagingRepository repository})
-    : _repository = repository;
+  GetSpaceMessagesTool({required this._repository});
 
   final MessagingRepository _repository;
 

@@ -508,12 +508,12 @@ class BrowserRigDriver implements RigDriver {
   /// Creates a [BrowserRigDriver].
   BrowserRigDriver({
     required this.client,
-    required RigDisplaySize viewport,
+    required this._viewport,
     this.onUrlChanged,
     this.audioStreamOpener,
     this.audioInputSender,
     this.audioInputCloser,
-  }) : _viewport = viewport {
+  }) {
     _bindNavigationTracking();
   }
 
@@ -1324,14 +1324,13 @@ class BrowserRigDriver implements RigDriver {
 class MobileRigDriver implements RigDriver {
   /// Creates a [MobileRigDriver].
   ///
-  /// [ffmpeg] resolves the host transcoder; it is injectable so the
+  /// [_ffmpeg] resolves the host transcoder; it is injectable so the
   /// missing-ffmpeg branch can be exercised on a host that has one.
   MobileRigDriver({
     required this.adb,
-    required RigDisplaySize size,
-    FfmpegResolver ffmpeg = HostFfmpeg.locate,
-  }) : _size = size,
-       _ffmpeg = ffmpeg;
+    required this._size,
+    this._ffmpeg = HostFfmpeg.locate,
+  });
 
   /// The device connection.
   final AdbClient adb;

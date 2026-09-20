@@ -117,6 +117,7 @@
   "rigStartHint": "この会話でエージェントと共有する使い捨ての VM を起動します。終了すると破棄され、中身はコンピュータに影響しません。",
   "rigStartAndroidHint": "サーバーですでに実行中の Android エミュレーターに接続します。ネットワークアクセスは隔離されません。",
   "rigStartIosHint": "サーバーの Mac 上に使い捨ての iOS Simulator を作成します。テスト環境を閉じると削除されます。ネットワークアクセスは隔離されません。",
+  "rigTechnicalDetails": "技術的な詳細",
   "rigStopMachine": "マシンを停止",
   "rigSurfaceUnavailable": "このサーバーではこの種類のマシンをホストできません。",
   "rigTabNeedsConversation": "先に会話を開いてください。マシンは会話に紐づくため、エージェントと同じ画面を見られます。",

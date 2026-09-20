@@ -18,20 +18,15 @@ import 'package:cc_harness/tools.dart';
 /// dialog. `SandboxDispatchDeps` lists it in its interaction-tool set for
 /// exactly that reason.
 class AskUserTool extends HarnessTool {
-  /// Creates an [AskUserTool] that renders into [spaceId] of [workspaceId].
+  /// Creates an [AskUserTool] that renders into [_spaceId] of [_workspaceId].
   AskUserTool({
-    required AgentQuestionPort port,
-    required String workspaceId,
-    required String spaceId,
-    String? askedByAgentId,
-    String? askedByName,
-    int maxOptions = 8,
-  }) : _port = port,
-       _workspaceId = workspaceId,
-       _spaceId = spaceId,
-       _askedByAgentId = askedByAgentId,
-       _askedByName = askedByName,
-       _maxOptions = maxOptions;
+    required this._port,
+    required this._workspaceId,
+    required this._spaceId,
+    this._askedByAgentId,
+    this._askedByName,
+    this._maxOptions = 8,
+  });
 
   final AgentQuestionPort _port;
   final String _workspaceId;

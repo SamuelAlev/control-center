@@ -29,14 +29,11 @@ import 'package:cc_host/cc_host.dart';
 class RigEventListener {
   /// Creates the listener. Call [start].
   RigEventListener({
-    required DomainEventBus eventBus,
-    required RigRepository rigs,
-    required AgentRunLogRepository runLogs,
-    required Future<bool> Function(String runLogId, String message) steerRun,
-  }) : _eventBus = eventBus,
-       _rigs = rigs,
-       _runLogs = runLogs,
-       _steerRun = steerRun;
+    required this._eventBus,
+    required this._rigs,
+    required this._runLogs,
+    required this._steerRun,
+  });
 
   final DomainEventBus _eventBus;
   final RigRepository _rigs;

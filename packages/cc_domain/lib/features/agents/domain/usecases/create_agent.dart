@@ -87,9 +87,9 @@ class CreateAgentCommand {
 class CreateAgentUseCase {
   /// Creates a new [CreateAgentUseCase].
   const CreateAgentUseCase({
-    required AgentRepository repository,
+    required this._repository,
     this.filesystemService,
-  }) : _repository = repository;
+  });
 
   final AgentRepository _repository;
 

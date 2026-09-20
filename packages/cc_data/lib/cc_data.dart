@@ -10,6 +10,7 @@
 /// no Flutter). Every client, including desktop LOCAL, uses these adapters.
 library;
 
+export 'src/repositories/key_value_site_allowlist_repository.dart';
 export 'src/repositories/pr_dto_mapping.dart'
     show pullRequestFromWireDto, prFileFromWireDto, prCommitFromWireDto;
 export 'src/repositories/remote_activity_log.dart';
@@ -71,15 +72,16 @@ export 'src/repositories/rpc_cache_repository.dart';
 export 'src/repositories/rpc_calendar_repository.dart';
 export 'src/repositories/rpc_chat_client.dart';
 export 'src/repositories/rpc_claude_accounts_repository.dart';
+export 'src/repositories/rpc_code_graph_lookup_repository.dart';
 export 'src/repositories/rpc_conversation_repository.dart';
 export 'src/repositories/rpc_dictation_control.dart';
 export 'src/repositories/rpc_directory_browser_port.dart';
 export 'src/repositories/rpc_evals_client.dart';
+export 'src/repositories/rpc_filter_list_port.dart';
 export 'src/repositories/rpc_fleet_client.dart';
 export 'src/repositories/rpc_font_catalog_repository.dart';
 export 'src/repositories/rpc_governance_repositories.dart';
 export 'src/repositories/rpc_harness_provider_repository.dart';
-export 'src/repositories/key_value_site_allowlist_repository.dart';
 export 'src/repositories/rpc_isolated_repo_repository.dart';
 export 'src/repositories/rpc_meeting_recording_control.dart';
 export 'src/repositories/rpc_meeting_repository.dart';
@@ -89,7 +91,6 @@ export 'src/repositories/rpc_memory_fact_repository.dart';
 export 'src/repositories/rpc_memory_policy_repository.dart';
 export 'src/repositories/rpc_messaging_port.dart';
 export 'src/repositories/rpc_messaging_repository.dart';
-export 'src/repositories/rpc_filter_list_port.dart';
 export 'src/repositories/rpc_models_dev_source.dart';
 export 'src/repositories/rpc_newsfeed_repository.dart';
 export 'src/repositories/rpc_notification_feed_repository.dart';
@@ -105,7 +106,6 @@ export 'src/repositories/rpc_presence_repository.dart';
 export 'src/repositories/rpc_process_detection_port.dart';
 export 'src/repositories/rpc_project_repository.dart';
 export 'src/repositories/rpc_provider_policy_repository.dart';
-export 'src/repositories/rpc_code_graph_lookup_repository.dart';
 export 'src/repositories/rpc_repo_repository.dart';
 export 'src/repositories/rpc_repo_script_repository.dart';
 export 'src/repositories/rpc_review_space_repository.dart';

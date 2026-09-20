@@ -8,8 +8,7 @@ import 'package:cc_domain/features/memory/domain/usecases/harmonize_memory_use_c
 /// flags cross-agent contradictions as conflicts.
 class HarmonizeMemoryTool extends McpTool {
   /// Creates a [HarmonizeMemoryTool].
-  HarmonizeMemoryTool({required HarmonizeMemoryUseCase useCase})
-    : _useCase = useCase;
+  HarmonizeMemoryTool({required this._useCase});
 
   final HarmonizeMemoryUseCase _useCase;
 

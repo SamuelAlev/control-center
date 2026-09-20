@@ -58,13 +58,11 @@ typedef PromptAttachmentResolver =
 /// directory and reports where they landed.
 class SpacePromptAttachments {
   /// Creates a [SpacePromptAttachments] over [blobStore], placing files under
-  /// the directory [spaceDir] resolves for a workspace/space pair.
+  /// the directory [_spaceDir] resolves for a workspace/space pair.
   SpacePromptAttachments({
     required BlobStore blobStore,
-    required Future<String> Function(String workspaceId, String spaceId)
-    spaceDir,
-  }) : _blobs = blobStore,
-       _spaceDir = spaceDir;
+    required this._spaceDir,
+  }) : _blobs = blobStore;
 
   final BlobStore _blobs;
   final Future<String> Function(String workspaceId, String spaceId) _spaceDir;

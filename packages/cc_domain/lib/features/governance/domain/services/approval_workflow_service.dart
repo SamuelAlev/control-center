@@ -12,10 +12,9 @@ import 'package:uuid/uuid.dart';
 class ApprovalWorkflowService {
   /// Creates an [ApprovalWorkflowService].
   ApprovalWorkflowService({
-    required ApprovalRepository repository,
+    required this._repository,
     ActivityLogger? activityLogger,
-  }) : _repository = repository,
-       _audit = activityLogger;
+  }) : _audit = activityLogger;
 
   final ApprovalRepository _repository;
   final ActivityLogger? _audit;

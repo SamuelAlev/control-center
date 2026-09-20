@@ -8,7 +8,7 @@ import 'package:cc_domain/features/skills/domain/ports/skill_bundle_port.dart';
 /// applying an update is a separate, gated `update_skill` call.
 class ListSkillUpdatesTool extends McpTool {
   /// Creates a [ListSkillUpdatesTool].
-  ListSkillUpdatesTool({required SkillBundlePort bundles}) : _bundles = bundles;
+  ListSkillUpdatesTool({required this._bundles});
 
   final SkillBundlePort _bundles;
 

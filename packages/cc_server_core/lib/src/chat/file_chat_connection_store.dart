@@ -80,8 +80,8 @@ class ChatAppSetup {
 /// Writes are atomic (temp file + rename) and tightened to owner-only, matching
 /// the Google credentials store next door.
 class FileChatConnectionStore {
-  /// Creates a store rooted at [dataDir].
-  FileChatConnectionStore({required String dataDir}) : _dataDir = dataDir;
+  /// Creates a store rooted at [_dataDir].
+  FileChatConnectionStore({required this._dataDir});
 
   final String _dataDir;
 

@@ -12,10 +12,9 @@ import 'package:cc_mcp/src/tools/memory_repo_scope_arg.dart';
 class ListPoliciesTool extends McpTool {
   /// Creates a [ListPoliciesTool].
   ListPoliciesTool({
-    required MemoryPolicyRepository repository,
-    required MemoryRepoScopeResolver repoScope,
-  }) : _repository = repository,
-       _repoScope = repoScope;
+    required this._repository,
+    required this._repoScope,
+  });
 
   final MemoryPolicyRepository _repository;
   final MemoryRepoScopeResolver _repoScope;

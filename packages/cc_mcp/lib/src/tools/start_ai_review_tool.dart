@@ -23,7 +23,7 @@ typedef ReviewHubStartFn =
 /// MCP tool that starts the AI review for a pull request.
 class StartAiReviewTool extends McpTool {
   /// Creates a new [StartAiReviewTool].
-  StartAiReviewTool({required ReviewHubStartFn start}) : _start = start;
+  StartAiReviewTool({required this._start});
 
   final ReviewHubStartFn _start;
 

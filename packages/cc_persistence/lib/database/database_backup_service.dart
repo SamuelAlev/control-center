@@ -37,21 +37,17 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
   /// Creates a backup service writing into [backupsDir].
   ///
   /// [exportsDir] receives single-workspace exports (defaults to a sibling of
-  /// [backupsDir]). [now] is a test seam.
+  /// [backupsDir]). [_now] is a test seam.
   AppDatabaseBackupService({
-    required GlobalDatabase global,
-    required WorkspaceDatabaseManager workspaces,
+    required this._global,
+    required this._workspaces,
     required String backupsDir,
     String? exportsDir,
-    DateTime Function() now = DateTime.now,
-    void Function(String message)? onWarn,
-  }) : _global = global,
-       _workspaces = workspaces,
-       _backupsDir = backupsDir,
+    this._now = DateTime.now,
+    this._onWarn,
+  }) : _backupsDir = backupsDir,
        _exportsDir =
-           exportsDir ?? '$backupsDir${Platform.pathSeparator}exports',
-       _now = now,
-       _onWarn = onWarn;
+           exportsDir ?? '$backupsDir${Platform.pathSeparator}exports';
 
   final GlobalDatabase _global;
   final WorkspaceDatabaseManager _workspaces;

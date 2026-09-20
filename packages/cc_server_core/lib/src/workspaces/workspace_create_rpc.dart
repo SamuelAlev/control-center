@@ -7,12 +7,13 @@ import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/workspaces/domain/usecases/create_workspace.dart';
 import 'package:cc_host/cc_host.dart';
-import 'package:cc_server_core/src/remote_rpc_catalog.dart' show workspaceToWire;
+import 'package:cc_server_core/src/remote_rpc_catalog.dart'
+    show workspaceToWire;
 import 'package:uuid/uuid.dart';
 
 /// Repo-RPC op that creates a workspace at a server chokepoint.
 ///
-/// Id minting, name trim and [WorkspaceCreated] live in
+/// Id minting, name trim and `WorkspaceCreated` live in
 /// [CreateWorkspaceUseCase]. Owner membership is recorded here — the same
 /// bootstrap `workspace.upsert` runs on a create — so the caller is a member
 /// before the next workspace-scoped call. Injected via `extraOps`.

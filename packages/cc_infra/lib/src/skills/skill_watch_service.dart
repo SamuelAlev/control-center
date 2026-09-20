@@ -41,22 +41,15 @@ class SkillWatchService {
   /// Creates the service. [watcherFactory] is a test hook (production uses the
   /// required native `cc_watcher`).
   SkillWatchService({
-    required WorkspaceRepository workspaces,
-    required WorkspaceFilesystemPort filesystem,
-    required DomainEventBus eventBus,
-    required SkillBundlePort bundles,
-    Duration debounce = const Duration(seconds: 2),
-    Duration maxDebounce = const Duration(seconds: 15),
-    Duration reconcileInterval = const Duration(minutes: 1),
+    required this._workspaces,
+    required this._filesystem,
+    required this._eventBus,
+    required this._bundles,
+    this._debounce = const Duration(seconds: 2),
+    this._maxDebounce = const Duration(seconds: 15),
+    this._reconcileInterval = const Duration(minutes: 1),
     DirectoryChangeWatcherFactory? watcherFactory,
-  }) : _workspaces = workspaces,
-       _filesystem = filesystem,
-       _eventBus = eventBus,
-       _bundles = bundles,
-       _debounce = debounce,
-       _maxDebounce = maxDebounce,
-       _reconcileInterval = reconcileInterval,
-       _watcherFactory = watcherFactory ?? _defaultWatcherFactory;
+  }) : _watcherFactory = watcherFactory ?? _defaultWatcherFactory;
 
   final WorkspaceRepository _workspaces;
   final WorkspaceFilesystemPort _filesystem;
@@ -185,22 +178,15 @@ class SkillWatchService {
 class _SkillRootWatch {
   _SkillRootWatch._({
     required this.workspaceId,
-    required String dirPath,
-    required WorkspaceFilesystemPort filesystem,
-    required SkillBundlePort bundles,
-    required DomainEventBus eventBus,
+    required this._dirPath,
+    required this._filesystem,
+    required this._bundles,
+    required this._eventBus,
     required DirectoryChangeWatcher createdWatcher,
-    required Duration debounce,
-    required Duration maxDebounce,
-    required void Function() onGone,
-  }) : _dirPath = dirPath,
-       _filesystem = filesystem,
-       _bundles = bundles,
-       _eventBus = eventBus,
-       _debounce = debounce,
-       _maxDebounce = maxDebounce,
-       _onGone = onGone,
-       watcher = createdWatcher {
+    required this._debounce,
+    required this._maxDebounce,
+    required this._onGone,
+  }) : watcher = createdWatcher {
     _subscription = watcher.changes.listen(
       _onChange,
       onError: (Object e) {

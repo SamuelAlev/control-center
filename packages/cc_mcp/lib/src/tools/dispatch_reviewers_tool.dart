@@ -12,8 +12,7 @@ import 'package:cc_harness/tools.dart';
 /// exactly one place.
 class DispatchReviewersTool extends McpTool {
   /// Creates a new [DispatchReviewersTool].
-  DispatchReviewersTool({required DispatchReviewersPort service})
-    : _service = service;
+  DispatchReviewersTool({required this._service});
 
   final DispatchReviewersPort _service;
 

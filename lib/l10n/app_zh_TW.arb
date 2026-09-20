@@ -117,6 +117,7 @@
   "rigStartHint": "啟動一台用完即丟的虛擬機，供你和代理在此對話共用。關閉後即銷毀，其中內容不會動到你的電腦。",
   "rigStartAndroidHint": "連線至伺服器上已在執行的 Android 模擬器。網路存取未隔離。",
   "rigStartIosHint": "在伺服器 Mac 上建立一個用完即棄的 iOS 模擬器。測試環境關閉時會將其刪除；網路存取未隔離。",
+  "rigTechnicalDetails": "技術詳情",
   "rigStopMachine": "停止機器",
   "rigSurfaceUnavailable": "此伺服器無法託管這類機器。",
   "rigTabNeedsConversation": "請先開啟對話 — 機器隸屬於單一對話，這樣你和代理才會看到同一畫面。",

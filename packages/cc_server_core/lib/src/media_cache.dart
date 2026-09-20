@@ -160,29 +160,22 @@ final class MediaCacheFailure extends MediaCacheResolution {
 /// back [MediaFetchStream] re-fetches for itself — a stream has exactly one
 /// consumer.)
 class MediaCache {
-  /// Creates a [MediaCache] rooted at [dir] (created lazily on first write).
+  /// Creates a [MediaCache] rooted at [_dir] (created lazily on first write).
   ///
-  /// [maxStaleAge] is how long an EXPIRED entry is retained for
+  /// [_maxStaleAge] is how long an EXPIRED entry is retained for
   /// stale-if-error serving and conditional revalidation before the sweep
   /// deletes it outright — the revalidation value of a week-old expired
   /// avatar no longer justifies the disk.
   MediaCache({
-    required Directory dir,
-    int maxTotalBytes = 256 << 20,
-    int maxEntryBytes = 16 << 20,
-    Duration defaultTtl = const Duration(hours: 24),
-    Duration minTtl = const Duration(hours: 1),
-    Duration maxTtl = const Duration(days: 7),
-    Duration maxStaleAge = const Duration(days: 7),
+    required this._dir,
+    this._maxTotalBytes = 256 << 20,
+    this._maxEntryBytes = 16 << 20,
+    this._defaultTtl = const Duration(hours: 24),
+    this._minTtl = const Duration(hours: 1),
+    this._maxTtl = const Duration(days: 7),
+    this._maxStaleAge = const Duration(days: 7),
     DateTime Function()? clock,
-  }) : _dir = dir,
-       _maxTotalBytes = maxTotalBytes,
-       _maxEntryBytes = maxEntryBytes,
-       _defaultTtl = defaultTtl,
-       _minTtl = minTtl,
-       _maxTtl = maxTtl,
-       _maxStaleAge = maxStaleAge,
-       _clock = clock ?? DateTime.now;
+  }) : _clock = clock ?? DateTime.now;
 
   final Directory _dir;
   final int _maxTotalBytes;

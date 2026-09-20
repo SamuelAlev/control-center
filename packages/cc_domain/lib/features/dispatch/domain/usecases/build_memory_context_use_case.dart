@@ -16,12 +16,10 @@ import 'package:cc_domain/features/memory/domain/value_objects/memory_domain_sco
 class BuildMemoryContextUseCase {
   /// Creates a [BuildMemoryContextUseCase].
   BuildMemoryContextUseCase({
-    required MemoryPolicyRepository policyRepository,
-    required AgentWorkingMemoryRepository workingMemoryRepository,
-    MemoryFactRepository? factRepository,
-  }) : _policyRepository = policyRepository,
-       _workingMemoryRepository = workingMemoryRepository,
-       _factRepository = factRepository;
+    required this._policyRepository,
+    required this._workingMemoryRepository,
+    this._factRepository,
+  });
 
   final MemoryPolicyRepository _policyRepository;
   final AgentWorkingMemoryRepository _workingMemoryRepository;

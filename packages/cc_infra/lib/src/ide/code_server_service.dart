@@ -61,14 +61,13 @@ const Duration _idleGrace = Duration(minutes: 10);
 /// cannot reach another's code-server (the workspace-isolation invariant).
 class CodeServerService implements CodeServerPort {
   /// Creates the service over an [isolatedRepos] resolver (worktree lookup), a
-  /// `filesystem` (workspace layout) and a [dataRoot] (managed code-server
+  /// `filesystem` (workspace layout) and a [_dataRoot] (managed code-server
   /// install + shared extensions dir, e.g. cc_server's data dir).
   CodeServerService({
     required IsolatedRepoRepository isolatedRepos,
-    required String dataRoot,
+    required this._dataRoot,
     this.attemptManagedDownload = true,
-  }) : _repos = isolatedRepos,
-       _dataRoot = dataRoot;
+  }) : _repos = isolatedRepos;
 
   final IsolatedRepoRepository _repos;
   final String _dataRoot;

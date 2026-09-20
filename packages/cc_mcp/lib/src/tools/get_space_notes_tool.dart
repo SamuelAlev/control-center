@@ -10,10 +10,9 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 class GetSpaceNotesTool extends McpTool {
   /// Creates a [GetSpaceNotesTool].
   GetSpaceNotesTool({
-    required SpaceNotesPort notesPort,
+    required this._notesPort,
     required MessagingRepository messagingRepository,
-  }) : _notesPort = notesPort,
-       _messaging = messagingRepository;
+  }) : _messaging = messagingRepository;
 
   final SpaceNotesPort _notesPort;
   final MessagingRepository _messaging;

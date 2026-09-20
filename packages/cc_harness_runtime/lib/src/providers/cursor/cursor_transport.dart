@@ -31,11 +31,10 @@ class CursorRunFrame {
 class CursorRunSession {
   /// Creates a session.
   CursorRunSession({
-    required void Function(List<int> proto) send,
+    required this._send,
     required this.frames,
-    required Future<void> Function() close,
-  }) : _send = send,
-       _close = close;
+    required this._close,
+  });
 
   final void Function(List<int> proto) _send;
   final Future<void> Function() _close;

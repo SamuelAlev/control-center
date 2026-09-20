@@ -43,13 +43,12 @@ class RigFileTransferException implements Exception {
 /// these bytes in its own heap, so "the guest decides how many" is not an
 /// option.
 class RigFileTransfer {
-  /// Creates a [RigFileTransfer] over [transport], landing dropped files in
-  /// [dropDirectory] inside the guest.
+  /// Creates a [RigFileTransfer] over [_transport], landing dropped files in
+  /// [_dropDirectory] inside the guest.
   const RigFileTransfer({
-    required WorktreeTransport transport,
-    required String dropDirectory,
-  }) : _transport = transport,
-       _dropDirectory = dropDirectory;
+    required this._transport,
+    required this._dropDirectory,
+  });
 
   final WorktreeTransport _transport;
   final String _dropDirectory;

@@ -214,32 +214,36 @@ void main() {
       expect(ApprovalMode.write.wire, 'write');
     });
 
-    test('ToolApproval static constants + override/reason', () {
+    test('ToolApproval static constants + forcePrompt/reason', () {
       expect(ToolApproval.read.tier, CapabilityTier.read);
       expect(ToolApproval.write.tier, CapabilityTier.write);
       expect(ToolApproval.exec.tier, CapabilityTier.exec);
-      const o = ToolApproval(CapabilityTier.read, override: true, reason: 'r');
-      expect(o.override, isTrue);
+      const o = ToolApproval(
+        CapabilityTier.read,
+        forcePrompt: true,
+        reason: 'r',
+      );
+      expect(o.forcePrompt, isTrue);
       expect(o.reason, 'r');
     });
 
     test('resolveApproval matrix', () {
-      // yolo: allow unless override
+      // yolo: allow unless forcePrompt
       expect(
         resolveApproval(ToolApproval.exec, ApprovalMode.yolo),
         ApprovalDecision.allow,
       );
       expect(
         resolveApproval(
-          const ToolApproval(CapabilityTier.read, override: true),
+          const ToolApproval(CapabilityTier.read, forcePrompt: true),
           ApprovalMode.yolo,
         ),
         ApprovalDecision.prompt,
       );
-      // override forces prompt in non-yolo too
+      // forcePrompt forces prompt in non-yolo too
       expect(
         resolveApproval(
-          const ToolApproval(CapabilityTier.read, override: true),
+          const ToolApproval(CapabilityTier.read, forcePrompt: true),
           ApprovalMode.alwaysAsk,
         ),
         ApprovalDecision.prompt,

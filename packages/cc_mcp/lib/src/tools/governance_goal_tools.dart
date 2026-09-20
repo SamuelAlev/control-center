@@ -22,7 +22,7 @@ Map<String, dynamic> _goalJson(OrgGoal g) => {
 /// Creates a goal in the company → team → agent → task hierarchy.
 class CreateGoalTool extends McpTool {
   /// Creates a [CreateGoalTool].
-  CreateGoalTool({required GoalProgressService service}) : _service = service;
+  CreateGoalTool({required this._service});
 
   final GoalProgressService _service;
 
@@ -109,8 +109,7 @@ class CreateGoalTool extends McpTool {
 /// Lists the goals in a workspace.
 class ListGoalsTool extends McpTool {
   /// Creates a [ListGoalsTool].
-  ListGoalsTool({required GoalRepository repository})
-    : _repository = repository;
+  ListGoalsTool({required this._repository});
 
   final GoalRepository _repository;
 
@@ -150,8 +149,7 @@ class ListGoalsTool extends McpTool {
 /// Updates a goal's progress (and cascades it upward through the hierarchy).
 class UpdateGoalProgressTool extends McpTool {
   /// Creates an [UpdateGoalProgressTool].
-  UpdateGoalProgressTool({required GoalProgressService service})
-    : _service = service;
+  UpdateGoalProgressTool({required this._service});
 
   final GoalProgressService _service;
 

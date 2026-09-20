@@ -258,6 +258,9 @@ class AppLocalizationsUr extends AppLocalizations {
       'سرور کے Mac پر ایک عارضی iOS Simulator بناتا ہے۔ ٹیسٹ ماحول بند ہونے پر اسے حذف کر دیا جاتا ہے؛ نیٹ ورک تک رسائی الگ تھلگ نہیں ہے۔';
 
   @override
+  String get rigTechnicalDetails => 'تکنیکی تفصیلات';
+
+  @override
   String get rigStopMachine => 'مشین روکیں';
 
   @override

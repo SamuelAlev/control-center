@@ -12,10 +12,9 @@ import 'package:uuid/uuid.dart';
 class ResolveOrCreateDomainUseCase {
   /// Creates a [ResolveOrCreateDomainUseCase].
   ResolveOrCreateDomainUseCase({
-    required MemoryDomainRepository domainRepository,
-    required MemoryAccessGrantRepository grantRepository,
-  }) : _domainRepository = domainRepository,
-       _grantRepository = grantRepository;
+    required this._domainRepository,
+    required this._grantRepository,
+  });
 
   final MemoryDomainRepository _domainRepository;
   final MemoryAccessGrantRepository _grantRepository;

@@ -7,8 +7,8 @@ import 'package:uuid/uuid.dart';
 
 /// Publishes domain activity events to the event bus for observability.
 class ActivityLogger {
-  /// Creates an [ActivityLogger] that publishes to the optional [eventBus].
-  ActivityLogger({DomainEventBus? eventBus}) : _eventBus = eventBus;
+  /// Creates an [ActivityLogger] that publishes to the optional [_eventBus].
+  ActivityLogger({this._eventBus});
 
   final DomainEventBus? _eventBus;
   static const _uuid = Uuid();

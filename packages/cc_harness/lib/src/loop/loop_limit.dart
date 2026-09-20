@@ -167,19 +167,16 @@ Duration? _parseCompactDuration(String token) {
 /// restore it: a `/loop 10` that survives a server restart has to remember it
 /// is on iteration 4, and a counter living only in a parse result could not.
 class LoopBudget {
-  /// Creates a [LoopBudget] from a parsed [limit], starting now.
-  LoopBudget({LoopLimit? limit, DateTime? startedAt})
-    : _limit = limit,
-      _startedAt = startedAt ?? DateTime.now();
+  /// Creates a [LoopBudget] from a parsed [_limit], starting now.
+  LoopBudget({this._limit, DateTime? startedAt})
+    : _startedAt = startedAt ?? DateTime.now();
 
   /// Restores a budget mid-flight.
   LoopBudget.resumed({
-    LoopLimit? limit,
-    required DateTime startedAt,
-    required int completed,
-  }) : _limit = limit,
-       _startedAt = startedAt,
-       _completed = completed;
+    this._limit,
+    required this._startedAt,
+    required this._completed,
+  });
 
   final LoopLimit? _limit;
   final DateTime _startedAt;

@@ -34,19 +34,18 @@ const List<({String id, String name})> kSubscriptionUsageProviders = [
 class SubscriptionUsageService {
   /// Creates a [SubscriptionUsageService].
   ///
-  /// [dio] is the outbound HTTP client (the host passes its shared `createDio`
+  /// [_dio] is the outbound HTTP client (the host passes its shared `createDio`
   /// instance). [homeDir]/[environment] default to the process environment.
   /// [fetchClaudeCached] is the single-flight cache in front of Claude's
   /// rate-limited usage endpoint — the pill and the dispatch-time headroom
   /// check share it so multi-account does not 429 itself.
   SubscriptionUsageService({
-    required Dio dio,
+    required this._dio,
     String? homeDir,
     Map<String, String>? environment,
     this.readClaudeKeychain = true,
     this.fetchClaudeCached,
-  }) : _dio = dio,
-       _env = environment ?? Platform.environment,
+  }) : _env = environment ?? Platform.environment,
        _home = homeDir;
 
   final Dio _dio;

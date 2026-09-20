@@ -31,17 +31,12 @@ class ForgeRepositoryFactory implements ForgeProviderFactory {
   ForgeRepositoryFactory({
     required this.forge,
     required WorkspaceDatabaseManager workspaceDbs,
-    required ForgePrClientBuilder buildClient,
-    required PrDiffSource localGitSource,
-    required PrDiffSource Function() buildApiDiffSource,
-    DomainEventBus? eventBus,
-    PrChangeSignals? changeSignals,
-  }) : _dbs = workspaceDbs,
-       _buildClient = buildClient,
-       _localGitSource = localGitSource,
-       _buildApiDiffSource = buildApiDiffSource,
-       _eventBus = eventBus,
-       _changeSignals = changeSignals;
+    required this._buildClient,
+    required this._localGitSource,
+    required this._buildApiDiffSource,
+    this._eventBus,
+    this._changeSignals,
+  }) : _dbs = workspaceDbs;
 
   @override
   final ForgeHost forge;

@@ -15,12 +15,11 @@ import 'package:dio/dio.dart';
 class ClaudeUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [ClaudeUsageStrategy].
   ClaudeUsageStrategy({
-    required Dio dio,
+    required this._dio,
     required Map<String, String> environment,
     String? homeDir,
     this.readClaudeKeychain = true,
-  }) : _dio = dio,
-       _env = environment,
+  }) : _env = environment,
        _home = homeDir,
        super(providerId: 'claude', displayName: 'Claude');
 

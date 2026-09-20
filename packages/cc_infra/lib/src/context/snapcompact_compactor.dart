@@ -21,12 +21,12 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 class SnapcompactCompactor implements HarnessCompactor {
   /// Creates a [SnapcompactCompactor].
   SnapcompactCompactor({
-    required HarnessCompactor fallback,
+    required this._fallback,
     required this.modelId,
     required this.readerHasVision,
     this.preferSnapshots = false,
     this.config = CompactionConfig.defaults,
-  }) : _fallback = fallback;
+  });
 
   final HarnessCompactor _fallback;
 

@@ -249,6 +249,9 @@ class AppLocalizationsZh extends AppLocalizations {
       '在服务器 Mac 上创建一个用完即弃的 iOS 模拟器。测试环境关闭时会将其删除；网络访问未隔离。';
 
   @override
+  String get rigTechnicalDetails => '技术详情';
+
+  @override
   String get rigStopMachine => '停止机器';
 
   @override
@@ -14328,6 +14331,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String get rigStartIosHint =>
       '在伺服器 Mac 上建立一個用完即棄的 iOS 模擬器。測試環境關閉時會將其刪除；網路存取未隔離。';
+
+  @override
+  String get rigTechnicalDetails => '技術詳情';
 
   @override
   String get rigStopMachine => '停止機器';

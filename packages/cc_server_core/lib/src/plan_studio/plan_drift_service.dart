@@ -27,17 +27,12 @@ import 'package:cc_persistence/database/workspace_database_manager.dart';
 class PlanDriftService {
   /// Creates the service.
   PlanDriftService({
-    required OrchestrationRepository orchestrations,
-    required AgentRunLogRepository runLogs,
+    required this._orchestrations,
+    required this._runLogs,
     required WorkspaceDatabaseManager workspaceDbs,
-    required MessagingRepository messaging,
-    required Future<List<PrFile>> Function(String workspaceId, String spaceId)
-    conversationChanges,
-  }) : _orchestrations = orchestrations,
-       _runLogs = runLogs,
-       _dbs = workspaceDbs,
-       _messaging = messaging,
-       _conversationChanges = conversationChanges;
+    required this._messaging,
+    required this._conversationChanges,
+  }) : _dbs = workspaceDbs;
 
   /// The Caches kind holding divergence markers (key = orchestration id).
   static const String cacheKind = 'plan_divergence';

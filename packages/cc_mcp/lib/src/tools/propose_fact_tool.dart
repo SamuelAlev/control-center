@@ -13,10 +13,9 @@ import 'package:cc_mcp/src/tools/memory_repo_scope_arg.dart';
 class ProposeFactTool extends McpTool {
   /// Creates a [ProposeFactTool].
   ProposeFactTool({
-    required RecordMemoryFactUseCase recordFact,
-    required MemoryRepoScopeResolver repoScope,
-  }) : _recordFact = recordFact,
-       _repoScope = repoScope;
+    required this._recordFact,
+    required this._repoScope,
+  });
 
   final RecordMemoryFactUseCase _recordFact;
   final MemoryRepoScopeResolver _repoScope;

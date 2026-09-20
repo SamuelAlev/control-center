@@ -11,8 +11,7 @@ import 'package:uuid/uuid.dart';
 /// when no per-reviewer verdicts exist, so this tool is informational only.
 class SubmitReviewerVerdictTool extends McpTool {
   /// Creates a [SubmitReviewerVerdictTool].
-  SubmitReviewerVerdictTool({required MessagingRepository repository})
-    : _repository = repository;
+  SubmitReviewerVerdictTool({required this._repository});
 
   final MessagingRepository _repository;
 

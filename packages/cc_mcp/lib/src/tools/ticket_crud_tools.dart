@@ -25,10 +25,9 @@ Map<String, dynamic> _ticketJson(Ticket t) => {
 class CreateTicketTool extends McpTool {
   /// Creates a [CreateTicketTool].
   CreateTicketTool({
-    required TicketWorkflowService service,
-    required TicketProvider provider,
-  }) : _service = service,
-       _provider = provider;
+    required this._service,
+    required this._provider,
+  });
 
   final TicketWorkflowService _service;
   final TicketProvider _provider;
@@ -111,8 +110,7 @@ class CreateTicketTool extends McpTool {
 /// MCP tool to fetch a single ticket by id.
 class GetTicketTool extends McpTool {
   /// Creates a [GetTicketTool].
-  GetTicketTool({required TicketRepository repository})
-    : _repository = repository;
+  GetTicketTool({required this._repository});
   final TicketRepository _repository;
 
   @override
@@ -160,8 +158,7 @@ class GetTicketTool extends McpTool {
 /// MCP tool to list tickets in a workspace, optionally filtered.
 class ListTicketsTool extends McpTool {
   /// Creates a [ListTicketsTool].
-  ListTicketsTool({required TicketRepository repository})
-    : _repository = repository;
+  ListTicketsTool({required this._repository});
   final TicketRepository _repository;
 
   @override
@@ -233,10 +230,9 @@ class ListTicketsTool extends McpTool {
 class UpdateTicketTool extends McpTool {
   /// Creates an [UpdateTicketTool].
   UpdateTicketTool({
-    required TicketWorkflowService service,
-    required TicketRepository repository,
-  }) : _service = service,
-       _repository = repository;
+    required this._service,
+    required this._repository,
+  });
   final TicketWorkflowService _service;
   final TicketRepository _repository;
 

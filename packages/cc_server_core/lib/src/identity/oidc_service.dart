@@ -127,11 +127,7 @@ class OidcService {
     required UserRepository users,
     required WorkspaceMembershipRepository members,
     required WorkspaceRepository workspaces,
-    required Future<({String deviceId, String psk})> Function(
-      String userId,
-      String label,
-    )
-    mintDevice,
+    required this._mintDevice,
     DomainEventBus? eventBus,
     HttpClient? httpClient,
     DateTime Function()? now,
@@ -142,7 +138,6 @@ class OidcService {
          eventBus: eventBus,
          now: now,
        ),
-       _mintDevice = mintDevice,
        _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
        _now = now ?? DateTime.now;
 

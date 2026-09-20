@@ -27,7 +27,7 @@ const int kFeedPrecalcRowBudget = 24;
 /// a stable scrollbar thumb and a growth delta the follow physics can trust —
 /// for the rows around the viewport, where it is felt, without paying it for
 /// scrollback nobody has reached. Beyond the budget rows keep
-/// [estimateMessageRowExtent], which is content-derived rather than the
+/// `estimateMessageRowExtent`, which is content-derived rather than the
 /// package's flat 100px, and every row corrects itself the moment it is
 /// genuinely built.
 class IdlePrecalculationPolicy extends ExtentPrecalculationPolicy {
@@ -61,15 +61,17 @@ class IdlePrecalculationPolicy extends ExtentPrecalculationPolicy {
 
 /// Accent flash wrapper for the permalink-scroll highlight pulse.
 class Highlight extends StatefulWidget {
+  /// Creates a [Highlight] around [child].
   const Highlight({super.key, required this.child});
 
+  /// The row to flash.
   final Widget child;
 
   @override
-  State<Highlight> createState() => HighlightState();
+  State<Highlight> createState() => _HighlightState();
 }
 
-class HighlightState extends State<Highlight>
+class _HighlightState extends State<Highlight>
     with SingleTickerProviderStateMixin {
   static const _pulse = Duration(milliseconds: 1200);
 

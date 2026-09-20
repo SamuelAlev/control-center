@@ -1,6 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/value_objects/diff_overflow_mode.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 /// Per-frame visual configuration for the unified diff sliver. Cheap to

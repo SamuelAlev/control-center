@@ -1,6 +1,8 @@
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
-import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
+import 'package:control_center/features/rigs/presentation/rig_boot_mark.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -56,6 +58,53 @@ void main() {
       ),
     );
     await tester.pump(const Duration(seconds: 3));
+    expect(find.byType(FadeTransition), findsNothing);
+    expect(
+      tester.hasRunningAnimations,
+      isFalse,
+      reason: 'Reduced motion means no pulse, not a slower one.',
+    );
+  });
+
+  testWidgets('iOS and Android boot marks breathe their platform glyphs', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(child: RigBootMark(surface: RigTabSurfaces.ios)),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byIcon(AppIcons.appleLogo), findsOneWidget);
+    expect(find.byType(FadeTransition), findsOneWidget);
+    expect(tester.hasRunningAnimations, isTrue);
+
+    await tester.pumpWidget(
+      const Directionality(
+        textDirection: TextDirection.ltr,
+        child: Center(child: RigBootMark(surface: RigTabSurfaces.mobile)),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.byIcon(AppIcons.androidLogo), findsOneWidget);
+    expect(find.byType(FadeTransition), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('reduced motion holds a platform mark still', (tester) async {
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(disableAnimations: true),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Center(child: RigBootMark(surface: RigTabSurfaces.ios)),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.byIcon(AppIcons.appleLogo), findsOneWidget);
     expect(find.byType(FadeTransition), findsNothing);
     expect(
       tester.hasRunningAnimations,

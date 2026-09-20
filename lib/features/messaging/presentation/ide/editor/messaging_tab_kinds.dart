@@ -97,6 +97,9 @@ abstract final class MessagingTabKinds {
       case browser:
         return AppIcons.globe;
       case rig:
+        // Kind-only: the surface lives in args. Host chrome MUST resolve
+        // via RigTabSurfaces.iconForArgs, or every phone tab wears the
+        // desktop glyph.
         return AppIcons.monitor;
       case codeServer:
         return AppIcons.code;

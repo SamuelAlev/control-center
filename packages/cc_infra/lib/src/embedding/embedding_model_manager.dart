@@ -89,14 +89,13 @@ class EmbeddingModelInstallException implements Exception {
 /// families coexist cleanly under `<root>/models/` and the same manager serves
 /// both the desktop app and a headless `cc_server`.
 class EmbeddingModelManager {
-  /// Creates a manager rooted at [paths] (the app/server on-disk layout that
+  /// Creates a manager rooted at [_paths] (the app/server on-disk layout that
   /// supplies the `models/` directory).
   EmbeddingModelManager({
-    required CcPaths paths,
+    required this._paths,
     Dio? dio,
     this.model = EmbeddingModelInfo.allMiniLmL6V2,
-  }) : _paths = paths,
-       _dio = dio ?? createDio();
+  }) : _dio = dio ?? createDio();
 
   final CcPaths _paths;
   final Dio _dio;

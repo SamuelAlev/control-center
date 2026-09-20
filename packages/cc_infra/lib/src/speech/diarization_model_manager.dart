@@ -99,14 +99,13 @@ class DiarizationModelInstallException implements Exception {
 /// resolve). Mirrors `EmbeddingModelManager`/`VoiceModelManager` so all model
 /// families coexist under `<root>/models/`.
 class DiarizationModelManager {
-  /// Creates a [DiarizationModelManager] rooted at [paths] (the app/server
+  /// Creates a [DiarizationModelManager] rooted at [_paths] (the app/server
   /// on-disk layout that supplies the `models/` directory).
   DiarizationModelManager({
-    required CcPaths paths,
+    required this._paths,
     Dio? dio,
     this.model = DiarizationModelInfo.pyannoteWespeaker,
-  }) : _paths = paths,
-       _dio = dio ?? createDio();
+  }) : _dio = dio ?? createDio();
 
   final CcPaths _paths;
   final Dio _dio;

@@ -134,10 +134,9 @@ class FileEditResult {
 /// this session has seen can recover through a three-way merge even after the
 /// file drifts on disk.
 class FileEditService implements SnapshotStore {
-  /// Creates a [FileEditService] with an optional [blockResolver] for resolving
+  /// Creates a [FileEditService] with an optional [_blockResolver] for resolving
   /// block-anchored edits to concrete spans.
-  FileEditService({BlockResolver? blockResolver})
-    : _blockResolver = blockResolver;
+  FileEditService({this._blockResolver});
 
   final BlockResolver? _blockResolver;
 

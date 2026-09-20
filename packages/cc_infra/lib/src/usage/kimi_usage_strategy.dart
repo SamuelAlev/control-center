@@ -13,9 +13,8 @@ import 'package:dio/dio.dart';
 /// `resource_exhausted` and is reported as [SubscriptionStatus.exhausted].
 class KimiUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [KimiUsageStrategy].
-  KimiUsageStrategy({required Dio dio})
-    : _dio = dio,
-      super(providerId: 'kimi-code', displayName: 'Kimi Code');
+  KimiUsageStrategy({required this._dio})
+    : super(providerId: 'kimi-code', displayName: 'Kimi Code');
 
   final Dio _dio;
 

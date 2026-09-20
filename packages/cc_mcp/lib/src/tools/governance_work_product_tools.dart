@@ -19,8 +19,7 @@ Map<String, dynamic> _productJson(WorkProduct w) => {
 /// Creates a durable, versioned work-product artifact (plan, document, …).
 class CreateWorkProductTool extends McpTool {
   /// Creates a [CreateWorkProductTool].
-  CreateWorkProductTool({required WorkProductService service})
-    : _service = service;
+  CreateWorkProductTool({required this._service});
 
   final WorkProductService _service;
 
@@ -78,8 +77,7 @@ class CreateWorkProductTool extends McpTool {
 /// Saves a new revision of a work product (optimistic concurrency on the base).
 class SaveWorkProductRevisionTool extends McpTool {
   /// Creates a [SaveWorkProductRevisionTool].
-  SaveWorkProductRevisionTool({required WorkProductService service})
-    : _service = service;
+  SaveWorkProductRevisionTool({required this._service});
 
   final WorkProductService _service;
 
@@ -147,8 +145,7 @@ class SaveWorkProductRevisionTool extends McpTool {
 /// Lists work products in a workspace, optionally filtered by task.
 class ListWorkProductsTool extends McpTool {
   /// Creates a [ListWorkProductsTool].
-  ListWorkProductsTool({required WorkProductRepository repository})
-    : _repository = repository;
+  ListWorkProductsTool({required this._repository});
 
   final WorkProductRepository _repository;
 
@@ -192,8 +189,7 @@ class ListWorkProductsTool extends McpTool {
 /// Returns a work product with its full revision history.
 class GetWorkProductTool extends McpTool {
   /// Creates a [GetWorkProductTool].
-  GetWorkProductTool({required WorkProductRepository repository})
-    : _repository = repository;
+  GetWorkProductTool({required this._repository});
 
   final WorkProductRepository _repository;
 

@@ -126,8 +126,8 @@ abstract class SamlBackend {
 
 /// [SamlBackend] over the required `cc_saml` native.
 class NativeSamlBackend implements SamlBackend {
-  /// Creates a [NativeSamlBackend] over [saml] (defaults to `CcSaml.require`).
-  NativeSamlBackend({CcSaml? saml}) : _saml = saml;
+  /// Creates a [NativeSamlBackend] over [_saml] (defaults to `CcSaml.require`).
+  NativeSamlBackend({this._saml});
 
   final CcSaml? _saml;
 
@@ -198,11 +198,7 @@ class SamlService {
     required UserRepository users,
     required WorkspaceMembershipRepository members,
     required WorkspaceRepository workspaces,
-    required Future<({String deviceId, String psk})> Function(
-      String userId,
-      String label,
-    )
-    mintDevice,
+    required this._mintDevice,
     SamlBackend? backend,
     DomainEventBus? eventBus,
     DateTime Function()? now,
@@ -214,7 +210,6 @@ class SamlService {
          now: now,
        ),
        _backend = backend ?? NativeSamlBackend(),
-       _mintDevice = mintDevice,
        _now = now ?? DateTime.now;
 
   /// Upper bound on concurrent pending logins. The `/saml/login` endpoint is

@@ -21,9 +21,8 @@ typedef SkillLinkFilter =
 /// usage is confined to this desktop/server-side implementation.
 class WorkspaceFilesystemService implements WorkspaceFilesystemPort {
   /// Creates a service rooted at [_paths] (the app/server on-disk layout).
-  /// [linkFilter] optionally gates which skills may be agent-linked.
-  WorkspaceFilesystemService(this._paths, {SkillLinkFilter? linkFilter})
-    : _linkFilter = linkFilter;
+  /// [_linkFilter] optionally gates which skills may be agent-linked.
+  WorkspaceFilesystemService(this._paths, {this._linkFilter});
 
   final CcPaths _paths;
   SkillLinkFilter? _linkFilter;

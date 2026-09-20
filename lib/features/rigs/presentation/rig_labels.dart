@@ -18,11 +18,15 @@ import 'package:flutter/widgets.dart' show IconData;
 
 /// The tab-strip / header icon for [surface].
 ///
+/// iOS and Android wear their platform marks, not a shared phone glyph and
+/// never the desktop monitor: a tab strip that cannot tell those machines
+/// apart is the same failure three browser engines sharing a globe was.
 /// An unknown surface gets the desktop glyph: it is the neutral one, and a
 /// missing icon is a hole in a row of them.
 IconData rigSurfaceIcon(RigSurface? surface) => switch (surface) {
   RigSurface.browser => AppIcons.globe,
-  RigSurface.mobile || RigSurface.ios => AppIcons.smartphone,
+  RigSurface.mobile => AppIcons.androidLogo,
+  RigSurface.ios => AppIcons.appleLogo,
   RigSurface.computer || null => AppIcons.monitor,
 };
 

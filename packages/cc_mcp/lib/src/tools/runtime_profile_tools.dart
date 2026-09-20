@@ -20,8 +20,7 @@ Map<String, dynamic> _profileJson(RuntimeProfile p) => {
 /// Creates a reusable custom runtime profile (protocol + command + fixed args).
 class CreateRuntimeProfileTool extends McpTool {
   /// Creates a [CreateRuntimeProfileTool].
-  CreateRuntimeProfileTool({required RuntimeProfileRepository repository})
-    : _repository = repository;
+  CreateRuntimeProfileTool({required this._repository});
 
   final RuntimeProfileRepository _repository;
 
@@ -98,8 +97,7 @@ class CreateRuntimeProfileTool extends McpTool {
 /// Lists the custom runtime profiles defined in a workspace.
 class ListRuntimeProfilesTool extends McpTool {
   /// Creates a [ListRuntimeProfilesTool].
-  ListRuntimeProfilesTool({required RuntimeProfileRepository repository})
-    : _repository = repository;
+  ListRuntimeProfilesTool({required this._repository});
 
   final RuntimeProfileRepository _repository;
 

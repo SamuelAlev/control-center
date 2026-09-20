@@ -28,22 +28,14 @@ class TakeoverService {
   /// Creates the service.
   TakeoverService({
     required WorkspaceDatabaseManager workspaceDbs,
-    required AgentRunLogRepository runLogs,
-    required MessagingRepository messaging,
-    required Future<bool> Function(String runLogId) pauseRun,
-    required Future<bool> Function(String runLogId) resumeRun,
-    required Future<void> Function(String workspaceId, String runLogId) stopRun,
-    required Future<bool> Function(String runLogId, String message) steerRun,
-    required Future<List<PrFile>> Function(String workspaceId, String spaceId)
-    conversationChanges,
-  }) : _dbs = workspaceDbs,
-       _runLogs = runLogs,
-       _messaging = messaging,
-       _pauseRun = pauseRun,
-       _resumeRun = resumeRun,
-       _stopRun = stopRun,
-       _steerRun = steerRun,
-       _conversationChanges = conversationChanges;
+    required this._runLogs,
+    required this._messaging,
+    required this._pauseRun,
+    required this._resumeRun,
+    required this._stopRun,
+    required this._steerRun,
+    required this._conversationChanges,
+  }) : _dbs = workspaceDbs;
 
   /// The Caches kind holding take-over markers (key = space id).
   static const String cacheKind = 'takeover';

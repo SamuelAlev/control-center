@@ -13,13 +13,9 @@ class _FakeProvider implements HarnessOAuthProvider {
     required this.providerId,
     this.callbackPort = 1,
     this.authUrl = 'https://provider.example/authorize',
-    ProviderCredential? Function()? exchangeResult,
-    ProviderCredential? Function(ProviderCredential)? refreshResult,
-    Object? exchangeError,
-  }) : callbackPath = '/cb',
-       _exchangeResult = exchangeResult,
-       _refreshResult = refreshResult,
-       _exchangeError = exchangeError;
+    this._refreshResult,
+    this._exchangeError,
+  }) : callbackPath = '/cb';
 
   @override
   final String providerId;
@@ -29,7 +25,6 @@ class _FakeProvider implements HarnessOAuthProvider {
   final String callbackPath;
   final String authUrl;
 
-  final ProviderCredential? Function()? _exchangeResult;
   final ProviderCredential? Function(ProviderCredential)? _refreshResult;
   final Object? _exchangeError;
 
@@ -45,13 +40,12 @@ class _FakeProvider implements HarnessOAuthProvider {
     if (_exchangeError != null) {
       throw _exchangeError;
     }
-    return _exchangeResult?.call() ??
-        ProviderCredential(
-          providerId: providerId,
-          method: HarnessAuthMethod.oauth,
-          accessToken: 'token-$code',
-          email: 'user@example.com',
-        );
+    return ProviderCredential(
+      providerId: providerId,
+      method: HarnessAuthMethod.oauth,
+      accessToken: 'token-$code',
+      email: 'user@example.com',
+    );
   }
 
   @override
@@ -214,20 +208,14 @@ void main() {
     test(
       'falls back to device when the redirect loopback cannot bind',
       () async {
-        final occupied = await HttpServer.bind(
-          InternetAddress.loopbackIPv4,
-          0,
-        );
+        final occupied = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
         addTearDown(occupied.close);
         final store = _RecordingStore();
         final device = _FakeDeviceProvider(providerId: 'codex');
         final broker = _broker(
           store: store,
           providers: [
-            _FakeProvider(
-              providerId: 'codex',
-              callbackPort: occupied.port,
-            ),
+            _FakeProvider(providerId: 'codex', callbackPort: occupied.port),
           ],
           deviceProviders: [device],
         );

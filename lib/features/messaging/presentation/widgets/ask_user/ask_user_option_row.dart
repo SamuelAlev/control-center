@@ -2,7 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// One numbered choice in an [AskUserCard]: label + optional description,
+/// One numbered choice in an `AskUserCard`: label + optional description,
 /// with a trailing index that becomes a submit arrow on hover for
 /// single-select.
 class AskUserOptionRow extends StatelessWidget {

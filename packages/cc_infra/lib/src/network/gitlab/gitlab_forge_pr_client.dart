@@ -50,18 +50,17 @@ import 'package:dio/dio.dart';
 /// [ForgeUnsupportedError] rather than returning an empty result, because
 /// "none" and "this forge cannot tell you" are different answers.
 class GitLabForgePrClient implements ForgePrClient {
-  /// Creates a [GitLabForgePrClient] for `owner/repo` on the instance [client]
+  /// Creates a [GitLabForgePrClient] for `owner/repo` on the instance [_client]
   /// is pointed at.
   ///
   /// [owner] is the namespace path and may be nested
   /// (`group/subgroup`); [repo] is the project name. Together they form the
   /// project coordinate every request is addressed by.
   GitLabForgePrClient({
-    required GitLabApiClient client,
+    required this._client,
     required String owner,
     required String repo,
-  }) : _client = client,
-       owner = owner,
+  }) : owner = owner,
        repo = repo,
        _projectId = GitLabApiClient.encodeProjectPath('$owner/$repo');
 

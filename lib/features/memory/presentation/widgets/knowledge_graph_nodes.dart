@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 /// Domain node — the brand-accented anchor of each cluster. Brand is the only
 /// color here; topics, facts and policies stay neutral so blue keeps meaning.
 class DomainNode extends StatelessWidget {
+  /// Creates a [DomainNode].
   const DomainNode({
     super.key,
     required this.domainLabel,
@@ -17,9 +18,16 @@ class DomainNode extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Human-readable domain name shown on the card.
   final String domainLabel;
+
+  /// Number of facts grouped under this domain.
   final int factCount;
+
+  /// Number of policies grouped under this domain.
   final int policyCount;
+
+  /// Opens the domain's detail sheet.
   final VoidCallback onTap;
 
   @override
@@ -82,6 +90,7 @@ class DomainNode extends StatelessWidget {
 /// Topic node — neutral grouping under a domain, and the graph's expand
 /// control: its chevron is what reveals the facts stacked beneath it.
 class TopicNode extends StatelessWidget {
+  /// Creates a [TopicNode].
   const TopicNode({
     super.key,
     required this.topic,
@@ -91,7 +100,10 @@ class TopicNode extends StatelessWidget {
     required this.onTap,
   });
 
+  /// Topic label shown on the card.
   final String topic;
+
+  /// Number of facts stacked under this topic.
   final int factCount;
 
   /// Whether this topic's facts are currently on the canvas.
@@ -99,6 +111,8 @@ class TopicNode extends StatelessWidget {
 
   /// Shows or hides this topic's facts.
   final VoidCallback onToggle;
+
+  /// Opens the topic's detail sheet.
   final VoidCallback onTap;
 
   @override
@@ -194,6 +208,7 @@ class TopicNode extends StatelessWidget {
 
 /// Fact node — neutral card; the only color is the confidence meter.
 class FactNode extends StatelessWidget {
+  /// Creates a [FactNode].
   const FactNode({
     super.key,
     required this.fact,
@@ -201,8 +216,13 @@ class FactNode extends StatelessWidget {
     required this.onTap,
   });
 
+  /// The fact rendered on this card.
   final MemoryFact fact;
+
+  /// How many facts this one superseded.
   final int supersededCount;
+
+  /// Opens the fact's detail sheet.
   final VoidCallback onTap;
 
   @override

@@ -25,7 +25,7 @@ import 'package:cc_harness/provider.dart';
 class WatchdogAdvisor implements Advisor {
   /// Creates a [WatchdogAdvisor] over `provider`.
   ///
-  /// [model] optionally overrides the reviewer model (a bare id the run's
+  /// [_model] optionally overrides the reviewer model (a bare id the run's
   /// provider serves — typically a cheaper/faster sibling). [attention] is
   /// `WATCHDOG.md` content the reviewer should weigh especially; [projectContext]
   /// is the project's standing instructions (AGENTS.md / CLAUDE.md) so it holds
@@ -33,17 +33,14 @@ class WatchdogAdvisor implements Advisor {
   /// is any `advisor.instructions` from `.agents/harness.json`.
   WatchdogAdvisor(
     this._provider, {
-    String? model,
+    this._model,
     String? attention,
     String? projectContext,
     String? extraInstructions,
-    int maxConvoMessages = 24,
-    int maxConsecutiveFailures = 3,
+    this._maxConvoMessages = 24,
+    this._maxConsecutiveFailures = 3,
     AdvisorEmissionGuard? guard,
-  }) : _model = model,
-       _maxConvoMessages = maxConvoMessages,
-       _maxConsecutiveFailures = maxConsecutiveFailures,
-       _guard = guard ?? AdvisorEmissionGuard(),
+  }) : _guard = guard ?? AdvisorEmissionGuard(),
        _system = _buildSystem(
          attention: attention,
          projectContext: projectContext,
@@ -314,9 +311,8 @@ const int _defaultGuardCapacity = 4096;
 /// a real escalation — nit → concern → blocker — still passes while a verbatim
 /// re-tag at equal/lower severity is suppressed). Reset on advisor re-prime.
 class AdvisorEmissionGuard {
-  /// Creates a guard with an optional dedupe [capacity].
-  AdvisorEmissionGuard({int capacity = _defaultGuardCapacity})
-    : _capacity = capacity;
+  /// Creates a guard with an optional dedupe [_capacity].
+  AdvisorEmissionGuard({this._capacity = _defaultGuardCapacity});
 
   final int _capacity;
 

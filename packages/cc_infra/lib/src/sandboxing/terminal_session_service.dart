@@ -371,20 +371,16 @@ class _Session {
 /// cannot drive another workspace's terminal (the workspace-isolation
 /// invariant).
 class TerminalSessionService implements TerminalSessionPort {
-  /// Creates the service over a [manager] (sandbox lifecycle), a [filesystem]
-  /// (working-dir resolution) and a [defaultBackend] used when the client does
+  /// Creates the service over a [_manager] (sandbox lifecycle), a [filesystem]
+  /// (working-dir resolution) and a [_defaultBackend] used when the client does
   /// not name one (the headless server defaults to the host shell).
   TerminalSessionService({
-    required SandboxManager manager,
+    required this._manager,
     required WorkspaceFilesystemPort filesystem,
-    SandboxBackend defaultBackend = SandboxBackend.none,
-    TerminalVmShellResolver? vmShell,
-    TerminalGuestRootsResolver? guestRoots,
-  }) : _manager = manager,
-       _fs = filesystem,
-       _defaultBackend = defaultBackend,
-       _vmShell = vmShell,
-       _guestRoots = guestRoots;
+    this._defaultBackend = SandboxBackend.none,
+    this._vmShell,
+    this._guestRoots,
+  }) : _fs = filesystem;
 
   final SandboxManager _manager;
   final WorkspaceFilesystemPort _fs;

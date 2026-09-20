@@ -71,25 +71,17 @@ class ReviewFinalization {
 class ReviewFinalizer {
   /// Creates a [ReviewFinalizer].
   ReviewFinalizer({
-    required MessagingRepository messaging,
-    required ReviewSpaceRepository reviewSpaces,
-    ReviewAxisResultRepository? reviewAxisResults,
-    ReviewRunSnapshotRepository? runSnapshots,
-    ReviewCohortRepository? reviewCohorts,
-    ReviewSuppressionMatcher? suppressionMatcher,
+    required this._messaging,
+    required this._reviewSpaces,
+    this._reviewAxisResults,
+    this._runSnapshots,
+    this._reviewCohorts,
+    this._suppressionMatcher,
     ComputeReviewVerdictUseCase? computeVerdict,
-    FindingFingerprinter fingerprinter = const FindingFingerprinter(),
-    EstimateReviewEffortUseCase estimateEffort =
+    this._fingerprinter = const FindingFingerprinter(),
+    this._estimateEffort =
         const EstimateReviewEffortUseCase(),
-  }) : _messaging = messaging,
-       _reviewSpaces = reviewSpaces,
-       _reviewAxisResults = reviewAxisResults,
-       _runSnapshots = runSnapshots,
-       _reviewCohorts = reviewCohorts,
-       _suppressionMatcher = suppressionMatcher,
-       _fingerprinter = fingerprinter,
-       _estimateEffort = estimateEffort,
-       _computeVerdict = computeVerdict ?? const ComputeReviewVerdictUseCase();
+  }) : _computeVerdict = computeVerdict ?? const ComputeReviewVerdictUseCase();
 
   final MessagingRepository _messaging;
   final ReviewSpaceRepository _reviewSpaces;

@@ -32,8 +32,8 @@ const String kUnattributedRigAgentId = 'unattributed';
 /// The shared implementation behind `computer_use`, `browser_use`,
 /// `mobile_use`, and `ios_use`: one resolution path and one effect contract.
 abstract class RigUseTool extends McpTool {
-  /// Creates a [RigUseTool] over [rigs].
-  RigUseTool({required RigPort rigs}) : _rigs = rigs;
+  /// Creates a [RigUseTool] over [_rigs].
+  RigUseTool({required this._rigs});
 
   final RigPort _rigs;
 
@@ -778,7 +778,7 @@ class IosUseTool extends RigUseTool {
 /// `rig_list` — what enclosures are open in this workspace.
 class RigListTool extends McpTool {
   /// Creates a [RigListTool].
-  RigListTool({required RigPort rigs}) : _rigs = rigs;
+  RigListTool({required this._rigs});
 
   final RigPort _rigs;
 
@@ -844,7 +844,7 @@ class RigListTool extends McpTool {
 /// `rig_close` — destroy an enclosure.
 class RigCloseTool extends McpTool {
   /// Creates a [RigCloseTool].
-  RigCloseTool({required RigPort rigs}) : _rigs = rigs;
+  RigCloseTool({required this._rigs});
 
   final RigPort _rigs;
 

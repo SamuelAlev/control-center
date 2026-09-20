@@ -264,6 +264,9 @@ class AppLocalizationsNb extends AppLocalizations {
       'Oppretter en midlertidig iOS-simulator på serverens Mac. Den slettes når testmiljøet lukkes; nettverkstilgangen er ikke isolert.';
 
   @override
+  String get rigTechnicalDetails => 'Tekniske detaljer';
+
+  @override
   String get rigStopMachine => 'Stopp maskinen';
 
   @override

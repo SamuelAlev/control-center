@@ -15,12 +15,10 @@ import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_ser
 class OrchestrationRunListener {
   /// Creates an [OrchestrationRunListener].
   OrchestrationRunListener({
-    required DomainEventBus eventBus,
-    required OrchestrationRepository orchestrations,
-    required TicketWorkflowService ticketWorkflow,
-  }) : _eventBus = eventBus,
-       _orchestrations = orchestrations,
-       _ticketWorkflow = ticketWorkflow;
+    required this._eventBus,
+    required this._orchestrations,
+    required this._ticketWorkflow,
+  });
 
   final DomainEventBus _eventBus;
   final OrchestrationRepository _orchestrations;

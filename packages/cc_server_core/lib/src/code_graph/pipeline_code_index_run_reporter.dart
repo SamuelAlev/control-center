@@ -46,16 +46,13 @@ class PipelineCodeIndexRunReporter implements CodeIndexRunReporter {
   /// reporting failures, which are never surfaced to the indexer.
   PipelineCodeIndexRunReporter(
     this._runs, {
-    void Function(String message)? onError,
+    this._onError,
     String Function()? idFactory,
     DateTime Function()? now,
-    int publishFileFloor = defaultPublishFileFloor,
-    Duration publishAfter = defaultPublishAfter,
-  }) : _onError = onError,
-       _idFactory = idFactory ?? (() => const Uuid().v4()),
-       _now = now ?? DateTime.now,
-       _publishFileFloor = publishFileFloor,
-       _publishAfter = publishAfter;
+    this._publishFileFloor = defaultPublishFileFloor,
+    this._publishAfter = defaultPublishAfter,
+  }) : _idFactory = idFactory ?? (() => const Uuid().v4()),
+       _now = now ?? DateTime.now;
 
   /// How many files a run must be about to extract before it earns a row.
   ///
@@ -154,23 +151,18 @@ class PipelineCodeIndexRunReporter implements CodeIndexRunReporter {
 
 class _PipelineCodeIndexRun implements CodeIndexRun {
   _PipelineCodeIndexRun({
-    required PipelineRunRepository runs,
-    required void Function(String message)? onError,
-    required String Function() idFactory,
+    required this._runs,
+    required this._onError,
+    required this._idFactory,
     required DateTime Function() now,
     required this.workspaceId,
     required this.repoId,
     required this.repoPath,
     required this.checkoutId,
     required this.cause,
-    required int publishFileFloor,
-    required Duration publishAfter,
-  }) : _runs = runs,
-       _onError = onError,
-       _idFactory = idFactory,
-       _now = now,
-       _publishFileFloor = publishFileFloor,
-       _publishAfter = publishAfter,
+    required this._publishFileFloor,
+    required this._publishAfter,
+  }) : _now = now,
        _startedAt = now();
 
   final PipelineRunRepository _runs;

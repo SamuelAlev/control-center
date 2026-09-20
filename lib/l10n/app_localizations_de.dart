@@ -267,6 +267,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Erstellt einen temporären iOS-Simulator auf dem Server-Mac. Er wird gelöscht, wenn das Rig geschlossen wird; der Netzwerkzugriff ist nicht isoliert.';
 
   @override
+  String get rigTechnicalDetails => 'Technische Details';
+
+  @override
   String get rigStopMachine => 'Maschine stoppen';
 
   @override

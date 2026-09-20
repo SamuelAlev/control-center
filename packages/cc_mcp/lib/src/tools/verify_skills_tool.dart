@@ -7,7 +7,7 @@ import 'package:cc_domain/features/skills/domain/ports/skill_bundle_port.dart';
 /// hash recorded in `skills-lock.json`, reporting matched / drifted / missing.
 class VerifySkillsTool extends McpTool {
   /// Creates a [VerifySkillsTool].
-  VerifySkillsTool({required SkillBundlePort bundles}) : _bundles = bundles;
+  VerifySkillsTool({required this._bundles});
 
   final SkillBundlePort _bundles;
 

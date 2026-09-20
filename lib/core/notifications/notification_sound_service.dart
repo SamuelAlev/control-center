@@ -14,17 +14,14 @@ import 'package:media_kit/media_kit.dart';
 class NotificationSoundService {
   /// Creates a [NotificationSoundService].
   ///
-  /// [outputDeviceName] resolves the app-wide output device at PLAY time — a
+  /// [_outputDeviceName] resolves the app-wide output device at PLAY time — a
   /// long-lived service outlives any one selection, so a value captured at
   /// construction would pin whichever device was chosen at app start.
   // The field stays PRIVATE so it is not part of the implicit interface
   // outside this library: the notification test doubles `implements` this
   // class, and a public member would force every one of them to grow a
-  // resolver they have no use for. `this._x` is not expressible for a named
-  // parameter, so the initializing formal the lint wants cannot be written.
-  NotificationSoundService({String? Function()? outputDeviceName})
-    // ignore: prefer_initializing_formals
-    : _outputDeviceName = outputDeviceName;
+  // resolver they have no use for.
+  NotificationSoundService({this._outputDeviceName});
 
   /// Resolves the app-wide output device name (null = system default), or is
   /// itself null where routing does not apply (web, tests).

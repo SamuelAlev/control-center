@@ -9,12 +9,10 @@ import 'package:cc_domain/features/ticketing/domain/services/ticket_workflow_ser
 class CancelOrchestrationUseCase {
   /// Creates a [CancelOrchestrationUseCase].
   CancelOrchestrationUseCase({
-    required OrchestrationRepository orchestrations,
-    required PipelineEngine engine,
-    required TicketWorkflowService ticketWorkflow,
-  }) : _orchestrations = orchestrations,
-       _engine = engine,
-       _ticketWorkflow = ticketWorkflow;
+    required this._orchestrations,
+    required this._engine,
+    required this._ticketWorkflow,
+  });
 
   final OrchestrationRepository _orchestrations;
   final PipelineEngine _engine;

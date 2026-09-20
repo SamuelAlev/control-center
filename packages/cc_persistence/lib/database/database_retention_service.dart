@@ -48,10 +48,9 @@ class DatabaseRetentionService {
     this.codeIndexRunsKept = 50,
     this.interval = const Duration(hours: 24),
     DateTime Function()? now,
-    void Function(String message)? onError,
+    this._onError,
   }) : _cross = CrossWorkspaceQueries(workspaces),
-       _now = now ?? DateTime.now,
-       _onError = onError;
+       _now = now ?? DateTime.now;
 
   final CrossWorkspaceQueries _cross;
 

@@ -11,10 +11,9 @@ import 'package:cc_infra/src/util/agents_md_parser.dart';
 class AgentDiscoveryService {
   /// Creates an [AgentDiscoveryService].
   AgentDiscoveryService({
-    required WorkspaceFilesystemPort filesystem,
+    required this._filesystem,
     AgentsMdParser? parser,
-  }) : _filesystem = filesystem,
-       _parser = parser ?? AgentsMdParser();
+  }) : _parser = parser ?? AgentsMdParser();
 
   final WorkspaceFilesystemPort _filesystem;
   final AgentsMdParser _parser;

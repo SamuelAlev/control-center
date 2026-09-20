@@ -109,14 +109,11 @@ class AppBackedGitHubPrConversationGateway
     implements GitHubPrConversationGateway {
   /// Creates an [AppBackedGitHubPrConversationGateway].
   AppBackedGitHubPrConversationGateway({
-    required Future<GitHubAppClient?> Function() app,
-    required GitHubApiClient Function(String owner) clientForOwner,
-    String reviewLabel = kGithubPrReviewLabel,
-    void Function(String message)? onWarning,
-  }) : _app = app,
-       _clientForOwner = clientForOwner,
-       _reviewLabel = reviewLabel,
-       _onWarning = onWarning;
+    required this._app,
+    required this._clientForOwner,
+    this._reviewLabel = kGithubPrReviewLabel,
+    this._onWarning,
+  });
 
   final Future<GitHubAppClient?> Function() _app;
   final GitHubApiClient Function(String owner) _clientForOwner;

@@ -23,14 +23,11 @@ import 'package:uuid/uuid.dart';
 class WorkspaceSeeder {
   /// Creates a [WorkspaceSeeder] over the workspace-scoped write surfaces.
   const WorkspaceSeeder({
-    required AgentRepository agentRepository,
-    required WorkspaceFilesystemPort filesystem,
-    required PipelineTemplateRepository templateRepository,
-    required PipelineTriggerRepository triggerRepository,
-  }) : _agentRepository = agentRepository,
-       _filesystem = filesystem,
-       _templateRepository = templateRepository,
-       _triggerRepository = triggerRepository;
+    required this._agentRepository,
+    required this._filesystem,
+    required this._templateRepository,
+    required this._triggerRepository,
+  });
 
   final AgentRepository _agentRepository;
   final WorkspaceFilesystemPort _filesystem;

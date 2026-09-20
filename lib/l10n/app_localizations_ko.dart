@@ -254,6 +254,9 @@ class AppLocalizationsKo extends AppLocalizations {
       '서버의 Mac에 일회용 iOS Simulator를 생성합니다. 테스트 환경을 닫으면 삭제되며 네트워크 액세스는 격리되지 않습니다.';
 
   @override
+  String get rigTechnicalDetails => '기술 세부 정보';
+
+  @override
   String get rigStopMachine => '머신 중지';
 
   @override

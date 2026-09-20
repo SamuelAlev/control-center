@@ -13,8 +13,8 @@ class BackfillEmbeddingsUseCase {
   /// Creates a new [BackfillEmbeddingsUseCase].
   BackfillEmbeddingsUseCase({
     required WorkspaceDatabaseManager workspaces,
-    EmbeddingPort? embeddingService,
-  }) : _embeddingService = embeddingService;
+    this._embeddingService,
+  });
 
   final EmbeddingPort? _embeddingService;
 

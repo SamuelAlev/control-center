@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui' show Color;
 
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/providers/review_session_provider.dart';
@@ -77,40 +76,39 @@ class _ReviewTimerBannerState extends ConsumerState<ReviewTimerBanner> {
     // Warning semantic tokens from the design system.
     final warningBg =
         tokens?.bgWarningSecondary ??
-            const Color(0xFFFF9800).withValues(alpha: 0.12);
-    final warningFg =
-        tokens?.fgWarningPrimary ?? const Color(0xFFFF9800);
+        const Color(0xFFFF9800).withValues(alpha: 0.12);
+    final warningFg = tokens?.fgWarningPrimary ?? const Color(0xFFFF9800);
     final warningBorder =
         tokens?.fgWarningSecondary ??
-            const Color(0xFFFF9800).withValues(alpha: 0.35);
+        const Color(0xFFFF9800).withValues(alpha: 0.35);
 
     return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: warningBg,
-          // Bottom only: the header above already paints its own bottom
-          // border, so a top edge here would stack into a double line.
-          border: Border(bottom: BorderSide(color: warningBorder)),
-        ),
-        child: Row(
-          children: [
-            Icon(AppIcons.clock, size: 15, color: warningFg),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n.reviewFatigueWarning(_elapsedMinutes),
-                style: CcTypography.body.copyWith(color: warningFg),
-              ),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: warningBg,
+        // Bottom only: the header above already paints its own bottom
+        // border, so a top edge here would stack into a double line.
+        border: Border(bottom: BorderSide(color: warningBorder)),
+      ),
+      child: Row(
+        children: [
+          Icon(AppIcons.clock, size: 15, color: warningFg),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.reviewFatigueWarning(_elapsedMinutes),
+              style: CcTypography.body.copyWith(color: warningFg),
             ),
-            CcButton(
-              onPressed: () => setState(() => _dismissed = true),
-              variant: CcButtonVariant.ghost,
-              size: CcButtonSize.sm,
-              child: Text(l10n.dismiss),
-            ),
-          ],
-        ),
+          ),
+          CcButton(
+            onPressed: () => setState(() => _dismissed = true),
+            variant: CcButtonVariant.ghost,
+            size: CcButtonSize.sm,
+            child: Text(l10n.dismiss),
+          ),
+        ],
+      ),
     );
   }
 }

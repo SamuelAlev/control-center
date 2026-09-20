@@ -3,7 +3,7 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-/// Last-row free-text field for an [AskUserCard]: placeholder plus a trailing
+/// Last-row free-text field for an `AskUserCard`: placeholder plus a trailing
 /// index that becomes a submit arrow once there is text to send.
 class AskUserFreeTextRow extends StatelessWidget {
   /// Creates an [AskUserFreeTextRow].

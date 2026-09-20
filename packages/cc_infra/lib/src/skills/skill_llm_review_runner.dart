@@ -24,17 +24,12 @@ class SkillLlmReviewRunner {
   /// Creates a [SkillLlmReviewRunner].
   SkillLlmReviewRunner({
     required ProviderCredentialStore credentials,
-    required ModelCatalog catalog,
-    HarnessProviderFactory factory = const HarnessProviderFactory(),
-    ProviderCredentialRefresher? refresher,
-    Duration timeout = const Duration(seconds: 45),
-    int maxTokens = 1024,
-  }) : _creds = credentials,
-       _catalog = catalog,
-       _factory = factory,
-       _refresher = refresher,
-       _timeout = timeout,
-       _maxTokens = maxTokens;
+    required this._catalog,
+    this._factory = const HarnessProviderFactory(),
+    this._refresher,
+    this._timeout = const Duration(seconds: 45),
+    this._maxTokens = 1024,
+  }) : _creds = credentials;
 
   final ProviderCredentialStore _creds;
   final ModelCatalog _catalog;

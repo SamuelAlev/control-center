@@ -2,9 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_server_core/src/catalog/catalog_wire.dart';
-import 'package:cc_server_core/src/catalog/meeting_ops.dart';
-import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/git_repo_info.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
@@ -86,8 +83,6 @@ import 'package:cc_domain/features/memory/domain/repositories/memory_fact_reposi
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
-import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
-import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_read_repository.dart';
@@ -97,6 +92,8 @@ import 'package:cc_domain/features/messaging/domain/value_objects/conversation_t
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_activity.dart';
 import 'package:cc_domain/features/model_routing/model_routing.dart';
+import 'package:cc_domain/features/newsfeed/domain/repositories/newsfeed_repository.dart';
+import 'package:cc_domain/features/notifications/domain/repositories/notification_feed_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_proposal.dart';
 import 'package:cc_domain/features/orchestration/domain/repositories/orchestration_repository.dart';
 import 'package:cc_domain/features/orchestration/domain/usecases/save_orchestration_revision_use_case.dart';
@@ -173,13 +170,17 @@ import 'package:cc_persistence/cc_persistence.dart'
 import 'package:cc_persistence/database/daos/paired_device_dao.dart'
     show PairedDeviceDao, PairedDeviceStatus;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteControlCrypto;
+import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart';
+import 'package:cc_server_core/src/catalog/catalog_wire.dart';
+import 'package:cc_server_core/src/catalog/meeting_ops.dart';
+import 'package:cc_server_core/src/catalog/model_control_ops.dart';
+import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/cc_server_runtime.dart'
     show accountPoolKeyForLane;
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
-import 'package:cc_server_core/src/rig_rpc_ops.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
 import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
@@ -192,6 +193,7 @@ import 'package:cc_server_core/src/identity/workspace_invite_service.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:cc_server_core/src/pr_review/review_ci_signal_service.dart';
+import 'package:cc_server_core/src/rig_rpc_ops.dart';
 import 'package:cc_server_core/src/rig_wire.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
@@ -200,9 +202,6 @@ import 'package:cc_server_core/src/usage/harness_usage_accounts.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
-
-import 'package:cc_server_core/src/catalog/agent_goal_run_ops.dart';
-import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 
 export 'catalog/agent_goal_run_ops.dart';
 export 'catalog/catalog_wire.dart';

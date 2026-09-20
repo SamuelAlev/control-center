@@ -79,22 +79,15 @@ class CompactionOutcome {
 class ConversationCompactionService {
   /// Creates a [ConversationCompactionService].
   ConversationCompactionService({
-    required MessagingRepository repo,
-    required ConversationSummarizerPort summarizer,
-    EmbeddingPort? embeddingPort,
-    ConversationCompactor compactor = const ConversationCompactor(),
-    ConversationPruner pruner = const ConversationPruner(),
-    TokenEstimator estimator = TokenEstimator.instance,
-    CompactionConfig config = CompactionConfig.defaults,
-    DateTime Function() now = DateTime.now,
-  }) : _repo = repo,
-       _summarizer = summarizer,
-       _embeddingPort = embeddingPort,
-       _compactor = compactor,
-       _pruner = pruner,
-       _estimator = estimator,
-       _config = config,
-       _now = now;
+    required this._repo,
+    required this._summarizer,
+    this._embeddingPort,
+    this._compactor = const ConversationCompactor(),
+    this._pruner = const ConversationPruner(),
+    this._estimator = TokenEstimator.instance,
+    this._config = CompactionConfig.defaults,
+    this._now = DateTime.now,
+  });
 
   final MessagingRepository _repo;
   final ConversationSummarizerPort _summarizer;

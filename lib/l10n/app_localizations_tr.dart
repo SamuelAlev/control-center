@@ -262,6 +262,9 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sunucu Mac’inde geçici bir iOS Simülatörü oluşturur. Test ortamı kapatıldığında silinir; ağ erişimi yalıtılmamıştır.';
 
   @override
+  String get rigTechnicalDetails => 'Teknik ayrıntılar';
+
+  @override
   String get rigStopMachine => 'Makineyi durdur';
 
   @override

@@ -62,26 +62,22 @@ String modelDescription(String displayName, int approxBytes) =>
 class ManagedModelControl implements ModelControl {
   /// Creates a control backed by a model manager.
   ///
-  /// [probeInstalled] reports whether the model is already present on disk
-  /// (typically `manager.resolve() != null`); [runInstall] downloads + unpacks
+  /// [_probeInstalled] reports whether the model is already present on disk
+  /// (typically `manager.resolve() != null`); [_runInstall] downloads + unpacks
   /// it (streaming progress through `onProgress`, honouring `cancelToken`);
-  /// [runUninstall] removes it.
+  /// [_runUninstall] removes it.
   ///
-  /// [onLog] receives the install lifecycle — see [ModelLogLevel]. [description]
+  /// [_onLog] receives the install lifecycle — see [ModelLogLevel]. [_description]
   /// names what is being fetched (e.g. `'all-MiniLM-L6-v2, ~90 MB'`) and is
   /// quoted in the download-started line, so the log says which asset the wait
   /// is for and roughly how long it should take.
   ManagedModelControl({
-    required Future<bool> Function() probeInstalled,
-    required ModelInstallRunner runInstall,
-    required Future<void> Function() runUninstall,
-    String? description,
-    void Function(ModelLogLevel level, String message)? onLog,
-  }) : _probeInstalled = probeInstalled,
-       _runInstall = runInstall,
-       _runUninstall = runUninstall,
-       _description = description,
-       _onLog = onLog;
+    required this._probeInstalled,
+    required this._runInstall,
+    required this._runUninstall,
+    this._description,
+    this._onLog,
+  });
 
   final Future<bool> Function() _probeInstalled;
   final ModelInstallRunner _runInstall;

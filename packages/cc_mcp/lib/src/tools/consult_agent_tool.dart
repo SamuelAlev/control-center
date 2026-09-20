@@ -17,12 +17,10 @@ import 'package:cc_harness/tools.dart';
 class ConsultAgentTool extends McpTool {
   /// Creates a new [ConsultAgentTool].
   ConsultAgentTool({
-    required AgentRepository agents,
-    required MessagingRepository messaging,
-    required MessagingPort messagingPort,
-  }) : _agents = agents,
-       _messaging = messaging,
-       _messagingPort = messagingPort;
+    required this._agents,
+    required this._messaging,
+    required this._messagingPort,
+  });
 
   final AgentRepository _agents;
   final MessagingRepository _messaging;

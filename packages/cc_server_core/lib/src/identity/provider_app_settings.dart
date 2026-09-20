@@ -140,13 +140,10 @@ typedef OAuthAppCredentials = ({String clientId, String clientSecret});
 class ProviderAppSettings {
   /// Creates a [ProviderAppSettings].
   ProviderAppSettings({
-    required FileSecretsStore secrets,
-    ServerSettingDao? settings,
-    GitHubAppClient Function({required String appId, required String pem})?
-    githubAppFactory,
-  }) : _secrets = secrets,
-       _settings = settings,
-       _githubAppFactory = githubAppFactory;
+    required this._secrets,
+    this._settings,
+    this._githubAppFactory,
+  });
 
   final FileSecretsStore _secrets;
   final ServerSettingDao? _settings;

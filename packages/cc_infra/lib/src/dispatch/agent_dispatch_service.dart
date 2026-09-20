@@ -57,28 +57,21 @@ class AgentDispatchResult {
 class AgentDispatchService {
   /// Creates an agent dispatch service.
   AgentDispatchService({
-    required AgentDispatchPort agentDispatch,
-    required DispatchAgentUseCase dispatchUseCase,
-    AgentRunLogRepository? runLogRepo,
-    RepoWorkspaceProvisionerPort? repoProvisioner,
-    AgentRegistry? registry,
-    WorkspaceFilesystemPort? filesystemPort,
-    PathLockManager? pathLock,
-    DomainEventBus? eventBus,
+    required this._agentDispatch,
+    required this._dispatchUseCase,
+    this._runLogRepo,
+    this._repoProvisioner,
+    this._registry,
+    this._filesystemPort,
+    this._pathLock,
+    this._eventBus,
     this.adapterLaunchOverrides,
     this.resolveClaudeConfigDir,
     this.resolveHarnessRotation,
     this.onHarnessCredentialExhausted,
     this.credentialGate,
     this.onRunEnded,
-  }) : _agentDispatch = agentDispatch,
-       _dispatchUseCase = dispatchUseCase,
-       _runLogRepo = runLogRepo,
-       _repoProvisioner = repoProvisioner,
-       _registry = registry,
-       _filesystemPort = filesystemPort,
-       _pathLock = pathLock,
-       _eventBus = eventBus;
+  });
 
   final AgentDispatchPort _agentDispatch;
   final DispatchAgentUseCase _dispatchUseCase;

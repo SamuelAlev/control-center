@@ -1,8 +1,8 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
-import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:flutter/foundation.dart';
 
 /// Fans one turn's [ActiveStreamRegistry] update stream out into two

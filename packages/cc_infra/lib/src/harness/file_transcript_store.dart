@@ -23,13 +23,13 @@ import 'package:path/path.dart' as p;
 class FileHarnessTranscriptStore implements HarnessTranscriptStore {
   /// Creates a [FileHarnessTranscriptStore].
   ///
-  /// [workspaceDir] resolves a workspace's directory — passed as a callback so
+  /// [_workspaceDir] resolves a workspace's directory — passed as a callback so
   /// this stays free of a `cc_persistence` dependency, the same seam the blob
   /// store uses.
   FileHarnessTranscriptStore({
-    required String Function(String workspaceId) workspaceDir,
+    required this._workspaceDir,
     this.maxBytes = 32 * 1024 * 1024,
-  }) : _workspaceDir = workspaceDir;
+  });
 
   final String Function(String workspaceId) _workspaceDir;
 

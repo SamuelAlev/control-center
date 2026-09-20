@@ -17,6 +17,12 @@
 
 import 'dart:io';
 
+/// `c_sharp` → `cSharp`. Query ids stay snake_case on disk and in the map.
+String _dartConstName(String id) => id.replaceAllMapped(
+  RegExp(r'_([a-z0-9])'),
+  (m) => m.group(1)!.toUpperCase(),
+);
+
 void main() {
   final queriesDir = Directory('scripts/natives/queries');
   if (!queriesDir.existsSync()) {
@@ -24,12 +30,13 @@ void main() {
     exit(1);
   }
 
-  final files = queriesDir
-      .listSync()
-      .whereType<File>()
-      .where((f) => f.path.endsWith('.scm'))
-      .toList()
-    ..sort((a, b) => a.path.compareTo(b.path));
+  final files =
+      queriesDir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.scm'))
+          .toList()
+        ..sort((a, b) => a.path.compareTo(b.path));
   if (files.isEmpty) {
     stderr.writeln('No .scm files in ${queriesDir.path}.');
     exit(1);
@@ -76,16 +83,17 @@ library;
       content = '$content\n';
     }
     ids.add(id);
+    final constName = _dartConstName(id);
     // The newline right after the opening quotes is not part of the literal.
     constants
       ..writeln()
-      ..write("const String _\$$id = r'''\n$content''';\n");
+      ..write("const String _\$$constName = r'''\n$content''';\n");
   }
 
   buffer.writeln('\n/// Query id → `.scm` source.');
   buffer.writeln('const Map<String, String> embeddedTreeSitterQueries = {');
   for (final id in ids) {
-    buffer.writeln("  '$id': _\$$id,");
+    buffer.writeln("  '$id': _\$${_dartConstName(id)},");
   }
   buffer
     ..writeln('};')

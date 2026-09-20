@@ -13,10 +13,9 @@ import 'package:cc_domain/features/governance/domain/value_objects/runtime_healt
 class HeartbeatMonitorService {
   /// Creates a [HeartbeatMonitorService].
   HeartbeatMonitorService({
-    required AgentRuntimeStateRepository repository,
+    required this._repository,
     ActivityLogger? activityLogger,
-  }) : _repository = repository,
-       _audit = activityLogger;
+  }) : _audit = activityLogger;
 
   final AgentRuntimeStateRepository _repository;
   final ActivityLogger? _audit;

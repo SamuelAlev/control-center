@@ -10,8 +10,7 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 /// message linked to the review node via `metadata['reviewNodeId']`.
 class ConfirmReviewNodeTool extends McpTool {
   /// Creates a new [ConfirmReviewNodeTool].
-  ConfirmReviewNodeTool({required MessagingRepository repository})
-    : _repository = repository;
+  ConfirmReviewNodeTool({required this._repository});
 
   final MessagingRepository _repository;
 

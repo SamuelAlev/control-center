@@ -258,6 +258,9 @@ class AppLocalizationsFa extends AppLocalizations {
       'یک شبیه‌ساز موقت iOS روی Mac سرور ایجاد می‌کند. با بسته‌شدن محیط آزمایش حذف می‌شود؛ دسترسی به شبکه ایزوله نیست.';
 
   @override
+  String get rigTechnicalDetails => 'جزئیات فنی';
+
+  @override
   String get rigStopMachine => 'توقف ماشین';
 
   @override

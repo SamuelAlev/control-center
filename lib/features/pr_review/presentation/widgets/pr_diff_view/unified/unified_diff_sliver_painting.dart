@@ -8,6 +8,7 @@ part of 'unified_diff_sliver.dart';
 /// Layout slot management, sticky-header computation and code-row painting
 /// for the unified diff sliver render object.
 extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
+  /// Schedules a post-frame callback that reports the current layout mode.
   void scheduleLayoutModeTick() {
     if (_layoutModeTickScheduled) {
       return;
@@ -45,6 +46,7 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return math.max(0.0, crossAxisExtent - kDiffGutterWidth);
   }
 
+  /// Number of currently laid-out child boxes.
   int laidOutCount() {
     var count = 0;
     var child = firstChild;
@@ -55,11 +57,13 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return count;
   }
 
+  /// Writes [index]'s slot offset into [child]'s parent data.
   void setChildOffset(RenderBox child, int index) {
     (child.parentData! as SliverMultiBoxAdaptorParentData).layoutOffset =
         slots[index].offset;
   }
 
+  /// Tight or loose constraints for slot [index] at [crossAxisExtent].
   BoxConstraints constraintsFor(int index, double crossAxisExtent) {
     final slot = slots[index];
     switch (slot.kind) {
@@ -115,6 +119,7 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return (first: first, last: math.min(last, slots.length - 1));
   }
 
+  /// Lays out slots `first` through `last` and collects children outside that range.
   void layoutSlotRange(int first, int last, double crossAxisExtent) {
     if (firstChild != null) {
       final curFirst = indexOf(firstChild!);
@@ -197,6 +202,7 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
         : -1;
   }
 
+  /// Updates sticky-header bookkeeping from [constraints].
   void computeSticky(SliverConstraints constraints) {
     _stickyFile = _document.fileAtOffset(constraints.scrollOffset);
     _stickySlotIndex = headerSlotOf(_stickyFile);
@@ -227,6 +233,7 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return pinnedScreenY - originY;
   }
 
+  /// Builds the painter used for unified/split code rows.
   UnifiedRowPainter makeRowPainter({
     required double gutterWidth,
     required bool hideOldGutter,

@@ -4,9 +4,10 @@ library;
 
 import 'dart:io';
 
-import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_infra/src/process/cc_server_process.dart';
+import 'package:cc_rpc/cc_rpc.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 import '../helpers/seed_databases.dart';
 
 /// Verifies the THIN-CLIENT BOOT FLIP's auth path end-to-end: the desktop does

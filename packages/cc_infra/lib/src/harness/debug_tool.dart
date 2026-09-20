@@ -23,14 +23,11 @@ import 'package:path/path.dart' as p;
 class DebugTool extends HarnessTool {
   /// Creates a [DebugTool].
   DebugTool({
-    required DebugSessionSupervisor supervisor,
-    required String workingDirectory,
-    required String sessionKey,
-    Map<String, String>? environment,
-  }) : _supervisor = supervisor,
-       _workingDirectory = workingDirectory,
-       _sessionKey = sessionKey,
-       _environment = environment;
+    required this._supervisor,
+    required this._workingDirectory,
+    required this._sessionKey,
+    this._environment,
+  });
 
   final DebugSessionSupervisor _supervisor;
   final String _workingDirectory;

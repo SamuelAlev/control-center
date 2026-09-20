@@ -58,16 +58,12 @@ class PreparedDispatch {
 class DispatchAgentUseCase {
   /// Creates a [DispatchAgentUseCase].
   DispatchAgentUseCase({
-    required AgentRepository agentRepo,
-    BuildMemoryContextUseCase? memoryContextUseCase,
-    BuildConversationContextUseCase? conversationContextUseCase,
-    ModeResolver? modeResolver,
-    AppLocale? locale,
-  }) : _agentRepo = agentRepo,
-       _memoryContextUseCase = memoryContextUseCase,
-       _conversationContextUseCase = conversationContextUseCase,
-       _modeResolver = modeResolver,
-       _locale = locale;
+    required this._agentRepo,
+    this._memoryContextUseCase,
+    this._conversationContextUseCase,
+    this._modeResolver,
+    this._locale,
+  });
 
   final AgentRepository _agentRepo;
   final BuildMemoryContextUseCase? _memoryContextUseCase;

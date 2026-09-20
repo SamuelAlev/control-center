@@ -11,8 +11,7 @@ import 'package:uuid/uuid.dart';
 /// action).
 class RequestPeerReviewTool extends McpTool {
   /// Creates a new [RequestPeerReviewTool].
-  RequestPeerReviewTool({required MessagingRepository messaging})
-    : _messaging = messaging;
+  RequestPeerReviewTool({required this._messaging});
 
   final MessagingRepository _messaging;
 

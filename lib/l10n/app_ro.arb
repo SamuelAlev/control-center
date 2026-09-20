@@ -117,6 +117,7 @@
   "rigStartHint": "Pornește o VM de unică folosință partajată de tine și de agenții tăi pentru această conversație. Este distrusă la închidere și nimic din ea nu atinge computerul tău.",
   "rigStartAndroidHint": "Se conectează la un emulator Android care rulează deja pe server. Accesul la rețea nu este izolat.",
   "rigStartIosHint": "Creează un simulator iOS temporar pe computerul Mac al serverului. Acesta este șters când mediul de testare se închide; accesul la rețea nu este izolat.",
+  "rigTechnicalDetails": "Detalii tehnice",
   "rigStopMachine": "Oprește mașina",
   "rigSurfaceUnavailable": "Acest server nu poate găzdui acest tip de mașină.",
   "rigTabNeedsConversation": "Deschide mai întâi o conversație — o mașină aparține uneia, ca tu și agenții tăi să priviți același ecran.",

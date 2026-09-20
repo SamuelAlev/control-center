@@ -219,12 +219,11 @@ class EvalKernel {
   /// Creates an [EvalKernel].
   EvalKernel({
     required this.language,
-    required KernelLauncher launcher,
-    KernelToolBridge? bridge,
+    required this._launcher,
+    this._bridge,
     this.inactivityTimeout = const Duration(minutes: 5),
     this.maxOutputChars = 100000,
-  }) : _launcher = launcher,
-       _bridge = bridge;
+  });
 
   /// Which interpreter.
   final KernelLanguage language;

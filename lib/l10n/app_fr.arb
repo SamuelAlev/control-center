@@ -110,6 +110,7 @@
   "rigStartHint": "Démarre une VM jetable partagée avec vos agents pour cette conversation. Elle est détruite à sa fermeture et rien de ce qui s'y passe ne touche votre ordinateur.",
   "rigStartAndroidHint": "Se connecte à un émulateur Android déjà en cours d’exécution sur le serveur. L’accès au réseau n’est pas isolé.",
   "rigStartIosHint": "Crée un simulateur iOS temporaire sur le Mac du serveur. Il est supprimé à la fermeture de l’environnement de test ; l’accès au réseau n’est pas isolé.",
+  "rigTechnicalDetails": "Détails techniques",
   "rigStopMachine": "Arrêter la machine",
   "rigSurfaceUnavailable": "Ce serveur ne peut pas héberger ce type de machine.",
   "rigTabNeedsConversation": "Ouvrez d'abord une conversation — une machine appartient à l'une d'elles, pour que vos agents et vous regardiez le même écran.",

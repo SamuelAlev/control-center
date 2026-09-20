@@ -14,10 +14,9 @@ import 'package:uuid/uuid.dart';
 class WorkProductService {
   /// Creates a [WorkProductService].
   WorkProductService({
-    required WorkProductRepository repository,
+    required this._repository,
     ActivityLogger? activityLogger,
-  }) : _repository = repository,
-       _audit = activityLogger;
+  }) : _audit = activityLogger;
 
   final WorkProductRepository _repository;
   final ActivityLogger? _audit;

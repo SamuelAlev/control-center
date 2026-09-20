@@ -1790,6 +1790,12 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
     if (rig == null) {
       return true;
     }
+    // A failed boot has no machine. Keeping the row would make the next
+    // open of this tab resurrect the dump; dismiss it quietly.
+    if (rig.isFailed) {
+      await _destroyRig(workspaceId, rig.id);
+      return true;
+    }
     final choice = await confirmCloseLiveTab(
       context: context,
       title: l10n.ideCloseKeepTitle(tab.label),
@@ -2206,9 +2212,18 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
   EditorChrome _chrome(AppLocalizations l10n) => EditorChrome(
     // A thread's chat tab gets the branch glyph the conversation switcher
     // uses, so the badge reads the same in both places.
-    iconFor: (tab) => _tabConversation(tab)?.isThread ?? false
-        ? AppIcons.gitBranch
-        : MessagingTabKinds.iconFor(tab.kind),
+    iconFor: (tab) {
+      if (_tabConversation(tab)?.isThread ?? false) {
+        return AppIcons.gitBranch;
+      }
+      // Kind-only maps cannot see a rig's surface, so they paint every
+      // machine as a desktop. The surface lives in args — the same place
+      // the `[+]` menu already looked when it opened the tab.
+      if (tab.kind == MessagingTabKinds.rig) {
+        return RigTabSurfaces.iconForArgs(tab.args);
+      }
+      return MessagingTabKinds.iconFor(tab.kind);
+    },
     // A browser-rig tab leads with its engine's monochrome logo (an SVG the
     // icon font has no glyph for), so "Firefox (VM)" and "Chromium (VM)"
     // are told apart at a glance — the job the generic globe could not do.

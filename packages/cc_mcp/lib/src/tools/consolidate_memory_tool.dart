@@ -8,8 +8,7 @@ import 'package:cc_domain/features/memory/domain/services/memory_consolidation_s
 /// long-term facts.
 class ConsolidateMemoryTool extends McpTool {
   /// Creates a [ConsolidateMemoryTool].
-  ConsolidateMemoryTool({required MemoryConsolidationService service})
-    : _service = service;
+  ConsolidateMemoryTool({required this._service});
 
   final MemoryConsolidationService _service;
 

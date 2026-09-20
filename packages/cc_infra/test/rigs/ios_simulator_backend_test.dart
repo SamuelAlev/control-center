@@ -69,7 +69,7 @@ void main() {
       dataDir: temp.path,
       automationStore: store,
       isMacOS: false,
-      runProcess: (_, __, {environment}) async => result(),
+      runProcess: (_, _, {environment}) async => result(),
     );
     final capability = await backend.probe();
     expect(capability.backend, EnclosureBackend.iosSimulator);
@@ -85,8 +85,8 @@ void main() {
       dataDir: temp.path,
       automationStore: store,
       isMacOS: true,
-      runProcess: (_, __, {environment}) =>
-          throw ProcessException('xcrun', const [], 'missing'),
+      runProcess: (_, _, {environment}) =>
+          throw const ProcessException('xcrun', [], 'missing'),
     );
     final capability = await backend.probe();
     expect(capability.available, isFalse);
@@ -253,7 +253,9 @@ void main() {
           args: List.of(args),
           environment: environment,
         ));
-        if (args.contains('create')) return result(stdout: 'UDID-1\n');
+        if (args.contains('create')) {
+          return result(stdout: 'UDID-1\n');
+        }
         if (args.contains('devices')) {
           return result(
             stdout: jsonEncode({
@@ -261,13 +263,17 @@ void main() {
             }),
           );
         }
-        if (args.contains('list'))
+        if (args.contains('list')) {
           return result(stdout: jsonEncode(simulatorList()));
-        if (executable.endsWith('plutil'))
+        }
+        if (executable.endsWith('plutil')) {
           return result(
             stdout: 'com.facebook.WebDriverAgentRunner.xctrunner\n',
           );
-        if (args.contains('delete')) devices = [];
+        }
+        if (args.contains('delete')) {
+          devices = [];
+        }
         return result(
           stdout: executable.endsWith('xcodebuild')
               ? 'Xcode 16.4'
@@ -296,7 +302,7 @@ void main() {
           return ports.current;
         },
         delay: (_) async {},
-        clientFactory: (_, __) => fakeWda,
+        clientFactory: (_, _) => fakeWda,
       );
 
       final stages = <String>[];
@@ -370,7 +376,7 @@ void main() {
         dataDir: temp.path,
         automationStore: store,
         isMacOS: false,
-        runProcess: (_, __, {environment}) async => result(),
+        runProcess: (_, _, {environment}) async => result(),
       );
       await expectLater(
         backend.sweepOrphanedDevices(),
@@ -420,7 +426,9 @@ void main() {
           }),
         );
       }
-      if (args.contains('delete')) deleted.add(args.last);
+      if (args.contains('delete')) {
+        deleted.add(args.last);
+      }
       return result();
     }
 
@@ -434,6 +442,52 @@ void main() {
     expect(deleted, ['OWNED']);
     expect(await registry.readAsString(), isNot(contains('owned-exact')));
   });
+
+  test(
+    'orphan sweep keeps a device it cannot delete and does not throw',
+    () async {
+      final registry = File(p.join(temp.path, 'rigs', 'ios', 'devices.json'));
+      registry.parent.createSync(recursive: true);
+      registry.writeAsStringSync(
+        jsonEncode([
+          {'rigId': 'r1', 'name': 'stuck', 'udid': 'STUCK'},
+        ]),
+      );
+      Future<ProcessResult> run(
+        String executable,
+        List<String> args, {
+        Map<String, String>? environment,
+      }) async {
+        if (args.contains('devices')) {
+          return result(
+            stdout: jsonEncode({
+              'devices': {
+                'ios-17': [
+                  {'name': 'stuck', 'udid': 'STUCK', 'state': 'Booted'},
+                ],
+              },
+            }),
+          );
+        }
+        if (args.contains('shutdown') || args.contains('delete')) {
+          return result(
+            exit: 1,
+            stderr: 'Unable to delete device in current state: Booted',
+          );
+        }
+        return result();
+      }
+
+      final backend = IosSimulatorBackend(
+        dataDir: temp.path,
+        automationStore: store,
+        isMacOS: true,
+        runProcess: run,
+      );
+      await backend.sweepOrphanedDevices();
+      expect(await registry.readAsString(), contains('STUCK'));
+    },
+  );
 }
 
 class _FakeRunner implements IosRunnerProcess {
@@ -452,7 +506,9 @@ class _FakeRunner implements IosRunnerProcess {
 
   @override
   bool kill([ProcessSignal signal = ProcessSignal.sigterm]) {
-    if (!_exit.isCompleted) _exit.complete(0);
+    if (!_exit.isCompleted) {
+      _exit.complete(0);
+    }
     unawaited(_stdout.close());
     unawaited(_stderr.close());
     return true;

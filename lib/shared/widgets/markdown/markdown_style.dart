@@ -5,8 +5,8 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/syntax/syntax_languages.dart';
 import 'package:control_center/shared/widgets/markdown/code_highlighter.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 /// Canonical code-block visual constants.
 ///
@@ -650,7 +650,7 @@ class _SharedCodeBlockState extends State<_SharedCodeBlock> {
         : _spansFor(
             displayCode,
             shikiLangForFence(language),
-            dark: (context.ccTheme?.isDark ?? false),
+            dark: context.ccTheme?.isDark ?? false,
           );
 
     final l10n = AppLocalizations.of(context);

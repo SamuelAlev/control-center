@@ -52,21 +52,17 @@ typedef ProviderTokenRefresh =
 class ForgeCredentials implements ForgeCredentialPort {
   /// Creates a [ForgeCredentials].
   ///
-  /// [users] holds the per-user credentials; [apps] supplies the server's own
+  /// [_users] holds the per-user credentials; [_apps] supplies the server's own
   /// app identity. Both may be null on a minimal host, which degrades to the
-  /// environment lane. [viewerProbe] resolves the account name behind a token;
+  /// environment lane. [_viewerProbe] resolves the account name behind a token;
   /// without it connections report authentication with no username.
   ForgeCredentials({
-    required EnvLookup env,
-    UserCredentialsStore? users,
-    ProviderAppSettings? apps,
-    Future<String?> Function()? serverOwnerUserId,
-    ViewerProbe? viewerProbe,
-  }) : _env = env,
-       _users = users,
-       _apps = apps,
-       _serverOwnerUserId = serverOwnerUserId,
-       _viewerProbe = viewerProbe;
+    required this._env,
+    this._users,
+    this._apps,
+    this._serverOwnerUserId,
+    this._viewerProbe,
+  });
 
   final EnvLookup _env;
   final UserCredentialsStore? _users;

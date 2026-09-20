@@ -27,9 +27,8 @@ class AuditStreamSink {
     this.flushInterval = const Duration(seconds: 10),
     this.maxBuffered = 1000,
     Dio? client,
-    void Function(String message)? onWarn,
-  }) : _dio = client ?? Dio(),
-       _onWarn = onWarn;
+    this._onWarn,
+  }) : _dio = client ?? Dio();
 
   /// The HTTPS endpoint batches are POSTed to.
   final String endpoint;

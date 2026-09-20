@@ -78,23 +78,17 @@ class AssociatedPullRequest {
 class PrConversationPollingService {
   /// Creates a [PrConversationPollingService].
   PrConversationPollingService({
-    required GitHubPrConversationGateway gateway,
-    required GitHubPrConversationSink bridge,
-    required Future<List<String>> Function(String repoFullName)
-    workspacesForRepo,
-    required Future<List<AssociatedPullRequest>> Function()
-    associatedPullRequests,
+    required this._gateway,
+    required this._bridge,
+    required this._workspacesForRepo,
+    required this._associatedPullRequests,
     this.minInterval = const Duration(seconds: 60),
     this.idleInterval = const Duration(minutes: 5),
     this.maxCommentSweeps = 25,
     this.loadDedupeState,
     this.saveDedupeState,
     DateTime Function()? now,
-  }) : _gateway = gateway,
-       _bridge = bridge,
-       _workspacesForRepo = workspacesForRepo,
-       _associatedPullRequests = associatedPullRequests,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   final GitHubPrConversationGateway _gateway;
   final GitHubPrConversationSink _bridge;

@@ -9,10 +9,9 @@ import 'package:uuid/uuid.dart';
 class CreateCeoAgentUseCase {
   /// Creates a [CreateCeoAgentUseCase].
   const CreateCeoAgentUseCase({
-    required AgentRepository agentRepository,
-    required WorkspaceFilesystemPort filesystemService,
-  }) : _agentRepository = agentRepository,
-       _filesystemService = filesystemService;
+    required this._agentRepository,
+    required this._filesystemService,
+  });
 
   final AgentRepository _agentRepository;
   final WorkspaceFilesystemPort _filesystemService;

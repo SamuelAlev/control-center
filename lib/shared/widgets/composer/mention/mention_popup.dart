@@ -4,8 +4,8 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:control_center/shared/widgets/composer/mention/mention_source.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 /// A single visual row entry — either a section header or a suggestion.
 class _Row {

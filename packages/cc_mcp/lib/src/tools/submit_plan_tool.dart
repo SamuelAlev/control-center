@@ -39,14 +39,11 @@ class SubmitPlanTool extends McpTool {
   SubmitPlanTool({
     required AgentRunLogRepository runLogRepository,
     required PlanDocumentRepository planDocuments,
-    MessagingRepository? messaging,
-    WorkProductRepository? workProducts,
-    CodeGraphRepository? codeGraph,
+    this._messaging,
+    this._workProducts,
+    this._codeGraph,
   }) : _runLogs = runLogRepository,
-       _plans = planDocuments,
-       _messaging = messaging,
-       _workProducts = workProducts,
-       _codeGraph = codeGraph;
+       _plans = planDocuments;
 
   final AgentRunLogRepository _runLogs;
   final PlanDocumentRepository _plans;

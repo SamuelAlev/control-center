@@ -264,6 +264,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Skapar en tillfällig iOS-simulator på serverns Mac. Den tas bort när testmiljön stängs; nätverksåtkomsten är inte isolerad.';
 
   @override
+  String get rigTechnicalDetails => 'Tekniska detaljer';
+
+  @override
   String get rigStopMachine => 'Stoppa maskinen';
 
   @override

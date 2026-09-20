@@ -1,8 +1,8 @@
 import 'package:cc_data/cc_data.dart'
     show RemoteAgentRepository, RemoteAgentRunLogRepository, RpcAgentRepository;
-import 'package:cc_domain/features/agents/domain/usecases/create_agent.dart';
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/features/agents/domain/usecases/create_agent.dart';
 import 'package:cc_domain/features/agents/domain/value_objects/agent_live_state.dart';
 import 'package:cc_domain/features/governance/domain/services/org_chart_service.dart';
 import 'package:cc_domain/features/governance/domain/value_objects/agent_presence.dart';
@@ -40,7 +40,7 @@ abstract interface class AgentCreatePort {
 
 /// RPC implementation of [AgentCreatePort].
 class RpcAgentCreatePort implements AgentCreatePort {
-  /// Creates a [RpcAgentCreatePort] over [remote].
+  /// Creates a [RpcAgentCreatePort] over `_remote`.
   RpcAgentCreatePort(this._remote);
 
   final RemoteAgentRepository _remote;
@@ -64,7 +64,7 @@ class RpcAgentCreatePort implements AgentCreatePort {
 
 /// In-process implementation used by widget tests (no RPC host).
 class UseCaseAgentCreatePort implements AgentCreatePort {
-  /// Creates a [UseCaseAgentCreatePort] over [useCase].
+  /// Creates a [UseCaseAgentCreatePort] over `_useCase`.
   UseCaseAgentCreatePort(this._useCase);
 
   final CreateAgentUseCase _useCase;
@@ -87,6 +87,7 @@ class UseCaseAgentCreatePort implements AgentCreatePort {
   }
 }
 
+/// The in-process port used to create agents from the UI and widget tests.
 final agentCreatePortProvider = Provider<AgentCreatePort>(
   (ref) => RpcAgentCreatePort(ref.watch(remoteAgentOpsProvider)),
 );

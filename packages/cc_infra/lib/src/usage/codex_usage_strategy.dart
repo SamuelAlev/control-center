@@ -10,9 +10,8 @@ import 'package:dio/dio.dart';
 /// spawns the Codex CLI.
 class CodexUsageStrategy extends SubscriptionUsageStrategy {
   /// Creates a [CodexUsageStrategy].
-  CodexUsageStrategy({required Dio dio})
-    : _dio = dio,
-      super(providerId: 'codex', displayName: 'Codex');
+  CodexUsageStrategy({required this._dio})
+    : super(providerId: 'codex', displayName: 'Codex');
 
   final Dio _dio;
 

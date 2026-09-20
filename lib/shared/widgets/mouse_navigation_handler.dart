@@ -6,8 +6,8 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -275,7 +275,11 @@ class _MouseNavigationHandlerState extends State<MouseNavigationHandler> {
                     width: 2,
                   ),
                 ),
-                child: const Icon(AppIcons.move, color: const Color(0xFFFFFFFF), size: 16),
+                child: const Icon(
+                  AppIcons.move,
+                  color: Color(0xFFFFFFFF),
+                  size: 16,
+                ),
               ),
             ),
           ],

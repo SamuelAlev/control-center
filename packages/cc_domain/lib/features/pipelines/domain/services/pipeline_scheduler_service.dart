@@ -21,17 +21,14 @@ class PipelineSchedulerService {
   /// Creates a [PipelineSchedulerService].
   PipelineSchedulerService({
     required PipelineTriggerRepository triggerRepository,
-    required PipelineEngine engine,
-    required CronExecutionLedger ledger,
+    required this._engine,
+    required this._ledger,
     PipelineCronScheduler? scheduler,
     String Function()? idGenerator,
-    Duration tickInterval = const Duration(seconds: 60),
+    this._tickInterval = const Duration(seconds: 60),
   }) : _triggers = triggerRepository,
-       _engine = engine,
-       _ledger = ledger,
        _scheduler = scheduler ?? PipelineCronScheduler(),
-       _idGenerator = idGenerator ?? (() => const Uuid().v4()),
-       _tickInterval = tickInterval;
+       _idGenerator = idGenerator ?? (() => const Uuid().v4());
 
   final PipelineTriggerRepository _triggers;
   final PipelineEngine _engine;

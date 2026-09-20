@@ -13,12 +13,10 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 class BuildConversationContextUseCase {
   /// Creates a [BuildConversationContextUseCase].
   BuildConversationContextUseCase({
-    required MessagingRepository messagingRepository,
-    ConversationRepository? conversationRepository,
-    EmbeddingPort? embeddingPort,
-  }) : _messagingRepository = messagingRepository,
-       _conversationRepository = conversationRepository,
-       _embeddingPort = embeddingPort;
+    required this._messagingRepository,
+    this._conversationRepository,
+    this._embeddingPort,
+  });
 
   final MessagingRepository _messagingRepository;
   final ConversationRepository? _conversationRepository;
