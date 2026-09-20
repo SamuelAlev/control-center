@@ -1,6 +1,13 @@
 import 'package:cc_domain/features/pr_review/domain/entities/gif_result.dart';
-import 'package:flutter/material.dart';
+import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/klipy_gif_picker.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../../../../helpers/fake_rpc_client.dart';
+import '../../../../helpers/test_wrap.dart';
 
 void main() {
   group('GifResult', () {
@@ -273,83 +280,96 @@ void main() {
     });
   });
 
-  group('_positionWidget logic', () {
-    test('anchor below middle places widget below', () {
-      const anchor = Offset(100, 100);
-      const screenSize = Size(1080, 800);
-      final spaceBelow = screenSize.height - anchor.dy - 12;
-      final spaceAbove = anchor.dy - 12;
-
-      expect(spaceBelow, 688);
-      expect(spaceAbove, 88);
-      expect(spaceBelow >= 300 || spaceBelow >= spaceAbove, isTrue);
-    });
-
-    test('anchor near bottom places widget above (not enough space below)', () {
-      const anchor = Offset(100, 750);
-      const screenSize = Size(1080, 800);
-
-      final spaceBelow = screenSize.height - anchor.dy - 12;
-      final spaceAbove = anchor.dy - 12;
-
-      expect(spaceBelow, 38);
-      expect(spaceAbove, 738);
-      expect(spaceBelow >= 300 || spaceBelow >= spaceAbove, isFalse);
-    });
-
-    test('left edge clamps to 12 pixels', () {
-      const anchor = Offset(0, 100);
-      const screenSize = Size(1080, 800);
-
-      final left = (anchor.dx - 12).clamp(12.0, screenSize.width - 440 - 12);
-      expect(left, 12.0);
-    });
-
-    test('right edge clamps to screen width minus card', () {
-      const anchor = Offset(1100, 100);
-      const screenSize = Size(1080, 800);
-
-      final left = (anchor.dx - 12).clamp(12.0, screenSize.width - 440 - 12);
-      expect(left, 628.0);
-    });
-
-    test('anchor exactly at top positions below', () {
-      const anchor = Offset(500, 0);
-      const screenSize = Size(1080, 800);
-
-      final spaceBelow = screenSize.height - anchor.dy - 12;
-      final spaceAbove = anchor.dy - 12;
-
-      expect(spaceBelow, 788);
-      expect(spaceAbove, -12);
-      expect(spaceBelow >= 300 || spaceBelow >= spaceAbove, isTrue);
-    });
-
-    test(
-      'anchor at very top of small screen positions below when spaceAbove negative',
-      () {
-        const anchor = Offset(500, 0);
-        const screenSize = Size(1080, 400);
-
-        final spaceBelow = screenSize.height - anchor.dy - 12;
-        final spaceAbove = anchor.dy - 12;
-
-        expect(spaceBelow >= 300 || spaceBelow >= spaceAbove, isTrue);
-      },
+  group('GifPickerPopover', () {
+    Finder _addGif() => find.byWidgetPredicate(
+      (w) => w is CcIconButton && w.tooltip == 'Add GIF',
     );
 
-    test('centered anchor on small screen positions below', () {
-      const anchor = Offset(500, 200);
-      const screenSize = Size(1080, 400);
+    Future<void> pumpPicker(WidgetTester tester, {Alignment? alignment}) async {
+      final host = FakeRpcHost()
+        ..onCall = (op, args) {
+          expect(op, anyOf('gif.trending', 'gif.search'));
+          return {'gifs': <Map<String, dynamic>>[]};
+        };
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [rpcClientProvider.overrideWithValue(host.client())],
+          child: testWrap(
+            Align(
+              alignment: alignment ?? Alignment.center,
+              child: GifPickerPopover(onGifSelected: (_) {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
 
-      final spaceBelow = screenSize.height - anchor.dy - 12;
-      final spaceAbove = anchor.dy - 12;
+    testWidgets('opens a panel on the trigger tap', (tester) async {
+      await pumpPicker(tester);
 
-      expect(spaceBelow, 188);
-      expect(spaceAbove, 188);
-      expect(spaceBelow >= 300, isFalse);
-      expect(spaceBelow >= spaceAbove, isTrue);
+      expect(find.byKey(const Key('gif-picker-panel')), findsNothing);
+
+      await tester.tap(_addGif());
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('gif-picker-panel')), findsOneWidget);
+      expect(find.text('Search GIFs'), findsOneWidget);
     });
+
+    testWidgets('anchors the panel to the trigger, not the overlay origin', (
+      tester,
+    ) async {
+      await pumpPicker(tester, alignment: Alignment.bottomRight);
+
+      await tester.tap(_addGif());
+      await tester.pump();
+      await tester.pump();
+
+      final trigger = tester.getRect(_addGif());
+      final panel = tester.getRect(find.byKey(const Key('gif-picker-panel')));
+      final screen = tester.getSize(find.byType(Overlay).first);
+
+      // The previous OverlayEntry used root-overlay coordinates computed
+      // against a nested overlay, which parked a 440px panel at the top-left.
+      expect(panel.left, greaterThan(200));
+      expect(panel.top, greaterThan(40));
+      expect(panel.right, lessThanOrEqualTo(screen.width - 4));
+      expect(
+        panel.top >= trigger.bottom - 8 || panel.bottom <= trigger.top + 8,
+        isTrue,
+        reason: 'panel should sit above or below the trigger, not over it',
+      );
+      expect(
+        (panel.right - trigger.right).abs(),
+        lessThan(32),
+        reason: 'trailing toolbar popover should share the trigger\'s end edge',
+      );
+    });
+
+    testWidgets(
+      'search hint is fully visible without the overlay error underline',
+      (tester) async {
+        await pumpPicker(tester);
+
+        await tester.tap(_addGif());
+        await tester.pump();
+        await tester.pump();
+
+        final titleStyle = DefaultTextStyle.of(
+          tester.element(find.text('Search GIFs')),
+        ).style;
+        expect(titleStyle.decoration, TextDecoration.none);
+
+        final hint = find.text('Search GIFs...');
+        expect(hint, findsOneWidget);
+        final hintRect = tester.getRect(hint);
+        final fieldRect = tester.getRect(find.byType(CcTextField));
+        expect(hintRect.top, greaterThanOrEqualTo(fieldRect.top - 0.5));
+        expect(hintRect.bottom, lessThanOrEqualTo(fieldRect.bottom + 0.5));
+      },
+    );
   });
 
   group('GifResult - additional edge cases', () {
@@ -441,16 +461,5 @@ void main() {
       expect(result.url, 'https://example.com/gif.gif');
       expect(result.previewUrl, 'https://example.com/gif.gif');
     });
-  });
-
-  group('showGifPicker widget', () {
-    // Nothing to isolate here any more: the client no longer reads a `.env`
-    // (the SERVER does), so a KLIPY_APP_KEY in the developer's environment
-    // cannot reach this widget and make it try a real request.
-    //
-    // Widget tests skip the actual HTTP-dependent picker since the test
-    // environment (TestWidgetsFlutterBinding) blocks HTTP with 400 errors.
-    // Unit tests for GifResult parsing and _positionWidget above cover the
-    // pure-logic surface.
   });
 }

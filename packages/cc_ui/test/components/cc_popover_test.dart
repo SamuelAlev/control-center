@@ -30,6 +30,50 @@ void main() {
       expect(find.text('Popover content'), findsOneWidget);
     });
 
+    testWidgets('supplies a complete text style over a bad ambient default', (
+      tester,
+    ) async {
+      // OverlayPortal content often sits outside a route's Material, where
+      // the only ambient DefaultTextStyle is WidgetsApp's 48px double-yellow
+      // underline. The panel must override it so Text copyWith cannot leak
+      // the decoration.
+      TextStyle? resolved;
+      await tester.pumpWidget(
+        ccTestApp(
+          Center(
+            child: DefaultTextStyle(
+              style: const TextStyle(
+                fontSize: 48,
+                decoration: TextDecoration.underline,
+                decorationColor: Color(0xFFFFFF00),
+                decorationStyle: TextDecorationStyle.double,
+              ),
+              child: CcPopover(
+                target: const Text('Open'),
+                overlayBuilder: (context, size) => Builder(
+                  builder: (context) {
+                    resolved = DefaultTextStyle.of(context).style;
+                    return const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Text('Popover content'),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Popover content'), findsOneWidget);
+      expect(resolved, isNotNull);
+      expect(resolved!.decoration, TextDecoration.none);
+      expect(resolved!.fontSize, 14);
+    });
+
     testWidgets('an external controller drives open state', (tester) async {
       final controller = CcOverlayController();
       addTearDown(controller.dispose);

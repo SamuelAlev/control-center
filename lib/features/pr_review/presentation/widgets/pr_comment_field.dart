@@ -1,5 +1,4 @@
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/emoji_chooser.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/github_reference_link_builder.dart';
@@ -8,7 +7,6 @@ import 'package:control_center/features/pr_review/presentation/widgets/mention_a
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
-import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_editor.dart';
 import 'package:flutter/widgets.dart';
@@ -98,8 +96,6 @@ class PrCommentField extends ConsumerStatefulWidget {
 }
 
 class _PrCommentFieldState extends ConsumerState<PrCommentField> {
-  final GlobalKey _gifKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
@@ -170,26 +166,6 @@ class _PrCommentFieldState extends ConsumerState<PrCommentField> {
     widget.focusNode.requestFocus();
   }
 
-  Offset? _gifAnchor() {
-    final box = _gifKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null) {
-      return null;
-    }
-    return box.localToGlobal(
-      Offset.zero,
-      ancestor: Overlay.of(context).context.findRenderObject(),
-    );
-  }
-
-  Future<void> _addGif() async {
-    await showGifPicker(
-      anchor: context,
-      rpcClient: ref.read(rpcClientProvider),
-      onGifSelected: (gif) => _insertAtCursor('![gif](${gif.url})\n'),
-      anchorPosition: _gifAnchor(),
-    );
-  }
-
   /// `owner/name` for every repo in the active workspace — lets the preview's
   /// link builder tell an in-app reference from an outbound one.
   Set<String> _workspaceRepoKeys() {
@@ -220,23 +196,9 @@ class _PrCommentFieldState extends ConsumerState<PrCommentField> {
       focusNode: widget.focusNode,
       onAttach: widget.onAttachImage,
       toolbarTrailing: [
-        EmojiPopover(
-          onEmojiSelected: _insertAtCursor,
-          child: CcIconButton(
-            variant: CcButtonVariant.ghost,
-            size: CcButtonSize.sm,
-            onPressed: () {},
-            icon: AppIcons.smile,
-            tooltip: l10n.addEmoji,
-          ),
-        ),
-        CcIconButton(
-          key: _gifKey,
-          variant: CcButtonVariant.ghost,
-          size: CcButtonSize.sm,
-          onPressed: _addGif,
-          icon: AppIcons.clapperboard,
-          tooltip: l10n.addGif,
+        EmojiPopover(onEmojiSelected: _insertAtCursor),
+        GifPickerPopover(
+          onGifSelected: (gif) => _insertAtCursor('![gif](${gif.url})\n'),
         ),
       ],
       fieldBuilder: (context) => MentionAutocompleteField(

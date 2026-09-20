@@ -2,6 +2,8 @@ import 'package:cc_ui/src/foundation/cc_component_tokens.dart';
 import 'package:cc_ui/src/foundation/cc_elevation.dart';
 import 'package:cc_ui/src/foundation/cc_overlay_anchor.dart';
 import 'package:cc_ui/src/foundation/cc_tappable.dart';
+import 'package:cc_ui/src/foundation/cc_typography.dart';
+import 'package:cc_ui/src/theme/cc_fonts.dart';
 import 'package:cc_ui/src/theme/cc_theme.dart';
 import 'package:cc_ui/src/tokens/app_radii.dart';
 import 'package:flutter/widgets.dart';
@@ -116,8 +118,20 @@ class _CcPopoverState extends State<CcPopover> {
   }
 
   Widget _buildPanel(BuildContext context, Size? targetSize) {
+    final theme = context.ccTheme;
     final t = context.ds;
     final card = CcCardTokens.panel(t);
+    // OverlayPortal paints on the overlay; the nearest DefaultTextStyle there
+    // is often WidgetsApp's error fallback (48px, double yellow underline).
+    // CopyWith on body styles leaves decoration unset, so the underline
+    // bleeds through every Text in the panel. Same discipline as showCcDialog.
+    final baseStyle = CcFonts.ui(
+      family: theme?.fontFamily,
+      textStyle: CcTypography.body.copyWith(
+        color: t.textPrimary,
+        decoration: TextDecoration.none,
+      ),
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -128,10 +142,13 @@ class _CcPopoverState extends State<CcPopover> {
       ),
       child: ClipRRect(
         borderRadius: AppRadii.brLg,
-        child: FocusScope(
-          node: _panelScope,
-          autofocus: true,
-          child: widget.overlayBuilder(context, targetSize),
+        child: DefaultTextStyle(
+          style: baseStyle,
+          child: FocusScope(
+            node: _panelScope,
+            autofocus: true,
+            child: widget.overlayBuilder(context, targetSize),
+          ),
         ),
       ),
     );

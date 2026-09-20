@@ -1,24 +1,24 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/emoji_data.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_emoji/flutter_emoji.dart';
 
 final _emojiParser = EmojiParser();
 
-/// A popover widget that displays an emoji picker grid.
+/// Toolbar emoji picker: a [CcIconButton] that opens a grouped grid popover.
+///
+/// The popover is driven by an explicit controller with `toggleOnTargetTap`
+/// off: [CcPopover]'s own target [CcTappable] would otherwise wrap the button,
+/// forward no hover states, and two recognizers would fight over the tap —
+/// which is why the smile button used to do nothing.
 class EmojiPopover extends StatefulWidget {
   /// Creates an [EmojiPopover].
-  const EmojiPopover({
-    super.key,
-    required this.onEmojiSelected,
-    required this.child,
-  });
+  const EmojiPopover({super.key, required this.onEmojiSelected});
 
   /// Callback invoked when an emoji is selected.
   final void Function(String emoji) onEmojiSelected;
-
-  /// The child widget that triggers the popover.
-  final Widget child;
 
   @override
   State<EmojiPopover> createState() => _EmojiPopoverState();
@@ -35,10 +35,12 @@ class _EmojiPopoverState extends State<EmojiPopover> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return CcPopover(
       controller: _controller,
-      targetAnchor: Alignment.bottomCenter,
-      followerAnchor: Alignment.topCenter,
+      toggleOnTargetTap: false,
+      targetAnchor: AlignmentDirectional.bottomEnd,
+      followerAnchor: AlignmentDirectional.topEnd,
       overlayBuilder: (context, _) => Padding(
         padding: const EdgeInsets.all(5),
         child: _EmojiGrid(
@@ -48,7 +50,13 @@ class _EmojiPopoverState extends State<EmojiPopover> {
           },
         ),
       ),
-      target: widget.child,
+      target: CcIconButton(
+        variant: CcButtonVariant.ghost,
+        size: CcButtonSize.sm,
+        onPressed: _controller.toggle,
+        icon: AppIcons.smile,
+        tooltip: l10n.addEmoji,
+      ),
     );
   }
 }
@@ -116,4 +124,3 @@ class _EmojiGrid extends StatelessWidget {
     return '';
   }
 }
-

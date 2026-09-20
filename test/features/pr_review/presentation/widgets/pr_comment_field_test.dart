@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_comment_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments/comment_composer_widget.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../helpers/fake_rpc_client.dart';
 import '../../../../helpers/test_wrap.dart';
 
 /// The design system draws its own tooltip, so `find.byTooltip` (which looks
@@ -136,6 +138,62 @@ void main() {
       await tester.pump();
 
       expect(controller.text, 'see :not_an_emoji_name:');
+    });
+
+    testWidgets('tapping Add emoji opens the picker and inserts', (
+      tester,
+    ) async {
+      await pumpField(tester);
+
+      expect(find.text('Smileys'), findsNothing);
+
+      await tester.tap(_action('Add emoji'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Smileys'), findsOneWidget);
+
+      await tester.tap(find.text('😀'));
+      await tester.pumpAndSettle();
+
+      expect(controller.text, '😀');
+      expect(find.text('Smileys'), findsNothing);
+    });
+
+    testWidgets('tapping Add GIF opens a picker next to the trigger', (
+      tester,
+    ) async {
+      final host = FakeRpcHost()
+        ..onCall = (op, args) => {'gifs': <Map<String, dynamic>>[]};
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [rpcClientProvider.overrideWithValue(host.client())],
+          child: _host(
+            PrCommentField(
+              controller: controller,
+              focusNode: focusNode,
+              hintText: 'Leave a comment…',
+              owner: 'octocat',
+              repo: 'hello-world',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('gif-picker-panel')), findsNothing);
+
+      await tester.tap(_action('Add GIF'));
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Search GIFs'), findsOneWidget);
+      final trigger = tester.getRect(_action('Add GIF'));
+      final panel = tester.getRect(find.byKey(const Key('gif-picker-panel')));
+      expect(
+        panel.top >= trigger.bottom - 8 || panel.bottom <= trigger.top + 8,
+        isTrue,
+        reason: 'GIF picker must sit beside its toolbar button',
+      );
     });
   });
 
