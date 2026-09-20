@@ -106,15 +106,30 @@ class _FakeChannel implements RemoteRpcChannelPort {
         });
         return;
       }
+      // Host-shell port affordances issue `terminal.*Port*` calls; answer
+      // them so pumpAndSettle cannot hang on an unanswered RPC.
+      if (id != null) {
+        _incoming.add({
+          'jsonrpc': '2.0',
+          'id': id,
+          'result': {'data': <String, dynamic>{}},
+        });
+      }
     }
     if (method == 'sub/subscribe') {
       // No pushes until the test drives them; acknowledge with a per-query
-      // subscription id so `output()` / `titles()` streams don't collide.
+      // subscription id so `output()` / `titles()` / `watchPorts` streams
+      // don't collide. Host-shell terminals now also subscribe to
+      // `terminal.watchPorts`; sharing `fake-sub-1` with PTY output made
+      // OSC titles and keep-alive buffer asserts miss the terminal.
       final params = (frame['params'] as Map).cast<String, dynamic>();
       final query = params['query'] as String? ?? '';
-      final subId = query == 'terminal.titles'
-          ? 'fake-sub-titles'
-          : 'fake-sub-1';
+      final subId = switch (query) {
+        'terminal.titles' => 'fake-sub-titles',
+        'terminal.watchPorts' => 'fake-sub-ports',
+        'rig.watchPorts' => 'fake-sub-rig-ports',
+        _ => 'fake-sub-1',
+      };
       _incoming.add({
         'jsonrpc': '2.0',
         'id': id,

@@ -1,6 +1,8 @@
 # path  linecount — shrinking allowlist for packages/**/lib over 1500 lines
 # Exclude *.g.dart, geoip_country_data.dart, emoji_shortcodes.dart.
-# Updated 2026-09-20 after CI ratchet catch-up.
+# Updated 2026-09-20 after CI ratchet catch-up; catalog freeze extracted
+# terminal.*Port* ops (16217). smolvm exec guests now warm a runner-style
+# CLI toolset (2159).
 packages/cc_domain/lib/features/pipelines/domain/services/pipeline_engine.dart  2251
 packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2849
 packages/cc_domain/lib/src/dtos/dtos.dart  4142
@@ -15,11 +17,11 @@ packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1668
 packages/cc_infra/lib/src/rigs/cdp_client.dart  2520
 packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1832
 packages/cc_infra/lib/src/rigs/rig_service.dart  3002
-packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2020
+packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2159
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2707
 packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3351
 packages/cc_server_core/lib/src/cc_server_runtime.dart  7862
 packages/cc_server_core/lib/src/demo/demo_seeder.dart  2551
 packages/cc_server_core/lib/src/local_rpc_server.dart  2572
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16392
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  16217
 packages/cc_server_core/lib/src/repo_ide_data_service.dart  1720

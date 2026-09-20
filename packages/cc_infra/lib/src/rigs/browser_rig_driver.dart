@@ -602,7 +602,7 @@ class BrowserRigDriver implements RigDriver {
           );
 
         case BrowserPermissionRespond():
-          return _respondPermission(action);
+          return await _respondPermission(action);
       }
     } on Object catch (e) {
       return rigDriverFailure(action.verb, e);

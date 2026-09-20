@@ -92,4 +92,19 @@ runs:
       if: inputs.pub-get == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: flutter pub get
+      run: |
+        if [ "${RUNNER_OS:-}" = "Windows" ]; then
+          # Git Bash's tar treats "C:" as a remote host:
+          #   /usr/bin/tar: Cannot connect to C: resolve failed
+          # Flutter extracts SDK artifacts with `tar -xf C:\path\file.zip`.
+          # Prefer Windows' libarchive tar, which understands drive letters.
+          # Shadow only `tar` — System32 also has `find`/`sort`, which are not
+          # the Unix tools Git Bash scripts expect.
+          win_tar="/c/Windows/System32/tar.exe"
+          if [ -x "$win_tar" ]; then
+            mkdir -p "${RUNNER_TEMP}/win-tar"
+            cp "$win_tar" "${RUNNER_TEMP}/win-tar/tar"
+            export PATH="${RUNNER_TEMP}/win-tar:${PATH}"
+          fi
+        fi
+        flutter pub get

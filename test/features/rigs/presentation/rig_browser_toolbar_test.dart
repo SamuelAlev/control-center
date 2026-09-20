@@ -26,10 +26,9 @@ class _StubChannel implements RemoteRpcChannelPort {
 }
 
 class _StubRepository extends RemoteRigRepository {
-  _StubRepository({this.stateUrl = 'http://localhost:5173/'})
-    : super(RemoteRpcClient(_StubChannel()));
+  _StubRepository() : super(RemoteRpcClient(_StubChannel()));
 
-  String stateUrl;
+  String stateUrl = 'http://localhost:5173/';
 
   @override
   Future<RigBrowserStateView> browserState(

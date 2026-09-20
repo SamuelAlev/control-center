@@ -24,9 +24,11 @@ class NewsfeedToolbar extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 10),
       child: Row(
         children: [
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320, minWidth: 200),
-            child: const _ArticleSearchField(),
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 320),
+              child: const _ArticleSearchField(),
+            ),
           ),
           const SizedBox(width: 8),
           SourceFilterMenu(provider: newsfeedFilterProvider),

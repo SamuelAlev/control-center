@@ -175,6 +175,7 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
+import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/cc_server_runtime.dart'
     show accountPoolKeyForLane;
 import 'package:cc_server_core/src/collab/checker_listener.dart';
@@ -208,6 +209,7 @@ export 'catalog/catalog_wire.dart';
 export 'catalog/meeting_ops.dart';
 export 'catalog/model_control_ops.dart';
 export 'catalog/pr_review_ops.dart';
+export 'catalog/terminal_port_ops.dart';
 
 /// The repo-RPC + watch-query registries a server exposes to first-party
 /// clients (desktop-remote / web). `ops` are request/response operations;
@@ -5745,188 +5747,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
 
     // ---- Host-shell / session ports (WORKSPACE-SCOPED) ----
     //
-    // Same snapshots and mutations as `rig.*Port*`, keyed by the PTY
-    // `session_id` plus the caller's current `space_id`. A session whose
-    // stored space is not this space reads as absent — same-number listeners
-    // in two spaces must not mix. Present only when [rigPorts] is wired
-    // (demo omits them). Mutations stay `networkEgress`.
+    // Same snapshots and mutations as `rig.*Port*`. The literals live in
+    // `catalog/terminal_port_ops.dart` so this file's RepoOp freeze does not
+    // grow. Present only when [rigPorts] is wired (demo omits them).
     if (rigPorts != null)
-      ...[
-        RepoOp(
-          name: 'terminal.setPortsAutoForward',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['session_id', 'space_id', 'enabled'],
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final sessionId = ctx.args['session_id'];
-            final spaceId = ctx.args['space_id'];
-            if (sessionId is! String || sessionId.isEmpty) {
-              throw const ValidationException(
-                'Missing or invalid argument: session_id',
-              );
-            }
-            if (spaceId is! String) {
-              throw const ValidationException(
-                'Missing or invalid argument: space_id',
-              );
-            }
-            final ok = await rigPorts.setTerminalPortsAutoForward(
-              ctx.workspaceId!,
-              sessionId,
-              spaceId: spaceId,
-              enabled: ctx.args['enabled'] == true,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'terminal.addPort',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['session_id', 'space_id', 'guest_port'],
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final sessionId = ctx.args['session_id'];
-            final spaceId = ctx.args['space_id'];
-            if (sessionId is! String || sessionId.isEmpty) {
-              throw const ValidationException(
-                'Missing or invalid argument: session_id',
-              );
-            }
-            if (spaceId is! String) {
-              throw const ValidationException(
-                'Missing or invalid argument: space_id',
-              );
-            }
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            final hostPort = ctx.args.containsKey('host_port')
-                ? asPort(ctx.args['host_port'])
-                : null;
-            if (ctx.args.containsKey('host_port') && hostPort == null) {
-              throw const ValidationException(
-                'Invalid argument: host_port (expected 1-65535)',
-              );
-            }
-            final ok = await rigPorts.addTerminalPortForward(
-              ctx.workspaceId!,
-              sessionId,
-              spaceId: spaceId,
-              guestPort: port,
-              hostPort: hostPort,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'terminal.removePort',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['session_id', 'space_id', 'guest_port'],
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final sessionId = ctx.args['session_id'];
-            final spaceId = ctx.args['space_id'];
-            if (sessionId is! String || sessionId.isEmpty) {
-              throw const ValidationException(
-                'Missing or invalid argument: session_id',
-              );
-            }
-            if (spaceId is! String) {
-              throw const ValidationException(
-                'Missing or invalid argument: space_id',
-              );
-            }
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            final ok = await rigPorts.removeTerminalPortForward(
-              ctx.workspaceId!,
-              sessionId,
-              spaceId: spaceId,
-              guestPort: port,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'terminal.setPortLan',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['session_id', 'space_id', 'guest_port', 'exposed'],
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final sessionId = ctx.args['session_id'];
-            final spaceId = ctx.args['space_id'];
-            if (sessionId is! String || sessionId.isEmpty) {
-              throw const ValidationException(
-                'Missing or invalid argument: session_id',
-              );
-            }
-            if (spaceId is! String) {
-              throw const ValidationException(
-                'Missing or invalid argument: space_id',
-              );
-            }
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            final ok = await rigPorts.setTerminalPortLanExposed(
-              ctx.workspaceId!,
-              sessionId,
-              spaceId: spaceId,
-              guestPort: port,
-              exposed: ctx.args['exposed'] == true,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'terminal.setPortDomain',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['session_id', 'space_id', 'guest_port'],
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final sessionId = ctx.args['session_id'];
-            final spaceId = ctx.args['space_id'];
-            if (sessionId is! String || sessionId.isEmpty) {
-              throw const ValidationException(
-                'Missing or invalid argument: session_id',
-              );
-            }
-            if (spaceId is! String) {
-              throw const ValidationException(
-                'Missing or invalid argument: space_id',
-              );
-            }
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            try {
-              final ok = await rigPorts.setTerminalPortDomain(
-                ctx.workspaceId!,
-                sessionId,
-                spaceId: spaceId,
-                guestPort: port,
-                domain: ctx.args['domain'] as String?,
-              );
-              return {'ok': ok};
-            } on ArgumentError catch (e) {
-              throw ValidationException('${e.message}');
-            }
-          },
-        ),
-      ].map(fullClientOnly),
+      ...buildTerminalPortOps(rigPorts: rigPorts).map(fullClientOnly),
 
     // ---- Code-server (VS Code in the browser) over RPC (WORKSPACE-SCOPED) ---
     //
