@@ -117,11 +117,18 @@ jobs:
       #                                                   war story in
       #                                                   release.yml's
       #                                                   release job)
+      # ONE step, not two with `if:`. GitHub still runs an action's pre-hook
+      # when the main step is skipped, so a Linux-only `block` sibling
+      # installed the agent with this allowlist on macOS and Windows too —
+      # then the second pre-hook saw the agent already there and no-op'd.
+      # macOS then could not resolve Homebrew's bottle host; Windows pip
+      # got WinError 10013 talking to pypi.org. `block` is Linux-only in
+      # harden-runner; audit is the ceiling on macOS and Windows. The
+      # allowlist is ignored under audit.
       - name: Harden runner
-        if: runner.os == 'Linux'
         uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
-          egress-policy: block
+          egress-policy: ${{ runner.os == 'Linux' && 'block' || 'audit' }}
           allowed-endpoints: >
             *.archive.ubuntu.com:80
             *.blob.core.windows.net:443
@@ -138,14 +145,6 @@ jobs:
             static.crates.io:443
             static.rust-lang.org:443
             wrapdb.mesonbuild.com:443
-
-      - name: Harden runner
-        # `block` is Linux-only in harden-runner; audit is the ceiling on
-        # macOS and Windows.
-        if: runner.os != 'Linux'
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
-        with:
-          egress-policy: audit
 
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

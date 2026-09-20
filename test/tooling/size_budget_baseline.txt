@@ -4,8 +4,8 @@
 #
 # Format: <repo-relative path> <line count when baselined>
 #
-# Updated 2026-09-20 after CI ratchet catch-up (pipeline editor, demo seeder,
-# calendar host, and adjacent presentation files that grew with those changes).
+# Updated 2026-09-20 after CI ratchet catch-up (PR-detail lag work, profile
+# charts, pipeline editor, demo seeder, calendar host).
 lib/features/agents/presentation/screens/agent_registry_screen.dart  612
 lib/features/agents/presentation/widgets/agent_form_dialog.dart  793
 lib/features/agents/presentation/widgets/agent_logs_tab.dart  483
@@ -83,9 +83,10 @@ lib/features/plan_studio/presentation/widgets/plan_version_panel.dart  306
 lib/features/pr_review/presentation/screens/compose_pull_request_screen.dart  774
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_checks_tab.dart  879
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_detail_actions.dart  382
-lib/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart  552
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_diff_tab.dart  579
+lib/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart  301
 lib/features/pr_review/presentation/screens/pull_request_detail/pr_source_control_tab.dart  714
-lib/features/pr_review/presentation/screens/pull_request_detail_screen.dart  1390
+lib/features/pr_review/presentation/screens/pull_request_detail_screen.dart  1414
 lib/features/pr_review/presentation/screens/pull_request_list_screen.dart  305
 lib/features/pr_review/presentation/widgets/assignee_picker_flyout.dart  362
 lib/features/pr_review/presentation/widgets/compose/compose_branch_bar.dart  387
@@ -95,7 +96,7 @@ lib/features/pr_review/presentation/widgets/mention_autocomplete_field.dart  436
 lib/features/pr_review/presentation/widgets/merge_flyout_button.dart  552
 lib/features/pr_review/presentation/widgets/open_in_ide_button.dart  585
 lib/features/pr_review/presentation/widgets/picker_flyout.dart  340
-lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1636
+lib/features/pr_review/presentation/widgets/pr_activity_timeline.dart  1698
 lib/features/pr_review/presentation/widgets/pr_detail_skeleton.dart  445
 lib/features/pr_review/presentation/widgets/pr_diff_file_tree.dart  819
 lib/features/pr_review/presentation/widgets/pr_diff_view/commit_range_selector.dart  425
@@ -104,9 +105,9 @@ lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dar
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart  522
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  926
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  319
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  882
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  368
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3204
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  942
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  424
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3191
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart  903
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart  406
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart  1280
@@ -171,5 +172,5 @@ lib/features/ticketing/presentation/widgets/ticket_properties_rail.dart  618
 lib/features/ticketing/presentation/widgets/ticket_relations_card.dart  385
 lib/features/ticketing/presentation/widgets/ticket_visuals.dart  320
 lib/features/user_profiles/presentation/screens/user_profile_screen.dart  358
-lib/features/user_profiles/presentation/widgets/github_profile_metrics_charts.dart  923
+lib/features/user_profiles/presentation/widgets/github_profile_metrics_charts.dart  1132
 lib/features/workspaces/presentation/screens/workspace_list_screen.dart  1396

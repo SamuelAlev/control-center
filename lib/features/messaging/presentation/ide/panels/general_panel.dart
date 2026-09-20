@@ -139,9 +139,9 @@ String? focusedConversationId(
   WidgetRef ref,
   String spaceId,
 ) {
-  final tabKey = GoRouterState.of(
+  final tabKey = GoRouter.maybeOf(
     context,
-  ).uri.queryParameters[editorTabQueryParam];
+  )?.state.uri.queryParameters[editorTabQueryParam];
   final standingId = ref.watch(standingConversationIdProvider(spaceId)).value;
   if (tabKey == null || tabKey == MessagingTabKinds.chatSpaceTabKey(spaceId)) {
     return standingId;
@@ -356,12 +356,7 @@ class _TodosSection extends ConsumerWidget {
                   if (conversationId == null) {
                     return;
                   }
-                  repo.updateStatus(
-                    workspaceId,
-                    conversationId,
-                    todo.id,
-                    next,
-                  );
+                  repo.updateStatus(workspaceId, conversationId, todo.id, next);
                   // Reversible (PRD 19 §5): ⌘Z restores the prior status.
                   ref
                       .read(actionJournalProvider.notifier)
@@ -546,10 +541,9 @@ class _GoalAccordionState extends State<_GoalAccordion> {
                           child: Icon(
                             AppIcons.circleStop,
                             size: 14,
-                            color:
-                                states.contains(WidgetState.hovered)
-                                    ? t.textPrimary
-                                    : t.textTertiary,
+                            color: states.contains(WidgetState.hovered)
+                                ? t.textPrimary
+                                : t.textTertiary,
                           ),
                         ),
                       ),
@@ -566,10 +560,9 @@ class _GoalAccordionState extends State<_GoalAccordion> {
                         child: Icon(
                           AppIcons.x,
                           size: 14,
-                          color:
-                              states.contains(WidgetState.hovered)
-                                  ? t.textPrimary
-                                  : t.textTertiary,
+                          color: states.contains(WidgetState.hovered)
+                              ? t.textPrimary
+                              : t.textTertiary,
                         ),
                       ),
                     ),
