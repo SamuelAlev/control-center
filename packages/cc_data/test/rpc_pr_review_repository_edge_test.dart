@@ -155,6 +155,32 @@ void main() {
       expect(await repo().watchFiles(42).first, isEmpty);
     });
 
+    test('watchReviewComments sends include_hunks: false for the index', () async {
+      host.snapshotFor('pr_review.watchReviewComments', {
+        'comments': const <Map<String, dynamic>>[],
+      });
+      await repo().watchReviewComments(42, includeHunks: false).first;
+      expect(host.lastSubscribe!.query, 'pr_review.watchReviewComments');
+      expect(host.lastSubscribe!.args['include_hunks'], false);
+    });
+
+    test('watchFiles sends include_patches: false for the index', () async {
+      host.snapshotFor('pr_review.watchFiles', {
+        'files': [
+          {
+            'filename': 'a.dart',
+            'status': 'modified',
+            'additions': 1,
+            'deletions': 0,
+            'patch': '',
+          },
+        ],
+      });
+      await repo().watchFiles(42, includePatches: false).first;
+      expect(host.lastSubscribe!.query, 'pr_review.watchFiles');
+      expect(host.lastSubscribe!.args['include_patches'], false);
+    });
+
     test('watchReviewers maps a team reviewer', () async {
       host.snapshotFor('pr_review.watchReviewers', {
         'reviewers': [

@@ -90,3 +90,36 @@ Future<void> seedTestWorkspace(
   );
   await workspaces.create(workspaceId);
 }
+
+/// Seeds spaces and matching conversations so todos/goals can FK-reference
+/// them. Uses the same id for space and conversation so existing test ids
+/// (`c-1`) keep working as conversation ids.
+Future<void> seedTodoConversations(
+  WorkspaceDatabase db, [
+  List<(String id, String workspaceId)> rows = const [
+    ('c-1', 'w-1'),
+    ('c-2', 'w-1'),
+    ('c-3', 'w-2'),
+  ],
+]) async {
+  for (final (id, ws) in rows) {
+    await db
+        .into(db.spacesTable)
+        .insert(
+          SpacesTableCompanion.insert(
+            id: id,
+            name: id,
+            workspaceId: Value(ws),
+          ),
+        );
+    await db
+        .into(db.conversationsTable)
+        .insert(
+          ConversationsTableCompanion.insert(
+            id: id,
+            spaceId: id,
+            workspaceId: Value(ws),
+          ),
+        );
+  }
+}

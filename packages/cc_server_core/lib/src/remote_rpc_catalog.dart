@@ -1235,6 +1235,25 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     }
   }
 
+  Future<void> assertConversationOwned(
+    String workspaceId,
+    String conversationId,
+  ) async {
+    final repo = conversationRepository;
+    if (repo == null) {
+      return;
+    }
+    final conv = await repo.getById(
+      workspaceId: workspaceId,
+      conversationId: conversationId,
+    );
+    if (conv == null) {
+      throw const WorkspaceMismatchException(
+        'Conversation belongs to a different workspace',
+      );
+    }
+  }
+
   /// The conversation (stream) a caller means: the one it named, or the
   /// space's standing conversation when it named none.
   ///
@@ -13574,31 +13593,35 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         };
       },
     ),
-    // ---- Per-space todo lists ----
+    // ---- Per-conversation todo lists ----
     // Workspace-scoped (the bound workspace is `ctx.workspaceId!`); each op
-    // additionally requires the `space_id` it operates on, and proves the
-    // space belongs to that workspace before it touches a row. The list is
-    // per SPACE, not per conversation: a space owns one worktree and one task
-    // list, and the `todos.space_id` foreign key points at `spaces`.
+    // additionally requires the `conversation_id` it operates on, and proves
+    // the conversation belongs to that workspace before it touches a row. The
+    // list is per CONVERSATION, not per space: a conversation owns one stream
+    // and one task list, and the `todos.conversation_id` foreign key points
+    // at `conversations`.
     RepoOp(
       name: 'todos.list',
       kind: RepoOpKind.read,
-      requiredArgs: ['space_id'],
+      requiredArgs: ['conversation_id'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
-        final items = await todoRepository.list(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        final items = await todoRepository.list(
+          ctx.workspaceId!,
+          conversationId,
+        );
         return {'todos': items.map(todoItemToWire).toList()};
       },
     ),
     RepoOp(
       name: 'todos.replaceAll',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id', 'todos'],
+      requiredArgs: ['conversation_id', 'todos'],
       handler: (ctx) async {
         final workspaceId = ctx.workspaceId!;
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(workspaceId, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(workspaceId, conversationId);
         final raw = (ctx.args['todos'] as List).cast<Map>();
         final now = DateTime.now();
         final items = <TodoItem>[
@@ -13608,7 +13631,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                   (raw[i]['id'] as String?) ??
                   '${now.microsecondsSinceEpoch}-$i',
               workspaceId: workspaceId,
-              spaceId: spaceId,
+              conversationId: conversationId,
               content: (raw[i]['content'] as String? ?? '').trim(),
               status: TodoStatus.fromStorage(raw[i]['status'] as String?),
               position: i,
@@ -13616,20 +13639,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               updatedAt: now,
             ),
         ]..removeWhere((t) => t.content.isEmpty);
-        await todoRepository.replaceAll(workspaceId, spaceId, items);
+        await todoRepository.replaceAll(workspaceId, conversationId, items);
         return {'ok': true};
       },
     ),
     RepoOp(
       name: 'todos.append',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id', 'content'],
+      requiredArgs: ['conversation_id', 'content'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
         final item = await todoRepository.append(
           ctx.workspaceId!,
-          spaceId,
+          conversationId,
           (ctx.args['content'] as String).trim(),
         );
         return {'todo': todoItemToWire(item)};
@@ -13640,13 +13663,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       // Reversible: the prior status is captured client-side and re-applied.
       undoClass: UndoClass.reversible,
-      requiredArgs: ['space_id', 'id', 'status'],
+      requiredArgs: ['conversation_id', 'id', 'status'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
         await todoRepository.updateStatus(
           ctx.workspaceId!,
-          spaceId,
+          conversationId,
           ctx.args['id'] as String,
           TodoStatus.fromStorage(ctx.args['status'] as String?),
         );
@@ -13656,13 +13679,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'todos.remove',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id', 'id'],
+      requiredArgs: ['conversation_id', 'id'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
         await todoRepository.remove(
           ctx.workspaceId!,
-          spaceId,
+          conversationId,
           ctx.args['id'] as String,
         );
         return {'ok': true};
@@ -13671,13 +13694,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'todos.reorder',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id', 'ordered_ids'],
+      requiredArgs: ['conversation_id', 'ordered_ids'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
         await todoRepository.reorder(
           ctx.workspaceId!,
-          spaceId,
+          conversationId,
           (ctx.args['ordered_ids'] as List).cast<String>(),
         );
         return {'ok': true};
@@ -13686,27 +13709,27 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'todos.clear',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id'],
+      requiredArgs: ['conversation_id'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
-        await todoRepository.clear(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await todoRepository.clear(ctx.workspaceId!, conversationId);
         return {'ok': true};
       },
     ),
-    // Per-space working goal (`/goal`): set replaces the prior goal; a blank
-    // title clears it (the repository normalizes). The todos render nested
-    // under it client-side.
+    // Per-conversation working goal (`/goal`): set replaces the prior goal; a
+    // blank title clears it (the repository normalizes). The todos render
+    // nested under it client-side.
     RepoOp(
       name: 'todos.setGoal',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id', 'title'],
+      requiredArgs: ['conversation_id', 'title'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
         await todoRepository.setGoal(
           ctx.workspaceId!,
-          spaceId,
+          conversationId,
           (ctx.args['title'] as String).trim(),
         );
         return {'ok': true};
@@ -13715,11 +13738,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'todos.clearGoal',
       kind: RepoOpKind.mutate,
-      requiredArgs: ['space_id'],
+      requiredArgs: ['conversation_id'],
       handler: (ctx) async {
-        final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
-        await todoRepository.clearGoal(ctx.workspaceId!, spaceId);
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await todoRepository.clearGoal(ctx.workspaceId!, conversationId);
         return {'ok': true};
       },
     ),
@@ -15511,9 +15534,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           c.repo,
           userId: ctx.userId,
         );
+        final includePatches = ctx.args['include_patches'] != false;
         yield* repo
-            .watchFiles((ctx.args['pr_number'] as num).toInt())
-            .map((files) => {'files': files.map(prFileToWire).toList()});
+            .watchFiles(
+              (ctx.args['pr_number'] as num).toInt(),
+              includePatches: includePatches,
+            )
+            .map(
+              (files) => {
+                'files': [
+                  for (final f in files)
+                    prFileToWire(f, includePatch: includePatches),
+                ],
+              },
+            );
       },
     ),
     WatchQuery(
@@ -15595,11 +15629,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           c.repo,
           userId: ctx.userId,
         );
+        final includeHunks = ctx.args['include_hunks'] != false;
         yield* repo
-            .watchReviewComments((ctx.args['pr_number'] as num).toInt())
+            .watchReviewComments(
+              (ctx.args['pr_number'] as num).toInt(),
+              includeHunks: includeHunks,
+            )
             .map(
               (comments) => {
-                'comments': comments.map(prCodeReviewCommentToWire).toList(),
+                'comments': [
+                  for (final c in comments)
+                    prCodeReviewCommentToWire(c, includeHunk: includeHunks),
+                ],
               },
             );
       },
@@ -15848,20 +15889,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           .watchByWorkspace(ctx.workspaceId!)
           .map((list) => {'approvals': list.map(approvalToWire).toList()}),
     ),
-    // Per-space todo list (workspace-scoped; the space comes from the
-    // client's `space_id` filter arg).
+    // Per-conversation todo list (workspace-scoped; the conversation comes
+    // from the client's `conversation_id` filter arg).
     WatchQuery(
       name: 'todos.watch',
       handler: (ctx) => todoRepository
-          .watch(ctx.workspaceId!, ctx.args['space_id'] as String)
+          .watch(ctx.workspaceId!, ctx.args['conversation_id'] as String)
           .map((list) => {'todos': list.map(todoItemToWire).toList()}),
     ),
-    // The space's working goal (or null), driving the goal accordion the
-    // todos nest under.
+    // The conversation's working goal (or null), driving the goal accordion
+    // the todos nest under.
     WatchQuery(
       name: 'todos.watchGoal',
       handler: (ctx) => todoRepository
-          .watchGoal(ctx.workspaceId!, ctx.args['space_id'] as String)
+          .watchGoal(ctx.workspaceId!, ctx.args['conversation_id'] as String)
           .map((g) => {'goal': g == null ? null : goalToWire(g)}),
     ),
     // The workspace's durable notification feed (newest-first stored

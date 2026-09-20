@@ -56,7 +56,7 @@ class PrOverviewTab extends ConsumerWidget {
       prOptimisticReviewStateProvider,
     )[prRef];
 
-    final main = Column(
+    final header = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -71,12 +71,12 @@ class PrOverviewTab extends ConsumerWidget {
         const SizedBox(height: 24),
         const CcDivider(),
         const SizedBox(height: 20),
-        PrActivityTimeline(
-          pr: pr,
-          prRef: prRef,
-          onOpenFileInDiff: onOpenFileInDiff,
-        ),
       ],
+    );
+    final timeline = PrActivityTimeline(
+      pr: pr,
+      prRef: prRef,
+      onOpenFileInDiff: onOpenFileInDiff,
     );
     final sidebar = PrSidebar(
       pr: pr,
@@ -95,21 +95,24 @@ class PrOverviewTab extends ConsumerWidget {
         builder: (context, constraints) {
           final wide = constraints.maxWidth >= _wideBreakpoint;
           if (!wide) {
-            return SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
-                    child: main,
-                  ),
-                  const CcDivider(),
-                  Padding(
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+                  sliver: SliverToBoxAdapter(child: header),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+                  sliver: timeline,
+                ),
+                const SliverToBoxAdapter(child: CcDivider()),
+                SliverToBoxAdapter(
+                  child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     child: sidebar,
                   ),
-                ],
-              ),
+                ),
+              ],
             );
           }
           return CcResizable(
@@ -118,9 +121,17 @@ class PrOverviewTab extends ConsumerWidget {
               CcResizableRegion(
                 initialExtent: constraints.maxWidth - _sidebarWidth,
                 minExtent: 420,
-                builder: (context) => SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-                  child: main,
+                builder: (context) => CustomScrollView(
+                  slivers: [
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      sliver: SliverToBoxAdapter(child: header),
+                    ),
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      sliver: timeline,
+                    ),
+                  ],
                 ),
               ),
               CcResizableRegion(

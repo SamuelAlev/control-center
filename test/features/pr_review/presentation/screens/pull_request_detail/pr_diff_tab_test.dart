@@ -213,7 +213,7 @@ void main() {
           PrDiffTab(pr: _pr(), prRef: _prRef),
           prefs: AppPreferences.inMemory(),
           overrides: [
-            prFilesProvider(_prRef).overrideWith((ref) => Stream.value(files)),
+            prFileIndexProvider(_prRef).overrideWith((ref) => Stream.value(files)),
           ],
         ),
       );

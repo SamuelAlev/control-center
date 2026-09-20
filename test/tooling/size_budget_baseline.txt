@@ -22,7 +22,7 @@ lib/features/chat_bridges/presentation/widgets/sections/chat_bridges_section.dar
 lib/features/focus_mode/presentation/screens/focus_pill_window.dart  427
 lib/features/inbox/presentation/widgets/inbox_pr_row.dart  508
 lib/features/inbox/presentation/widgets/inbox_section_card.dart  512
-lib/features/meetings/presentation/screens/meeting_detail_screen.dart  716
+lib/features/meetings/presentation/screens/meeting_detail_screen.dart  714
 lib/features/meetings/presentation/screens/meeting_record_screen.dart  754
 lib/features/meetings/presentation/screens/meeting_toolbar_window.dart  325
 lib/features/meetings/presentation/screens/meetings_screen.dart  637
@@ -104,7 +104,7 @@ lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dar
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart  522
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  926
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  319
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  889
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  882
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  368
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3204
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart  903
@@ -143,7 +143,7 @@ lib/features/settings/presentation/widgets/providers/model_edit_dialog.dart  341
 lib/features/settings/presentation/widgets/providers/provider_model_list.dart  360
 lib/features/settings/presentation/widgets/sections/claude_account_row.dart  312
 lib/features/settings/presentation/widgets/sections/general/notifications_section.dart  656
-lib/features/settings/presentation/widgets/sections/general/settings_shared.dart  385
+lib/features/settings/presentation/widgets/sections/general/settings_shared.dart  384
 lib/features/settings/presentation/widgets/sections/integrations/server_sharing_section.dart  345
 lib/features/settings/presentation/widgets/sections/skills/skill_scan_widgets.dart  390
 lib/features/settings/presentation/widgets/sections/skills/skill_sources_panel.dart  1131

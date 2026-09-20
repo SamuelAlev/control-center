@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_diff_scope_notifier.dart';
@@ -131,6 +132,10 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     setState(() => _sidebarMode = PrDiffSidebarMode.tree);
   }
 
+  /// The full-patch stream starts on the next frame so opening Diff paints
+  /// from [prFileIndexProvider] inside the interaction budget.
+  bool _listenForPatches = false;
+
   @override
   void initState() {
     super.initState();
@@ -139,6 +144,22 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     _maybeJumpToPendingFile();
     widget.pendingCommentAnchor?.addListener(_maybeRevealPendingComment);
     _maybeRevealPendingComment();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _listenForPatches = true);
+    });
+  }
+
+  /// Patched files once the heavy subscription is armed, otherwise the
+  /// metadata index Overview already loaded.
+  List<PrFile> _filesForChrome() {
+    final index = ref.watch(prFileIndexProvider(widget.prRef)).value;
+    if (!_listenForPatches) {
+      return index ?? const [];
+    }
+    return preferPatchedFiles(
+      ref.watch(prFilesProvider(widget.prRef)).value,
+      index,
+    );
   }
 
   @override
@@ -301,14 +322,18 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     final scope = ref.watch(prDiffScopeProvider);
     final commits =
         ref.watch(prCommitsProvider(widget.prRef)).value ?? const [];
-    final filesAsync = ref.watch(prFilesProvider(widget.prRef));
+    final indexAsync = ref.watch(prFileIndexProvider(widget.prRef));
+    final filesAsync = _listenForPatches
+        ? ref.watch(prFilesProvider(widget.prRef))
+        : const AsyncValue<List<PrFile>>.data([]);
+    final allFiles = preferPatchedFiles(filesAsync.value, indexAsync.value);
     final scoped = watchScopedDiffFiles(
       ref,
       pr: widget.prRef,
       scope: scope,
       commits: commits,
-      allFiles: filesAsync.value ?? const [],
-      isLoading: filesAsync.isLoading,
+      allFiles: allFiles,
+      isLoading: filesAsync.isLoading && !indexAsync.hasValue,
       error: filesAsync.hasError ? filesAsync.error : null,
     );
 
@@ -451,8 +476,7 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     required bool splitView,
   }) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final files =
-        ref.watch(prFilesProvider(widget.prRef)).value ?? const [];
+    final files = _filesForChrome();
 
     final diffScroll = ColoredBox(
       color: t.bgPrimary,
@@ -529,7 +553,10 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
   }
 
   Widget _buildFilesSliver({required bool splitView}) {
-    final filesAsync = ref.watch(prFilesProvider(widget.prRef));
+    final indexAsync = ref.watch(prFileIndexProvider(widget.prRef));
+    final filesAsync = _listenForPatches
+        ? ref.watch(prFilesProvider(widget.prRef))
+        : const AsyncValue<List<PrFile>>.data([]);
     final commitsAsync = ref.watch(prCommitsProvider(widget.prRef));
     final reviewCommentsAsync = ref.watch(
       prReviewCommentsProvider(widget.prRef),
@@ -537,10 +564,10 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
     return FilesTab(
       pr: widget.pr,
       prRef: widget.prRef,
-      allFiles: filesAsync.value ?? const [],
+      allFiles: preferPatchedFiles(filesAsync.value, indexAsync.value),
       commits: commitsAsync.value ?? const [],
       comments: reviewCommentsAsync.value ?? const [],
-      isLoading: filesAsync.isLoading,
+      isLoading: filesAsync.isLoading && !indexAsync.hasValue,
       error: filesAsync.hasError ? filesAsync.error : null,
       diffKey: _diffKey,
       splitView: splitView,

@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
-import 'package:cc_domain/features/messaging/domain/entities/space.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/todos/domain/entities/conversation_goal.dart';
 import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
@@ -8,52 +8,61 @@ import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
 import 'package:cc_mcp/cc_mcp.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// In-memory [TodoRepository] scoped by (workspace, space).
+/// In-memory [TodoRepository] scoped by (workspace, conversation).
 class _InMemoryTodoRepo implements TodoRepository {
   final Map<String, List<TodoItem>> _store = {};
 
-  String _key(String ws, String space) => '$ws/$space';
+  String _key(String ws, String conversation) => '$ws/$conversation';
 
-  List<TodoItem> seen(String ws, String space) => _store[_key(ws, space)] ?? [];
+  List<TodoItem> seen(String ws, String conversation) =>
+      _store[_key(ws, conversation)] ?? [];
 
   @override
-  Future<void> replaceAll(String ws, String space, List<TodoItem> items) async {
-    _store[_key(ws, space)] = List.of(items);
+  Future<void> replaceAll(
+    String ws,
+    String conversation,
+    List<TodoItem> items,
+  ) async {
+    _store[_key(ws, conversation)] = List.of(items);
   }
 
   @override
-  Future<TodoItem> append(String ws, String space, String content) async {
+  Future<TodoItem> append(
+    String ws,
+    String conversation,
+    String content,
+  ) async {
     final item = TodoItem(
-      id: 'x${seen(ws, space).length}',
+      id: 'x${seen(ws, conversation).length}',
       workspaceId: ws,
-      spaceId: space,
+      conversationId: conversation,
       content: content,
       createdAt: DateTime(2020),
       updatedAt: DateTime(2020),
     );
-    _store.putIfAbsent(_key(ws, space), () => []).add(item);
+    _store.putIfAbsent(_key(ws, conversation), () => []).add(item);
     return item;
   }
 
   @override
-  Future<void> clear(String ws, String space) async =>
-      _store.remove(_key(ws, space));
+  Future<void> clear(String ws, String conversation) async =>
+      _store.remove(_key(ws, conversation));
 
   final Map<String, ConversationGoal> _goals = {};
 
   @override
-  Stream<ConversationGoal?> watchGoal(String ws, String space) =>
-      Stream.value(_goals[_key(ws, space)]);
+  Stream<ConversationGoal?> watchGoal(String ws, String conversation) =>
+      Stream.value(_goals[_key(ws, conversation)]);
 
   @override
-  Future<void> setGoal(String ws, String space, String title) async {
+  Future<void> setGoal(String ws, String conversation, String title) async {
     final trimmed = title.trim();
     if (trimmed.isEmpty) {
-      _goals.remove(_key(ws, space));
+      _goals.remove(_key(ws, conversation));
       return;
     }
-    _goals[_key(ws, space)] = ConversationGoal(
-      spaceId: space,
+    _goals[_key(ws, conversation)] = ConversationGoal(
+      conversationId: conversation,
       workspaceId: ws,
       title: trimmed,
       createdAt: DateTime(2020),
@@ -62,45 +71,56 @@ class _InMemoryTodoRepo implements TodoRepository {
   }
 
   @override
-  Future<void> clearGoal(String ws, String space) async =>
-      _goals.remove(_key(ws, space));
+  Future<void> clearGoal(String ws, String conversation) async =>
+      _goals.remove(_key(ws, conversation));
 
   @override
-  Future<List<TodoItem>> list(String ws, String space) async => seen(ws, space);
+  Future<List<TodoItem>> list(String ws, String conversation) async =>
+      seen(ws, conversation);
 
   @override
-  Future<void> remove(String ws, String space, String id) async =>
-      _store[_key(ws, space)]?.removeWhere((t) => t.id == id);
+  Future<void> remove(String ws, String conversation, String id) async =>
+      _store[_key(ws, conversation)]?.removeWhere((t) => t.id == id);
 
   @override
-  Future<void> reorder(String ws, String space, List<String> ids) async {}
+  Future<void> reorder(String ws, String conversation, List<String> ids) async {}
 
   @override
   Future<void> updateStatus(
     String ws,
-    String space,
+    String conversation,
     String id,
     TodoStatus status,
   ) async => {};
 
   @override
-  Stream<List<TodoItem>> watch(String ws, String space) =>
-      Stream.value(seen(ws, space));
+  Stream<List<TodoItem>> watch(String ws, String conversation) =>
+      Stream.value(seen(ws, conversation));
 }
 
-class _FakeMessagingRepo extends Fake implements MessagingRepository {
-  _FakeMessagingRepo(this._spaces);
-  final List<Space> _spaces;
+class _FakeConversations extends Fake implements ConversationRepository {
+  _FakeConversations(this._conversations);
+  final List<Conversation> _conversations;
 
   @override
-  Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) =>
-      Stream.value(_spaces.where((c) => c.workspaceId == workspaceId).toList());
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    for (final c in _conversations) {
+      if (c.id == conversationId && c.workspaceId == workspaceId) {
+        return c;
+      }
+    }
+    return null;
+  }
 }
 
-Space _space(String id, String ws) => Space(
+Conversation _conversation(String id, String ws) => Conversation(
   id: id,
-  name: id,
   workspaceId: ws,
+  spaceId: 's-1',
+  title: id,
   createdAt: DateTime(2020),
   updatedAt: DateTime(2020),
 );
@@ -113,14 +133,14 @@ void main() {
     todos = _InMemoryTodoRepo();
     tool = TodoWriteTool(
       todoRepository: todos,
-      messagingRepository: _FakeMessagingRepo([_space('c-1', 'w-1')]),
+      conversationRepository: _FakeConversations([_conversation('c-1', 'w-1')]),
     );
   });
 
-  test('persists the full list for the (workspace, space)', () async {
+  test('persists the full list for the (workspace, conversation)', () async {
     final result = await tool.run({
       'workspace_id': 'w-1',
-      'space_id': 'c-1',
+      'conversation_id': 'c-1',
       'todos': [
         {'content': 'first', 'status': 'completed'},
         {'content': 'second', 'status': 'in_progress'},
@@ -132,13 +152,13 @@ void main() {
     expect(stored.map((t) => t.content), ['first', 'second', 'third']);
     expect(stored.first.status, TodoStatus.completed);
     expect(stored.first.workspaceId, 'w-1');
-    expect(stored.first.spaceId, 'c-1');
+    expect(stored.first.conversationId, 'c-1');
   });
 
-  test('rejects a space in a different workspace', () async {
+  test('rejects a conversation in a different workspace', () async {
     final result = await tool.run({
       'workspace_id': 'w-1',
-      'space_id': 'c-999', // not a space in w-1
+      'conversation_id': 'c-999', // not a conversation in w-1
       'todos': [
         {'content': 'x', 'status': 'pending'},
       ],
@@ -148,14 +168,14 @@ void main() {
   });
 
   test('rejects a missing workspace_id', () async {
-    final result = await tool.run({'space_id': 'c-1', 'todos': const []});
+    final result = await tool.run({'conversation_id': 'c-1', 'todos': const []});
     expect(result.isError, isTrue);
   });
 
   test('rejects an invalid status', () async {
     final result = await tool.run({
       'workspace_id': 'w-1',
-      'space_id': 'c-1',
+      'conversation_id': 'c-1',
       'todos': [
         {'content': 'x', 'status': 'bogus'},
       ],
@@ -165,7 +185,7 @@ void main() {
 
   Future<CallResult> writeList(List<(String, String)> items) => tool.run({
     'workspace_id': 'w-1',
-    'space_id': 'c-1',
+    'conversation_id': 'c-1',
     'todos': [
       for (final (content, status) in items)
         {'content': content, 'status': status},
@@ -212,7 +232,7 @@ void main() {
 
         await tool.run({
           'workspace_id': 'w-1',
-          'space_id': 'c-1',
+          'conversation_id': 'c-1',
           'todos': [
             {'id': id, 'content': 'final wording', 'status': 'in_progress'},
           ],
@@ -241,7 +261,7 @@ void main() {
 
         final result = await tool.run({
           'workspace_id': 'w-1',
-          'space_id': 'c-1',
+          'conversation_id': 'c-1',
           'todos': [
             {'id': 'never-existed', 'content': 'a', 'status': 'completed'},
           ],

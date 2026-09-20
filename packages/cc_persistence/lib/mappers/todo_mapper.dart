@@ -12,7 +12,7 @@ class TodoMapper {
   TodoItem toDomain(TodosTableData row) => TodoItem(
     id: row.id,
     workspaceId: row.workspaceId,
-    spaceId: row.spaceId,
+    conversationId: row.conversationId,
     content: row.content,
     status: TodoStatus.fromStorage(row.status),
     position: row.position,
@@ -28,7 +28,7 @@ class TodoMapper {
   TodosTableCompanion toCompanion(TodoItem item) => TodosTableCompanion(
     id: Value(item.id),
     workspaceId: Value(item.workspaceId),
-    spaceId: Value(item.spaceId),
+    conversationId: Value(item.conversationId),
     content: Value(item.content),
     status: Value(item.status.storage),
     position: Value(item.position),

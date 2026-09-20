@@ -410,7 +410,7 @@ Map<String, dynamic> orgGoalToWire(OrgGoal g) => {
 Map<String, dynamic> todoItemToWire(TodoItem t) => {
   'id': t.id,
   'workspace_id': t.workspaceId,
-  'space_id': t.spaceId,
+  'conversation_id': t.conversationId,
   'content': t.content,
   'status': t.status.storage,
   'position': t.position,
@@ -454,7 +454,7 @@ Map<String, dynamic> notificationItemStateToWire(NotificationItemState s) => {
 
 /// Maps a [ConversationGoal] to its wire shape.
 Map<String, dynamic> goalToWire(ConversationGoal g) => {
-  'space_id': g.spaceId,
+  'conversation_id': g.conversationId,
   'workspace_id': g.workspaceId,
   'title': g.title,
   'created_at': g.createdAt.toIso8601String(),
@@ -2572,12 +2572,12 @@ bool prCountsTowardNeedsMyReview(
 
 /// Maps a [PrFile] to the `PrFileDto` wire shape (`status` as `.name`,
 /// `viewer_viewed_state` as its GraphQL wire name).
-Map<String, dynamic> prFileToWire(PrFile f) => {
+Map<String, dynamic> prFileToWire(PrFile f, {bool includePatch = true}) => {
   'filename': f.filename,
   'status': f.status.name,
   'additions': f.additions,
   'deletions': f.deletions,
-  'patch': f.patch,
+  'patch': includePatch ? f.patch : '',
   'previous_filename': ?f.previousFilename,
   'viewer_viewed_state': f.viewerViewedState.wireName,
 };
@@ -2612,7 +2612,10 @@ Map<String, dynamic> prTimelineEventToWire(PrTimelineEvent e) => {
 };
 
 /// Maps a [PrCodeReviewComment] to the `PrCodeReviewCommentDto` wire shape.
-Map<String, dynamic> prCodeReviewCommentToWire(PrCodeReviewComment c) => {
+Map<String, dynamic> prCodeReviewCommentToWire(
+  PrCodeReviewComment c, {
+  bool includeHunk = true,
+}) => {
   'id': c.id,
   'body': c.body,
   'path': c.path,
@@ -2623,7 +2626,7 @@ Map<String, dynamic> prCodeReviewCommentToWire(PrCodeReviewComment c) => {
   'in_reply_to_id': ?c.inReplyToId,
   'review_id': ?c.reviewId,
   'start_line': ?c.startLine,
-  'diff_hunk': c.diffHunk,
+  'diff_hunk': includeHunk ? c.diffHunk : '',
   'line': ?c.line,
   'original_line': ?c.originalLine,
   'thread_id': ?c.threadId,

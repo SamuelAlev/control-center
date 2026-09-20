@@ -17,9 +17,9 @@ class _TeamHeader extends StatelessWidget {
     final fallback = '@$organization/$slug';
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: t.bgSecondary,
-        border: Border.all(color: t.borderSecondary),
-        borderRadius: AppRadii.brSm,
+        color: t.panel,
+        border: Border.all(color: t.borderPrimary),
+        borderRadius: AppRadii.brLg,
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.xl),

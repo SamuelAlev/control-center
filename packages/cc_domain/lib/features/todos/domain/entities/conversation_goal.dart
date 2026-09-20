@@ -1,16 +1,16 @@
-/// A single working goal for a space.
+/// A single working goal for a conversation.
 ///
-/// A space has at most ONE goal at a time (the store is keyed by [spaceId]).
-/// Set via `/goal`, it is the objective the space's todos work toward — the
-/// todos render nested beneath it in the General pane. It is deliberately NOT
-/// a todo row (the agent's `todo_write` replaces the whole todo list and would
-/// clobber it) and NOT a field on the space row itself (that rides the
-/// messaging sync/serialization backbone). Scoped to exactly one workspace
-/// ([workspaceId], the isolation boundary).
+/// A conversation has at most ONE goal at a time (the store is keyed by
+/// [conversationId]). Set via `/goal`, it is the objective the conversation's
+/// todos work toward — the todos render nested beneath it in the General pane.
+/// It is deliberately NOT a todo row (the agent's `todo_write` replaces the
+/// whole todo list and would clobber it) and NOT a field on the conversation
+/// row itself (that rides the messaging sync/serialization backbone). Scoped to
+/// exactly one workspace ([workspaceId], the isolation boundary).
 class ConversationGoal {
   /// Creates a [ConversationGoal].
   ConversationGoal({
-    required this.spaceId,
+    required this.conversationId,
     required this.workspaceId,
     required this.title,
     required this.createdAt,
@@ -22,13 +22,13 @@ class ConversationGoal {
     if (workspaceId.isEmpty) {
       throw ArgumentError('workspaceId must not be empty');
     }
-    if (spaceId.isEmpty) {
-      throw ArgumentError('spaceId must not be empty');
+    if (conversationId.isEmpty) {
+      throw ArgumentError('conversationId must not be empty');
     }
   }
 
-  /// Owning space — the primary key (one goal per space).
-  final String spaceId;
+  /// Owning conversation — the primary key (one goal per conversation).
+  final String conversationId;
 
   /// Owning workspace (the isolation boundary).
   final String workspaceId;
@@ -44,14 +44,14 @@ class ConversationGoal {
 
   /// Returns a copy with the given fields replaced.
   ConversationGoal copyWith({
-    String? spaceId,
+    String? conversationId,
     String? workspaceId,
     String? title,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return ConversationGoal(
-      spaceId: spaceId ?? this.spaceId,
+      conversationId: conversationId ?? this.conversationId,
       workspaceId: workspaceId ?? this.workspaceId,
       title: title ?? this.title,
       createdAt: createdAt ?? this.createdAt,
@@ -64,7 +64,7 @@ class ConversationGoal {
       identical(this, other) ||
       other is ConversationGoal &&
           runtimeType == other.runtimeType &&
-          spaceId == other.spaceId &&
+          conversationId == other.conversationId &&
           workspaceId == other.workspaceId &&
           title == other.title &&
           createdAt == other.createdAt &&
@@ -72,5 +72,5 @@ class ConversationGoal {
 
   @override
   int get hashCode =>
-      Object.hash(spaceId, workspaceId, title, createdAt, updatedAt);
+      Object.hash(conversationId, workspaceId, title, createdAt, updatedAt);
 }

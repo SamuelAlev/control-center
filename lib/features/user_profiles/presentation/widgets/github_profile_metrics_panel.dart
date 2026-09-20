@@ -4,6 +4,7 @@ import 'dart:ui' as ui show TextDirection;
 import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/shared/widgets/charts/chart_hover.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -87,10 +88,6 @@ class _MetricsBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MetricsHeader(
-          title: l10n.profileDeliveryMetrics,
-          sample: l10n.profileMetricsSample(metrics.analyzedPullRequests),
-        ),
         _OutcomeLedger(facts: facts),
         _ChartsGrid(
           distribution: _MergeDistributionChart(
@@ -140,62 +137,6 @@ class _MetricsBody extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _MetricsHeader extends StatelessWidget {
-  const _MetricsHeader({required this.title, required this.sample});
-
-  final String title;
-  final String sample;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: t.rail,
-        border: Border(bottom: BorderSide(color: t.borderSecondary)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        child: Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: AppSpacing.lg,
-          runSpacing: AppSpacing.sm,
-          children: [
-            Text(
-              title,
-              style: CcTypography.title.copyWith(color: t.textPrimary),
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: t.bgTertiary,
-                borderRadius: AppRadii.brSm,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Text(
-                  sample,
-                  style: CcFonts.code(
-                    textStyle: CcTypography.caption.copyWith(
-                      color: t.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

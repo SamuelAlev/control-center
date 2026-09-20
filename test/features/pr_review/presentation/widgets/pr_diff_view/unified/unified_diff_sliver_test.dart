@@ -1,4 +1,6 @@
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/diff_overflow_mode.dart';
+import 'package:control_center/features/pr_review/presentation/utils/diff_isolate_worker.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_slot.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/diff_structure_store.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
@@ -370,5 +372,112 @@ void main() {
 
   test('kDiffSplitGutterWidth is positive', () {
     expect(kDiffSplitGutterWidth, greaterThan(0));
+  });
+
+  // ── Lazy structure parse vs slot offsets ────────────────────────
+
+  group('lazy structure parse during layout', () {
+    setUpAll(() => DiffWorkerPool.debugForceInline = true);
+    tearDownAll(() => DiffWorkerPool.debugForceInline = false);
+
+    // A hunk that does NOT start at line 1: the parser synthesizes a leading
+    // "Show lines 1-4" expand-gap row (and the document appends an EOF gap),
+    // so the parsed display-row count exceeds the pre-parse newline estimate
+    // and the parse moves every later file's offset.
+    const patch = '@@ -5,3 +5,4 @@\n a\n+b\n c\n d\n';
+
+    PrFile file(String name) => PrFile(
+      filename: name,
+      status: PrFileStatus.modified,
+      additions: 1,
+      deletions: 0,
+      patch: patch,
+    );
+
+    testWidgets(
+        'slot children track live document offsets when a parse moves files '
+        '(host only eagerly parses the opening file)',
+      (tester) async {
+        final doc = PrDiffDocument(lineHeight: 20, headerHeight: 32)
+          ..setFiles([file('a.dart'), file('b.dart')]);
+        final store = DiffStructureStore(document: doc, maxTokenFiles: 8);
+
+        // Snapshot slot offsets from the ESTIMATED heights, before any parse —
+        // exactly what the host's slot list holds on a PR over the eager-parse
+        // budget.
+        final staleOffsetOfB = doc.offsetOfFile(1);
+        final slots = [
+          DiffSlot(
+            kind: DiffSlotKind.header,
+            key: 'hdr:a',
+            fileIndex: 0,
+            offset: doc.offsetOfFile(0),
+            height: 32,
+          ),
+          DiffSlot(
+            kind: DiffSlotKind.header,
+            key: 'hdr:b',
+            fileIndex: 1,
+            offset: staleOffsetOfB,
+            height: 32,
+          ),
+        ];
+
+        var geometryMoved = 0;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: CustomScrollView(
+              slivers: [
+                UnifiedDiffSliver(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => SizedBox(
+                      key: ValueKey(slots[i].key),
+                      height: slots[i].height,
+                    ),
+                    childCount: slots.length,
+                  ),
+                  document: doc,
+                  store: store,
+                  config: const UnifiedDiffPaintConfig(
+                    brightness: Brightness.light,
+                    baseStyle: TextStyle(fontSize: 13),
+                    gutterBgColor: Color(0xFFF0F0F0),
+                    gutterBorderColor: Color(0xFFDDDDDD),
+                    expandGapBgColor: Color(0xFFEEEEEE),
+                    expandGapBorderColor: Color(0xFFCCCCCC),
+                    expandGapTextColor: Color(0xFF666666),
+                    commentHighlightColor: Color(0x1A0000FF),
+                    commentHighlightActiveColor: Color(0x330000FF),
+                    revision: 0,
+                  ),
+                  slots: slots,
+                  onLayoutModeChanged: () => geometryMoved++,
+                ),
+              ],
+            ),
+          ),
+        );
+
+        // The first layout parsed the visible files, replacing estimated
+        // heights with exact ones.
+        expect(doc.structureOf(0), isNotNull);
+        final liveOffsetOfB = doc.offsetOfFile(1);
+        // Fixture guard: the parse really moved file b — without drift this
+        // test asserts nothing.
+        expect(liveOffsetOfB, isNot(equals(staleOffsetOfB)));
+
+        // The header child is positioned at the document's LIVE offset, not
+        // the slot snapshot: positioning by the snapshot painted headers
+        // mid-file with a blank band at the real file boundary.
+        final headerTop = tester
+            .getTopLeft(find.byKey(const ValueKey('hdr:b')))
+            .dy;
+        expect(headerTop, moreOrLessEquals(liveOffsetOfB, epsilon: 0.01));
+
+        // And the host was asked (post-frame) to rebuild its slot list
+        // against the new geometry.
+        expect(geometryMoved, greaterThan(0));
+      },
+    );
   });
 }

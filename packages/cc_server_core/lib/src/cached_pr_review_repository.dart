@@ -875,11 +875,17 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   /// Watches the list of changed files for a PR.
   @override
-  Stream<List<PrFile>> watchFiles(int prNumber) async* {
+  Stream<List<PrFile>> watchFiles(
+    int prNumber, {
+    bool includePatches = true,
+  }) async* {
     await for (final load in watchFilesLoad(prNumber)) {
-      if (load.files.isNotEmpty) {
-        yield load.files;
+      if (load.files.isEmpty) {
+        continue;
       }
+      yield includePatches
+          ? load.files
+          : [for (final f in load.files) f.copyWith(patch: '')];
     }
   }
 
@@ -1444,8 +1450,11 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
   /// Watches review comments for a PR, enriching reactions with per-user state.
   @override
-  Stream<List<PrCodeReviewComment>> watchReviewComments(int prNumber) {
-    return _swr<List<PrCodeReviewComment>>(
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  }) {
+    final raw = _swr<List<PrCodeReviewComment>>(
       kind: _Kind.prReviewComments,
       key: _prKey(prNumber),
       reactToPr: prNumber,
@@ -1471,6 +1480,12 @@ class CachedPrReviewRepository implements PrReviewRepository {
         fresh.map(PrCacheCodec.reviewCommentToCache).toList(growable: false),
         large: true,
       ),
+    );
+    if (includeHunks) {
+      return raw;
+    }
+    return raw.map(
+      (comments) => [for (final c in comments) c.copyWith(diffHunk: '')],
     );
   }
 

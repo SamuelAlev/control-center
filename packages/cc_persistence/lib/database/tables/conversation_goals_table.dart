@@ -1,19 +1,22 @@
-import 'package:cc_persistence/database/tables/spaces.dart';
+import 'package:cc_persistence/database/tables/conversations.dart';
 import 'package:drift/drift.dart';
 
-/// Drift table for per-space working goals.
+/// Drift table for per-conversation working goals.
 ///
-/// A space has at most ONE goal — [spaceId] is the primary key, so setting a
-/// new goal replaces the prior one. The goal belongs to exactly one workspace
-/// ([workspaceId], the isolation boundary); every read filters by both.
-/// Deleting a space or workspace cascades its goal. Isolated from the `todos`
-/// table on purpose: the agent's `todo_write` replaces the whole todo list and
-/// would otherwise clobber the goal.
+/// A conversation has at most ONE goal — [conversationId] is the primary key,
+/// so setting a new goal replaces the prior one. The goal belongs to exactly
+/// one workspace ([workspaceId], the isolation boundary); every read filters
+/// by both. Deleting a conversation or workspace cascades its goal. Isolated
+/// from the `todos` table on purpose: the agent's `todo_write` replaces the
+/// whole todo list and would otherwise clobber the goal.
 @TableIndex(name: 'idx_conversation_goals_workspaceId', columns: {#workspaceId})
 class ConversationGoalsTable extends Table {
-  /// Owning space — one goal per space.
-  TextColumn get spaceId =>
-      text().references(SpacesTable, #id, onDelete: KeyAction.cascade)();
+  /// Owning conversation — one goal per conversation.
+  TextColumn get conversationId => text().references(
+    ConversationsTable,
+    #id,
+    onDelete: KeyAction.cascade,
+  )();
 
   /// Owning workspace.
   TextColumn get workspaceId => text()();
@@ -31,5 +34,5 @@ class ConversationGoalsTable extends Table {
   String get tableName => 'conversation_goals';
 
   @override
-  Set<Column> get primaryKey => {spaceId};
+  Set<Column> get primaryKey => {conversationId};
 }

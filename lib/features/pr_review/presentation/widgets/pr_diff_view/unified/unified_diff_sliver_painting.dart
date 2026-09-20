@@ -7,8 +7,7 @@ part of 'unified_diff_sliver.dart';
 
 /// Layout slot management, sticky-header computation and code-row painting
 /// for the unified diff sliver render object.
-extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
-  /// Schedules a post-frame callback that reports the current layout mode.
+extension _UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
   void scheduleLayoutModeTick() {
     if (_layoutModeTickScheduled) {
       return;
@@ -18,6 +17,19 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
       _layoutModeTickScheduled = false;
       if (attached) {
         onLayoutModeChanged?.call();
+      }
+    });
+  }
+
+  void scheduleDeferredStructureParse() {
+    if (_deferredParseScheduled) {
+      return;
+    }
+    _deferredParseScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _deferredParseScheduled = false;
+      if (attached) {
+        markNeedsLayout();
       }
     });
   }
@@ -46,7 +58,6 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return math.max(0.0, crossAxisExtent - kDiffGutterWidth);
   }
 
-  /// Number of currently laid-out child boxes.
   int laidOutCount() {
     var count = 0;
     var child = firstChild;
@@ -57,13 +68,52 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return count;
   }
 
-  /// Writes [index]'s slot offset into [child]'s parent data.
   void setChildOffset(RenderBox child, int index) {
     (child.parentData! as SliverMultiBoxAdaptorParentData).layoutOffset =
-        slots[index].offset;
+        liveSlotOffset(index);
   }
 
-  /// Tight or loose constraints for slot [index] at [crossAxisExtent].
+  /// Live document offset of slot [index].
+  ///
+  /// A slot's [DiffSlot.offset] is a snapshot taken when the host built the
+  /// list. On a large PR structure parses land lazily during layout, replacing
+  /// estimated file heights with exact ones — which moves every later file —
+  /// while code rows always paint from the document's live offsets. Positioning
+  /// children by the snapshot painted headers mid-file with a blank band at the
+  /// real file boundary until an unrelated rebuild, so every slot offset the
+  /// sliver acts on is re-derived from the document instead. Intra-file
+  /// geometry is exact at build time (a file only gets body slots once parsed),
+  /// so each slot kind can be recomputed directly.
+  double liveSlotOffset(int index) {
+    final slot = slots[index];
+    switch (slot.kind) {
+      case DiffSlotKind.header:
+        return _document.offsetOfFile(slot.fileIndex);
+      case DiffSlotKind.preview:
+        return _document.offsetOfFile(slot.fileIndex) + _document.headerHeight;
+      case DiffSlotKind.gap:
+        return _document.offsetOfLine(slot.fileIndex, slot.anchorDisplayLine);
+      case DiffSlotKind.comment:
+      case DiffSlotKind.composer:
+        final int f = slot.fileIndex;
+        final int d = slot.anchorDisplayLine;
+        double y =
+            _document.offsetOfLine(f, d) +
+            _document.visualRowsOf(f, d) * _document.lineHeight;
+        // The composer stacks under a thread anchored at the same line,
+        // mirroring the host's emission order (thread first, composer after).
+        if (slot.kind == DiffSlotKind.composer && index > 0) {
+          final prev = slots[index - 1];
+          if (prev.kind == DiffSlotKind.comment &&
+              prev.fileIndex == f &&
+              prev.anchorDisplayLine == d) {
+            y += prev.height;
+          }
+        }
+        return y;
+    }
+  }
+
   BoxConstraints constraintsFor(int index, double crossAxisExtent) {
     final slot = slots[index];
     switch (slot.kind) {
@@ -84,13 +134,15 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     }
   }
 
-  /// First slot index whose `offset >= value` (lower bound).
+  /// First slot index whose live offset is `>= value` (lower bound). Searches
+  /// [liveSlotOffset], never the built-time snapshot: slots are emitted in
+  /// document order, so live offsets stay sorted even after parses moved files.
   int firstSlotAtOrAfter(double value) {
     var lo = 0;
     var hi = slots.length;
     while (lo < hi) {
       final mid = (lo + hi) >> 1;
-      if (slots[mid].offset < value) {
+      if (liveSlotOffset(mid) < value) {
         lo = mid + 1;
       } else {
         hi = mid;
@@ -108,7 +160,7 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     var first = atOrAfterStart;
     if (atOrAfterStart > 0) {
       final prev = slots[atOrAfterStart - 1];
-      if (prev.offset + prev.height > start) {
+      if (liveSlotOffset(atOrAfterStart - 1) + prev.height > start) {
         first = atOrAfterStart - 1;
       }
     }
@@ -119,7 +171,6 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return (first: first, last: math.min(last, slots.length - 1));
   }
 
-  /// Lays out slots `first` through `last` and collects children outside that range.
   void layoutSlotRange(int first, int last, double crossAxisExtent) {
     if (firstChild != null) {
       final curFirst = indexOf(firstChild!);
@@ -130,7 +181,7 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     }
 
     if (firstChild == null) {
-      if (!addInitialChild(index: first, layoutOffset: slots[first].offset)) {
+      if (!addInitialChild(index: first, layoutOffset: liveSlotOffset(first))) {
         return;
       }
       firstChild!.layout(
@@ -202,7 +253,6 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
         : -1;
   }
 
-  /// Updates sticky-header bookkeeping from [constraints].
   void computeSticky(SliverConstraints constraints) {
     _stickyFile = _document.fileAtOffset(constraints.scrollOffset);
     _stickySlotIndex = headerSlotOf(_stickyFile);
@@ -233,7 +283,6 @@ extension UnifiedDiffSliverPainting on RenderUnifiedDiffSliver {
     return pinnedScreenY - originY;
   }
 
-  /// Builds the painter used for unified/split code rows.
   UnifiedRowPainter makeRowPainter({
     required double gutterWidth,
     required bool hideOldGutter,

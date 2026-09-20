@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
@@ -28,13 +30,13 @@ import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/utils/relative_time.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
-import 'package:control_center/shared/widgets/github_markdown_body.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/github_user_hover_target.dart';
 import 'package:control_center/shared/widgets/github_user_mention.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:super_sliver_list/super_sliver_list.dart';
 
 /// The Overview tab's conversation feed, rendered under the PR description:
 /// a chronological timeline of the opened event, review requests, label
@@ -42,8 +44,12 @@ import 'package:go_router/go_router.dart';
 /// reviewer wrote a summary), top-level conversation comments (bots included)
 /// and pushed commits.
 ///
-/// Inline code comments deliberately do NOT appear here — they stay anchored
-/// to their diff lines in the Diff tab.
+/// Builds as a sliver so off-screen cards are not parsed. Each inline
+/// conversation is its own sliver child (a review with twenty threads
+/// must not build all twenty when the review row enters the viewport).
+/// Uses [SuperSliverList] with eager extent precalculation so the Overview
+/// scrollbar thumb stays put while scrolling. Unresolved conversations
+/// start open; resolved ones start collapsed.
 class PrActivityTimeline extends ConsumerStatefulWidget {
   /// Creates a [PrActivityTimeline].
   const PrActivityTimeline({
@@ -95,7 +101,12 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
   bool _isResolved(ServerReviewThread t) =>
       _resolvedOverride[t.id] ?? t.isResolved;
 
+  /// Open unless the conversation is resolved — same default as the Diff.
   bool _isOpen(ServerReviewThread t) => _open[t.id] ?? !_isResolved(t);
+
+  /// Measures every row's real height so the Overview thumb does not resize
+  /// as SuperSliverList trades estimates for laid-out cards.
+  final _precalcPolicy = _AlwaysPrecalculateExtents();
 
   /// Reveals the conversation a reply answers: expands it if it was collapsed
   /// (a resolved one arrives collapsed) and scrolls it into view.
@@ -172,42 +183,6 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
     widget.onOpenFileInDiff?.call(i >= 0 ? i : 0);
   }
 
-  /// The conversations a review started, or null when it started none.
-  Widget? _threadsHost(
-    List<ServerReviewThread> threads,
-    List<PrFile> orderedFiles,
-  ) {
-    if (threads.isEmpty) {
-      return null;
-    }
-    return _ReviewCodeThreads(
-      threads: threads,
-      controller: ref.watch(
-        prInlineCommentsControllerProvider(widget.prRef).notifier,
-      ),
-      isOpen: _isOpen,
-      isResolved: _isResolved,
-      isResolveBusy: (t) => _resolveInFlight.contains(t.id),
-      focusedThreadId: _focusedThreadId,
-      keyFor: _keyFor,
-      onToggleCollapsed: (t) => setState(() => _open[t.id] = !_isOpen(t)),
-      onSetResolved: _setResolved,
-      onOpenInDiff: (t) => _openThreadInDiff(orderedFiles, t),
-    );
-  }
-
-  /// The replies a review posted into conversations it did not start, or null.
-  Widget? _repliesHost(List<ServerReviewReply> replies, PullRequest pr) {
-    if (replies.isEmpty) {
-      return null;
-    }
-    return _ReviewReplyRefs(
-      replies: replies,
-      repoFullName: pr.repoFullName,
-      onFollow: (reply) => _revealThread(reply.thread.id),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final pr = widget.pr;
@@ -225,10 +200,10 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
         ref.watch(prCommitsProvider(prRef)).value ?? const <PrCommit>[];
     final events = ref.watch(prTimelineEventsProvider(prRef)).value ?? const [];
     final codeComments =
-        ref.watch(prReviewCommentsProvider(prRef)).value ??
+        ref.watch(prReviewCommentIndexProvider(prRef)).value ??
         const <PrCodeReviewComment>[];
     final orderedFiles = sortFilesByTreeOrder(
-      ref.watch(prFilesProvider(prRef)).value ?? const <PrFile>[],
+      ref.watch(prFileIndexProvider(prRef)).value ?? const <PrFile>[],
     );
 
     // Conversations, keyed by the review that STARTED each one.
@@ -258,54 +233,101 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
       events: events,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Text(
-            l10n.activity,
-            style: CcTypography.body.copyWith(
-              fontWeight: FontWeight.w600,
-              color: t.textPrimary,
+    // One sliver child per conversation so a review that started twenty
+    // threads does not build (and markdown-parse) all twenty the moment
+    // its verdict row enters the cache extent.
+    final rows = <_FeedRow>[];
+    for (final entry in entries) {
+      if (entry is PrReviewEntry) {
+        final threads = threadsByReview[entry.review.id] ?? const [];
+        final replies = repliesByReview[entry.review.id] ?? const [];
+        rows.add(_EntryRow(entry));
+        if (replies.isNotEmpty) {
+          rows.add(_RepliesRow(replies));
+        }
+        if (threads.isNotEmpty) {
+          rows.add(_ThreadsIntroRow(entry.review.id, threads.length));
+          for (final thread in threads) {
+            rows.add(_ThreadRow(thread));
+          }
+        }
+      } else {
+        rows.add(_EntryRow(entry));
+      }
+    }
+
+    final controller = ref.watch(
+      prInlineCommentsControllerProvider(prRef).notifier,
+    );
+
+    // One SuperSliverList owns the heading and every feed row so a single
+    // extent table is the scrollbar's source of truth. A SliverMainAxisGroup
+    // plus a lazy list let the heading sliver and the list disagree.
+    return SuperSliverList.builder(
+      extentPrecalculationPolicy: _precalcPolicy,
+      itemCount: rows.length + 1,
+      extentEstimation: (index, crossAxis) {
+        if (index == null) {
+          return 0;
+        }
+        if (index <= 0) {
+          return _kActivityHeadingExtent;
+        }
+        final rowIndex = index - 1;
+        if (rowIndex >= rows.length) {
+          return _kEventRowExtent;
+        }
+        return _estimateActivityRow(
+          rows[rowIndex],
+          isOpen: _isOpen,
+          width: crossAxis,
+        );
+      },
+      findChildIndexCallback: (key) {
+        if (key is! ValueKey<String>) {
+          return null;
+        }
+        if (key.value == _kActivityHeadingKey) {
+          return 0;
+        }
+        final i = rows.indexWhere((r) => _activityRowKey(r) == key.value);
+        return i < 0 ? null : i + 1;
+      },
+      itemBuilder: (context, i) {
+        if (i == 0) {
+          return Padding(
+            key: const ValueKey<String>(_kActivityHeadingKey),
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              l10n.activity,
+              style: CcTypography.body.copyWith(
+                fontWeight: FontWeight.w600,
+                color: t.textPrimary,
+              ),
             ),
-          ),
-        ),
-        for (final (i, entry) in entries.indexed)
-          _TimelineTile(
-            isLast: i == entries.length - 1,
-            leading: _leadingFor(entry),
-            child: switch (entry) {
+          );
+        }
+        final row = rows[i - 1];
+        return _TimelineTile(
+          key: ValueKey<String>(_activityRowKey(row)),
+          isLast: i == rows.length,
+          leading: switch (row) {
+            _EntryRow(:final entry) => _leadingFor(entry),
+            _ => const SizedBox(width: 24, height: 24),
+          },
+          child: switch (row) {
+            _EntryRow(:final entry) => switch (entry) {
               PrOpenedEntry() => _OpenedRow(entry: entry),
               PrReviewRequestEntry() => _ReviewRequestRow(entry: entry),
               PrLabelChangeEntry() => _LabelChangeRow(entry: entry),
               PrCommitEntry() => _CommitRow(entry: entry),
               PrCommitGroupEntry() => _CommitGroupRow(entry: entry),
               PrReviewEntry() when entry.review.body.trim().isEmpty =>
-                _ReviewVerdictRow(
-                  entry: entry,
-                  threads: _threadsHost(
-                    threadsByReview[entry.review.id] ?? const [],
-                    orderedFiles,
-                  ),
-                  replies: _repliesHost(
-                    repliesByReview[entry.review.id] ?? const [],
-                    pr,
-                  ),
-                ),
+                _ReviewVerdictRow(entry: entry),
               PrReviewEntry() => _ReviewCard(
                 prRef: prRef,
                 entry: entry,
                 pr: pr,
-                threads: _threadsHost(
-                  threadsByReview[entry.review.id] ?? const [],
-                  orderedFiles,
-                ),
-                replies: _repliesHost(
-                  repliesByReview[entry.review.id] ?? const [],
-                  pr,
-                ),
               ),
               PrCommentEntry() => _CommentCard(
                 entry: entry,
@@ -313,8 +335,39 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline> {
                 prRef: prRef,
               ),
             },
-          ),
-      ],
+            _RepliesRow(:final replies) => _ReviewReplyRefs(
+              replies: replies,
+              repoFullName: pr.repoFullName,
+              onFollow: (reply) => _revealThread(reply.thread.id),
+            ),
+            _ThreadsIntroRow(:final count) => Padding(
+              padding: const EdgeInsetsDirectional.only(bottom: 6, start: 2),
+              child: Text(
+                l10n.prTimelineCodeComments(count),
+                style: CcTypography.caption.copyWith(
+                  color: t.textTertiary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            _ThreadRow(:final thread) => _TimelineThreadCard(
+              key: _keyFor(thread.id),
+              thread: thread,
+              controller: controller,
+              collapsed: !_isOpen(thread),
+              resolved: _isResolved(thread),
+              resolveBusy: _resolveInFlight.contains(thread.id),
+              focused: _focusedThreadId == thread.id,
+              onToggleCollapsed: () =>
+                  setState(() => _open[thread.id] = !_isOpen(thread)),
+              onSetResolved: (v) => _setResolved(thread, v),
+              onOpenInDiff: thread.isOutdated
+                  ? null
+                  : () => _openThreadInDiff(orderedFiles, thread),
+            ),
+          },
+        );
+      },
     );
   }
 
@@ -383,6 +436,7 @@ class _Avatar extends StatelessWidget {
 /// which cannot compute a dry layout (throws at runtime).
 class _TimelineTile extends StatelessWidget {
   const _TimelineTile({
+    super.key,
     required this.isLast,
     required this.leading,
     required this.child,
@@ -925,19 +979,9 @@ class _CommitGroupRowState extends ConsumerState<_CommitGroupRow> {
 /// A submitted review with no summary text: one verdict sentence, colored by
 /// state and paired with a shape (the gutter icon) per the status rule.
 class _ReviewVerdictRow extends StatelessWidget {
-  const _ReviewVerdictRow({
-    required this.entry,
-    required this.threads,
-    required this.replies,
-  });
+  const _ReviewVerdictRow({required this.entry});
 
   final PrReviewEntry entry;
-
-  /// The conversations this review started, already built. Null when none.
-  final Widget? threads;
-
-  /// The replies it posted into conversations it did not start. Null when none.
-  final Widget? replies;
 
   @override
   Widget build(BuildContext context) {
@@ -950,97 +994,9 @@ class _ReviewVerdictRow extends StatelessWidget {
       _ => l10n.prTimelineReviewed(author),
     };
     final mentions = [_NamedMention.maybeUser(entry.review.author, author)];
-    final row = _EventSentence(
+    return _EventSentence(
       spans: _eventSpans(context, sentence, mentions),
       timestamp: entry.review.submittedAt,
-    );
-    if (threads == null && replies == null) {
-      return row;
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [row, ?replies, ?threads],
-    );
-  }
-}
-
-/// A review's inline conversations, rendered under its timeline row.
-///
-/// This used to be a bare "N code comments" button that jumped to the Diff
-/// tab. That is not enough: a comment whose line no longer exists is
-/// **outdated**, cannot be anchored to a diff row and so is unreachable from
-/// the Diff tab at all — the timeline is the only place it can still be read.
-/// So each conversation renders here in full: what it was left against, the
-/// whole reply chain, a reply box and resolve, exactly as in the diff.
-class _ReviewCodeThreads extends StatelessWidget {
-  const _ReviewCodeThreads({
-    required this.threads,
-    required this.controller,
-    required this.isOpen,
-    required this.isResolved,
-    required this.isResolveBusy,
-    required this.focusedThreadId,
-    required this.keyFor,
-    required this.onToggleCollapsed,
-    required this.onSetResolved,
-    required this.onOpenInDiff,
-  });
-
-  /// Conversations started by this review, oldest first.
-  final List<ServerReviewThread> threads;
-  final PrInlineCommentsController controller;
-
-  // State lives on the timeline, not here: following a reply has to open a
-  // conversation that may sit under a different review entry.
-  final bool Function(ServerReviewThread) isOpen;
-  final bool Function(ServerReviewThread) isResolved;
-  final bool Function(ServerReviewThread) isResolveBusy;
-  final String? focusedThreadId;
-  final GlobalKey Function(String threadId) keyFor;
-  final ValueChanged<ServerReviewThread> onToggleCollapsed;
-  final Future<void> Function(ServerReviewThread, bool) onSetResolved;
-
-  /// Jumps the Diff tab to a conversation's file. Not offered for an outdated
-  /// one — there is no row left to jump to.
-  final ValueChanged<ServerReviewThread> onOpenInDiff;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsetsDirectional.only(bottom: 6, start: 2),
-            child: Text(
-              l10n.prTimelineCodeComments(threads.length),
-              style: CcTypography.caption.copyWith(
-                color: context.ds.textTertiary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          for (final thread in threads)
-            _TimelineThreadCard(
-              key: keyFor(thread.id),
-              thread: thread,
-              controller: controller,
-              collapsed: !isOpen(thread),
-              resolved: isResolved(thread),
-              resolveBusy: isResolveBusy(thread),
-              focused: focusedThreadId == thread.id,
-              onToggleCollapsed: () => onToggleCollapsed(thread),
-              onSetResolved: (v) => onSetResolved(thread, v),
-              onOpenInDiff: thread.isOutdated
-                  ? null
-                  : () => onOpenInDiff(thread),
-            ),
-        ],
-      ),
     );
   }
 }
@@ -1051,7 +1007,7 @@ class _ReviewCodeThreads extends StatelessWidget {
 /// person answered someone, and their words live in a thread anchored under an
 /// earlier entry. Each row shows what they said and follows back to the
 /// discussion — opening it if it was collapsed or resolved, and scrolling to it.
-class _ReviewReplyRefs extends ConsumerWidget {
+class _ReviewReplyRefs extends StatelessWidget {
   const _ReviewReplyRefs({
     required this.replies,
     required this.repoFullName,
@@ -1063,7 +1019,7 @@ class _ReviewReplyRefs extends ConsumerWidget {
   final ValueChanged<ServerReviewReply> onFollow;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     return Padding(
@@ -1119,12 +1075,10 @@ class _ReviewReplyRefs extends ConsumerWidget {
                   ),
                   Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                    child: GitHubMarkdownBody(
-                      data: reply.comment.body,
-                      repoOwner: repoFullName.split('/').firstOrNull,
-                      repoName: repoFullName.split('/').lastOrNull,
-                      compact: true,
-                      codeFontFamily: ref.watch(codeFontFamilyProvider),
+                    child: PrBodyMarkdown(
+                      body: reply.comment.body,
+                      repoFullName: repoFullName,
+                      deferParse: false,
                     ),
                   ),
                 ],
@@ -1288,19 +1242,11 @@ class _ReviewCard extends ConsumerWidget {
     required this.entry,
     required this.pr,
     required this.prRef,
-    required this.threads,
-    required this.replies,
   });
 
   final PrReviewEntry entry;
   final PullRequest pr;
   final PrRef prRef;
-
-  /// The conversations this review started, already built. Null when none.
-  final Widget? threads;
-
-  /// The replies it posted into conversations it did not start. Null when none.
-  final Widget? replies;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1337,14 +1283,7 @@ class _ReviewCard extends ConsumerWidget {
         ),
       ),
     );
-    if (threads == null && replies == null) {
-      return card;
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [card, ?replies, ?threads],
-    );
+    return card;
   }
 }
 
@@ -1522,6 +1461,7 @@ class _ActivityCard extends ConsumerWidget {
             child: PrBodyMarkdown(
               body: body,
               repoFullName: repoFullName,
+              deferParse: false,
               onTaskCheckboxChanged: onTaskCheckboxChanged,
             ),
           ),
@@ -1622,6 +1562,128 @@ class _ClickableAuthorName extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// One virtualised sliver child in the activity feed. A review's
+/// conversations are unbundled so only on-screen cards build.
+sealed class _FeedRow {
+  const _FeedRow();
+}
+
+class _EntryRow extends _FeedRow {
+  const _EntryRow(this.entry);
+  final PrActivityEntry entry;
+}
+
+class _RepliesRow extends _FeedRow {
+  const _RepliesRow(this.replies);
+  final List<ServerReviewReply> replies;
+}
+
+class _ThreadsIntroRow extends _FeedRow {
+  const _ThreadsIntroRow(this.reviewId, this.count);
+  final int reviewId;
+  final int count;
+}
+
+class _ThreadRow extends _FeedRow {
+  const _ThreadRow(this.thread);
+  final ServerReviewThread thread;
+}
+
+/// Tile chrome: 3px optical pad + 16px gap under each entry.
+const double _kTileChrome = 19;
+
+/// "Activity" heading above the feed.
+const double _kActivityHeadingExtent = 36;
+
+/// Stable key for the heading row in the SuperSliverList.
+const String _kActivityHeadingKey = 'activity-heading';
+
+/// One caption event sentence (opened / requested / committed / verdict).
+const double _kEventRowExtent = 40;
+
+/// Collapsed conversation: file header + one-line preview.
+const double _kCollapsedThreadExtent = 92;
+
+/// Average UI-font advance used to estimate wrapped prose.
+const double _kEstimateCharWidth = 7.4;
+
+String _activityRowKey(_FeedRow row) {
+  return switch (row) {
+    _EntryRow(:final entry) => switch (entry) {
+      PrOpenedEntry() => 'opened',
+      PrReviewRequestEntry() => 'req-${entry.timestamp}',
+      PrLabelChangeEntry() => 'lbl-${entry.timestamp}',
+      PrCommitEntry(:final commit) => 'c-${commit.sha}',
+      PrCommitGroupEntry(:final commits) => 'cg-${commits.first.sha}',
+      PrReviewEntry(:final review) => 'r-${review.id}',
+      PrCommentEntry(:final comment) => 'ic-${comment.id}',
+    },
+    _RepliesRow(:final replies) => 'replies-${replies.first.comment.id}',
+    _ThreadsIntroRow(:final reviewId) => 'intro-$reviewId',
+    _ThreadRow(:final thread) => thread.id,
+  };
+}
+
+double _estimateActivityRow(
+  _FeedRow row, {
+  required bool Function(ServerReviewThread) isOpen,
+  required double width,
+}) {
+  return switch (row) {
+    _EntryRow(:final entry) => switch (entry) {
+      PrOpenedEntry() ||
+      PrReviewRequestEntry() ||
+      PrLabelChangeEntry() ||
+      PrCommitEntry() ||
+      PrCommitGroupEntry() => _kEventRowExtent,
+      PrReviewEntry() when entry.review.body.trim().isEmpty => _kEventRowExtent,
+      PrReviewEntry() => _estimateMarkdownCard(entry.review.body, width),
+      PrCommentEntry() => _estimateMarkdownCard(entry.comment.body, width),
+    },
+    _RepliesRow(:final replies) => replies.length * 88.0 + _kTileChrome,
+    _ThreadsIntroRow() => 28,
+    _ThreadRow(:final thread) =>
+      isOpen(thread)
+          ? _estimateOpenThread(thread, width)
+          : _kCollapsedThreadExtent,
+  };
+}
+
+double _estimateMarkdownCard(String body, double width) {
+  final charsPerLine = math.max(24, width ~/ _kEstimateCharWidth);
+  final lines = math.max(1, '\n'.allMatches(body).length + 1);
+  final wrapped = (body.length / charsPerLine).ceil().clamp(1, 24);
+  final prose = math.max(lines, wrapped) * 18.0;
+  return (52 + prose + _kTileChrome).clamp(72, 560);
+}
+
+double _estimateOpenThread(ServerReviewThread thread, double width) {
+  var height = 64.0 + _kTileChrome;
+  final hunk = thread.root.diffHunk.trim();
+  if (hunk.isNotEmpty) {
+    final hunkLines = math.min(24, '\n'.allMatches(hunk).length + 1);
+    height += 20 + hunkLines * 20.0;
+  }
+  final charsPerLine = math.max(24, width ~/ _kEstimateCharWidth);
+  for (final comment in thread.comments) {
+    final lines = math.max(1, '\n'.allMatches(comment.body).length + 1);
+    final wrapped = (comment.body.length / charsPerLine).ceil().clamp(1, 16);
+    height += 64 + math.max(lines, wrapped) * 18.0;
+  }
+  return height + 52;
+}
+
+/// Measures every unmeasured row. Overview feeds are tens of cards, not
+/// thousands: the estimate-to-actual error on a short list is the whole
+/// scrollbar thumb. The message feed refuses this because measuring a
+/// bubble fetches a transcript; a timeline card is local markdown.
+class _AlwaysPrecalculateExtents extends ExtentPrecalculationPolicy {
+  @override
+  bool shouldPrecalculateExtents(ExtentPrecalculationContext context) {
+    return context.numberOfItemsWithEstimatedExtent > 0;
   }
 }
 

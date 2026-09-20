@@ -19,7 +19,7 @@ ConversationGoal? _goalFromWire(Object? raw) {
     return null;
   }
   return ConversationGoal(
-    spaceId: w['space_id'] as String? ?? '',
+    conversationId: w['conversation_id'] as String? ?? '',
     workspaceId: w['workspace_id'] as String? ?? '',
     title: title,
     createdAt: _parseDate(w['created_at']),
@@ -30,7 +30,7 @@ ConversationGoal? _goalFromWire(Object? raw) {
 TodoItem _todoFromWire(Map<String, dynamic> w) => TodoItem(
   id: w['id'] as String,
   workspaceId: w['workspace_id'] as String? ?? '',
-  spaceId: w['space_id'] as String? ?? '',
+  conversationId: w['conversation_id'] as String? ?? '',
   content: w['content'] as String? ?? '',
   status: TodoStatus.fromStorage(w['status'] as String?),
   position: (w['position'] as num?)?.toInt() ?? 0,
@@ -46,8 +46,9 @@ List<Map<String, dynamic>> _maps(Object? raw) => ((raw as List?) ?? const [])
 /// A [TodoRepository] backed by the RPC client.
 ///
 /// Reads and mutations both go over the wire (`todos.*` ops + `todos.watch`).
-/// `workspace_id` is auto-injected by [RemoteRpcClient]; `space_id` is always
-/// passed explicitly since it is a per-call filter, not the session binding.
+/// `workspace_id` is auto-injected by [RemoteRpcClient]; `conversation_id` is
+/// always passed explicitly since it is a per-call filter, not the session
+/// binding.
 class RpcTodoRepository implements TodoRepository {
   /// Creates an [RpcTodoRepository] over the given client.
   RpcTodoRepository(this._client);
@@ -55,20 +56,25 @@ class RpcTodoRepository implements TodoRepository {
   final RemoteRpcClient _client;
 
   @override
-  Stream<List<TodoItem>> watch(String workspaceId, String spaceId) => _client
-      .subscribe('todos.watch', {
-        'workspace_id': workspaceId,
-        'space_id': spaceId,
-      })
-      .map(
-        (data) => decodeRows(_maps(data['todos']), _todoFromWire, what: 'todo'),
-      );
+  Stream<List<TodoItem>> watch(String workspaceId, String conversationId) =>
+      _client
+          .subscribe('todos.watch', {
+            'workspace_id': workspaceId,
+            'conversation_id': conversationId,
+          })
+          .map(
+            (data) =>
+                decodeRows(_maps(data['todos']), _todoFromWire, what: 'todo'),
+          );
 
   @override
-  Future<List<TodoItem>> list(String workspaceId, String spaceId) async {
+  Future<List<TodoItem>> list(
+    String workspaceId,
+    String conversationId,
+  ) async {
     final data = await _client.call('todos.list', {
       'workspace_id': workspaceId,
-      'space_id': spaceId,
+      'conversation_id': conversationId,
     });
     return decodeRows(_maps(data['todos']), _todoFromWire, what: 'todo');
   }
@@ -76,11 +82,11 @@ class RpcTodoRepository implements TodoRepository {
   @override
   Future<void> replaceAll(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     List<TodoItem> items,
   ) => _client.call('todos.replaceAll', {
     'workspace_id': workspaceId,
-    'space_id': spaceId,
+    'conversation_id': conversationId,
     'todos': [
       for (final t in items)
         {'id': t.id, 'content': t.content, 'status': t.status.storage},
@@ -90,12 +96,12 @@ class RpcTodoRepository implements TodoRepository {
   @override
   Future<TodoItem> append(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     String content,
   ) async {
     final data = await _client.call('todos.append', {
       'workspace_id': workspaceId,
-      'space_id': spaceId,
+      'conversation_id': conversationId,
       'content': content,
     });
     final todo = data['todo'];
@@ -105,61 +111,68 @@ class RpcTodoRepository implements TodoRepository {
   @override
   Future<void> updateStatus(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     String id,
     TodoStatus status,
   ) => _client.call('todos.setStatus', {
     'workspace_id': workspaceId,
-    'space_id': spaceId,
+    'conversation_id': conversationId,
     'id': id,
     'status': status.storage,
   });
 
   @override
-  Future<void> remove(String workspaceId, String spaceId, String id) =>
+  Future<void> remove(String workspaceId, String conversationId, String id) =>
       _client.call('todos.remove', {
         'workspace_id': workspaceId,
-        'space_id': spaceId,
+        'conversation_id': conversationId,
         'id': id,
       });
 
   @override
   Future<void> reorder(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     List<String> orderedIds,
   ) => _client.call('todos.reorder', {
     'workspace_id': workspaceId,
-    'space_id': spaceId,
+    'conversation_id': conversationId,
     'ordered_ids': orderedIds,
   });
 
   @override
-  Future<void> clear(String workspaceId, String spaceId) => _client.call(
-    'todos.clear',
-    {'workspace_id': workspaceId, 'space_id': spaceId},
-  );
-
-  @override
-  Stream<ConversationGoal?> watchGoal(String workspaceId, String spaceId) =>
-      _client
-          .subscribe('todos.watchGoal', {
-            'workspace_id': workspaceId,
-            'space_id': spaceId,
-          })
-          .map((data) => _goalFromWire(data['goal']));
-
-  @override
-  Future<void> setGoal(String workspaceId, String spaceId, String title) =>
-      _client.call('todos.setGoal', {
+  Future<void> clear(String workspaceId, String conversationId) =>
+      _client.call('todos.clear', {
         'workspace_id': workspaceId,
-        'space_id': spaceId,
-        'title': title,
+        'conversation_id': conversationId,
       });
 
   @override
-  Future<void> clearGoal(String workspaceId, String spaceId) => _client.call(
-    'todos.clearGoal',
-    {'workspace_id': workspaceId, 'space_id': spaceId},
-  );
+  Stream<ConversationGoal?> watchGoal(
+    String workspaceId,
+    String conversationId,
+  ) => _client
+      .subscribe('todos.watchGoal', {
+        'workspace_id': workspaceId,
+        'conversation_id': conversationId,
+      })
+      .map((data) => _goalFromWire(data['goal']));
+
+  @override
+  Future<void> setGoal(
+    String workspaceId,
+    String conversationId,
+    String title,
+  ) => _client.call('todos.setGoal', {
+    'workspace_id': workspaceId,
+    'conversation_id': conversationId,
+    'title': title,
+  });
+
+  @override
+  Future<void> clearGoal(String workspaceId, String conversationId) =>
+      _client.call('todos.clearGoal', {
+        'workspace_id': workspaceId,
+        'conversation_id': conversationId,
+      });
 }

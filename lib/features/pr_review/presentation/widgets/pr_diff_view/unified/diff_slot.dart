@@ -46,7 +46,11 @@ class DiffSlot {
   /// File this slot belongs to.
   final int fileIndex;
 
-  /// Absolute top offset in the document's scroll space.
+  /// Absolute top offset in the document's scroll space, snapshotted when the
+  /// host built the list. The sliver re-derives each slot's LIVE offset from
+  /// the document at layout/paint time (`liveSlotOffset`) — lazy structure
+  /// parses replace estimated file heights mid-scroll, and positioning by this
+  /// snapshot would put headers mid-file until the next slot rebuild.
   final double offset;
 
   /// Slot height in logical pixels. Fixed for headers/gaps; for comments it is

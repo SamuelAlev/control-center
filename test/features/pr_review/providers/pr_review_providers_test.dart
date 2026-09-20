@@ -1,6 +1,7 @@
 import 'package:cc_data/cc_data.dart' show RpcPrReviewRepository;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_provider.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
@@ -208,6 +209,35 @@ void main() {
   group('prFilesProvider', () {
     test('is a StreamProvider.family', () {
       expect(prFilesProvider, isNotNull);
+    });
+  });
+
+  group('prFileIndexProvider', () {
+    test('is a StreamProvider.family', () {
+      expect(prFileIndexProvider, isNotNull);
+    });
+  });
+
+  group('preferPatchedFiles', () {
+    PrFile file(String name, {String patch = ''}) => PrFile(
+      filename: name,
+      status: PrFileStatus.modified,
+      additions: 1,
+      deletions: 0,
+      patch: patch,
+    );
+
+    test('uses patched files once they arrive', () {
+      final patched = [file('a.dart', patch: '@@ 1')];
+      final index = [file('a.dart'), file('b.dart')];
+      expect(preferPatchedFiles(patched, index), patched);
+    });
+
+    test('falls back to the index while patches are empty or missing', () {
+      final index = [file('a.dart'), file('b.dart')];
+      expect(preferPatchedFiles(null, index), index);
+      expect(preferPatchedFiles(const [], index), index);
+      expect(preferPatchedFiles(null, null), isEmpty);
     });
   });
 

@@ -96,7 +96,10 @@ void main() {
             child: const CcToastScope(
               child: Scaffold(
                 body: SingleChildScrollView(
-                  child: GoalsSection(spaceId: 'c-1', workspaceId: 'ws-1'),
+                  child: GoalsSection(
+                    conversationId: 'c-1',
+                    workspaceId: 'ws-1',
+                  ),
                 ),
               ),
             ),

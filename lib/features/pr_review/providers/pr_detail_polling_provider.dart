@@ -84,6 +84,7 @@ class PrDetailPollingNotifier extends Notifier<PrDetailRefreshState> {
     // Invalidate the source provider — prFilesProvider derives from it.
     ref.invalidate(prFilesLoadProvider(pr));
     ref.invalidate(prFilesProvider(pr));
+    ref.invalidate(prFileIndexProvider(pr));
     state = state.copyWith(hasDiffUpdate: false);
   }
 
@@ -116,6 +117,7 @@ class PrDetailPollingNotifier extends Notifier<PrDetailRefreshState> {
       await Future.wait([
         _refetch(prDetailProvider(pr)),
         _refetch(prReviewCommentsProvider(pr)),
+        _refetch(prReviewCommentIndexProvider(pr)),
         _refetch(prIssueCommentsProvider(pr)),
         _refetch(prReviewsProvider(pr)),
         _refetch(prReviewersProvider(pr)),
@@ -123,6 +125,7 @@ class PrDetailPollingNotifier extends Notifier<PrDetailRefreshState> {
         _refetch(prCheckRunsProvider(pr)),
         _refetch(prCommitsProvider(pr)),
         _refetch(prDiffProvider(pr)),
+        _refetch(prFileIndexProvider(pr)),
         _refetch(prFilesLoadProvider(pr)),
       ]);
       // prFilesProvider bridges prFilesLoadProvider via ref.listen and only

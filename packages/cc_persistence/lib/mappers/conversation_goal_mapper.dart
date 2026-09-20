@@ -10,7 +10,7 @@ class ConversationGoalMapper {
 
   /// To domain.
   ConversationGoal toDomain(ConversationGoalsTableData row) => ConversationGoal(
-    spaceId: row.spaceId,
+    conversationId: row.conversationId,
     workspaceId: row.workspaceId,
     title: row.title,
     createdAt: row.createdAt,
@@ -24,7 +24,7 @@ class ConversationGoalMapper {
   /// To companion.
   ConversationGoalsTableCompanion toCompanion(ConversationGoal goal) =>
       ConversationGoalsTableCompanion(
-        spaceId: Value(goal.spaceId),
+        conversationId: Value(goal.conversationId),
         workspaceId: Value(goal.workspaceId),
         title: Value(goal.title),
         createdAt: Value(goal.createdAt),

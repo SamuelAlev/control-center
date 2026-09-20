@@ -6,6 +6,9 @@ import 'package:control_center/features/pr_review/providers/pr_table_providers.d
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Width of the repo rail in the grouped PR table.
+const double kPrRepoRailWidth = 224;
+
 /// The repo-grouped PR table — the inbox's view (left rail + section card)
 /// keyed by repository. The left rail lists every repo with its PR count
 /// (repos are never hidden; a filtered-out repo shows a 0 count); selecting a
@@ -15,9 +18,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// bar (close / assign / ask-for-review) rides at the bottom, acting across the
 /// whole selection (not just the shown repo).
 ///
-/// Shared by the pull-request queue and the user-profile PR view. Each screen
-/// shapes and orders [sections]; this widget renders the rail + detail and
-/// overlays the bulk bar.
+/// Shared by the pull-request queue. The user-profile PR view composes the
+/// same rail and section card into a page [CustomScrollView] instead so the
+/// scrollbar can sit on the pane edge.
 class PrRepoView extends ConsumerStatefulWidget {
   /// Creates a [PrRepoView].
   const PrRepoView({
@@ -99,8 +102,9 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 224,
+          width: kPrRepoRailWidth,
           child: SingleChildScrollView(
+            primary: false,
             child: PrRepoRail(
               entries: [
                 for (final section in sections)

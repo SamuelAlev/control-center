@@ -169,6 +169,7 @@ class PrBodyMarkdown extends ConsumerWidget {
     required this.repoFullName,
     this.bodyHtml,
     this.pending = false,
+    this.deferParse = true,
     this.onAttachmentLoadFailed,
     this.onTaskCheckboxChanged,
   });
@@ -176,6 +177,12 @@ class PrBodyMarkdown extends ConsumerWidget {
   /// True while [body] is merely unfetched rather than genuinely absent —
   /// renders a skeleton instead of the "no description" placeholder.
   final bool pending;
+
+  /// When true (the default), the first frame paints a plain-text stand-in so
+  /// the Overview header can appear inside the interaction budget. Timeline
+  /// cards pass false: a later swap from placeholder to markdown is what made
+  /// the Overview scrollbar thumb jump while scrolling.
+  final bool deferParse;
 
   /// Markdown body text.
   final String body;
@@ -228,7 +235,7 @@ class PrBodyMarkdown extends ConsumerWidget {
       await ref.read(activeRepoIdProvider.notifier).setActive(repoId);
     }
 
-    return GitHubMarkdownBody(
+    final markdown = GitHubMarkdownBody(
       data: body,
       bodyHtml: bodyHtml,
       onAttachmentLoadFailed: onAttachmentLoadFailed,
@@ -246,5 +253,49 @@ class PrBodyMarkdown extends ConsumerWidget {
       onSwitchToRepo: switchToRepo,
       embedVideos: true,
     );
+    if (!deferParse) {
+      return markdown;
+    }
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return _DeferredMarkdown(
+      placeholder: Text(
+        body,
+        maxLines: 8,
+        overflow: TextOverflow.ellipsis,
+        style: CcTypography.body.copyWith(color: t.textPrimary),
+      ),
+      child: markdown,
+    );
+  }
+}
+
+/// Paints [placeholder] on the first frame, then [child].
+///
+/// GitHub-flavoured markdown parse + widget build is the Overview hitch:
+/// a long description or a bot report must not run before first paint.
+class _DeferredMarkdown extends StatefulWidget {
+  const _DeferredMarkdown({required this.placeholder, required this.child});
+
+  final Widget placeholder;
+  final Widget child;
+
+  @override
+  State<_DeferredMarkdown> createState() => _DeferredMarkdownState();
+}
+
+class _DeferredMarkdownState extends State<_DeferredMarkdown> {
+  var _ready = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _ready = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _ready ? widget.child : widget.placeholder;
   }
 }

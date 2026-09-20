@@ -106,7 +106,7 @@ build_grammar java       https://github.com/tree-sitter/tree-sitter-java.git    
 build_grammar ruby       https://github.com/tree-sitter/tree-sitter-ruby.git            "$TS_RUBY_REF"       src
 build_grammar c_sharp    https://github.com/tree-sitter/tree-sitter-c-sharp.git         "$TS_C_SHARP_REF"    src
 # Swift's release tags omit parser.c; pin the matching *-with-generated-files
-# tag (see renovate extractVersionTemplate). Ada has no version tags — master.
+# tag (see renovate versioningTemplate). Ada has no version tags — master.
 build_grammar swift      https://github.com/alex-pinkus/tree-sitter-swift.git           "$TS_SWIFT_REF"      src
 build_grammar kotlin     https://github.com/tree-sitter-grammars/tree-sitter-kotlin.git "$TS_KOTLIN_REF"     src
 build_grammar r          https://github.com/r-lib/tree-sitter-r.git                     "$TS_R_REF"          src

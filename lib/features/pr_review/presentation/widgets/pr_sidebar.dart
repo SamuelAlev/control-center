@@ -110,7 +110,7 @@ class PrSidebar extends ConsumerWidget {
         .where((w) => w.status == WorkflowStatus.failure)
         .length;
 
-    final filesAsync = ref.watch(prFilesProvider(prRef));
+    final filesAsync = ref.watch(prFileIndexProvider(prRef));
     final filesPending = !filesAsync.hasValue && !filesAsync.hasError;
     final files = filesAsync.value ?? const <PrFile>[];
     final sortedFiles = sortFilesByTreeOrder(files);

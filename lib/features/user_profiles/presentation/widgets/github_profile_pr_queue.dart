@@ -5,12 +5,14 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
-import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pull_request_list/pr_list_shared.dart'
     show EmptyConfigState;
 import 'package:control_center/features/pr_review/providers/pr_lane_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_table_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
+import 'package:control_center/features/user_profiles/presentation/widgets/profile_delivery_scaffold.dart';
+import 'package:control_center/features/user_profiles/presentation/widgets/profile_pr_queue_filter.dart';
+import 'package:control_center/features/user_profiles/presentation/widgets/profile_pr_queue_pane.dart';
 import 'package:control_center/features/user_profiles/providers/user_profile_pr_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -28,6 +30,11 @@ final _profileQueueOverrides = [
 ];
 
 /// Shared all-state PR browser used by user and team profiles.
+///
+/// Owns the profile [CustomScrollView]: identity/metrics (when provided by
+/// [ProfileDeliveryLeading]) scroll away; the state filter, repo rail and
+/// table header pin; only the PR rows scroll. Horizontal padding lives on
+/// the slivers so the scrollbar sits on the pane edge.
 class GitHubProfilePrQueue extends StatelessWidget {
   /// Creates a profile PR browser.
   const GitHubProfilePrQueue({
@@ -59,6 +66,7 @@ class GitHubProfilePrQueue extends StatelessWidget {
         activity: activity,
         emptyMessage: emptyMessage,
         searchFocusNode: searchFocusNode,
+        leading: ProfileDeliveryLeading.maybeOf(context),
       ),
     );
   }
@@ -70,12 +78,14 @@ class _ProfilePrQueueBody extends ConsumerWidget {
     required this.activity,
     required this.emptyMessage,
     required this.searchFocusNode,
+    required this.leading,
   });
 
   final String profileKey;
   final AsyncValue<GitHubProfileActivity> activity;
   final String emptyMessage;
   final FocusNode searchFocusNode;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -102,63 +112,73 @@ class _ProfilePrQueueBody extends ConsumerWidget {
           ref.invalidate(teamProfileActivityProvider);
         },
       },
-      child: activity.when(
-        loading: () => const Center(child: CcSpinner()),
-        error: (error, _) => Center(
+      child: _pane(
+        l10n: l10n,
+        query: query,
+        filter: filter,
+        reposAsync: reposAsync,
+        linked: linked,
+        repoOrder: repoOrder,
+      ),
+    );
+  }
+
+  Widget _pane({
+    required AppLocalizations l10n,
+    required String query,
+    required ProfilePrStateFilter filter,
+    required AsyncValue<List<Repo>> reposAsync,
+    required List<Repo> linked,
+    required Map<String, int> repoOrder,
+  }) {
+    return activity.when(
+      loading: () => ProfilePrQueuePane(
+        pageStorageKey: 'profile-pr-queue:$profileKey',
+        leading: leading,
+        filter: null,
+        sections: const [],
+        fill: const Center(child: CcSpinner()),
+      ),
+      error: (error, _) => ProfilePrQueuePane(
+        pageStorageKey: 'profile-pr-queue:$profileKey',
+        leading: leading,
+        filter: null,
+        sections: const [],
+        fill: Center(
           child: CcAlert(
             variant: CcAlertVariant.danger,
             title: l10n.failedToLoad,
             description: Text(error.toString()),
           ),
         ),
-        data: (value) {
-          if (!reposAsync.hasValue && value.repos.isNotEmpty) {
-            return const Center(child: CcSpinner());
-          }
-          final groups = _joinRepos(value, linked);
-          final counts = _stateCounts(groups);
-          final sections = _sectionsFor(groups, query, filter, repoOrder);
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: CcSegmentedToggle<ProfilePrStateFilter>(
-                  value: filter,
-                  semanticLabel: l10n.profilePrStateFilterLabel,
-                  onChanged: (next) => ref
-                      .read(profilePrStateFilterProvider(profileKey).notifier)
-                      .set(next),
-                  segments: [
-                    CcSegment(
-                      value: ProfilePrStateFilter.all,
-                      label: '${l10n.all} ${counts.all}',
-                    ),
-                    CcSegment(
-                      value: ProfilePrStateFilter.open,
-                      label: '${l10n.openLabel} ${counts.open}',
-                    ),
-                    CcSegment(
-                      value: ProfilePrStateFilter.merged,
-                      label: '${l10n.merged} ${counts.merged}',
-                    ),
-                    CcSegment(
-                      value: ProfilePrStateFilter.closed,
-                      label: '${l10n.closed} ${counts.closed}',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Expanded(
-                child: sections.isEmpty
-                    ? _emptyState(l10n, query, emptyMessage)
-                    : PrRepoView(sections: sections),
-              ),
-            ],
-          );
-        },
       ),
+      data: (value) {
+        if (!reposAsync.hasValue && value.repos.isNotEmpty) {
+          return ProfilePrQueuePane(
+            pageStorageKey: 'profile-pr-queue:$profileKey',
+            leading: leading,
+            filter: null,
+            sections: const [],
+            fill: const Center(child: CcSpinner()),
+          );
+        }
+        final groups = _joinRepos(value, linked);
+        final counts = _stateCounts(groups);
+        final sections = _sectionsFor(groups, query, filter, repoOrder);
+        return ProfilePrQueuePane(
+          pageStorageKey: 'profile-pr-queue:$profileKey',
+          leading: leading,
+          filter: ProfilePrQueueFilter(
+            profileKey: profileKey,
+            filter: filter,
+            counts: counts,
+          ),
+          sections: sections,
+          fill: sections.isEmpty
+              ? _emptyState(l10n, query, emptyMessage)
+              : null,
+        );
+      },
     );
   }
 

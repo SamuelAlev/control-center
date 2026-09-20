@@ -40,7 +40,9 @@ Widget _wrap(Widget child) {
       workspacesProvider.overrideWith(
         (ref) => const Stream<List<Workspace>>.empty(),
       ),
-      prFilesProvider(_prRef).overrideWith((ref) => Stream.value(const <PrFile>[])),
+      prFileIndexProvider(
+        _prRef,
+      ).overrideWith((ref) => Stream.value(const <PrFile>[])),
     ],
     child: MaterialApp(
       localizationsDelegates: [

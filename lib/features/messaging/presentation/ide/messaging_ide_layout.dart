@@ -38,6 +38,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_close.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_pane.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
@@ -1769,59 +1770,15 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout> {
 
   /// The rig tab's machine: keep it running (reopen from the sidebar) or shut
   /// it down now. Nothing booted → nothing to ask about.
-  Future<bool> _confirmCloseRig(EditorTab tab, AppLocalizations l10n) async {
-    final workspaceId = _workspaceId;
-    final spaceId = widget.selectedSpaceId;
-    if (workspaceId == null || spaceId == null) {
-      return true;
-    }
-    final key = (
-      workspaceId: workspaceId,
-      conversationId: spaceId,
-      surface: tab.args['surface'] as String? ?? RigTabSurfaces.computer,
-      engine: RigTabSurfaces.browserEngineOf(tab.args),
-      slotId: RigTabSurfaces.slotFromArgs(tab.args),
-    );
-    // A rig that is still BOOTING counts: it already owns a machine, and a
-    // boot abandoned halfway is the most expensive thing to leave behind.
-    final rig =
-        ref.read(conversationRigProvider(key)) ??
-        ref.read(conversationPendingRigProvider(key));
-    if (rig == null) {
-      return true;
-    }
-    // A failed boot has no machine. Keeping the row would make the next
-    // open of this tab resurrect the dump; dismiss it quietly.
-    if (rig.isFailed) {
-      await _destroyRig(workspaceId, rig.id);
-      return true;
-    }
-    final choice = await confirmCloseLiveTab(
-      context: context,
-      title: l10n.ideCloseKeepTitle(tab.label),
-      body: l10n.ideCloseKeepBodyMachine,
-      shutDownLabel: l10n.ideCloseShutDownMachine,
-    );
-    switch (choice) {
-      case LiveTabCloseChoice.cancel:
-        return false;
-      case LiveTabCloseChoice.keepRunning:
-        return true;
-      case LiveTabCloseChoice.shutDown:
-        await _destroyRig(workspaceId, rig.id);
-        return true;
-    }
-  }
-
-  Future<void> _destroyRig(String workspaceId, String rigId) async {
-    try {
-      await ref.read(rigRepositoryProvider).destroy(workspaceId, rigId);
-    } on Object catch (e) {
-      if (mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
-      }
-    }
-  }
+  Future<bool> _confirmCloseRig(EditorTab tab, AppLocalizations l10n) =>
+      confirmCloseLiveRigTab(
+        context: context,
+        ref: ref,
+        title: l10n.ideCloseKeepTitle(tab.label),
+        workspaceId: _workspaceId,
+        conversationId: widget.selectedSpaceId,
+        args: tab.args,
+      );
 
   /// The terminal tab's shell: asked about only while a command holds the
   /// foreground. A shell at its prompt is closed and killed exactly as before

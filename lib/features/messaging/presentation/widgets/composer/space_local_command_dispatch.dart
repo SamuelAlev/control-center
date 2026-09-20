@@ -63,7 +63,7 @@ Future<String?> dispatchLocalSlashCommand({
     await handleTodoSlashCommand(
       ref: ref,
       context: context,
-      spaceId: spaceId,
+      conversationId: conversationId,
       workspaceId: workspaceId,
       args: parsed.args,
     );

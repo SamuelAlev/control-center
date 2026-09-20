@@ -4,18 +4,20 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Watches the persisted todo list for a conversation (by space id) in the
-/// active workspace, streamed live over RPC (`todos.watch`).
+/// Watches the persisted todo list for a conversation in the active
+/// workspace, streamed live over RPC (`todos.watch`).
 ///
 /// Returns an empty stream until a workspace is active. `autoDispose` tears the
 /// RPC subscription down when no widget is listening.
 final conversationTodosProvider = StreamProvider.autoDispose
-    .family<List<TodoItem>, String>((ref, spaceId) {
+    .family<List<TodoItem>, String>((ref, conversationId) {
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
       if (workspaceId == null || workspaceId.isEmpty) {
         return const Stream<List<TodoItem>>.empty();
       }
-      return ref.watch(todoRepositoryProvider).watch(workspaceId, spaceId);
+      return ref
+          .watch(todoRepositoryProvider)
+          .watch(workspaceId, conversationId);
     });
 
 /// Watches the conversation's working goal (set via `/goal`), or null when none
@@ -24,10 +26,12 @@ final conversationTodosProvider = StreamProvider.autoDispose
 /// Returns an empty stream until a workspace is active. `autoDispose` tears the
 /// RPC subscription down when no widget is listening.
 final conversationGoalProvider = StreamProvider.autoDispose
-    .family<ConversationGoal?, String>((ref, spaceId) {
+    .family<ConversationGoal?, String>((ref, conversationId) {
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
       if (workspaceId == null || workspaceId.isEmpty) {
         return const Stream<ConversationGoal?>.empty();
       }
-      return ref.watch(todoRepositoryProvider).watchGoal(workspaceId, spaceId);
+      return ref
+          .watch(todoRepositoryProvider)
+          .watchGoal(workspaceId, conversationId);
     });

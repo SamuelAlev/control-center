@@ -15,12 +15,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 Future<void> showTodoEditorDialog({
   required BuildContext context,
   required WidgetRef ref,
-  required String spaceId,
+  required String conversationId,
   required String workspaceId,
 }) async {
   final l10n = AppLocalizations.of(context);
   final current =
-      ref.read(conversationTodosProvider(spaceId)).asData?.value ??
+      ref.read(conversationTodosProvider(conversationId)).asData?.value ??
       const <TodoItem>[];
   final controller = TextEditingController(text: todoListToMarkdown(current));
 
@@ -79,7 +79,7 @@ Future<void> showTodoEditorDialog({
                   TodoItem(
                     id: '${now.microsecondsSinceEpoch}-$i',
                     workspaceId: workspaceId,
-                    spaceId: spaceId,
+                    conversationId: conversationId,
                     content: parsed[i].content,
                     status: parsed[i].status,
                     position: i,
@@ -89,7 +89,7 @@ Future<void> showTodoEditorDialog({
               ];
               await ref
                   .read(todoRepositoryProvider)
-                  .replaceAll(workspaceId, spaceId, items);
+                  .replaceAll(workspaceId, conversationId, items);
               if (context.mounted) {
                 Navigator.of(context).pop();
               }

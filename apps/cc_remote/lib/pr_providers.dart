@@ -326,7 +326,7 @@ final prFilesProvider = StreamProvider.autoDispose
     .family<List<PrFile>, PrCoords>((ref, coords) {
       final repository = ref.watch(prReviewRepositoryProvider(coords));
       if (repository == null) return const Stream.empty();
-      return repository.watchFiles(coords.number);
+      return repository.watchFiles(coords.number, includePatches: false);
     });
 
 /// The caller's permission on [coords]'s repo: `admin` / `write` / `read` /

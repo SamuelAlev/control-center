@@ -80,7 +80,7 @@ class TreeOverlay extends ConsumerWidget {
       );
     }
 
-    final rawFiles = ref.watch(prFilesProvider(prRef)).value ?? const [];
+    final rawFiles = ref.watch(prFileIndexProvider(prRef)).value ?? const [];
     if (rawFiles.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -140,7 +140,7 @@ class _SearchHostState extends ConsumerState<_SearchHost> {
         ),
       );
     }
-    final prFilesAsync = ref.watch(prFilesProvider(widget.prRef));
+    final prFilesAsync = ref.watch(prFileIndexProvider(widget.prRef));
     final Set<String>? prTouchedPaths = prFilesAsync.hasValue
         ? {for (final f in prFilesAsync.value!) f.filename}
         : null;
@@ -173,7 +173,7 @@ class _SearchHostState extends ConsumerState<_SearchHost> {
 
   /// In-PR hits scroll the diff; everything else opens a code-server tab.
   void _openSearchResult(String path, {int? line}) {
-    final files = ref.read(prFilesProvider(widget.prRef)).value;
+    final files = ref.read(prFileIndexProvider(widget.prRef)).value;
     if (_isPrTouchedPath(path, files)) {
       _jumpInDiff(path, line: line);
       return;

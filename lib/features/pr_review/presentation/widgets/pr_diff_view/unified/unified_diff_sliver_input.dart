@@ -10,8 +10,7 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     if (a == null || f == null) {
       return null;
     }
-    final text =
-        _document.copyTextBetween(a.$1, a.$2, a.$3, f.$1, f.$2, f.$3);
+    final text = _document.copyTextBetween(a.$1, a.$2, a.$3, f.$1, f.$2, f.$3);
     return text.isEmpty ? null : text;
   }
 
@@ -98,8 +97,7 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     }
     var sf = a.$1, sl = a.$2, sc = a.$3;
     var ef = f.$1, el = f.$2, ec = f.$3;
-    final aAfterB =
-        ef < sf || (ef == sf && (el < sl || (el == sl && ec < sc)));
+    final aAfterB = ef < sf || (ef == sf && (el < sl || (el == sl && ec < sc)));
     if (aAfterB) {
       final tf = sf, tl = sl, tc = sc;
       sf = ef;
@@ -205,5 +203,15 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
     GestureBinding.instance.pointerSignalResolver.register(event, (_) {
       applyHorizontalPan(next);
     });
+  }
+
+  /// Applies a pan to the code column's horizontal scroll offset.
+  void applyHorizontalPan(double offset) {
+    final double clamped = offset.clamp(0.0, maxHorizontalScrollExtent);
+    if (clamped == _horizontalScrollOffset) {
+      return;
+    }
+    _horizontalScrollOffset = clamped;
+    markNeedsPaint();
   }
 }

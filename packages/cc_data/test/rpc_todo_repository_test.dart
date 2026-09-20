@@ -28,7 +28,7 @@ void main() {
       await repo.setGoal('ws-1', 'c-1', '  ship it  ');
       final call = host.lastCall('todos.setGoal')!;
       expect(call.args['workspace_id'], 'ws-1');
-      expect(call.args['space_id'], 'c-1');
+      expect(call.args['conversation_id'], 'c-1');
       expect(call.args['title'], '  ship it  ');
     });
 
@@ -36,14 +36,14 @@ void main() {
       final repo = RpcTodoRepository(client);
       await repo.clearGoal('ws-1', 'c-1');
       final call = host.lastCall('todos.clearGoal')!;
-      expect(call.args['space_id'], 'c-1');
+      expect(call.args['conversation_id'], 'c-1');
       expect(call.args['workspace_id'], 'ws-1');
     });
 
     test('watchGoal decodes a goal snapshot and maps to the entity', () async {
       host.goalSnapshot = {
         'goal': {
-          'space_id': 'c-1',
+          'conversation_id': 'c-1',
           'workspace_id': 'ws-1',
           'title': 'Ship it',
           'created_at': '2026-07-01T09:00:00.000',
@@ -54,7 +54,7 @@ void main() {
       final g = await repo.watchGoal('ws-1', 'c-1').first;
       expect(g, isNotNull);
       expect(g!.title, 'Ship it');
-      expect(g.spaceId, 'c-1');
+      expect(g.conversationId, 'c-1');
       expect(g.workspaceId, 'ws-1');
       expect(g.createdAt, DateTime(2026, 7, 1, 9));
       expect(g.updatedAt, DateTime(2026, 7, 1, 10));
@@ -75,7 +75,7 @@ void main() {
     test('watchGoal emits null when the title is blank', () async {
       host.goalSnapshot = {
         'goal': {
-          'space_id': 'c-1',
+          'conversation_id': 'c-1',
           'workspace_id': 'ws-1',
           'title': '   ',
           'created_at': '2026-07-01T09:00:00.000',
@@ -91,7 +91,7 @@ void main() {
       () async {
         host.goalSnapshot = {
           'goal': {
-            'space_id': 'c-1',
+            'conversation_id': 'c-1',
             'workspace_id': 'ws-1',
             'title': 'partial',
             'updated_at': '2026-07-01T10:00:00.000',
@@ -105,7 +105,7 @@ void main() {
     );
 
     test(
-      'watchGoal sends the workspace + space on the subscribe',
+      'watchGoal sends the workspace + conversation on the subscribe',
       () async {
         host.goalSnapshot = const {'goal': null};
         final repo = RpcTodoRepository(client);
@@ -113,7 +113,7 @@ void main() {
         final sub = host.lastSubscribe!;
         expect(sub.query, 'todos.watchGoal');
         expect(sub.args['workspace_id'], 'ws-1');
-        expect(sub.args['space_id'], 'c-1');
+        expect(sub.args['conversation_id'], 'c-1');
       },
     );
   });
@@ -125,7 +125,7 @@ void main() {
           {
             'id': 't-1',
             'workspace_id': 'ws-1',
-            'space_id': 'c-1',
+            'conversation_id': 'c-1',
             'content': 'do thing',
             'status': 'in_progress',
             'position': 0,
@@ -148,7 +148,7 @@ void main() {
         'todo': {
           'id': 't-9',
           'workspace_id': 'ws-1',
-          'space_id': 'c-1',
+          'conversation_id': 'c-1',
           'content': 'new',
           'status': 'pending',
           'position': 3,
@@ -168,7 +168,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'ws-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'a',
           status: TodoStatus.completed,
           createdAt: DateTime(2026),
@@ -197,7 +197,7 @@ void main() {
           {
             'id': 't-1',
             'workspace_id': 'ws-1',
-            'space_id': 'c-1',
+            'conversation_id': 'c-1',
             'content': 'do thing',
             'status': 'in_progress',
             'position': 1,
@@ -214,7 +214,7 @@ void main() {
       expect(todos.first.position, 1);
       final sub = host.lastSubscribe!;
       expect(sub.args['workspace_id'], 'ws-1');
-      expect(sub.args['space_id'], 'c-1');
+      expect(sub.args['conversation_id'], 'c-1');
     });
 
     test('watch falls back to an empty list when todos is absent', () async {
@@ -228,7 +228,7 @@ void main() {
       await repo.remove('ws-1', 'c-1', 't-1');
       final call = host.lastCall('todos.remove')!;
       expect(call.args['id'], 't-1');
-      expect(call.args['space_id'], 'c-1');
+      expect(call.args['conversation_id'], 'c-1');
     });
 
     test('reorder forwards the ordered ids on todos.reorder', () async {
@@ -238,11 +238,11 @@ void main() {
       expect(call.args['ordered_ids'], ['t-1', 't-2']);
     });
 
-    test('clear sends the workspace + space on todos.clear', () async {
+    test('clear sends the workspace + conversation on todos.clear', () async {
       final repo = RpcTodoRepository(client);
       await repo.clear('ws-1', 'c-1');
       final call = host.lastCall('todos.clear')!;
-      expect(call.args['space_id'], 'c-1');
+      expect(call.args['conversation_id'], 'c-1');
       expect(call.args['workspace_id'], 'ws-1');
     });
   });

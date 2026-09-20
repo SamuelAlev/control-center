@@ -35,6 +35,7 @@ import 'package:control_center/features/pr_review/providers/pr_space_provider.da
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_close.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/sandboxing/presentation/enclosed_terminal_start.dart';
@@ -621,12 +622,31 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       tab.kind == PrTabKinds.codeServer &&
       _dirty.isDirty(tab.args['path'] as String?);
 
-  /// Close interceptor for a code-server tab: clean tabs close immediately; a
-  /// dirty one runs the shared Save / Don't save / Cancel prompt, saving via the
-  /// embedded editor on Save. Non-code-server tabs never prompt.
-  Future<bool> _confirmCloseTab(EditorTab tab) {
-    if (!_tabDirty(tab)) {
-      return Future.value(true);
+  /// Close interceptor: a live rig asks keep-running / shut-down / cancel
+  /// (same prompt as the messaging IDE); a dirty code-server tab asks Save /
+  /// Don't save / Cancel. Everything else closes immediately.
+  ///
+  /// The rig prompt used to be missing here — only dirty files were gated —
+  /// so closing a browser-rig tab on a PR silently put the viewer away and
+  /// left the machine running with no chance to shut it down.
+  Future<bool> _confirmCloseTab(EditorTab tab) async {
+    if (tab.kind == PrTabKinds.rig) {
+      final l10n = AppLocalizations.of(context);
+      if (!await confirmCloseLiveRigTab(
+        context: context,
+        ref: ref,
+        title: l10n.ideCloseKeepTitle(tab.label),
+        workspaceId: widget.prRef.workspaceId,
+        conversationId: ref.read(prSpaceProvider(widget.pr)).value,
+        args: tab.args,
+      )) {
+        return false;
+      }
+    }
+    // The first prompt is async, so this state can be gone by now — and an
+    // unmounted layout has no tab left to close.
+    if (!mounted || !_tabDirty(tab)) {
+      return mounted;
     }
     final path = tab.args['path'] as String? ?? '';
     return confirmCloseDirtyEditorTab(
@@ -647,8 +667,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     );
   }
 
-  /// Closes the active leaf's selected tab (⌘W), routing a dirty code-server
-  /// tab through the same Save / Don't save / Cancel prompt as the tab-strip ×
+  /// Closes the active leaf's selected tab (⌘W), routing a live rig or a
+  /// dirty code-server tab through the same prompt as the tab-strip ×
   /// (an async prompt can shift the selection, so the tab is re-located by
   /// identity before closing). Mirrors the messaging IDE's `closeActiveTab`.
   Future<void> _closeActiveTab() async {
@@ -659,6 +679,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     }
     final tab = controller.tabs[controller.selectedIndex];
     if (!await _confirmCloseTab(tab)) {
+      return;
+    }
+    if (!mounted) {
       return;
     }
     final idx = controller.indexOfIdentity(tab);
@@ -867,6 +890,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           pr: widget.pr,
           surface: tab.args['surface'] as String? ?? RigTabSurfaces.computer,
           engine: RigTabSurfaces.engineFromArgs(tab.args),
+          slotId: RigTabSurfaces.slotFromArgs(tab.args),
           isVisible: isVisible,
         );
       case PrTabKinds.reviewArtifact:
@@ -1035,9 +1059,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
             child: EditorWorkspace(
               layout: _layout,
               chrome: EditorChrome(
-                iconFor: (tab) => tab.kind == PrTabKinds.rig
-                    ? RigTabSurfaces.iconForArgs(tab.args)
-                    : PrTabKinds.iconFor(tab.kind),
+                iconFor: PrTabKinds.iconForTab,
                 // A browser-rig tab leads with its engine's monochrome logo,
                 // so "Firefox (VM)" and "Chromium (VM)" are told apart at a
                 // glance — the job the generic globe could not do.
@@ -1258,9 +1280,7 @@ class _PrDetailLoadingBodyState extends State<_PrDetailLoadingBody> {
     return EditorWorkspace(
       layout: _layout,
       chrome: EditorChrome(
-        iconFor: (tab) => tab.kind == PrTabKinds.rig
-            ? RigTabSurfaces.iconForArgs(tab.args)
-            : PrTabKinds.iconFor(tab.kind),
+        iconFor: PrTabKinds.iconForTab,
         labelFor: (tab) => _PrDetailBodyState._label(tab.kind, l10n),
       ),
       buildBody: (tab, {required isVisible}) => switch (tab.kind) {

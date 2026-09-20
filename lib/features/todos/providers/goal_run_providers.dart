@@ -4,18 +4,18 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Watches the durable supervised goals ([AgentGoalRun] — `/goal` + `/loop`)
-/// for a conversation (by space id) in the active workspace, streamed live
-/// over RPC (`agentGoalRuns.watchForConversation`).
+/// for a conversation in the active workspace, streamed live over RPC
+/// (`agentGoalRuns.watchForConversation`).
 ///
 /// Returns an empty stream until a workspace is active. `autoDispose` tears
 /// the RPC subscription down when no widget is listening.
 final conversationAgentGoalRunsProvider = StreamProvider.autoDispose
-    .family<List<AgentGoalRun>, String>((ref, spaceId) {
+    .family<List<AgentGoalRun>, String>((ref, conversationId) {
       final workspaceId = ref.watch(activeWorkspaceIdProvider);
       if (workspaceId == null || workspaceId.isEmpty) {
         return const Stream<List<AgentGoalRun>>.empty();
       }
       return ref
           .watch(agentGoalRunRepositoryProvider)
-          .watchForConversation(workspaceId, spaceId);
+          .watchForConversation(workspaceId, conversationId);
     });

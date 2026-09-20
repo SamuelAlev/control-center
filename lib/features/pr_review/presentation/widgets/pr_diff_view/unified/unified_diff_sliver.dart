@@ -17,6 +17,12 @@ import 'package:flutter/widgets.dart';
 part 'unified_diff_sliver_input.dart';
 part 'unified_diff_sliver_painting.dart';
 
+/// Per-layout budget for prefetching structure outside the paint window.
+/// On-screen files always parse (they have to paint); cache-window files
+/// wait for the next frame once this is spent so a tab click stays under
+/// the 150ms interaction budget.
+const int _kStructureParseBudgetMs = 8;
+
 /// Sliver widget hosting the unified diff. Code rows are painted directly on a
 /// single canvas; the comparatively rare interactive rows (file headers, gap
 /// affordances, comment threads, composer) are lazily-built sparse children,
@@ -72,8 +78,9 @@ class UnifiedDiffSliver extends SliverMultiBoxAdaptorWidget {
   /// host overlay can reposition the floating review toolbar.
   final VoidCallback? onSelectionChanged;
 
-  /// Called (post-frame) when the wrap layout changes — a width/mode change
-  /// moved per-line offsets, so the host must rebuild its slot list.
+  /// Called (post-frame) when layout geometry moved under the host's slot
+  /// list — a width/mode change moved per-line offsets, or a lazy structure
+  /// parse replaced estimated file heights — so the host must rebuild it.
   final VoidCallback? onLayoutModeChanged;
 
   /// Host-owned notifier updated (post-frame) with the file index whose header
@@ -150,8 +157,9 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
   /// the floating review toolbar.
   VoidCallback? onSelectionChanged;
 
-  /// Called (post-frame) after a width/mode change moved per-line offsets, so
-  /// the host can rebuild its slot list against the new geometry.
+  /// Called (post-frame) after a width/mode change moved per-line offsets, or
+  /// a lazy structure parse moved file heights, so the host can rebuild its
+  /// slot list against the new geometry.
   VoidCallback? onLayoutModeChanged;
 
   /// Host-owned notifier: the file whose header is currently docked (pinned),
@@ -179,6 +187,10 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
 
   /// Whether a slot-rebuild notification is already scheduled for this frame.
   bool _layoutModeTickScheduled = false;
+
+  /// Whether a follow-up layout is already scheduled to finish a deferred
+  /// cache-window structure parse.
+  bool _deferredParseScheduled = false;
 
   Map<int, Map<int, DiffCommentHighlight>> _commentHighlights = const {};
 
@@ -313,16 +325,6 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
 
   double get _effectiveHScroll =>
       _horizontalScrollOffset.clamp(0.0, maxHorizontalScrollExtent);
-
-  /// Applies a pan to the code column's horizontal scroll offset.
-  void applyHorizontalPan(double offset) {
-    final double clamped = offset.clamp(0.0, maxHorizontalScrollExtent);
-    if (clamped == _horizontalScrollOffset) {
-      return;
-    }
-    _horizontalScrollOffset = clamped;
-    markNeedsPaint();
-  }
 
   /// Whether there is an active selection (for the view's copy shortcut).
   bool get hasSelection => _selAnchor != null && _selFocus != null;
@@ -573,7 +575,7 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       scheduleLayoutModeTick();
     }
 
-    final double total = _document.totalExtent;
+    double total = _document.totalExtent;
 
     if (_slots.isEmpty || _document.fileCount == 0) {
       collectGarbage(laidOutCount(), 0);
@@ -596,21 +598,69 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       0,
       constraints.scrollOffset + constraints.cacheOrigin,
     );
-    final double cacheEnd = math.min(
+    double cacheEnd = math.min(
       total,
       cacheStart + constraints.remainingCacheExtent,
     );
 
-    // Ensure structure for the files whose body intersects the cache window
-    // (needed to paint their code rows). Cache hits in steady state.
-    final int firstFile = _document.fileAtOffset(cacheStart);
-    final int lastFile = _document.fileAtOffset(
-      math.min(total - 0.0001, math.max(0, cacheEnd)),
-    );
-    for (var i = firstFile; i <= lastFile; i++) {
-      if (_document.isExpanded(i) && _document.structureOf(i) == null) {
-        _store.ensureStructure(i);
+    // Ensure structure for files that intersect the paint window (they are
+    // on screen) and, if this frame still has budget, the cache window.
+    // Prefetching the whole cache in one pass is what made a mid-size PR
+    // hitch on first Diff-tab layout. Each file parses at most once; a
+    // leftover cache file is picked up on the next frame.
+    int firstFile;
+    int lastFile;
+    var parsedAny = false;
+    var deferred = false;
+    final parseClock = Stopwatch()..start();
+    while (true) {
+      firstFile = _document.fileAtOffset(cacheStart);
+      lastFile = _document.fileAtOffset(
+        math.min(total - 0.0001, math.max(0, cacheEnd)),
+      );
+      final paintEnd = math.min(
+        total,
+        constraints.scrollOffset + constraints.remainingPaintExtent,
+      );
+      final firstPaint = _document.fileAtOffset(
+        math.min(total - 0.0001, math.max(0, constraints.scrollOffset)),
+      );
+      final lastPaint = _document.fileAtOffset(
+        math.min(total - 0.0001, math.max(0, paintEnd)),
+      );
+      var parsedThisPass = false;
+      for (var i = firstPaint; i <= lastPaint; i++) {
+        if (_document.isExpanded(i) && _document.structureOf(i) == null) {
+          _store.ensureStructure(i);
+          parsedThisPass = true;
+        }
       }
+      for (var i = firstFile; i <= lastFile; i++) {
+        if (i >= firstPaint && i <= lastPaint) {
+          continue;
+        }
+        if (!_document.isExpanded(i) || _document.structureOf(i) != null) {
+          continue;
+        }
+        if (parseClock.elapsedMilliseconds >= _kStructureParseBudgetMs) {
+          deferred = true;
+          break;
+        }
+        _store.ensureStructure(i);
+        parsedThisPass = true;
+      }
+      if (!parsedThisPass) {
+        break;
+      }
+      parsedAny = true;
+      total = _document.totalExtent;
+      cacheEnd = math.min(total, cacheStart + constraints.remainingCacheExtent);
+    }
+    if (parsedAny) {
+      scheduleLayoutModeTick();
+    }
+    if (deferred) {
+      scheduleDeferredStructureParse();
     }
 
     // Compute sticky state before layout so the sticky file's header slot can

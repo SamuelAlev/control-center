@@ -70,7 +70,8 @@ CC_THIRD_PARTY=(
   # Fonts. Vendored into packages/cc_ui/fonts/ and compiled into the Flutter
   # asset bundle, so they ship in the app and never in the server archive. The
   # texts here are copies of the ones beside the .ttf files, which is where a
-  # font swap updates them first.
+  # font swap updates them first. Manrope is an explicit freeze: the GitHub
+  # repo is gone and upstream no longer tags releases.
   "Manrope (font)|4.505|OFL-1.1|https://github.com/sharanda/manrope|manrope-font-LICENSE.txt|bundled|desktop"
   "Fira Code (font)|6.2|OFL-1.1|https://github.com/tonsky/FiraCode|firacode-font-LICENSE.txt|bundled|desktop"
   "Phosphor Icons (font)|2.0.8|MIT|https://github.com/phosphor-icons/core|phosphor-font-LICENSE.txt|bundled|desktop"

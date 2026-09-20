@@ -249,6 +249,45 @@ void main() {
       expect(c.available, 300);
     });
 
+    test(
+      'a capped trailing rail does not absorb window slack — the unbounded '
+      'pane does',
+      () {
+        // Overview: flex body + sidebar capped at 380. Parent-width jitter
+        // used to dump leftover on the last region, so the rail breathed
+        // between min and max on every rebuild.
+        final c = CcResizableController([
+          CcResizableRegion.child(
+            child: const Text('body'),
+            initialExtent: 700,
+            minExtent: 420,
+          ),
+          CcResizableRegion.child(
+            child: const Text('rail'),
+            initialExtent: 300,
+            minExtent: 240,
+            maxExtent: 380,
+          ),
+        ]);
+        addTearDown(c.dispose);
+        expect(c.setAvailable(1000), isFalse);
+        expect(c.extents, [700, 300]);
+
+        expect(c.setAvailable(1100), isTrue);
+        expect(c.extents[1], 300, reason: 'capped rail stays put on grow');
+        expect(c.extents[0], 800);
+
+        expect(c.setAvailable(900), isTrue);
+        expect(c.extents[1], 300, reason: 'capped rail stays put on shrink');
+        expect(c.extents[0], 600);
+
+        // Only once the flex pane is at its min does the rail shrink.
+        expect(c.setAvailable(680), isTrue);
+        expect(c.extents[0], 420);
+        expect(c.extents[1], 260);
+      },
+    );
+
     test('setExtents clamps to per-region bounds and re-fits the total', () {
       final c = CcResizableController(regions());
       addTearDown(c.dispose);

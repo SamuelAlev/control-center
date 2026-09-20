@@ -692,7 +692,7 @@ void main() {
             prReviewersProvider(
               _prRef,
             ).overrideWith((ref) => Stream.value(const <PrReviewer>[])),
-            prFilesProvider(_prRef).overrideWith((ref) => Stream.value(files)),
+            prFileIndexProvider(_prRef).overrideWith((ref) => Stream.value(files)),
           ],
           child: MaterialApp(
             localizationsDelegates: [

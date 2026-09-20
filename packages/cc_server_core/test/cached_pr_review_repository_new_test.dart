@@ -411,9 +411,15 @@ class FakePrReviewRepository implements PrReviewRepository {
 
   // -- Files --------------------------------------------------------------
   @override
-  Stream<List<PrFile>> watchFiles(int prNumber) async* {
+  Stream<List<PrFile>> watchFiles(
+    int prNumber, {
+    bool includePatches = true,
+  }) async* {
     if (_files.containsKey(prNumber)) {
-      yield _files[prNumber]!;
+      final files = _files[prNumber]!;
+      yield includePatches
+          ? files
+          : [for (final f in files) f.copyWith(patch: '')];
     }
   }
 
@@ -466,9 +472,15 @@ class FakePrReviewRepository implements PrReviewRepository {
 
   // -- Review comments ---------------------------------------------------
   @override
-  Stream<List<PrCodeReviewComment>> watchReviewComments(int prNumber) async* {
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  }) async* {
     if (_reviewComments.containsKey(prNumber)) {
-      yield _reviewComments[prNumber]!;
+      final comments = _reviewComments[prNumber]!;
+      yield includeHunks
+          ? comments
+          : [for (final c in comments) c.copyWith(diffHunk: '')];
     }
   }
 

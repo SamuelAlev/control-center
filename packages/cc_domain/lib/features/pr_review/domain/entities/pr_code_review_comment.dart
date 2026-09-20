@@ -94,6 +94,7 @@ class PrCodeReviewComment {
     List<ReactionGroup>? reactions,
     String? threadId,
     bool? isResolved,
+    String? diffHunk,
   }) => PrCodeReviewComment(
     id: id,
     body: body,
@@ -104,7 +105,7 @@ class PrCodeReviewComment {
     side: side,
     inReplyToId: inReplyToId,
     startLine: startLine,
-    diffHunk: diffHunk,
+    diffHunk: diffHunk ?? this.diffHunk,
     line: line,
     originalLine: originalLine,
     reactions: reactions ?? this.reactions,

@@ -6,6 +6,7 @@ import 'package:cc_domain/features/memory/domain/entities/memory_domain.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/memory/presentation/widgets/fact_edit_dialog.dart';
+import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_chrome.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_data.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_layout.dart';
 import 'package:control_center/features/memory/presentation/widgets/knowledge_graph_node_sheet.dart';
@@ -269,5 +270,4 @@ class _KnowledgeGraphState extends ConsumerState<KnowledgeGraph> {
   /// which is exactly what clustering exists to prevent.
   static String _topicKey(String domain, String topic) =>
       'topic:$domain/$topic';
-
 }

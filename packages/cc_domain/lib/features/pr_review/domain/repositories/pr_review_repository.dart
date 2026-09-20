@@ -23,7 +23,10 @@ abstract class PrReviewRepository {
   Stream<String> watchDiff(int prNumber);
 
   /// Stream of changed files for a PR.
-  Stream<List<PrFile>> watchFiles(int prNumber);
+  ///
+  /// [includePatches] defaults to true. Overview, badges and file trees
+  /// pass false so opening a PR does not pull every hunk onto the wire.
+  Stream<List<PrFile>> watchFiles(int prNumber, {bool includePatches = true});
 
   /// Watch file content.
   Stream<String> watchFileContent(String path, String ref);
@@ -38,7 +41,13 @@ abstract class PrReviewRepository {
   Stream<List<PrReviewSubmission>> watchReviews(int prNumber);
 
   /// Stream of inline review comments for a PR.
-  Stream<List<PrCodeReviewComment>> watchReviewComments(int prNumber);
+  ///
+  /// [includeHunks] defaults to true. Overview passes false so opening a
+  /// PR does not decode every comment's `diff_hunk` on the UI isolate.
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  });
 
   /// Stream of top-level issue comments for a PR.
   Stream<List<IssueComment>> watchIssueComments(int prNumber);
@@ -301,8 +310,10 @@ class EmptyPrReviewRepository implements PrReviewRepository {
   Stream<String> watchDiff(int prNumber) => Stream.value('');
 
   @override
-  Stream<List<PrFile>> watchFiles(int prNumber) =>
-      Stream.value(const <PrFile>[]);
+  Stream<List<PrFile>> watchFiles(
+    int prNumber, {
+    bool includePatches = true,
+  }) => Stream.value(const <PrFile>[]);
 
   @override
   Stream<String> watchFileContent(String path, String ref) => Stream.value('');
@@ -320,8 +331,10 @@ class EmptyPrReviewRepository implements PrReviewRepository {
       Stream.value(const <PrReviewSubmission>[]);
 
   @override
-  Stream<List<PrCodeReviewComment>> watchReviewComments(int prNumber) =>
-      Stream.value(const <PrCodeReviewComment>[]);
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  }) => Stream.value(const <PrCodeReviewComment>[]);
 
   @override
   Stream<List<IssueComment>> watchIssueComments(int prNumber) =>

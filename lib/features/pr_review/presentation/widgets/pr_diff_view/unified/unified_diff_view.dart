@@ -136,6 +136,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
   final GlobalKey _sliverKey = GlobalKey();
   late final PrDiffDocument _document;
   late final DiffStructureStore _store;
+
+  /// The live document. Tests pin first-paint parse cost against it.
+  @visibleForTesting
+  PrDiffDocument get debugDocument => _document;
   late final PrDiffSearchController _search;
   late final PrDiffKeyboardHandler _keyboard;
   final Set<String> _viewed = {};
@@ -1063,35 +1067,16 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       ]);
   }
 
-  /// Total estimated expanded lines under which every expanded file's
-  /// structure is parsed eagerly at open. Above it, only the sliver's lazy
-  /// viewport-window parse runs — a huge PR would otherwise materialize a
-  /// parsed copy of every patch (roughly doubling diff RAM) before the first
-  /// frame, for files the user may never scroll to.
-  static const int _eagerParseLineBudget = 20000;
-
-  /// Parses structure for every initially expanded file up front so the scroll
-  /// extent is exact from the first frame (no estimate→exact drift) and the
-  /// painter never meets an unparsed visible file. Collapsed dependency
-  /// lockfiles are skipped until the user expands them.
-  ///
-  /// The budget is checked in a separate pass. The old incremental check parsed
-  /// almost 20k lines before discovering that a large PR exceeded the budget,
-  /// doing the expensive work that the large-PR lazy path exists to avoid.
+  /// Parses only the first expanded file so the opening viewport has exact
+  /// geometry on frame one. Everything else waits for the sliver's lazy
+  /// window: a 13k-line PR used to parse every file here (the old 20k-line
+  /// budget) and freeze the Diff-tab click for well over the 150ms
+  /// interaction budget.
   void _ensureExpandedStructures() {
-    var total = 0;
-    for (var i = 0; i < _document.fileCount; i++) {
-      if (!_document.isExpanded(i)) {
-        continue;
-      }
-      total += _document.lineCountOf(i);
-      if (total > _eagerParseLineBudget) {
-        return;
-      }
-    }
     for (var i = 0; i < _document.fileCount; i++) {
       if (_document.isExpanded(i)) {
         _store.ensureStructure(i);
+        return;
       }
     }
   }
@@ -3147,8 +3132,10 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     );
   }
 
-  /// A width/mode change moved per-line offsets, so rebuild the slot list (and
-  /// thus every gap / comment / composer offset) against the new geometry.
+  /// Layout geometry moved under the slot list — a width/mode change moved
+  /// per-line offsets, or a lazy structure parse replaced estimated file
+  /// heights — so rebuild the slot list (and thus every header / gap /
+  /// comment / composer offset) against it.
   void _onLayoutModeChanged() {
     if (mounted) {
       setState(() => _revision++);

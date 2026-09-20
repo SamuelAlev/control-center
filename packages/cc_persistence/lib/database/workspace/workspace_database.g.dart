@@ -57184,18 +57184,18 @@ class $TodosTableTable extends TodosTable
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
-    'spaceId',
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
   );
   @override
-  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
-    'space_id',
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES spaces (id) ON DELETE CASCADE',
+      'REFERENCES conversations (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _contentMeta = const VerificationMeta(
@@ -57259,7 +57259,7 @@ class $TodosTableTable extends TodosTable
   List<GeneratedColumn> get $columns => [
     id,
     workspaceId,
-    spaceId,
+    conversationId,
     content,
     status,
     position,
@@ -57294,13 +57294,16 @@ class $TodosTableTable extends TodosTable
     } else if (isInserting) {
       context.missing(_workspaceIdMeta);
     }
-    if (data.containsKey('space_id')) {
+    if (data.containsKey('conversation_id')) {
       context.handle(
-        _spaceIdMeta,
-        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_spaceIdMeta);
+      context.missing(_conversationIdMeta);
     }
     if (data.containsKey('content')) {
       context.handle(
@@ -57351,9 +57354,9 @@ class $TodosTableTable extends TodosTable
         DriftSqlType.string,
         data['${effectivePrefix}workspace_id'],
       )!,
-      spaceId: attachedDatabase.typeMapping.read(
+      conversationId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}space_id'],
+        data['${effectivePrefix}conversation_id'],
       )!,
       content: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -57391,8 +57394,8 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
   /// Owning workspace.
   final String workspaceId;
 
-  /// Owning space (a space owns one worktree and one task list).
-  final String spaceId;
+  /// Owning conversation (a conversation owns one stream and one task list).
+  final String conversationId;
 
   /// The task description.
   final String content;
@@ -57400,7 +57403,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
   /// Lifecycle status: `pending`, `in_progress`, or `completed`.
   final String status;
 
-  /// Stable ascending sort order within the space.
+  /// Stable ascending sort order within the conversation.
   final int position;
 
   /// When the item was created.
@@ -57411,7 +57414,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
   const TodosTableData({
     required this.id,
     required this.workspaceId,
-    required this.spaceId,
+    required this.conversationId,
     required this.content,
     required this.status,
     required this.position,
@@ -57423,7 +57426,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
     map['workspace_id'] = Variable<String>(workspaceId);
-    map['space_id'] = Variable<String>(spaceId);
+    map['conversation_id'] = Variable<String>(conversationId);
     map['content'] = Variable<String>(content);
     map['status'] = Variable<String>(status);
     map['position'] = Variable<int>(position);
@@ -57436,7 +57439,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
     return TodosTableCompanion(
       id: Value(id),
       workspaceId: Value(workspaceId),
-      spaceId: Value(spaceId),
+      conversationId: Value(conversationId),
       content: Value(content),
       status: Value(status),
       position: Value(position),
@@ -57453,7 +57456,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
     return TodosTableData(
       id: serializer.fromJson<String>(json['id']),
       workspaceId: serializer.fromJson<String>(json['workspaceId']),
-      spaceId: serializer.fromJson<String>(json['spaceId']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
       content: serializer.fromJson<String>(json['content']),
       status: serializer.fromJson<String>(json['status']),
       position: serializer.fromJson<int>(json['position']),
@@ -57467,7 +57470,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'workspaceId': serializer.toJson<String>(workspaceId),
-      'spaceId': serializer.toJson<String>(spaceId),
+      'conversationId': serializer.toJson<String>(conversationId),
       'content': serializer.toJson<String>(content),
       'status': serializer.toJson<String>(status),
       'position': serializer.toJson<int>(position),
@@ -57479,7 +57482,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
   TodosTableData copyWith({
     String? id,
     String? workspaceId,
-    String? spaceId,
+    String? conversationId,
     String? content,
     String? status,
     int? position,
@@ -57488,7 +57491,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
   }) => TodosTableData(
     id: id ?? this.id,
     workspaceId: workspaceId ?? this.workspaceId,
-    spaceId: spaceId ?? this.spaceId,
+    conversationId: conversationId ?? this.conversationId,
     content: content ?? this.content,
     status: status ?? this.status,
     position: position ?? this.position,
@@ -57501,7 +57504,9 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
       workspaceId: data.workspaceId.present
           ? data.workspaceId.value
           : this.workspaceId,
-      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
       content: data.content.present ? data.content.value : this.content,
       status: data.status.present ? data.status.value : this.status,
       position: data.position.present ? data.position.value : this.position,
@@ -57515,7 +57520,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
     return (StringBuffer('TodosTableData(')
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
-          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
           ..write('content: $content, ')
           ..write('status: $status, ')
           ..write('position: $position, ')
@@ -57529,7 +57534,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
   int get hashCode => Object.hash(
     id,
     workspaceId,
-    spaceId,
+    conversationId,
     content,
     status,
     position,
@@ -57542,7 +57547,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
       (other is TodosTableData &&
           other.id == this.id &&
           other.workspaceId == this.workspaceId &&
-          other.spaceId == this.spaceId &&
+          other.conversationId == this.conversationId &&
           other.content == this.content &&
           other.status == this.status &&
           other.position == this.position &&
@@ -57553,7 +57558,7 @@ class TodosTableData extends DataClass implements Insertable<TodosTableData> {
 class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
   final Value<String> id;
   final Value<String> workspaceId;
-  final Value<String> spaceId;
+  final Value<String> conversationId;
   final Value<String> content;
   final Value<String> status;
   final Value<int> position;
@@ -57563,7 +57568,7 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
   const TodosTableCompanion({
     this.id = const Value.absent(),
     this.workspaceId = const Value.absent(),
-    this.spaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
     this.content = const Value.absent(),
     this.status = const Value.absent(),
     this.position = const Value.absent(),
@@ -57574,7 +57579,7 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
   TodosTableCompanion.insert({
     required String id,
     required String workspaceId,
-    required String spaceId,
+    required String conversationId,
     required String content,
     this.status = const Value.absent(),
     this.position = const Value.absent(),
@@ -57583,12 +57588,12 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        workspaceId = Value(workspaceId),
-       spaceId = Value(spaceId),
+       conversationId = Value(conversationId),
        content = Value(content);
   static Insertable<TodosTableData> custom({
     Expression<String>? id,
     Expression<String>? workspaceId,
-    Expression<String>? spaceId,
+    Expression<String>? conversationId,
     Expression<String>? content,
     Expression<String>? status,
     Expression<int>? position,
@@ -57599,7 +57604,7 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (workspaceId != null) 'workspace_id': workspaceId,
-      if (spaceId != null) 'space_id': spaceId,
+      if (conversationId != null) 'conversation_id': conversationId,
       if (content != null) 'content': content,
       if (status != null) 'status': status,
       if (position != null) 'position': position,
@@ -57612,7 +57617,7 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
   TodosTableCompanion copyWith({
     Value<String>? id,
     Value<String>? workspaceId,
-    Value<String>? spaceId,
+    Value<String>? conversationId,
     Value<String>? content,
     Value<String>? status,
     Value<int>? position,
@@ -57623,7 +57628,7 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
     return TodosTableCompanion(
       id: id ?? this.id,
       workspaceId: workspaceId ?? this.workspaceId,
-      spaceId: spaceId ?? this.spaceId,
+      conversationId: conversationId ?? this.conversationId,
       content: content ?? this.content,
       status: status ?? this.status,
       position: position ?? this.position,
@@ -57642,8 +57647,8 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
     if (workspaceId.present) {
       map['workspace_id'] = Variable<String>(workspaceId.value);
     }
-    if (spaceId.present) {
-      map['space_id'] = Variable<String>(spaceId.value);
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
     }
     if (content.present) {
       map['content'] = Variable<String>(content.value);
@@ -57671,7 +57676,7 @@ class TodosTableCompanion extends UpdateCompanion<TodosTableData> {
     return (StringBuffer('TodosTableCompanion(')
           ..write('id: $id, ')
           ..write('workspaceId: $workspaceId, ')
-          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
           ..write('content: $content, ')
           ..write('status: $status, ')
           ..write('position: $position, ')
@@ -67954,18 +67959,18 @@ class $ConversationGoalsTableTable extends ConversationGoalsTable
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ConversationGoalsTableTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _spaceIdMeta = const VerificationMeta(
-    'spaceId',
+  static const VerificationMeta _conversationIdMeta = const VerificationMeta(
+    'conversationId',
   );
   @override
-  late final GeneratedColumn<String> spaceId = GeneratedColumn<String>(
-    'space_id',
+  late final GeneratedColumn<String> conversationId = GeneratedColumn<String>(
+    'conversation_id',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
     defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES spaces (id) ON DELETE CASCADE',
+      'REFERENCES conversations (id) ON DELETE CASCADE',
     ),
   );
   static const VerificationMeta _workspaceIdMeta = const VerificationMeta(
@@ -68014,7 +68019,7 @@ class $ConversationGoalsTableTable extends ConversationGoalsTable
   );
   @override
   List<GeneratedColumn> get $columns => [
-    spaceId,
+    conversationId,
     workspaceId,
     title,
     createdAt,
@@ -68032,13 +68037,16 @@ class $ConversationGoalsTableTable extends ConversationGoalsTable
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
-    if (data.containsKey('space_id')) {
+    if (data.containsKey('conversation_id')) {
       context.handle(
-        _spaceIdMeta,
-        spaceId.isAcceptableOrUnknown(data['space_id']!, _spaceIdMeta),
+        _conversationIdMeta,
+        conversationId.isAcceptableOrUnknown(
+          data['conversation_id']!,
+          _conversationIdMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_spaceIdMeta);
+      context.missing(_conversationIdMeta);
     }
     if (data.containsKey('workspace_id')) {
       context.handle(
@@ -68075,7 +68083,7 @@ class $ConversationGoalsTableTable extends ConversationGoalsTable
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {spaceId};
+  Set<GeneratedColumn> get $primaryKey => {conversationId};
   @override
   ConversationGoalsTableData map(
     Map<String, dynamic> data, {
@@ -68083,9 +68091,9 @@ class $ConversationGoalsTableTable extends ConversationGoalsTable
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ConversationGoalsTableData(
-      spaceId: attachedDatabase.typeMapping.read(
+      conversationId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}space_id'],
+        data['${effectivePrefix}conversation_id'],
       )!,
       workspaceId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -68114,8 +68122,8 @@ class $ConversationGoalsTableTable extends ConversationGoalsTable
 
 class ConversationGoalsTableData extends DataClass
     implements Insertable<ConversationGoalsTableData> {
-  /// Owning space — one goal per space.
-  final String spaceId;
+  /// Owning conversation — one goal per conversation.
+  final String conversationId;
 
   /// Owning workspace.
   final String workspaceId;
@@ -68129,7 +68137,7 @@ class ConversationGoalsTableData extends DataClass
   /// When the goal was last updated.
   final DateTime updatedAt;
   const ConversationGoalsTableData({
-    required this.spaceId,
+    required this.conversationId,
     required this.workspaceId,
     required this.title,
     required this.createdAt,
@@ -68138,7 +68146,7 @@ class ConversationGoalsTableData extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['space_id'] = Variable<String>(spaceId);
+    map['conversation_id'] = Variable<String>(conversationId);
     map['workspace_id'] = Variable<String>(workspaceId);
     map['title'] = Variable<String>(title);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -68148,7 +68156,7 @@ class ConversationGoalsTableData extends DataClass
 
   ConversationGoalsTableCompanion toCompanion(bool nullToAbsent) {
     return ConversationGoalsTableCompanion(
-      spaceId: Value(spaceId),
+      conversationId: Value(conversationId),
       workspaceId: Value(workspaceId),
       title: Value(title),
       createdAt: Value(createdAt),
@@ -68162,7 +68170,7 @@ class ConversationGoalsTableData extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ConversationGoalsTableData(
-      spaceId: serializer.fromJson<String>(json['spaceId']),
+      conversationId: serializer.fromJson<String>(json['conversationId']),
       workspaceId: serializer.fromJson<String>(json['workspaceId']),
       title: serializer.fromJson<String>(json['title']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -68173,7 +68181,7 @@ class ConversationGoalsTableData extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'spaceId': serializer.toJson<String>(spaceId),
+      'conversationId': serializer.toJson<String>(conversationId),
       'workspaceId': serializer.toJson<String>(workspaceId),
       'title': serializer.toJson<String>(title),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -68182,13 +68190,13 @@ class ConversationGoalsTableData extends DataClass
   }
 
   ConversationGoalsTableData copyWith({
-    String? spaceId,
+    String? conversationId,
     String? workspaceId,
     String? title,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => ConversationGoalsTableData(
-    spaceId: spaceId ?? this.spaceId,
+    conversationId: conversationId ?? this.conversationId,
     workspaceId: workspaceId ?? this.workspaceId,
     title: title ?? this.title,
     createdAt: createdAt ?? this.createdAt,
@@ -68198,7 +68206,9 @@ class ConversationGoalsTableData extends DataClass
     ConversationGoalsTableCompanion data,
   ) {
     return ConversationGoalsTableData(
-      spaceId: data.spaceId.present ? data.spaceId.value : this.spaceId,
+      conversationId: data.conversationId.present
+          ? data.conversationId.value
+          : this.conversationId,
       workspaceId: data.workspaceId.present
           ? data.workspaceId.value
           : this.workspaceId,
@@ -68211,7 +68221,7 @@ class ConversationGoalsTableData extends DataClass
   @override
   String toString() {
     return (StringBuffer('ConversationGoalsTableData(')
-          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
           ..write('workspaceId: $workspaceId, ')
           ..write('title: $title, ')
           ..write('createdAt: $createdAt, ')
@@ -68222,12 +68232,12 @@ class ConversationGoalsTableData extends DataClass
 
   @override
   int get hashCode =>
-      Object.hash(spaceId, workspaceId, title, createdAt, updatedAt);
+      Object.hash(conversationId, workspaceId, title, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ConversationGoalsTableData &&
-          other.spaceId == this.spaceId &&
+          other.conversationId == this.conversationId &&
           other.workspaceId == this.workspaceId &&
           other.title == this.title &&
           other.createdAt == this.createdAt &&
@@ -68236,14 +68246,14 @@ class ConversationGoalsTableData extends DataClass
 
 class ConversationGoalsTableCompanion
     extends UpdateCompanion<ConversationGoalsTableData> {
-  final Value<String> spaceId;
+  final Value<String> conversationId;
   final Value<String> workspaceId;
   final Value<String> title;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
   const ConversationGoalsTableCompanion({
-    this.spaceId = const Value.absent(),
+    this.conversationId = const Value.absent(),
     this.workspaceId = const Value.absent(),
     this.title = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -68251,17 +68261,17 @@ class ConversationGoalsTableCompanion
     this.rowid = const Value.absent(),
   });
   ConversationGoalsTableCompanion.insert({
-    required String spaceId,
+    required String conversationId,
     required String workspaceId,
     required String title,
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : spaceId = Value(spaceId),
+  }) : conversationId = Value(conversationId),
        workspaceId = Value(workspaceId),
        title = Value(title);
   static Insertable<ConversationGoalsTableData> custom({
-    Expression<String>? spaceId,
+    Expression<String>? conversationId,
     Expression<String>? workspaceId,
     Expression<String>? title,
     Expression<DateTime>? createdAt,
@@ -68269,7 +68279,7 @@ class ConversationGoalsTableCompanion
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
-      if (spaceId != null) 'space_id': spaceId,
+      if (conversationId != null) 'conversation_id': conversationId,
       if (workspaceId != null) 'workspace_id': workspaceId,
       if (title != null) 'title': title,
       if (createdAt != null) 'created_at': createdAt,
@@ -68279,7 +68289,7 @@ class ConversationGoalsTableCompanion
   }
 
   ConversationGoalsTableCompanion copyWith({
-    Value<String>? spaceId,
+    Value<String>? conversationId,
     Value<String>? workspaceId,
     Value<String>? title,
     Value<DateTime>? createdAt,
@@ -68287,7 +68297,7 @@ class ConversationGoalsTableCompanion
     Value<int>? rowid,
   }) {
     return ConversationGoalsTableCompanion(
-      spaceId: spaceId ?? this.spaceId,
+      conversationId: conversationId ?? this.conversationId,
       workspaceId: workspaceId ?? this.workspaceId,
       title: title ?? this.title,
       createdAt: createdAt ?? this.createdAt,
@@ -68299,8 +68309,8 @@ class ConversationGoalsTableCompanion
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    if (spaceId.present) {
-      map['space_id'] = Variable<String>(spaceId.value);
+    if (conversationId.present) {
+      map['conversation_id'] = Variable<String>(conversationId.value);
     }
     if (workspaceId.present) {
       map['workspace_id'] = Variable<String>(workspaceId.value);
@@ -68323,7 +68333,7 @@ class ConversationGoalsTableCompanion
   @override
   String toString() {
     return (StringBuffer('ConversationGoalsTableCompanion(')
-          ..write('spaceId: $spaceId, ')
+          ..write('conversationId: $conversationId, ')
           ..write('workspaceId: $workspaceId, ')
           ..write('title: $title, ')
           ..write('createdAt: $createdAt, ')
@@ -76425,9 +76435,9 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     'idx_todos_workspaceId',
     'CREATE INDEX idx_todos_workspaceId ON todos (workspace_id)',
   );
-  late final Index idxTodosSpace = Index(
-    'idx_todos_space',
-    'CREATE INDEX idx_todos_space ON todos (workspace_id, space_id)',
+  late final Index idxTodosConversation = Index(
+    'idx_todos_conversation',
+    'CREATE INDEX idx_todos_conversation ON todos (workspace_id, conversation_id)',
   );
   late final Index idxWorkspaceMembersWorkspaceId = Index(
     'idx_workspace_members_workspaceId',
@@ -77039,7 +77049,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     idxTicketSyncLogWs,
     idxTicketSyncLogDedupe,
     idxTodosWorkspaceId,
-    idxTodosSpace,
+    idxTodosConversation,
     idxWorkspaceMembersWorkspaceId,
     idxWorkspaceMembersUserId,
     uqWorkspaceMembersWorkspaceUser,
@@ -77297,7 +77307,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
-        'spaces',
+        'conversations',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('todos', kind: UpdateKind.delete)],
@@ -77313,7 +77323,7 @@ abstract class _$WorkspaceDatabase extends GeneratedDatabase {
     ),
     WritePropagation(
       on: TableUpdateQuery.onTableName(
-        'spaces',
+        'conversations',
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('conversation_goals', kind: UpdateKind.delete)],
@@ -81915,49 +81925,6 @@ final class $$SpacesTableTableReferences
       manager.$state.copyWith(prefetchedData: cache),
     );
   }
-
-  static MultiTypedResultKey<$TodosTableTable, List<TodosTableData>>
-  _todosTableRefsTable(_$WorkspaceDatabase db) => MultiTypedResultKey.fromTable(
-    db.todosTable,
-    aliasName: 'spaces__id__todos__space_id',
-  );
-
-  $$TodosTableTableProcessedTableManager get todosTableRefs {
-    final manager = $$TodosTableTableTableManager(
-      $_db,
-      $_db.todosTable,
-    ).filter((f) => f.spaceId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(_todosTableRefsTable($_db));
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
-  static MultiTypedResultKey<
-    $ConversationGoalsTableTable,
-    List<ConversationGoalsTableData>
-  >
-  _conversationGoalsTableRefsTable(_$WorkspaceDatabase db) =>
-      MultiTypedResultKey.fromTable(
-        db.conversationGoalsTable,
-        aliasName: 'spaces__id__conversation_goals__space_id',
-      );
-
-  $$ConversationGoalsTableTableProcessedTableManager
-  get conversationGoalsTableRefs {
-    final manager = $$ConversationGoalsTableTableTableManager(
-      $_db,
-      $_db.conversationGoalsTable,
-    ).filter((f) => f.spaceId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _conversationGoalsTableRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
 }
 
 class $$SpacesTableTableFilterComposer
@@ -82101,57 +82068,6 @@ class $$SpacesTableTableFilterComposer
                 $removeJoinBuilderFromRootComposer,
           ),
     );
-    return f(composer);
-  }
-
-  Expression<bool> todosTableRefs(
-    Expression<bool> Function($$TodosTableTableFilterComposer f) f,
-  ) {
-    final $$TodosTableTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.todosTable,
-      getReferencedColumn: (t) => t.spaceId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TodosTableTableFilterComposer(
-            $db: $db,
-            $table: $db.todosTable,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> conversationGoalsTableRefs(
-    Expression<bool> Function($$ConversationGoalsTableTableFilterComposer f) f,
-  ) {
-    final $$ConversationGoalsTableTableFilterComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.conversationGoalsTable,
-          getReferencedColumn: (t) => t.spaceId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$ConversationGoalsTableTableFilterComposer(
-                $db: $db,
-                $table: $db.conversationGoalsTable,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
     return f(composer);
   }
 }
@@ -82357,57 +82273,6 @@ class $$SpacesTableTableAnnotationComposer
         );
     return f(composer);
   }
-
-  Expression<T> todosTableRefs<T extends Object>(
-    Expression<T> Function($$TodosTableTableAnnotationComposer a) f,
-  ) {
-    final $$TodosTableTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.todosTable,
-      getReferencedColumn: (t) => t.spaceId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$TodosTableTableAnnotationComposer(
-            $db: $db,
-            $table: $db.todosTable,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<T> conversationGoalsTableRefs<T extends Object>(
-    Expression<T> Function($$ConversationGoalsTableTableAnnotationComposer a) f,
-  ) {
-    final $$ConversationGoalsTableTableAnnotationComposer composer =
-        $composerBuilder(
-          composer: this,
-          getCurrentColumn: (t) => t.id,
-          referencedTable: $db.conversationGoalsTable,
-          getReferencedColumn: (t) => t.spaceId,
-          builder:
-              (
-                joinBuilder, {
-                $addJoinBuilderToRootComposer,
-                $removeJoinBuilderFromRootComposer,
-              }) => $$ConversationGoalsTableTableAnnotationComposer(
-                $db: $db,
-                $table: $db.conversationGoalsTable,
-                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-                joinBuilder: joinBuilder,
-                $removeJoinBuilderFromRootComposer:
-                    $removeJoinBuilderFromRootComposer,
-              ),
-        );
-    return f(composer);
-  }
 }
 
 class $$SpacesTableTableTableManager
@@ -82427,8 +82292,6 @@ class $$SpacesTableTableTableManager
             bool conversationsTableRefs,
             bool spaceNotesTableRefs,
             bool spaceAutonomyTableRefs,
-            bool todosTableRefs,
-            bool conversationGoalsTableRefs,
           })
         > {
   $$SpacesTableTableTableManager(
@@ -82517,8 +82380,6 @@ class $$SpacesTableTableTableManager
                 conversationsTableRefs = false,
                 spaceNotesTableRefs = false,
                 spaceAutonomyTableRefs = false,
-                todosTableRefs = false,
-                conversationGoalsTableRefs = false,
               }) {
                 return PrefetchHooks(
                   db: db,
@@ -82526,8 +82387,6 @@ class $$SpacesTableTableTableManager
                     if (conversationsTableRefs) db.conversationsTable,
                     if (spaceNotesTableRefs) db.spaceNotesTable,
                     if (spaceAutonomyTableRefs) db.spaceAutonomyTable,
-                    if (todosTableRefs) db.todosTable,
-                    if (conversationGoalsTableRefs) db.conversationGoalsTable,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -82595,48 +82454,6 @@ class $$SpacesTableTableTableManager
                               ),
                           typedResults: items,
                         ),
-                      if (todosTableRefs)
-                        await $_getPrefetchedData<
-                          SpacesTableData,
-                          $SpacesTableTable,
-                          TodosTableData
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SpacesTableTableReferences
-                              ._todosTableRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SpacesTableTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).todosTableRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.spaceId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (conversationGoalsTableRefs)
-                        await $_getPrefetchedData<
-                          SpacesTableData,
-                          $SpacesTableTable,
-                          ConversationGoalsTableData
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SpacesTableTableReferences
-                              ._conversationGoalsTableRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SpacesTableTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).conversationGoalsTableRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.spaceId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
                     ];
                   },
                 );
@@ -82661,8 +82478,6 @@ typedef $$SpacesTableTableProcessedTableManager =
         bool conversationsTableRefs,
         bool spaceNotesTableRefs,
         bool spaceAutonomyTableRefs,
-        bool todosTableRefs,
-        bool conversationGoalsTableRefs,
       })
     >;
 typedef $$ConversationsTableTableCreateCompanionBuilder =
@@ -82721,6 +82536,49 @@ final class $$ConversationsTableTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$TodosTableTable, List<TodosTableData>>
+  _todosTableRefsTable(_$WorkspaceDatabase db) => MultiTypedResultKey.fromTable(
+    db.todosTable,
+    aliasName: 'conversations__id__todos__conversation_id',
+  );
+
+  $$TodosTableTableProcessedTableManager get todosTableRefs {
+    final manager = $$TodosTableTableTableManager(
+      $_db,
+      $_db.todosTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_todosTableRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<
+    $ConversationGoalsTableTable,
+    List<ConversationGoalsTableData>
+  >
+  _conversationGoalsTableRefsTable(_$WorkspaceDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.conversationGoalsTable,
+        aliasName: 'conversations__id__conversation_goals__conversation_id',
+      );
+
+  $$ConversationGoalsTableTableProcessedTableManager
+  get conversationGoalsTableRefs {
+    final manager = $$ConversationGoalsTableTableTableManager(
+      $_db,
+      $_db.conversationGoalsTable,
+    ).filter((f) => f.conversationId.id.sqlEquals($_itemColumn<String>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _conversationGoalsTableRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
@@ -82800,6 +82658,57 @@ class $$ConversationsTableTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> todosTableRefs(
+    Expression<bool> Function($$TodosTableTableFilterComposer f) f,
+  ) {
+    final $$TodosTableTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.todosTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TodosTableTableFilterComposer(
+            $db: $db,
+            $table: $db.todosTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<bool> conversationGoalsTableRefs(
+    Expression<bool> Function($$ConversationGoalsTableTableFilterComposer f) f,
+  ) {
+    final $$ConversationGoalsTableTableFilterComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.conversationGoalsTable,
+          getReferencedColumn: (t) => t.conversationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationGoalsTableTableFilterComposer(
+                $db: $db,
+                $table: $db.conversationGoalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
   }
 }
 
@@ -82947,6 +82856,57 @@ class $$ConversationsTableTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> todosTableRefs<T extends Object>(
+    Expression<T> Function($$TodosTableTableAnnotationComposer a) f,
+  ) {
+    final $$TodosTableTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.todosTable,
+      getReferencedColumn: (t) => t.conversationId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TodosTableTableAnnotationComposer(
+            $db: $db,
+            $table: $db.todosTable,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+
+  Expression<T> conversationGoalsTableRefs<T extends Object>(
+    Expression<T> Function($$ConversationGoalsTableTableAnnotationComposer a) f,
+  ) {
+    final $$ConversationGoalsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.id,
+          referencedTable: $db.conversationGoalsTable,
+          getReferencedColumn: (t) => t.conversationId,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer,
+              }) => $$ConversationGoalsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationGoalsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
+    return f(composer);
+  }
 }
 
 class $$ConversationsTableTableTableManager
@@ -82962,7 +82922,11 @@ class $$ConversationsTableTableTableManager
           $$ConversationsTableTableUpdateCompanionBuilder,
           (ConversationsTableData, $$ConversationsTableTableReferences),
           ConversationsTableData,
-          PrefetchHooks Function({bool spaceId})
+          PrefetchHooks Function({
+            bool spaceId,
+            bool todosTableRefs,
+            bool conversationGoalsTableRefs,
+          })
         > {
   $$ConversationsTableTableTableManager(
     _$WorkspaceDatabase db,
@@ -83040,49 +83004,100 @@ class $$ConversationsTableTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({spaceId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (spaceId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.spaceId,
-                                referencedTable:
-                                    $$ConversationsTableTableReferences
-                                        ._spaceIdTable(db),
-                                referencedColumn:
-                                    $$ConversationsTableTableReferences
-                                        ._spaceIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({
+                spaceId = false,
+                todosTableRefs = false,
+                conversationGoalsTableRefs = false,
+              }) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (todosTableRefs) db.todosTable,
+                    if (conversationGoalsTableRefs) db.conversationGoalsTable,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (spaceId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.spaceId,
+                                    referencedTable:
+                                        $$ConversationsTableTableReferences
+                                            ._spaceIdTable(db),
+                                    referencedColumn:
+                                        $$ConversationsTableTableReferences
+                                            ._spaceIdTable(db)
+                                            .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (todosTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          TodosTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._todosTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).todosTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                      if (conversationGoalsTableRefs)
+                        await $_getPrefetchedData<
+                          ConversationsTableData,
+                          $ConversationsTableTable,
+                          ConversationGoalsTableData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ConversationsTableTableReferences
+                              ._conversationGoalsTableRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ConversationsTableTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).conversationGoalsTableRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.conversationId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -83099,7 +83114,11 @@ typedef $$ConversationsTableTableProcessedTableManager =
       $$ConversationsTableTableUpdateCompanionBuilder,
       (ConversationsTableData, $$ConversationsTableTableReferences),
       ConversationsTableData,
-      PrefetchHooks Function({bool spaceId})
+      PrefetchHooks Function({
+        bool spaceId,
+        bool todosTableRefs,
+        bool conversationGoalsTableRefs,
+      })
     >;
 typedef $$SpaceParticipantsTableTableCreateCompanionBuilder =
     SpaceParticipantsTableCompanion Function({
@@ -111758,7 +111777,7 @@ typedef $$TodosTableTableCreateCompanionBuilder =
     TodosTableCompanion Function({
       required String id,
       required String workspaceId,
-      required String spaceId,
+      required String conversationId,
       required String content,
       Value<String> status,
       Value<int> position,
@@ -111770,7 +111789,7 @@ typedef $$TodosTableTableUpdateCompanionBuilder =
     TodosTableCompanion Function({
       Value<String> id,
       Value<String> workspaceId,
-      Value<String> spaceId,
+      Value<String> conversationId,
       Value<String> content,
       Value<String> status,
       Value<int> position,
@@ -111784,17 +111803,20 @@ final class $$TodosTableTableReferences
         BaseReferences<_$WorkspaceDatabase, $TodosTableTable, TodosTableData> {
   $$TodosTableTableReferences(super.$_db, super.$_table, super.$_typedResult);
 
-  static $SpacesTableTable _spaceIdTable(_$WorkspaceDatabase db) =>
-      db.spacesTable.createAlias('todos__space_id__spaces__id');
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'todos__conversation_id__conversations__id',
+  );
 
-  $$SpacesTableTableProcessedTableManager get spaceId {
-    final $_column = $_itemColumn<String>('space_id')!;
+  $$ConversationsTableTableProcessedTableManager get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id')!;
 
-    final manager = $$SpacesTableTableTableManager(
+    final manager = $$ConversationsTableTableTableManager(
       $_db,
-      $_db.spacesTable,
+      $_db.conversationsTable,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_spaceIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -111846,20 +111868,20 @@ class $$TodosTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$SpacesTableTableFilterComposer get spaceId {
-    final $$SpacesTableTableFilterComposer composer = $composerBuilder(
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.spaceId,
-      referencedTable: $db.spacesTable,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SpacesTableTableFilterComposer(
+          }) => $$ConversationsTableTableFilterComposer(
             $db: $db,
-            $table: $db.spacesTable,
+            $table: $db.conversationsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -111914,20 +111936,20 @@ class $$TodosTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$SpacesTableTableOrderingComposer get spaceId {
-    final $$SpacesTableTableOrderingComposer composer = $composerBuilder(
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.spaceId,
-      referencedTable: $db.spacesTable,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SpacesTableTableOrderingComposer(
+          }) => $$ConversationsTableTableOrderingComposer(
             $db: $db,
-            $table: $db.spacesTable,
+            $table: $db.conversationsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -111970,26 +111992,27 @@ class $$TodosTableTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  $$SpacesTableTableAnnotationComposer get spaceId {
-    final $$SpacesTableTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.spaceId,
-      referencedTable: $db.spacesTable,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SpacesTableTableAnnotationComposer(
-            $db: $db,
-            $table: $db.spacesTable,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return composer;
   }
 }
@@ -112007,7 +112030,7 @@ class $$TodosTableTableTableManager
           $$TodosTableTableUpdateCompanionBuilder,
           (TodosTableData, $$TodosTableTableReferences),
           TodosTableData,
-          PrefetchHooks Function({bool spaceId})
+          PrefetchHooks Function({bool conversationId})
         > {
   $$TodosTableTableTableManager(_$WorkspaceDatabase db, $TodosTableTable table)
     : super(
@@ -112024,7 +112047,7 @@ class $$TodosTableTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String> workspaceId = const Value.absent(),
-                Value<String> spaceId = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<int> position = const Value.absent(),
@@ -112034,7 +112057,7 @@ class $$TodosTableTableTableManager
               }) => TodosTableCompanion(
                 id: id,
                 workspaceId: workspaceId,
-                spaceId: spaceId,
+                conversationId: conversationId,
                 content: content,
                 status: status,
                 position: position,
@@ -112046,7 +112069,7 @@ class $$TodosTableTableTableManager
               ({
                 required String id,
                 required String workspaceId,
-                required String spaceId,
+                required String conversationId,
                 required String content,
                 Value<String> status = const Value.absent(),
                 Value<int> position = const Value.absent(),
@@ -112056,7 +112079,7 @@ class $$TodosTableTableTableManager
               }) => TodosTableCompanion.insert(
                 id: id,
                 workspaceId: workspaceId,
-                spaceId: spaceId,
+                conversationId: conversationId,
                 content: content,
                 status: status,
                 position: position,
@@ -112072,7 +112095,7 @@ class $$TodosTableTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({spaceId = false}) {
+          prefetchHooksCallback: ({conversationId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -112092,15 +112115,15 @@ class $$TodosTableTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (spaceId) {
+                    if (conversationId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.spaceId,
+                                currentColumn: table.conversationId,
                                 referencedTable: $$TodosTableTableReferences
-                                    ._spaceIdTable(db),
+                                    ._conversationIdTable(db),
                                 referencedColumn: $$TodosTableTableReferences
-                                    ._spaceIdTable(db)
+                                    ._conversationIdTable(db)
                                     .id,
                               )
                               as T;
@@ -112129,7 +112152,7 @@ typedef $$TodosTableTableProcessedTableManager =
       $$TodosTableTableUpdateCompanionBuilder,
       (TodosTableData, $$TodosTableTableReferences),
       TodosTableData,
-      PrefetchHooks Function({bool spaceId})
+      PrefetchHooks Function({bool conversationId})
     >;
 typedef $$WorkspaceMembersTableTableCreateCompanionBuilder =
     WorkspaceMembersTableCompanion Function({
@@ -117193,7 +117216,7 @@ typedef $$WorkspaceRolesTableTableProcessedTableManager =
     >;
 typedef $$ConversationGoalsTableTableCreateCompanionBuilder =
     ConversationGoalsTableCompanion Function({
-      required String spaceId,
+      required String conversationId,
       required String workspaceId,
       required String title,
       Value<DateTime> createdAt,
@@ -117202,7 +117225,7 @@ typedef $$ConversationGoalsTableTableCreateCompanionBuilder =
     });
 typedef $$ConversationGoalsTableTableUpdateCompanionBuilder =
     ConversationGoalsTableCompanion Function({
-      Value<String> spaceId,
+      Value<String> conversationId,
       Value<String> workspaceId,
       Value<String> title,
       Value<DateTime> createdAt,
@@ -117223,17 +117246,20 @@ final class $$ConversationGoalsTableTableReferences
     super.$_typedResult,
   );
 
-  static $SpacesTableTable _spaceIdTable(_$WorkspaceDatabase db) =>
-      db.spacesTable.createAlias('conversation_goals__space_id__spaces__id');
+  static $ConversationsTableTable _conversationIdTable(
+    _$WorkspaceDatabase db,
+  ) => db.conversationsTable.createAlias(
+    'conversation_goals__conversation_id__conversations__id',
+  );
 
-  $$SpacesTableTableProcessedTableManager get spaceId {
-    final $_column = $_itemColumn<String>('space_id')!;
+  $$ConversationsTableTableProcessedTableManager get conversationId {
+    final $_column = $_itemColumn<String>('conversation_id')!;
 
-    final manager = $$SpacesTableTableTableManager(
+    final manager = $$ConversationsTableTableTableManager(
       $_db,
-      $_db.spacesTable,
+      $_db.conversationsTable,
     ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_spaceIdTable($_db));
+    final item = $_typedResult.readTableOrNull(_conversationIdTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
@@ -117270,20 +117296,20 @@ class $$ConversationGoalsTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  $$SpacesTableTableFilterComposer get spaceId {
-    final $$SpacesTableTableFilterComposer composer = $composerBuilder(
+  $$ConversationsTableTableFilterComposer get conversationId {
+    final $$ConversationsTableTableFilterComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.spaceId,
-      referencedTable: $db.spacesTable,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SpacesTableTableFilterComposer(
+          }) => $$ConversationsTableTableFilterComposer(
             $db: $db,
-            $table: $db.spacesTable,
+            $table: $db.conversationsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -117323,20 +117349,20 @@ class $$ConversationGoalsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  $$SpacesTableTableOrderingComposer get spaceId {
-    final $$SpacesTableTableOrderingComposer composer = $composerBuilder(
+  $$ConversationsTableTableOrderingComposer get conversationId {
+    final $$ConversationsTableTableOrderingComposer composer = $composerBuilder(
       composer: this,
-      getCurrentColumn: (t) => t.spaceId,
-      referencedTable: $db.spacesTable,
+      getCurrentColumn: (t) => t.conversationId,
+      referencedTable: $db.conversationsTable,
       getReferencedColumn: (t) => t.id,
       builder:
           (
             joinBuilder, {
             $addJoinBuilderToRootComposer,
             $removeJoinBuilderFromRootComposer,
-          }) => $$SpacesTableTableOrderingComposer(
+          }) => $$ConversationsTableTableOrderingComposer(
             $db: $db,
-            $table: $db.spacesTable,
+            $table: $db.conversationsTable,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -117370,26 +117396,27 @@ class $$ConversationGoalsTableTableAnnotationComposer
   GeneratedColumn<DateTime> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 
-  $$SpacesTableTableAnnotationComposer get spaceId {
-    final $$SpacesTableTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.spaceId,
-      referencedTable: $db.spacesTable,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SpacesTableTableAnnotationComposer(
-            $db: $db,
-            $table: $db.spacesTable,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
+  $$ConversationsTableTableAnnotationComposer get conversationId {
+    final $$ConversationsTableTableAnnotationComposer composer =
+        $composerBuilder(
+          composer: this,
+          getCurrentColumn: (t) => t.conversationId,
+          referencedTable: $db.conversationsTable,
+          getReferencedColumn: (t) => t.id,
+          builder:
+              (
+                joinBuilder, {
+                $addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer,
-          ),
-    );
+              }) => $$ConversationsTableTableAnnotationComposer(
+                $db: $db,
+                $table: $db.conversationsTable,
+                $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+                joinBuilder: joinBuilder,
+                $removeJoinBuilderFromRootComposer:
+                    $removeJoinBuilderFromRootComposer,
+              ),
+        );
     return composer;
   }
 }
@@ -117407,7 +117434,7 @@ class $$ConversationGoalsTableTableTableManager
           $$ConversationGoalsTableTableUpdateCompanionBuilder,
           (ConversationGoalsTableData, $$ConversationGoalsTableTableReferences),
           ConversationGoalsTableData,
-          PrefetchHooks Function({bool spaceId})
+          PrefetchHooks Function({bool conversationId})
         > {
   $$ConversationGoalsTableTableTableManager(
     _$WorkspaceDatabase db,
@@ -117433,14 +117460,14 @@ class $$ConversationGoalsTableTableTableManager
               ),
           updateCompanionCallback:
               ({
-                Value<String> spaceId = const Value.absent(),
+                Value<String> conversationId = const Value.absent(),
                 Value<String> workspaceId = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationGoalsTableCompanion(
-                spaceId: spaceId,
+                conversationId: conversationId,
                 workspaceId: workspaceId,
                 title: title,
                 createdAt: createdAt,
@@ -117449,14 +117476,14 @@ class $$ConversationGoalsTableTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String spaceId,
+                required String conversationId,
                 required String workspaceId,
                 required String title,
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ConversationGoalsTableCompanion.insert(
-                spaceId: spaceId,
+                conversationId: conversationId,
                 workspaceId: workspaceId,
                 title: title,
                 createdAt: createdAt,
@@ -117471,7 +117498,7 @@ class $$ConversationGoalsTableTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({spaceId = false}) {
+          prefetchHooksCallback: ({conversationId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -117491,17 +117518,17 @@ class $$ConversationGoalsTableTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (spaceId) {
+                    if (conversationId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.spaceId,
+                                currentColumn: table.conversationId,
                                 referencedTable:
                                     $$ConversationGoalsTableTableReferences
-                                        ._spaceIdTable(db),
+                                        ._conversationIdTable(db),
                                 referencedColumn:
                                     $$ConversationGoalsTableTableReferences
-                                        ._spaceIdTable(db)
+                                        ._conversationIdTable(db)
                                         .id,
                               )
                               as T;
@@ -117530,7 +117557,7 @@ typedef $$ConversationGoalsTableTableProcessedTableManager =
       $$ConversationGoalsTableTableUpdateCompanionBuilder,
       (ConversationGoalsTableData, $$ConversationGoalsTableTableReferences),
       ConversationGoalsTableData,
-      PrefetchHooks Function({bool spaceId})
+      PrefetchHooks Function({bool conversationId})
     >;
 typedef $$RunTranscriptsTableTableCreateCompanionBuilder =
     RunTranscriptsTableCompanion Function({

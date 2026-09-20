@@ -11,8 +11,8 @@ import 'package:uuid/uuid.dart';
 
 /// Drift-backed [TodoRepository].
 ///
-/// Todos and the space goal both live in the workspace's own database file,
-/// so each method resolves its DAO from the `workspaceId` it was given.
+/// Todos and the conversation goal both live in the workspace's own database
+/// file, so each method resolves its DAO from the `workspaceId` it was given.
 class DaoTodoRepository implements TodoRepository {
   /// Creates a [DaoTodoRepository] over the per-workspace databases.
   DaoTodoRepository(this._dbs);
@@ -28,23 +28,23 @@ class DaoTodoRepository implements TodoRepository {
       _dbs.of(workspaceId).conversationGoalDao;
 
   @override
-  Stream<List<TodoItem>> watch(String workspaceId, String spaceId) =>
+  Stream<List<TodoItem>> watch(String workspaceId, String conversationId) =>
       _dao(workspaceId)
-          .watchForSpace(workspaceId, spaceId)
+          .watchForConversation(workspaceId, conversationId)
           .map(_mapper.toDomainList);
 
   @override
   Future<List<TodoItem>> list(
     String workspaceId,
-    String spaceId,
+    String conversationId,
   ) async => _mapper.toDomainList(
-    await _dao(workspaceId).getForSpace(workspaceId, spaceId),
+    await _dao(workspaceId).getForConversation(workspaceId, conversationId),
   );
 
   @override
   Future<void> replaceAll(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     List<TodoItem> items,
   ) async {
     final now = DateTime.now();
@@ -53,23 +53,25 @@ class DaoTodoRepository implements TodoRepository {
         _mapper.toCompanion(
           items[i].copyWith(
             workspaceId: workspaceId,
-            spaceId: spaceId,
+            conversationId: conversationId,
             position: i,
             updatedAt: now,
           ),
         ),
     ];
-    await _dao(workspaceId).replaceAll(workspaceId, spaceId, companions);
+    await _dao(
+      workspaceId,
+    ).replaceAll(workspaceId, conversationId, companions);
   }
 
   @override
   Future<TodoItem> append(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     String content,
   ) async {
     final dao = _dao(workspaceId);
-    final existing = await dao.getForSpace(workspaceId, spaceId);
+    final existing = await dao.getForConversation(workspaceId, conversationId);
     final nextPosition = existing.isEmpty
         ? 0
         : existing.map((r) => r.position).reduce((a, b) => a > b ? a : b) + 1;
@@ -77,7 +79,7 @@ class DaoTodoRepository implements TodoRepository {
     final item = TodoItem(
       id: _uuid.v4(),
       workspaceId: workspaceId,
-      spaceId: spaceId,
+      conversationId: conversationId,
       content: content,
       status: TodoStatus.pending,
       position: nextPosition,
@@ -91,13 +93,13 @@ class DaoTodoRepository implements TodoRepository {
   @override
   Future<void> updateStatus(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     String id,
     TodoStatus status,
   ) => _dao(workspaceId)
       .updateStatus(
         workspaceId,
-        spaceId,
+        conversationId,
         id,
         status.storage,
         DateTime.now(),
@@ -105,59 +107,65 @@ class DaoTodoRepository implements TodoRepository {
       .then((_) {});
 
   @override
-  Future<void> remove(String workspaceId, String spaceId, String id) =>
+  Future<void> remove(String workspaceId, String conversationId, String id) =>
       _dao(
         workspaceId,
-      ).deleteById(workspaceId, spaceId, id).then((_) {});
+      ).deleteById(workspaceId, conversationId, id).then((_) {});
 
   @override
   Future<void> reorder(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     List<String> orderedIds,
   ) async {
     final dao = _dao(workspaceId);
     // One transaction, not N auto-commits. Each write otherwise cost its own
-    // fsync AND re-ran the space's todo watch, so dragging one item in a
-    // 20-item list produced 20 commits and 20 list re-emissions.
+    // fsync AND re-ran the conversation's todo watch, so dragging one item in
+    // a 20-item list produced 20 commits and 20 list re-emissions.
     await dao.transaction(() async {
       for (var i = 0; i < orderedIds.length; i++) {
-        await dao.updatePosition(workspaceId, spaceId, orderedIds[i], i);
+        await dao.updatePosition(
+          workspaceId,
+          conversationId,
+          orderedIds[i],
+          i,
+        );
       }
     });
   }
 
   @override
-  Future<void> clear(String workspaceId, String spaceId) =>
-      _dao(workspaceId).deleteAll(workspaceId, spaceId).then((_) {});
+  Future<void> clear(String workspaceId, String conversationId) => _dao(
+    workspaceId,
+  ).deleteAll(workspaceId, conversationId).then((_) {});
 
   @override
   Stream<ConversationGoal?> watchGoal(
     String workspaceId,
-    String spaceId,
+    String conversationId,
   ) => _goalDao(workspaceId)
-      .watchForSpace(workspaceId, spaceId)
+      .watchForConversation(workspaceId, conversationId)
       .map(_goalMapper.toDomainOrNull);
 
   @override
   Future<void> setGoal(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     String title,
   ) async {
     final trimmed = title.trim();
     if (trimmed.isEmpty) {
-      await clearGoal(workspaceId, spaceId);
+      await clearGoal(workspaceId, conversationId);
       return;
     }
     final now = DateTime.now();
     final goalDao = _goalDao(workspaceId);
-    final existing = await goalDao.getForSpace(
+    final existing = await goalDao.getForConversation(
       workspaceId,
-      spaceId,
+      conversationId,
     );
     final goal = ConversationGoal(
-      spaceId: spaceId,
+      conversationId: conversationId,
       workspaceId: workspaceId,
       title: trimmed,
       createdAt: existing?.createdAt ?? now,
@@ -167,7 +175,8 @@ class DaoTodoRepository implements TodoRepository {
   }
 
   @override
-  Future<void> clearGoal(String workspaceId, String spaceId) => _goalDao(
-    workspaceId,
-  ).deleteForSpace(workspaceId, spaceId).then((_) {});
+  Future<void> clearGoal(String workspaceId, String conversationId) =>
+      _goalDao(
+        workspaceId,
+      ).deleteForConversation(workspaceId, conversationId).then((_) {});
 }

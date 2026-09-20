@@ -159,37 +159,30 @@ class GitHubUserProfileHeader extends StatelessWidget {
       }
     }
 
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: tokens.bgSecondary,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ActivityHeatmap(
-            data: data,
-            weeks: heatmapWeeks,
-            cellSize: 10,
-            cellGap: 2,
-            cellRadius: 2,
-            showLegend: false,
-            palette: isDark ? _brandBlueDark : _brandBlueLight,
-            tooltipBuilder: _contributionTooltip,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ActivityHeatmap(
+          data: data,
+          weeks: heatmapWeeks,
+          cellSize: 10,
+          cellGap: 2,
+          cellRadius: 2,
+          showLegend: false,
+          palette: isDark ? _brandBlueDark : _brandBlueLight,
+          tooltipBuilder: _contributionTooltip,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '${_formatNumber(calendar.totalContributions)} contributions in the last year',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: tokens.textTertiary,
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${_formatNumber(calendar.totalContributions)} contributions in the last year',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: tokens.textTertiary,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

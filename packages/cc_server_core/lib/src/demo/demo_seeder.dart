@@ -911,7 +911,19 @@ class DemoSeeder {
       return;
     }
     final spaceId = spaces.first.id;
-    await _todos.setGoal(workspaceId, spaceId, 'Land #412 before the cut');
+    final conversations = await _dbs
+        .of(workspaceId)
+        .conversationDao
+        .listForSpace(workspaceId, spaceId);
+    if (conversations.isEmpty) {
+      return;
+    }
+    final conversationId = conversations.first.id;
+    await _todos.setGoal(
+      workspaceId,
+      conversationId,
+      'Land #412 before the cut',
+    );
     final items = <({String text, TodoStatus status})>[
       (text: 'Read the diff on #412', status: TodoStatus.completed),
       (
@@ -932,11 +944,15 @@ class DemoSeeder {
       ),
     ];
     for (final item in items) {
-      final created = await _todos.append(workspaceId, spaceId, item.text);
+      final created = await _todos.append(
+        workspaceId,
+        conversationId,
+        item.text,
+      );
       if (item.status != TodoStatus.pending) {
         await _todos.updateStatus(
           workspaceId,
-          spaceId,
+          conversationId,
           created.id,
           item.status,
         );

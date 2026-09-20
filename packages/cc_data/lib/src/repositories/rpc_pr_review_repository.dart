@@ -301,9 +301,26 @@ class RpcPrReviewRepository implements PrReviewRepository {
       .map((data) => data['diff'] as String? ?? '');
 
   @override
-  Stream<List<PrFile>> watchFiles(int prNumber) => _client
-      .subscribe('pr_review.watchFiles', _coords({'pr_number': prNumber}))
-      .map(_filesFromData);
+  Stream<List<PrFile>> watchFiles(
+    int prNumber, {
+    bool includePatches = true,
+  }) => _client
+      .subscribe(
+        'pr_review.watchFiles',
+        _coords({
+          'pr_number': prNumber,
+          if (!includePatches) 'include_patches': false,
+        }),
+      )
+      .asyncMap((data) async {
+        // Full-patch snapshots are the 13k-line payload. Yield so the
+        // Diff tab's chrome can paint before we walk every hunk. The
+        // index (includePatches: false) is small enough to map inline.
+        if (includePatches) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        return _filesFromData(data);
+      });
 
   @override
   Stream<String> watchFileContent(String path, String ref) => _client
@@ -347,21 +364,30 @@ class RpcPrReviewRepository implements PrReviewRepository {
       );
 
   @override
-  Stream<List<PrCodeReviewComment>> watchReviewComments(int prNumber) => _client
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  }) => _client
       .subscribe(
         'pr_review.watchReviewComments',
-        _coords({'pr_number': prNumber}),
+        _coords({
+          'pr_number': prNumber,
+          if (!includeHunks) 'include_hunks': false,
+        }),
       )
-      .map(
-        (data) => ((data['comments'] as List?) ?? const [])
+      .asyncMap((data) async {
+        if (includeHunks) {
+          await Future<void>.delayed(Duration.zero);
+        }
+        return ((data['comments'] as List?) ?? const [])
             .whereType<Map>()
             .map(
               (c) => _reviewCommentFromDto(
                 PrCodeReviewCommentDto.fromJson(c.cast<String, dynamic>()),
               ),
             )
-            .toList(),
-      );
+            .toList();
+      });
 
   @override
   Stream<List<IssueComment>> watchIssueComments(int prNumber) => _client

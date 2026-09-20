@@ -22,20 +22,13 @@ void main() {
     await seedTestWorkspace(global, dbs, 'w-1');
     await seedTestWorkspace(global, dbs, 'w-2');
     repo = DaoTodoRepository(dbs);
-    // Seed the spaces the goals FK-reference, each into its own workspace's
-    // database file.
-    for (final (id, ws) in [('c-1', 'w-1'), ('c-2', 'w-1'), ('c-3', 'w-2')]) {
-      final db = dbs.of(ws);
-      await db
-          .into(db.spacesTable)
-          .insert(
-            SpacesTableCompanion.insert(
-              id: id,
-              name: id,
-              workspaceId: Value(ws),
-            ),
-          );
-    }
+    // Seed the conversations the todos/goals FK-reference, each into its own
+    // workspace's database file.
+    await seedTodoConversations(dbs.of('w-1'), [
+      ('c-1', 'w-1'),
+      ('c-2', 'w-1'),
+    ]);
+    await seedTodoConversations(dbs.of('w-2'), [('c-3', 'w-2')]);
   });
 
   tearDown(() async {
@@ -49,7 +42,7 @@ void main() {
       final g = await repo.watchGoal('w-1', 'c-1').first;
       expect(g, isNotNull);
       expect(g!.title, 'Ship it');
-      expect(g.spaceId, 'c-1');
+      expect(g.conversationId, 'c-1');
       expect(g.workspaceId, 'w-1');
       expect(
         g.createdAt,
@@ -152,7 +145,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'do thing',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -170,7 +163,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'persisted',
           status: TodoStatus.inProgress,
           createdAt: DateTime(2026),
@@ -193,7 +186,7 @@ void main() {
           TodoItem(
             id: 't-1',
             workspaceId: 'w-1',
-            spaceId: 'c-1',
+            conversationId: 'c-1',
             content: 'first',
             createdAt: DateTime(2026),
             updatedAt: DateTime(2026),
@@ -201,7 +194,7 @@ void main() {
           TodoItem(
             id: 't-2',
             workspaceId: 'w-1',
-            spaceId: 'c-1',
+            conversationId: 'c-1',
             content: 'second',
             createdAt: DateTime(2026),
             updatedAt: DateTime(2026),
@@ -219,7 +212,7 @@ void main() {
         TodoItem(
           id: 't-old',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'old',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -229,7 +222,7 @@ void main() {
         TodoItem(
           id: 't-new',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'new',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -245,7 +238,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'first',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -269,7 +262,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'do thing',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -285,7 +278,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'keep',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -293,7 +286,7 @@ void main() {
         TodoItem(
           id: 't-2',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'drop',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -312,7 +305,7 @@ void main() {
           TodoItem(
             id: 't-1',
             workspaceId: 'w-1',
-            spaceId: 'c-1',
+            conversationId: 'c-1',
             content: 'one',
             createdAt: DateTime(2026),
             updatedAt: DateTime(2026),
@@ -320,7 +313,7 @@ void main() {
           TodoItem(
             id: 't-2',
             workspaceId: 'w-1',
-            spaceId: 'c-1',
+            conversationId: 'c-1',
             content: 'two',
             createdAt: DateTime(2026),
             updatedAt: DateTime(2026),
@@ -328,7 +321,7 @@ void main() {
           TodoItem(
             id: 't-3',
             workspaceId: 'w-1',
-            spaceId: 'c-1',
+            conversationId: 'c-1',
             content: 'three',
             createdAt: DateTime(2026),
             updatedAt: DateTime(2026),
@@ -347,7 +340,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'one',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),
@@ -376,7 +369,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'w-1',
-          spaceId: 'c-1',
+          conversationId: 'c-1',
           content: 'ws-1 todo',
           createdAt: DateTime(2026),
           updatedAt: DateTime(2026),

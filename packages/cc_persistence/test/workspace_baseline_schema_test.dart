@@ -507,6 +507,108 @@ void main() {
       expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
 
+    test('a fresh database keys todos and goals by conversation', () async {
+      final db = createTestDatabase();
+      addTearDown(db.close);
+
+      Future<Set<String>> columnsOf(String table) async =>
+          (await db.customSelect("PRAGMA table_info('$table')").get())
+              .map((r) => r.read<String>('name'))
+              .toSet();
+
+      final todos = await columnsOf('todos');
+      expect(todos, contains('conversation_id'));
+      expect(todos, isNot(contains('space_id')));
+
+      final goals = await columnsOf('conversation_goals');
+      expect(goals, contains('conversation_id'));
+      expect(goals, isNot(contains('space_id')));
+    });
+
+    test(
+      'an existing v8 database drops space-keyed todos and goals',
+      () async {
+        final dir = await Directory.systemTemp.createTemp('ws_migration_v9_');
+        addTearDown(() => dir.delete(recursive: true));
+        final file = File('${dir.path}/ws.db');
+
+        final setup = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        await setup.customStatement(
+          "INSERT INTO spaces (id, name, workspace_id) VALUES ('s-1', 's-1', 'ws')",
+        );
+        await setup.customStatement('DROP TABLE IF EXISTS todos');
+        await setup.customStatement(
+          'DROP TABLE IF EXISTS conversation_goals',
+        );
+        await setup.customStatement('''
+CREATE TABLE todos (
+  id TEXT NOT NULL PRIMARY KEY,
+  workspace_id TEXT NOT NULL,
+  space_id TEXT NOT NULL REFERENCES spaces (id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  "position" INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+)
+''');
+        await setup.customStatement('''
+CREATE TABLE conversation_goals (
+  space_id TEXT NOT NULL PRIMARY KEY REFERENCES spaces (id) ON DELETE CASCADE,
+  workspace_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+)
+''');
+        await setup.customStatement(
+          "INSERT INTO todos (id, workspace_id, space_id, content, "
+          "created_at, updated_at) VALUES ('t-old', 'ws', 's-1', 'stale', 0, 0)",
+        );
+        await setup.customStatement(
+          "INSERT INTO conversation_goals (space_id, workspace_id, title, "
+          "created_at, updated_at) VALUES ('s-1', 'ws', 'stale goal', 0, 0)",
+        );
+        await setup.customStatement('PRAGMA user_version = 8');
+        await setup.close();
+
+        final db = WorkspaceDatabase.forTesting(
+          NativeDatabase(file),
+          workspaceId: 'ws',
+        );
+        addTearDown(db.close);
+
+        Future<Set<String>> columnsOf(String table) async =>
+            (await db.customSelect("PRAGMA table_info('$table')").get())
+                .map((r) => r.read<String>('name'))
+                .toSet();
+
+        final todos = await columnsOf('todos');
+        expect(todos, contains('conversation_id'));
+        expect(todos, isNot(contains('space_id')));
+        expect(
+          (await db.customSelect('SELECT COUNT(*) AS n FROM todos').getSingle())
+              .read<int>('n'),
+          0,
+        );
+
+        final goals = await columnsOf('conversation_goals');
+        expect(goals, contains('conversation_id'));
+        expect(goals, isNot(contains('space_id')));
+        expect(
+          (await db
+                  .customSelect('SELECT COUNT(*) AS n FROM conversation_goals')
+                  .getSingle())
+              .read<int>('n'),
+          0,
+        );
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      },
+    );
+
     test('a fresh database carries the generic chat link tables', () async {
       final db = createTestDatabase();
       addTearDown(db.close);

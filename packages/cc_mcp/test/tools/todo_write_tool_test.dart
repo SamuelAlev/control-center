@@ -1,5 +1,5 @@
-import 'package:cc_domain/features/messaging/domain/entities/space.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
@@ -8,22 +8,22 @@ import 'package:test/test.dart';
 
 void main() {
   late _FakeTodos todos;
-  late _FakeMessaging messaging;
+  late _FakeConversations conversations;
   late TodoWriteTool tool;
 
   setUp(() {
     todos = _FakeTodos();
-    messaging = _FakeMessaging();
+    conversations = _FakeConversations();
     tool = TodoWriteTool(
       todoRepository: todos,
-      messagingRepository: messaging,
+      conversationRepository: conversations,
     );
   });
 
-  test('refuses a space from another workspace', () async {
+  test('refuses a conversation from another workspace', () async {
     final result = await tool.run({
       'workspace_id': 'ws-1',
-      'space_id': 'space-other',
+      'conversation_id': 'conv-other',
       'todos': [
         {'content': 'Do it', 'status': 'pending'},
       ],
@@ -35,7 +35,7 @@ void main() {
   test('preserves identity across full-list writes', () async {
     final first = await tool.run({
       'workspace_id': 'ws-1',
-      'space_id': 'space-1',
+      'conversation_id': 'conv-1',
       'todos': [
         {'content': 'Ship it', 'status': 'pending'},
       ],
@@ -46,7 +46,7 @@ void main() {
 
     final second = await tool.run({
       'workspace_id': 'ws-1',
-      'space_id': 'space-1',
+      'conversation_id': 'conv-1',
       'todos': [
         {'content': 'Ship it', 'status': 'in_progress'},
       ],
@@ -63,13 +63,15 @@ class _FakeTodos implements TodoRepository {
   List<TodoItem> items = [];
 
   @override
-  Future<List<TodoItem>> list(String workspaceId, String spaceId) async =>
-      List.unmodifiable(items);
+  Future<List<TodoItem>> list(
+    String workspaceId,
+    String conversationId,
+  ) async => List.unmodifiable(items);
 
   @override
   Future<void> replaceAll(
     String workspaceId,
-    String spaceId,
+    String conversationId,
     List<TodoItem> next,
   ) async {
     items = List.of(next);
@@ -79,18 +81,24 @@ class _FakeTodos implements TodoRepository {
   dynamic noSuchMethod(Invocation invocation) {}
 }
 
-class _FakeMessaging implements MessagingRepository {
+class _FakeConversations implements ConversationRepository {
   @override
-  Stream<List<Space>> watchSpacesByWorkspace(String workspaceId) =>
-      Stream.value([
-        Space(
-          id: 'space-1',
-          name: 'Work',
-          workspaceId: workspaceId,
-          createdAt: DateTime(2026),
-          updatedAt: DateTime(2026),
-        ),
-      ]);
+  Future<Conversation?> getById({
+    required String workspaceId,
+    required String conversationId,
+  }) async {
+    if (conversationId != 'conv-1' || workspaceId != 'ws-1') {
+      return null;
+    }
+    return Conversation(
+      id: 'conv-1',
+      workspaceId: workspaceId,
+      spaceId: 'space-1',
+      title: 'Work',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+    );
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}

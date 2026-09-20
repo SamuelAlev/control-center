@@ -47,49 +47,71 @@ class _NullWorkspaceIdNotifier extends ActiveWorkspaceIdNotifier {
   String? build() => null;
 }
 
-Widget _wrap(Widget child) {
+Widget _wrap(
+  Widget child, {
+  List<PrCodeReviewComment>? comments,
+  List<PrReviewSubmission>? reviews,
+  List<IssueComment>? issueComments,
+  List<PrCommit>? commits,
+  List<PrTimelineEvent>? events,
+}) {
   return ProviderScope(
     overrides: [
-      prReviewCommentsProvider(_prRef).overrideWith(
-        (ref) => Stream.value([
-          PrCodeReviewComment(
-            id: 100,
-            body: 'inline note',
-            user: const PrUser(login: 'krishna', avatarUrl: ''),
-            path: 'lib/b.dart',
-            position: 1,
-            line: 1,
-            createdAt: _t0.add(const Duration(hours: 4)),
-            reviewId: 1,
-          ),
-          // A reply, submitted with a LATER review: it belongs to the
-          // conversation above, not to a timeline entry of its own.
-          PrCodeReviewComment(
-            id: 101,
-            body: 'good catch',
-            user: const PrUser(login: 'alexandra', avatarUrl: ''),
-            path: 'lib/b.dart',
-            position: 1,
-            line: 1,
-            inReplyToId: 100,
-            createdAt: _t0.add(const Duration(hours: 5)),
-            reviewId: 9,
-          ),
-          // OUTDATED: no anchor line, so the diff cannot place it at all and
-          // the timeline is the only place it can be read.
-          PrCodeReviewComment(
-            id: 102,
-            body: 'this code is gone now',
-            user: const PrUser(login: 'krishna', avatarUrl: ''),
-            path: 'lib/gone.dart',
-            position: null,
-            diffHunk: '@@ -1,2 +1,2 @@\n-old line\n+new line',
-            createdAt: _t0.add(const Duration(hours: 4)),
-            reviewId: 1,
-          ),
-        ]),
+      prReviewCommentIndexProvider(_prRef).overrideWith(
+        (ref) => Stream.value(
+          comments ??
+              [
+                PrCodeReviewComment(
+                  id: 100,
+                  body: 'inline note',
+                  user: const PrUser(login: 'krishna', avatarUrl: ''),
+                  path: 'lib/b.dart',
+                  position: 1,
+                  line: 1,
+                  createdAt: _t0.add(const Duration(hours: 4)),
+                  reviewId: 1,
+                ),
+                // A reply, submitted with a LATER review: it belongs to the
+                // conversation above, not to a timeline entry of its own.
+                PrCodeReviewComment(
+                  id: 101,
+                  body: 'good catch',
+                  user: const PrUser(login: 'alexandra', avatarUrl: ''),
+                  path: 'lib/b.dart',
+                  position: 1,
+                  line: 1,
+                  inReplyToId: 100,
+                  createdAt: _t0.add(const Duration(hours: 5)),
+                  reviewId: 9,
+                ),
+                // OUTDATED: no anchor line, so the diff cannot place it at all
+                // and the timeline is the only place it can be read.
+                PrCodeReviewComment(
+                  id: 102,
+                  body: 'this code is gone now',
+                  user: const PrUser(login: 'krishna', avatarUrl: ''),
+                  path: 'lib/gone.dart',
+                  position: null,
+                  diffHunk: '@@ -1,2 +1,2 @@\n-old line\n+new line',
+                  createdAt: _t0.add(const Duration(hours: 4)),
+                  reviewId: 1,
+                ),
+                // Resolved conversations start collapsed; preview only.
+                PrCodeReviewComment(
+                  id: 103,
+                  body: 'already settled',
+                  user: const PrUser(login: 'krishna', avatarUrl: ''),
+                  path: 'lib/done.dart',
+                  position: 1,
+                  line: 4,
+                  isResolved: true,
+                  createdAt: _t0.add(const Duration(hours: 4)),
+                  reviewId: 1,
+                ),
+              ],
+        ),
       ),
-      prFilesProvider(_prRef).overrideWith(
+      prFileIndexProvider(_prRef).overrideWith(
         (ref) => Stream.value([
           PrFile(
             filename: 'lib/a.dart',
@@ -115,116 +137,132 @@ Widget _wrap(Widget child) {
         (ref) => const Stream<List<Workspace>>.empty(),
       ),
       prReviewsProvider(_prRef).overrideWith(
-        (ref) => Stream.value([
-          PrReviewSubmission(
-            id: 1,
-            state: PrReviewSubmissionState.approved,
-            author: const PrUser(login: 'krishna', avatarUrl: ''),
-            body: 'looks good!',
-            submittedAt: _t0.add(const Duration(hours: 4)),
-            // A reaction joined in from GraphQL: the review summary is a
-            // comment card on GitHub and carries reactions like one.
-            reactions: const [
-              ReactionGroup(
-                content: '+1',
-                emoji: '👍',
-                count: 2,
-                userReacted: false,
-                usernames: ['matias', 'sam'],
-              ),
-            ],
-          ),
-          PrReviewSubmission(
-            id: 2,
-            state: PrReviewSubmissionState.approved,
-            author: const PrUser(login: 'matias', avatarUrl: ''),
-            body: '',
-            submittedAt: _t0.add(const Duration(hours: 16)),
-          ),
-          // A review that ONLY replied to an earlier conversation: it starts no
-          // thread of its own, so without the reply reference its entry is a
-          // bare "reviewed" row with the words nowhere in sight.
-          PrReviewSubmission(
-            id: 9,
-            state: PrReviewSubmissionState.commented,
-            author: const PrUser(login: 'alexandra', avatarUrl: ''),
-            body: '',
-            submittedAt: _t0.add(const Duration(hours: 5)),
-          ),
-        ]),
+        (ref) => Stream.value(
+          reviews ??
+              [
+                PrReviewSubmission(
+                  id: 1,
+                  state: PrReviewSubmissionState.approved,
+                  author: const PrUser(login: 'krishna', avatarUrl: ''),
+                  body: 'looks good!',
+                  submittedAt: _t0.add(const Duration(hours: 4)),
+                  // A reaction joined in from GraphQL: the review summary is a
+                  // comment card on GitHub and carries reactions like one.
+                  reactions: const [
+                    ReactionGroup(
+                      content: '+1',
+                      emoji: '👍',
+                      count: 2,
+                      userReacted: false,
+                      usernames: ['matias', 'sam'],
+                    ),
+                  ],
+                ),
+                PrReviewSubmission(
+                  id: 2,
+                  state: PrReviewSubmissionState.approved,
+                  author: const PrUser(login: 'matias', avatarUrl: ''),
+                  body: '',
+                  submittedAt: _t0.add(const Duration(hours: 16)),
+                ),
+                // A review that ONLY replied to an earlier conversation: it
+                // starts no thread of its own, so without the reply reference
+                // its entry is a bare "reviewed" row with the words nowhere
+                // in sight.
+                PrReviewSubmission(
+                  id: 9,
+                  state: PrReviewSubmissionState.commented,
+                  author: const PrUser(login: 'alexandra', avatarUrl: ''),
+                  body: '',
+                  submittedAt: _t0.add(const Duration(hours: 5)),
+                ),
+              ],
+        ),
       ),
       prIssueCommentsProvider(_prRef).overrideWith(
-        (ref) => Stream.value([
-          IssueComment(
-            id: 22,
-            body: '## Quality Gate failed\n\n- 77.2% coverage on new code',
-            user: const PrUser(login: 'sonarqubecloud[bot]', avatarUrl: ''),
-            createdAt: _t0.add(const Duration(hours: 2)),
-          ),
-        ]),
+        (ref) => Stream.value(
+          issueComments ??
+              [
+                IssueComment(
+                  id: 22,
+                  body: '## Quality Gate failed\n\n- 77.2% coverage on new code',
+                  user: const PrUser(
+                    login: 'sonarqubecloud[bot]',
+                    avatarUrl: '',
+                  ),
+                  createdAt: _t0.add(const Duration(hours: 2)),
+                ),
+              ],
+        ),
       ),
       prCommitsProvider(_prRef).overrideWith(
-        (ref) => Stream.value([
-          PrCommit(
-            sha: '845facb1234',
-            message: 'refactor: introduce overrides in sidebar',
-            author: const PrUser(login: 'red', avatarUrl: ''),
-            date: _t0.add(const Duration(hours: 1)),
-          ),
-          // A contiguous same-author run — compacted to a "pushed 2 commits"
-          // accordion.
-          PrCommit(
-            sha: 'e07bcc41234',
-            message: 'upd',
-            author: const PrUser(login: 'sam', avatarUrl: ''),
-            date: _t0.add(const Duration(hours: 1, minutes: 10)),
-          ),
-          PrCommit(
-            sha: 'f797b6c1234',
-            message: 'upd',
-            author: const PrUser(login: 'sam', avatarUrl: ''),
-            date: _t0.add(const Duration(hours: 1, minutes: 20)),
-          ),
-        ]),
+        (ref) => Stream.value(
+          commits ??
+              [
+                PrCommit(
+                  sha: '845facb1234',
+                  message: 'refactor: introduce overrides in sidebar',
+                  author: const PrUser(login: 'red', avatarUrl: ''),
+                  date: _t0.add(const Duration(hours: 1)),
+                ),
+                // A contiguous same-author run — compacted to a
+                // "pushed 2 commits" accordion.
+                PrCommit(
+                  sha: 'e07bcc41234',
+                  message: 'upd',
+                  author: const PrUser(login: 'sam', avatarUrl: ''),
+                  date: _t0.add(const Duration(hours: 1, minutes: 10)),
+                ),
+                PrCommit(
+                  sha: 'f797b6c1234',
+                  message: 'upd',
+                  author: const PrUser(login: 'sam', avatarUrl: ''),
+                  date: _t0.add(const Duration(hours: 1, minutes: 20)),
+                ),
+              ],
+        ),
       ),
       prTimelineEventsProvider(_prRef).overrideWith(
-        (ref) => Stream.value([
-          PrTimelineEvent(
-            kind: PrTimelineEventKind.reviewRequested,
-            actor: const PrUser(login: 'alice', avatarUrl: ''),
-            reviewerName: 'krishna',
-            createdAt: _t0.add(const Duration(minutes: 5)),
-          ),
-          PrTimelineEvent(
-            kind: PrTimelineEventKind.reviewRequested,
-            actor: const PrUser(login: 'alice', avatarUrl: ''),
-            reviewerName: 'Brand Fundamentals',
-            reviewerIsTeam: true,
-            createdAt: _t0.add(const Duration(minutes: 5, seconds: 10)),
-          ),
-          PrTimelineEvent(
-            kind: PrTimelineEventKind.reviewRequestRemoved,
-            actor: const PrUser(login: 'alice', avatarUrl: ''),
-            reviewerName: 'krishna',
-            createdAt: _t0.add(const Duration(minutes: 5, seconds: 20)),
-          ),
-          PrTimelineEvent(
-            kind: PrTimelineEventKind.reviewRequested,
-            actor: const PrUser(login: 'alice', avatarUrl: ''),
-            reviewerName: 'matias',
-            createdAt: _t0.add(const Duration(minutes: 5, seconds: 30)),
-          ),
-          PrTimelineEvent(
-            kind: PrTimelineEventKind.labeled,
-            actor: const PrUser(login: 'renovate[bot]', avatarUrl: ''),
-            label: const PrLabel(
-              name: 'dependencies',
-              color: '0366d6',
-              description: 'Pull requests that update a dependency file',
-            ),
-            createdAt: _t0.add(const Duration(minutes: 8)),
-          ),
-        ]),
+        (ref) => Stream.value(
+          events ??
+              [
+                PrTimelineEvent(
+                  kind: PrTimelineEventKind.reviewRequested,
+                  actor: const PrUser(login: 'alice', avatarUrl: ''),
+                  reviewerName: 'krishna',
+                  createdAt: _t0.add(const Duration(minutes: 5)),
+                ),
+                PrTimelineEvent(
+                  kind: PrTimelineEventKind.reviewRequested,
+                  actor: const PrUser(login: 'alice', avatarUrl: ''),
+                  reviewerName: 'Brand Fundamentals',
+                  reviewerIsTeam: true,
+                  createdAt: _t0.add(const Duration(minutes: 5, seconds: 10)),
+                ),
+                PrTimelineEvent(
+                  kind: PrTimelineEventKind.reviewRequestRemoved,
+                  actor: const PrUser(login: 'alice', avatarUrl: ''),
+                  reviewerName: 'krishna',
+                  createdAt: _t0.add(const Duration(minutes: 5, seconds: 20)),
+                ),
+                PrTimelineEvent(
+                  kind: PrTimelineEventKind.reviewRequested,
+                  actor: const PrUser(login: 'alice', avatarUrl: ''),
+                  reviewerName: 'matias',
+                  createdAt: _t0.add(const Duration(minutes: 5, seconds: 30)),
+                ),
+                PrTimelineEvent(
+                  kind: PrTimelineEventKind.labeled,
+                  actor: const PrUser(login: 'renovate[bot]', avatarUrl: ''),
+                  label: const PrLabel(
+                    name: 'dependencies',
+                    color: '0366d6',
+                    description: 'Pull requests that update a dependency file',
+                  ),
+                  createdAt: _t0.add(const Duration(minutes: 8)),
+                ),
+              ],
+        ),
       ),
     ],
     child: MaterialApp(
@@ -263,18 +301,25 @@ void main() {
       'renders event rows and markdown comment cards inside a scroll view '
       'without layout exceptions',
       (tester) async {
+        tester.view.physicalSize = const Size(800, 4000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
         final controller = ScrollController();
         addTearDown(controller.dispose);
         final diffJumps = <int>[];
         await tester.pumpWidget(
           _wrap(
-            SingleChildScrollView(
+            CustomScrollView(
               controller: controller,
-              child: PrActivityTimeline(
-                pr: _pr(),
-                prRef: _prRef,
-                onOpenFileInDiff: diffJumps.add,
-              ),
+              cacheExtent: 8000,
+              slivers: [
+                PrActivityTimeline(
+                  pr: _pr(),
+                  prRef: _prRef,
+                  onOpenFileInDiff: diffJumps.add,
+                ),
+              ],
             ),
           ),
         );
@@ -328,38 +373,38 @@ void main() {
         // next to the add-reaction pill every comment card has.
         expect(find.text('👍'), findsOneWidget);
         expect(find.text('2'), findsOneWidget);
-        // The review's inline conversations render in full here — body, author
-        // and all — because an OUTDATED one (its line gone from the diff) can
-        // be read nowhere else.
-        expect(find.text('2 code comments'), findsOneWidget);
+        // Unresolved conversations start open so the text and replies are
+        // readable without a click.
+        expect(find.text('3 code comments'), findsOneWidget);
         expect(find.text('lib/b.dart'), findsOneWidget);
-        expect(_richTextContaining('inline note'), findsWidgets);
+        expect(find.text('inline note'), findsWidgets);
         expect(find.text('krishna'), findsWidgets);
-        // A reply submitted with a LATER review still belongs to the
-        // conversation it answers, not to a timeline entry of its own.
+        expect(_richTextContaining('inline note'), findsWidgets);
         expect(_richTextContaining('good catch'), findsWidgets);
         expect(find.text('2 comments'), findsOneWidget);
-        // The review that only REPLIED gets its own reference card, showing
-        // what was said and pointing back at the conversation it answers.
-        expect(find.text('In reply to lib/b.dart'), findsOneWidget);
-        // The outdated conversation is here, badged, with the hunk it was left
-        // against — and offers no jump, because there is no row to jump to.
         expect(find.text('lib/gone.dart'), findsOneWidget);
         expect(find.text('Outdated'), findsOneWidget);
+        expect(find.text('this code is gone now'), findsWidgets);
         expect(_richTextContaining('this code is gone now'), findsWidgets);
-        // The hunk renders as a real diff: markers stripped, content
-        // syntax-highlighted, old/new line numbers in a gutter.
         expect(_richTextContaining('old line'), findsWidgets);
         expect(_richTextContaining('new line'), findsWidgets);
         expect(find.text('-old line'), findsNothing);
         expect(find.text('@@ -1,2 +1,2 @@'), findsNothing);
+        // Resolved conversations start collapsed: preview only, no reply box.
+        expect(find.text('lib/done.dart'), findsOneWidget);
+        expect(find.text('already settled'), findsWidgets);
+        expect(find.text('Resolved'), findsOneWidget);
+        // The review that only REPLIED gets its own reference card, showing
+        // what was said and pointing back at the conversation it answers.
+        expect(find.text('In reply to lib/b.dart'), findsOneWidget);
         // The jump to the diff moved onto the conversation's file header, and
         // resolves the commented file's tree-order index (lib/b.dart is second
         // after lib/a.dart).
         final jump = find.byIcon(AppIcons.arrowRight);
-        expect(jump, findsOneWidget);
-        await tester.ensureVisible(jump);
-        await tester.tap(jump);
+        // Live file + the resolved conversation that still has a line.
+        expect(jump, findsNWidgets(2));
+        await tester.ensureVisible(jump.first);
+        await tester.tap(jump.first);
         expect(diffJumps, [1]);
         // Bot comment: badge + stripped display login + markdown body.
         expect(find.text('bot'), findsOneWidget);
@@ -386,6 +431,138 @@ void main() {
 
         await tester.pumpWidget(Container());
         await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      'only on-screen conversations build, even when they start open',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final comments = [
+          for (var i = 0; i < 20; i++)
+            PrCodeReviewComment(
+              id: 200 + i,
+              body: 'thread-body-$i',
+              user: const PrUser(login: 'krishna', avatarUrl: ''),
+              path: 'lib/f$i.dart',
+              position: 1,
+              line: 1,
+              createdAt: _t0.add(Duration(minutes: i)),
+              reviewId: 1,
+            ),
+        ];
+
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          _wrap(
+            CustomScrollView(
+              controller: controller,
+              cacheExtent: 0,
+              slivers: [
+                PrActivityTimeline(pr: _pr(), prRef: _prRef),
+              ],
+            ),
+            comments: comments,
+            reviews: [
+              PrReviewSubmission(
+                id: 1,
+                state: PrReviewSubmissionState.commented,
+                author: const PrUser(login: 'krishna', avatarUrl: ''),
+                body: '',
+                submittedAt: _t0,
+              ),
+            ],
+            issueComments: const [],
+            commits: const [],
+            events: const [],
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 5));
+
+        expect(_richTextContaining('thread-body-0'), findsOneWidget);
+        // Precalculation may have measured later threads; the invariant is
+        // that scrolling them into view does not resize the thumb.
+
+        // The list used to extrapolate extent from the visible average, so
+        // the thumb shrank and grew as short rows and tall cards swapped.
+        final before = controller.position.maxScrollExtent;
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -240));
+        await tester.pump();
+        expect(
+          controller.position.maxScrollExtent,
+          closeTo(before, 8),
+          reason: 'scroll extent must not jump when newly built rows appear',
+        );
+      },
+    );
+
+    testWidgets(
+      'scroll extent stays stable when short events give way to tall cards',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 400);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // Unique authors so commits stay one row each (same-author runs
+        // compact to a single accordion).
+        final commits = [
+          for (var i = 0; i < 24; i++)
+            PrCommit(
+              sha: 'c${i.toString().padLeft(8, '0')}',
+              message: 'commit $i',
+              author: PrUser(login: 'dev$i', avatarUrl: ''),
+              date: _t0.add(Duration(minutes: i)),
+            ),
+        ];
+        final issueComments = [
+          for (var i = 0; i < 6; i++)
+            IssueComment(
+              id: 300 + i,
+              body: '${'paragraph $i. ' * 40}\n\n${'more text. ' * 40}',
+              user: const PrUser(login: 'sonarqubecloud[bot]', avatarUrl: ''),
+              createdAt: _t0.add(Duration(hours: 2, minutes: i)),
+            ),
+        ];
+
+        final controller = ScrollController();
+        addTearDown(controller.dispose);
+        await tester.pumpWidget(
+          _wrap(
+            CustomScrollView(
+              controller: controller,
+              cacheExtent: 0,
+              slivers: [
+                PrActivityTimeline(pr: _pr(), prRef: _prRef),
+              ],
+            ),
+            comments: const [],
+            reviews: const [],
+            issueComments: issueComments,
+            commits: commits,
+            events: const [],
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 5));
+
+        final before = controller.position.maxScrollExtent;
+        expect(before, greaterThan(400));
+
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+        await tester.pump();
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -900));
+        await tester.pump();
+
+        expect(
+          controller.position.maxScrollExtent,
+          closeTo(before, 8),
+          reason: 'mixed short/tall rows must not resize the Overview thumb',
+        );
       },
     );
   });

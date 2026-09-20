@@ -11,6 +11,9 @@ import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart'
 import 'package:cc_domain/features/dispatch/domain/entities/agent_goal_run.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_goal_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/commit_status.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/settings/domain/entities/acp_model.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_domain/features/todos/domain/entities/conversation_goal.dart';
@@ -30,7 +33,7 @@ void main() {
         TodoItem(
           id: 't-1',
           workspaceId: 'ws-1',
-          spaceId: 's-1',
+          conversationId: 's-1',
           content: 'do it',
           status: TodoStatus.inProgress,
           position: 2,
@@ -40,7 +43,7 @@ void main() {
       );
       expect(w['id'], 't-1');
       expect(w['workspace_id'], 'ws-1');
-      expect(w['space_id'], 's-1');
+      expect(w['conversation_id'], 's-1');
       expect(w['content'], 'do it');
       expect(w['status'], 'in_progress');
       expect(w['position'], 2);
@@ -51,14 +54,14 @@ void main() {
     test('goalToWire maps every field', () {
       final w = goalToWire(
         ConversationGoal(
-          spaceId: 's-1',
+          conversationId: 's-1',
           workspaceId: 'ws-1',
           title: 'Ship it',
           createdAt: DateTime(2026, 7, 1, 9),
           updatedAt: DateTime(2026, 7, 1, 10),
         ),
       );
-      expect(w['space_id'], 's-1');
+      expect(w['conversation_id'], 's-1');
       expect(w['workspace_id'], 'ws-1');
       expect(w['title'], 'Ship it');
       expect(w['created_at'], '2026-07-01T09:00:00.000');
@@ -506,6 +509,50 @@ void main() {
         expect((parsed.hour, parsed.minute), (0, 0));
       },
     );
+
+    test('prFileToWire keeps the patch body by default', () {
+      final f = PrFile(
+        filename: 'lib/a.dart',
+        status: PrFileStatus.modified,
+        additions: 2,
+        deletions: 1,
+        patch: '@@ -1,1 +1,2 @@\n-a\n+b\n+c\n',
+      );
+      final w = prFileToWire(f);
+      expect(w['filename'], 'lib/a.dart');
+      expect(w['status'], 'modified');
+      expect(w['additions'], 2);
+      expect(w['deletions'], 1);
+      expect(w['patch'], f.patch);
+    });
+
+    test('prFileToWire omits the patch body when includePatch is false', () {
+      final f = PrFile(
+        filename: 'lib/a.dart',
+        status: PrFileStatus.modified,
+        additions: 2,
+        deletions: 1,
+        patch: '@@ -1,1 +1,2 @@\n-a\n+b\n+c\n',
+      );
+      final w = prFileToWire(f, includePatch: false);
+      expect(w['filename'], 'lib/a.dart');
+      expect(w['additions'], 2);
+      expect(w['patch'], '');
+    });
+
+    test('prCodeReviewCommentToWire omits the hunk when includeHunk is false', () {
+      final c = PrCodeReviewComment(
+        id: 9,
+        body: 'nits',
+        user: const PrUser(login: 'octocat', avatarUrl: ''),
+        path: 'lib/a.dart',
+        position: 1,
+        createdAt: DateTime(2026, 7, 1, 9),
+        diffHunk: '@@ -1,1 +1,1 @@\n-a\n+b\n',
+      );
+      expect(prCodeReviewCommentToWire(c)['diff_hunk'], c.diffHunk);
+      expect(prCodeReviewCommentToWire(c, includeHunk: false)['diff_hunk'], '');
+    });
   });
 
   group('prCountsTowardNeedsMyReview', () {

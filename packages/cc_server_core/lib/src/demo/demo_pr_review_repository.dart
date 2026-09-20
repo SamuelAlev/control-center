@@ -142,11 +142,20 @@ class DemoPrReviewRepository extends EmptyPrReviewRepository {
       .map((raw) => raw ?? '');
 
   @override
-  Stream<List<PrFile>> watchFiles(int prNumber) => _watchList(
-    DemoPrCacheKind.files,
-    _key(prNumber),
-    PrCacheCodec.fileFromCache,
-  );
+  Stream<List<PrFile>> watchFiles(
+    int prNumber, {
+    bool includePatches = true,
+  }) {
+    final raw = _watchList(
+      DemoPrCacheKind.files,
+      _key(prNumber),
+      PrCacheCodec.fileFromCache,
+    );
+    if (includePatches) {
+      return raw;
+    }
+    return raw.map((files) => [for (final f in files) f.copyWith(patch: '')]);
+  }
 
   @override
   Stream<String> watchFileContent(String path, String ref) => _db.cacheDao
@@ -179,12 +188,22 @@ class DemoPrReviewRepository extends EmptyPrReviewRepository {
   );
 
   @override
-  Stream<List<PrCodeReviewComment>> watchReviewComments(int prNumber) =>
-      _watchList(
-        DemoPrCacheKind.reviewComments,
-        _key(prNumber),
-        PrCacheCodec.reviewCommentFromCache,
-      );
+  Stream<List<PrCodeReviewComment>> watchReviewComments(
+    int prNumber, {
+    bool includeHunks = true,
+  }) {
+    final raw = _watchList(
+      DemoPrCacheKind.reviewComments,
+      _key(prNumber),
+      PrCacheCodec.reviewCommentFromCache,
+    );
+    if (includeHunks) {
+      return raw;
+    }
+    return raw.map(
+      (comments) => [for (final c in comments) c.copyWith(diffHunk: '')],
+    );
+  }
 
   @override
   Stream<List<IssueComment>> watchIssueComments(int prNumber) => _watchList(

@@ -197,17 +197,17 @@
       "datasourceTemplate": "github-tags"
     },
     {
-      "description": "tree-sitter-swift grammar pin (TS_SWIFT_REF; only *-with-generated-files tags ship parser.c)",
+      "description": "tree-sitter-swift grammar pin (TS_SWIFT_REF; only *-with-generated-files tags ship parser.c). currentValue is the tag without the comment's `v` prefix \u2014 upstream tags are 0.7.3-with-generated-files, not v0.7.3, and extractVersion + a v-prefixed currentValue cannot resolve a digest.",
       "customType": "regex",
       "managerFilePatterns": [
         "/scripts/lib/native_pins\\.env$/"
       ],
       "matchStrings": [
-        "TS_SWIFT_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?(?<currentValue>v[0-9][\\w.]*)"
+        "TS_SWIFT_REF[^\\n]*?(?<currentDigest>[0-9a-f]{40})[^\\n]*?v(?<currentValue>[0-9][\\w.-]*-with-generated-files)"
       ],
       "depNameTemplate": "alex-pinkus/tree-sitter-swift",
       "datasourceTemplate": "github-tags",
-      "extractVersionTemplate": "^(?<version>\\d+\\.\\d+\\.\\d+)-with-generated-files$"
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-with-generated-files$"
     },
     {
       "description": "tree-sitter-kotlin grammar pin (TS_KOTLIN_REF)",
@@ -379,21 +379,6 @@
       "depNameTemplate": "phosphor-icons/core",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "description": "Manrope UI font. Replace the vendored TTF when this bumps.",
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/packages/cc_ui/fonts/Manrope-LICENSE\\.txt$/",
-        "/third_party/licenses/manrope-font-LICENSE\\.txt$/",
-        "/scripts/lib/third_party\\.sh$/"
-      ],
-      "matchStrings": [
-        "Manrope \\(variable font\\) (?<currentValue>[0-9][\\w.]*)",
-        "Manrope \\(font\\)\\|(?<currentValue>[0-9][\\w.]*)\\|"
-      ],
-      "depNameTemplate": "sharanda/manrope",
-      "datasourceTemplate": "github-tags"
     },
     {
       "description": "Fira Code mono font. Replace the vendored TTF when this bumps.",

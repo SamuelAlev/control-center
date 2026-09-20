@@ -201,8 +201,8 @@ class McpToolBridge extends HarnessTool {
     }
     // space_id comes from the run's SPACE, never from its conversation id. A
     // conversation owns its own uuid, so filling a space-scoped argument from
-    // it names no space: `todo_write`/`todo_read` failed their ownership check
-    // on every call and the agent's task list never worked.
+    // it names no space: worktree-scoped tools failed their ownership check
+    // on every call.
     final spaceId = context.spaceId;
     if (spaceId != null &&
         spaceId.isNotEmpty &&

@@ -1,19 +1,19 @@
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
-import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/todos/domain/entities/todo_item.dart';
 import 'package:cc_domain/features/todos/domain/repositories/todo_repository.dart';
 import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
 
-/// Records or updates the persisted task checklist for a space.
+/// Records or updates the persisted task checklist for a conversation.
 ///
 /// This is the single agent-facing todo surface: it is reached both by the
-/// built-in harness (bridged into the loop, with `space_id` injected from the
-/// run context) and by external adapters (Claude CLI / Pi) over MCP. The list
-/// is persisted per `(workspace_id, space_id)` — a space owns one worktree and
-/// one task list, which is what the `todos.space_id` foreign key points at —
-/// and rendered in the app's General pane. The model always passes the FULL
-/// list (create + update in one shot), matching the historical ephemeral tool
-/// contract.
+/// built-in harness (bridged into the loop, with `conversation_id` injected
+/// from the run context) and by external adapters (Claude CLI / Pi) over MCP.
+/// The list is persisted per `(workspace_id, conversation_id)` — a conversation
+/// owns one stream and one task list, which is what the `todos.conversation_id`
+/// foreign key points at — and rendered in the app's General pane. The model
+/// always passes the FULL list (create + update in one shot), matching the
+/// historical ephemeral tool contract.
 ///
 /// **Identity is preserved across calls.** A full-list write is reconciled
 /// against the stored list rather than blindly re-minting rows: an incoming
@@ -34,12 +34,12 @@ class TodoWriteTool extends McpTool {
   /// Creates a [TodoWriteTool].
   TodoWriteTool({
     required TodoRepository todoRepository,
-    required MessagingRepository messagingRepository,
+    required ConversationRepository conversationRepository,
   }) : _todos = todoRepository,
-       _messaging = messagingRepository;
+       _conversations = conversationRepository;
 
   final TodoRepository _todos;
-  final MessagingRepository _messaging;
+  final ConversationRepository _conversations;
 
   static const _statuses = {'pending', 'in_progress', 'completed'};
 
@@ -48,7 +48,7 @@ class TodoWriteTool extends McpTool {
 
   @override
   String get description =>
-      'Record AND update the task checklist for this space. Pass the '
+      'Record AND update the task checklist for this conversation. Pass the '
       'FULL list every call as `todos` (items are {content, status}, plus an '
       'optional {id}); status is one of pending, in_progress, completed.\n'
       'The list is only useful if its state tracks reality, so:\n'
@@ -62,8 +62,8 @@ class TodoWriteTool extends McpTool {
       'changed — that is how an item keeps its identity and its place. Pass '
       'the `id` from `todo_read` when you want to be explicit.\n'
       'Appending new items without ever transitioning the old ones is the one '
-      'way to use this tool wrong. The list is persisted per space and shown '
-      'to the user live.';
+      'way to use this tool wrong. The list is persisted per conversation and '
+      'shown to the user live.';
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -71,11 +71,11 @@ class TodoWriteTool extends McpTool {
     'properties': {
       'workspace_id': {
         'type': 'string',
-        'description': 'The workspace the space belongs to.',
+        'description': 'The workspace the conversation belongs to.',
       },
-      'space_id': {
+      'conversation_id': {
         'type': 'string',
-        'description': 'The space whose task list to write.',
+        'description': 'The conversation whose task list to write.',
       },
       'todos': {
         'type': 'array',
@@ -102,7 +102,7 @@ class TodoWriteTool extends McpTool {
         },
       },
     },
-    'required': ['workspace_id', 'space_id', 'todos'],
+    'required': ['workspace_id', 'conversation_id', 'todos'],
   };
 
   @override
@@ -111,10 +111,10 @@ class TodoWriteTool extends McpTool {
     if (workspaceId is! String || workspaceId.isEmpty) {
       return CallResult.error('Missing or invalid argument: workspace_id');
     }
-    final spaceId = arguments['space_id'];
-    if (spaceId is! String || spaceId.isEmpty) {
+    final conversationId = arguments['conversation_id'];
+    if (conversationId is! String || conversationId.isEmpty) {
       return CallResult.error(
-        'Missing or invalid argument: space_id (expected string)',
+        'Missing or invalid argument: conversation_id (expected string)',
       );
     }
     final raw = arguments['todos'];
@@ -122,16 +122,21 @@ class TodoWriteTool extends McpTool {
       return CallResult.error('Missing or invalid argument: todos');
     }
 
-    // Workspace isolation (hard invariant): the space MUST belong to the
-    // caller's workspace. A bare space_id is not proof of ownership.
-    final spaces = await _messaging.watchSpacesByWorkspace(workspaceId).first;
-    if (!spaces.any((s) => s.id == spaceId)) {
-      return CallResult.error('Space belongs to a different workspace.');
+    // Workspace isolation (hard invariant): the conversation MUST belong to
+    // the caller's workspace. A bare conversation_id is not proof of ownership.
+    final conversation = await _conversations.getById(
+      workspaceId: workspaceId,
+      conversationId: conversationId,
+    );
+    if (conversation == null) {
+      return CallResult.error(
+        'Conversation belongs to a different workspace.',
+      );
     }
 
     // Reconcile against the stored list so unchanged items keep their identity
     // (id + createdAt) instead of being deleted and re-inserted under a new id.
-    final existing = await _todos.list(workspaceId, spaceId);
+    final existing = await _todos.list(workspaceId, conversationId);
     final byId = {for (final e in existing) e.id: e};
     final byContent = <String, List<TodoItem>>{};
     for (final e in existing) {
@@ -190,7 +195,7 @@ class TodoWriteTool extends McpTool {
         TodoItem(
           id: resolvedId,
           workspaceId: workspaceId,
-          spaceId: spaceId,
+          conversationId: conversationId,
           content: trimmed,
           status: TodoStatus.fromStorage(status),
           position: i,
@@ -200,7 +205,7 @@ class TodoWriteTool extends McpTool {
       );
     }
 
-    await _todos.replaceAll(workspaceId, spaceId, items);
+    await _todos.replaceAll(workspaceId, conversationId, items);
     final dropped = [
       for (final e in existing)
         if (!claimed.contains(e.id)) e,

@@ -81,8 +81,15 @@ class FilesTab extends ConsumerWidget {
     final scope = ref.watch(prDiffScopeProvider);
     final scoped = scope.isScoped;
 
-    // Watch the full load state for clone-progress reporting.
-    final filesLoad = ref.watch(prFilesLoadProvider(prRef));
+    // Clone progress is only meaningful while we have no file list at
+    // all. Watching [prFilesLoadProvider] here starts the full-patch
+    // subscription — keep that off the first Diff frame when Overview
+    // already supplied the metadata index via [allFiles].
+    final filesLoad = allFiles.isEmpty
+        ? ref.watch(prFilesLoadProvider(prRef))
+        : const AsyncValue<PrFilesLoad>.data(
+            PrFilesLoad(files: [], isComplete: true),
+          );
     final clonePhase = filesLoad.value?.clonePhase;
     final cloneMessage = filesLoad.value?.cloneMessage ?? '';
 

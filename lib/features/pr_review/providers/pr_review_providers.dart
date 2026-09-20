@@ -344,6 +344,10 @@ final prDiffProvider = StreamProvider.autoDispose.family<String, PrRef>((
 /// Bridges from `prFilesLoadProvider` via `ref.listen` so the clone/compute
 /// pipeline only runs ONCE, regardless of how many widgets watch either
 /// provider. Emits only when the file list is non-empty.
+///
+/// This is the FULL-patch subscription. Overview must not watch it — use
+/// [prFileIndexProvider] so opening a PR does not decode every hunk on
+/// the UI isolate.
 final prFilesProvider =
     StreamProvider.autoDispose.family<List<PrFile>, PrRef>((ref, pr) {
       final controller = StreamController<List<PrFile>>();
@@ -362,6 +366,33 @@ final prFilesProvider =
 
       return controller.stream;
     });
+
+/// Changed-file index: path, status and +/- counts, no patch bodies.
+///
+/// Overview, complexity/ship-show-ask badges and the file tree subscribe
+/// here. A 52-file / 13k-line PR is a handful of names on this stream and
+/// the entire unified diff on [prFilesProvider].
+final prFileIndexProvider = StreamProvider.autoDispose
+    .family<List<PrFile>, PrRef>((ref, pr) {
+      return _prStream(
+        ref,
+        pr,
+        (repository) =>
+            repository.watchFiles(pr.number, includePatches: false),
+      );
+    });
+
+/// Patched files when they have arrived, otherwise the patch-free index.
+///
+/// Diff chrome (tree, counts, headers) can paint from the index the
+/// moment Overview loaded it; the sliver swaps in real patches when
+/// [prFilesProvider] emits.
+List<PrFile> preferPatchedFiles(List<PrFile>? patched, List<PrFile>? index) {
+  if (patched != null && patched.isNotEmpty) {
+    return patched;
+  }
+  return index ?? const [];
+}
 
 /// Pr file content key: the PR the file belongs to (its repo binds the
 /// repository), the path, and the ref to read.
@@ -513,9 +544,28 @@ final issueSearchProvider = FutureProvider.autoDispose
     });
 
 /// Stream of inline review comments for a PR.
+///
+/// This is the FULL-hunk subscription. Overview must not watch it — use
+/// [prReviewCommentIndexProvider] so opening a PR does not decode every
+/// comment's `diff_hunk` on the UI isolate.
 final prReviewCommentsProvider = StreamProvider.autoDispose
     .family<List<PrCodeReviewComment>, PrRef>((ref, pr) {
       return _prStream(ref, pr, (r) => r.watchReviewComments(pr.number));
+    });
+
+/// Inline-comment index: ids, bodies, paths and thread state, no hunks.
+///
+/// Overview groups conversations from this stream. The forge hunk stays
+/// on [prReviewCommentsProvider] for the Diff tab and for an expanded
+/// outdated card that needs the code picture.
+final prReviewCommentIndexProvider = StreamProvider.autoDispose
+    .family<List<PrCodeReviewComment>, PrRef>((ref, pr) {
+      return _prStream(
+        ref,
+        pr,
+        (repository) =>
+            repository.watchReviewComments(pr.number, includeHunks: false),
+      );
     });
 
 /// Stream of top-level issue comments for a PR.

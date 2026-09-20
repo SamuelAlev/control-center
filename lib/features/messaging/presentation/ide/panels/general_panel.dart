@@ -8,6 +8,7 @@ import 'package:cc_domain/features/todos/domain/value_objects/todo_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/undo/action_journal.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agent_run_target.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/agents_section.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/goals_section.dart';
@@ -24,6 +25,7 @@ import 'package:control_center/features/workspaces/providers/workspace_providers
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:control_center/shared/widgets/collapsible_sidebar_section.dart';
 import 'package:control_center/shared/widgets/pr_title_text.dart';
 import 'package:flutter/material.dart';
@@ -74,17 +76,26 @@ class GeneralPanel extends ConsumerWidget {
         message: l10n.selectConversation,
       );
     }
+    final conversationId = focusedConversationId(context, ref, spaceId);
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
       children: [
         // Durable supervised goals (`/goal` + `/loop`) sit on top: they are
         // the standing orders every run below works toward.
-        GoalsSection(spaceId: spaceId, workspaceId: workspaceId),
+        if (conversationId != null)
+          GoalsSection(
+            conversationId: conversationId,
+            workspaceId: workspaceId,
+          ),
         // The conversation's linked pull request, when there is one.
         _PullRequestsSection(spaceId: spaceId),
         // An approved plan shows up as this conversation's GOAL (inside TODOS),
         // not as a surface of its own.
-        _TodosSection(spaceId: spaceId, workspaceId: workspaceId),
+        _TodosSection(
+          spaceId: spaceId,
+          conversationId: conversationId,
+          workspaceId: workspaceId,
+        ),
         AgentsSection(
           spaceId: spaceId,
           workspaceId: workspaceId,
@@ -113,6 +124,29 @@ class GeneralPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// The focused conversation in this space: the `?tab=chat:<id>` query when a
+/// chat tab is selected, otherwise the space's standing conversation.
+///
+/// Todos and goals are keyed by conversation, so the General pane has to
+/// follow the same identity the conversations sidebar uses. Layout restore
+/// does not rebuild this host on every tab press, so reading the URL (not
+/// the in-memory layout) is what makes switching conversations actually
+/// swap the list.
+String? focusedConversationId(
+  BuildContext context,
+  WidgetRef ref,
+  String spaceId,
+) {
+  final tabKey = GoRouterState.of(
+    context,
+  ).uri.queryParameters[editorTabQueryParam];
+  final standingId = ref.watch(standingConversationIdProvider(spaceId)).value;
+  if (tabKey == null || tabKey == MessagingTabKinds.chatSpaceTabKey(spaceId)) {
+    return standingId;
+  }
+  return MessagingTabKinds.conversationIdFromChatTabKey(tabKey) ?? standingId;
 }
 
 /// The messaging IDE sidebar's collapsible section shell now lives in
@@ -266,17 +300,27 @@ class _ConversationPrCard extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _TodosSection extends ConsumerWidget {
-  const _TodosSection({required this.spaceId, required this.workspaceId});
+  const _TodosSection({
+    required this.spaceId,
+    required this.conversationId,
+    required this.workspaceId,
+  });
 
   final String spaceId;
+  final String? conversationId;
   final String workspaceId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final todosAsync = ref.watch(conversationTodosProvider(spaceId));
-    final todos = todosAsync.asData?.value ?? const <TodoItem>[];
-    final goal = ref.watch(conversationGoalProvider(spaceId)).asData?.value;
+    final conversationId = this.conversationId;
+    final todos = conversationId == null
+        ? const <TodoItem>[]
+        : ref.watch(conversationTodosProvider(conversationId)).asData?.value ??
+              const <TodoItem>[];
+    final goal = conversationId == null
+        ? null
+        : ref.watch(conversationGoalProvider(conversationId)).asData?.value;
 
     final listBody = todos.isEmpty
         ? SidebarEmptyRow(message: l10n.generalTodosEmpty)
@@ -289,9 +333,11 @@ class _TodosSection extends ConsumerWidget {
               final ids = todos.map((t) => t.id).toList();
               final moved = ids.removeAt(oldIndex);
               ids.insert(newIndex, moved);
-              ref
-                  .read(todoRepositoryProvider)
-                  .reorder(workspaceId, spaceId, ids);
+              if (conversationId != null) {
+                ref
+                    .read(todoRepositoryProvider)
+                    .reorder(workspaceId, conversationId, ids);
+              }
             },
             itemBuilder: (context, index) {
               final todo = todos[index];
@@ -307,7 +353,15 @@ class _TodosSection extends ConsumerWidget {
                     TodoStatus.completed => TodoStatus.pending,
                   };
                   final repo = ref.read(todoRepositoryProvider);
-                  repo.updateStatus(workspaceId, spaceId, todo.id, next);
+                  if (conversationId == null) {
+                    return;
+                  }
+                  repo.updateStatus(
+                    workspaceId,
+                    conversationId,
+                    todo.id,
+                    next,
+                  );
                   // Reversible (PRD 19 §5): ⌘Z restores the prior status.
                   ref
                       .read(actionJournalProvider.notifier)
@@ -317,13 +371,13 @@ class _TodosSection extends ConsumerWidget {
                           undoClass: UndoClass.reversible,
                           undo: () => repo.updateStatus(
                             workspaceId,
-                            spaceId,
+                            conversationId,
                             todo.id,
                             previous,
                           ),
                           redo: () => repo.updateStatus(
                             workspaceId,
-                            spaceId,
+                            conversationId,
                             todo.id,
                             next,
                           ),
@@ -382,16 +436,20 @@ class _TodosSection extends ConsumerWidget {
   /// Clears the conversation's goal (reversible via ⌘Z — undo re-sets the same
   /// title).
   void _clearGoal(WidgetRef ref, AppLocalizations l10n, ConversationGoal goal) {
+    final conversationId = this.conversationId;
+    if (conversationId == null) {
+      return;
+    }
     final repo = ref.read(todoRepositoryProvider);
-    repo.clearGoal(workspaceId, spaceId);
+    repo.clearGoal(workspaceId, conversationId);
     ref
         .read(actionJournalProvider.notifier)
         .record(
           UndoableAction(
             label: l10n.undoLabelGoalClear,
             undoClass: UndoClass.reversible,
-            undo: () => repo.setGoal(workspaceId, spaceId, goal.title),
-            redo: () => repo.clearGoal(workspaceId, spaceId),
+            undo: () => repo.setGoal(workspaceId, conversationId, goal.title),
+            redo: () => repo.clearGoal(workspaceId, conversationId),
           ),
         );
   }

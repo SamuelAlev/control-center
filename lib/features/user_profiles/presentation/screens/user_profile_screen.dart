@@ -129,11 +129,11 @@ class _ProfileHeaderCard extends ConsumerWidget {
     final tokens = context.designSystem!;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.xl),
       decoration: BoxDecoration(
-        color: tokens.bgSecondary,
-        border: Border.all(color: tokens.borderSecondary),
-        borderRadius: BorderRadius.circular(4),
+        color: tokens.panel,
+        border: Border.all(color: tokens.borderPrimary),
+        borderRadius: AppRadii.brLg,
       ),
       child: profileAsync.when(
         loading: () =>

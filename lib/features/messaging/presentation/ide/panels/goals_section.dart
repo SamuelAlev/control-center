@@ -18,12 +18,12 @@ class GoalsSection extends ConsumerWidget {
   /// Creates a [GoalsSection].
   const GoalsSection({
     super.key,
-    required this.spaceId,
+    required this.conversationId,
     required this.workspaceId,
   });
 
   /// The conversation whose goals are shown.
-  final String spaceId;
+  final String conversationId;
 
   /// The active workspace.
   final String workspaceId;
@@ -35,7 +35,9 @@ class GoalsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final goalsAsync = ref.watch(conversationAgentGoalRunsProvider(spaceId));
+    final goalsAsync = ref.watch(
+      conversationAgentGoalRunsProvider(conversationId),
+    );
     final goals = goalsAsync.asData?.value ?? const <AgentGoalRun>[];
     if (goals.isEmpty) {
       return const SizedBox.shrink();

@@ -1257,7 +1257,7 @@ Future<CcServer> runCcServer({
     runLogs: agentRunLogRepository,
   );
 
-  // Per-space todo store — shared by the MCP `todo_write` tool (below)
+  // Per-conversation todo store — shared by the MCP `todo_write` tool (below)
   // and the `todos.*` RPC ops (further down). Constructed once.
   final todoRepository = DaoTodoRepository(workspaceDbs);
 
@@ -1473,11 +1473,9 @@ Future<CcServer> runCcServer({
             : canonicalHash({'command': a.command}),
       );
       unawaited(
-        guardDecisionRepository.append(decision).catchError((Object e) {
-          // Block body: `=> log(...)` returns `void` and catchError then
-          // throws "must return a value of the future's type".
-          CcHostLog.warning('guard audit append failed: $e');
-        }),
+        guardDecisionRepository
+            .append(decision)
+            .catchError(_onGuardAuditAppendError),
       );
       // A COPY to the operator's SIEM, when one is configured. Never gates
       // the decision: the durable, verifiable record is the local chain.
@@ -2793,7 +2791,7 @@ Future<CcServer> runCcServer({
     ..register(
       TodoReadTool(
         todoRepository: todoRepository,
-        messagingRepository: messagingRepository,
+        conversationRepository: conversationRepository,
       ),
     )
     ..register(
@@ -6293,9 +6291,7 @@ Future<CcServer> runCcServer({
                     correlationId: correlationId,
                   ),
                 )
-                .catchError((Object e) {
-                  CcHostLog.warning('guard audit append failed: $e');
-                }),
+                .catchError(_onGuardAuditAppendError),
           );
         },
     // The membership chokepoint: every workspace-scoped op resolves the
@@ -7812,3 +7808,6 @@ Future<CcServer> runCcServer({
   }
   return ccServer;
 }
+
+Future<void> _onGuardAuditAppendError(Object error, [StackTrace? _]) async =>
+    CcHostLog.warning('guard audit append failed: $error');

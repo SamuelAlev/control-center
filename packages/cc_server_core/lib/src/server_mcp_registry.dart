@@ -217,7 +217,7 @@ McpToolRegistry buildServerMcpRegistry({
     ),
     TodoWriteTool(
       todoRepository: todoRepository,
-      messagingRepository: messagingRepository,
+      conversationRepository: DaoConversationRepository(workspaceDbs),
     ),
     // Workspaces / agents / repos.
     ListWorkspacesTool(repository: workspaceRepository),

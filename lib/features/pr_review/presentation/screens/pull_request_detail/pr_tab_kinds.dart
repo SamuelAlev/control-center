@@ -1,3 +1,5 @@
+import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
+import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
@@ -108,5 +110,14 @@ abstract final class PrTabKinds {
       default:
         return AppIcons.fileText;
     }
+  }
+
+  /// Tab-strip icon for [tab], using the rig's surface args when the kind is
+  /// [rig]. Kind-only [iconFor] cannot tell an iOS tab from a desktop one.
+  static IconData iconForTab(EditorTab tab) {
+    if (tab.kind == rig) {
+      return RigTabSurfaces.iconForArgs(tab.args);
+    }
+    return iconFor(tab.kind);
   }
 }

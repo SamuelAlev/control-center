@@ -23,54 +23,59 @@ class _OutcomeLedger extends StatelessWidget {
             ? 4
             : 2;
         final width = constraints.maxWidth / columns;
-        return Wrap(
-          children: [
-            for (var index = 0; index < facts.length; index++)
-              SizedBox(
-                width: width,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: BorderDirectional(
-                      start: index % columns == 0
-                          ? BorderSide.none
-                          : BorderSide(color: t.borderSecondary),
-                      top: index < columns
-                          ? BorderSide.none
-                          : BorderSide(color: t.borderSecondary),
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: t.borderSecondary)),
+          ),
+          child: Wrap(
+            children: [
+              for (var index = 0; index < facts.length; index++)
+                SizedBox(
+                  width: width,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: BorderDirectional(
+                        start: index % columns == 0
+                            ? BorderSide.none
+                            : BorderSide(color: t.borderSecondary),
+                        top: index < columns
+                            ? BorderSide.none
+                            : BorderSide(color: t.borderSecondary),
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          facts[index].value,
-                          maxLines: 1,
-                          style: CcFonts.code(
-                            textStyle: CcTypography.body.copyWith(
-                              color: t.textPrimary,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.md,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            facts[index].value,
+                            maxLines: 1,
+                            style: CcFonts.code(
+                              textStyle: CcTypography.body.copyWith(
+                                color: t.textPrimary,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xxs),
-                        Text(
-                          facts[index].label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: CcTypography.caption.copyWith(
-                            color: t.textSecondary,
+                          const SizedBox(height: AppSpacing.xxs),
+                          Text(
+                            facts[index].label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: CcTypography.caption.copyWith(
+                              color: t.textSecondary,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -273,7 +278,6 @@ class _BucketHistogram extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
     final total = counts.fold<int>(0, (sum, value) => sum + value);
     final maxCount = counts.fold<int>(0, math.max);
     final semantics = [
@@ -292,78 +296,119 @@ class _BucketHistogram extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             for (var index = 0; index < counts.length; index++)
-              Row(
-                children: [
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      labels[index],
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: CcFonts.code(
-                        textStyle: CcTypography.caption.copyWith(
-                          color: medianBucket == index
-                              ? t.textPrimary
-                              : t.textSecondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: SizedBox(
-                      height: 12,
-                      child: ColoredBox(
-                        color: t.bgTertiary,
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: FractionallySizedBox(
-                            widthFactor: maxCount == 0
-                                ? 0
-                                : counts[index] / maxCount,
-                            heightFactor: 1,
-                            child: ColoredBox(
-                              color: medianBucket == index
-                                  ? t.fgPrimary
-                                  : t.muted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  SizedBox(
-                    width: 24,
-                    child: Text(
-                      '${counts[index]}',
-                      textAlign: TextAlign.end,
-                      style: CcFonts.code(
-                        textStyle: CcTypography.caption.copyWith(
-                          color: counts[index] == 0
-                              ? t.textTertiary
-                              : t.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 38,
-                    child: Text(
-                      total == 0
-                          ? '—'
-                          : '${(counts[index] * 100 / total).round()}%',
-                      textAlign: TextAlign.end,
-                      style: CcFonts.code(
-                        textStyle: CcTypography.caption.copyWith(
-                          color: t.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              _HistogramBar(
+                label: labels[index],
+                count: counts[index],
+                percent: total == 0
+                    ? '—'
+                    : '${(counts[index] * 100 / total).round()}%',
+                fraction: maxCount == 0 ? 0 : counts[index] / maxCount,
+                emphasized: medianBucket == index,
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HistogramBar extends StatefulWidget {
+  const _HistogramBar({
+    required this.label,
+    required this.count,
+    required this.percent,
+    required this.fraction,
+    required this.emphasized,
+  });
+
+  final String label;
+  final int count;
+  final String percent;
+  final double fraction;
+  final bool emphasized;
+
+  @override
+  State<_HistogramBar> createState() => _HistogramBarState();
+}
+
+class _HistogramBarState extends State<_HistogramBar> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    final fill = _hovered
+        ? t.accent
+        : widget.emphasized
+        ? t.fgPrimary
+        : t.muted;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: CcTooltip(
+        showDelay: CcMotion.fast,
+        placement: CcTooltipPlacement.top,
+        message: '${widget.label} · ${widget.count} (${widget.percent})',
+        child: Row(
+          children: [
+            SizedBox(
+              width: 72,
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: CcFonts.code(
+                  textStyle: CcTypography.caption.copyWith(
+                    color: widget.emphasized || _hovered
+                        ? t.textPrimary
+                        : t.textSecondary,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: SizedBox(
+                height: 12,
+                child: ColoredBox(
+                  color: t.bgTertiary,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: FractionallySizedBox(
+                      widthFactor: widget.fraction,
+                      heightFactor: 1,
+                      child: ColoredBox(color: fill),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            SizedBox(
+              width: 24,
+              child: Text(
+                '${widget.count}',
+                textAlign: TextAlign.end,
+                style: CcFonts.code(
+                  textStyle: CcTypography.caption.copyWith(
+                    color: widget.count == 0 ? t.textTertiary : t.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+            SizedBox(
+              width: 38,
+              child: Text(
+                widget.percent,
+                textAlign: TextAlign.end,
+                style: CcFonts.code(
+                  textStyle: CcTypography.caption.copyWith(
+                    color: t.textSecondary,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -408,29 +453,22 @@ class _MergeTrendChart extends StatelessWidget {
                     ),
                   ),
                 )
-              : _trendPlot(context, locale, t, l10n),
+              : _trendPlot(locale, t, l10n),
         ),
       ),
     );
   }
 
   Widget _trendPlot(
-    BuildContext context,
     String locale,
     DesignSystemTokens t,
     AppLocalizations l10n,
   ) {
-    final values = [
-      for (final point in points) math.log(math.max(1, point.hours * 60)),
-    ];
-    var minY = values.reduce(math.min);
-    var maxY = values.reduce(math.max);
-    final span = math.max(0.4, maxY - minY);
-    minY -= span * 0.08;
-    maxY += span * 0.08;
-    final interval = (maxY - minY) / 2;
+    final values = [for (final point in points) _logMinutes(point.hours)];
+    final axis = _LogDurationAxis.fromValues(values);
     final last = points.length - 1;
     final stride = math.max(1, (points.length / 3).ceil());
+    final sample = (axis.maxY - axis.minY) / 80;
     final axisStyle = CcFonts.code(
       textStyle: CcTypography.caption.copyWith(
         color: t.textSecondary,
@@ -438,106 +476,132 @@ class _MergeTrendChart extends StatelessWidget {
       ),
     );
 
-    bool onGrid(double value) {
-      if (interval <= 0) {
-        return true;
+    Widget? tickTitle(double value, TitleMeta meta) {
+      for (final tick in axis.ticks) {
+        if ((value - tick).abs() <= sample / 2) {
+          return SideTitleWidget(
+            meta: meta,
+            space: 4,
+            child: SizedBox(
+              width: 52,
+              child: Text(
+                _duration(l10n, math.exp(tick) / 60),
+                textAlign: TextAlign.right,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: axisStyle,
+              ),
+            ),
+          );
+        }
       }
-      final steps = ((value - minY) / interval).round();
-      return (value - (minY + steps * interval)).abs() <= interval * 0.05;
+      return null;
     }
 
-    return LineChart(
-      duration: Duration.zero,
-      LineChartData(
-        minX: 0,
-        maxX: math.max(1, last).toDouble(),
-        minY: minY,
-        maxY: maxY,
-        clipData: const FlClipData.all(),
-        borderData: FlBorderData(show: false),
-        lineTouchData: const LineTouchData(enabled: false),
-        gridData: FlGridData(
-          drawVerticalLine: false,
-          horizontalInterval: interval,
-          getDrawingHorizontalLine: (_) =>
-              FlLine(color: t.borderSecondary, strokeWidth: 1),
-        ),
-        titlesData: FlTitlesData(
-          topTitles: const AxisTitles(),
-          rightTitles: const AxisTitles(),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 56,
-              interval: interval,
-              getTitlesWidget: (value, meta) {
-                if (!onGrid(value)) {
-                  return const SizedBox.shrink();
-                }
-                return SideTitleWidget(
-                  meta: meta,
-                  space: 4,
-                  fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-                  child: SizedBox(
-                    width: 52,
+    return ChartHoverHost(
+      plotPadding: _trendPlotPadding,
+      pointCount: points.length,
+      maxY: axis.maxY - axis.minY,
+      seriesColors: [t.accent],
+      seriesValuesAt: (index) => [values[index] - axis.minY],
+      flyoutBuilder: (index) {
+        final point = points[index];
+        return Text(
+          '${DateFormat.yMMMd(locale).format(point.weekStart)}\n'
+          '${_duration(l10n, point.hours)}',
+        );
+      },
+      child: LineChart(
+        duration: Duration.zero,
+        LineChartData(
+          minX: 0,
+          maxX: math.max(1, last).toDouble(),
+          minY: axis.minY,
+          maxY: axis.maxY,
+          clipData: const FlClipData.all(),
+          borderData: FlBorderData(show: false),
+          lineTouchData: const LineTouchData(enabled: false),
+          gridData: const FlGridData(show: false),
+          extraLinesData: ExtraLinesData(
+            extraLinesOnTop: false,
+            horizontalLines: [
+              for (final tick in axis.ticks)
+                HorizontalLine(
+                  y: tick,
+                  color: t.borderSecondary,
+                  strokeWidth: 1,
+                ),
+            ],
+          ),
+          titlesData: FlTitlesData(
+            topTitles: const AxisTitles(),
+            rightTitles: const AxisTitles(),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 56,
+                interval: sample,
+                minIncluded: false,
+                maxIncluded: false,
+                getTitlesWidget: (value, meta) =>
+                    tickTitle(value, meta) ?? const SizedBox.shrink(),
+              ),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 28,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  final index = value.round();
+                  if (index < 0 || index > last) {
+                    return const SizedBox.shrink();
+                  }
+                  final isEdge = index == 0 || index == last;
+                  final isStride = index % stride == 0;
+                  if (!isEdge && (!isStride || last - index < stride)) {
+                    return const SizedBox.shrink();
+                  }
+                  return SideTitleWidget(
+                    meta: meta,
+                    space: 4,
+                    fitInside: SideTitleFitInsideData.fromTitleMeta(
+                      meta,
+                      distanceFromEdge: 0,
+                    ),
                     child: Text(
-                      _duration(l10n, math.exp(value) / 60),
-                      textAlign: TextAlign.right,
+                      DateFormat.MMMd(locale).format(points[index].weekStart),
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                       style: axisStyle,
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 28,
-              interval: 1,
-              getTitlesWidget: (value, meta) {
-                final index = value.round();
-                if (index < 0 || index > last) {
-                  return const SizedBox.shrink();
-                }
-                final isEdge = index == 0 || index == last;
-                final isStride = index % stride == 0;
-                if (!isEdge && (!isStride || last - index < stride)) {
-                  return const SizedBox.shrink();
-                }
-                return SideTitleWidget(
-                  meta: meta,
-                  space: 4,
-                  fitInside: SideTitleFitInsideData.fromTitleMeta(
-                    meta,
-                    distanceFromEdge: 0,
-                  ),
-                  child: Text(
-                    DateFormat.MMMd(locale).format(points[index].weekStart),
-                    maxLines: 1,
-                    style: axisStyle,
-                  ),
-                );
-              },
+          lineBarsData: [
+            LineChartBarData(
+              spots: [
+                for (var index = 0; index < values.length; index++)
+                  FlSpot(index.toDouble(), values[index]),
+              ],
+              isCurved: false,
+              isStepLineChart: points.length > 1,
+              color: t.accent,
+              barWidth: 2,
+              dotData: FlDotData(
+                show: true,
+                getDotPainter: (spot, percent, bar, index) =>
+                    FlDotCirclePainter(
+                      radius: 2.5,
+                      color: t.accent,
+                      strokeWidth: 0,
+                    ),
+              ),
+              belowBarData: BarAreaData(show: false),
             ),
-          ),
+          ],
         ),
-        lineBarsData: [
-          LineChartBarData(
-            spots: [
-              for (var index = 0; index < values.length; index++)
-                FlSpot(index.toDouble(), values[index]),
-            ],
-            isCurved: false,
-            isStepLineChart: points.length > 1,
-            color: t.accent,
-            barWidth: 2,
-            dotData: FlDotData(show: points.length == 1),
-            belowBarData: BarAreaData(show: false),
-          ),
-        ],
       ),
     );
   }
@@ -621,12 +685,14 @@ class _OpeningRhythmChart extends StatelessWidget {
                         ),
                         const SizedBox(width: gap),
                         for (var bucket = 0; bucket < 8; bucket++) ...[
-                          SizedBox(
+                          _HeatCell(
                             width: cellWidth,
-                            height: 15,
-                            child: ColoredBox(
-                              color: _heatColor(t, counts[day][bucket], peak),
-                            ),
+                            color: _heatColor(t, counts[day][bucket], peak),
+                            tooltip:
+                                '${dayLabels[day]} · '
+                                '${NumberFormat('00', locale).format(bucket * 3)}–'
+                                '${NumberFormat('00', locale).format(bucket * 3 + 3)} · '
+                                '${counts[day][bucket]}',
                           ),
                           const SizedBox(width: gap),
                         ],
@@ -656,6 +722,51 @@ class _OpeningRhythmChart extends StatelessWidget {
     }
     final fraction = value / peak;
     return Color.lerp(t.surface, t.fg, 0.22 + fraction * 0.62)!;
+  }
+}
+
+class _HeatCell extends StatefulWidget {
+  const _HeatCell({
+    required this.width,
+    required this.color,
+    required this.tooltip,
+  });
+
+  final double width;
+  final Color color;
+  final String tooltip;
+
+  @override
+  State<_HeatCell> createState() => _HeatCellState();
+}
+
+class _HeatCellState extends State<_HeatCell> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return CcTooltip(
+      showDelay: CcMotion.fast,
+      placement: CcTooltipPlacement.top,
+      message: widget.tooltip,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: SizedBox(
+          width: widget.width,
+          height: 15,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: widget.color,
+              border: _hovered
+                  ? Border.all(color: t.textPrimary, width: 1)
+                  : null,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -722,8 +833,6 @@ class _MetricsSkeleton extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          block(height: 20, width: 180),
-          const SizedBox(height: AppSpacing.lg),
           Row(
             children: [
               for (var index = 0; index < 4; index++) ...[
@@ -816,6 +925,106 @@ class _WeeklyMedian {
 
   final DateTime weekStart;
   final double hours;
+}
+
+/// Must match [_MergeTrendChart] titles: left reservedSize 56, bottom 28.
+///
+/// RTL carve-out: fl_chart lays axes on the physical left/bottom.
+const _trendPlotPadding = EdgeInsets.only(left: 56, bottom: 28);
+
+double _logMinutes(double hours) => math.log(math.max(1, hours * 60));
+
+const _niceDurationMinutes = <int>[
+  1,
+  2,
+  5,
+  10,
+  15,
+  20,
+  30,
+  45,
+  60,
+  90,
+  120,
+  180,
+  240,
+  360,
+  480,
+  720,
+  1080,
+  1440,
+  2160,
+  2880,
+  4320,
+  5760,
+  10080,
+  20160,
+  43200,
+  86400,
+];
+
+class _LogDurationAxis {
+  const _LogDurationAxis({
+    required this.minY,
+    required this.maxY,
+    required this.ticks,
+  });
+
+  factory _LogDurationAxis.fromValues(List<double> values) {
+    var minY = values.reduce(math.min);
+    var maxY = values.reduce(math.max);
+    var span = maxY - minY;
+    if (span < 0.8) {
+      final mid = (minY + maxY) / 2;
+      minY = mid - 0.4;
+      maxY = mid + 0.4;
+      span = maxY - minY;
+    }
+    minY -= span * 0.1;
+    maxY += span * 0.1;
+
+    final candidates = [
+      for (final minutes in _niceDurationMinutes) math.log(minutes.toDouble()),
+    ].where((y) => y >= minY && y <= maxY).toList();
+    final ticks = _pickDurationTicks(candidates, minY: minY, maxY: maxY);
+    return _LogDurationAxis(
+      minY: math.min(minY, ticks.first),
+      maxY: math.max(maxY, ticks.last),
+      ticks: ticks,
+    );
+  }
+
+  final double minY;
+  final double maxY;
+  final List<double> ticks;
+}
+
+List<double> _pickDurationTicks(
+  List<double> candidates, {
+  required double minY,
+  required double maxY,
+}) {
+  const target = 5;
+  if (candidates.length >= 3) {
+    if (candidates.length <= target) {
+      return candidates;
+    }
+    final picked = <double>[candidates.first];
+    for (var i = 1; i < target - 1; i++) {
+      final index = ((candidates.length - 1) * i / (target - 1)).round();
+      final value = candidates[index];
+      if ((value - picked.last).abs() > 1e-9) {
+        picked.add(value);
+      }
+    }
+    if ((candidates.last - picked.last).abs() > 1e-9) {
+      picked.add(candidates.last);
+    }
+    return picked;
+  }
+  return [
+    for (var i = 0; i < target; i++) minY + (maxY - minY) * i / (target - 1),
+  ];
 }
 
 const _sizeBucketLimits = [10, 30, 100, 500, 1000, 5000, 10000];

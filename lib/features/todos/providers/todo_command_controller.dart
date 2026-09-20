@@ -67,7 +67,7 @@ List<({String content, TodoStatus status})> parseTodoMarkdown(String md) {
 Future<void> handleTodoSlashCommand({
   required WidgetRef ref,
   required BuildContext context,
-  required String spaceId,
+  required String conversationId,
   required String workspaceId,
   required String args,
 }) async {
@@ -80,7 +80,7 @@ Future<void> handleTodoSlashCommand({
 
   final repo = ref.read(todoRepositoryProvider);
   List<TodoItem> current() =>
-      ref.read(conversationTodosProvider(spaceId)).asData?.value ??
+      ref.read(conversationTodosProvider(conversationId)).asData?.value ??
       const <TodoItem>[];
 
   void toast(
@@ -115,7 +115,7 @@ Future<void> handleTodoSlashCommand({
       await showTodoEditorDialog(
         context: context,
         ref: ref,
-        spaceId: spaceId,
+        conversationId: conversationId,
         workspaceId: workspaceId,
       );
 
@@ -125,7 +125,7 @@ Future<void> handleTodoSlashCommand({
         toast(l10n.todoNeedsText, variant: CcToastVariant.warning);
         return;
       }
-      await repo.append(workspaceId, spaceId, rest);
+      await repo.append(workspaceId, conversationId, rest);
       toast(l10n.todoAdded(rest));
 
     case 'start':
@@ -136,7 +136,7 @@ Future<void> handleTodoSlashCommand({
       }
       await repo.updateStatus(
         workspaceId,
-        spaceId,
+        conversationId,
         item.id,
         TodoStatus.inProgress,
       );
@@ -151,7 +151,7 @@ Future<void> handleTodoSlashCommand({
       }
       await repo.updateStatus(
         workspaceId,
-        spaceId,
+        conversationId,
         item.id,
         TodoStatus.completed,
       );
@@ -162,7 +162,7 @@ Future<void> handleTodoSlashCommand({
     case 'remove':
       if (rest.isEmpty) {
         // Bare drop clears the whole list.
-        await repo.clear(workspaceId, spaceId);
+        await repo.clear(workspaceId, conversationId);
         toast(l10n.todoCleared, variant: CcToastVariant.warning);
         return;
       }
@@ -171,7 +171,7 @@ Future<void> handleTodoSlashCommand({
         toast(l10n.todoNotFound, variant: CcToastVariant.warning);
         return;
       }
-      await repo.remove(workspaceId, spaceId, item.id);
+      await repo.remove(workspaceId, conversationId, item.id);
       toast(l10n.todoRemoved(item.content));
 
     case 'copy':
@@ -190,7 +190,7 @@ Future<void> handleTodoSlashCommand({
         await showTodoEditorDialog(
           context: context,
           ref: ref,
-          spaceId: spaceId,
+          conversationId: conversationId,
           workspaceId: workspaceId,
         );
         return;
@@ -202,7 +202,7 @@ Future<void> handleTodoSlashCommand({
           TodoItem(
             id: '${now.microsecondsSinceEpoch}-$i',
             workspaceId: workspaceId,
-            spaceId: spaceId,
+            conversationId: conversationId,
             content: parsed[i].content,
             status: parsed[i].status,
             position: i,
@@ -210,7 +210,7 @@ Future<void> handleTodoSlashCommand({
             updatedAt: now,
           ),
       ];
-      await repo.replaceAll(workspaceId, spaceId, items);
+      await repo.replaceAll(workspaceId, conversationId, items);
       toast(l10n.todoImported(items.length), variant: CcToastVariant.success);
 
     default:

@@ -11,7 +11,7 @@ const _classifier = ClassifyShipShowAskUseCase();
 final shipShowAskProvider = Provider.autoDispose
     .family<AsyncValue<ShipShowAskResult?>, PrRef>((ref, pr) {
       final prAsync = ref.watch(prDetailProvider(pr));
-      final filesAsync = ref.watch(prFilesProvider(pr));
+      final filesAsync = ref.watch(prFileIndexProvider(pr));
       final checksAsync = ref.watch(prCheckRunsProvider(pr));
 
       if (prAsync.isLoading || filesAsync.isLoading || checksAsync.isLoading) {

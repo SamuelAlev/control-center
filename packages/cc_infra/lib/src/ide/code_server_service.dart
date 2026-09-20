@@ -127,7 +127,8 @@ class CodeServerService implements CodeServerPort {
   /// * **Chrome:** the activity bar, status bar, editor tab strip, menu bar,
   ///   command centre, chat toolbar and layout controls are hidden; the
   ///   welcome/tips editors are suppressed; the primary and secondary side bars
-  ///   are closed by the bridge extension on activation (see
+  ///   and the bottom panel are closed by the bridge extension on activation and
+  ///   again when the user clicks or moves the caret in the editor (see
   ///   [_bridgeExtensionSource]). With
   ///   the tab strip off (`showTabs: none`) opening a file
   ///   (including a cmd-click "go to definition" inside the editor) REPLACES the
@@ -1419,7 +1420,7 @@ final RegExp _portLine = RegExp(r'127\.0\.0\.1:(\d{2,5})');
 /// Version of the bundled bridge extension. Bump it (here + in the package.json
 /// and .vsix manifest below) to force a reinstall of the shipped source; the
 /// installer skips work once `extensions.json` lists this version.
-const String _bridgeExtensionVersion = '0.0.8';
+const String _bridgeExtensionVersion = '0.0.9';
 
 /// `package.json` for the bundled bridge extension. It runs in code-server's
 /// SERVER-SIDE Node extension host (`main`, activated on startup), so it has
@@ -1430,7 +1431,7 @@ const String _bridgeExtensionPackageJson = '''
   "displayName": "Control Center IDE Bridge",
   "description": "Hands in-editor file navigation back to the Control Center app shell so it owns the tabs.",
   "publisher": "control-center",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "engines": { "vscode": "^1.80.0" },
   "extensionKind": ["workspace"],
   "categories": ["Other"],
@@ -1458,7 +1459,7 @@ const String _bridgeVsixManifest = '''
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.8" Publisher="control-center"/>
+    <Identity Language="en-US" Id="cc-ide-bridge" Version="0.0.9" Publisher="control-center"/>
     <DisplayName>Control Center IDE Bridge</DisplayName>
     <Description xml:space="preserve">Hands in-editor file navigation to the Control Center app shell.</Description>
     <Tags>__ext_control-center</Tags>
@@ -1490,9 +1491,13 @@ const String _bridgeVsixManifest = '''
 ///
 /// It also (a) reports each text document's unsaved (dirty) state to the same
 /// endpoint (`{type:'dirty', path, dirty}`) so the app can render a per-tab
-/// unsaved-changes dot and (b) opens `CC_IDE_COMMANDS_URL` as an SSE stream and
+/// unsaved-changes dot, (b) opens `CC_IDE_COMMANDS_URL` as an SSE stream and
 /// executes reverse commands cc_server pushes — today `{cmd:'save', path}`,
-/// which saves that file so the app's Save-on-close writes to disk.
+/// which saves that file so the app's Save-on-close writes to disk — and (c)
+/// keeps code-server's own side bars and bottom panel closed: once on activate
+/// (with retries for folder-restore) and again when the user clicks or moves
+/// the caret in the editor, skipping programmatic selection changes so a view
+/// click cannot snap chrome shut as a side effect.
 const String _bridgeExtensionSource = r'''
 const vscode = require('vscode');
 const http = require('http');
@@ -1639,25 +1644,46 @@ function subscribeCommands(commandsUrl) {
   return { dispose: function () { closed = true; } };
 }
 
-function hideSideBars() {
-  // Close both the primary (Explorer) and secondary (auxiliary) side bars so the
-  // embedded editor is just the code. Both commands are CLOSES, not toggles —
-  // idempotent (a no-op when already closed), so they can never accidentally
-  // re-open a side bar. Retried a couple of times because opening a folder
-  // (?folder=) restores the Explorer as the workbench finishes booting and the
-  // secondary side bar can reappear once a view (e.g. chat) resolves into it;
-  // each retry is harmless.
-  function close() {
-    try {
-      vscode.commands.executeCommand('workbench.action.closeSidebar');
-    } catch (e) {}
-    try {
-      vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
-    } catch (e) {}
-  }
-  close();
-  setTimeout(close, 250);
-  setTimeout(close, 800);
+function closeChrome() {
+  // Close the primary (Explorer) and secondary (auxiliary) side bars AND the
+  // bottom panel (Problems / Output / Terminal) so the embedded editor is just
+  // the code — the app shell owns that chrome. All three commands are CLOSES,
+  // not toggles: idempotent (a no-op when already closed), so they can never
+  // accidentally re-open.
+  try {
+    vscode.commands.executeCommand('workbench.action.closeSidebar');
+  } catch (e) {}
+  try {
+    vscode.commands.executeCommand('workbench.action.closeAuxiliaryBar');
+  } catch (e) {}
+  try {
+    vscode.commands.executeCommand('workbench.action.closePanel');
+  } catch (e) {}
+}
+
+function hideChromeOnBoot() {
+  // Opening a folder (?folder=) restores the Explorer as the workbench finishes
+  // booting, the secondary side bar can reappear once a view (e.g. chat)
+  // resolves into it, and the panel can pop for a diagnostic. A couple of
+  // retries cover that; each is harmless. Later reappearances (Cmd+B, a view
+  // resolving after the retries) are handled by the selection listener below.
+  closeChrome();
+  setTimeout(closeChrome, 250);
+  setTimeout(closeChrome, 800);
+}
+
+function shouldHideFromSelection(e) {
+  if (!e || !e.textEditor) { return false; }
+  // Output / debug consoles aren't the editor surface; hiding on those would
+  // snap chrome shut while the user is reading them.
+  const scheme = e.textEditor.document.uri.scheme;
+  if (scheme === 'output' || scheme === 'debug') { return false; }
+  // Mouse click or caret in the editor = the user is working in the file.
+  // Skip Command / undefined so a programmatic reveal (Explorer, SCM, the
+  // go-to-definition hand-off below) cannot close chrome as a side effect of
+  // clicking a view.
+  const Kind = vscode.TextEditorSelectionChangeKind;
+  return e.kind === Kind.Mouse || e.kind === Kind.Keyboard;
 }
 
 // Pin the active (entry) editor so a preview open — go-to-definition, quick
@@ -1686,7 +1712,16 @@ async function revealEntry(entry) {
 }
 
 function activate(context) {
-  hideSideBars();
+  hideChromeOnBoot();
+  // Chrome can come back after the boot retries. Re-hide when the user actually
+  // clicks or moves the caret in the editor — not on programmatic selection
+  // changes, so opening a view doesn't immediately snap it shut.
+  context.subscriptions.push(
+    vscode.window.onDidChangeTextEditorSelection(function (e) {
+      if (!shouldHideFromSelection(e)) { return; }
+      closeChrome();
+    })
+  );
 
   const reportUrl = process.env.CC_IDE_REPORT_URL;
 

@@ -11,7 +11,7 @@ void main() {
   const mapper = ConversationGoalMapper();
 
   final row = ConversationGoalsTableData(
-    spaceId: 'c-1',
+    conversationId: 'c-1',
     workspaceId: 'ws-1',
     title: 'Ship the goal feature',
     createdAt: DateTime(2026, 7, 1, 9),
@@ -21,7 +21,7 @@ void main() {
   group('ConversationGoalMapper.toDomain', () {
     test('maps every field verbatim', () {
       final g = mapper.toDomain(row);
-      expect(g.spaceId, 'c-1');
+      expect(g.conversationId, 'c-1');
       expect(g.workspaceId, 'ws-1');
       expect(g.title, 'Ship the goal feature');
       expect(g.createdAt, DateTime(2026, 7, 1, 9));
@@ -43,7 +43,7 @@ void main() {
     test('carries every field as a Value', () {
       final g = mapper.toDomain(row);
       final c = mapper.toCompanion(g);
-      expect(c.spaceId.value, 'c-1');
+      expect(c.conversationId.value, 'c-1');
       expect(c.workspaceId.value, 'ws-1');
       expect(c.title.value, 'Ship the goal feature');
       expect(c.createdAt.value, DateTime(2026, 7, 1, 9));
@@ -64,7 +64,7 @@ void main() {
 /// round-trip assertion.
 extension on ConversationGoalsTableCompanion {
   ConversationGoal toCompanionGoal() => ConversationGoal(
-    spaceId: spaceId.value,
+    conversationId: conversationId.value,
     workspaceId: workspaceId.value,
     title: title.value,
     createdAt: createdAt.value,

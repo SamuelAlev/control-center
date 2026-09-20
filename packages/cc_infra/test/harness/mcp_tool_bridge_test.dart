@@ -196,9 +196,9 @@ void main() {
 
     // Regression: `space_id` must come from the run's SPACE, never from its
     // conversation id. A conversation owns its own uuid, so filling a
-    // space-scoped argument from it named no space — `todo_write`/`todo_read`
-    // failed their ownership check on every call and the agent's task list
-    // silently never worked.
+    // space-scoped argument from it named no space: worktree-scoped tools
+    // failed their ownership check on every call. `todo_write`/`todo_read`
+    // declare `conversation_id` instead and get that from the run.
     test('fills space_id from the space, not the conversation', () async {
       final tool = _FakeMcpTool(
         schema: {

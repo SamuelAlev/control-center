@@ -446,7 +446,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 8;
+  static const int currentSchemaVersion = 9;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -618,6 +618,26 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
           userActivityTable,
           userActivityTable.details,
         );
+      },
+    ),
+    // v8 → v9: todos + conversation_goals are keyed by conversation, not
+    // space. Switching conversations in one space used to show the same list
+    // because both tables FK'd `spaces`. No data is carried forward — a
+    // conversation owns its own uuid, so a space-keyed row cannot be mapped
+    // onto one stream without inventing an alias the product no longer has.
+    MigrationStep(
+      8,
+      9,
+      (m) async {
+        await m.database.customStatement('DROP TABLE IF EXISTS todos');
+        await m.database.customStatement(
+          'DROP TABLE IF EXISTS conversation_goals',
+        );
+        await m.createTable(todosTable);
+        await m.createTable(conversationGoalsTable);
+        await _createIndexIfMissing(m, idxTodosWorkspaceId);
+        await _createIndexIfMissing(m, idxTodosConversation);
+        await _createIndexIfMissing(m, idxConversationGoalsWorkspaceId);
       },
     ),
   ];

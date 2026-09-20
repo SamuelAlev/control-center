@@ -5,8 +5,11 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/keybindings/keybinding_dispatcher.dart';
 import 'package:control_center/core/keybindings/keybinding_providers.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_rail.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/user_profiles/presentation/widgets/github_profile_pr_queue.dart';
+import 'package:control_center/features/user_profiles/presentation/widgets/profile_delivery_scaffold.dart';
+import 'package:control_center/features/user_profiles/presentation/widgets/profile_pr_queue_filter.dart';
 import 'package:control_center/features/user_profiles/providers/user_profile_pr_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter/material.dart';
@@ -209,7 +212,7 @@ void main() {
         [repo],
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
     expect(find.text('Open change'), findsOneWidget);
     expect(find.text('Merged change'), findsOneWidget);
@@ -220,5 +223,103 @@ void main() {
     expect(find.text('Open change'), findsNothing);
     expect(find.text('Merged change'), findsOneWidget);
     expect(find.text('Closed change'), findsNothing);
+  });
+
+  testWidgets('the table is one page scroll with the scrollbar on the pane', (
+    tester,
+  ) async {
+    _useLargeViewport(tester);
+    final repo = _repo('r1', 'owner', 'repo');
+    await tester.pumpWidget(
+      _wrapWidget(
+        _queue(
+          AsyncValue.data(
+            _activity([
+              (repo: repo, prs: [_pr(number: 1, title: 'Open change')]),
+            ]),
+          ),
+        ),
+        [repo],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NestedScrollView), findsNothing);
+    expect(find.byType(CustomScrollView), findsOneWidget);
+    final page = tester.getRect(find.byType(GitHubProfilePrQueue));
+    final scroll = tester.getRect(find.byType(CustomScrollView));
+    expect(scroll.top, closeTo(page.top, 1));
+    expect(scroll.right, closeTo(page.right, 1));
+    expect(scroll.bottom, closeTo(page.bottom, 1));
+  });
+
+  testWidgets('filter, repo rail and table header pin while the rows scroll', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final repo = _repo('r1', 'parceel', 'parsed');
+    await tester.pumpWidget(
+      _wrapWidget(
+        ProfileDeliveryLeading(
+          leading: const SizedBox(height: 240, child: Text('profile-header')),
+          child: _queue(
+            AsyncValue.data(
+              _activity([
+                (
+                  repo: repo,
+                  prs: [
+                    for (var i = 1; i <= 40; i++)
+                      _pr(number: i, title: 'Change $i'),
+                  ],
+                ),
+              ]),
+            ),
+          ),
+        ),
+        [repo],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('profile-header'), findsOneWidget);
+    expect(find.byType(CustomScrollView), findsOneWidget);
+
+    final filterFinder = find.text('All 40');
+    final filterChrome = find.byType(ProfilePrQueueFilter);
+    final headerFinder = find.text('Title');
+    final railFinder = find.byType(PrRepoRail);
+    final filterTopAtRest = tester.getTopLeft(filterChrome).dy;
+
+    final position = tester
+        .state<ScrollableState>(
+          find.descendant(
+            of: find.byType(CustomScrollView),
+            matching: find.byType(Scrollable),
+          ),
+        )
+        .position;
+    expect(position.maxScrollExtent, greaterThan(280));
+
+    position.jumpTo(position.maxScrollExtent);
+    await tester.pumpAndSettle();
+
+    expect(find.text('profile-header').hitTestable(), findsNothing);
+    expect(tester.getTopLeft(filterChrome).dy, lessThan(filterTopAtRest));
+    expect(filterFinder.hitTestable(), findsOneWidget);
+    expect(headerFinder.hitTestable(), findsOneWidget);
+    expect(railFinder.hitTestable(), findsOneWidget);
+    expect(
+      tester.getTopLeft(railFinder).dy,
+      closeTo(tester.getBottomLeft(filterChrome).dy, 2),
+    );
+    expect(
+      tester.getTopLeft(headerFinder).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(filterChrome).dy - 1),
+    );
+    expect(find.text('Change 40'), findsOneWidget);
   });
 }

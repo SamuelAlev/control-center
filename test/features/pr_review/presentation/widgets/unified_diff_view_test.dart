@@ -76,6 +76,32 @@ void main() {
       expect(find.byType(UnifiedDiffView), findsOneWidget);
     });
 
+    testWidgets(
+      'first frame parses only the opening file of a mid-size PR',
+      (tester) async {
+        // 12 files × ~80 lines is well under the old 20k eager-parse budget,
+        // so the previous path parsed EVERY file in initState and froze the
+        // Diff-tab click. The last file must stay unparsed after the first
+        // layout — only the opening viewport is allowed to pay parse cost.
+        final tallPatch =
+            '@@ -1,80 +1,80 @@\n${List.filled(80, ' line\n').join()}';
+        final files = [
+          _testFile(filename: 'lib/a.dart'),
+          for (var i = 1; i <= 12; i++)
+            _testFile(filename: 'lib/f$i.dart', patch: tallPatch),
+        ];
+        final key = GlobalKey<UnifiedDiffViewState>();
+        await tester.pumpWidget(
+          _wrap(UnifiedDiffView(key: key, files: files)),
+        );
+        await tester.pump();
+
+        final doc = key.currentState!.debugDocument;
+        expect(doc.structureOf(0), isNotNull);
+        expect(doc.structureOf(doc.fileCount - 1), isNull);
+      },
+    );
+
     testWidgets('splitView=true parameter accepted', (tester) async {
       final files = [_testFile()];
 

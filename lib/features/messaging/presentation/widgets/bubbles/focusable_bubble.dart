@@ -379,8 +379,7 @@ class _AddReactionButton extends ConsumerStatefulWidget {
   final String messageId;
   final DesignSystemTokens tokens;
 
-  /// Reports the palette's open state so the rail stays revealed while the
-  /// pointer is inside the overlay (and therefore off the message).
+  /// Reports overlay-open so the rail stays revealed while the pointer is off the message.
   final ValueChanged<bool> onOpenChanged;
 
   @override

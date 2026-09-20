@@ -162,8 +162,13 @@ class CcResizableController extends ChangeNotifier {
     _normalize(notify: true);
   }
 
-  // Fits the extents to [_available] without breaking per-region bounds. The
-  // last region absorbs the leftover so the row/column exactly fills the space.
+  // Fits the extents to [_available] without breaking per-region bounds.
+  //
+  // Slack goes to UNBOUNDED regions first (no [maxExtent]) — last unbounded
+  // wins, matching "the leftover pane". A capped rail (Overview sidebar,
+  // pipeline inspector) must not grow or shrink when the window jitters;
+  // dumping leftover on the last region made those rails breathe on every
+  // parent-width flicker.
   bool _normalize({required bool notify}) {
     final available = _available;
     if (available == null || _extents.isEmpty) {
@@ -172,17 +177,11 @@ class CcResizableController extends ChangeNotifier {
     final next = [
       for (var i = 0; i < _extents.length; i++) _clampExtent(i, _extents[i]),
     ];
-    final fixedSum = next.fold<double>(0, (sum, e) => sum + e);
-    final slack = available - fixedSum;
+    var slack = available - next.fold<double>(0, (sum, e) => sum + e);
     if (slack != 0) {
-      // Push the slack onto the last region (clamped), then ripple any
-      // residual backwards so we never exceed bounds silently.
-      var residual = slack;
-      for (var i = next.length - 1; i >= 0 && residual != 0; i--) {
-        final target = next[i] + residual;
-        final clamped = _clampExtent(i, target);
-        residual = target - clamped;
-        next[i] = clamped;
+      slack = _applySlack(next, slack, unboundedOnly: true);
+      if (slack != 0) {
+        _applySlack(next, slack, unboundedOnly: false);
       }
     }
     final changed = !_listEquals(next, _extents);
@@ -191,6 +190,25 @@ class CcResizableController extends ChangeNotifier {
       notifyListeners();
     }
     return changed;
+  }
+
+  /// Walks regions last-to-first so a trailing flex pane still absorbs when
+  /// every region is unbounded (diff tree + leftover, compose overlay).
+  double _applySlack(
+    List<double> next,
+    double slack, {
+    required bool unboundedOnly,
+  }) {
+    for (var i = next.length - 1; i >= 0 && slack != 0; i--) {
+      if (unboundedOnly && _maxs[i] != null) {
+        continue;
+      }
+      final target = next[i] + slack;
+      final clamped = _clampExtent(i, target);
+      slack = target - clamped;
+      next[i] = clamped;
+    }
+    return slack;
   }
 
   static bool _listEquals(List<double> a, List<double> b) {

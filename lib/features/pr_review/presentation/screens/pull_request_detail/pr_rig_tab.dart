@@ -26,6 +26,7 @@ class PrRigTab extends ConsumerWidget {
     required this.audioTabKey,
     required this.surface,
     this.engine,
+    this.slotId,
     this.isVisible = true,
   });
 
@@ -40,6 +41,13 @@ class PrRigTab extends ConsumerWidget {
 
   /// Which browser, on the browser surface.
   final RigBrowserEngine? engine;
+
+  /// Which machine of this surface + engine, matching the tab's `slot` arg.
+  ///
+  /// Null is the conversation's default machine. Passing this through is
+  /// what keeps a second browser tab from showing (and later shutting down)
+  /// the first machine.
+  final String? slotId;
 
   /// Whether this tab is on screen. A hidden tab stops streaming frames.
   final bool isVisible;
@@ -74,6 +82,7 @@ class PrRigTab extends ConsumerWidget {
         return RigTabPane(
           surface: surface,
           engine: engine,
+          slotId: slotId,
           conversationId: spaceId,
           audioTabKey: audioTabKey,
           isVisible: isVisible,
