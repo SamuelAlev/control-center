@@ -30,7 +30,7 @@ import 'package:path/path.dart' as p;
 /// index digest, so one pin serves both arm64 and x64 hosts; smolvm resolves
 /// it through its default registry.
 const String kSmolvmExecImage =
-    'ubuntu:24.04@sha256:d78ab76437b1afc5f01e223d6bf0172763f404bb166441328845adbef44518cb';
+    'ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3';
 
 /// The OCI image every browser rig boots, pinned by digest.
 ///
@@ -41,7 +41,7 @@ const String kSmolvmExecImage =
 /// that binary emit sound.
 const String kSmolvmDebianBrowserImage =
     'debian:trixie-slim'
-    '@sha256:3a39a0592364683e6bab97937b72cad5a8fa6dcbbee90edb3bb48c7f8e94f258';
+    '@sha256:a99cfc517144bc59b1978475ec53b46ecabec7e43635402ee5b77cc54cd1b20a';
 
 /// The Debian mirrors each browser guest reaches while its pack warms.
 ///

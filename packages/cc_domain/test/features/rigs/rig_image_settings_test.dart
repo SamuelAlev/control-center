@@ -5,8 +5,8 @@ void main() {
   group('isValidCustomRigImageRef', () {
     test('accepts ordinary registry references', () {
       const pinnedUbuntu =
-          'ubuntu:24.04@sha256:d78ab76437b1afc5f01e223d6bf0172763f404bb166441'
-          '328845adbef44518cb';
+          'ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e'
+          '9cffbb1bf33ca3';
       const pinnedShell =
           'chromedp/headless-shell:stable@sha256:2d349b544a1ea6b5b5fd7c0fe992'
           '15ff662339c57407ee2e8c0a11af93516b04';

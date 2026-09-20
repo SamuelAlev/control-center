@@ -1,4 +1,5 @@
 Sarabun Regular + SemiBold 1.000, vendored here as Sarabun-Regular.ttf / Sarabun-SemiBold.ttf.
+NOT Renovate-tracked: cadsondemak/Sarabun has never tagged a release (font version 1.000 lives in the TTF; last commit 2018).
 Upstream: https://github.com/cadsondemak/Sarabun — licensed under the SIL Open Font License, Version 1.1.
 ---
 Copyright 2018 The Sarabun Project Authors (https://github.com/cadsondemak/Sarabun)

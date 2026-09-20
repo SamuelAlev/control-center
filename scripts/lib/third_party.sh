@@ -75,7 +75,7 @@ CC_THIRD_PARTY=(
   "Manrope (font)|4.505|OFL-1.1|https://github.com/sharanda/manrope|manrope-font-LICENSE.txt|bundled|desktop"
   "Fira Code (font)|6.2|OFL-1.1|https://github.com/tonsky/FiraCode|firacode-font-LICENSE.txt|bundled|desktop"
   "Phosphor Icons (font)|2.0.8|MIT|https://github.com/phosphor-icons/core|phosphor-font-LICENSE.txt|bundled|desktop"
-  "WebDriverAgent|v16.12.8|BSD-3-Clause|https://github.com/appium/WebDriverAgent|webdriveragent-BSD-3-Clause.txt|bundled|desktop"
+  "WebDriverAgent|v16.12.9|BSD-3-Clause|https://github.com/appium/WebDriverAgent|webdriveragent-BSD-3-Clause.txt|bundled|desktop"
 )
 
 # Prints `name|version|spdx|homepage|license_file|linkage` for one role

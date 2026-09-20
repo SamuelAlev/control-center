@@ -269,7 +269,8 @@
       "depNameTemplate": "briot/tree-sitter-ada",
       "packageNameTemplate": "https://github.com/briot/tree-sitter-ada",
       "datasourceTemplate": "git-refs",
-      "currentValueTemplate": "master"
+      "currentValueTemplate": "master",
+      "versioningTemplate": "regex:^(?<major>0)?master$"
     },
     {
       "description": "tree-sitter-dart grammar pin (TS_DART_REF; no releases \u2014 track master HEAD)",
@@ -283,7 +284,8 @@
       "depNameTemplate": "UserNobody14/tree-sitter-dart",
       "packageNameTemplate": "https://github.com/UserNobody14/tree-sitter-dart",
       "datasourceTemplate": "git-refs",
-      "currentValueTemplate": "master"
+      "currentValueTemplate": "master",
+      "versioningTemplate": "regex:^(?<major>0)?master$"
     },
     {
       "description": "webrtc-audio-processing (AEC3) source pin (WAP_REF)",
@@ -396,30 +398,6 @@
       "datasourceTemplate": "github-releases"
     },
     {
-      "description": "Sarabun Thai companion font. Replace the vendored TTFs when this bumps.",
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/packages/cc_ui/fonts/scripts/Sarabun-LICENSE\\.txt$/"
-      ],
-      "matchStrings": [
-        "Sarabun Regular \\+ SemiBold (?<currentValue>[0-9][\\w.]*)"
-      ],
-      "depNameTemplate": "cadsondemak/Sarabun",
-      "datasourceTemplate": "github-tags"
-    },
-    {
-      "description": "Rubik Hebrew companion font. Replace the vendored TTF when this bumps.",
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/packages/cc_ui/fonts/scripts/Rubik-LICENSE\\.txt$/"
-      ],
-      "matchStrings": [
-        "Rubik \\(variable wght\\) (?<currentValue>[0-9][\\w.]*)"
-      ],
-      "depNameTemplate": "googlefonts/rubik",
-      "datasourceTemplate": "github-tags"
-    },
-    {
       "description": "Vendored flutter_pty C sources (ccpty). Re-copy src/ from the pub package when this bumps.",
       "customType": "regex",
       "managerFilePatterns": [
@@ -432,7 +410,7 @@
         "flutter_pty \\(vendored C\\)\\|(?<currentValue>\\d+\\.\\d+\\.\\d+)\\|"
       ],
       "depNameTemplate": "flutter_pty",
-      "datasourceTemplate": "pub"
+      "datasourceTemplate": "dart"
     },
     {
       "description": "Flutter SDK commit pin (.fvmrc). Channel is main; the git ref is master.",
@@ -446,7 +424,8 @@
       "depNameTemplate": "flutter/flutter",
       "packageNameTemplate": "https://github.com/flutter/flutter",
       "datasourceTemplate": "git-refs",
-      "currentValueTemplate": "master"
+      "currentValueTemplate": "master",
+      "versioningTemplate": "regex:^(?<major>0)?master$"
     },
     {
       "description": "smolvm exec rig OCI image (digest-pinned Ubuntu 24.04).",
@@ -471,7 +450,8 @@
         "kSmolvmDebianBrowserImage\\s*=\\s*'debian:(?<currentValue>[^']+)'\\s*'@sha256:(?<currentDigest>[a-f0-9]{64})'"
       ],
       "depNameTemplate": "debian",
-      "datasourceTemplate": "docker"
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "debian"
     },
     {
       "description": "Dart SDK pin for the signaling-server image (ARG DART_SDK_VERSION).",
@@ -527,6 +507,17 @@
         "AppImage/appimagetool"
       ],
       "allowedVersions": "/^[0-9]/"
+    },
+    {
+      "description": "Debian OCI tags are a codename plus an optional -slim suffix. Docker versioning only accepts numeric tags, so strip -slim as compatibility and compare the codename with debian versioning (trixie-slim → forky-slim, not a digest-only pin).",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "debian"
+      ],
+      "versioning": "debian",
+      "versionCompatibility": "^(?<version>.*?)(?<compatibility>-slim)?$"
     },
     {
       "description": "WAP v2.1's tag (846fe90) is behind the pinned master commit (d0569cfa). Ignore digest-only tag syncs so Renovate does not downgrade AEC3.",

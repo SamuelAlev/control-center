@@ -26,7 +26,7 @@ void main() {
           'surfaces': ['ios'],
           'enforcedEgress': false,
           'setupAction': 'ios-automation',
-          'version': 'Xcode 16.4 / iOS 18.2 / WDA v16.12.8',
+          'version': 'Xcode 16.4 / iOS 18.2 / WDA v16.12.9',
         },
       ],
     };

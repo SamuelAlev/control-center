@@ -1,4 +1,5 @@
 Rubik (variable wght) 2.300, vendored here as Rubik-Variable.ttf.
+NOT Renovate-tracked: googlefonts/rubik is archived and has never tagged a release.
 Upstream: https://github.com/googlefonts/rubik — licensed under the SIL Open Font License, Version 1.1.
 ---
 Copyright 2015 The Rubik Project Authors (https://github.com/googlefonts/rubik)

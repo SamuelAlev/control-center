@@ -129,7 +129,7 @@ class WdaClient {
         message: 'WebDriverAgent returned malformed screen geometry.',
       );
     }
-    // WDA's /wda/screen (v16.12.8 handleGetScreen) returns
+    // WDA's /wda/screen (v16.12.9 handleGetScreen) returns
     // `{screenSize:{width,height}, statusBarSize:{…}, scale, displayId}`.
     // Top-level width/height is the W3C /window/size shape, accepted so a
     // test double and that route parse the same way.
