@@ -216,7 +216,10 @@ void main() {
           psk: _psk,
         );
         addTearDown(channel.close);
-        await _flush();
+        // Hello rides the same loopback WebSocket as the join; a fixed
+        // `_flush()` of zero-delay turns misses it on a loaded macos-26
+        // runner (packages dart OS job).
+        await _until(() => hello != null);
 
         expect(hello, isNotNull);
         expect(hello!['to'], 'owner-peer');

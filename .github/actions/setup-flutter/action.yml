@@ -88,23 +88,33 @@ runs:
       shell: bash
       run: flutter config --enable-windowing
 
+    # GitHub's windows-latest PATH lists Git usr\bin (GNU tar) before
+    # System32 (bsdtar). Flutter unpacks cache zips with
+    # `tar -xf C:\path\file.zip` (flutter_tools os.dart _unpackWithTar);
+    # GNU tar treats "C:" as a remote host and fails:
+    #   /usr/bin/tar: Cannot connect to C: resolve failed
+    # A same-step Git Bash PATH export does not reach Dart's Windows
+    # process lookup, and `[ -x tar.exe ]` is false on NTFS (no +x bit),
+    # so the previous shadow never ran. Prepend a directory that contains
+    # ONLY Windows tar.exe via GITHUB_PATH so every later step — pub get
+    # and the package tests — resolves that binary. Do not prepend
+    # System32 itself: bash scripts later in the job would then pick up
+    # Windows find.exe/sort.exe.
+    - name: Prefer Windows tar (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $dir = Join-Path $env:RUNNER_TEMP 'win-tar'
+        $src = Join-Path $env:SystemRoot 'System32\tar.exe'
+        if (-not (Test-Path $src)) {
+          throw "Windows tar.exe not found at $src"
+        }
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        Copy-Item -Force -Path $src -Destination (Join-Path $dir 'tar.exe')
+        Add-Content -Path $env:GITHUB_PATH -Value $dir
+
     - name: Resolve dependencies
       if: inputs.pub-get == 'true'
       shell: bash
       working-directory: ${{ inputs.working-directory }}
-      run: |
-        if [ "${RUNNER_OS:-}" = "Windows" ]; then
-          # Git Bash's tar treats "C:" as a remote host:
-          #   /usr/bin/tar: Cannot connect to C: resolve failed
-          # Flutter extracts SDK artifacts with `tar -xf C:\path\file.zip`.
-          # Prefer Windows' libarchive tar, which understands drive letters.
-          # Shadow only `tar` — System32 also has `find`/`sort`, which are not
-          # the Unix tools Git Bash scripts expect.
-          win_tar="/c/Windows/System32/tar.exe"
-          if [ -x "$win_tar" ]; then
-            mkdir -p "${RUNNER_TEMP}/win-tar"
-            cp "$win_tar" "${RUNNER_TEMP}/win-tar/tar"
-            export PATH="${RUNNER_TEMP}/win-tar:${PATH}"
-          fi
-        fi
-        flutter pub get
+      run: flutter pub get
