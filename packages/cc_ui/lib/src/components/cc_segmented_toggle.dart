@@ -78,7 +78,10 @@ enum CcSegmentedToggleSize {
 /// brand-tinted dark ink in dark, labelled in [DesignSystemTokens.accentOn]
 /// (resolved through [CcButtonTokens.primary], so it cannot drift from the
 /// button) — per DESIGN.md: *"selected tabs/segments use a dark fill with white
-/// text, matching the primary-button logic"*. Unselected segments are
+/// text, matching the primary-button logic"*. That fill paints *over* the
+/// track hairline (the hairline lives behind the segments, it does not inset
+/// them) so the selected edge is the fill color, not a lighter ring that
+/// frames the choice 2px taller than it is. Unselected segments are
 /// [DesignSystemTokens.textTertiary] on nothing, taking a
 /// [DesignSystemTokens.hover] wash on hover. Selection therefore survives
 /// grayscale and color-blind viewing as a filled-vs-empty cell, never as color
@@ -258,49 +261,88 @@ class _CcSegmentedToggleState<T> extends State<CcSegmentedToggle<T>> {
           onKeyEvent: _onKey,
           child: Container(
             height: height,
+            clipBehavior: Clip.hardEdge,
             decoration: BoxDecoration(
               color: disabled ? t.bgDisabled : t.surface,
               borderRadius: AppRadii.brSm,
-              border: Border.all(
+            ),
+            // Hairline is painted *behind* the segments (CustomPaint.painter,
+            // not a BoxDecoration border). A Container border would inset the
+            // children and leave a lighter ring around the choice — 1px on
+            // top and bottom, so the selected cell felt 2px taller than the
+            // fill. The selected fill (and its matching-color border) covers
+            // that stroke instead.
+            child: CustomPaint(
+              painter: _TrackHairlinePainter(
                 color: disabled ? t.borderDisabled : t.borderPrimary,
               ),
-            ),
-            child: CcFluidHover(
-              axis: CcFluidHoverAxis.x,
-              itemCount: widget.segments.length,
-              isItemDisabled: (_) => disabled,
-              itemBuilder: (context, index) => buildSegment(index),
-              layoutBuilder: (context, items) {
-                final cells = <Widget>[];
-                for (var i = 0; i < items.length; i++) {
-                  if (i > 0) {
+              child: CcFluidHover(
+                axis: CcFluidHoverAxis.x,
+                itemCount: widget.segments.length,
+                isItemDisabled: (_) => disabled,
+                itemBuilder: (context, index) => buildSegment(index),
+                layoutBuilder: (context, items) {
+                  final cells = <Widget>[];
+                  for (var i = 0; i < items.length; i++) {
+                    if (i > 0) {
+                      cells.add(
+                        _Separator(
+                          // The fill's own edge separates a selected segment.
+                          visible: selectedIndex != i && selectedIndex != i - 1,
+                          color: separator,
+                          duration: duration,
+                        ),
+                      );
+                    }
                     cells.add(
-                      _Separator(
-                        // The fill's own edge separates a selected segment.
-                        visible: selectedIndex != i && selectedIndex != i - 1,
-                        color: separator,
-                        duration: duration,
-                      ),
+                      widget.fullWidth ? Expanded(child: items[i]) : items[i],
                     );
                   }
-                  cells.add(
-                    widget.fullWidth ? Expanded(child: items[i]) : items[i],
+                  return Row(
+                    mainAxisSize: widget.fullWidth
+                        ? MainAxisSize.max
+                        : MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: cells,
                   );
-                }
-                return Row(
-                  mainAxisSize: widget.fullWidth
-                      ? MainAxisSize.max
-                      : MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: cells,
-                );
-              },
+                },
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+/// 1px track hairline, painted behind the segments so a selected fill covers it.
+class _TrackHairlinePainter extends CustomPainter {
+  const _TrackHairlinePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) {
+      return;
+    }
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    // Inset by 0.5 so the 1px stroke sits on the pixel grid, not straddling
+    // the outer edge.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1),
+        const Radius.circular(AppRadii.sm),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_TrackHairlinePainter old) => old.color != color;
 }
 
 /// The hairline parting two adjoining segments. It fades rather than
@@ -429,6 +471,15 @@ class _Segment<T> extends StatelessWidget {
                     ),
                   );
 
+            // 1px border on every segment keeps label height stable. Selected
+            // uses the fill color so the edge matches the item; transparent
+            // on the rest so the track hairline still shows. Top+bottom is
+            // 2px, which is what keeps the selected cell from feeling taller
+            // than the unselected ones after the fill covers the track.
+            final borderColor = selected
+                ? background
+                : background.withValues(alpha: 0);
+
             return AnimatedContainer(
               duration: duration,
               curve: CcMotion.standard,
@@ -437,6 +488,7 @@ class _Segment<T> extends StatelessWidget {
               decoration: BoxDecoration(
                 color: background,
                 borderRadius: AppRadii.brSm,
+                border: Border.all(color: borderColor),
               ),
               child: SelectionContainer.disabled(
                 child: Row(

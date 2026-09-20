@@ -232,6 +232,41 @@ void main() {
     expect(tester.getSize(find.byKey(const Key('md'))).height, 40);
   });
 
+  testWidgets('selected fill covers the track hairline in the fill color', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ccTestApp(
+        Center(
+          child: CcSegmentedToggle<String>(
+            key: const Key('sm'),
+            segments: segments,
+            value: 'recent',
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    // Covering the 1px track hairline (instead of sitting inside it) is what
+    // makes the selected edge the fill color. The fill must be the full 32px
+    // track, not the 30px inset a BoxDecoration border would leave.
+    final track = tester.getSize(find.byKey(const Key('sm')));
+    final fillFinder = find.descendant(
+      of: find.ancestor(
+        of: find.text('Recent'),
+        matching: find.byType(CcTappable),
+      ),
+      matching: find.byType(AnimatedContainer),
+    );
+    final fill = tester.widget<AnimatedContainer>(fillFinder);
+    expect(track.height, 32);
+    expect(tester.getSize(fillFinder).height, 32);
+    final decoration = fill.decoration! as BoxDecoration;
+    expect(decoration.color, isNotNull);
+    expect(decoration.border?.top.color, decoration.color);
+  });
+
   testWidgets('fullWidth gives every segment the same width', (tester) async {
     await tester.pumpWidget(
       ccTestApp(
