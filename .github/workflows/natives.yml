@@ -153,7 +153,7 @@ jobs:
 
       - name: Restore natives cache
         id: natives-cache
-        uses: ./.github/actions/natives-cache
+        uses: $/.github/actions/natives-cache
 
       # Toolchain setup only on a miss: a hit skips straight to verification.
       # cargo, curl, tar, make and a C/C++ compiler are preinstalled on all

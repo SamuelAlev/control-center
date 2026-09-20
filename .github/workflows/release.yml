@@ -129,7 +129,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Use CocoaPods (disable Swift Package Manager for a reliable clean build)
         run: flutter config --no-enable-swift-package-manager
@@ -138,7 +138,7 @@ jobs:
         run: brew install create-dmg meson ninja
 
       - name: Prepare release build
-        uses: ./.github/actions/prepare-release-build
+        uses: $/.github/actions/prepare-release-build
         with:
           os: macos
           version: ${{ env.VERSION }}
@@ -224,7 +224,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Set up MSVC developer environment
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
@@ -238,7 +238,7 @@ jobs:
         run: pip install meson ninja
 
       - name: Prepare release build
-        uses: ./.github/actions/prepare-release-build
+        uses: $/.github/actions/prepare-release-build
         with:
           os: windows
           version: ${{ env.VERSION }}
@@ -394,7 +394,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Install Linux build dependencies
         run: |
@@ -428,7 +428,7 @@ jobs:
             libcurl4-openssl-dev zlib1g-dev
 
       - name: Prepare release build
-        uses: ./.github/actions/prepare-release-build
+        uses: $/.github/actions/prepare-release-build
         with:
           os: linux
           version: ${{ env.VERSION }}
@@ -602,7 +602,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Resolve image namespace (GHCR requires a lowercase owner)
         id: ns

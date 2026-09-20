@@ -50,7 +50,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       # Globally activated rather than added as a dev_dependency to 17
       # pubspecs: it is a reporting tool, not something any package's code or

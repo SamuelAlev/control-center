@@ -31,7 +31,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -98,7 +98,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Build WebAssembly bundle
         working-directory: ${{ matrix.directory }}
@@ -160,7 +160,7 @@ jobs:
           sudo apt-get install -y bubblewrap socat
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Select shard
         env:
@@ -243,7 +243,7 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Test ${{ matrix.runner }} packages
         shell: bash
@@ -286,7 +286,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
         with:
           # WINDOWS ONLY. With the windowing flag on, WidgetsBinding's
           # initInstances eagerly constructs the Win32 windowing owner, whose
@@ -345,7 +345,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Regenerate
         run: |
@@ -424,11 +424,11 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
       - name: Restore natives cache
         id: natives-cache
-        uses: ./.github/actions/natives-cache
+        uses: $/.github/actions/natives-cache
 
       - name: Decide what a cache miss means here
         id: gate

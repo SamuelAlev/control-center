@@ -5,12 +5,12 @@ description: >
 
 # WHY THIS DOES NOT HARDEN THE RUNNER OR CHECK OUT THE REPO
 #
-# A local action is loaded from the workspace, so `actions/checkout` must have
-# run before GitHub can even read this file. That makes `uses: ./.github/...`
-# impossible as a job's first step — and `step-security/harden-runner` has to BE
-# the first step to intercept egress. The two constraints are mutually
-# exclusive, so harden-runner and checkout stay inline in each job and this
-# action owns everything after them.
+# `$/.github/...` loads this composite from the running commit without a
+# checkout, so it CAN be a job's first step. It still isn't: it operates on
+# the workspace (`flutter pub get`, patches), so `actions/checkout` has to
+# have run, and `step-security/harden-runner` has to BE the first step to
+# intercept egress. Those two stay inline in each job; this action owns
+# everything after them.
 #
 # Every job resolves the same dependency graph through this one composite, so a
 # green CI proves the deployed bundle was built from the same deps it validated.

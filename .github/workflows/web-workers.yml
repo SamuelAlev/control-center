@@ -70,7 +70,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Flutter
-        uses: ./.github/actions/setup-flutter
+        uses: $/.github/actions/setup-flutter
 
 
       - name: Check Web Workers are up to date

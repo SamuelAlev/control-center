@@ -71,7 +71,7 @@ runs:
     # natives-cache action.
     - name: Restore native FFI libraries from cache
       id: natives-cache
-      uses: ./.github/actions/natives-cache
+      uses: $/.github/actions/natives-cache
 
     # FATAL on failure: every native is required. cc_server's boot preflight
     # refuses to start without any one of them and the packaging scripts refuse
