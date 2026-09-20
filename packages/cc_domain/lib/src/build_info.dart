@@ -6,7 +6,7 @@
 /// client and the server (both link this package), which is what makes the
 /// stale-binary comparison honest. CI stamps them by re-running
 /// `tool/gen_build_info.dart` over this file before building — the committed
-/// values are the unstamped dev identity (`0.0.1` / `dev`), so a local
+/// values are the unstamped dev identity (`0.0.2` / `dev`), so a local
 /// `flutter run` or `dart build cli` is self-consistent too.
 ///
 /// This file is data, not logic: pure Dart, no platform imports and the
@@ -17,7 +17,7 @@ library;
 abstract final class BuildInfo {
   /// Release version of this build. Matches the release tag (`vX.Y.Z` →
   /// `X.Y.Z`) on CI builds; the root `pubspec.yaml` version otherwise.
-  static const String buildVersion = '0.0.1';
+  static const String buildVersion = '0.0.2';
 
   /// Short git sha this build was compiled from, or `dev` when unstamped.
   static const String buildGitSha = 'dev';
