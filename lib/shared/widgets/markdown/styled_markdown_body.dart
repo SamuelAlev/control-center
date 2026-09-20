@@ -24,6 +24,8 @@ class StyledMarkdownBody extends ConsumerStatefulWidget {
     super.key,
     required this.data,
     this.compact = false,
+    this.plugins,
+    this.builders,
   });
 
   /// The raw markdown to render.
@@ -31,6 +33,12 @@ class StyledMarkdownBody extends ConsumerStatefulWidget {
 
   /// Whether to use the tighter, smaller-type variant of the stylesheet.
   final bool compact;
+
+  /// Parser plugins. Defaults to the GitHub register (plugin-free GFM).
+  final CcPluginSet? plugins;
+
+  /// Builder overrides. Defaults to the GitHub register.
+  final CcBuilderRegistry? builders;
 
   @override
   ConsumerState<StyledMarkdownBody> createState() => _StyledMarkdownBodyState();
@@ -46,7 +54,7 @@ class _StyledMarkdownBodyState extends ConsumerState<StyledMarkdownBody> {
   @override
   void didUpdateWidget(StyledMarkdownBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.data != widget.data) {
+    if (oldWidget.data != widget.data || oldWidget.plugins != widget.plugins) {
       _prefetch();
     }
   }
@@ -59,7 +67,10 @@ class _StyledMarkdownBodyState extends ConsumerState<StyledMarkdownBody> {
   // never blocked on the worker. `data` is parsed verbatim here (no GitHub
   // preprocessing), so the prefetched cache key matches what build() looks up.
   void _prefetch() {
-    MarkdownParsePool.instance.prefetch(widget.data, githubMarkdownPlugins);
+    MarkdownParsePool.instance.prefetch(
+      widget.data,
+      widget.plugins ?? githubMarkdownPlugins,
+    );
   }
 
   @override
@@ -77,9 +88,9 @@ class _StyledMarkdownBodyState extends ConsumerState<StyledMarkdownBody> {
         codeFontFamily: codeFont,
         codeLigatures: codeLigatures,
       ),
-      plugins: githubMarkdownPlugins,
+      plugins: widget.plugins ?? githubMarkdownPlugins,
       options: githubMarkdownOptions,
-      builders: githubMarkdownBuilders,
+      builders: widget.builders ?? githubMarkdownBuilders,
       imageBuilder: appMarkdownImageBuilder,
       codeBuilder: (code, language, {required bool cache}) =>
           buildSharedCodeBlock(

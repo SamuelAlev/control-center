@@ -267,6 +267,26 @@ class AppLocalizationsMs extends AppLocalizations {
   String get rigStopMachine => 'Hentikan mesin';
 
   @override
+  String get rigHomeButton => 'Laman utama';
+
+  @override
+  String get rigRotateClockwise => 'Putar ikut jam';
+
+  @override
+  String get rigRotateCounterclockwise => 'Putar lawan jam';
+
+  @override
+  String get rigTakeScreenshot => 'Ambil tangkapan skrin';
+
+  @override
+  String get rigScreenshotSaved => 'Tangkapan skrin disimpan';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Tidak dapat menyimpan tangkapan skrin: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Pelayan ini tidak dapat mengehos jenis mesin ini.';
 
@@ -521,6 +541,40 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'tidak mendengar';
+
+  @override
+  String get rigPortsTooltipHost => 'Port terbuka dalam terminal ini';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Tiada yang mendengar dalam terminal ini lagi. Mulakan pelayan dan ia muncul di sini.';
+
+  @override
+  String get rigPortsAddHintHost => 'Port untuk dipetakan (cth. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Port setempat (pilihan)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port dalam pelayar (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'pelayar (VM) tidak dilampirkan';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port pada Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android tidak dilampirkan';
 
   @override
   String rigImagesMissing(int count) {
@@ -14014,6 +14068,10 @@ class AppLocalizationsMs extends AppLocalizations {
       'Ini ialah pentadbiran pelayan. Demo memberi setiap pelawat ruang kerja pakai buang sendiri dan tiada apa di luarnya.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipeline tidak boleh dijalankan di sini. Pelawat yang boleh menulis langkah bash dan memulakannya — secara manual atau melalui pencetus peristiwa — sedang melaksanakan kod pada hos ini.';
+
+  @override
   String get settingsBackupRestore => 'Sandaran & pulih';
 
   @override
@@ -14363,6 +14421,47 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Benarkan semua hos';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Kebenaran tapak';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Kebenaran tapak dan rangkaian';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'Tiada tapak meminta kebenaran lagi';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin mahu menggunakan $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Sekat';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Kamera';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Mikrofon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Pemberitahuan';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Lokasi';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Storan kekal';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Papan keratan';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Tangkapan skrin';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Benarkan setiap hos rangkaian?';

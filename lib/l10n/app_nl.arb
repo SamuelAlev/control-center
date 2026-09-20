@@ -112,6 +112,19 @@
   "rigStartIosHint": "Maakt een tijdelijke iOS-simulator op de Mac van de server. Deze wordt verwijderd wanneer de testomgeving wordt gesloten; de netwerktoegang is niet geïsoleerd.",
   "rigTechnicalDetails": "Technische details",
   "rigStopMachine": "Machine stoppen",
+  "rigHomeButton": "Home",
+  "rigRotateClockwise": "Draai met de klok mee",
+  "rigRotateCounterclockwise": "Draai tegen de klok in",
+  "rigTakeScreenshot": "Maak een schermafbeelding",
+  "rigScreenshotSaved": "Schermafbeelding opgeslagen",
+  "rigScreenshotSaveFailed": "Kon de schermafbeelding niet opslaan: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Deze server kan dit soort machine niet draaien.",
   "rigTabNeedsConversation": "Open eerst een gesprek — een machine hoort bij één gesprek, zodat jij en je agents naar hetzelfde scherm kijken.",
   "ideMenuSectionTools": "Gereedschap",
@@ -229,6 +242,23 @@
   "rigPortsDomainHint": "Domein voor de Browser (VM), bijv. myapp.test — daar bereikbaar, niet op de host",
   "rigPortsProcessUnknown": "onbekend proces",
   "rigPortsInactive": "luistert niet",
+  "rigPortsTooltipHost": "Poorten open in deze terminal",
+  "rigPortsEmptyHost": "Er luistert nog niets in deze terminal. Start een server en die verschijnt hier.",
+  "rigPortsAddHintHost": "Poort om te mappen (bijv. 5173)",
+  "rigPortsLocalPortHint": "Lokale poort (optioneel)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} in de browser (VM)",
+  "rigPortsDestBrowserUnreachable": "browser (VM) niet gekoppeld",
+  "rigPortsDestAndroid": "localhost:{port} op Android",
+  "rigPortsDestAndroidUnreachable": "Android niet gekoppeld",
   "rigImagesMissing": "{count, plural, =1{nog 1 basis-image te downloaden} other{nog {count} basis-images te downloaden}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -7575,6 +7605,7 @@
   "demoUnavailableSso": "Single sign-on is serverconfiguratie. De demo logt je in als tijdelijke gast.",
   "demoUnavailableAudio": "Opnemen en dicteren vereisen audio-opname en een spraakmodel op de host. De demo levert geen van beide: vergaderingen zijn transcripties zonder weergave.",
   "demoUnavailableServerAdmin": "Dit is serverbeheer. De demo geeft je een wegwerpwerkruimte en verder niets.",
+  "demoUnavailablePipelines": "Pipelines kunnen hier niet draaien. Een bezoeker die een bash-stap kan schrijven en starten — handmatig of via een gebeurtenistrigger — voert code uit op deze host.",
   "settingsBackupRestore": "Back-up en herstel",
   "settingsBackupRestoreDescription": "Momentopnamen van elke database op deze server, plus exporteren, importeren en verwijderen van één werkruimte.",
   "backupSnapshotsLabel": "Momentopnamen van de installatie",
@@ -7722,6 +7753,19 @@
   "noProfilePrsMatchSearchHint": "Probeer een andere titel of een ander pull-requestnummer",
   "rigNetworkUnrestricted": "Netwerk zonder beperkingen",
   "rigNetworkAllowAllHosts": "Alle hosts toestaan",
+  "rigBrowserPermissionsTitle": "Sitemachtigingen",
+  "rigBrowserPermissionsTooltip": "Sitemachtigingen en netwerk",
+  "rigBrowserPermissionEmpty": "Nog geen site heeft om een machtiging gevraagd",
+  "rigBrowserPermissionPrompt": "{origin} wil {permission} gebruiken",
+  "rigBrowserPermissionBlock": "Blokkeren",
+  "rigBrowserPermissionCamera": "Camera",
+  "rigBrowserPermissionMicrophone": "Microfoon",
+  "rigBrowserPermissionNotifications": "Meldingen",
+  "rigBrowserPermissionGeolocation": "Locatie",
+  "rigBrowserPermissionPersistentStorage": "Permanente opslag",
+  "rigBrowserPermissionClipboard": "Klembord",
+  "rigBrowserPermissionDisplayCapture": "Schermopname",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Alle netwerkhosts toestaan?",
   "rigNetworkBypassBody": "Hiermee wordt de geïsoleerde omgeving opnieuw gestart en wordt niet-vastgelegd werk erin verwijderd. Daarna kan de gast elke netwerkhost bereiken totdat de omgeving wordt gesloten.",
   "rigNetworkRestartUnrestricted": "Opnieuw starten zonder beperkingen",

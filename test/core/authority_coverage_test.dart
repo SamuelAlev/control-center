@@ -253,7 +253,8 @@ void main() {
       'evals.watchRunsForSuite', 'evals.watchSuites',
       // Live surfaces + utilities.
       'codeServer.watchDirtyState', 'codeServer.watchOpenRequests',
-      'rig.watchPorts', 'rig.watchSessions', 'terminal.output',
+      'rig.watchPorts', 'rig.watchSessions', 'terminal.watchPorts',
+      'terminal.output',
       'terminal.titles', 'soundscape.watchScene', 'weather.watchCurrent',
       'fleet.watchJobs', 'fleet.watchPlacements',
       // The sync change feed: carries rows the guest-readable read surface

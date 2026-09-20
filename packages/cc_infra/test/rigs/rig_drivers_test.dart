@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_permission.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/mobile_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
@@ -83,8 +84,10 @@ const List<int> _jpegBytes = [0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9];
 ({MobileRigDriver driver, FakeSpawner spawner}) _mobile({
   bool hasFfmpeg = true,
   bool deviceReady = true,
+  void Function(RigDisplaySize display)? onDisplayChanged,
 }) {
   late final FakeSpawner spawner;
+  var userRotation = 0;
   spawner = FakeSpawner((process) {
     if (process.executable == _ffmpegPath) {
       // A real ffmpeg exits on stdin EOF; the segment loop waits for exactly
@@ -104,6 +107,15 @@ const List<int> _jpegBytes = [0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9];
       return;
     }
     if (args.contains('wm')) {
+      if (args.contains('user-rotation')) {
+        if (args.contains('lock')) {
+          userRotation = int.parse(args.last);
+          process.complete();
+          return;
+        }
+        process.complete(stdout: 'User rotation: $userRotation\n');
+        return;
+      }
       process.complete(stdout: 'Physical size: 1080x1920\n');
       return;
     }
@@ -137,6 +149,7 @@ const List<int> _jpegBytes = [0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9];
         spawn: spawner.call,
       ),
       size: _deviceSize,
+      onDisplayChanged: onDisplayChanged,
       ffmpeg: () async => hasFfmpeg ? ffmpeg : null,
     ),
     spawner: spawner,
@@ -631,6 +644,68 @@ void main() {
       await driver.dispose();
     });
 
+    test('chrome-error publishes the unreachable destination', () async {
+      final socket = _FakeCdpSocket();
+      final urls = <String>[];
+      final driver = BrowserRigDriver(
+        client: CdpClient.over(socket),
+        viewport: RigDisplaySize(1280, 800),
+        onUrlChanged: urls.add,
+      );
+
+      socket.push({
+        'method': 'Page.frameNavigated',
+        'params': {
+          'frame': {
+            'id': 'main',
+            'url': 'chrome-error://chromewebdata/',
+            'unreachableUrl': 'http://localhost:5173/',
+          },
+        },
+      });
+      await _settle();
+
+      expect(
+        urls,
+        ['http://localhost:5173/'],
+        reason:
+            'Chrome\'s omnibox shows the URL that failed, not the '
+            'interstitial. Emitting chrome-error is what made the address '
+            'bar flicker when a viewport resize re-committed the error page.',
+      );
+      await driver.dispose();
+    });
+
+    test(
+      'chrome-error without a fallback never overwrites a real address',
+      () async {
+        final socket = _FakeCdpSocket();
+        final urls = <String>[];
+        final driver = BrowserRigDriver(
+          client: CdpClient.over(socket),
+          viewport: RigDisplaySize(1280, 800),
+          onUrlChanged: urls.add,
+        );
+
+        socket.push({
+          'method': 'Page.frameNavigated',
+          'params': {
+            'frame': {'id': 'main', 'url': 'http://localhost:5173/'},
+          },
+        });
+        socket.push({
+          'method': 'Page.frameNavigated',
+          'params': {
+            'frame': {'id': 'main', 'url': 'chrome-error://chromewebdata/'},
+          },
+        });
+        await _settle();
+
+        expect(urls, ['http://localhost:5173/']);
+        await driver.dispose();
+      },
+    );
+
     test('seedCurrentUrl publishes the page the driver attached to', () async {
       final socket = _FakeCdpSocket()
         ..autoReply['Page.getNavigationHistory'] = const {
@@ -732,6 +807,47 @@ void main() {
       expect(socket.sent.last['method'], 'Page.stopLoading');
       await driver.dispose();
     });
+
+    test('a site permission ask lands on navState and can be answered', () async {
+      final socket = _FakeCdpSocket()
+        ..autoReply['Page.getNavigationHistory'] = const {
+          'currentIndex': 0,
+          'entries': [
+            {'id': 1, 'url': 'http://localhost:5173/'},
+          ],
+        }
+        ..autoReply['Runtime.evaluate'] = const {}
+        ..autoReply['Browser.grantPermissions'] = const {};
+      final driver = _driver(socket);
+      socket.push({
+        'method': 'Runtime.bindingCalled',
+        'params': {
+          'name': 'ccBrowserPermission',
+          'payload':
+              '{"id":"9","kind":"persistent-storage","origin":"http://localhost:5173"}',
+          'executionContextId': 1,
+        },
+      });
+      await _settle();
+
+      final pending = await driver.navState();
+      expect(pending.permissions, hasLength(1));
+      expect(
+        pending.permissions.single.decision,
+        BrowserPermissionDecision.pending,
+      );
+
+      final result = await driver.perform(
+        const BrowserPermissionRespond(requestId: '9', allow: true),
+      );
+      expect(result.isError, isFalse);
+      expect(
+        (await driver.navState()).permissions.single.decision,
+        BrowserPermissionDecision.granted,
+      );
+      expect(socket.sent.map((f) => f['method']), contains('Runtime.evaluate'));
+      await driver.dispose();
+    });
   });
 
   group('MobileRigDriver stills', () {
@@ -792,6 +908,33 @@ void main() {
       final m = _mobile();
       await m.driver.captureForAgent();
       expect(m.spawner.started.any((p) => p.args.contains('wm')), isTrue);
+    });
+
+    test('rotate locks the next 90° and reports the swapped display', () async {
+      final displays = <RigDisplaySize>[];
+      final m = _mobile(onDisplayChanged: displays.add);
+      final result = await m.driver.perform(const MobileRotate());
+      expect(result.isError, isFalse, reason: result.text);
+      expect(
+        m.spawner.started.any(
+          (p) =>
+              p.args.contains('user-rotation') &&
+              p.args.contains('lock') &&
+              p.args.contains('1'),
+        ),
+        isTrue,
+      );
+      expect(displays, [RigDisplaySize(1920, 1080)]);
+    });
+
+    test('a full-resolution screenshot stays PNG', () async {
+      final m = _mobile();
+      final result = await m.driver.perform(
+        const MobileScreenshot(fullResolution: true),
+      );
+      expect(result.isError, isFalse);
+      expect(result.imageMediaType, 'image/png');
+      expect(base64Decode(result.imageBase64!), _pngBytes);
     });
   });
 

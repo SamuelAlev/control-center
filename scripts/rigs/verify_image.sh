@@ -23,7 +23,7 @@ if [[ -z "$IMAGE" || ! -f "$IMAGE" ]]; then
   exit 2
 fi
 
-TIMEOUT="${CC_RIG_VERIFY_TIMEOUT:-240}"
+TIMEOUT="${CC_RIG_VERIFY_TIMEOUT:-420}"
 AGENT_PORT="${CC_RIG_VERIFY_PORT:-17811}"
 SSH_PORT="${CC_RIG_VERIFY_SSH_PORT:-17822}"
 TOKEN="verify-$$-$RANDOM"
@@ -228,20 +228,86 @@ while (( SECONDS < deadline )); do
             echo "$proxy_env" >&2
             break
           fi
-          echo "==> checking Chromium reaches the public internet directly"
+          echo "==> checking Firefox reaches the public internet directly"
+          # Firefox has no Chromium-style --dump-dom we can grep; a headless
+          # screenshot of example.com is the proof it launched and fetched.
           if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
                -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
                -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
                cc@127.0.0.1 \
-               'browser=$(command -v chromium || command -v chromium-browser); \
-                test -n "$browser"; \
-                timeout 30 "$browser" --headless --no-sandbox \
-                  --disable-gpu --user-data-dir=/tmp/cc-net-verify \
-                  --dump-dom https://example.com 2>/dev/null | \
-                  grep -q "Example Domain"'; then
+               'test -x /opt/firefox/firefox && \
+                test -x /usr/local/bin/cc-firefox && \
+                timeout 90 /usr/local/bin/cc-firefox --headless \
+                  --screenshot /tmp/cc-ff.png https://example.com && \
+                test -s /tmp/cc-ff.png'; then
+            echo "==> Firefox internet access works"
+          else
+            echo "==> FAILED: Firefox cannot reach https://example.com." >&2
+            ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+              cc@127.0.0.1 \
+              'ls -l /opt/firefox/firefox /usr/local/bin/cc-firefox; \
+               /usr/local/bin/cc-firefox --version; \
+               ls -l /tmp/cc-ff.png' >&2 || true
+            break
+          fi
+          echo "==> checking Chromium reaches the public internet directly"
+          # Same proof as Firefox: dump-dom hangs under the windowed wrapper's
+          # SwiftShader flags, so screenshot the binary with a headless ozone.
+          if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+               cc@127.0.0.1 \
+               'test -x /opt/chromium/chrome && \
+                test -x /usr/local/bin/cc-chromium && \
+                timeout 90 /opt/chromium/chrome --headless=new --no-sandbox \
+                  --disable-gpu --ozone-platform=headless \
+                  --user-data-dir=/tmp/cc-chrome-verify \
+                  --screenshot=/tmp/cc-chrome.png https://example.com \
+                  >/tmp/cc-chrome.out 2>/tmp/cc-chrome.err && \
+                test -s /tmp/cc-chrome.png'; then
             echo "==> Chromium internet access works"
           else
             echo "==> FAILED: Chromium cannot reach https://example.com." >&2
+            ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+              cc@127.0.0.1 \
+              'ls -l /opt/chromium/chrome /usr/local/bin/cc-chromium /tmp/cc-chrome.png; \
+               /opt/chromium/chrome --version; \
+               tail -n 40 /tmp/cc-chrome.err' >&2 || true
+            exit 1
+          fi
+          echo "==> checking WebKit (Epiphany) is installed"
+          if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+               cc@127.0.0.1 \
+               'test -x /usr/local/bin/cc-webkit && command -v epiphany >/dev/null'; then
+            echo "==> WebKit is installed"
+          else
+            echo "==> FAILED: WebKit (epiphany) is not installed." >&2
+            break
+          fi
+          echo "==> checking the developer CLI toolset"
+          if ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+               -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+               -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+               cc@127.0.0.1 \
+               'command -v gcc >/dev/null && command -v g++ >/dev/null && \
+                command -v make >/dev/null && command -v python3 >/dev/null && \
+                command -v jq >/dev/null && command -v git >/dev/null && \
+                command -v cmake >/dev/null && command -v rsync >/dev/null && \
+                command -v unzip >/dev/null && command -v wget >/dev/null'; then
+            echo "==> CLI toolset is installed"
+          else
+            echo "==> FAILED: the GitHub-runner-style CLI toolset is missing." >&2
+            ssh -i "$WORK_DIR/id" -p "$SSH_PORT" \
+              -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+              -o LogLevel=ERROR -o BatchMode=yes -o ConnectTimeout=10 \
+              cc@127.0.0.1 \
+              'command -v gcc g++ make python3 jq git cmake rsync unzip wget' >&2 || true
             break
           fi
           # The audio lane can return HTTP 200 and still be silent if ffmpeg

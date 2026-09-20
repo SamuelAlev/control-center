@@ -408,6 +408,66 @@ class AdbClient {
     await _expectOk(['shell', 'input', 'keyevent', keycode]);
   }
 
+  /// The current `user_rotation` (0 portrait, 1–3 successive 90° turns).
+  ///
+  /// `null` when the device does not report one — callers treat that as 0
+  /// rather than guessing a landscape they cannot prove.
+  Future<int?> userRotation() async {
+    final wm = await _run(['shell', 'wm', 'user-rotation']);
+    final fromWm = _lastInt(wm.stdout);
+    if (fromWm != null) {
+      return fromWm;
+    }
+    final settings = await _run([
+      'shell',
+      'settings',
+      'get',
+      'system',
+      'user_rotation',
+    ]);
+    return _lastInt(settings.stdout);
+  }
+
+  /// Locks the display to [rotation] (0–3) and turns auto-rotate off so the
+  /// next sensor event cannot undo it.
+  Future<void> setUserRotation(int rotation) async {
+    if (rotation < 0 || rotation > 3) {
+      throw AdbException(
+        'Refusing rotation $rotation: expected 0 (portrait) through 3.',
+      );
+    }
+    // Best-effort: a device without this setting still accepts wm lock.
+    await _run([
+      'shell',
+      'settings',
+      'put',
+      'system',
+      'accelerometer_rotation',
+      '0',
+    ]);
+    try {
+      await _expectOk(['shell', 'wm', 'user-rotation', 'lock', '$rotation']);
+    } on AdbException {
+      await _expectOk([
+        'shell',
+        'settings',
+        'put',
+        'system',
+        'user_rotation',
+        '$rotation',
+      ]);
+    }
+  }
+
+  static int? _lastInt(String text) {
+    final match = RegExp(r'(\d+)\s*$').firstMatch(text.trim());
+    if (match == null) {
+      return null;
+    }
+    final value = int.parse(match.group(1)!);
+    return value >= 0 && value <= 3 ? value : null;
+  }
+
   /// Dumps the view hierarchy as text.
   Future<String> uiDump() async {
     // `--compressed` drops the layout-only nodes that make a raw dump
@@ -548,6 +608,42 @@ class AdbClient {
       throw AdbException(
         'Could not open $url on $serial: ${_firstLine(output)}',
       );
+    }
+  }
+
+  /// Forwards device `localhost:[devicePort]` to the host's
+  /// `localhost:[hostPort]` (`adb reverse tcp:… tcp:…`).
+  ///
+  /// Device-global on one emulator: a later reverse of the same device port
+  /// replaces the previous target. The ports service plants these only for
+  /// the Android rig's own conversation and drops them on detach.
+  Future<void> reverse({
+    required int devicePort,
+    required int hostPort,
+  }) async {
+    _assertTcpPort(devicePort, 'devicePort');
+    _assertTcpPort(hostPort, 'hostPort');
+    await _expectOk([
+      'reverse',
+      'tcp:$devicePort',
+      'tcp:$hostPort',
+    ]);
+  }
+
+  /// Removes one reverse for [devicePort].
+  Future<void> removeReverse(int devicePort) async {
+    _assertTcpPort(devicePort, 'devicePort');
+    await _expectOk(['reverse', '--remove', 'tcp:$devicePort']);
+  }
+
+  /// Removes every reverse this device currently holds.
+  Future<void> removeAllReverses() async {
+    await _expectOk(['reverse', '--remove-all']);
+  }
+
+  static void _assertTcpPort(int port, String name) {
+    if (port <= 0 || port > 65535) {
+      throw AdbException('Refusing $name $port: expected 1–65535.');
     }
   }
 

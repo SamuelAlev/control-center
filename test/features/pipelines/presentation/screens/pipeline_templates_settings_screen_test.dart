@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_templa
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_start.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/screens/pipeline_templates_settings_screen.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -215,6 +216,7 @@ void main() {
             ).overrideWith((ref) => const Stream.empty()),
             pipelineTemplateRepositoryProvider.overrideWithValue(repo),
             pipelineTriggerRepositoryProvider.overrideWithValue(triggers),
+            isDemoServerProvider.overrideWith((ref) => false),
           ],
           child: _routedShell(router),
         ),
@@ -291,6 +293,7 @@ void main() {
             pipelineTriggerRepositoryProvider.overrideWithValue(
               _FakeTriggerRepo(),
             ),
+            isDemoServerProvider.overrideWith((ref) => false),
           ],
           child: _routedShell(router),
         ),

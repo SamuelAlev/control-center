@@ -136,6 +136,11 @@ abstract final class CcIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData flaskConical = IconData(
+    0xe79e,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData folder = IconData(
     0xe24a,
     fontFamily: _family,
@@ -263,6 +268,11 @@ abstract final class CcIcons {
   );
   static const IconData pencil = IconData(
     0xe3b4,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
+  static const IconData pencilRuler = IconData(
+    0xe906,
     fontFamily: _family,
     fontPackage: _package,
   );

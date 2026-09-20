@@ -672,6 +672,11 @@ abstract final class AppIcons {
     fontFamily: _family,
     fontPackage: _package,
   );
+  static const IconData house = IconData(
+    0xe2c2,
+    fontFamily: _family,
+    fontPackage: _package,
+  );
   static const IconData image = IconData(
     0xe2ca,
     fontFamily: _family,

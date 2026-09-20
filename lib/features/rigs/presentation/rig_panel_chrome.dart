@@ -68,45 +68,63 @@ class RigHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(rigSurfaceIcon(rig.surfaceKind), size: 14, color: t.fgSecondary),
-          const SizedBox(width: AppSpacing.xs),
-          Flexible(
-            child: Text(
-              // Named by ENGINE on a browser rig: three of them can be open at
-              // once and "Browser" on all three says nothing about which page
-              // is on screen.
-              rigSurfaceLabel(l10n, rig.surfaceKind, engine: rig.browserEngine),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: CcTypography.bodySm.copyWith(
-                color: t.textPrimary,
-                fontWeight: FontWeight.w600,
-              ),
+          // The title Flexible must not sit next to a Spacer: a loose
+          // Flexible next to a Spacer splits leftover slack 1:1 and parks
+          // the size + controls in the middle of a wide panel. Expanding
+          // the leading cluster consumes the slack instead, so the trailing
+          // chrome stays flush right.
+          Expanded(
+            child: Row(
+              children: [
+                Icon(
+                  rigSurfaceIcon(rig.surfaceKind),
+                  size: 14,
+                  color: t.fgSecondary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Flexible(
+                  child: Text(
+                    // Named by ENGINE on a browser rig: three of them can
+                    // be open at once and "Browser" on all three says
+                    // nothing about which page is on screen.
+                    rigSurfaceLabel(
+                      l10n,
+                      rig.surfaceKind,
+                      engine: rig.browserEngine,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: CcTypography.bodySm.copyWith(
+                      color: t.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                CcStatusTag(
+                  label: rigPhaseLabel(l10n, rig),
+                  tone: rigPhaseTone(rig.phaseKind),
+                ),
+                // Only when the server actually SAID it is emulated. An
+                // absent field used to default to accelerated, which hid
+                // this badge on exactly the hosts that need it.
+                if (rig.isEmulated) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  CcStatusTag(
+                    label: l10n.rigNotAccelerated,
+                    tone: CcStatusTone.caution,
+                  ),
+                ],
+                if (rig.networkIsUnrestricted) ...[
+                  const SizedBox(width: AppSpacing.xs),
+                  CcStatusTag(
+                    label: l10n.rigNetworkUnrestricted,
+                    tone: CcStatusTone.caution,
+                  ),
+                ],
+              ],
             ),
           ),
-          const SizedBox(width: AppSpacing.sm),
-          CcStatusTag(
-            label: rigPhaseLabel(l10n, rig),
-            tone: rigPhaseTone(rig.phaseKind),
-          ),
-          // Only when the server actually SAID it is emulated. An absent
-          // field used to default to accelerated, which hid this badge on
-          // exactly the hosts that need it.
-          if (rig.isEmulated) ...[
-            const SizedBox(width: AppSpacing.xs),
-            CcStatusTag(
-              label: l10n.rigNotAccelerated,
-              tone: CcStatusTone.caution,
-            ),
-          ],
-          if (rig.networkIsUnrestricted) ...[
-            const SizedBox(width: AppSpacing.xs),
-            CcStatusTag(
-              label: l10n.rigNetworkUnrestricted,
-              tone: CcStatusTone.caution,
-            ),
-          ],
-          const Spacer(),
           if (rig.displayWidth != null && rig.displayHeight != null)
             Padding(
               padding: const EdgeInsetsDirectional.only(end: AppSpacing.sm),

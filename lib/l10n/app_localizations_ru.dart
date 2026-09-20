@@ -270,6 +270,26 @@ class AppLocalizationsRu extends AppLocalizations {
   String get rigStopMachine => 'Остановить машину';
 
   @override
+  String get rigHomeButton => 'Домой';
+
+  @override
+  String get rigRotateClockwise => 'Повернуть по часовой стрелке';
+
+  @override
+  String get rigRotateCounterclockwise => 'Повернуть против часовой стрелки';
+
+  @override
+  String get rigTakeScreenshot => 'Сделать снимок экрана';
+
+  @override
+  String get rigScreenshotSaved => 'Снимок экрана сохранён';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Не удалось сохранить снимок экрана: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Этот сервер не может размещать машины такого типа.';
 
@@ -525,6 +545,40 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'не слушает';
+
+  @override
+  String get rigPortsTooltipHost => 'Порты, открытые в этом терминале';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'В этом терминале пока никто не слушает. Запустите сервер — он появится здесь.';
+
+  @override
+  String get rigPortsAddHintHost => 'Порт для сопоставления (напр. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Локальный порт (необязательно)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port в браузере (ВМ)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'браузер (ВМ) не подключён';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port на Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android не подключён';
 
   @override
   String rigImagesMissing(int count) {
@@ -14177,6 +14231,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Это администрирование сервера. Демо даёт каждому посетителю своё одноразовое рабочее пространство и ничего сверх этого.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Конвейеры здесь не запускаются. Посетитель, который может написать шаг bash и запустить его — вручную или через триггер события — выполняет код на этом хосте.';
+
+  @override
   String get settingsBackupRestore => 'Резервное копирование и восстановление';
 
   @override
@@ -14527,6 +14585,48 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Разрешить все узлы';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Разрешения сайта';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Разрешения сайта и сеть';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Пока ни один сайт не запрашивал разрешение';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin хочет использовать: $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Заблокировать';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Камера';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Микрофон';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Уведомления';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Геолокация';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Постоянное хранилище';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Буфер обмена';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Запись экрана';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Разрешить все сетевые узлы?';

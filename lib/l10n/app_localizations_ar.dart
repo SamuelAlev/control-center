@@ -264,6 +264,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rigStopMachine => 'إيقاف الجهاز';
 
   @override
+  String get rigHomeButton => 'الرئيسية';
+
+  @override
+  String get rigRotateClockwise => 'تدوير باتجاه عقارب الساعة';
+
+  @override
+  String get rigRotateCounterclockwise => 'تدوير عكس عقارب الساعة';
+
+  @override
+  String get rigTakeScreenshot => 'التقاط لقطة شاشة';
+
+  @override
+  String get rigScreenshotSaved => 'تم حفظ لقطة الشاشة';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'تعذر حفظ لقطة الشاشة: ⁨$error⁩';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'لا يمكن لهذا الخادم استضافة هذا النوع من الأجهزة.';
 
@@ -518,6 +538,41 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'لا يستمع';
+
+  @override
+  String get rigPortsTooltipHost => 'المنافذ المفتوحة في هذا الطرفية';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'لا يوجد شيء يستمع في هذا الطرفية بعد. ابدأ خادماً فيظهر هنا.';
+
+  @override
+  String get rigPortsAddHintHost => 'المنفذ للتعيين (مثل 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'المنفذ المحلي (اختياري)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port في المتصفح (آلة افتراضية)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable =>
+      'المتصفح (آلة افتراضية) غير متصل';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port على أندرويد';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'أندرويد غير متصل';
 
   @override
   String rigImagesMissing(int count) {
@@ -14208,6 +14263,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'هذه إدارة للخادم. تمنح النسخة التجريبية كل زائر مساحة عمل مؤقتة خاصة به ولا شيء غيرها.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'لا يمكن تشغيل المسارات هنا. الزائر الذي يستطيع كتابة خطوة bash وتشغيلها — يدوياً أو عبر محفّز حدث — ينفّذ رمزاً على هذا المضيف.';
+
+  @override
   String get settingsBackupRestore => 'النسخ الاحتياطي والاستعادة';
 
   @override
@@ -14559,6 +14618,47 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'السماح بجميع المضيفين';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'أذونات الموقع';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'أذونات الموقع والشبكة';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'لم يطلب أي موقع إذناً بعد';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin يريد استخدام $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'حظر';
+
+  @override
+  String get rigBrowserPermissionCamera => 'الكاميرا';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'الميكروفون';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'الإشعارات';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'الموقع';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'التخزين الدائم';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'الحافظة';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'التقاط الشاشة';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'هل تريد السماح بكل مضيفي الشبكة؟';

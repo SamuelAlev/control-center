@@ -2,12 +2,14 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_input.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
+import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +48,13 @@ class _PipelineRunScreenState extends ConsumerState<PipelineRunScreen> {
         title: l10n.pipelineRunLauncherTitle,
         subtitle: l10n.pipelineRunSubtitle,
         child: Center(child: Text(l10n.pipelinesNoActiveWorkspace)),
+      );
+    }
+    if (ref.watch(isDemoServerProvider)) {
+      return PageWrapper(
+        title: l10n.pipelineRunLauncherTitle,
+        subtitle: l10n.pipelineRunSubtitle,
+        child: const DemoUnavailable(capability: DemoCapability.pipelines),
       );
     }
 

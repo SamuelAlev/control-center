@@ -7,9 +7,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_url.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
+import 'package:cc_infra/src/rigs/browser_permission_host.dart';
+import 'package:cc_infra/src/rigs/browser_permission_probe.dart';
+import 'package:cc_infra/src/rigs/cdp_permissions.dart';
+import 'package:cc_infra/src/rigs/cdp_screencast_fastpath.dart';
 
 /// A CDP command returned an error.
 ///
@@ -23,6 +28,20 @@ class CdpException extends BrowserEngineException {
   @override
   String toString() =>
       'CdpException${code == null ? '' : ' ($code)'}: $message';
+}
+
+/// The address-bar URL for a CDP frame.
+///
+/// A failed load commits Chromium's interstitial as
+/// `chrome-error://chromewebdata/` while the destination that failed is still
+/// on the frame as `unreachableUrl`. Chrome's own omnibox shows that
+/// destination; emitting the interstitial is what made the bar flicker.
+String _visibleFrameUrl(Map<dynamic, dynamic> frame) {
+  final url = frame['url'] is String ? frame['url'] as String : '';
+  final unreachable = frame['unreachableUrl'] is String
+      ? frame['unreachableUrl'] as String
+      : null;
+  return visibleBrowserUrl(url, fallback: unreachable);
 }
 
 /// What a page said when asked for its clipboard.
@@ -274,7 +293,7 @@ class CdpDialogRecord {
 /// guest is enclosed, so arbitrary JS is not a containment problem, but it IS
 /// an accountability one: an action log full of opaque script bodies cannot be
 /// reviewed, and every verb here exists so the log says what happened.
-class CdpClient implements BrowserEngineClient {
+class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
   CdpClient._(
     this._socket, {
     this._reconnect,
@@ -563,8 +582,8 @@ class CdpClient implements BrowserEngineClient {
             // id was known (the first navigation after attach), so commit is
             // the catch-all and frameStoppedLoading the release.
             emit(const BrowserPageLoadingChanged(loading: true));
-            final url = frame['url'];
-            if (url is String) {
+            final url = _visibleFrameUrl(frame);
+            if (url.isNotEmpty) {
               emit(BrowserPageUrlChanged(url));
             }
           }
@@ -731,7 +750,22 @@ class CdpClient implements BrowserEngineClient {
     } on Object catch (e) {
       CcInfraLog.debug('rig/cdp: target discovery unavailable: $e');
     }
+    await grantCdpHeadlessPermissions(_send, duringHandshake: duringHandshake);
+    await installCdpPermissionInterceptor(
+      _send,
+      duringHandshake: duringHandshake,
+    );
   }
+
+  @override
+  Future<void> installPermissionInterceptor() =>
+      installCdpPermissionInterceptor(_send);
+
+  @override
+  Future<void> resolvePermissionProbe(
+    BrowserPermissionProbe probe, {
+    required bool allow,
+  }) => resolveCdpPermissionProbe(_send, probe, allow: allow);
 
   /// Navigates to [url] and waits for the load event (or [timeout]).
   ///
@@ -751,6 +785,10 @@ class CdpClient implements BrowserEngineClient {
       }
     });
     try {
+      final parsed = Uri.tryParse(url);
+      if (parsed != null && parsed.hasScheme && parsed.hasAuthority) {
+        await grantCdpHeadlessPermissions(_send, origin: parsed.origin);
+      }
       final result = await send('Page.navigate', params: {'url': url});
       final errorText = result['errorText'];
       if (errorText is String && errorText.isNotEmpty) {
@@ -1820,8 +1858,12 @@ class CdpClient implements BrowserEngineClient {
     var url = '';
     if (current >= 0 && current < entries.length) {
       final entry = entries[current];
-      if (entry is Map && entry['url'] is String) {
-        url = entry['url'] as String;
+      if (entry is Map) {
+        final raw = entry['url'] is String ? entry['url'] as String : '';
+        final typed = entry['userTypedURL'] is String
+            ? entry['userTypedURL'] as String
+            : null;
+        url = visibleBrowserUrl(raw, fallback: typed);
       }
     }
     return (
@@ -1872,6 +1914,7 @@ class CdpClient implements BrowserEngineClient {
     if (!_screencastFrames.isClosed) {
       await _screencastFrames.close();
     }
+    closePermissionHost();
   }
 
   // ── Connection lifecycle ────────────────────────────────────────────────
@@ -2044,6 +2087,7 @@ class CdpClient implements BrowserEngineClient {
     if (!_screencastFrames.isClosed) {
       unawaited(_screencastFrames.close());
     }
+    closePermissionHost();
   }
 
   void _setState(CdpConnectionState state) {
@@ -2133,6 +2177,14 @@ class CdpClient implements BrowserEngineClient {
         _forgetTarget(event.params['targetId']);
       case 'Page.javascriptDialogOpening':
         _handleDialog(event.params);
+      case 'Runtime.bindingCalled':
+        final probe = probeFromCdpBinding(
+          method: event.method,
+          params: event.params,
+        );
+        if (probe != null) {
+          emitPermissionProbe(probe);
+        }
       default:
         break;
     }
@@ -2141,75 +2193,14 @@ class CdpClient implements BrowserEngineClient {
     }
   }
 
-  /// Recognizes a `Page.screencastFrame` frame and emits it without parsing
-  /// the whole thing. Returns false when the frame is anything else, or when
-  /// its shape is not the one Chromium emits — the caller then takes the
-  /// ordinary decode path, so this can only ever be a shortcut, never a
-  /// behaviour change.
-  ///
-  /// Only the method name, the `data` field and `sessionId` are read. The
-  /// `metadata` block (page scale, scroll offsets, timestamp) is not used by
-  /// any consumer, and it is the reason the generic path had to build a map.
   bool _tryFastScreencastFrame(String frame) {
-    // The method name is near the front of every event frame; bound the probe
-    // so a huge non-event frame is not scanned end to end for nothing.
-    // `lastIndexOf(needle, start)` searches BACKWARD from `start`, which is
-    // what bounds the probe — a plain `indexOf` would scan a 500 KB frame end
-    // to end before concluding it is not an event.
-    //
-    // `start` MUST be clamped to the frame length: `lastIndexOf` throws a
-    // RangeError for a start past the end, and an exception here escapes
-    // `_onFrame` and kills the whole frame loop — every pending command then
-    // hangs. Most frames are short, so the unclamped form broke everything.
-    const probeLimit = 200;
-    final probeStart = frame.length < probeLimit ? frame.length : probeLimit;
-    if (frame.lastIndexOf('"Page.screencastFrame"', probeStart) < 0) {
-      return false;
-    }
-    const dataKey = '"data":"';
-    final dataStart = frame.indexOf(dataKey);
-    if (dataStart < 0) {
-      return false;
-    }
-    final valueStart = dataStart + dataKey.length;
-    final valueEnd = frame.indexOf('"', valueStart);
-    if (valueEnd < 0) {
-      return false;
-    }
-    const sessionKey = '"sessionId":';
-    final sessionStart = frame.indexOf(sessionKey);
-    var sessionId = -1;
-    if (sessionStart >= 0) {
-      var i = sessionStart + sessionKey.length;
-      while (i < frame.length && frame.codeUnitAt(i) == 0x20) {
-        i++;
-      }
-      var value = 0;
-      var digits = 0;
-      while (i < frame.length) {
-        final c = frame.codeUnitAt(i);
-        if (c < 0x30 || c > 0x39) {
-          break;
-        }
-        value = value * 10 + (c - 0x30);
-        digits++;
-        i++;
-      }
-      if (digits > 0) {
-        sessionId = value;
-      }
-    }
-    final Uint8List bytes;
-    try {
-      // Decoded straight out of the socket frame — no substring, so the
-      // base64 payload is never copied.
-      bytes = base64.decoder.convert(frame, valueStart, valueEnd);
-    } on FormatException {
+    final parsed = parseCdpScreencastFastpath(frame);
+    if (parsed == null) {
       return false;
     }
     if (!_screencastFrames.isClosed) {
       _screencastFrames.add(
-        CdpScreencastFrame(bytes: bytes, sessionId: sessionId),
+        CdpScreencastFrame(bytes: parsed.bytes, sessionId: parsed.sessionId),
       );
     }
     return true;

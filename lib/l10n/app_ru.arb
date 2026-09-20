@@ -119,6 +119,19 @@
   "rigStartIosHint": "Создает временный симулятор iOS на сервере Mac. Он удаляется при закрытии тестовой среды; доступ к сети не изолирован.",
   "rigTechnicalDetails": "Технические сведения",
   "rigStopMachine": "Остановить машину",
+  "rigHomeButton": "Домой",
+  "rigRotateClockwise": "Повернуть по часовой стрелке",
+  "rigRotateCounterclockwise": "Повернуть против часовой стрелки",
+  "rigTakeScreenshot": "Сделать снимок экрана",
+  "rigScreenshotSaved": "Снимок экрана сохранён",
+  "rigScreenshotSaveFailed": "Не удалось сохранить снимок экрана: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Этот сервер не может размещать машины такого типа.",
   "rigTabNeedsConversation": "Сначала откройте разговор — машина принадлежит одному, поэтому вы и ваши агенты смотрите на один экран.",
   "ideMenuSectionTools": "Инструменты",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Домен для браузера (VM), например myapp.test — доступен там, не на хосте",
   "rigPortsProcessUnknown": "неизвестный процесс",
   "rigPortsInactive": "не слушает",
+  "rigPortsTooltipHost": "Порты, открытые в этом терминале",
+  "rigPortsEmptyHost": "В этом терминале пока никто не слушает. Запустите сервер — он появится здесь.",
+  "rigPortsAddHintHost": "Порт для сопоставления (напр. 5173)",
+  "rigPortsLocalPortHint": "Локальный порт (необязательно)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} в браузере (ВМ)",
+  "rigPortsDestBrowserUnreachable": "браузер (ВМ) не подключён",
+  "rigPortsDestAndroid": "localhost:{port} на Android",
+  "rigPortsDestAndroidUnreachable": "Android не подключён",
   "rigImagesMissing": "{count, plural, one{Осталось скачать {count} базовый образ} few{Осталось скачать {count} базовых образа} many{Осталось скачать {count} базовых образов} other{Осталось скачать {count} базовых образов}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Единый вход — это конфигурация сервера. Демо вместо этого входит как временный гость.",
   "demoUnavailableAudio": "Запись и диктовка требуют захвата звука и речевой модели на хосте. В демо нет ни того ни другого, поэтому встречи — только расшифровки без воспроизведения.",
   "demoUnavailableServerAdmin": "Это администрирование сервера. Демо даёт каждому посетителю своё одноразовое рабочее пространство и ничего сверх этого.",
+  "demoUnavailablePipelines": "Конвейеры здесь не запускаются. Посетитель, который может написать шаг bash и запустить его — вручную или через триггер события — выполняет код на этом хосте.",
   "settingsBackupRestore": "Резервное копирование и восстановление",
   "settingsBackupRestoreDescription": "Снимки всех баз данных на этом сервере, а также экспорт, импорт и удаление одного рабочего пространства.",
   "backupSnapshotsLabel": "Снимки установки",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Попробуйте другое название или номер запроса на слияние",
   "rigNetworkUnrestricted": "Сеть без ограничений",
   "rigNetworkAllowAllHosts": "Разрешить все узлы",
+  "rigBrowserPermissionsTitle": "Разрешения сайта",
+  "rigBrowserPermissionsTooltip": "Разрешения сайта и сеть",
+  "rigBrowserPermissionEmpty": "Пока ни один сайт не запрашивал разрешение",
+  "rigBrowserPermissionPrompt": "{origin} хочет использовать: {permission}",
+  "rigBrowserPermissionBlock": "Заблокировать",
+  "rigBrowserPermissionCamera": "Камера",
+  "rigBrowserPermissionMicrophone": "Микрофон",
+  "rigBrowserPermissionNotifications": "Уведомления",
+  "rigBrowserPermissionGeolocation": "Геолокация",
+  "rigBrowserPermissionPersistentStorage": "Постоянное хранилище",
+  "rigBrowserPermissionClipboard": "Буфер обмена",
+  "rigBrowserPermissionDisplayCapture": "Запись экрана",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Разрешить все сетевые узлы?",
   "rigNetworkBypassBody": "Изолированная среда будет перезапущена, а незакоммиченная работа внутри неё будет удалена. После этого гостевая система сможет обращаться к любым сетевым узлам до закрытия.",
   "rigNetworkRestartUnrestricted": "Перезапустить без ограничений",

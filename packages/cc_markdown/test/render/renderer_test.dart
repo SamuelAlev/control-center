@@ -53,6 +53,26 @@ void main() {
       // ...and the surrounding prose is still one paragraph RichText.
       expect(find.textContaining('before', findRichText: true), findsOneWidget);
     });
+
+    testWidgets('buildSpan embeds a TextSpan instead of a WidgetSpan', (
+      tester,
+    ) async {
+      final builders = CcBuilderRegistry(const {
+        'inline_code': _SpanCodeBuilder(),
+      });
+      await tester.pumpWidget(
+        _host(
+          CcMarkdown(
+            data: 'before `x` after',
+            style: style,
+            builders: builders,
+          ),
+        ),
+      );
+      expect(find.byType(RichText), findsOneWidget);
+      expect(find.text('[x]'), findsNothing);
+      expect(find.text('before x after', findRichText: true), findsOneWidget);
+    });
   });
 
   group('core block rendering', () {
@@ -122,42 +142,41 @@ void main() {
       expect(toggled, [(0, true), (1, false)]);
     });
 
-    testWidgets(
-      'tapping still works when the document is selectable',
-      (tester) async {
-        final toggled = <(int, bool)>[];
-        final styled = style.copyWith(
-          checkbox: (checked, {onChanged}) {
-            return GestureDetector(
-              onTap: onChanged == null ? null : () => onChanged(!checked),
-              child: Text(checked ? 'checked' : 'unchecked'),
-            );
-          },
-        );
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Align(
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: 600,
-                  child: CcMarkdown(
-                    data: '- [ ] first\n- [x] second',
-                    style: styled,
-                    selectable: true,
-                    onTaskCheckboxChanged: (index, checked) =>
-                        toggled.add((index, checked)),
-                  ),
+    testWidgets('tapping still works when the document is selectable', (
+      tester,
+    ) async {
+      final toggled = <(int, bool)>[];
+      final styled = style.copyWith(
+        checkbox: (checked, {onChanged}) {
+          return GestureDetector(
+            onTap: onChanged == null ? null : () => onChanged(!checked),
+            child: Text(checked ? 'checked' : 'unchecked'),
+          );
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 600,
+                child: CcMarkdown(
+                  data: '- [ ] first\n- [x] second',
+                  style: styled,
+                  selectable: true,
+                  onTaskCheckboxChanged: (index, checked) =>
+                      toggled.add((index, checked)),
                 ),
               ),
             ),
           ),
-        );
-        await tester.tap(find.text('unchecked'));
-        await tester.tap(find.text('checked'));
-        expect(toggled, [(0, true), (1, false)]);
-      },
-    );
+        ),
+      );
+      await tester.tap(find.text('unchecked'));
+      await tester.tap(find.text('checked'));
+      expect(toggled, [(0, true), (1, false)]);
+    });
 
     testWidgets('footnotes render a definitions section after the content', (
       tester,
@@ -250,6 +269,22 @@ class _ChipBuilder extends CcNodeBuilder {
   @override
   Widget build(CcNode node, CcMarkdownStyle style, CcRenderContext context) =>
       Text('[${(node as CcInlineCode).code}]');
+}
+
+class _SpanCodeBuilder extends CcNodeBuilder {
+  const _SpanCodeBuilder();
+  @override
+  Widget build(CcNode node, CcMarkdownStyle style, CcRenderContext context) =>
+      Text('[${(node as CcInlineCode).code}]');
+
+  @override
+  InlineSpan? buildSpan(
+    CcNode node,
+    TextStyle? base,
+    CcMarkdownStyle style,
+    CcRenderContext context,
+    BuildContext buildContext,
+  ) => TextSpan(text: (node as CcInlineCode).code);
 }
 
 class _CcOnlyLinkBuilder extends CcNodeBuilder {

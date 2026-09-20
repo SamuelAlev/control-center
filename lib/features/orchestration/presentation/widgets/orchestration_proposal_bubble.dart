@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration.dart';
 import 'package:cc_domain/features/orchestration/domain/entities/orchestration_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/plan_tab.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/orchestration/presentation/notifiers/orchestration_proposal_notifier.dart';
@@ -213,7 +214,7 @@ class _Card extends ConsumerWidget {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 CcButton(
-                  onPressed: busy
+                  onPressed: busy || ref.watch(isDemoServerProvider)
                       ? null
                       : () => notifier.approve(
                           workspaceId: workspaceId,

@@ -135,6 +135,23 @@
     "description": "Disclosure label on a rig start screen that hides a failed boot's stdout/stderr dump."
   },
   "rigStopMachine": "Stop the machine",
+  "rigHomeButton": "Home",
+  "@rigHomeButton": {
+    "description": "Toolbar button that sends the device Home key / opens the Home screen."
+  },
+  "rigRotateClockwise": "Rotate clockwise",
+  "rigRotateCounterclockwise": "Rotate counterclockwise",
+  "rigTakeScreenshot": "Take a screenshot",
+  "rigScreenshotSaved": "Screenshot saved",
+  "rigScreenshotSaveFailed": "Could not save the screenshot: {error}",
+  "@rigScreenshotSaveFailed": {
+    "description": "Toast when a simulator screenshot could not be written.",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "This server cannot host this kind of machine.",
   "rigTabNeedsConversation": "Open a conversation first — a machine belongs to one, so you and your agents are looking at the same screen.",
   "ideMenuSectionTools": "Tools",
@@ -306,6 +323,39 @@
   "rigPortsDomainHint": "Domain for the Browser (VM), e.g. myapp.test — reachable there, not on the host",
   "rigPortsProcessUnknown": "unknown process",
   "rigPortsInactive": "not listening",
+  "rigPortsTooltipHost": "Ports open in this terminal",
+  "rigPortsEmptyHost": "Nothing is listening in this terminal yet. Start a server and it shows up here.",
+  "rigPortsAddHintHost": "Port to map (e.g. 5173)",
+  "rigPortsLocalPortHint": "Local port (optional)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} in the browser (VM)",
+  "@rigPortsDestBrowser": {
+    "description": "Browser (VM) loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowserUnreachable": "browser (VM) not attached",
+  "rigPortsDestAndroid": "localhost:{port} on Android",
+  "@rigPortsDestAndroid": {
+    "description": "Android loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestAndroidUnreachable": "Android not attached",
   "rigImagesMissing": "{count, plural, =1{1 base image still to download} other{{count} base images still to download}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -12692,6 +12742,10 @@
   "@demoUnavailableServerAdmin": {
     "description": "Why server administration is unavailable on a demo server"
   },
+  "demoUnavailablePipelines": "Pipelines cannot run here. A visitor who can write a bash step and start it — by hand or through an event trigger — is executing code on this host.",
+  "@demoUnavailablePipelines": {
+    "description": "Why creating, starting and triggering pipelines is unavailable on a demo server"
+  },
   "settingsBackupRestore": "Backup & restore",
   "@settingsBackupRestore": {
     "description": "Settings → Server → Backup & restore nav label and page title"
@@ -13086,6 +13140,30 @@
   "@rigNetworkUnrestricted": {"description": "Enclosure network security control"},
   "rigNetworkAllowAllHosts": "Allow all hosts",
   "@rigNetworkAllowAllHosts": {"description": "Enclosure network security control"},
+  "rigBrowserPermissionsTitle": "Site permissions",
+  "@rigBrowserPermissionsTitle": {"description": "Browser shield flyout title"},
+  "rigBrowserPermissionsTooltip": "Site permissions and network",
+  "@rigBrowserPermissionsTooltip": {"description": "Browser shield tooltip"},
+  "rigBrowserPermissionEmpty": "No site has asked for a permission yet",
+  "@rigBrowserPermissionEmpty": {"description": "Empty state in the browser shield flyout"},
+  "rigBrowserPermissionPrompt": "{origin} wants to use {permission}",
+  "@rigBrowserPermissionPrompt": {
+    "description": "Pending site permission in the browser shield flyout",
+    "placeholders": {
+      "origin": {"type": "String"},
+      "permission": {"type": "String"}
+    }
+  },
+  "rigBrowserPermissionBlock": "Block",
+  "@rigBrowserPermissionBlock": {"description": "Refuse a site permission request"},
+  "rigBrowserPermissionCamera": "Camera",
+  "rigBrowserPermissionMicrophone": "Microphone",
+  "rigBrowserPermissionNotifications": "Notifications",
+  "rigBrowserPermissionGeolocation": "Location",
+  "rigBrowserPermissionPersistentStorage": "Persistent storage",
+  "rigBrowserPermissionClipboard": "Clipboard",
+  "rigBrowserPermissionDisplayCapture": "Screen capture",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Allow every network host?",
   "@rigNetworkBypassTitle": {"description": "Enclosure network security control"},
   "rigNetworkBypassBody": "This restarts the enclosure and discards uncommitted work inside it. The guest can then reach any network host until it is closed.",

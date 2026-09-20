@@ -119,6 +119,19 @@
   "rigStartIosHint": "Membuat Simulator iOS sementara di Mac server. Simulator dihapus saat rig ditutup; akses jaringan tidak diisolasi.",
   "rigTechnicalDetails": "Detail teknis",
   "rigStopMachine": "Hentikan mesin",
+  "rigHomeButton": "Beranda",
+  "rigRotateClockwise": "Putar searah jarum jam",
+  "rigRotateCounterclockwise": "Putar berlawanan jarum jam",
+  "rigTakeScreenshot": "Ambil tangkapan layar",
+  "rigScreenshotSaved": "Tangkapan layar disimpan",
+  "rigScreenshotSaveFailed": "Tidak dapat menyimpan tangkapan layar: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Server ini tidak dapat menampung jenis mesin ini.",
   "rigTabNeedsConversation": "Buka percakapan dulu — mesin terikat ke satu percakapan, agar Anda dan agen melihat layar yang sama.",
   "ideMenuSectionTools": "Alat",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domain untuk Browser (VM), mis. myapp.test — dapat diakses di sana, bukan di host",
   "rigPortsProcessUnknown": "proses tidak dikenal",
   "rigPortsInactive": "tidak mendengarkan",
+  "rigPortsTooltipHost": "Port yang terbuka di terminal ini",
+  "rigPortsEmptyHost": "Belum ada yang mendengarkan di terminal ini. Mulai server dan ia muncul di sini.",
+  "rigPortsAddHintHost": "Port yang dipetakan (mis. 5173)",
+  "rigPortsLocalPortHint": "Port lokal (opsional)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} di browser (VM)",
+  "rigPortsDestBrowserUnreachable": "browser (VM) tidak terpasang",
+  "rigPortsDestAndroid": "localhost:{port} di Android",
+  "rigPortsDestAndroidUnreachable": "Android tidak terpasang",
   "rigImagesMissing": "{count, plural, =1{1 image dasar masih perlu diunduh} other{{count} image dasar masih perlu diunduh}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Single sign-on adalah konfigurasi server. Demo malah memasukkan Anda sebagai tamu sementara.",
   "demoUnavailableAudio": "Perekaman dan dikte membutuhkan penangkapan audio dan model ucapan di host. Demo tidak menyertakan keduanya, jadi rapatnya berupa transkrip tanpa pemutaran.",
   "demoUnavailableServerAdmin": "Ini administrasi server. Demo memberi setiap pengunjung ruang kerja sekali pakai sendiri, dan tidak lebih dari itu.",
+  "demoUnavailablePipelines": "Pipeline tidak dapat dijalankan di sini. Pengunjung yang dapat menulis langkah bash dan menjalankannya — secara manual atau melalui pemicu peristiwa — sedang mengeksekusi kode di host ini.",
   "settingsBackupRestore": "Cadangan & pemulihan",
   "settingsBackupRestoreDescription": "Snapshot setiap basis data di server ini, plus ekspor, impor, dan hapus untuk satu ruang kerja.",
   "backupSnapshotsLabel": "Snapshot instalasi",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Coba judul atau nomor pull request lain",
   "rigNetworkUnrestricted": "Jaringan tanpa batasan",
   "rigNetworkAllowAllHosts": "Izinkan semua host",
+  "rigBrowserPermissionsTitle": "Izin situs",
+  "rigBrowserPermissionsTooltip": "Izin situs dan jaringan",
+  "rigBrowserPermissionEmpty": "Belum ada situs yang meminta izin",
+  "rigBrowserPermissionPrompt": "{origin} ingin menggunakan {permission}",
+  "rigBrowserPermissionBlock": "Blokir",
+  "rigBrowserPermissionCamera": "Kamera",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Notifikasi",
+  "rigBrowserPermissionGeolocation": "Lokasi",
+  "rigBrowserPermissionPersistentStorage": "Penyimpanan persisten",
+  "rigBrowserPermissionClipboard": "Papan klip",
+  "rigBrowserPermissionDisplayCapture": "Tangkapan layar",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Izinkan setiap host jaringan?",
   "rigNetworkBypassBody": "Tindakan ini memulai ulang lingkungan terisolasi dan membuang pekerjaan yang belum di-commit di dalamnya. Setelah itu, sistem tamu dapat menjangkau host jaringan mana pun hingga ditutup.",
   "rigNetworkRestartUnrestricted": "Mulai ulang tanpa batasan",

@@ -272,6 +272,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get rigStopMachine => 'Detener la máquina';
 
   @override
+  String get rigHomeButton => 'Inicio';
+
+  @override
+  String get rigRotateClockwise => 'Girar a la derecha';
+
+  @override
+  String get rigRotateCounterclockwise => 'Girar a la izquierda';
+
+  @override
+  String get rigTakeScreenshot => 'Hacer una captura';
+
+  @override
+  String get rigScreenshotSaved => 'Captura guardada';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'No se pudo guardar la captura: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Este servidor no puede alojar este tipo de máquina.';
 
@@ -530,6 +550,40 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'no escucha';
+
+  @override
+  String get rigPortsTooltipHost => 'Puertos abiertos en esta terminal';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Aún no hay nada escuchando en esta terminal. Arranca un servidor y aparece aquí.';
+
+  @override
+  String get rigPortsAddHintHost => 'Puerto a asignar (p. ej. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Puerto local (opcional)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port en el navegador (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'navegador (VM) no conectado';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port en Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android no conectado';
 
   @override
   String rigImagesMissing(int count) {
@@ -14080,6 +14134,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Esto es administración del servidor. La demo te da un espacio de trabajo desechable y nada más.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Las canalizaciones no pueden ejecutarse aquí. Un visitante que pueda escribir un paso bash e iniciarlo — a mano o mediante un disparador de evento — está ejecutando código en este host.';
+
+  @override
   String get settingsBackupRestore => 'Copia de seguridad y restauración';
 
   @override
@@ -14430,6 +14488,49 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Permitir todos los hosts';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Permisos del sitio';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Permisos del sitio y red';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Ningún sitio ha pedido un permiso todavía';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin quiere usar $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Bloquear';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Cámara';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Micrófono';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Notificaciones';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Ubicación';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage =>
+      'Almacenamiento persistente';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Portapapeles';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Captura de pantalla';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => '¿Permitir todos los hosts de red?';

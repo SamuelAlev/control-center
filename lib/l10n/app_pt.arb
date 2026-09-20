@@ -112,6 +112,19 @@
   "rigStartIosHint": "Cria um simulador iOS temporário no Mac do servidor. É eliminado quando o ambiente de testes é fechado; o acesso à rede não está isolado.",
   "rigTechnicalDetails": "Detalhes técnicos",
   "rigStopMachine": "Parar a máquina",
+  "rigHomeButton": "Início",
+  "rigRotateClockwise": "Rodar no sentido horário",
+  "rigRotateCounterclockwise": "Rodar no sentido anti-horário",
+  "rigTakeScreenshot": "Tirar uma captura de ecrã",
+  "rigScreenshotSaved": "Captura de ecrã guardada",
+  "rigScreenshotSaveFailed": "Não foi possível guardar a captura de ecrã: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Este servidor não consegue alojar este tipo de máquina.",
   "rigTabNeedsConversation": "Abra primeiro uma conversa — uma máquina pertence a uma delas, para que você e os seus agentes vejam o mesmo ecrã.",
   "ideMenuSectionTools": "Ferramentas",
@@ -229,6 +242,23 @@
   "rigPortsDomainHint": "Domínio para o Navegador (VM), ex.: myapp.test — acessível lá, não no host",
   "rigPortsProcessUnknown": "processo desconhecido",
   "rigPortsInactive": "não está escutando",
+  "rigPortsTooltipHost": "Portas abertas neste terminal",
+  "rigPortsEmptyHost": "Nada está escutando neste terminal ainda. Inicie um servidor e ele aparece aqui.",
+  "rigPortsAddHintHost": "Porta a mapear (ex. 5173)",
+  "rigPortsLocalPortHint": "Porta local (opcional)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} no navegador (VM)",
+  "rigPortsDestBrowserUnreachable": "navegador (VM) não ligado",
+  "rigPortsDestAndroid": "localhost:{port} no Android",
+  "rigPortsDestAndroidUnreachable": "Android não ligado",
   "rigImagesMissing": "{count, plural, =1{falta transferir 1 imagem base} other{faltam transferir {count} imagens base}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -7572,6 +7602,7 @@
   "demoUnavailableSso": "O início de sessão único é configuração do servidor. A demo autentica-o como convidado temporário.",
   "demoUnavailableAudio": "Gravar e ditar exigem captura de áudio e um modelo de voz no anfitrião. A demo não inclui nenhum: as suas reuniões são transcrições sem reprodução.",
   "demoUnavailableServerAdmin": "Isto é administração do servidor. A demo dá-lhe um espaço de trabalho descartável e nada além disso.",
+  "demoUnavailablePipelines": "As pipelines não podem ser executadas aqui. Um visitante que consiga escrever um passo bash e iniciá-lo — à mão ou através de um gatilho de evento — está a executar código neste anfitrião.",
   "settingsBackupRestore": "Backup e restauração",
   "settingsBackupRestoreDescription": "Instantâneos de todos os bancos de dados deste servidor, além de exportar, importar e excluir um espaço de trabalho.",
   "backupSnapshotsLabel": "Instantâneos da instalação",
@@ -7719,6 +7750,19 @@
   "noProfilePrsMatchSearchHint": "Tente outro título ou número de pull request",
   "rigNetworkUnrestricted": "Rede sem restrições",
   "rigNetworkAllowAllHosts": "Permitir todos os anfitriões",
+  "rigBrowserPermissionsTitle": "Permissões do site",
+  "rigBrowserPermissionsTooltip": "Permissões do site e rede",
+  "rigBrowserPermissionEmpty": "Nenhum site pediu uma permissão ainda",
+  "rigBrowserPermissionPrompt": "{origin} quer usar {permission}",
+  "rigBrowserPermissionBlock": "Bloquear",
+  "rigBrowserPermissionCamera": "Câmara",
+  "rigBrowserPermissionMicrophone": "Microfone",
+  "rigBrowserPermissionNotifications": "Notificações",
+  "rigBrowserPermissionGeolocation": "Localização",
+  "rigBrowserPermissionPersistentStorage": "Armazenamento persistente",
+  "rigBrowserPermissionClipboard": "Área de transferência",
+  "rigBrowserPermissionDisplayCapture": "Captura de ecrã",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Permitir todos os anfitriões da rede?",
   "rigNetworkBypassBody": "Isto reinicia o ambiente isolado e elimina o trabalho sem commit que estiver no seu interior. Depois, o sistema convidado poderá aceder a qualquer anfitrião da rede até ser fechado.",
   "rigNetworkRestartUnrestricted": "Reiniciar sem restrições",

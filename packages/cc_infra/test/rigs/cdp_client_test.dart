@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_infra/src/rigs/browser_engine_client.dart';
 import 'package:cc_infra/src/rigs/cdp_client.dart';
 import 'package:test/test.dart';
 
@@ -557,6 +558,57 @@ void main() {
       await client.close();
     });
 
+    test('an error-page history entry shows the typed URL', () async {
+      final socket = _FakeCdpSocket()
+        ..autoReply['Page.getNavigationHistory'] = const {
+          'currentIndex': 0,
+          'entries': [
+            {
+              'id': 1,
+              'url': 'chrome-error://chromewebdata/',
+              'userTypedURL': 'http://localhost:5173/',
+            },
+          ],
+        };
+      final client = CdpClient.over(socket);
+      expect(
+        (await client.navigationState()).url,
+        'http://localhost:5173/',
+        reason:
+            'Page.getNavigationHistory names the interstitial as `url` and '
+            'the failed destination as `userTypedURL`. The address bar '
+            'must follow the latter, the way Chrome\'s omnibox does.',
+      );
+      await client.close();
+    });
+
+    test(
+      'an error frame publishes the unreachable URL, not chrome-error',
+      () async {
+        final socket = _FakeCdpSocket();
+        final client = CdpClient.over(socket);
+        final urls = <String>[];
+        client.pageEvents.listen((event) {
+          if (event is BrowserPageUrlChanged) {
+            urls.add(event.url);
+          }
+        });
+        socket.push({
+          'method': 'Page.frameNavigated',
+          'params': {
+            'frame': {
+              'id': 'main',
+              'url': 'chrome-error://chromewebdata/',
+              'unreachableUrl': 'http://localhost:5173/',
+            },
+          },
+        });
+        await _settle();
+        expect(urls, ['http://localhost:5173/']);
+        await client.close();
+      },
+    );
+
     test(
       'the first entry cannot go back, the last cannot go forward',
       () async {
@@ -819,6 +871,8 @@ void main() {
             'Runtime.enable',
             'DOM.enable',
             'Log.enable',
+            'Runtime.addBinding',
+            'Page.addScriptToEvaluateOnNewDocument',
             'Emulation.setDeviceMetricsOverride',
             'Page.startScreencast',
           ]),

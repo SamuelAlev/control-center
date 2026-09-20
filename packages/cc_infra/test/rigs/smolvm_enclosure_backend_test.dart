@@ -304,6 +304,79 @@ void main() {
       expect(smolvmPackFileName(kSmolvmExecImage), endsWith('.smolmachine'));
     });
 
+    test('exec packs are keyed on the toolset revision', () {
+      // The image pin does not change when gcc is added, so the variant is
+      // what stops a pack warmed with only git/curl/socat from serving a
+      // machine that is supposed to have a compiler.
+      expect(
+        smolvmPackVariantFor(RigSpec.exec(conversationId: 'c1')),
+        kSmolvmExecPackVariant,
+      );
+      expect(
+        smolvmPackFileName(kSmolvmExecImage, variant: kSmolvmExecPackVariant),
+        isNot(smolvmPackFileName(kSmolvmExecImage)),
+      );
+    });
+
+    test('an exec machine warms a GitHub-runner-style CLI toolset', () {
+      final args = buildSmolvmCreateArgs(plan());
+      final initAt = args.indexOf('--init');
+      expect(initAt, greaterThanOrEqualTo(0));
+      final init = args[initAt + 1];
+      expect(init, smolvmExecInit());
+      for (final pkg in [
+        'git',
+        'curl',
+        'socat',
+        'ca-certificates',
+        'gcc',
+        'g++',
+        'make',
+        'python3',
+        'python3-venv',
+        'jq',
+        'wget',
+        'unzip',
+        'rsync',
+        'cmake',
+        'shellcheck',
+        'git-lfs',
+        'netcat-openbsd',
+      ]) {
+        expect(
+          kSmolvmExecPackages,
+          contains(pkg),
+          reason: 'The warmed terminal is supposed to ship $pkg.',
+        );
+        expect(init, contains(pkg));
+      }
+      expect(
+        kSmolvmExecPackages,
+        isNot(contains('netcat')),
+        reason:
+            'netcat is virtual on Ubuntu 24.04; netcat-openbsd is the package.',
+      );
+      expect(kSmolvmExecPackages, isNot(contains('docker')));
+      expect(kSmolvmExecPackages, isNot(contains('docker.io')));
+      expect(kSmolvmExecPackages, isNot(contains('sphinxsearch')));
+      expect(kSmolvmExecPackages, isNot(contains('pollinate')));
+      expect(
+        kSmolvmExecPackages.toSet().length,
+        kSmolvmExecPackages.length,
+        reason:
+            'A duplicated package name is a copy-paste, not a second install.',
+      );
+      expect(smolvmExecWarmProbe(), contains('command -v gcc'));
+      expect(smolvmExecWarmProbe(), contains('command -v python3'));
+      expect(
+        init,
+        contains('! command -v apt-get'),
+        reason:
+            'A custom image that already has git/curl/socat and no apt '
+            '(Alpine) must not have its init fail trying to apt-get gcc.',
+      );
+    });
+
     test('a browser machine forwards exactly one loopback port', () {
       final args = buildSmolvmCreateArgs(
         plan(
@@ -424,6 +497,8 @@ void main() {
       );
       expect(script, contains('--remote-debugging-port=9223'));
       expect(script, contains('--use-fake-ui-for-media-stream'));
+      expect(script, contains('--use-fake-device-for-media-stream'));
+      expect(script, contains('--autoplay-policy=no-user-gesture-required'));
       expect(
         script,
         isNot(contains('--remote-debugging-address')),
@@ -478,11 +553,12 @@ void main() {
       ).last;
       // Chromium's rule parser trims, but a lone " MAP" after a comma is an
       // avoidable ambiguity — pin the tight form.
+      expect(script, contains('--disable-ipv6'));
       expect(
         script,
         contains(
-          '--host-resolver-rules=MAP *.test 127.0.0.1,MAP *.localhost '
-          '127.0.0.1',
+          '--host-resolver-rules=MAP localhost 127.0.0.1,MAP *.test '
+          '127.0.0.1,MAP *.localhost 127.0.0.1',
         ),
       );
     });
@@ -558,6 +634,27 @@ void main() {
         contains('media.navigator.permission.disabled'),
         reason:
             'Headless Firefox cannot present a microphone permission prompt.',
+      );
+      expect(
+        workloadOf(argvFor(RigBrowserEngine.firefox)),
+        contains('media.navigator.streams.fake'),
+        reason:
+            'Headless Firefox has no capture hardware; a page that awaits '
+            'getUserMedia on boot otherwise never paints.',
+      );
+      expect(
+        workloadOf(argvFor(RigBrowserEngine.firefox)),
+        contains('network.dns.disableIPv6'),
+        reason:
+            'Firefox resolves localhost to ::1 first; the reverse tunnel '
+            'listens on 127.0.0.1.',
+      );
+      expect(
+        workloadOf(argvFor(RigBrowserEngine.firefox)),
+        contains('dom.storageManager.prompt.testing'),
+        reason:
+            'After the host allows persistent storage, calling the original '
+            'persist() must not show a second doorhanger the human never sees.',
       );
     });
 

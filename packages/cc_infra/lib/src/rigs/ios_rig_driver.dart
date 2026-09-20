@@ -13,6 +13,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_file_transfer.d
 import 'package:cc_infra/src/rigs/host_ffmpeg.dart';
 import 'package:cc_infra/src/rigs/ios_simulator_backend.dart';
 import 'package:cc_infra/src/rigs/rig_drivers.dart';
+import 'package:cc_infra/src/rigs/wda_client.dart';
 import 'package:path/path.dart' as p;
 
 /// Drives one ephemeral iOS Simulator through WebDriverAgent.
@@ -108,8 +109,12 @@ class IosRigDriver implements RigDriver {
             await session.client.lock();
           case IosUnlock():
             await session.client.unlock();
-          case IosScreenshot():
-            return await _captureForAgentUnlocked();
+          case IosRotate(:final direction):
+            await _rotate(direction);
+          case IosScreenshot(:final fullResolution):
+            return await _captureForAgentUnlocked(
+              fullResolution: fullResolution,
+            );
           case IosUiDump():
             final source = await session.client.source();
             final summary = await Isolate.run(_IosTreeSummary(source).call);
@@ -154,10 +159,23 @@ class IosRigDriver implements RigDriver {
   Future<RigActionResult> captureForAgent() =>
       _serialize(_captureForAgentUnlocked);
 
-  Future<RigActionResult> _captureForAgentUnlocked() async {
+  Future<RigActionResult> _captureForAgentUnlocked({
+    bool fullResolution = false,
+  }) async {
     try {
       await _refreshScreen();
       final png = await session.client.screenshot();
+      if (fullResolution) {
+        return RigActionResult(
+          text:
+              'Screenshot of the $display iOS Simulator at full resolution as '
+              'PNG. Coordinates in actions are in SIMULATOR POINTS ($display), '
+              'not screenshot pixels.',
+          imageBase64: base64Encode(png),
+          imageMediaType: 'image/png',
+          displaySize: display.toString(),
+        );
+      }
       final target = display.fitInside(RigDisplaySize.agentCeiling);
       final ffmpeg = await _ffmpeg();
       if (ffmpeg != null) {
@@ -259,6 +277,38 @@ class IosRigDriver implements RigDriver {
     }
     session.display = current.size;
     onDisplayChanged(current.size);
+  }
+
+  /// Simulator "Rotate Right" is clockwise: portrait → home-on-left
+  /// (LANDSCAPERIGHT) → upside down → home-on-right (LANDSCAPE).
+  static const List<String> _clockwiseOrientations = [
+    'PORTRAIT',
+    'UIA_DEVICE_ORIENTATION_LANDSCAPERIGHT',
+    'UIA_DEVICE_ORIENTATION_PORTRAIT_UPSIDEDOWN',
+    'LANDSCAPE',
+  ];
+
+  Future<void> _rotate(RigRotateDirection direction) async {
+    final current = await session.client.orientation();
+    final cycle = direction == RigRotateDirection.clockwise
+        ? _clockwiseOrientations
+        : _clockwiseOrientations.reversed.toList();
+    final index = cycle.indexOf(current);
+    final next = index < 0
+        ? (direction == RigRotateDirection.clockwise
+              ? 'UIA_DEVICE_ORIENTATION_LANDSCAPERIGHT'
+              : 'LANDSCAPE')
+        : cycle[(index + 1) % cycle.length];
+    try {
+      await session.client.setOrientation(next);
+    } on WdaException {
+      // Older WebDriverAgent builds only speak PORTRAIT / LANDSCAPE.
+      await session.client.setOrientation(
+        current == 'PORTRAIT' ? 'LANDSCAPE' : 'PORTRAIT',
+      );
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    await _refreshScreen();
   }
 
   void _requirePoint(int x, int y) {

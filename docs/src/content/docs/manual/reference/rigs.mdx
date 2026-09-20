@@ -58,19 +58,24 @@ Engine-specific limits, stated rather than worked around:
 | --- | --- | --- |
 | Terminal | `ubuntu:24.04`, digest-pinned | Automatically on first boot, via the machine's own gated network |
 | Browser (Chromium, Firefox, WebKit) | `debian:trixie-slim`, digest-pinned, plus the engine's own packages | Automatically on first boot, then cached as a warmed pack |
-| Computer | A qcow2 desktop image | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
+| Computer | A qcow2 desktop image with Chromium, Firefox, WebKit and the same GitHub-hosted-runner CLI baseline the terminal warms | **Import** under Settings → Server → Rigs (checksum-pinned downloads where published) |
 | Android | Google's system images | Through the Android SDK |
 | iOS | An Xcode Simulator runtime plus checksum-pinned WebDriverAgent | Runtime through Xcode; automation bridge from Settings → Server → Rigs |
 
 After the first boot of each microVM kind the server caches a pre-extracted
 copy under the data directory and boots every later machine from it —
-including pre-warmed images with the packages already installed: `git`,
-`curl` and `socat` for the terminal, and the engine itself for every
-browser. All three engines share a Debian base but never share a pack: the
-cache is keyed on the image, the engine **and** an audio revision
+including pre-warmed images with the packages already installed. The
+terminal warms a GitHub-hosted-runner-style CLI toolset (`git`, `gcc`,
+`python3`, `jq`, `rsync`, archive tools, and the rest of the apt baseline;
+not Docker or language toolcaches). The Computer qcow2 bakes the same CLI
+names in at image build, next to XFCE and the three browsers. Every browser
+warms its engine. All three engines share a Debian base but never share a
+pack: the cache is keyed on the image, the engine **and** an audio revision
 (`audio-v1-<engine>`), because a machine warmed for one engine — or before
 PulseAudio and ffmpeg were part of the workload — has none of the other in
-it.
+it. The terminal pack is keyed on a toolset revision (`tools-v1`) for the
+same reason: a pack warmed before the compiler was part of the image must
+not serve a machine that is supposed to have one.
 
 There is no baked automation image worth taking — Chromium's
 `chromedp/headless-shell` compiles both ALSA and PulseAudio out, so it can
@@ -97,8 +102,10 @@ Docker Hub, GHCR, Quay, GitLab and GCR) is admitted through the egress gate
 for the pull.
 
 **Terminal image contract** — `bash` present; `git`, `curl`, `socat`
-preinstalled *or* a Debian/Ubuntu apt base (they are installed on first
-start).
+preinstalled *or* a Debian/Ubuntu apt base (the enclosure installs those
+three plus a GitHub-hosted-runner-style CLI toolset on first start:
+compilers, Python 3, `jq`, archive tools, `rsync`. Language toolcaches and
+Docker are not installed).
 
 **Browser image contract** — a Debian/Ubuntu apt base (or the packages already
 installed) with `bash` and `socat`, plus a `chromium` binary the server

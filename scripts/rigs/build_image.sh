@@ -112,30 +112,80 @@ fi
 OUT_IMG="$OUT_DIR/$IMAGE_ID-$ARCH.qcow2"
 echo "==> preparing $OUT_IMG"
 cp "$BASE_PATH" "$OUT_IMG"
-# Cloud images ship small and grow on first boot; a desktop needs room.
-qemu-img resize "$OUT_IMG" 12G >/dev/null
+# Cloud images ship small and grow on first boot; a desktop plus a compiler toolchain needs room.
+qemu-img resize "$OUT_IMG" 16G >/dev/null
 
 # ── What goes in ────────────────────────────────────────────────────────────
 # Base: the SSH server worktree sync tars through, the git credential helper's
-# dependencies, and the tiny capture agent the host's guest-agent client talks
-# to on :7811.
-COMMON_PACKAGES="openssh-server ca-certificates curl git jq python3 python3-pil iputils-ping"
+# dependencies, the tiny capture agent the host's guest-agent client talks
+# to on :7811 (`python3-pil`), and the same GitHub-hosted-runner CLI baseline
+# the terminal (exec) guest warms. Keep the CLI names in lockstep with
+# `kSmolvmExecPackages` in
+# packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart — a Computer
+# tab and a terminal tab should not disagree about what "a basic toolchain"
+# means. Language toolcaches (Node, Go, Java) and Docker stay out: those
+# are versioned, huge, and Docker needs a nested daemon this VM does not
+# run. `netcat` is virtual on Ubuntu 24.04; `netcat-openbsd` is the package.
+COMMON_PACKAGES="openssh-server python3-pil \
+acl aria2 autoconf automake binutils bison brotli bzip2 \
+ca-certificates cmake curl dnsutils dpkg-dev fakeroot file flex \
+g++ gcc git git-lfs gnupg iproute2 iputils-ping jq less \
+libffi-dev libicu-dev libsqlite3-dev libssl-dev libtool libyaml-dev \
+locales lsof lz4 m4 make nano net-tools netcat-openbsd ninja-build \
+openssh-client p7zip-full parallel patch patchelf pigz pkg-config \
+procps python-is-python3 python3 python3-pip python3-venv rsync \
+shellcheck socat sqlite3 strace sudo swig tar time tree tzdata \
+unzip wget xz-utils zip zlib1g-dev zstd"
 
 # A real desktop someone debugs apps on: XFCE (panel, Thunar, terminal) plus
-# Chromium. XFCE and not GNOME because gnome-shell HARD-REQUIRES working GL
-# (gnome-session-check-accelerated fails the whole session into the "Oh no!"
-# screen) and QEMU-without-virgl has no GL to give it — GNOME becomes possible
-# with the roadmap's vendored-virgl GPU tier, not before. openbox + feh stay as
-# the fallback session. dbus-user-session + linger give snap apps (chromium) a
-# user manager to mint their scopes on. PulseAudio provides the virtual devices;
-# pulseaudio-utils provides `pacat`, which feeds the viewer microphone into the
-# input device. No hypervisor audio hardware or host audio stack is involved.
+# three windowed browsers — Chromium, Firefox, WebKit — matching the Browser
+# (VM) engines so a Computer tab can try the same page in each. Ubuntu's
+# chromium-browser and firefox packages are snap stubs on 24.04; snap-confine
+# execve-fails with EIO inside the systemd User= xinit session, and XFCE
+# reports "Failed to execute default Web Browser. Input/output error." So
+# Chromium is Google's Chrome for Testing zip and Firefox is Mozilla's
+# official tarball, both checksum-pinned into /opt. WebKit is Epiphany
+# (GNOME Web) over WebKitGTK, a real .deb. XFCE and not GNOME because
+# gnome-shell HARD-REQUIRES working GL (gnome-session-check-accelerated fails
+# the whole session into the "Oh no!" screen) and QEMU-without-virgl has no
+# GL to give it — GNOME becomes possible with the roadmap's vendored-virgl
+# GPU tier, not before. openbox + feh stay as the fallback session.
+# dbus-user-session + linger give the cc user a manager for PulseAudio
+# scopes. libnss3 is TLS for the /opt browsers; libgbm1 and the GTK bits are
+# what Chrome for Testing needs besides its bundled libs. PulseAudio
+# provides the virtual devices; pulseaudio-utils provides `pacat`, which
+# feeds the viewer microphone into the input device. No hypervisor audio
+# hardware or host audio stack is involved.
 # xclip is load-bearing, not a convenience: it is the only thing in this list
 # that can OWN an X selection, which is what putting something on the guest's
 # clipboard requires (X has no clipboard daemon — the selection belongs to a
 # live client until another one claims it). It is also how the host reads a
 # drag in flight, by asking for XdndSelection while the source holds it.
-EXTRA_PACKAGES="xserver-xorg xinit x11-xserver-utils x11-utils xdotool xclip scrot ffmpeg feh openbox xfce4 xfce4-terminal chromium-browser network-manager dbus-user-session pulseaudio pulseaudio-utils"
+# fonts-noto-color-emoji is what stops browsers from rendering tofu for
+# emoji; the CLI toolset does not need it, the desktop does.
+EXTRA_PACKAGES="xserver-xorg xinit x11-xserver-utils x11-utils xdotool xclip scrot ffmpeg feh openbox xfce4 xfce4-terminal network-manager dbus-user-session pulseaudio pulseaudio-utils libnss3 libnspr4 libdbus-glib-1-2 libxt6 libpci3 fonts-liberation fonts-noto-color-emoji libgbm1 libatk-bridge2.0-0 libxcomposite1 libxdamage1 libxrandr2 libxss1 libxtst6 libcups2t64 libasound2t64 epiphany-browser"
+
+# Pinned guest browsers. Bump a version and BOTH of its hashes together.
+# Firefox: https://ftp.mozilla.org/pub/firefox/releases/<ver>/SHA256SUMS
+# Chromium: https://googlechromelabs.github.io/chrome-for-testing/last-known-good-versions-with-downloads.json
+FIREFOX_VERSION="156.0"
+CHROMIUM_VERSION="153.0.8010.52"
+case "$ARCH" in
+  arm64)
+    FIREFOX_PLATFORM="linux-aarch64"
+    FIREFOX_SHA256="7dd9425eafa0decf61c0f6bc56dc71cba84595495dc01395d3eea38a18aaf710"
+    CHROMIUM_PLATFORM="linux-arm64"
+    CHROMIUM_SHA256="794441f3254273eb30d710b3eaab3cd1c7bbf1c88a40275470f6cee350881ce5"
+    ;;
+  *)
+    FIREFOX_PLATFORM="linux-x86_64"
+    FIREFOX_SHA256="1d44cd02351c307c3e19061ea2a4d18a30f236e6be862b94f2282564afdb0167"
+    CHROMIUM_PLATFORM="linux64"
+    CHROMIUM_SHA256="e66f66d4802a46d4a022667e668aa950e277cadbfbed4b3777915b47413a0ef9"
+    ;;
+esac
+FIREFOX_URL="https://ftp.mozilla.org/pub/firefox/releases/${FIREFOX_VERSION}/${FIREFOX_PLATFORM}/en-US/firefox-${FIREFOX_VERSION}.tar.xz"
+CHROMIUM_URL="https://storage.googleapis.com/chrome-for-testing-public/${CHROMIUM_VERSION}/${CHROMIUM_PLATFORM}/chrome-${CHROMIUM_PLATFORM}.zip"
 SURFACE_UNITS="cc-x11.service"
 EXTRA_RUNCMD=$'  - loginctl enable-linger cc'
 # Optional wallpaper, baked into the image (base64 in the cloud-init seed).
@@ -180,6 +230,14 @@ write_files:
     content: |
       network:
         config: disabled
+  # needrestart runs from apt's post-invoke and will restart cloud-final
+  # while the package module is still inside it, which cloud-init then
+  # reports as "Failure when attempting to install packages" even though
+  # dpkg finished. List-only: a build must not bounce its own units.
+  - path: /etc/needrestart/conf.d/cc-build.conf
+    permissions: '0644'
+    content: |
+      \$nrconf{restart} = 'l';
   # The guest agent: capture, mode-set and the clipboard, and deliberately
   # UNPRIVILEGED. Input injection is the hypervisor's job (QMP), so nothing in
   # here can synthesize a keystroke even if the guest is compromised — and the
@@ -191,16 +249,16 @@ write_files:
       #!/usr/bin/env python3
       """Capture, audio, and display mode-set for a Control Center rig.
 
-      Speaks the small HTTP protocol GuestAgentClient expects on :7811:
-        GET  /health                    -> {"display": {"width", "height"}}
-        GET  /version                   -> {"protocol": N, "agent": "..."}
-        GET  /frame?w=&h=&q=            -> a single JPEG
-        GET  /stream?w=&h=&fps=&q=      -> concatenated JPEGs, close-delimited
-        GET  /audio?kbps=               -> MP3, close-delimited
-        GET  /clipboard?sel=            -> {"text", "image", "files"}
-        POST /microphone?rate=&channels= -> PCM16 input for the guest
-        POST /display  {"width","height"} -> {"display": {...}}
-        POST /clipboard {"text"|"image"|"files"} -> {"ok": true}
+      Speaks the small HTTP protocol GuestAgentClient expects on :7811.
+        GET  /health          JSON display width and height
+        GET  /version         JSON protocol and agent
+        GET  /frame           JPEG still
+        GET  /stream          concatenated JPEGs, close-delimited
+        GET  /audio           MP3, close-delimited
+        GET  /clipboard       JSON text, image, files
+        POST /microphone      PCM16 input for the guest
+        POST /display         JSON width and height
+        POST /clipboard       JSON ok
       Every request must carry the per-VM bearer token from the seed image.
       """
       import base64, hmac, http.server, json, os, queue, socketserver
@@ -1082,6 +1140,7 @@ write_files:
     content: |
       #!/bin/bash
       export XDG_SESSION_TYPE=x11
+      export PATH="/usr/local/bin:/usr/bin:/bin:\$PATH"
       # No blanking, no DPMS: a rig that turns its own screen off looks like
       # a broken stream.
       # Start one persistent PulseAudio server before any desktop app. The
@@ -1089,11 +1148,22 @@ write_files:
       # socket; relying on whichever client happens to autospawn first left the
       # browser connected to no usable output on some boots.
       pulseaudio --start --exit-idle-time=-1 2>/dev/null || true
+      # Same env the wrappers inject, so a terminal in this session can
+      # launch the /opt browsers without GPU or a working user-namespace
+      # sandbox.
+      export MOZ_WEBRENDER=0
+      export MOZ_ACCELERATED=0
+      export MOZ_DISABLE_CONTENT_SANDBOX=1
+      export MOZ_DISABLE_AUTO_UPDATE=1
+      export LIBGL_ALWAYS_SOFTWARE=1
+      export WEBKIT_DISABLE_SANDBOX=1
+      export WEBKIT_DISABLE_COMPOSITING_MODE=1
       xset s off -dpms 2>/dev/null || true
-      # Hand DISPLAY to dbus activation and the user manager — snap apps
-      # (chromium) launched inside the session mint their scopes there.
       dbus-update-activation-environment --systemd DISPLAY XAUTHORITY \\
-        XDG_CURRENT_DESKTOP XDG_SESSION_TYPE 2>/dev/null || true
+        XDG_CURRENT_DESKTOP XDG_SESSION_TYPE MOZ_WEBRENDER \\
+        MOZ_DISABLE_CONTENT_SANDBOX LIBGL_ALWAYS_SOFTWARE \\
+        WEBKIT_DISABLE_SANDBOX WEBKIT_DISABLE_COMPOSITING_MODE \\
+        2>/dev/null || true
       if command -v startxfce4 >/dev/null 2>&1; then
         export XDG_CURRENT_DESKTOP=XFCE
         startxfce4
@@ -1142,6 +1212,214 @@ write_files:
           </property>
         </property>
       </channel>
+
+  # Three windowed engines, none of them Ubuntu's snap stubs. The dock globe
+  # is exo-open --launch WebBrowser and stays Firefox (the helper below).
+  # Chromium, Firefox and WebKit each have their own wrapper + desktop file
+  # so Applications → Internet can open the engine you meant.
+  - path: /usr/local/bin/cc-firefox
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      if [ ! -x /opt/firefox/firefox ]; then
+        echo "cc-firefox: Firefox is not installed at /opt/firefox" >&2
+        exit 127
+      fi
+      export MOZ_WEBRENDER="\${MOZ_WEBRENDER:-0}"
+      export MOZ_ACCELERATED="\${MOZ_ACCELERATED:-0}"
+      export MOZ_DISABLE_CONTENT_SANDBOX="\${MOZ_DISABLE_CONTENT_SANDBOX:-1}"
+      export MOZ_DISABLE_AUTO_UPDATE="\${MOZ_DISABLE_AUTO_UPDATE:-1}"
+      export LIBGL_ALWAYS_SOFTWARE="\${LIBGL_ALWAYS_SOFTWARE:-1}"
+      exec /opt/firefox/firefox "\$@"
+  - path: /usr/local/bin/cc-chromium
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      if [ ! -x /opt/chromium/chrome ]; then
+        echo "cc-chromium: Chromium is not installed at /opt/chromium" >&2
+        exit 127
+      fi
+      export LIBGL_ALWAYS_SOFTWARE="\${LIBGL_ALWAYS_SOFTWARE:-1}"
+      export VK_ICD_FILENAMES="\${VK_ICD_FILENAMES:-/dev/null}"
+      ozone=x11
+      for arg in "\$@"; do
+        case "\$arg" in
+          --headless|--headless=*|--dump-dom) ozone=headless ;;
+        esac
+      done
+      if [ -z "\${DISPLAY:-}" ]; then
+        ozone=headless
+      fi
+      exec /opt/chromium/chrome --no-sandbox --disable-dev-shm-usage --disable-gpu --disable-features=Vulkan --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader --ozone-platform="\$ozone" --no-first-run --no-default-browser-check --disable-search-engine-choice-screen "\$@"
+  - path: /usr/local/bin/cc-webkit
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      if ! command -v epiphany >/dev/null 2>&1; then
+        echo "cc-webkit: epiphany (WebKitGTK) is not installed" >&2
+        exit 127
+      fi
+      export WEBKIT_DISABLE_SANDBOX="\${WEBKIT_DISABLE_SANDBOX:-1}"
+      export WEBKIT_DISABLE_COMPOSITING_MODE="\${WEBKIT_DISABLE_COMPOSITING_MODE:-1}"
+      exec epiphany "\$@"
+  - path: /usr/local/bin/cc-web-browser
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      exec /usr/local/bin/cc-firefox "\$@"
+  - path: /usr/share/xfce4/helpers/cc-web-browser.desktop
+    permissions: '0644'
+    content: |
+      [Desktop Entry]
+      Version=1.0
+      Icon=/opt/firefox/browser/chrome/icons/default/default128.png
+      Type=X-XFCE-Helper
+      Name=Web Browser
+      StartupNotify=true
+      X-XFCE-Binaries=cc-web-browser;
+      X-XFCE-Category=WebBrowser
+      X-XFCE-Commands=%B;
+      X-XFCE-CommandsWithParameter=%B "%s";
+  - path: /etc/xdg/xfce4/helpers.rc
+    permissions: '0644'
+    content: |
+      WebBrowser=cc-web-browser
+      FileManager=Thunar
+      TerminalEmulator=xfce4-terminal
+  - path: /usr/share/applications/cc-web-browser.desktop
+    permissions: '0644'
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name=Web Browser
+      Exec=/usr/local/bin/cc-web-browser %U
+      Icon=/opt/firefox/browser/chrome/icons/default/default128.png
+      Terminal=false
+      NoDisplay=true
+      Categories=Network;WebBrowser;
+      MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+      StartupNotify=true
+  - path: /usr/share/applications/cc-chromium.desktop
+    permissions: '0644'
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name=Chromium
+      Comment=Chrome for Testing
+      Exec=/usr/local/bin/cc-chromium %U
+      Icon=/opt/chromium/product_logo_48.png
+      Terminal=false
+      Categories=Network;WebBrowser;
+      MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+      StartupNotify=true
+  - path: /usr/share/applications/cc-firefox.desktop
+    permissions: '0644'
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name=Firefox
+      Exec=/usr/local/bin/cc-firefox %U
+      Icon=/opt/firefox/browser/chrome/icons/default/default128.png
+      Terminal=false
+      Categories=Network;WebBrowser;
+      MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+      StartupNotify=true
+  - path: /usr/share/applications/cc-webkit.desktop
+    permissions: '0644'
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name=WebKit
+      Comment=GNOME Web (WebKitGTK)
+      Exec=/usr/local/bin/cc-webkit %U
+      Icon=org.gnome.Epiphany
+      Terminal=false
+      Categories=Network;WebBrowser;
+      MimeType=text/html;text/xml;application/xhtml+xml;x-scheme-handler/http;x-scheme-handler/https;
+      StartupNotify=true
+  - path: /etc/xdg/mimeapps.list
+    permissions: '0644'
+    content: |
+      [Default Applications]
+      text/html=cc-web-browser.desktop
+      x-scheme-handler/http=cc-web-browser.desktop
+      x-scheme-handler/https=cc-web-browser.desktop
+
+  # Tarball Firefox reads /etc/firefox/policies and installdir/distribution.
+  # Empty OverrideFirstRunPage turns about:welcome off; DontCheckDefaultBrowser
+  # is the startup prompt; SkipTermsOfUse is the ToU gate on 136+.
+  - path: /etc/firefox/policies/policies.json
+    permissions: '0644'
+    content: |
+      {
+        "policies": {
+          "DontCheckDefaultBrowser": true,
+          "OverrideFirstRunPage": "",
+          "OverridePostUpdatePage": "",
+          "SkipTermsOfUse": true,
+          "DisableProfileImport": true,
+          "UserMessaging": {
+            "WhatsNew": false,
+            "MoreFromMozilla": false,
+            "SkipOnboarding": true,
+            "Locked": true
+          }
+        }
+      }
+  # Chrome for Testing reads /etc/opt/chrome_for_testing, not /etc/opt/chrome.
+  # DefaultBrowserSettingEnabled false is the prompt; the wrapper also passes
+  # --no-first-run and --no-default-browser-check. initial_preferences is the
+  # first-run file next to the binary (copied after the zip is extracted).
+  - path: /etc/opt/chrome_for_testing/policies/managed/cc-rig.json
+    permissions: '0644'
+    content: |
+      {
+        "DefaultBrowserSettingEnabled": false,
+        "BrowserSignin": 0,
+        "PromotionalTabsEnabled": false,
+        "WelcomePageOnOSUpgradeEnabled": false,
+        "PrivacySandboxPromptEnabled": false
+      }
+  - path: /etc/opt/chrome/policies/managed/cc-rig.json
+    permissions: '0644'
+    content: |
+      {
+        "DefaultBrowserSettingEnabled": false,
+        "BrowserSignin": 0,
+        "PromotionalTabsEnabled": false,
+        "WelcomePageOnOSUpgradeEnabled": false,
+        "PrivacySandboxPromptEnabled": false
+      }
+  - path: /etc/chromium/policies/managed/cc-rig.json
+    permissions: '0644'
+    content: |
+      {
+        "DefaultBrowserSettingEnabled": false,
+        "BrowserSignin": 0,
+        "PromotionalTabsEnabled": false,
+        "WelcomePageOnOSUpgradeEnabled": false,
+        "PrivacySandboxPromptEnabled": false
+      }
+  - path: /usr/share/cc-rig/chromium-initial-preferences
+    permissions: '0644'
+    content: |
+      {
+        "distribution": {
+          "skip_first_run_ui": true,
+          "make_chrome_default": false,
+          "make_chrome_default_for_user": false,
+          "import_bookmarks": false,
+          "import_history": false,
+          "suppress_first_run_bubble": true,
+          "suppress_first_run_default_browser_prompt": true
+        },
+        "first_run_tabs": []
+      }
+  - path: /usr/share/glib-2.0/schemas/99-cc-rig.gschema.override
+    permissions: '0644'
+    content: |
+      [org.gnome.Epiphany]
+      ask-for-default=false
 
   - path: /etc/systemd/system/cc-x11.service
     content: |
@@ -1195,6 +1473,16 @@ runcmd:
   - rm -f /etc/netplan/50-cloud-init.yaml
   - netplan generate
   - systemctl enable NetworkManager.service
+  # Firefox and Chromium archives ride on a second ISO labelled CCBROWSERS,
+  # not on cidata. Stuffing those ~230 MB zips into the NoCloud volume made
+  # cloud-init find the disk, run local/network, and never apply user-data.
+  # Filenames are ISO 9660 8.3 (firefox.txz, chrome.zip): hdiutil's ISO has
+  # Joliet but no Rock Ridge, so a name with two dots was mangled on the
+  # guest mount. WebKit is Epiphany from apt.
+  # The volume is often already mounted at /mnt/ccbrowsers; a second mount
+  # is ignored and extract still runs.
+  - sh -c 'mkdir -p /mnt/ccbrowsers /opt; mount -o ro /dev/disk/by-label/CCBROWSERS /mnt/ccbrowsers; tar -C /opt -xf /mnt/ccbrowsers/firefox.txz && unzip -q -o /mnt/ccbrowsers/chrome.zip -d /opt && test -d /opt/chrome-linux-arm64 && mv /opt/chrome-linux-arm64 /opt/chromium; test -d /opt/chrome-linux64 && mv /opt/chrome-linux64 /opt/chromium; test -x /opt/firefox/firefox && test -x /opt/chromium/chrome && ln -sfn /opt/firefox/firefox /usr/local/bin/firefox && chmod -R a+rX /opt/firefox /opt/chromium'
+  - sh -c 'mkdir -p /opt/firefox/distribution /opt/chromium/policies/managed && cp /etc/firefox/policies/policies.json /opt/firefox/distribution/policies.json && cp /etc/opt/chrome_for_testing/policies/managed/cc-rig.json /opt/chromium/policies/managed/cc-rig.json && cp /usr/share/cc-rig/chromium-initial-preferences /opt/chromium/initial_preferences && glib-compile-schemas /usr/share/glib-2.0/schemas'
   - sh -c 'printf "http_proxy=http://${QEMU_HTTP_PROXY_ADDR}\nhttps_proxy=http://${QEMU_HTTP_PROXY_ADDR}\nHTTP_PROXY=http://${QEMU_HTTP_PROXY_ADDR}\nHTTPS_PROXY=http://${QEMU_HTTP_PROXY_ADDR}\nALL_PROXY=socks5://${QEMU_SOCKS_PROXY_ADDR}\nno_proxy=localhost,127.0.0.1\nNO_PROXY=localhost,127.0.0.1\n" >> /etc/environment'
   - git config --system credential.helper /usr/local/bin/cc-git-credential
   - systemctl enable cc-rig-seed.service cc-guest-agent.service $SURFACE_UNITS
@@ -1205,6 +1493,8 @@ runcmd:
   # Masking the alias covers whichever DM a future package might install.
   - systemctl mask lightdm.service display-manager.service 2>/dev/null || true
 $EXTRA_RUNCMD
+  - sh -c 'update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/local/bin/cc-web-browser 200'
+  - sh -c 'update-alternatives --install /usr/bin/gnome-www-browser gnome-www-browser /usr/local/bin/cc-web-browser 200'
   # Leave no identity behind: every rig that boots this image must look new.
   - cloud-init clean --logs --seed
   - rm -f /etc/ssh/ssh_host_* /etc/machine-id
@@ -1219,7 +1509,11 @@ $EXTRA_RUNCMD
   # in which it did nothing at all (a seed it never found is "no config", not
   # an error), so an explicit marker is the only way the build can tell a real
   # customisation from a stock image that merely booted.
-  - echo "CC_RIG_BUILD_OK $IMAGE_ID" > /dev/console
+  # Only emit the completion marker when the three browsers actually landed.
+  # cloud-init string runcmds do not abort the rest of the list, so a failed
+  # extract used to still print CC_RIG_BUILD_OK and ship a desktop with no
+  # /opt/firefox.
+  - sh -c 'if test -x /opt/firefox/firefox && test -x /opt/chromium/chrome && command -v epiphany >/dev/null; then echo "CC_RIG_BUILD_OK ${IMAGE_ID}" > /dev/console; else echo "CC_RIG_BUILD_FAIL browsers" > /dev/console; ls -la /dev/disk/by-label /mnt/ccbrowsers /opt > /dev/console 2>&1; fi'
   - poweroff
 CLOUDINIT
 
@@ -1227,47 +1521,75 @@ printf '#cloud-config\ninstance-id: cc-rig-build\nlocal-hostname: cc-rig-build\n
   > "$WORK_DIR/meta-data"
 
 # ── Build the seed and run the one-shot customisation boot ──────────────────
-SEED_ISO="$WORK_DIR/seed.iso"
-
-# Stage the seed in its own directory. cloud-init reads the WHOLE volume, and
-# handing the builder $WORK_DIR would ship the 64 MiB firmware and the output
-# image inside the seed alongside the two files that belong there.
+# cidata is user-data + meta-data only. Browser archives go on a second ISO
+# labelled CCBROWSERS: a 230 MB NoCloud volume made cloud-init skip applying
+# the build config while still booting cleanly.
 SEED_DIR="$WORK_DIR/seed"
-mkdir -p "$SEED_DIR"
+BROWSERS_DIR="$WORK_DIR/browsers"
+mkdir -p "$SEED_DIR" "$BROWSERS_DIR"
 cp "$WORK_DIR/user-data" "$WORK_DIR/meta-data" "$SEED_DIR/"
 
-# The volume LABEL must be exactly `cidata` — that string is how NoCloud finds
-# the seed, and a correctly-populated ISO under any other label is invisible.
-# Getting this wrong does not fail: cloud-init falls back to DataSourceNone,
-# reports success, and hands back a stock image with none of our changes in it.
-if command -v cloud-localds >/dev/null 2>&1; then
-  cloud-localds "$SEED_ISO" "$SEED_DIR/user-data" "$SEED_DIR/meta-data"
-elif command -v genisoimage >/dev/null 2>&1; then
-  genisoimage -output "$SEED_ISO" -volid cidata -joliet -rock \
-    "$SEED_DIR/user-data" "$SEED_DIR/meta-data" >/dev/null 2>&1
-elif command -v mkisofs >/dev/null 2>&1; then
-  mkisofs -output "$SEED_ISO" -volid cidata -joliet -rock \
-    "$SEED_DIR/user-data" "$SEED_DIR/meta-data" >/dev/null 2>&1
-elif command -v xorriso >/dev/null 2>&1; then
-  xorriso -as mkisofs -output "$SEED_ISO" -volid cidata -joliet -rock \
-    "$SEED_DIR/user-data" "$SEED_DIR/meta-data" >/dev/null 2>&1
-elif command -v hdiutil >/dev/null 2>&1; then
-  # macOS with no cloud-image tooling installed. Set every volume name this
-  # accepts: -default-volume-name alone has been observed not to reach the
-  # ISO9660 volume id, which is the one NoCloud actually reads.
-  rm -f "$SEED_ISO"
-  hdiutil makehybrid -o "$SEED_ISO" -iso -joliet \
-    -default-volume-name cidata \
-    -iso-volume-name cidata \
-    -joliet-volume-name cidata \
-    "$SEED_DIR" >/dev/null
+# Firefox and Chromium are fetched HERE and checksummed. The guest only
+# extracts; a 403 from Mozilla during the customize boot used to skip
+# /opt/firefox while still completing.
+echo "==> downloading Firefox ${FIREFOX_VERSION} (${FIREFOX_PLATFORM})"
+curl -fSL --retry 5 --retry-delay 2 --progress-bar \
+  -o "$BROWSERS_DIR/firefox.txz" "$FIREFOX_URL"
+echo "==> downloading Chromium ${CHROMIUM_VERSION} (${CHROMIUM_PLATFORM})"
+curl -fSL --retry 5 --retry-delay 2 --progress-bar \
+  -o "$BROWSERS_DIR/chrome.zip" "$CHROMIUM_URL"
+if command -v sha256sum >/dev/null 2>&1; then
+  echo "${FIREFOX_SHA256}  $BROWSERS_DIR/firefox.txz" | sha256sum -c
+  echo "${CHROMIUM_SHA256}  $BROWSERS_DIR/chrome.zip" | sha256sum -c
 else
-  echo "need one of: cloud-localds, genisoimage, mkisofs, xorriso, hdiutil" >&2
-  echo "(to build the cloud-init seed)" >&2
-  exit 1
+  actual_ff="$(shasum -a 256 "$BROWSERS_DIR/firefox.txz" | awk '{print $1}')"
+  actual_ch="$(shasum -a 256 "$BROWSERS_DIR/chrome.zip" | awk '{print $1}')"
+  if [[ "$actual_ff" != "$FIREFOX_SHA256" || "$actual_ch" != "$CHROMIUM_SHA256" ]]; then
+    echo "browser archive checksum mismatch" >&2
+    echo "  firefox expected $FIREFOX_SHA256 got $actual_ff" >&2
+    echo "  chrome  expected $CHROMIUM_SHA256 got $actual_ch" >&2
+    exit 1
+  fi
+  echo "firefox.txz: OK"
+  echo "chrome.zip: OK"
 fi
 
-# Verify the label before spending ten minutes finding out it was wrong.
+# <dir> <label> <out>. The volume LABEL is how the guest finds each disk.
+# cidata must be exactly that string or NoCloud falls back to DataSourceNone
+# and hands back a stock image. CCBROWSERS is the extract payload only.
+make_iso() {
+  local src="$1" label="$2" out="$3"
+  if command -v cloud-localds >/dev/null 2>&1 && [[ "$label" == "cidata" ]]; then
+    cloud-localds "$out" "$src/user-data" "$src/meta-data"
+  elif command -v genisoimage >/dev/null 2>&1; then
+    genisoimage -output "$out" -volid "$label" -joliet -rock "$src"/* >/dev/null
+  elif command -v mkisofs >/dev/null 2>&1; then
+    mkisofs -output "$out" -volid "$label" -joliet -rock "$src"/* >/dev/null
+  elif command -v xorriso >/dev/null 2>&1; then
+    xorriso -as mkisofs -output "$out" -volid "$label" -joliet -rock \
+      "$src"/* >/dev/null
+  elif command -v hdiutil >/dev/null 2>&1; then
+    # macOS with no cloud-image tooling. Set every volume name this accepts:
+    # -default-volume-name alone has been observed not to reach the ISO9660
+    # volume id, which is the one NoCloud (and udev by-label) actually reads.
+    rm -f "$out"
+    hdiutil makehybrid -o "$out" -iso -joliet \
+      -default-volume-name "$label" \
+      -iso-volume-name "$label" \
+      -joliet-volume-name "$label" \
+      "$src" >/dev/null
+  else
+    echo "need one of: cloud-localds, genisoimage, mkisofs, xorriso, hdiutil" >&2
+    exit 1
+  fi
+}
+
+SEED_ISO="$WORK_DIR/seed.iso"
+BROWSERS_ISO="$WORK_DIR/browsers.iso"
+make_iso "$SEED_DIR" cidata "$SEED_ISO"
+make_iso "$BROWSERS_DIR" CCBROWSERS "$BROWSERS_ISO"
+
+# Verify the cidata label before spending ten minutes finding out it was wrong.
 if command -v file >/dev/null 2>&1; then
   if ! file "$SEED_ISO" | grep -qi "cidata"; then
     echo "the cloud-init seed did not come out labelled 'cidata':" >&2
@@ -1277,7 +1599,16 @@ if command -v file >/dev/null 2>&1; then
   fi
 fi
 
-echo "==> running the customisation boot (this installs packages; ~10 minutes)"
+# A cidata that has grown to archive size is the failure that skipped
+# user-data last time. Wallpaper + yaml belong here; the browser zips do not.
+SEED_BYTES="$(wc -c < "$SEED_ISO" | tr -d ' ')"
+if [[ "$SEED_BYTES" -gt 16777216 ]]; then
+  echo "cidata seed is $SEED_BYTES bytes; browser archives must not ride on it." >&2
+  echo "  seed: $SEED_ISO" >&2
+  exit 1
+fi
+
+echo "==> running the customisation boot (this installs packages; ~15 minutes)"
 ACCEL=tcg
 [[ "$(uname -s)" == "Darwin" ]] && ACCEL=hvf
 [[ -r /dev/kvm ]] && ACCEL=kvm
@@ -1382,6 +1713,7 @@ set +e
   -serial "file:$BOOT_LOG" \
   -drive "file=$OUT_IMG,if=virtio,format=qcow2" \
   -drive "file=$SEED_ISO,if=virtio,format=raw,readonly=on" \
+  -drive "file=$BROWSERS_ISO,if=virtio,format=raw,readonly=on" \
   -netdev user,id=net0 -device virtio-net-pci,netdev=net0 &
 QEMU_PID=$!
 
@@ -1464,7 +1796,7 @@ fi
 
 echo "==> compacting"
 qemu-img convert -O qcow2 -c "$OUT_IMG" "$OUT_IMG.compact"
-mv "$OUT_IMG.compact" "$OUT_IMG"
+mv -f "$OUT_IMG.compact" "$OUT_IMG"
 
 # Prove the image WORKS, not merely that it built. cloud-init applying every
 # line and the guest agent actually serving are different claims, and only the

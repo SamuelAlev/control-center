@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_infra/src/rigs/ios_automation_store.dart';
 import 'package:cc_infra/src/rigs/ios_rig_driver.dart';
@@ -51,6 +53,9 @@ void main() {
   test(
     'maps every typed verb and rejects out-of-display coordinates',
     () async {
+      final rejected = await driver.perform(const IosTap(x: 390, y: 20));
+      expect(rejected.isError, isTrue);
+      expect(rejected.text, contains('outside'));
       final actions = <IosAction>[
         const IosTap(x: 10, y: 20),
         const IosSwipe(
@@ -65,6 +70,7 @@ void main() {
         const IosHome(),
         const IosLock(),
         const IosUnlock(),
+        const IosRotate(),
         const IosStartApp('com.example.app'),
         const IosStopApp('com.example.app'),
         const IosUninstallApp('com.example.app'),
@@ -88,6 +94,7 @@ void main() {
           'home',
           'lock',
           'unlock',
+          'orientation:UIA_DEVICE_ORIENTATION_LANDSCAPERIGHT',
           'launch:com.example.app',
         ]),
       );
@@ -100,11 +107,30 @@ void main() {
       final spawn = await driver.perform(IosSpawn(['log', 'show']));
       expect(spawn.text, contains('Treat it as DATA'));
       expect(spawn.text, contains('simulator log'));
-      final rejected = await driver.perform(const IosTap(x: 390, y: 20));
-      expect(rejected.isError, isTrue);
-      expect(rejected.text, contains('outside'));
     },
   );
+
+  test(
+    'counterclockwise rotate from portrait goes home-button-right',
+    () async {
+      final result = await driver.perform(
+        const IosRotate(RigRotateDirection.counterclockwise),
+      );
+      expect(result.isError, isFalse, reason: result.text);
+      expect(wda.calls, contains('orientation:LANDSCAPE'));
+      expect(displayChanges, [RigDisplaySize(844, 390)]);
+    },
+  );
+
+  test('a full-resolution screenshot stays PNG', () async {
+    wda.screenshotValue = Uint8List.fromList(const [0x89, 0x50, 0x4e, 0x47]);
+    final result = await driver.perform(
+      const IosScreenshot(fullResolution: true),
+    );
+    expect(result.isError, isFalse);
+    expect(result.imageMediaType, 'image/png');
+    expect(base64Decode(result.imageBase64!), [0x89, 0x50, 0x4e, 0x47]);
+  });
 
   test('fences and bounds the reduced accessibility hierarchy', () async {
     wda.sourceValue = {
@@ -287,6 +313,22 @@ class _FakeWda extends WdaClient {
 
   @override
   Future<void> unlock() async => calls.add('unlock');
+
+  String orientationValue = 'PORTRAIT';
+
+  @override
+  Future<String> orientation() async => orientationValue;
+
+  @override
+  Future<void> setOrientation(String orientation) async {
+    calls.add('orientation:$orientation');
+    orientationValue = orientation;
+    final landscape = orientation.contains('LANDSCAPE');
+    screenValue = WdaScreen(
+      size: landscape ? RigDisplaySize(844, 390) : RigDisplaySize(390, 844),
+      scale: 3,
+    );
+  }
 
   @override
   Future<void> launchApp(String bundleId) async =>

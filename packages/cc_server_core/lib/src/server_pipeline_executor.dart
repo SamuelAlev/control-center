@@ -115,6 +115,10 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   required VoiceProfileRepository voiceProfileRepository,
   required DiarizationModelManager diarizationModelManager,
   required MeetingDiarizationPort diarizationService,
+  // Public demo: keep the body key so an in-flight graph does not fail
+  // "unknown body", but never `Process.start`. Default on so a missed
+  // argument cannot silently disable bash on a real host.
+  bool enableBashScript = true,
 }) {
   final stepProcess = StepProcessRegistry();
   final launcher = SubPipelineLauncher();
@@ -137,6 +141,7 @@ ServerPipelineExecutor buildServerPipelineExecutor({
     credentialsRepository: credentials,
     stepProcessRegistry: stepProcess,
     runDirPath: runDirPath,
+    execute: enableBashScript,
   );
   registerPrReviewBodies(
     registry,

@@ -1,40 +1,79 @@
 ---
-title: Forward ports from an enclosed terminal
-description: Reach a dev server running inside a Terminal (VM) — from your machine, from the Browser (VM), on your network, or under a dev domain with HTTPS.
+title: Forward ports from a terminal
+description: Reach a dev server started in a Terminal (VM) or a host-shell — from your machine, from the Browser (VM), from Android, on your network, or under a dev domain with HTTPS.
 ---
 
-A server you start inside a [Terminal (VM)](/manual/guides/use-rigs/#terminals-inside-a-rig)
-listens inside the machine, not on your computer. The ports panel notices it,
-forwards it, and gives you an address for every place you might want to reach
-it from. Nothing here opens the machine up: every path is created by the
-server, on request, and dies with the rig.
+A server you start in a conversation's terminal is published only for **that space**. The ports panel notices listeners this app started there, maps them, and gives you an address for every place you might want to reach them from. Two spaces can both listen on `5173`; their maps never mix.
+
+Nothing here opens the machine up: every path is created by the server, on request, and dies with the terminal or rig.
 
 ## See what is listening
 
-1. Open the conversation's **Terminal (VM)** (in a space or on a PR page).
+1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
 2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
 3. Within a few seconds the **plug icon** in the terminal's top-right corner
    gets a dot. Click it.
 
 The panel lists every listening port with the process that owns it, as
-`3000 → 3000`: the guest port on the left, the port it answers on locally on
-the right (the same number whenever it was free on your machine).
+`3000 → 3000`: the port the process bound on the left, the port it answers
+on locally on the right (the same number whenever it was free on your
+machine). Each row also says whether desktop `localhost`, the Browser (VM),
+and Android can reach it.
 
-New ports are forwarded automatically. Turn **Auto-forward ports** off in the
-same panel if you want only the ones you add yourself.
+Discovery is contained: a Terminal (VM) is polled inside that guest; a
+host-shell is polled from that session's PTY process tree. Other spaces,
+and other processes on your Mac, are not listed.
+
+New ports in **this** terminal are forwarded automatically. Turn
+**Auto-forward ports** off in the same panel if you want only the ones you
+add yourself.
 
 ## Reach it from this computer
 
 Use **Copy local URL** on the row — `http://localhost:3000`. The forward
 listens on loopback only, so nothing else on your network can see it.
 
+If two spaces both expose guest `5173` and your machine already holds
+`127.0.0.1:5173`, the second space keeps guest `5173` and gets an
+ephemeral local port. Copy URL uses the right-hand number.
+
+On a host-shell, the process is already on your machine. Mapping the same
+local port is a no-op; picking a **different** local port binds a loopback
+proxy to the one you chose.
+
+`--host` (or binding `0.0.0.0`) does **not** make an enclosed Browser (VM)
+able to reach a server on the Mac. The guest has its own loopback; the
+server plants a tunnel into that guest when the Browser tab is in the
+**same space**.
+
 ## Reach it from the Browser (VM)
 
-Nothing to configure. The enclosed browser in the **same conversation**
-reaches every forwarded port at `localhost:<port>` — type
-`localhost:3000` into it, or have an agent's `browser_use` navigate there to
-test the page you just started. The two machines are wired together through
-the server; neither can reach the other any other way.
+Open the enclosed browser in the **same conversation**. Type
+`localhost:<left-hand port>` — the number the process bound. A remap
+(`5173 → 3000`) also answers at the right-hand number in that browser, so
+Copy URL works there too. An agent's `browser_use` can navigate to either.
+A server in Space A never appears as `localhost:5173` in Space B's browser.
+
+Use `localhost`, not a LAN IP and not `--host`. The guest has its own
+loopback; the tunnel listens there on both IPv4 and IPv6.
+
+Pages that open many connections at once (dozens of assets, a live
+reload socket) share that same tunnel. The Browser (VM) multiplexes
+them onto one persistent exec, so a burst of fetches is not one process
+spawn per connection and does not time out as a white page.
+
+Inside one space, a Terminal (VM) forward wins over a host-shell on the
+same number. Across spaces there is no precedence — they are separate maps.
+
+## Reach it from Android
+
+Open that space's **Android** tab. The emulator's `localhost:<port>` is
+then reversed to this space's published port (`adb reverse`). One emulator
+is device-global: attaching Space B retargets `:5173` to B and drops A's.
+Close the tab and the reverses this rig planted are removed.
+
+iOS Simulator already is the Mac — no reverse. A physical iPhone still
+needs a LAN share.
 
 ## Share it on your network
 
@@ -57,6 +96,8 @@ callbacks).
 
 - Domains must end in `.test` or `.localhost` — the two TLDs reserved for
   development, so a dev name can never shadow a real site.
+- Domain **names** are unique on the server; port **numbers** are not. Two
+  spaces may both use `5173`, but they cannot both claim `myapp.test`.
 - The certificate comes from a local authority minted on your server the
   first time it is needed. Its keys live under the server's data directory
   and never enter any guest; the enclosed browser trusts exactly that one
@@ -67,20 +108,23 @@ callbacks).
 
 ## Forward a port by hand
 
-**Add port** at the bottom of the panel forwards a guest port before (or
-whether or not) anything is listening on it. A manual forward keeps its
-address while your server restarts — the row shows *not listening* until it
-comes back — where auto-forwards disappear when their port does.
+**Add port** at the bottom of the panel maps a port before (or whether or
+not) anything is listening on it. A manual forward keeps its address while
+your server restarts — the row shows *not listening* until it comes back —
+where auto-forwards disappear when their port does. On a host-shell you can
+also set a different local port.
 
 ## How it stays contained
 
-The hypervisor's own port map is fixed when a machine boots, so all of this
-rides two narrow channels the server controls: one pre-created inbound lane
-into the terminal VM that refuses to connect to any port the guest is not
-actually listening on, and reverse tunnels the server holds open for the
-Browser (VM). No listener is ever created inside a guest that the server did
-not put there, and everything is torn down with the rig. The design is
-explained in [Rigs and enclosures](/manual/concepts/rigs/#ports-without-holes);
+Ports are keyed by workspace and space. The hypervisor's own port map is
+fixed when a machine boots, so a Terminal (VM) rides two narrow channels
+the server controls: one pre-created inbound lane into the guest that
+refuses to connect to any port the guest is not actually listening on, and
+reverse tunnels the server holds open for the Browser (VM) and Android. A
+host-shell never scans the whole machine. No listener is ever created
+inside a guest that the server did not put there, and everything is torn
+down with the terminal or rig. The design is explained in
+[Rigs and enclosures](/manual/concepts/rigs/#ports-without-holes);
 the exact reserved ports and domain rules are in the
 [rigs reference](/manual/reference/rigs/#ports-and-dev-domains).
 

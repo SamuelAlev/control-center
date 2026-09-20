@@ -7,6 +7,7 @@ import 'package:cc_domain/features/plan_studio/domain/services/plan_document_com
 import 'package:cc_domain/features/plan_studio/domain/value_objects/plan_graph.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/orchestration/providers/orchestration_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
@@ -234,7 +235,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
           ),
           PlanApprovalBar(
             total: _total,
-            canApprove: proposed,
+            canApprove: proposed && !ref.watch(isDemoServerProvider),
             isExecuting: executing,
             hasSelection: selected != null && selected.isWork,
             busy: _busy,
@@ -242,7 +243,9 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
                 ? _actionError
                 : validationErrors.first,
             showContinueNode:
-                selected != null && divergedKeys.contains(selected.key),
+                !ref.watch(isDemoServerProvider) &&
+                selected != null &&
+                divergedKeys.contains(selected.key),
             onContinueNode: () => _run(
               () => ref
                   .read(planStudioRepositoryProvider)
@@ -255,11 +258,13 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
               setState(() => _total = PlanTotalEstimate.fromWire(wire));
             }),
             onApprovePlan: () => _saveThenApprove(o, null),
-            onApproveSelectedNodes: () => _run(
-              () => ref
-                  .read(planStudioRepositoryProvider)
-                  .approveNodes(o.id, _closure(graph, _selectedKey!)),
-            ),
+            onApproveSelectedNodes: ref.watch(isDemoServerProvider)
+                ? null
+                : () => _run(
+                    () => ref
+                        .read(planStudioRepositoryProvider)
+                        .approveNodes(o.id, _closure(graph, _selectedKey!)),
+                  ),
             onCancelOrReject: () =>
                 _run(() => ref.read(planStudioRepositoryProvider).cancel(o.id)),
           ),
@@ -348,7 +353,7 @@ class _PlanStudioScreenState extends ConsumerState<PlanStudioScreen> {
           ),
           PlanApprovalBar(
             total: _total,
-            canApprove: proposed,
+            canApprove: proposed && !ref.watch(isDemoServerProvider),
             isExecuting: executing,
             hasSelection: selected != null && selected.isWork,
             busy: _busy,

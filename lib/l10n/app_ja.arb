@@ -119,6 +119,19 @@
   "rigStartIosHint": "サーバーの Mac 上に使い捨ての iOS Simulator を作成します。テスト環境を閉じると削除されます。ネットワークアクセスは隔離されません。",
   "rigTechnicalDetails": "技術的な詳細",
   "rigStopMachine": "マシンを停止",
+  "rigHomeButton": "ホーム",
+  "rigRotateClockwise": "右に回転",
+  "rigRotateCounterclockwise": "左に回転",
+  "rigTakeScreenshot": "スクリーンショットを撮る",
+  "rigScreenshotSaved": "スクリーンショットを保存しました",
+  "rigScreenshotSaveFailed": "スクリーンショットを保存できませんでした: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "このサーバーではこの種類のマシンをホストできません。",
   "rigTabNeedsConversation": "先に会話を開いてください。マシンは会話に紐づくため、エージェントと同じ画面を見られます。",
   "ideMenuSectionTools": "ツール",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "ブラウザ（VM）用のドメインです。例: myapp.test — そちらからアクセスでき、ホスト側では使えません",
   "rigPortsProcessUnknown": "不明なプロセス",
   "rigPortsInactive": "未リッスン",
+  "rigPortsTooltipHost": "このターミナルで開いているポート",
+  "rigPortsEmptyHost": "このターミナルではまだ何も待ち受けていません。サーバーを起動するとここに表示されます。",
+  "rigPortsAddHintHost": "割り当てるポート（例: 5173）",
+  "rigPortsLocalPortHint": "ローカルポート（任意）",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port}（ブラウザ VM）",
+  "rigPortsDestBrowserUnreachable": "ブラウザ（VM）未接続",
+  "rigPortsDestAndroid": "localhost:{port}（Android）",
+  "rigPortsDestAndroidUnreachable": "Android 未接続",
   "rigImagesMissing": "{count, plural, =1{ダウンロード待ちのベースイメージが 1 件あります} other{ダウンロード待ちのベースイメージが {count} 件あります}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "シングルサインオンはサーバー設定です。デモでは代わりに一時ゲストとしてサインインします。",
   "demoUnavailableAudio": "録音とディクテーションには、ホスト上のオーディオキャプチャと音声モデルが必要です。デモにはどちらもないため、会議は再生のない文字起こしになります。",
   "demoUnavailableServerAdmin": "これはサーバー管理です。デモは各訪問者に使い捨てのワークスペースだけを与え、それ以上は何もありません。",
+  "demoUnavailablePipelines": "パイプラインはここでは実行できません。bash ステップを書いて手動またはイベントトリガーで開始できる訪問者は、このホスト上でコードを実行しています。",
   "settingsBackupRestore": "バックアップと復元",
   "settingsBackupRestoreDescription": "このサーバー上の全データベースのスナップショットと、単一ワークスペースのエクスポート・インポート・削除です。",
   "backupSnapshotsLabel": "インストール全体のスナップショット",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "別のタイトルまたはプルリクエスト番号をお試しください",
   "rigNetworkUnrestricted": "ネットワークの制限なし",
   "rigNetworkAllowAllHosts": "すべてのホストを許可",
+  "rigBrowserPermissionsTitle": "サイトの許可",
+  "rigBrowserPermissionsTooltip": "サイトの許可とネットワーク",
+  "rigBrowserPermissionEmpty": "まだ許可を求めたサイトはありません",
+  "rigBrowserPermissionPrompt": "{origin} が {permission} の使用を求めています",
+  "rigBrowserPermissionBlock": "ブロック",
+  "rigBrowserPermissionCamera": "カメラ",
+  "rigBrowserPermissionMicrophone": "マイク",
+  "rigBrowserPermissionNotifications": "通知",
+  "rigBrowserPermissionGeolocation": "位置情報",
+  "rigBrowserPermissionPersistentStorage": "永続ストレージ",
+  "rigBrowserPermissionClipboard": "クリップボード",
+  "rigBrowserPermissionDisplayCapture": "画面キャプチャ",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "すべてのネットワークホストを許可しますか？",
   "rigNetworkBypassBody": "隔離環境を再起動し、その内部にある未コミットの作業を破棄します。その後、ゲストは閉じられるまで、すべてのネットワークホストに接続できるようになります。",
   "rigNetworkRestartUnrestricted": "制限なしで再起動",

@@ -119,6 +119,19 @@
   "rigStartIosHint": "Vytvoří dočasný simulátor iOS na serverovém Macu. Po ukončení testovacího prostředí bude odstraněn; přístup k síti není izolovaný.",
   "rigTechnicalDetails": "Technické podrobnosti",
   "rigStopMachine": "Zastavit stroj",
+  "rigHomeButton": "Plocha",
+  "rigRotateClockwise": "Otočit po směru hodin",
+  "rigRotateCounterclockwise": "Otočit proti směru hodin",
+  "rigTakeScreenshot": "Pořídit snímek obrazovky",
+  "rigScreenshotSaved": "Snímek obrazovky uložen",
+  "rigScreenshotSaveFailed": "Snímek obrazovky se nepodařilo uložit: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Tento server nemůže hostovat tento druh stroje.",
   "rigTabNeedsConversation": "Nejprve otevřete konverzaci — stroj k ní patří, abyste vy i agenti viděli stejnou obrazovku.",
   "ideMenuSectionTools": "Nástroje",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Doména pro Browser (VM), např. myapp.test — dostupná tam, ne na hostiteli",
   "rigPortsProcessUnknown": "neznámý proces",
   "rigPortsInactive": "nenaslouchá",
+  "rigPortsTooltipHost": "Porty otevřené v tomto terminálu",
+  "rigPortsEmptyHost": "V tomto terminálu zatím nic nenaslouchá. Spusťte server a objeví se tu.",
+  "rigPortsAddHintHost": "Port k namapování (např. 5173)",
+  "rigPortsLocalPortHint": "Místní port (volitelné)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} v prohlížeči (VM)",
+  "rigPortsDestBrowserUnreachable": "prohlížeč (VM) není připojen",
+  "rigPortsDestAndroid": "localhost:{port} na Androidu",
+  "rigPortsDestAndroidUnreachable": "Android není připojen",
   "rigImagesMissing": "{count, plural, one{Zbývá stáhnout 1 základní obraz} few{Zbývá stáhnout {count} základní obrazy} many{Zbývá stáhnout {count} základních obrazů} other{Zbývá stáhnout {count} základních obrazů}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Jednotné přihlášení je konfigurace serveru. Demo vás místo toho přihlásí jako dočasného hosta.",
   "demoUnavailableAudio": "Nahrávání a diktování potřebují snímání zvuku a řečový model na hostiteli. Demo nemá ani jedno, takže jeho schůzky jsou přepisy bez přehrávání.",
   "demoUnavailableServerAdmin": "Tohle je správa serveru. Demo dá každému návštěvníkovi vlastní jednorázový pracovní prostor a nic mimo něj.",
+  "demoUnavailablePipelines": "Pipeline zde nelze spouštět. Návštěvník, který dokáže napsat krok bash a spustit ho — ručně nebo přes spouštěč události — spouští kód na tomto hostiteli.",
   "settingsBackupRestore": "Záloha a obnovení",
   "settingsBackupRestoreDescription": "Snímky každé databáze na tomto serveru plus export, import a smazání jednoho pracovního prostoru.",
   "backupSnapshotsLabel": "Snímky instalace",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Zkuste jiný název nebo číslo pull requestu",
   "rigNetworkUnrestricted": "Síť bez omezení",
   "rigNetworkAllowAllHosts": "Povolit všechny hostitele",
+  "rigBrowserPermissionsTitle": "Oprávnění webu",
+  "rigBrowserPermissionsTooltip": "Oprávnění webu a síť",
+  "rigBrowserPermissionEmpty": "Zatím žádný web nepožádal o oprávnění",
+  "rigBrowserPermissionPrompt": "{origin} chce použít {permission}",
+  "rigBrowserPermissionBlock": "Blokovat",
+  "rigBrowserPermissionCamera": "Kameru",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Oznámení",
+  "rigBrowserPermissionGeolocation": "Polohu",
+  "rigBrowserPermissionPersistentStorage": "Trvalé úložiště",
+  "rigBrowserPermissionClipboard": "Schránku",
+  "rigBrowserPermissionDisplayCapture": "Snímek obrazovky",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Povolit všechny síťové hostitele?",
   "rigNetworkBypassBody": "Tímto se restartuje izolované prostředí a zahodí se nepotvrzená práce uvnitř. Host pak bude moci přistupovat ke všem síťovým hostitelům, dokud nebude prostředí zavřeno.",
   "rigNetworkRestartUnrestricted": "Restartovat bez omezení",

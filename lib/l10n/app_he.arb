@@ -119,6 +119,19 @@
   "rigStartIosHint": "יוצר סימולטור iOS זמני ב-Mac של השרת. הוא נמחק כשסביבת הבדיקה נסגרת; הגישה לרשת אינה מבודדת.",
   "rigTechnicalDetails": "פרטים טכניים",
   "rigStopMachine": "עצור את המכונה",
+  "rigHomeButton": "בית",
+  "rigRotateClockwise": "סיבוב עם כיוון השעון",
+  "rigRotateCounterclockwise": "סיבוב נגד כיוון השעון",
+  "rigTakeScreenshot": "צילום מסך",
+  "rigScreenshotSaved": "צילום המסך נשמר",
+  "rigScreenshotSaveFailed": "לא ניתן לשמור את צילום המסך: ⁨{error}⁩",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "שרת זה אינו יכול לארח מכונה מסוג זה.",
   "rigTabNeedsConversation": "פתח שיחה קודם — מכונה שייכת לשיחה אחת, כך שאתה והסוכנים שלך רואים את אותו מסך.",
   "ideMenuSectionTools": "כלים",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "דומיין עבור הדפדפן (VM), לדוגמה ⁨myapp.test⁩ — נגיש שם, לא על המארח",
   "rigPortsProcessUnknown": "תהליך לא ידוע",
   "rigPortsInactive": "לא מאזין",
+  "rigPortsTooltipHost": "פורטים פתוחים במסוף הזה",
+  "rigPortsEmptyHost": "עדיין אין האזנה במסוף הזה. הפעילו שרת והוא יופיע כאן.",
+  "rigPortsAddHintHost": "פורט למיפוי (למשל 5173)",
+  "rigPortsLocalPortHint": "פורט מקומי (אופציונלי)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} בדפדפן (מכונה וירטואלית)",
+  "rigPortsDestBrowserUnreachable": "דפדפן (מכונה וירטואלית) לא מחובר",
+  "rigPortsDestAndroid": "localhost:{port} ב-Android",
+  "rigPortsDestAndroidUnreachable": "Android לא מחובר",
   "rigImagesMissing": "{count, plural, one{נותרה תמונת בסיס אחת להורדה} two{נותרו שתי תמונות בסיס להורדה} many{נותרו {count} תמונות בסיס להורדה} other{נותרו {count} תמונות בסיס להורדה}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "כניסה מאוחדת היא תצורת שרת. הדמו מכניס אתכם במקום זאת כאורחים זמניים.",
   "demoUnavailableAudio": "הקלטה והכתבה דורשות לכידת שמע ומודל דיבור על המארח. הדמו לא כולל אף אחד מהם, ולכן הפגישות שלו הן תמלילים ללא השמעה.",
   "demoUnavailableServerAdmin": "זהו ניהול שרת. הדמו נותן לכל מבקר סביבת עבודה חד-פעמית משלו ותו לא.",
+  "demoUnavailablePipelines": "לא ניתן להריץ צינורות כאן. מבקר שיכול לכתוב שלב bash ולהפעיל אותו — ידנית או דרך מפעיל אירוע — מריץ קוד על המארח הזה.",
   "settingsBackupRestore": "גיבוי ושחזור",
   "settingsBackupRestoreDescription": "תמונות מצב של כל מסד נתונים בשרת הזה, וגם ייצוא, ייבוא ומחיקה של סביבת עבודה בודדת.",
   "backupSnapshotsLabel": "תמונות מצב של ההתקנה",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "נסו כותרת או מספר בקשת משיכה אחרים",
   "rigNetworkUnrestricted": "רשת ללא הגבלות",
   "rigNetworkAllowAllHosts": "מתן גישה לכל המארחים",
+  "rigBrowserPermissionsTitle": "הרשאות אתר",
+  "rigBrowserPermissionsTooltip": "הרשאות אתר ורשת",
+  "rigBrowserPermissionEmpty": "אף אתר עדיין לא ביקש הרשאה",
+  "rigBrowserPermissionPrompt": "{origin} רוצה להשתמש ב{permission}",
+  "rigBrowserPermissionBlock": "חסום",
+  "rigBrowserPermissionCamera": "מצלמה",
+  "rigBrowserPermissionMicrophone": "מיקרופון",
+  "rigBrowserPermissionNotifications": "התראות",
+  "rigBrowserPermissionGeolocation": "מיקום",
+  "rigBrowserPermissionPersistentStorage": "אחסון קבוע",
+  "rigBrowserPermissionClipboard": "לוח",
+  "rigBrowserPermissionDisplayCapture": "צילום מסך",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "לאפשר כל מארח ברשת?",
   "rigNetworkBypassBody": "פעולה זו מפעילה מחדש את הסביבה המבודדת ומוחקת עבודה שלא נשמרה בתוכה. לאחר מכן המערכת האורחת תוכל לגשת לכל מארח ברשת עד לסגירתה.",
   "rigNetworkRestartUnrestricted": "הפעלה מחדש ללא הגבלות",

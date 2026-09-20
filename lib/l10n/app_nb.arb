@@ -119,6 +119,19 @@
   "rigStartIosHint": "Oppretter en midlertidig iOS-simulator på serverens Mac. Den slettes når testmiljøet lukkes; nettverkstilgangen er ikke isolert.",
   "rigTechnicalDetails": "Tekniske detaljer",
   "rigStopMachine": "Stopp maskinen",
+  "rigHomeButton": "Hjem",
+  "rigRotateClockwise": "Roter med klokken",
+  "rigRotateCounterclockwise": "Roter mot klokken",
+  "rigTakeScreenshot": "Ta et skjermbilde",
+  "rigScreenshotSaved": "Skjermbildet er lagret",
+  "rigScreenshotSaveFailed": "Kunne ikke lagre skjermbildet: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Denne serveren kan ikke kjøre denne typen maskin.",
   "rigTabNeedsConversation": "Åpne en samtale først — en maskin tilhører én, slik at du og agentene dine ser samme skjerm.",
   "ideMenuSectionTools": "Verktøy",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domene for Nettleser (VM), f.eks. myapp.test — nås der, ikke på verten",
   "rigPortsProcessUnknown": "ukjent prosess",
   "rigPortsInactive": "lytter ikke",
+  "rigPortsTooltipHost": "Porter åpne i denne terminalen",
+  "rigPortsEmptyHost": "Ingenting lytter i denne terminalen ennå. Start en server, så vises den her.",
+  "rigPortsAddHintHost": "Port å mappe (f.eks. 5173)",
+  "rigPortsLocalPortHint": "Lokal port (valgfritt)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} i nettleseren (VM)",
+  "rigPortsDestBrowserUnreachable": "nettleser (VM) ikke tilkoblet",
+  "rigPortsDestAndroid": "localhost:{port} på Android",
+  "rigPortsDestAndroidUnreachable": "Android ikke tilkoblet",
   "rigImagesMissing": "{count, plural, one{1 basisbilde gjenstår å laste ned} other{{count} basisbilder gjenstår å laste ned}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Enkel pålogging er serverkonfigurasjon. Demoen logger deg inn som en midlertidig gjest i stedet.",
   "demoUnavailableAudio": "Opptak og diktering trenger lydfangst og en talemodell på verten. Demoen leverer ingen av delene, så møtene er transkripter uten avspilling.",
   "demoUnavailableServerAdmin": "Dette er serveradministrasjon. Demoen gir hver besøkende sitt eget engangsarbeidsområde og ingenting utover det.",
+  "demoUnavailablePipelines": "Pipelines kan ikke kjøre her. En besøkende som kan skrive et bash-steg og starte det — manuelt eller via en hendelsestrigger — kjører kode på denne verten.",
   "settingsBackupRestore": "Sikkerhetskopi og gjenoppretting",
   "settingsBackupRestoreDescription": "Øyeblikksbilder av hver database på denne serveren, pluss eksport, import og sletting for ett arbeidsområde.",
   "backupSnapshotsLabel": "Installasjonsøyeblikksbilder",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Prøv en annen tittel eller et annet pull request-nummer",
   "rigNetworkUnrestricted": "Nettverk uten begrensninger",
   "rigNetworkAllowAllHosts": "Tillat alle verter",
+  "rigBrowserPermissionsTitle": "Nettstedstillatelser",
+  "rigBrowserPermissionsTooltip": "Nettstedstillatelser og nettverk",
+  "rigBrowserPermissionEmpty": "Ingen nettsteder har bedt om tillatelse ennå",
+  "rigBrowserPermissionPrompt": "{origin} vil bruke {permission}",
+  "rigBrowserPermissionBlock": "Blokker",
+  "rigBrowserPermissionCamera": "Kamera",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Varsler",
+  "rigBrowserPermissionGeolocation": "Plassering",
+  "rigBrowserPermissionPersistentStorage": "Vedvarende lagring",
+  "rigBrowserPermissionClipboard": "Utklippstavle",
+  "rigBrowserPermissionDisplayCapture": "Skjermopptak",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Vil du tillate alle nettverksverter?",
   "rigNetworkBypassBody": "Dette starter det isolerte miljøet på nytt og forkaster arbeid som ikke er sjekket inn. Gjesten kan deretter nå alle nettverksverter frem til den lukkes.",
   "rigNetworkRestartUnrestricted": "Start på nytt uten begrensninger",

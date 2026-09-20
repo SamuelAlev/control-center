@@ -262,6 +262,26 @@ class AppLocalizationsHe extends AppLocalizations {
   String get rigStopMachine => 'עצור את המכונה';
 
   @override
+  String get rigHomeButton => 'בית';
+
+  @override
+  String get rigRotateClockwise => 'סיבוב עם כיוון השעון';
+
+  @override
+  String get rigRotateCounterclockwise => 'סיבוב נגד כיוון השעון';
+
+  @override
+  String get rigTakeScreenshot => 'צילום מסך';
+
+  @override
+  String get rigScreenshotSaved => 'צילום המסך נשמר';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'לא ניתן לשמור את צילום המסך: ⁨$error⁩';
+  }
+
+  @override
   String get rigSurfaceUnavailable => 'שרת זה אינו יכול לארח מכונה מסוג זה.';
 
   @override
@@ -514,6 +534,41 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'לא מאזין';
+
+  @override
+  String get rigPortsTooltipHost => 'פורטים פתוחים במסוף הזה';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'עדיין אין האזנה במסוף הזה. הפעילו שרת והוא יופיע כאן.';
+
+  @override
+  String get rigPortsAddHintHost => 'פורט למיפוי (למשל 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'פורט מקומי (אופציונלי)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port בדפדפן (מכונה וירטואלית)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable =>
+      'דפדפן (מכונה וירטואלית) לא מחובר';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port ב-Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android לא מחובר';
 
   @override
   String rigImagesMissing(int count) {
@@ -14003,6 +14058,10 @@ class AppLocalizationsHe extends AppLocalizations {
       'זהו ניהול שרת. הדמו נותן לכל מבקר סביבת עבודה חד-פעמית משלו ותו לא.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'לא ניתן להריץ צינורות כאן. מבקר שיכול לכתוב שלב bash ולהפעיל אותו — ידנית או דרך מפעיל אירוע — מריץ קוד על המארח הזה.';
+
+  @override
   String get settingsBackupRestore => 'גיבוי ושחזור';
 
   @override
@@ -14350,6 +14409,47 @@ class AppLocalizationsHe extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'מתן גישה לכל המארחים';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'הרשאות אתר';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'הרשאות אתר ורשת';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'אף אתר עדיין לא ביקש הרשאה';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin רוצה להשתמש ב$permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'חסום';
+
+  @override
+  String get rigBrowserPermissionCamera => 'מצלמה';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'מיקרופון';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'התראות';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'מיקום';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'אחסון קבוע';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'לוח';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'צילום מסך';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'לאפשר כל מארח ברשת?';

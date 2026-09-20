@@ -119,6 +119,19 @@
   "rigStartIosHint": "Létrehoz egy ideiglenes iOS-szimulátort a szerver Mac gépén. A tesztkörnyezet bezárásakor törlődik; a hálózati hozzáférés nincs elkülönítve.",
   "rigTechnicalDetails": "Műszaki részletek",
   "rigStopMachine": "Gép leállítása",
+  "rigHomeButton": "Kezdőképernyő",
+  "rigRotateClockwise": "Forgatás óramutató szerint",
+  "rigRotateCounterclockwise": "Forgatás óramutatóval ellentétesen",
+  "rigTakeScreenshot": "Képernyőkép készítése",
+  "rigScreenshotSaved": "Képernyőkép mentve",
+  "rigScreenshotSaveFailed": "A képernyőképet nem sikerült menteni: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Ez a szerver nem tud ilyen gépet futtatni.",
   "rigTabNeedsConversation": "Először nyisson beszélgetést — a gép egyhez tartozik, így Ön és az ügynökei ugyanazt a képernyőt látják.",
   "ideMenuSectionTools": "Eszközök",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domain a Böngésző (VM) számára, pl. myapp.test — ott elérhető, a hoszton nem",
   "rigPortsProcessUnknown": "ismeretlen folyamat",
   "rigPortsInactive": "nem figyel",
+  "rigPortsTooltipHost": "Nyitott portok ebben a terminálban",
+  "rigPortsEmptyHost": "Ebben a terminálban még semmi sem figyel. Indíts egy szervert, és itt megjelenik.",
+  "rigPortsAddHintHost": "Leképezendő port (pl. 5173)",
+  "rigPortsLocalPortHint": "Helyi port (nem kötelező)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} a böngészőben (VM)",
+  "rigPortsDestBrowserUnreachable": "böngésző (VM) nincs csatolva",
+  "rigPortsDestAndroid": "localhost:{port} Androidon",
+  "rigPortsDestAndroidUnreachable": "Android nincs csatolva",
   "rigImagesMissing": "{count, plural, one{# alapkép vár még letöltésre} other{# alapkép vár még letöltésre}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Az egyszeri bejelentkezés szerverbeállítás. A demo ideiglenes vendégként jelentkezteti be.",
   "demoUnavailableAudio": "A felvételhez és a diktáláshoz hangrögzítés és beszédmodell kell a hoszton. A demo egyiket sem szállítja, így a megbeszélései lejátszás nélküli átiratok.",
   "demoUnavailableServerAdmin": "Ez szerveradminisztráció. A demo minden látogatónak saját eldobható munkaterületet ad, és semmit azon túl.",
+  "demoUnavailablePipelines": "A folyamatok itt nem futhatnak. Egy látogató, aki bash lépést írhat és elindíthatja — kézzel vagy eseményindítóval — kódot futtat ezen a gazdagépen.",
   "settingsBackupRestore": "Biztonsági mentés és visszaállítás",
   "settingsBackupRestoreDescription": "A szerver minden adatbázisának pillanatképei, plusz egyetlen munkaterület exportálása, importálása és törlése.",
   "backupSnapshotsLabel": "Telepítési pillanatképek",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Próbáljon másik címet vagy pull request-számot",
   "rigNetworkUnrestricted": "Korlátozás nélküli hálózat",
   "rigNetworkAllowAllHosts": "Minden gazdagép engedélyezése",
+  "rigBrowserPermissionsTitle": "Webhelyengedélyek",
+  "rigBrowserPermissionsTooltip": "Webhelyengedélyek és hálózat",
+  "rigBrowserPermissionEmpty": "Még egy webhely sem kért engedélyt",
+  "rigBrowserPermissionPrompt": "A(z) {origin} a következőt szeretné használni: {permission}",
+  "rigBrowserPermissionBlock": "Tiltás",
+  "rigBrowserPermissionCamera": "Kamera",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Értesítések",
+  "rigBrowserPermissionGeolocation": "Helymeghatározás",
+  "rigBrowserPermissionPersistentStorage": "Állandó tárhely",
+  "rigBrowserPermissionClipboard": "Vágólap",
+  "rigBrowserPermissionDisplayCapture": "Képernyőfelvétel",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Engedélyezi az összes hálózati gazdagépet?",
   "rigNetworkBypassBody": "Ez újraindítja az elkülönített környezetet, és elveti a benne lévő, még nem véglegesített munkát. Ezután a vendégrendszer a bezárásáig bármely hálózati gazdagépet elérheti.",
   "rigNetworkRestartUnrestricted": "Újraindítás korlátozások nélkül",

@@ -105,9 +105,9 @@ lib/features/pr_review/presentation/widgets/pr_diff_view/unified/file_header.dar
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/outdated_comments.dart  522
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart  926
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/suggestion_composer.dart  319
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  942
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart  996
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver_painting.dart  424
-lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3191
+lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_view.dart  3199
 lib/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_row_painter.dart  903
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart  406
 lib/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart  1280

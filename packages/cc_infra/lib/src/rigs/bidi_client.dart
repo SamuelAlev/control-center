@@ -31,9 +31,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_url.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
+import 'package:cc_infra/src/rigs/browser_permission_host.dart';
+import 'package:cc_infra/src/rigs/browser_permission_probe.dart';
+import 'package:cc_infra/src/rigs/browser_permission_script.dart';
 
 /// A BiDi command came back as an error.
 class BidiException extends BrowserEngineException {
@@ -50,7 +54,8 @@ class BidiException extends BrowserEngineException {
 }
 
 /// Drives one Firefox browsing context over WebDriver BiDi.
-class BidiClient extends ScriptedBrowserEngineClient {
+class BidiClient extends ScriptedBrowserEngineClient
+    with BrowserPermissionHost {
   BidiClient._(this._socket, {required this.hostAuthority});
 
   /// The authority (`127.0.0.1:9223`) the remote agent believes it serves.
@@ -98,6 +103,7 @@ class BidiClient extends ScriptedBrowserEngineClient {
     'browsingContext.load',
     'browsingContext.fragmentNavigated',
     'log.entryAdded',
+    'script.message',
   ];
 
   @override
@@ -184,6 +190,39 @@ class BidiClient extends ScriptedBrowserEngineClient {
     _sessionId = session['sessionId'] as String?;
     await _refreshContext();
     await _send('session.subscribe', {'events': _subscriptions});
+    await _installPermissionInterceptor();
+  }
+
+  Future<void> _installPermissionInterceptor() async {
+    try {
+      await _send('script.addPreloadScript', {
+        'functionDeclaration': kBrowserPermissionPreloadFunction,
+        'arguments': [
+          {
+            'type': 'channel',
+            'value': {
+              'channel': kBrowserPermissionChannel,
+              'ownership': 'root',
+            },
+          },
+        ],
+      });
+      await evaluateJson(kBrowserPermissionInstallScript);
+    } on Object catch (e) {
+      CcInfraLog.debug('rig/bidi: permission interceptor skipped: $e');
+    }
+  }
+
+  @override
+  Future<void> installPermissionInterceptor() =>
+      _installPermissionInterceptor();
+
+  @override
+  Future<void> resolvePermissionProbe(
+    BrowserPermissionProbe probe, {
+    required bool allow,
+  }) async {
+    await evaluateJson(browserPermissionResolveScript(probe.id, allow: allow));
   }
 
   /// Learns (or re-learns) which browsing context to drive.
@@ -294,7 +333,7 @@ class BidiClient extends ScriptedBrowserEngineClient {
           final url = params['url'];
           if (url is String) {
             _pushHistory();
-            _emit(BrowserPageUrlChanged(url));
+            _emitVisibleUrl(url);
           }
         }
       case 'browsingContext.fragmentNavigated':
@@ -302,7 +341,7 @@ class BidiClient extends ScriptedBrowserEngineClient {
           final url = params['url'];
           if (url is String) {
             _pushHistory();
-            _emit(BrowserPageUrlChanged(url));
+            _emitVisibleUrl(url);
           }
         }
       case 'log.entryAdded':
@@ -310,12 +349,35 @@ class BidiClient extends ScriptedBrowserEngineClient {
         if (text is String && text.isNotEmpty) {
           recordConsole('[${params['level'] ?? 'log'}] $text');
         }
+      case 'script.message':
+        if (params['channel'] == kBrowserPermissionChannel) {
+          final probe = BrowserPermissionProbe.parse(
+            _unwrapBidiValue(params['data']),
+          );
+          if (probe != null) {
+            emitPermissionProbe(probe);
+          }
+        }
     }
+  }
+
+  static Object? _unwrapBidiValue(Object? data) {
+    if (data is Map && data['value'] != null) {
+      return data['value'];
+    }
+    return data;
   }
 
   void _emit(BrowserPageEvent event) {
     if (!_pageEvents.isClosed) {
       _pageEvents.add(event);
+    }
+  }
+
+  void _emitVisibleUrl(String url) {
+    final visible = visibleBrowserUrl(url);
+    if (visible.isNotEmpty) {
+      _emit(BrowserPageUrlChanged(visible));
     }
   }
 
@@ -352,6 +414,7 @@ class BidiClient extends ScriptedBrowserEngineClient {
     if (!_pageEvents.isClosed) {
       unawaited(_pageEvents.close());
     }
+    closePermissionHost();
   }
 
   // ── The scripted primitives ─────────────────────────────────────────────
@@ -483,7 +546,7 @@ class BidiClient extends ScriptedBrowserEngineClient {
     if (contexts is List && contexts.isNotEmpty) {
       final first = contexts.first;
       if (first is Map && first['url'] is String) {
-        url = first['url'] as String;
+        url = visibleBrowserUrl(first['url'] as String);
       }
     }
     return (
@@ -617,5 +680,6 @@ class BidiClient extends ScriptedBrowserEngineClient {
       // Already gone.
     }
     _onDone();
+    closePermissionHost();
   }
 }

@@ -306,6 +306,11 @@ void main() {
     'rig.setPortLan': {'networkEgress'},
     'rig.setPortDomain': {'networkEgress'},
     'rig.setPortsAutoForward': {'networkEgress'},
+    'terminal.addPort': {'networkEgress'},
+    'terminal.removePort': {'networkEgress'},
+    'terminal.setPortLan': {'networkEgress'},
+    'terminal.setPortDomain': {'networkEgress'},
+    'terminal.setPortsAutoForward': {'networkEgress'},
     // Git plumbing on the operator's own repositories.
     'worktree.commitAndPush': {'gitCommit', 'gitPush'},
     'worktree.publishBranch': {'gitPush'},
@@ -349,6 +354,22 @@ void main() {
     'pr_review.setPullRequestDraft': {'prPublish'},
     // Review Hub: both ops dispatch agent runs on the host.
     'review_hub.start': {'processSpawn'},
+    // Pipeline execution: start/retry spawn bash (and other step bodies);
+    // cancel/kill interrupt a live process. Template upsert and trigger
+    // writes schedule that spawn by proxy, the same claim as
+    // `repos.setScripts`. Plan/orchestration approve is the same engine
+    // reached through another door.
+    'pipeline.start': {'processSpawn'},
+    'pipeline.cancel': {'processSpawn'},
+    'pipeline.retry': {'processSpawn'},
+    'pipeline.killStep': {'processSpawn'},
+    'pipeline_template.upsert': {'processSpawn'},
+    'pipeline_trigger.insert': {'processSpawn'},
+    'pipeline_trigger.update': {'processSpawn'},
+    'orchestration.approve': {'processSpawn'},
+    'orchestration.approveNodes': {'processSpawn'},
+    'orchestration.continueNode': {'processSpawn'},
+    'plan.approve': {'processSpawn'},
     // Per-repo lifecycle scripts: the body is shell the SERVER executes at
     // the next worktree provision/teardown, so writing it schedules a process
     // spawn by proxy.

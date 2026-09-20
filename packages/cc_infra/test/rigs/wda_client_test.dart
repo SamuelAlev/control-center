@@ -21,7 +21,11 @@ void main() {
     commandSubscription = commandServer.listen((request) async {
       final text = await utf8.decoder.bind(request).join();
       final body = text.isEmpty ? null : jsonDecode(text);
-      requests.add((method: request.method, path: request.uri.toString(), body: body));
+      requests.add((
+        method: request.method,
+        path: request.uri.toString(),
+        body: body,
+      ));
       request.response.headers.contentType = ContentType.json;
 
       Object? value;
@@ -34,6 +38,8 @@ void main() {
           'displayId': 1,
           'scale': 3,
         };
+      } else if (request.uri.path.endsWith('/orientation')) {
+        value = 'PORTRAIT';
       } else if (request.uri.path.endsWith('/screenshot')) {
         value = base64Encode([1, 2, 3, 4]);
       } else if (request.uri.path.endsWith('/source')) {
@@ -143,6 +149,8 @@ void main() {
     await client.home();
     await client.lock();
     await client.unlock();
+    expect(await client.orientation(), 'PORTRAIT');
+    await client.setOrientation('LANDSCAPE');
     await client.launchApp('com.example.app');
     await client.configureMjpeg(fps: 40, scalingFactor: 60, quality: 70);
     await client.setPasteboard(
@@ -161,15 +169,19 @@ void main() {
         '/session/session-1/wda/homescreen',
         '/session/session-1/wda/lock',
         '/session/session-1/wda/unlock',
+        '/session/session-1/orientation',
+        '/session/session-1/orientation',
         '/session/session-1/wda/apps/launch',
         '/session/session-1/appium/settings',
         '/session/session-1/wda/setPasteboard',
         '/session/session-1/wda/getPasteboard',
       ]),
     );
-    final settings = requests
-        .singleWhere((entry) => entry.path.endsWith('/appium/settings'))
-        .body as Map;
+    final settings =
+        requests
+                .singleWhere((entry) => entry.path.endsWith('/appium/settings'))
+                .body
+            as Map;
     expect((settings['settings'] as Map)['mjpegServerFramerate'], 15);
   });
 

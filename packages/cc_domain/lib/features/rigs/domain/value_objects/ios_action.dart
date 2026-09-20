@@ -44,8 +44,8 @@ sealed class IosAction extends RigAction {
     if (verb == null) {
       return const RigActionInvalid(
         'Missing or invalid argument: action (expected one of tap, swipe, '
-        'type, key, home, lock, unlock, screenshot, ui_dump, install_app, '
-        'start_app, stop_app, uninstall_app, open_url, spawn)',
+        'type, key, home, lock, unlock, rotate, screenshot, ui_dump, '
+        'install_app, start_app, stop_app, uninstall_app, open_url, spawn)',
       );
     }
     switch (verb) {
@@ -124,8 +124,21 @@ sealed class IosAction extends RigAction {
         return const RigActionParsed(IosLock());
       case 'unlock':
         return const RigActionParsed(IosUnlock());
+      case 'rotate':
+        final parsed = _parseRotate(args);
+        if (parsed == null) {
+          return const RigActionInvalid(
+            'Missing or invalid argument: direction (expected clockwise or '
+            'counterclockwise)',
+          );
+        }
+        return RigActionParsed(IosRotate(parsed));
       case 'screenshot':
-        return const RigActionParsed(IosScreenshot());
+        return RigActionParsed(
+          IosScreenshot(
+            fullResolution: rigOptBool(args, 'full_resolution') ?? false,
+          ),
+        );
       case 'ui_dump':
         return const RigActionParsed(IosUiDump());
       case 'install_app':
@@ -185,6 +198,14 @@ sealed class IosAction extends RigAction {
   static final RegExp _bundleIdPattern = RegExp(
     r'^[A-Za-z][A-Za-z0-9_-]*(\.[A-Za-z][A-Za-z0-9_-]*)+$',
   );
+
+  static RigRotateDirection? _parseRotate(Map<String, dynamic> args) {
+    final raw = rigOptString(args, 'direction');
+    if (raw == null) {
+      return RigRotateDirection.clockwise;
+    }
+    return RigRotateDirection.fromWire(raw);
+  }
 
   static String? _parseUrl(Map<String, dynamic> args) {
     final value = rigOptString(args, 'url');
@@ -407,10 +428,36 @@ class IosUnlock extends IosAction {
   String get summary => 'Unlocked the simulator';
 }
 
+/// Rotate the simulator 90 degrees.
+class IosRotate extends IosAction {
+  /// Creates an [IosRotate].
+  const IosRotate([this.direction = RigRotateDirection.clockwise]);
+
+  /// Which way to turn the simulator.
+  final RigRotateDirection direction;
+
+  @override
+  String get verb => 'rotate';
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'action': verb,
+    'direction': direction.wire,
+  };
+
+  @override
+  String get summary => direction == RigRotateDirection.clockwise
+      ? 'Rotated clockwise'
+      : 'Rotated counterclockwise';
+}
+
 /// Capture the simulator screen.
 class IosScreenshot extends IosAction {
   /// Creates an [IosScreenshot].
-  const IosScreenshot();
+  const IosScreenshot({this.fullResolution = false});
+
+  /// When true, return the native PNG instead of the downscaled agent JPEG.
+  final bool fullResolution;
 
   @override
   String get verb => 'screenshot';
@@ -419,7 +466,10 @@ class IosScreenshot extends IosAction {
   bool get mutatesGuest => false;
 
   @override
-  Map<String, dynamic> toJson() => {'action': verb};
+  Map<String, dynamic> toJson() => {
+    'action': verb,
+    if (fullResolution) 'full_resolution': true,
+  };
 
   @override
   String get summary => 'Took a screenshot';

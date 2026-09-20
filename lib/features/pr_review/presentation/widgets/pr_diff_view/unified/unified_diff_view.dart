@@ -2096,6 +2096,12 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
     }
 
     (int, int)? rowAtGlobalY(double gy) {
+      // The pinned file header overlays rows that have scrolled under it.
+      // Hover must not resolve those hidden rows — that is how a "+" pill
+      // or selection would otherwise surface through the bar.
+      if (gy < affordanceTop) {
+        return null;
+      }
       final double docOffset = (gy - vpTopLeft.dy) + pixels - preceding;
       if (docOffset < 0 || docOffset >= _document.totalExtent) {
         return null;
@@ -2437,7 +2443,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
       final double selLeft = screenXOfCol(sel.file, single ? sel.startCol : 0);
       const double toolbarWidth = 132;
       const double toolbarHeight = 44;
-      if (yBot + kDiffLineHeight > rect.top && yBot < rect.bottom) {
+      if (yBot + kDiffLineHeight > affordanceTop && yBot < rect.bottom) {
         children.add(
           Positioned(
             left: math.max(
@@ -2445,7 +2451,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
               math.min(selLeft, rect.right - toolbarWidth),
             ),
             top: math.max(
-              rect.top,
+              affordanceTop,
               math.min(yBot + kDiffLineHeight + 6, rect.bottom - toolbarHeight),
             ),
             child: PrSelectionToolbar(
@@ -3101,6 +3107,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView> {
                   cachedContent: _previewContent[file.filename],
                   onLoaded: (content) =>
                       _previewContent[file.filename] = content,
+                  patch: file.patch,
+                  status: file.status,
                 ),
               ),
             );

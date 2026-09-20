@@ -3,6 +3,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
+import 'package:control_center/features/rigs/presentation/rig_device_toolbar.dart';
 import 'package:control_center/features/rigs/presentation/rig_panel.dart';
 import 'package:control_center/features/rigs/presentation/rig_panel_chrome.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
@@ -102,6 +103,37 @@ void main() {
     displayHeight: 844,
   );
 
+  testWidgets(
+    'display size and media controls sit flush against the trailing edge',
+    (tester) async {
+      // Regression: a loose Flexible next to a Spacer split leftover slack
+      // 1:1 and parked the size + buttons in the middle of a wide panel.
+      tester.view.physicalSize = const Size(1200, 400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        app(
+          RigHeader(
+            rig: lifecycleRig,
+            onStop: () {},
+            onToggleAudio: () {},
+            onToggleMicrophone: () {},
+            onNetworkSecurity: () {},
+          ),
+        ),
+      );
+
+      expect(find.text('640×480'), findsOneWidget);
+      final trailing = tester.getTopRight(
+        find.byWidgetPredicate(
+          (w) => w is CcIconButton && w.icon == AppIcons.power,
+        ),
+      );
+      expect(trailing.dx, closeTo(1200 - AppSpacing.md, 0.5));
+    },
+  );
+
   testWidgets('computer header exposes independent output and input controls', (
     tester,
   ) async {
@@ -164,7 +196,9 @@ void main() {
     expect(repository.unrestrictedRestarts, [('ws-1', 'rig-lifecycle')]);
   });
 
-  testWidgets('iOS exposes input without desktop-only controls', (tester) async {
+  testWidgets('iOS exposes input without desktop-only controls', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       ProviderScope(
         child: app(
@@ -182,6 +216,11 @@ void main() {
     expect(find.byIcon(AppIcons.shieldOff), findsNothing);
     expect(find.byIcon(AppIcons.volumeOff), findsNothing);
     expect(find.byIcon(AppIcons.micOff), findsNothing);
+    expect(find.byType(RigDeviceToolbar), findsOneWidget);
+    expect(find.byIcon(AppIcons.house), findsOneWidget);
+    expect(find.byIcon(AppIcons.rotateCw), findsOneWidget);
+    expect(find.byIcon(AppIcons.rotateCcw), findsOneWidget);
+    expect(find.byIcon(AppIcons.image), findsOneWidget);
   });
 
   testWidgets('tab media indicators mute output and suppress microphone', (

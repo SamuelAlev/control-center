@@ -137,6 +137,32 @@ void main() {
     });
   });
 
+  group('registerBashScriptBody — refuse', () {
+    test('execute: false never spawns bash', () async {
+      final marker = File('${runDir.path}/pwned');
+      expect(marker.existsSync(), isFalse);
+      final tpl = _FakeTemplateRepo(
+        const _PipelineConfig(stepId: 'bash', script: 'echo pwned > pwned'),
+      );
+      final registry = PipelineBodyRegistry();
+      registerBashScriptBody(
+        registry,
+        templateRepository: tpl,
+        runRepository: runRepo,
+        credentialsRepository: creds,
+        stepProcessRegistry: stepRegistry,
+        runDirPath: (_) async => runDir.path,
+        execute: false,
+      );
+      final res = await registry.body(BuiltInBodyKeys.bashScript)(
+        ctx(stepId: 'bash'),
+      );
+      expect(res.isFailed, isTrue);
+      expect(res.errorMessage, contains('disabled on this host'));
+      expect(marker.existsSync(), isFalse);
+    });
+  });
+
   group('registerBashScriptBody — execution', () {
     test('exit 0 writes stdout to outputKey + exposes the runDir', () async {
       final res = await run(

@@ -4,6 +4,40 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yaml/yaml.dart';
 
+/// Joins a `NAME="a b \` / `c"` assignment so a continued COMMON_PACKAGES
+/// list still renders as one shell statement.
+String readContinuedAssignment(List<String> lines, String name) {
+  final start = lines.indexWhere((line) => line.startsWith('$name='));
+  if (start < 0) {
+    throw StateError('no $name= assignment');
+  }
+  final buf = StringBuffer();
+  for (var i = start; i < lines.length; i++) {
+    var line = lines[i];
+    final cont = line.endsWith(r'\');
+    if (cont) {
+      line = line.substring(0, line.length - 1).trimRight();
+    }
+    if (buf.isEmpty) {
+      buf.write(line);
+    } else {
+      buf
+        ..write(' ')
+        ..write(line.trimLeft());
+    }
+    if (!cont) {
+      break;
+    }
+  }
+  return buf.toString();
+}
+
+List<String> packagesInAssignment(String assignment) {
+  final eq = assignment.indexOf('=');
+  final value = assignment.substring(eq + 1).replaceAll('"', '').trim();
+  return value.split(RegExp(r'\s+')).where((pkg) => pkg.isNotEmpty).toList();
+}
+
 void main() {
   test('last viewer detach cannot kill an interleaved reconnect', () async {
     final lines = File('scripts/rigs/build_image.sh').readAsLinesSync();
@@ -189,9 +223,7 @@ threading.Thread.start = real_start
     );
     expect(start, greaterThanOrEqualTo(0));
     expect(end, greaterThan(start));
-    final commonPackages = lines.firstWhere(
-      (line) => line.startsWith('COMMON_PACKAGES='),
-    );
+    final commonPackages = readContinuedAssignment(lines, 'COMMON_PACKAGES');
     final renderScript = [
       commonPackages,
       ...lines.sublist(start, end + 1),
@@ -204,6 +236,7 @@ threading.Thread.start = real_start
     final result = await Process.run(
       'bash',
       ['-c', renderScript],
+      workingDirectory: workDir.path,
       environment: {
         'WORK_DIR': workDir.path,
         'EXTRA_PACKAGES': '',
@@ -213,6 +246,10 @@ threading.Thread.start = real_start
         'SURFACE_UNITS': 'cc-x11.service',
         'EXTRA_RUNCMD': '',
         'IMAGE_ID': 'test-image',
+        'FIREFOX_URL': 'https://example.invalid/firefox.tar.xz',
+        'FIREFOX_SHA256': 'deadbeef',
+        'CHROMIUM_URL': 'https://example.invalid/chrome.zip',
+        'CHROMIUM_SHA256': 'cafebabe',
       },
     );
 
@@ -222,27 +259,47 @@ threading.Thread.start = real_start
       reason: 'stdout: ${result.stdout}\nstderr: ${result.stderr}',
     );
     expect(result.stderr, isEmpty);
+    for (final name in [
+      '{display:',
+      '{ok:',
+      '{protocol:',
+      '{text,',
+      'PCM16',
+      'MP3,',
+      'concatenated',
+      'a',
+    ]) {
+      expect(
+        File('${workDir.path}/$name').existsSync(),
+        isFalse,
+        reason:
+            'cloud-init body was executed as shell and redirected into $name',
+      );
+    }
     final rendered = await File('${workDir.path}/user-data').readAsString();
     final cloudInit = loadYaml(rendered);
     expect(cloudInit, isA<YamlMap>());
     final document = cloudInit as YamlMap;
     final packages = document['packages'] as YamlList;
     expect(packages, contains('iputils-ping'));
+    expect(packages, contains('gcc'));
+    expect(packages, contains('python3'));
+    expect(packages, contains('cmake'));
     final writeFiles = document['write_files'] as YamlList;
     for (final entry in writeFiles) {
       expect(entry, isA<YamlMap>());
     }
-    final seedService = writeFiles
-        .whereType<YamlMap>()
-        .singleWhere((entry) => entry['path'] == '/usr/local/bin/cc-rig-seed');
+    final seedService = writeFiles.whereType<YamlMap>().singleWhere(
+      (entry) => entry['path'] == '/usr/local/bin/cc-rig-seed',
+    );
     final seedScript = seedService['content'];
     expect(seedScript, isA<String>());
     expect(seedScript, contains('.unrestricted_network == true'));
     expect(seedScript, contains("sed -i '/^\\("));
     expect(seedScript, contains('unset http_proxy https_proxy'));
-    final netplan = writeFiles
-        .whereType<YamlMap>()
-        .singleWhere((entry) => entry['path'] == '/etc/netplan/60-cc-rig.yaml');
+    final netplan = writeFiles.whereType<YamlMap>().singleWhere(
+      (entry) => entry['path'] == '/etc/netplan/60-cc-rig.yaml',
+    );
     expect(netplan['content'], contains('renderer: NetworkManager'));
     expect(netplan['content'], contains('name: "en*"'));
     expect(netplan['content'], contains('dhcp4: true'));
@@ -268,5 +325,132 @@ threading.Thread.start = real_start
       rendered,
       contains('Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native'),
     );
+    final extraPackages = lines.firstWhere(
+      (line) => line.startsWith('EXTRA_PACKAGES='),
+    );
+    expect(extraPackages, isNot(contains('chromium-browser')));
+    expect(extraPackages, contains('libnss3'));
+    expect(extraPackages, contains('epiphany-browser'));
+    expect(
+      packages,
+      contains('unzip'),
+      reason:
+          'Chromium is a zip; runcmd extracts it, so unzip must be in the '
+          'apt list (it lives in COMMON_PACKAGES with the rest of the CLI '
+          'baseline).',
+    );
+    final firefox = writeFiles.whereType<YamlMap>().singleWhere(
+      (entry) => entry['path'] == '/usr/local/bin/cc-firefox',
+    );
+    expect(firefox['content'], contains('/opt/firefox/firefox'));
+    expect(firefox['content'], contains('MOZ_DISABLE_CONTENT_SANDBOX'));
+    final chromium = writeFiles.whereType<YamlMap>().singleWhere(
+      (entry) => entry['path'] == '/usr/local/bin/cc-chromium',
+    );
+    expect(chromium['content'], contains('/opt/chromium/chrome'));
+    expect(chromium['content'], contains('--no-sandbox'));
+    expect(chromium['content'], contains('--enable-unsafe-swiftshader'));
+    expect(chromium['content'], contains('VK_ICD_FILENAMES'));
+    expect(chromium['content'], contains('--ozone-platform='));
+    expect(chromium['content'], contains('--no-first-run'));
+    expect(chromium['content'], contains('--no-default-browser-check'));
+    expect(rendered, contains('DontCheckDefaultBrowser'));
+    expect(rendered, contains('OverrideFirstRunPage'));
+    expect(rendered, contains('SkipTermsOfUse'));
+    expect(rendered, contains('DefaultBrowserSettingEnabled'));
+    expect(rendered, contains('/etc/opt/chrome_for_testing/policies/managed'));
+    expect(rendered, contains('skip_first_run_ui'));
+    expect(rendered, contains('ask-for-default=false'));
+    final webkit = writeFiles.whereType<YamlMap>().singleWhere(
+      (entry) => entry['path'] == '/usr/local/bin/cc-webkit',
+    );
+    expect(webkit['content'], contains('epiphany'));
+    expect(webkit['content'], contains('WEBKIT_DISABLE_SANDBOX'));
+    final browser = writeFiles.whereType<YamlMap>().singleWhere(
+      (entry) => entry['path'] == '/usr/local/bin/cc-web-browser',
+    );
+    expect(browser['content'], contains('/usr/local/bin/cc-firefox'));
+    expect(browser['content'], isNot(contains('/snap/bin/chromium')));
+    expect(rendered, contains('WebBrowser=cc-web-browser'));
+    expect(rendered, contains('Name=Chromium'));
+    expect(rendered, contains('Name=Firefox'));
+    expect(rendered, contains('Name=WebKit'));
+    expect(rendered, contains('export MOZ_WEBRENDER=0'));
+    expect(rendered, contains('/mnt/ccbrowsers/firefox.txz'));
+    expect(rendered, contains('/mnt/ccbrowsers/chrome.zip'));
+    expect(rendered, contains('/dev/disk/by-label/CCBROWSERS'));
+    expect(rendered, contains("\$nrconf{restart} = 'l';"));
+    expect(rendered, isNot(contains('/mnt/cidata/firefox')));
+    expect(rendered, isNot(contains('firefox.tar.xz')));
+    expect(rendered, contains('test -x /opt/firefox/firefox'));
+    expect(rendered, contains('test -x /opt/chromium/chrome'));
+    expect(rendered, contains('CC_RIG_BUILD_FAIL browsers'));
+    final source = File('scripts/rigs/build_image.sh').readAsStringSync();
+    expect(source, contains('BROWSERS_ISO'));
+    expect(source, contains(r'make_iso "$BROWSERS_DIR" CCBROWSERS'));
+    expect(
+      source,
+      contains('-drive "file=\$BROWSERS_ISO,if=virtio,format=raw,readonly=on"'),
+    );
+    expect(rendered, isNot(contains('CHROMIUM_FLAGS')));
+    expect(
+      runCommands,
+      contains(
+        "sh -c 'update-alternatives --install /usr/bin/x-www-browser x-www-browser /usr/local/bin/cc-web-browser 200'",
+      ),
+    );
+    for (final command in runCommands.whereType<String>()) {
+      if (!command.contains("sh -c '")) {
+        continue;
+      }
+      expect(
+        command.startsWith("sh -c '") && command.endsWith("'"),
+        isTrue,
+        reason:
+            'cloud-init runcmd uses set -e; an unclosed sh -c quote '
+            'aborts cloud-final before poweroff: $command',
+      );
+    }
+    final proxyCmd = runCommands.whereType<String>().singleWhere(
+      (command) => command.contains('>> /etc/environment'),
+    );
+    expect(proxyCmd.startsWith("sh -c '"), isTrue);
+    expect(proxyCmd.endsWith("'"), isTrue);
+  });
+
+  test('the desktop image ships the same CLI toolset as the terminal', () {
+    // A Computer tab and a terminal tab should not disagree about what "a
+    // basic toolchain" means. Desktop-only extras (openssh-server,
+    // python3-pil) sit on top; every package the exec guest warms must
+    // also be in the qcow2.
+    final shellLines = File('scripts/rigs/build_image.sh').readAsLinesSync();
+    final desktop = packagesInAssignment(
+      readContinuedAssignment(shellLines, 'COMMON_PACKAGES'),
+    );
+    final dart = File(
+      'packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart',
+    ).readAsStringSync();
+    final start = dart.indexOf('const List<String> kSmolvmExecPackages = [');
+    expect(start, greaterThanOrEqualTo(0));
+    final open = dart.indexOf('[', start);
+    final close = dart.indexOf('];', open);
+    final execPackages = [
+      for (final match in RegExp(
+        "'([^']+)'",
+      ).allMatches(dart.substring(open + 1, close)))
+        match.group(1)!,
+    ];
+    expect(execPackages, isNotEmpty);
+    for (final pkg in execPackages) {
+      expect(
+        desktop,
+        contains(pkg),
+        reason:
+            'The desktop image is missing $pkg which the terminal warms. '
+            'Keep COMMON_PACKAGES in lockstep with kSmolvmExecPackages.',
+      );
+    }
+    expect(desktop, contains('openssh-server'));
+    expect(desktop, contains('python3-pil'));
   });
 }

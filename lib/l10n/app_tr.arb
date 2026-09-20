@@ -119,6 +119,19 @@
   "rigStartIosHint": "Sunucu Mac’inde geçici bir iOS Simülatörü oluşturur. Test ortamı kapatıldığında silinir; ağ erişimi yalıtılmamıştır.",
   "rigTechnicalDetails": "Teknik ayrıntılar",
   "rigStopMachine": "Makineyi durdur",
+  "rigHomeButton": "Ana ekran",
+  "rigRotateClockwise": "Saat yönünde döndür",
+  "rigRotateCounterclockwise": "Saat yönünün tersine döndür",
+  "rigTakeScreenshot": "Ekran görüntüsü al",
+  "rigScreenshotSaved": "Ekran görüntüsü kaydedildi",
+  "rigScreenshotSaveFailed": "Ekran görüntüsü kaydedilemedi: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Bu sunucu bu tür bir makine barındıramaz.",
   "rigTabNeedsConversation": "Önce bir konuşma açın — makine bir konuşmaya aittir, böylece siz ve ajanlarınız aynı ekrana bakarsınız.",
   "ideMenuSectionTools": "Araçlar",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Tarayıcı (VM) için etki alanı, ör. myapp.test — oradan erişilir, ana makineden değil",
   "rigPortsProcessUnknown": "bilinmeyen süreç",
   "rigPortsInactive": "dinlemiyor",
+  "rigPortsTooltipHost": "Bu terminalde açık bağlantı noktaları",
+  "rigPortsEmptyHost": "Bu terminalde henüz dinleyen yok. Bir sunucu başlatın, burada görünür.",
+  "rigPortsAddHintHost": "Eşlenecek bağlantı noktası (ör. 5173)",
+  "rigPortsLocalPortHint": "Yerel bağlantı noktası (isteğe bağlı)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} tarayıcıda (VM)",
+  "rigPortsDestBrowserUnreachable": "tarayıcı (VM) bağlı değil",
+  "rigPortsDestAndroid": "localhost:{port} Android'de",
+  "rigPortsDestAndroidUnreachable": "Android bağlı değil",
   "rigImagesMissing": "{count, plural, =1{İndirilecek 1 temel imaj kaldı} other{İndirilecek {count} temel imaj kaldı}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Tek oturum açma sunucu yapılandırmasıdır. Demo sizi bunun yerine geçici bir konuk olarak oturum açtırır.",
   "demoUnavailableAudio": "Kayıt ve dikte, ses yakalama ve ana makinede bir konuşma modeli ister. Demo ikisini de içermez; toplantıları oynatma olmadan yalnızca transkripttir.",
   "demoUnavailableServerAdmin": "Bu sunucu yönetimidir. Demo her ziyaretçiye kendi tek kullanımlık çalışma alanını verir, ötesinde bir şey vermez.",
+  "demoUnavailablePipelines": "İş hatları burada çalıştırılamaz. Bir bash adımı yazıp — elle veya bir olay tetikleyicisiyle — başlatabilen bir ziyaretçi bu makinede kod çalıştırıyor demektir.",
   "settingsBackupRestore": "Yedekleme ve geri yükleme",
   "settingsBackupRestoreDescription": "Bu sunucudaki her veritabanının anlık görüntüleri; ayrıca tek bir çalışma alanı için dışa aktarma, içe aktarma ve silme.",
   "backupSnapshotsLabel": "Kurulum anlık görüntüleri",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Başka bir başlık veya pull request numarası deneyin",
   "rigNetworkUnrestricted": "Ağ kısıtlamasız",
   "rigNetworkAllowAllHosts": "Tüm ana bilgisayarlara izin ver",
+  "rigBrowserPermissionsTitle": "Site izinleri",
+  "rigBrowserPermissionsTooltip": "Site izinleri ve ağ",
+  "rigBrowserPermissionEmpty": "Henüz hiçbir site izin istemedi",
+  "rigBrowserPermissionPrompt": "{origin} şunu kullanmak istiyor: {permission}",
+  "rigBrowserPermissionBlock": "Engelle",
+  "rigBrowserPermissionCamera": "Kamera",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Bildirimler",
+  "rigBrowserPermissionGeolocation": "Konum",
+  "rigBrowserPermissionPersistentStorage": "Kalıcı depolama",
+  "rigBrowserPermissionClipboard": "Pano",
+  "rigBrowserPermissionDisplayCapture": "Ekran yakalama",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Tüm ağ ana bilgisayarlarına izin verilsin mi?",
   "rigNetworkBypassBody": "Bu işlem yalıtılmış ortamı yeniden başlatır ve içindeki işlenmemiş çalışmaları siler. Ardından konuk sistem, kapatılana kadar tüm ağ ana bilgisayarlarına erişebilir.",
   "rigNetworkRestartUnrestricted": "Kısıtlamasız yeniden başlat",

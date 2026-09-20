@@ -112,6 +112,19 @@
   "rigStartIosHint": "Crea un simulador de iOS desechable en el Mac del servidor. Se elimina cuando se cierra el entorno de pruebas; el acceso a la red no está aislado.",
   "rigTechnicalDetails": "Detalles técnicos",
   "rigStopMachine": "Detener la máquina",
+  "rigHomeButton": "Inicio",
+  "rigRotateClockwise": "Girar a la derecha",
+  "rigRotateCounterclockwise": "Girar a la izquierda",
+  "rigTakeScreenshot": "Hacer una captura",
+  "rigScreenshotSaved": "Captura guardada",
+  "rigScreenshotSaveFailed": "No se pudo guardar la captura: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Este servidor no puede alojar este tipo de máquina.",
   "rigTabNeedsConversation": "Abre primero una conversación: una máquina pertenece a una, para que tus agentes y tú veáis la misma pantalla.",
   "ideMenuSectionTools": "Herramientas",
@@ -229,6 +242,23 @@
   "rigPortsDomainHint": "Dominio para el Navegador (VM), p. ej. myapp.test — accesible allí, no en el host",
   "rigPortsProcessUnknown": "proceso desconocido",
   "rigPortsInactive": "no escucha",
+  "rigPortsTooltipHost": "Puertos abiertos en esta terminal",
+  "rigPortsEmptyHost": "Aún no hay nada escuchando en esta terminal. Arranca un servidor y aparece aquí.",
+  "rigPortsAddHintHost": "Puerto a asignar (p. ej. 5173)",
+  "rigPortsLocalPortHint": "Puerto local (opcional)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} en el navegador (VM)",
+  "rigPortsDestBrowserUnreachable": "navegador (VM) no conectado",
+  "rigPortsDestAndroid": "localhost:{port} en Android",
+  "rigPortsDestAndroidUnreachable": "Android no conectado",
   "rigImagesMissing": "{count, plural, =1{1 imagen base por descargar} other{{count} imágenes base por descargar}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -7569,6 +7599,7 @@
   "demoUnavailableSso": "El inicio de sesión único es configuración del servidor. La demo te identifica como invitado temporal.",
   "demoUnavailableAudio": "Grabar y dictar requieren captura de audio y un modelo de voz en el host. La demo no incluye ninguno: sus reuniones son transcripciones sin reproducción.",
   "demoUnavailableServerAdmin": "Esto es administración del servidor. La demo te da un espacio de trabajo desechable y nada más.",
+  "demoUnavailablePipelines": "Las canalizaciones no pueden ejecutarse aquí. Un visitante que pueda escribir un paso bash e iniciarlo — a mano o mediante un disparador de evento — está ejecutando código en este host.",
   "settingsBackupRestore": "Copia de seguridad y restauración",
   "settingsBackupRestoreDescription": "Instantáneas de todas las bases de datos de este servidor, además de exportar, importar y eliminar un espacio de trabajo.",
   "backupSnapshotsLabel": "Instantáneas de la instalación",
@@ -7716,6 +7747,19 @@
   "noProfilePrsMatchSearchHint": "Prueba con otro título o número de pull request",
   "rigNetworkUnrestricted": "Red sin restricciones",
   "rigNetworkAllowAllHosts": "Permitir todos los hosts",
+  "rigBrowserPermissionsTitle": "Permisos del sitio",
+  "rigBrowserPermissionsTooltip": "Permisos del sitio y red",
+  "rigBrowserPermissionEmpty": "Ningún sitio ha pedido un permiso todavía",
+  "rigBrowserPermissionPrompt": "{origin} quiere usar {permission}",
+  "rigBrowserPermissionBlock": "Bloquear",
+  "rigBrowserPermissionCamera": "Cámara",
+  "rigBrowserPermissionMicrophone": "Micrófono",
+  "rigBrowserPermissionNotifications": "Notificaciones",
+  "rigBrowserPermissionGeolocation": "Ubicación",
+  "rigBrowserPermissionPersistentStorage": "Almacenamiento persistente",
+  "rigBrowserPermissionClipboard": "Portapapeles",
+  "rigBrowserPermissionDisplayCapture": "Captura de pantalla",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "¿Permitir todos los hosts de red?",
   "rigNetworkBypassBody": "Esto reinicia el entorno aislado y descarta el trabajo sin confirmar que contenga. Después, el sistema invitado podrá acceder a cualquier host de red hasta que se cierre.",
   "rigNetworkRestartUnrestricted": "Reiniciar sin restricciones",

@@ -7,6 +7,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_defin
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_status_badge.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_status_visuals.dart';
@@ -108,7 +109,9 @@ class PipelineStepDetailPanel extends ConsumerWidget {
                   ),
                 ),
                 AppSpacing.hGapSm,
-                if (isLive && stepRun != null)
+                if (isLive &&
+                    stepRun != null &&
+                    !ref.watch(isDemoServerProvider))
                   CcIconButton(
                     icon: AppIcons.square,
                     tooltip: l10n.killRunning,

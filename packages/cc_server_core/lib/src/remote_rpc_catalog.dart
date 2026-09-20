@@ -5422,6 +5422,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'text': result.text,
               'is_error': result.isError,
               if (result.displaySize != null) 'display': result.displaySize,
+              if (result.imageBase64 != null)
+                'image_base64': result.imageBase64,
+              if (result.imageMediaType != null)
+                'image_media_type': result.imageMediaType,
             };
           },
         ),
@@ -5733,6 +5737,191 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               return {'ok': ok};
             } on ArgumentError catch (e) {
               // The domain validation message reaches the client verbatim.
+              throw ValidationException('${e.message}');
+            }
+          },
+        ),
+      ].map(fullClientOnly),
+
+    // ---- Host-shell / session ports (WORKSPACE-SCOPED) ----
+    //
+    // Same snapshots and mutations as `rig.*Port*`, keyed by the PTY
+    // `session_id` plus the caller's current `space_id`. A session whose
+    // stored space is not this space reads as absent — same-number listeners
+    // in two spaces must not mix. Present only when [rigPorts] is wired
+    // (demo omits them). Mutations stay `networkEgress`.
+    if (rigPorts != null)
+      ...[
+        RepoOp(
+          name: 'terminal.setPortsAutoForward',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['session_id', 'space_id', 'enabled'],
+          actionClasses: const {ActionClass.networkEgress},
+          handler: (ctx) async {
+            final sessionId = ctx.args['session_id'];
+            final spaceId = ctx.args['space_id'];
+            if (sessionId is! String || sessionId.isEmpty) {
+              throw const ValidationException(
+                'Missing or invalid argument: session_id',
+              );
+            }
+            if (spaceId is! String) {
+              throw const ValidationException(
+                'Missing or invalid argument: space_id',
+              );
+            }
+            final ok = await rigPorts.setTerminalPortsAutoForward(
+              ctx.workspaceId!,
+              sessionId,
+              spaceId: spaceId,
+              enabled: ctx.args['enabled'] == true,
+            );
+            return {'ok': ok};
+          },
+        ),
+        RepoOp(
+          name: 'terminal.addPort',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['session_id', 'space_id', 'guest_port'],
+          actionClasses: const {ActionClass.networkEgress},
+          handler: (ctx) async {
+            final sessionId = ctx.args['session_id'];
+            final spaceId = ctx.args['space_id'];
+            if (sessionId is! String || sessionId.isEmpty) {
+              throw const ValidationException(
+                'Missing or invalid argument: session_id',
+              );
+            }
+            if (spaceId is! String) {
+              throw const ValidationException(
+                'Missing or invalid argument: space_id',
+              );
+            }
+            final port = asPort(ctx.args['guest_port']);
+            if (port == null) {
+              throw const ValidationException(
+                'Invalid argument: guest_port (expected 1-65535)',
+              );
+            }
+            final hostPort = ctx.args.containsKey('host_port')
+                ? asPort(ctx.args['host_port'])
+                : null;
+            if (ctx.args.containsKey('host_port') && hostPort == null) {
+              throw const ValidationException(
+                'Invalid argument: host_port (expected 1-65535)',
+              );
+            }
+            final ok = await rigPorts.addTerminalPortForward(
+              ctx.workspaceId!,
+              sessionId,
+              spaceId: spaceId,
+              guestPort: port,
+              hostPort: hostPort,
+            );
+            return {'ok': ok};
+          },
+        ),
+        RepoOp(
+          name: 'terminal.removePort',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['session_id', 'space_id', 'guest_port'],
+          actionClasses: const {ActionClass.networkEgress},
+          handler: (ctx) async {
+            final sessionId = ctx.args['session_id'];
+            final spaceId = ctx.args['space_id'];
+            if (sessionId is! String || sessionId.isEmpty) {
+              throw const ValidationException(
+                'Missing or invalid argument: session_id',
+              );
+            }
+            if (spaceId is! String) {
+              throw const ValidationException(
+                'Missing or invalid argument: space_id',
+              );
+            }
+            final port = asPort(ctx.args['guest_port']);
+            if (port == null) {
+              throw const ValidationException(
+                'Invalid argument: guest_port (expected 1-65535)',
+              );
+            }
+            final ok = await rigPorts.removeTerminalPortForward(
+              ctx.workspaceId!,
+              sessionId,
+              spaceId: spaceId,
+              guestPort: port,
+            );
+            return {'ok': ok};
+          },
+        ),
+        RepoOp(
+          name: 'terminal.setPortLan',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['session_id', 'space_id', 'guest_port', 'exposed'],
+          actionClasses: const {ActionClass.networkEgress},
+          handler: (ctx) async {
+            final sessionId = ctx.args['session_id'];
+            final spaceId = ctx.args['space_id'];
+            if (sessionId is! String || sessionId.isEmpty) {
+              throw const ValidationException(
+                'Missing or invalid argument: session_id',
+              );
+            }
+            if (spaceId is! String) {
+              throw const ValidationException(
+                'Missing or invalid argument: space_id',
+              );
+            }
+            final port = asPort(ctx.args['guest_port']);
+            if (port == null) {
+              throw const ValidationException(
+                'Invalid argument: guest_port (expected 1-65535)',
+              );
+            }
+            final ok = await rigPorts.setTerminalPortLanExposed(
+              ctx.workspaceId!,
+              sessionId,
+              spaceId: spaceId,
+              guestPort: port,
+              exposed: ctx.args['exposed'] == true,
+            );
+            return {'ok': ok};
+          },
+        ),
+        RepoOp(
+          name: 'terminal.setPortDomain',
+          kind: RepoOpKind.mutate,
+          requiredArgs: ['session_id', 'space_id', 'guest_port'],
+          actionClasses: const {ActionClass.networkEgress},
+          handler: (ctx) async {
+            final sessionId = ctx.args['session_id'];
+            final spaceId = ctx.args['space_id'];
+            if (sessionId is! String || sessionId.isEmpty) {
+              throw const ValidationException(
+                'Missing or invalid argument: session_id',
+              );
+            }
+            if (spaceId is! String) {
+              throw const ValidationException(
+                'Missing or invalid argument: space_id',
+              );
+            }
+            final port = asPort(ctx.args['guest_port']);
+            if (port == null) {
+              throw const ValidationException(
+                'Invalid argument: guest_port (expected 1-65535)',
+              );
+            }
+            try {
+              final ok = await rigPorts.setTerminalPortDomain(
+                ctx.workspaceId!,
+                sessionId,
+                spaceId: spaceId,
+                guestPort: port,
+                domain: ctx.args['domain'] as String?,
+              );
+              return {'ok': ok};
+            } on ArgumentError catch (e) {
               throw ValidationException('${e.message}');
             }
           },
@@ -12055,6 +12244,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'pipeline.start',
         kind: RepoOpKind.mutate,
+        // Starts a run whose graph may contain `bash.script` (Process.start).
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['template_id'],
         handler: (ctx) async {
           // Starts a run for the bound workspace — the workspace is server-bound,
@@ -12078,6 +12269,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'pipeline.cancel',
         kind: RepoOpKind.mutate,
+        // Interrupts a live step process. Same family as `terminal.kill`.
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['pipeline_run_id'],
         handler: (ctx) async {
           final runId = ctx.args['pipeline_run_id'] as String;
@@ -12090,6 +12283,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'pipeline.retry',
         kind: RepoOpKind.mutate,
+        // Re-opens failed steps, which may spawn bash again.
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['pipeline_run_id'],
         handler: (ctx) async {
           final runId = ctx.args['pipeline_run_id'] as String;
@@ -12101,6 +12296,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'pipeline.killStep',
         kind: RepoOpKind.mutate,
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['step_run_id'],
         handler: (ctx) async {
           final stepRunId = ctx.args['step_run_id'] as String;
@@ -12124,6 +12320,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'orchestration.approve',
         kind: RepoOpKind.mutate,
+        // Hires agents and starts the generated pipeline (bash included).
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['orchestration_id'],
         handler: (ctx) async {
           // Optional subtree scope (PRD 17 §4): when `approved_node_keys` is
@@ -12168,6 +12366,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'orchestration.approveNodes',
         kind: RepoOpKind.mutate,
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['orchestration_id', 'node_keys'],
         handler: (ctx) async {
           await approveNodes(
@@ -12233,6 +12432,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'orchestration.continueNode',
         kind: RepoOpKind.mutate,
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['orchestration_id', 'node_key'],
         handler: (ctx) async {
           await continueNode(
@@ -12422,6 +12622,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'plan.approve',
         kind: RepoOpKind.mutate,
+        // Compiles the plan into an orchestration and runs the same approve
+        // path that starts pipelines.
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['plan_id'],
         handler: (ctx) async {
           final rawKeys = ctx.args['approved_node_keys'];
@@ -12825,6 +13028,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'pipeline_template.upsert',
       kind: RepoOpKind.mutate,
+      // Authoring a `bash.script` node schedules a process spawn by proxy —
+      // the same claim `repos.setScripts` makes about a lifecycle script.
+      actionClasses: const {ActionClass.processSpawn},
       requiredArgs: ['template'],
       handler: (ctx) async {
         final definition = pipelineTemplateFromWire(
@@ -12859,6 +13065,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'pipeline_trigger.insert',
       kind: RepoOpKind.mutate,
+      // An enabled event/cron/webhook trigger is `engine.start` without an
+      // RPC, which is how a visitor would fire a bash-bearing pipeline.
+      actionClasses: const {ActionClass.processSpawn},
       requiredArgs: ['trigger'],
       handler: (ctx) async {
         final trigger = pipelineTriggerEntityFromWire(
@@ -12878,6 +13087,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     RepoOp(
       name: 'pipeline_trigger.update',
       kind: RepoOpKind.mutate,
+      // Enabling or scheduling a trigger is the same spawn-by-proxy as insert.
+      actionClasses: const {ActionClass.processSpawn},
       requiredArgs: ['trigger'],
       handler: (ctx) async {
         final trigger = pipelineTriggerEntityFromWire(
@@ -15808,6 +16019,29 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
           }
           return rigPorts.watchPorts(ctx.workspaceId!, rigId);
+        },
+      ),
+    if (rigPorts != null)
+      WatchQuery(
+        name: 'terminal.watchPorts',
+        handler: (ctx) {
+          final sessionId = ctx.args['session_id'];
+          final spaceId = ctx.args['space_id'];
+          if (sessionId is! String || sessionId.isEmpty) {
+            throw const ValidationException(
+              'Missing or invalid argument: session_id',
+            );
+          }
+          if (spaceId is! String) {
+            throw const ValidationException(
+              'Missing or invalid argument: space_id',
+            );
+          }
+          return rigPorts.watchTerminalPorts(
+            ctx.workspaceId!,
+            sessionId,
+            spaceId: spaceId,
+          );
         },
       ),
     // ---- Remote agent-action approvals (confirmation.*) ----

@@ -119,6 +119,19 @@
   "rigStartIosHint": "在服务器 Mac 上创建一个用完即弃的 iOS 模拟器。测试环境关闭时会将其删除；网络访问未隔离。",
   "rigTechnicalDetails": "技术详情",
   "rigStopMachine": "停止机器",
+  "rigHomeButton": "主屏幕",
+  "rigRotateClockwise": "顺时针旋转",
+  "rigRotateCounterclockwise": "逆时针旋转",
+  "rigTakeScreenshot": "截取屏幕",
+  "rigScreenshotSaved": "截图已保存",
+  "rigScreenshotSaveFailed": "无法保存截图：{error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "此服务器无法承载这类机器。",
   "rigTabNeedsConversation": "请先打开一个会话——机器归属于某个会话，这样你和你的智能体看到的是同一块屏幕。",
   "ideMenuSectionTools": "工具",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "浏览器（VM）使用的域名，例如 myapp.test——仅在其中可访问，主机上不可",
   "rigPortsProcessUnknown": "未知进程",
   "rigPortsInactive": "未监听",
+  "rigPortsTooltipHost": "此终端中打开的端口",
+  "rigPortsEmptyHost": "此终端中还没有进程在监听。启动服务器后会出现在这里。",
+  "rigPortsAddHintHost": "要映射的端口（例如 5173）",
+  "rigPortsLocalPortHint": "本地端口（可选）",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port}（浏览器虚拟机）",
+  "rigPortsDestBrowserUnreachable": "浏览器（虚拟机）未连接",
+  "rigPortsDestAndroid": "localhost:{port}（Android）",
+  "rigPortsDestAndroidUnreachable": "Android 未连接",
   "rigImagesMissing": "{count, plural, =1{还有 1 个基础镜像待下载} other{还有 {count} 个基础镜像待下载}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "单点登录属于服务器配置。演示会改为让你以临时访客身份登录。",
   "demoUnavailableAudio": "录制和听写需要主机上的音频采集和语音模型。演示两者都没有，因此其会议只有文字记录，没有回放。",
   "demoUnavailableServerAdmin": "这是服务器管理。演示为每位访客提供一个一次性工作区，仅此而已。",
+  "demoUnavailablePipelines": "此处无法运行流水线。访客若能编写 bash 步骤并以手动或事件触发方式启动，就是在此主机上执行代码。",
   "settingsBackupRestore": "备份与恢复",
   "settingsBackupRestoreDescription": "此服务器上所有数据库的快照，以及单个工作区的导出、导入和删除。",
   "backupSnapshotsLabel": "安装快照",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "请尝试其他标题或拉取请求编号",
   "rigNetworkUnrestricted": "网络不受限制",
   "rigNetworkAllowAllHosts": "允许所有主机",
+  "rigBrowserPermissionsTitle": "网站权限",
+  "rigBrowserPermissionsTooltip": "网站权限和网络",
+  "rigBrowserPermissionEmpty": "还没有网站请求过权限",
+  "rigBrowserPermissionPrompt": "{origin} 想要使用{permission}",
+  "rigBrowserPermissionBlock": "阻止",
+  "rigBrowserPermissionCamera": "相机",
+  "rigBrowserPermissionMicrophone": "麦克风",
+  "rigBrowserPermissionNotifications": "通知",
+  "rigBrowserPermissionGeolocation": "位置",
+  "rigBrowserPermissionPersistentStorage": "持久存储",
+  "rigBrowserPermissionClipboard": "剪贴板",
+  "rigBrowserPermissionDisplayCapture": "屏幕捕获",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "允许访问所有网络主机？",
   "rigNetworkBypassBody": "这会重启隔离环境，并丢弃其中未提交的工作。之后，访客系统在关闭前可以访问任何网络主机。",
   "rigNetworkRestartUnrestricted": "以不受限模式重启",

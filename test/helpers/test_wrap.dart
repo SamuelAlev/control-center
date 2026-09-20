@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/meetings/providers/meeting_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -10,10 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Provider overrides shared by both wrappers. Declared as a getter returning an
-// inline literal (rather than a `List<Override>`-typed helper) because the
-// `Override` type name isn't directly importable here; the literal's element
-// type is inferred from the `ProviderScope.overrides` parameter at each use.
+// Provider overrides shared by both wrappers.
 //
 // Deliberately does NOT seed activeWorkspaceIdProvider. These wrappers create
 // their own ProviderScope, so an override here would shadow one supplied by an
@@ -55,10 +53,15 @@ final _testOverrides = [
 /// [locale] picks the l10n strings (default English). [textDirection] forces
 /// the ambient [Directionality] under `home` — pass [TextDirection.rtl] to
 /// exercise a widget's RTL mirroring without needing an RTL locale's strings.
+///
+/// [isDemo] pins [isDemoServerProvider]. Tests of demo-gated chrome pass true;
+/// everyone else gets false so a screen that watches the flag does not hit
+/// the live server-list provider.
 Widget testWrap(
   Widget child, {
   Locale locale = const Locale('en'),
   TextDirection? textDirection,
+  bool isDemo = false,
 }) {
   Widget home = CcTheme(
     data: CcThemeData.light(),
@@ -68,7 +71,10 @@ Widget testWrap(
     home = Directionality(textDirection: textDirection, child: home);
   }
   return ProviderScope(
-    overrides: _testOverrides,
+    overrides: [
+      isDemoServerProvider.overrideWith((ref) => isDemo),
+      ..._testOverrides,
+    ],
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,
@@ -100,9 +106,13 @@ Widget testWrapWithToastOverlay(
   Widget child, {
   Locale locale = const Locale('en'),
   TextDirection? textDirection,
+  bool isDemo = false,
 }) {
   return ProviderScope(
-    overrides: _testOverrides,
+    overrides: [
+      isDemoServerProvider.overrideWith((ref) => isDemo),
+      ..._testOverrides,
+    ],
     child: MaterialApp(
       localizationsDelegates: [
         ...AppLocalizations.localizationsDelegates,

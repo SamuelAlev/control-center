@@ -55,6 +55,28 @@ enum RigScrollDirection {
   }
 }
 
+/// 90-degree screen rotation, matching the emulator / Simulator chrome.
+enum RigRotateDirection {
+  /// Rotate the device 90 degrees clockwise.
+  clockwise,
+
+  /// Rotate the device 90 degrees counterclockwise.
+  counterclockwise;
+
+  /// Stable wire string.
+  String get wire => name;
+
+  /// Parses [value], or null when it is not a supported direction.
+  static RigRotateDirection? fromWire(String? value) {
+    for (final direction in values) {
+      if (direction.wire == value) {
+        return direction;
+      }
+    }
+    return null;
+  }
+}
+
 /// One thing an actor (agent or human) does to a rig.
 ///
 /// Abstract here, SEALED per surface (`ComputerAction`, `BrowserAction`,

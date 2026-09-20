@@ -16,23 +16,56 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Which source the ports popover is talking to: an exec rig or a host-shell
+/// PTY session. Mutations and the watch key both branch on this.
+class PortsTarget {
+  /// An enclosed Terminal (VM) identified by [rigId].
+  const PortsTarget.rig({required this.workspaceId, required String rigId})
+    : sessionId = null,
+      spaceId = '',
+      rigId = rigId;
+
+  /// A host-shell PTY identified by [sessionId] in [spaceId].
+  const PortsTarget.session({
+    required this.workspaceId,
+    required String sessionId,
+    required String spaceId,
+  }) : rigId = null,
+       sessionId = sessionId,
+       spaceId = spaceId;
+
+  /// The owning workspace.
+  final String workspaceId;
+
+  /// Exec rig id, when this is a Terminal (VM).
+  final String? rigId;
+
+  /// Server PTY session id, when this is a host-shell.
+  final String? sessionId;
+
+  /// The conversation the session belongs to. Empty for an exec rig (the
+  /// rig already carries its conversation).
+  final String spaceId;
+
+  /// Whether this target is a host-shell session.
+  bool get isSession => sessionId != null;
+}
+
 /// One forwarded port: what is listening, every address it answers on, and
 /// the menu of things that can be done to it.
 class PortRow extends ConsumerWidget {
   /// Creates a [PortRow].
   const PortRow({
     super.key,
-    required this.workspaceId,
-    required this.rigId,
+    required this.target,
     required this.port,
     this.domainTls = false,
+    this.browserReachable = false,
+    this.androidReachable = false,
   });
 
-  /// The workspace the rig belongs to.
-  final String workspaceId;
-
-  /// The rig whose port this is.
-  final String rigId;
+  /// The rig or host-shell this row belongs to.
+  final PortsTarget target;
 
   /// The forwarded port this row describes.
   final RigPortView port;
@@ -40,6 +73,12 @@ class PortRow extends ConsumerWidget {
   /// Whether the dev-domain router serves HTTPS, so the domain renders with
   /// the scheme it actually answers on.
   final bool domainTls;
+
+  /// Whether a Browser (VM) in this space is attached.
+  final bool browserReachable;
+
+  /// Whether an Android rig in this space is attached.
+  final bool androidReachable;
 
   Future<void> _copyLocalUrl(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
@@ -57,6 +96,15 @@ class PortRow extends ConsumerWidget {
     final subtitleParts = <String>[
       if (port.process != null) port.process! else l10n.rigPortsProcessUnknown,
       if (!port.active) l10n.rigPortsInactive,
+      l10n.rigPortsDestDesktop(port.hostPort),
+      if (browserReachable)
+        l10n.rigPortsDestBrowser(port.guestPort)
+      else
+        l10n.rigPortsDestBrowserUnreachable,
+      if (androidReachable)
+        l10n.rigPortsDestAndroid(port.guestPort)
+      else
+        l10n.rigPortsDestAndroidUnreachable,
       if (port.lanPort != null) l10n.rigPortsLanShared,
       if (port.domain != null)
         '${domainTls ? 'https' : 'http'}://${port.domain}',
@@ -106,7 +154,7 @@ class PortRow extends ConsumerWidget {
                 if (subtitleParts.isNotEmpty)
                   Text(
                     subtitleParts.join(' · '),
-                    maxLines: 1,
+                    maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: CcTypography.caption.copyWith(color: t.textTertiary),
                   ),
@@ -118,7 +166,7 @@ class PortRow extends ConsumerWidget {
             tooltip: l10n.rigPortsCopyUrl,
             onPressed: () => unawaited(_copyLocalUrl(context)),
           ),
-          PortMenu(workspaceId: workspaceId, rigId: rigId, port: port),
+          PortMenu(target: target, port: port),
         ],
       ),
     );
@@ -127,25 +175,12 @@ class PortRow extends ConsumerWidget {
 
 /// The per-port overflow menu: expose on the LAN, set a dev domain, stop
 /// forwarding.
-///
-/// A `ConsumerWidget` that resolves its repository through `ref`, rather than
-/// receiving one as widget config. Data access travelling as a constructor
-/// argument is how a widget ends up holding a handle its own subtree can no
-/// longer see the provenance of.
 class PortMenu extends ConsumerWidget {
   /// Creates a [PortMenu].
-  const PortMenu({
-    super.key,
-    required this.workspaceId,
-    required this.rigId,
-    required this.port,
-  });
+  const PortMenu({super.key, required this.target, required this.port});
 
-  /// The workspace the rig belongs to.
-  final String workspaceId;
-
-  /// The rig whose port this is.
-  final String rigId;
+  /// The rig or host-shell this menu acts on.
+  final PortsTarget target;
 
   /// The port this menu acts on.
   final RigPortView port;
@@ -161,14 +196,7 @@ class PortMenu extends ConsumerWidget {
               ? l10n.rigPortsExposeLan
               : l10n.rigPortsLanPrivate,
           icon: AppIcons.globe,
-          onSelected: () => unawaited(
-            repo.setPortLan(
-              workspaceId,
-              rigId,
-              port.guestPort,
-              exposed: port.lanPort == null,
-            ),
-          ),
+          onSelected: () => unawaited(_setLan(repo, exposed: port.lanPort == null)),
         ),
         CcMenuItem(
           label: l10n.rigPortsSetDomain,
@@ -179,8 +207,7 @@ class PortMenu extends ConsumerWidget {
           label: l10n.rigPortsStopForward,
           icon: AppIcons.x,
           destructive: true,
-          onSelected: () =>
-              unawaited(repo.removePort(workspaceId, rigId, port.guestPort)),
+          onSelected: () => unawaited(_remove(repo)),
         ),
       ],
       target: CcIcon(
@@ -189,6 +216,36 @@ class PortMenu extends ConsumerWidget {
         color: (context.designSystem ?? DesignSystemTokens.light()).fgSecondary,
       ),
     );
+  }
+
+  Future<void> _setLan(RemoteRigRepository repo, {required bool exposed}) {
+    if (target.isSession) {
+      return repo.setTerminalPortLan(
+        target.workspaceId,
+        target.sessionId!,
+        spaceId: target.spaceId,
+        guestPort: port.guestPort,
+        exposed: exposed,
+      );
+    }
+    return repo.setPortLan(
+      target.workspaceId,
+      target.rigId!,
+      port.guestPort,
+      exposed: exposed,
+    );
+  }
+
+  Future<void> _remove(RemoteRigRepository repo) {
+    if (target.isSession) {
+      return repo.removeTerminalPort(
+        target.workspaceId,
+        target.sessionId!,
+        spaceId: target.spaceId,
+        guestPort: port.guestPort,
+      );
+    }
+    return repo.removePort(target.workspaceId, target.rigId!, port.guestPort);
   }
 
   Future<void> _promptDomain(
@@ -205,12 +262,22 @@ class PortMenu extends ConsumerWidget {
     }
     final domain = value.trim();
     try {
-      await repo.setPortDomain(
-        workspaceId,
-        rigId,
-        port.guestPort,
-        domain.isEmpty ? null : domain,
-      );
+      if (target.isSession) {
+        await repo.setTerminalPortDomain(
+          target.workspaceId,
+          target.sessionId!,
+          spaceId: target.spaceId,
+          guestPort: port.guestPort,
+          domain: domain.isEmpty ? null : domain,
+        );
+      } else {
+        await repo.setPortDomain(
+          target.workspaceId,
+          target.rigId!,
+          port.guestPort,
+          domain.isEmpty ? null : domain,
+        );
+      }
     } on Object catch (e) {
       if (context.mounted) {
         CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
@@ -285,13 +352,10 @@ class _DomainDialogState extends State<DomainDialog> {
 /// The "forward another port" field at the foot of the popover.
 class AddPortRow extends ConsumerStatefulWidget {
   /// Creates an [AddPortRow].
-  const AddPortRow({super.key, required this.workspaceId, required this.rigId});
+  const AddPortRow({super.key, required this.target});
 
-  /// The workspace the rig belongs to.
-  final String workspaceId;
-
-  /// The rig to forward a port on.
-  final String rigId;
+  /// The rig or host-shell to forward a port on.
+  final PortsTarget target;
 
   @override
   ConsumerState<AddPortRow> createState() => _AddPortRowState();
@@ -299,11 +363,13 @@ class AddPortRow extends ConsumerStatefulWidget {
 
 class _AddPortRowState extends ConsumerState<AddPortRow> {
   final TextEditingController _controller = TextEditingController();
+  final TextEditingController _local = TextEditingController();
   bool _adding = false;
 
   @override
   void dispose() {
     _controller.dispose();
+    _local.dispose();
     super.dispose();
   }
 
@@ -312,12 +378,28 @@ class _AddPortRowState extends ConsumerState<AddPortRow> {
     if (port == null || port <= 0 || port > 65535 || _adding) {
       return;
     }
+    final localText = _local.text.trim();
+    final localPort = localText.isEmpty ? null : int.tryParse(localText);
+    if (localText.isNotEmpty &&
+        (localPort == null || localPort <= 0 || localPort > 65535)) {
+      return;
+    }
     setState(() => _adding = true);
     try {
-      await ref
-          .read(rigRepositoryProvider)
-          .addPort(widget.workspaceId, widget.rigId, port);
+      final repo = ref.read(rigRepositoryProvider);
+      if (widget.target.isSession) {
+        await repo.addTerminalPort(
+          widget.target.workspaceId,
+          widget.target.sessionId!,
+          spaceId: widget.target.spaceId,
+          guestPort: port,
+          hostPort: localPort,
+        );
+      } else {
+        await repo.addPort(widget.target.workspaceId, widget.target.rigId!, port);
+      }
       _controller.clear();
+      _local.clear();
     } on Object catch (e) {
       if (mounted) {
         CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
@@ -337,25 +419,40 @@ class _AddPortRowState extends ConsumerState<AddPortRow> {
         horizontal: AppSpacing.md,
         vertical: AppSpacing.xs,
       ),
-      child: Row(
+      child: Column(
         children: [
-          Expanded(
-            child: CcTextField(
-              controller: _controller,
-              hintText: l10n.rigPortsAddHint,
+          Row(
+            children: [
+              Expanded(
+                child: CcTextField(
+                  controller: _controller,
+                  hintText: widget.target.isSession
+                      ? l10n.rigPortsAddHintHost
+                      : l10n.rigPortsAddHint,
+                  keyboardType: TextInputType.number,
+                  onSubmitted: (_) => unawaited(_add()),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              CcButton(
+                size: CcButtonSize.sm,
+                variant: CcButtonVariant.secondary,
+                loading: _adding,
+                icon: AppIcons.plus,
+                onPressed: () => unawaited(_add()),
+                child: Text(l10n.rigPortsAdd),
+              ),
+            ],
+          ),
+          if (widget.target.isSession) ...[
+            const SizedBox(height: AppSpacing.xs),
+            CcTextField(
+              controller: _local,
+              hintText: l10n.rigPortsLocalPortHint,
               keyboardType: TextInputType.number,
               onSubmitted: (_) => unawaited(_add()),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          CcButton(
-            size: CcButtonSize.sm,
-            variant: CcButtonVariant.secondary,
-            loading: _adding,
-            icon: AppIcons.plus,
-            onPressed: () => unawaited(_add()),
-            child: Text(l10n.rigPortsAdd),
-          ),
+          ],
         ],
       ),
     );
@@ -367,16 +464,12 @@ class AutoForwardRow extends ConsumerWidget {
   /// Creates an [AutoForwardRow].
   const AutoForwardRow({
     super.key,
-    required this.workspaceId,
-    required this.rigId,
+    required this.target,
     required this.enabled,
   });
 
-  /// The workspace the rig belongs to.
-  final String workspaceId;
-
-  /// The rig this toggle applies to.
-  final String rigId;
+  /// The rig or host-shell this toggle applies to.
+  final PortsTarget target;
 
   /// Whether auto-forwarding is on right now.
   final bool enabled;
@@ -402,14 +495,27 @@ class AutoForwardRow extends ConsumerWidget {
           ),
           CcSwitch(
             value: enabled,
-            onChanged: (next) => unawaited(
-              ref
-                  .read(rigRepositoryProvider)
-                  .setPortsAutoForward(workspaceId, rigId, enabled: next),
-            ),
+            onChanged: (next) => unawaited(_set(ref, next)),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _set(WidgetRef ref, bool next) {
+    final repo = ref.read(rigRepositoryProvider);
+    if (target.isSession) {
+      return repo.setTerminalPortsAutoForward(
+        target.workspaceId,
+        target.sessionId!,
+        spaceId: target.spaceId,
+        enabled: next,
+      );
+    }
+    return repo.setPortsAutoForward(
+      target.workspaceId,
+      target.rigId!,
+      enabled: next,
     );
   }
 }

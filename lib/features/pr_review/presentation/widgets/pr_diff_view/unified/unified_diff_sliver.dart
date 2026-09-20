@@ -341,6 +341,9 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
 
   void _handleSelectStart(DragStartDetails details) {
     final anchor = cellAt(_selDownMain, _selDownCross);
+    if (anchor == null) {
+      return;
+    }
     _selAnchor = anchor;
     _selFocus = anchor;
     _selAccumDy = 0;
@@ -354,8 +357,15 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     if (!_selMoved && _selAccumDy.abs() < 2 && _selAccumDx.abs() < 2) {
       return;
     }
+    final next = cellAt(
+      _selDownMain + _selAccumDy,
+      _selDownCross + _selAccumDx,
+    );
+    if (next == null) {
+      return;
+    }
     _selMoved = true;
-    _selFocus = cellAt(_selDownMain + _selAccumDy, _selDownCross + _selAccumDx);
+    _selFocus = next;
     markNeedsPaint();
     onSelectionChanged?.call();
   }
@@ -394,6 +404,22 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
 
   /// Whether the sticky file header is currently pinned under the tab strip.
   bool get stickyHeaderPinned => _stickyPinned;
+
+  /// Whether [mainAxisPosition] (from this sliver's paint origin) falls on
+  /// the painted sticky file header.
+  ///
+  /// Code that has scrolled under that overlay is not a selection, hover, or
+  /// comment target — the header owns the pointer. Document-space hit tests
+  /// ([codeRowAt], [cellAt]) cannot see the overlay, so callers have to ask
+  /// this instead of trusting a Y that maps to a hidden row.
+  bool coversStickyHeader(double mainAxisPosition) {
+    if (!_stickyPinned || _stickySlotIndex < 0) {
+      return false;
+    }
+    final top = _stickyHeaderTop;
+    return mainAxisPosition >= top &&
+        mainAxisPosition < top + _document.headerHeight;
+  }
 
   Set<int> _lastTokenSet = const {};
 
@@ -495,6 +521,9 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     required double mainAxisPosition,
     required double crossAxisPosition,
   }) {
+    if (coversStickyHeader(mainAxisPosition)) {
+      return false;
+    }
     if (codeRowAt(mainAxisPosition) != null) {
       return true;
     }
@@ -509,6 +538,12 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
       return;
     }
     if (event is! PointerDownEvent) {
+      return;
+    }
+    // The sliver stays on the hit path as the header child's ancestor, so
+    // a press on the pinned bar would otherwise start a code selection of
+    // the rows scrolling underneath it.
+    if (coversStickyHeader(entry.mainAxisPosition)) {
       return;
     }
     final hit = codeRowAt(entry.mainAxisPosition);
@@ -920,14 +955,33 @@ class RenderUnifiedDiffSliver extends RenderSliverMultiBoxAdaptor {
     required double mainAxisPosition,
     required double crossAxisPosition,
   }) {
+    bool hit(RenderBox child) => hitTestBoxChild(
+      BoxHitTestResult.wrap(result),
+      child,
+      mainAxisPosition: mainAxisPosition,
+      crossAxisPosition: crossAxisPosition,
+    );
+
+    // Painted last, so it must win hits too — otherwise a comment card or
+    // gap row that has scrolled under the pinned bar still receives the
+    // pointer, and so does the code-selection recognizer on this sliver.
+    if (_stickyPinned && _stickySlotIndex >= 0) {
+      RenderBox? child = firstChild;
+      while (child != null) {
+        if (indexOf(child) == _stickySlotIndex) {
+          if (hit(child)) {
+            return true;
+          }
+          break;
+        }
+        child = childAfter(child);
+      }
+    }
+
     RenderBox? child = lastChild;
     while (child != null) {
-      if (hitTestBoxChild(
-        BoxHitTestResult.wrap(result),
-        child,
-        mainAxisPosition: mainAxisPosition,
-        crossAxisPosition: crossAxisPosition,
-      )) {
+      if (!(_stickyPinned && indexOf(child) == _stickySlotIndex) &&
+          hit(child)) {
         return true;
       }
       child = childBefore(child);

@@ -119,6 +119,19 @@
   "rigStartIosHint": "ينشئ محاكي iOS مؤقتًا على جهاز Mac الخادم. يُحذف عند إغلاق بيئة الاختبار؛ الوصول إلى الشبكة غير معزول.",
   "rigTechnicalDetails": "التفاصيل التقنية",
   "rigStopMachine": "إيقاف الجهاز",
+  "rigHomeButton": "الرئيسية",
+  "rigRotateClockwise": "تدوير باتجاه عقارب الساعة",
+  "rigRotateCounterclockwise": "تدوير عكس عقارب الساعة",
+  "rigTakeScreenshot": "التقاط لقطة شاشة",
+  "rigScreenshotSaved": "تم حفظ لقطة الشاشة",
+  "rigScreenshotSaveFailed": "تعذر حفظ لقطة الشاشة: ⁨{error}⁩",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "لا يمكن لهذا الخادم استضافة هذا النوع من الأجهزة.",
   "rigTabNeedsConversation": "افتح محادثة أولًا — فالجهاز يتبع محادثة واحدة، لتنظر أنت ووكلاؤك إلى الشاشة نفسها.",
   "ideMenuSectionTools": "الأدوات",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "نطاق للمتصفح (VM)، مثل ⁨myapp.test⁩ — يمكن الوصول إليه هناك، وليس على المضيف",
   "rigPortsProcessUnknown": "عملية غير معروفة",
   "rigPortsInactive": "لا يستمع",
+  "rigPortsTooltipHost": "المنافذ المفتوحة في هذا الطرفية",
+  "rigPortsEmptyHost": "لا يوجد شيء يستمع في هذا الطرفية بعد. ابدأ خادماً فيظهر هنا.",
+  "rigPortsAddHintHost": "المنفذ للتعيين (مثل 5173)",
+  "rigPortsLocalPortHint": "المنفذ المحلي (اختياري)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} في المتصفح (آلة افتراضية)",
+  "rigPortsDestBrowserUnreachable": "المتصفح (آلة افتراضية) غير متصل",
+  "rigPortsDestAndroid": "localhost:{port} على أندرويد",
+  "rigPortsDestAndroidUnreachable": "أندرويد غير متصل",
   "rigImagesMissing": "{count, plural, zero{لا صور أساسية بحاجة إلى التنزيل} one{صورة أساسية واحدة لا تزال بحاجة إلى التنزيل} two{صورتان أساسيتان لا تزالان بحاجة إلى التنزيل} few{{count} صور أساسية لا تزال بحاجة إلى التنزيل} many{{count} صورة أساسية لا تزال بحاجة إلى التنزيل} other{{count} صورة أساسية لا تزال بحاجة إلى التنزيل}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "تسجيل الدخول الموحّد هو تهيئة للخادم. تسجّلك النسخة التجريبية كضيف مؤقت بدلاً من ذلك.",
   "demoUnavailableAudio": "يتطلب التسجيل والإملاء التقاط الصوت ونموذج كلام على المضيف. لا توفر النسخة التجريبية أيًا منهما، لذا اجتماعاتها نصوص دون تشغيل صوتي.",
   "demoUnavailableServerAdmin": "هذه إدارة للخادم. تمنح النسخة التجريبية كل زائر مساحة عمل مؤقتة خاصة به ولا شيء غيرها.",
+  "demoUnavailablePipelines": "لا يمكن تشغيل المسارات هنا. الزائر الذي يستطيع كتابة خطوة bash وتشغيلها — يدوياً أو عبر محفّز حدث — ينفّذ رمزاً على هذا المضيف.",
   "settingsBackupRestore": "النسخ الاحتياطي والاستعادة",
   "settingsBackupRestoreDescription": "لقطات لكل قاعدة بيانات على هذا الخادم، مع تصدير مساحة عمل واحدة واستيرادها وحذفها.",
   "backupSnapshotsLabel": "لقطات التثبيت",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "جرّب عنوانًا أو رقم طلب سحب آخر",
   "rigNetworkUnrestricted": "الشبكة غير مقيّدة",
   "rigNetworkAllowAllHosts": "السماح بجميع المضيفين",
+  "rigBrowserPermissionsTitle": "أذونات الموقع",
+  "rigBrowserPermissionsTooltip": "أذونات الموقع والشبكة",
+  "rigBrowserPermissionEmpty": "لم يطلب أي موقع إذناً بعد",
+  "rigBrowserPermissionPrompt": "{origin} يريد استخدام {permission}",
+  "rigBrowserPermissionBlock": "حظر",
+  "rigBrowserPermissionCamera": "الكاميرا",
+  "rigBrowserPermissionMicrophone": "الميكروفون",
+  "rigBrowserPermissionNotifications": "الإشعارات",
+  "rigBrowserPermissionGeolocation": "الموقع",
+  "rigBrowserPermissionPersistentStorage": "التخزين الدائم",
+  "rigBrowserPermissionClipboard": "الحافظة",
+  "rigBrowserPermissionDisplayCapture": "التقاط الشاشة",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "هل تريد السماح بكل مضيفي الشبكة؟",
   "rigNetworkBypassBody": "سيؤدي هذا إلى إعادة تشغيل البيئة المعزولة وحذف العمل غير المثبّت داخلها. سيتمكن الضيف بعدها من الوصول إلى أي مضيف على الشبكة حتى يتم إغلاقه.",
   "rigNetworkRestartUnrestricted": "إعادة التشغيل بلا قيود",

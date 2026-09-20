@@ -269,6 +269,26 @@ class AppLocalizationsVi extends AppLocalizations {
   String get rigStopMachine => 'Dừng máy';
 
   @override
+  String get rigHomeButton => 'Màn hình chính';
+
+  @override
+  String get rigRotateClockwise => 'Xoay theo chiều kim đồng hồ';
+
+  @override
+  String get rigRotateCounterclockwise => 'Xoay ngược chiều kim đồng hồ';
+
+  @override
+  String get rigTakeScreenshot => 'Chụp màn hình';
+
+  @override
+  String get rigScreenshotSaved => 'Đã lưu ảnh chụp màn hình';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Không thể lưu ảnh chụp màn hình: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Máy chủ này không thể chạy loại máy này.';
 
@@ -524,6 +544,40 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'không lắng nghe';
+
+  @override
+  String get rigPortsTooltipHost => 'Các cổng đang mở trong terminal này';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Chưa có gì đang lắng nghe trong terminal này. Hãy khởi động máy chủ và nó sẽ hiện ở đây.';
+
+  @override
+  String get rigPortsAddHintHost => 'Cổng cần ánh xạ (vd. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Cổng cục bộ (tuỳ chọn)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port trong trình duyệt (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'trình duyệt (VM) chưa gắn';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port trên Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android chưa gắn';
 
   @override
   String rigImagesMissing(int count) {
@@ -13969,6 +14023,10 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đây là quản trị máy chủ. Bản demo cấp cho mỗi khách một không gian làm việc dùng một lần và không gì hơn.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipeline không thể chạy ở đây. Khách có thể viết bước bash rồi chạy thủ công hoặc qua trình kích hoạt sự kiện là đang thực thi mã trên máy chủ này.';
+
+  @override
   String get settingsBackupRestore => 'Sao lưu và khôi phục';
 
   @override
@@ -14315,6 +14373,47 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Cho phép mọi máy chủ';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Quyền của trang';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Quyền của trang và mạng';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'Chưa có trang nào xin quyền';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin muốn dùng $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Chặn';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Máy ảnh';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Micro';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Thông báo';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Vị trí';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Bộ nhớ bền vững';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Bảng tạm';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Quay màn hình';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Cho phép mọi máy chủ mạng?';

@@ -263,6 +263,26 @@ class AppLocalizationsTh extends AppLocalizations {
   String get rigStopMachine => 'หยุดเครื่อง';
 
   @override
+  String get rigHomeButton => 'หน้าหลัก';
+
+  @override
+  String get rigRotateClockwise => 'หมุนตามเข็มนาฬิกา';
+
+  @override
+  String get rigRotateCounterclockwise => 'หมุนทวนเข็มนาฬิกา';
+
+  @override
+  String get rigTakeScreenshot => 'ถ่ายภาพหน้าจอ';
+
+  @override
+  String get rigScreenshotSaved => 'บันทึกภาพหน้าจอแล้ว';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'บันทึกภาพหน้าจอไม่ได้: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable => 'เซิร์ฟเวอร์นี้โฮสต์เครื่องชนิดนี้ไม่ได้';
 
   @override
@@ -517,6 +537,41 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'ไม่ได้ฟัง';
+
+  @override
+  String get rigPortsTooltipHost => 'พอร์ตที่เปิดในเทอร์มินัลนี้';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'ยังไม่มีอะไรกำลังฟังในเทอร์มินัลนี้ เริ่มเซิร์ฟเวอร์แล้วจะปรากฏที่นี่';
+
+  @override
+  String get rigPortsAddHintHost => 'พอร์ตที่จะแมป (เช่น 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'พอร์ตภายในเครื่อง (ไม่บังคับ)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port ในเบราว์เซอร์ (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable =>
+      'เบราว์เซอร์ (VM) ยังไม่เชื่อมต่อ';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port บน Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android ยังไม่เชื่อมต่อ';
 
   @override
   String rigImagesMissing(int count) {
@@ -13872,6 +13927,10 @@ class AppLocalizationsTh extends AppLocalizations {
       'นี่คือการดูแลเซิร์ฟเวอร์ เดโมให้ผู้เข้าชมทุกคนมีเวิร์กสเปซทิ้งได้ของตัวเองและไม่มีอะไรเกินนั้น';
 
   @override
+  String get demoUnavailablePipelines =>
+      'ไม่สามารถรันไปป์ไลน์ที่นี่ได้ ผู้เยี่ยมชมที่เขียนสเต็ป bash แล้วเริ่มได้ — ด้วยมือหรือผ่านทริกเกอร์เหตุการณ์ — คือการรันโค้ดบนโฮสต์นี้';
+
+  @override
   String get settingsBackupRestore => 'สำรองและกู้คืน';
 
   @override
@@ -14215,6 +14274,47 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'อนุญาตโฮสต์ทั้งหมด';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'สิทธิ์ของไซต์';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'สิทธิ์ของไซต์และเครือข่าย';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'ยังไม่มีไซต์ใดขอสิทธิ์';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin ต้องการใช้ $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'บล็อก';
+
+  @override
+  String get rigBrowserPermissionCamera => 'กล้อง';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'ไมโครโฟน';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'การแจ้งเตือน';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'ตำแหน่ง';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'ที่เก็บข้อมูลถาวร';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'คลิปบอร์ด';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'การจับภาพหน้าจอ';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'อนุญาตโฮสต์เครือข่ายทั้งหมดหรือไม่';

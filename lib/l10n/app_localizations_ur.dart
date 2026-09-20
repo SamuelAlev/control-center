@@ -264,6 +264,26 @@ class AppLocalizationsUr extends AppLocalizations {
   String get rigStopMachine => 'مشین روکیں';
 
   @override
+  String get rigHomeButton => 'ہوم';
+
+  @override
+  String get rigRotateClockwise => 'گھڑی وار گھمائیں';
+
+  @override
+  String get rigRotateCounterclockwise => 'گھڑی کے خلاف گھمائیں';
+
+  @override
+  String get rigTakeScreenshot => 'اسکرین شاٹ لیں';
+
+  @override
+  String get rigScreenshotSaved => 'اسکرین شاٹ محفوظ ہو گیا';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'اسکرین شاٹ محفوظ نہیں ہو سکا: ⁨$error⁩';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'یہ سرور اس قسم کی مشین ہوسٹ نہیں کر سکتا۔';
 
@@ -517,6 +537,40 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'سن نہیں رہا';
+
+  @override
+  String get rigPortsTooltipHost => 'اس ٹرمینل میں کھلے پورٹس';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'اس ٹرمینل میں ابھی کچھ سن نہیں رہا۔ سرور چلائیں تو یہاں دکھائی دے گا۔';
+
+  @override
+  String get rigPortsAddHintHost => 'میپ کرنے کا پورٹ (مثلاً 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'مقامی پورٹ (اختیاری)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port براؤزر میں (وی ایم)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'براؤزر (وی ایم) منسلک نہیں';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port اینڈرائیڈ پر';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'اینڈرائیڈ منسلک نہیں';
 
   @override
   String rigImagesMissing(int count) {
@@ -13941,6 +13995,10 @@ class AppLocalizationsUr extends AppLocalizations {
       'یہ سرور انتظامیہ ہے۔ ڈیمو ہر زائر کو اپنا عارضی ورک اسپیس دیتا ہے اور اس سے آگے کچھ نہیں۔';
 
   @override
+  String get demoUnavailablePipelines =>
+      'پائپ لائنز یہاں نہیں چل سکتیں۔ ایک زائر جو bash قدم لکھ کر — ہاتھ سے یا ایونٹ ٹرگر کے ذریعے — شروع کر سکتا ہے، اس میزبان پر کوڈ چلا رہا ہے۔';
+
+  @override
   String get settingsBackupRestore => 'بیک اپ اور بحالی';
 
   @override
@@ -14287,6 +14345,47 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'تمام میزبانوں کی اجازت دیں';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'سائٹ کی اجازتیں';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'سائٹ کی اجازتیں اور نیٹ ورک';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'ابھی کسی سائٹ نے اجازت نہیں مانگی';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin $permission استعمال کرنا چاہتا ہے';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'روکیں';
+
+  @override
+  String get rigBrowserPermissionCamera => 'کیمرہ';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'مائیکروفون';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'اطلاعات';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'مقام';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'مستقل ذخیرہ';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'کلپ بورڈ';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'اسکرین کیپچر';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'کیا ہر نیٹ ورک میزبان کی اجازت دینی ہے؟';

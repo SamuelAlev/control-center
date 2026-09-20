@@ -119,6 +119,19 @@
   "rigStartIosHint": "سرور کے Mac پر ایک عارضی iOS Simulator بناتا ہے۔ ٹیسٹ ماحول بند ہونے پر اسے حذف کر دیا جاتا ہے؛ نیٹ ورک تک رسائی الگ تھلگ نہیں ہے۔",
   "rigTechnicalDetails": "تکنیکی تفصیلات",
   "rigStopMachine": "مشین روکیں",
+  "rigHomeButton": "ہوم",
+  "rigRotateClockwise": "گھڑی وار گھمائیں",
+  "rigRotateCounterclockwise": "گھڑی کے خلاف گھمائیں",
+  "rigTakeScreenshot": "اسکرین شاٹ لیں",
+  "rigScreenshotSaved": "اسکرین شاٹ محفوظ ہو گیا",
+  "rigScreenshotSaveFailed": "اسکرین شاٹ محفوظ نہیں ہو سکا: ⁨{error}⁩",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "یہ سرور اس قسم کی مشین ہوسٹ نہیں کر سکتا۔",
   "rigTabNeedsConversation": "پہلے گفتگو کھولیں — مشین ایک ہی گفتگو کی ہوتی ہے، تاکہ آپ اور آپ کے ایجنٹ ایک ہی اسکرین دیکھیں۔",
   "ideMenuSectionTools": "ٹولز",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Browser (VM) کے لیے ڈومین، مثلاً ⁨myapp.test⁩ — وہاں پہنچتا ہے، ہوسٹ پر نہیں",
   "rigPortsProcessUnknown": "نامعلوم پراسیس",
   "rigPortsInactive": "سن نہیں رہا",
+  "rigPortsTooltipHost": "اس ٹرمینل میں کھلے پورٹس",
+  "rigPortsEmptyHost": "اس ٹرمینل میں ابھی کچھ سن نہیں رہا۔ سرور چلائیں تو یہاں دکھائی دے گا۔",
+  "rigPortsAddHintHost": "میپ کرنے کا پورٹ (مثلاً 5173)",
+  "rigPortsLocalPortHint": "مقامی پورٹ (اختیاری)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} براؤزر میں (وی ایم)",
+  "rigPortsDestBrowserUnreachable": "براؤزر (وی ایم) منسلک نہیں",
+  "rigPortsDestAndroid": "localhost:{port} اینڈرائیڈ پر",
+  "rigPortsDestAndroidUnreachable": "اینڈرائیڈ منسلک نہیں",
   "rigImagesMissing": "{count, plural, one{1 بیس امیج ابھی ڈاؤن لوڈ کرنی ہے} other{{count} بیس امیجز ابھی ڈاؤن لوڈ کرنی ہیں}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "سنگل سائن آن سرور کنفیگریشن ہے۔ ڈیمو آپ کو عارضی مہمان کے طور پر سائن اِن کرتا ہے۔",
   "demoUnavailableAudio": "ریکارڈنگ اور ڈکٹیشن کو آڈیو کیپچر اور ہوسٹ پر اسپیچ ماڈل چاہیے۔ ڈیمو دونوں نہیں بھیجتا، اس لیے اس کی میٹنگز بغیر پلے بیک کی ٹرانسکرپٹس ہیں۔",
   "demoUnavailableServerAdmin": "یہ سرور انتظامیہ ہے۔ ڈیمو ہر زائر کو اپنا عارضی ورک اسپیس دیتا ہے اور اس سے آگے کچھ نہیں۔",
+  "demoUnavailablePipelines": "پائپ لائنز یہاں نہیں چل سکتیں۔ ایک زائر جو bash قدم لکھ کر — ہاتھ سے یا ایونٹ ٹرگر کے ذریعے — شروع کر سکتا ہے، اس میزبان پر کوڈ چلا رہا ہے۔",
   "settingsBackupRestore": "بیک اپ اور بحالی",
   "settingsBackupRestoreDescription": "اس سرور کے ہر ڈیٹا بیس کے اسنیپ شاٹس، نیز ایک ورک اسپیس کا برآمد، درآمد اور حذف۔",
   "backupSnapshotsLabel": "انسٹال اسنیپ شاٹس",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "کوئی اور عنوان یا پل ریکویسٹ نمبر آزمائیں",
   "rigNetworkUnrestricted": "نیٹ ورک پر کوئی پابندی نہیں",
   "rigNetworkAllowAllHosts": "تمام میزبانوں کی اجازت دیں",
+  "rigBrowserPermissionsTitle": "سائٹ کی اجازتیں",
+  "rigBrowserPermissionsTooltip": "سائٹ کی اجازتیں اور نیٹ ورک",
+  "rigBrowserPermissionEmpty": "ابھی کسی سائٹ نے اجازت نہیں مانگی",
+  "rigBrowserPermissionPrompt": "{origin} {permission} استعمال کرنا چاہتا ہے",
+  "rigBrowserPermissionBlock": "روکیں",
+  "rigBrowserPermissionCamera": "کیمرہ",
+  "rigBrowserPermissionMicrophone": "مائیکروفون",
+  "rigBrowserPermissionNotifications": "اطلاعات",
+  "rigBrowserPermissionGeolocation": "مقام",
+  "rigBrowserPermissionPersistentStorage": "مستقل ذخیرہ",
+  "rigBrowserPermissionClipboard": "کلپ بورڈ",
+  "rigBrowserPermissionDisplayCapture": "اسکرین کیپچر",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "کیا ہر نیٹ ورک میزبان کی اجازت دینی ہے؟",
   "rigNetworkBypassBody": "اس سے الگ تھلگ ماحول دوبارہ شروع ہو گا اور اس کے اندر غیر کمیٹ شدہ کام ضائع ہو جائے گا۔ اس کے بعد مہمان بند ہونے تک کسی بھی نیٹ ورک میزبان تک رسائی حاصل کر سکے گا۔",
   "rigNetworkRestartUnrestricted": "بغیر پابندی دوبارہ شروع کریں",

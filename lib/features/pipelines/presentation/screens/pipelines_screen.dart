@@ -1,4 +1,5 @@
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_filter_rail.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_runs_table.dart';
@@ -74,6 +75,7 @@ class _PipelinesScreenState extends ConsumerState<PipelinesScreen> {
       );
     }
     final runsAsync = ref.watch(workspacePipelineRunsProvider(workspaceId));
+    final isDemo = ref.watch(isDemoServerProvider);
     // Friendly names for the run rows: templateId → human-readable name.
     final templateNames = {
       for (final t
@@ -87,12 +89,13 @@ class _PipelinesScreenState extends ConsumerState<PipelinesScreen> {
       title: l10n.pipelinesScreenTitle,
       subtitle: l10n.pipelinesScreenSubtitle,
       actions: [
-        CcButton(
-          onPressed: () => context.go(runPipelineRoute(workspaceId)),
-          icon: AppIcons.play,
-          size: CcButtonSize.sm,
-          child: Text(l10n.pipelinesRunPipeline),
-        ),
+        if (!isDemo)
+          CcButton(
+            onPressed: () => context.go(runPipelineRoute(workspaceId)),
+            icon: AppIcons.play,
+            size: CcButtonSize.sm,
+            child: Text(l10n.pipelinesRunPipeline),
+          ),
       ],
       child: runsAsync.when(
         loading: () => _RunsLoadingSkeleton(tokens: tokens),

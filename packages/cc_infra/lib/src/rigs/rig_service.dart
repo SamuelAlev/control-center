@@ -234,11 +234,17 @@ class RigService implements RigPort, RigPortsPort {
 
   final Map<String, _LiveRig> _live = {};
 
-  /// Port discovery + forwarding for smolvm rigs (see `rig_port_service.dart`).
+  /// Port discovery + forwarding for smolvm rigs and host-shell terminals
+  /// (see `rig_port_service.dart`).
   ///
   /// Late so it can close over the resolved smolvm binary, which does not
   /// exist until the first probe. Every guest touch goes through `machine
-  /// exec`, so a host with no smolvm simply never constructs a space.
+  /// exec`, so a host with no smolvm simply never constructs a space. The
+  /// composition root also injects this into [TerminalSessionService] so
+  /// host-shell PTYs publish without `cc_infra` terminals importing this
+  /// service.
+  RigPortsService get ports => _ports;
+
   late final RigPortsService _ports = RigPortsService(
     runInGuest: (machineName, command) async {
       final binary = _smolvm.resolvedBinary;
@@ -266,9 +272,9 @@ class RigService implements RigPort, RigPortsPort {
       return Process.start(binary, [
         'machine',
         'exec',
-        '-i',
         '--name',
         machineName,
+        '-i',
         '--',
         ...guestArgv,
       ]);
@@ -1611,6 +1617,15 @@ class RigService implements RigPort, RigPortsPort {
       _ports.watch(workspaceId, rigId).map((s) => s.toWire());
 
   @override
+  Stream<Map<String, dynamic>> watchTerminalPorts(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+  }) => _ports
+      .watch(workspaceId, sessionId, spaceId: spaceId)
+      .map((s) => s.toWire());
+
+  @override
   Future<bool> setPortsAutoForward(
     String workspaceId,
     String rigId, {
@@ -1618,12 +1633,31 @@ class RigService implements RigPort, RigPortsPort {
   }) => _ports.setAutoForward(workspaceId, rigId, enabled: enabled);
 
   @override
+  Future<bool> setTerminalPortsAutoForward(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required bool enabled,
+  }) => _ports.setAutoForward(
+    workspaceId,
+    sessionId,
+    spaceId: spaceId,
+    enabled: enabled,
+  );
+
+  @override
   Future<bool> addPortForward(
     String workspaceId,
     String rigId,
-    int guestPort,
-  ) async {
-    final ok = await _ports.addForward(workspaceId, rigId, guestPort);
+    int guestPort, {
+    int? hostPort,
+  }) async {
+    final ok = await _ports.addForward(
+      workspaceId,
+      rigId,
+      guestPort,
+      hostPort: hostPort,
+    );
     if (ok) {
       await _touchById(rigId, workspaceId);
     }
@@ -1631,11 +1665,39 @@ class RigService implements RigPort, RigPortsPort {
   }
 
   @override
+  Future<bool> addTerminalPortForward(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+    int? hostPort,
+  }) => _ports.addForward(
+    workspaceId,
+    sessionId,
+    guestPort,
+    spaceId: spaceId,
+    hostPort: hostPort,
+  );
+
+  @override
   Future<bool> removePortForward(
     String workspaceId,
     String rigId,
     int guestPort,
   ) => _ports.removeForward(workspaceId, rigId, guestPort);
+
+  @override
+  Future<bool> removeTerminalPortForward(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+  }) => _ports.removeForward(
+    workspaceId,
+    sessionId,
+    guestPort,
+    spaceId: spaceId,
+  );
 
   @override
   Future<bool> setPortLanExposed(
@@ -1646,12 +1708,42 @@ class RigService implements RigPort, RigPortsPort {
   }) => _ports.setLanExposed(workspaceId, rigId, guestPort, exposed: exposed);
 
   @override
+  Future<bool> setTerminalPortLanExposed(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+    required bool exposed,
+  }) => _ports.setLanExposed(
+    workspaceId,
+    sessionId,
+    guestPort,
+    spaceId: spaceId,
+    exposed: exposed,
+  );
+
+  @override
   Future<bool> setPortDomain(
     String workspaceId,
     String rigId,
     int guestPort,
     String? domain,
   ) => _ports.setDomain(workspaceId, rigId, guestPort, domain);
+
+  @override
+  Future<bool> setTerminalPortDomain(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+    String? domain,
+  }) => _ports.setDomain(
+    workspaceId,
+    sessionId,
+    guestPort,
+    domain,
+    spaceId: spaceId,
+  );
 
   Future<void> _touchById(String rigId, String workspaceId) async {
     final live = _live[rigId];
@@ -2036,7 +2128,20 @@ class RigService implements RigPort, RigPortsPort {
       // showing a device it can never act on.
       return;
     }
-    live.driver = MobileRigDriver(adb: adb, size: display);
+    live.driver = MobileRigDriver(
+      adb: adb,
+      size: display,
+      onDisplayChanged: (next) => unawaited(_mobileDisplayChanged(live, next)),
+    );
+    _ports.attachAndroid(
+      rigId: live.rig.id,
+      workspaceId: live.rig.workspaceId,
+      conversationId: live.rig.conversationId,
+      reverse: ({required int devicePort, required int hostPort}) =>
+          adb.reverse(devicePort: devicePort, hostPort: hostPort),
+      removeReverse: adb.removeReverse,
+      removeAllReverses: adb.removeAllReverses,
+    );
     live.rig = live.rig.copyWith(
       status: const RigReady(),
       display: display,
@@ -2098,6 +2203,17 @@ class RigService implements RigPort, RigPortsPort {
   }
 
   Future<void> _iosDisplayChanged(_LiveRig live, RigDisplaySize display) async {
+    if (!_isCurrent(live) || live.rig.display == display) {
+      return;
+    }
+    live.rig = live.rig.copyWith(display: display);
+    await _repository.save(live.rig.workspaceId, live.rig);
+  }
+
+  Future<void> _mobileDisplayChanged(
+    _LiveRig live,
+    RigDisplaySize display,
+  ) async {
     if (!_isCurrent(live) || live.rig.display == display) {
       return;
     }

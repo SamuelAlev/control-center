@@ -618,6 +618,42 @@ abstract class AppLocalizations {
   /// **'Stop the machine'**
   String get rigStopMachine;
 
+  /// Toolbar button that sends the device Home key / opens the Home screen.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get rigHomeButton;
+
+  /// No description provided for @rigRotateClockwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate clockwise'**
+  String get rigRotateClockwise;
+
+  /// No description provided for @rigRotateCounterclockwise.
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate counterclockwise'**
+  String get rigRotateCounterclockwise;
+
+  /// No description provided for @rigTakeScreenshot.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a screenshot'**
+  String get rigTakeScreenshot;
+
+  /// No description provided for @rigScreenshotSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Screenshot saved'**
+  String get rigScreenshotSaved;
+
+  /// Toast when a simulator screenshot could not be written.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the screenshot: {error}'**
+  String rigScreenshotSaveFailed(String error);
+
   /// No description provided for @rigSurfaceUnavailable.
   ///
   /// In en, this message translates to:
@@ -1067,6 +1103,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'not listening'**
   String get rigPortsInactive;
+
+  /// No description provided for @rigPortsTooltipHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Ports open in this terminal'**
+  String get rigPortsTooltipHost;
+
+  /// No description provided for @rigPortsEmptyHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is listening in this terminal yet. Start a server and it shows up here.'**
+  String get rigPortsEmptyHost;
+
+  /// No description provided for @rigPortsAddHintHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Port to map (e.g. 5173)'**
+  String get rigPortsAddHintHost;
+
+  /// No description provided for @rigPortsLocalPortHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Local port (optional)'**
+  String get rigPortsLocalPortHint;
+
+  /// Desktop loopback address for a forwarded port
+  ///
+  /// In en, this message translates to:
+  /// **'localhost:{port}'**
+  String rigPortsDestDesktop(int port);
+
+  /// Browser (VM) loopback address for a forwarded port
+  ///
+  /// In en, this message translates to:
+  /// **'localhost:{port} in the browser (VM)'**
+  String rigPortsDestBrowser(int port);
+
+  /// No description provided for @rigPortsDestBrowserUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'browser (VM) not attached'**
+  String get rigPortsDestBrowserUnreachable;
+
+  /// Android loopback address for a forwarded port
+  ///
+  /// In en, this message translates to:
+  /// **'localhost:{port} on Android'**
+  String rigPortsDestAndroid(int port);
+
+  /// No description provided for @rigPortsDestAndroidUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Android not attached'**
+  String get rigPortsDestAndroidUnreachable;
 
   /// Count of base images still needing download for a rig backend
   ///
@@ -23788,6 +23878,12 @@ abstract class AppLocalizations {
   /// **'This is server administration. The demo gives every visitor their own throwaway workspace and nothing beyond it.'**
   String get demoUnavailableServerAdmin;
 
+  /// Why creating, starting and triggering pipelines is unavailable on a demo server
+  ///
+  /// In en, this message translates to:
+  /// **'Pipelines cannot run here. A visitor who can write a bash step and start it — by hand or through an event trigger — is executing code on this host.'**
+  String get demoUnavailablePipelines;
+
   /// Settings → Server → Backup & restore nav label and page title
   ///
   /// In en, this message translates to:
@@ -24315,6 +24411,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allow all hosts'**
   String get rigNetworkAllowAllHosts;
+
+  /// Browser shield flyout title
+  ///
+  /// In en, this message translates to:
+  /// **'Site permissions'**
+  String get rigBrowserPermissionsTitle;
+
+  /// Browser shield tooltip
+  ///
+  /// In en, this message translates to:
+  /// **'Site permissions and network'**
+  String get rigBrowserPermissionsTooltip;
+
+  /// Empty state in the browser shield flyout
+  ///
+  /// In en, this message translates to:
+  /// **'No site has asked for a permission yet'**
+  String get rigBrowserPermissionEmpty;
+
+  /// Pending site permission in the browser shield flyout
+  ///
+  /// In en, this message translates to:
+  /// **'{origin} wants to use {permission}'**
+  String rigBrowserPermissionPrompt(String origin, String permission);
+
+  /// Refuse a site permission request
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get rigBrowserPermissionBlock;
+
+  /// No description provided for @rigBrowserPermissionCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera'**
+  String get rigBrowserPermissionCamera;
+
+  /// No description provided for @rigBrowserPermissionMicrophone.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone'**
+  String get rigBrowserPermissionMicrophone;
+
+  /// No description provided for @rigBrowserPermissionNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get rigBrowserPermissionNotifications;
+
+  /// No description provided for @rigBrowserPermissionGeolocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get rigBrowserPermissionGeolocation;
+
+  /// No description provided for @rigBrowserPermissionPersistentStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Persistent storage'**
+  String get rigBrowserPermissionPersistentStorage;
+
+  /// No description provided for @rigBrowserPermissionClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Clipboard'**
+  String get rigBrowserPermissionClipboard;
+
+  /// No description provided for @rigBrowserPermissionDisplayCapture.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen capture'**
+  String get rigBrowserPermissionDisplayCapture;
+
+  /// No description provided for @rigBrowserPermissionMidi.
+  ///
+  /// In en, this message translates to:
+  /// **'MIDI'**
+  String get rigBrowserPermissionMidi;
 
   /// Enclosure network security control
   ///

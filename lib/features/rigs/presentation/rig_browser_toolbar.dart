@@ -15,7 +15,10 @@ library;
 import 'dart:async';
 
 import 'package:cc_data/cc_data.dart' show RigView;
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_permission.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_url.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/rigs/presentation/rig_browser_toolbar_trailing.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -77,6 +80,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
   /// timer because "loading finished" has no pushed signal of its own.
   bool _loading = false;
   Timer? _loadingPoll;
+  List<BrowserPermissionEntry> _permissions = const [];
 
   /// A toolbar-initiated action in flight. Drives the thin progress bar the
   /// in-app browser shows under its toolbar — the screencast itself is the
@@ -90,11 +94,15 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
   @override
   void initState() {
     super.initState();
-    _shownUrl = _displayUrl(widget.rig.currentUrl);
+    _shownUrl = browserAddressBarText(widget.rig.currentUrl);
     _address = TextEditingController(text: _shownUrl);
     // The pushed URL alone cannot say whether back/forward lead anywhere;
     // that has to be asked of the session history.
     WidgetsBinding.instance.addPostFrameCallback((_) => _refreshState());
+    _loadingPoll = Timer.periodic(
+      const Duration(milliseconds: 400),
+      (_) => unawaited(_refreshState()),
+    );
   }
 
   @override
@@ -108,43 +116,29 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
   @override
   void didUpdateWidget(RigBrowserToolbar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final url = _displayUrl(widget.rig.currentUrl);
+    final url = widget.rig.currentUrl ?? '';
+    if (visibleBrowserUrl(url) == _shownUrl ||
+        (isBrowserInternalUrl(url) && _shownUrl.isNotEmpty)) {
+      return;
+    }
+    _applyAddress(url);
+    unawaited(_refreshState());
+  }
+
+  /// Writes [raw] into the field unless it is browser furniture that would
+  /// blank a real address the person is already looking at.
+  void _applyAddress(String raw) {
+    if (isBrowserInternalUrl(raw) && _shownUrl.isNotEmpty) {
+      return;
+    }
+    final url = browserAddressBarText(raw);
     if (url == _shownUrl) {
       return;
     }
     _shownUrl = url;
-    // A focused field is a draft the user is typing; a navigation only
-    // replaces what it shows when nobody is editing it.
     if (!_addressFocus.hasFocus) {
       _address.text = url;
     }
-    // A navigation moved the history position with it.
-    unawaited(_refreshState());
-  }
-
-  /// What the address bar shows for [url]. The local home page is the rig's
-  /// furniture, not a place the user chose — show an empty field like a fresh
-  /// tab rather than a `file://` path from inside the guest.
-  static String _displayUrl(String? url) {
-    if (url == null || url.isEmpty || url == 'about:blank') {
-      return '';
-    }
-    if (url.startsWith('file://')) {
-      return '';
-    }
-    return url;
-  }
-
-  /// Normalises raw address-bar input into a loadable `http(s)` URL, or null
-  /// when blank.
-  String? _normalizeAddress(String value) {
-    final raw = value.trim();
-    if (raw.isEmpty) {
-      return null;
-    }
-    final uri = Uri.tryParse(raw);
-    final hasScheme = uri != null && uri.hasScheme;
-    return hasScheme ? raw : 'https://$raw';
   }
 
   Future<void> _act(Map<String, dynamic> action) async {
@@ -180,8 +174,6 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
   /// Pulls the history position. Failures keep the last known state: a
   /// momentarily unreachable browser must not flash working buttons dead.
   Future<void> _refreshState() async {
-    _loadingPoll?.cancel();
-    _loadingPoll = null;
     try {
       final state = await ref
           .read(rigRepositoryProvider)
@@ -193,24 +185,16 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
         _canGoBack = state.canGoBack;
         _canGoForward = state.canGoForward;
         _loading = state.loading;
+        _permissions = state.permissions;
       });
-      final url = _displayUrl(state.url);
-      if (url != _shownUrl && !_addressFocus.hasFocus) {
-        _shownUrl = url;
-        _address.text = url;
-      }
-      // A load in flight is the one state with no push of its own — poll
-      // until it settles so the stop button becomes a reload again.
-      if (_loading) {
-        _loadingPoll = Timer(const Duration(milliseconds: 400), _refreshState);
-      }
+      _applyAddress(state.url);
     } on Object {
       // Keep what we have.
     }
   }
 
   void _submitAddress(String value) {
-    final url = _normalizeAddress(value);
+    final url = normalizeBrowserAddressInput(value);
     if (url == null) {
       return;
     }
@@ -280,59 +264,22 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar> {
                   onSubmitted: _submitAddress,
                 ),
               ),
-              // The guest's display size, moved out of the old header row:
-              // it is what coordinates on the canvas mean, so it stays
-              // visible next to the bar that navigates.
-              if (widget.rig.displayWidth != null &&
-                  widget.rig.displayHeight != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Text(
-                    '${widget.rig.displayWidth}×${widget.rig.displayHeight}',
-                    style: CcTypography.caption.copyWith(color: t.textTertiary),
-                  ),
+              RigBrowserToolbarTrailing(
+                rig: widget.rig,
+                permissions: _permissions,
+                networkRestarting: widget.networkRestarting,
+                onNetworkSecurity: widget.onNetworkSecurity,
+                audioOn: widget.audioOn,
+                onToggleAudio: widget.onToggleAudio,
+                microphoneOn: widget.microphoneOn,
+                onToggleMicrophone: widget.onToggleMicrophone,
+                onRespond: (id, {required allow}) => unawaited(
+                  _act({
+                    'action': 'permission_respond',
+                    'request_id': id,
+                    'allow': allow,
+                  }),
                 ),
-              if (widget.rig.networkIsUnrestricted)
-                Padding(
-                  padding: const EdgeInsetsDirectional.only(end: AppSpacing.xs),
-                  child: CcStatusTag(
-                    label: l10n.rigNetworkUnrestricted,
-                    tone: CcStatusTone.caution,
-                  ),
-                ),
-              if (widget.onToggleAudio != null)
-                CcIconButton(
-                  icon: widget.audioOn ? AppIcons.volume2 : AppIcons.volumeOff,
-                  size: CcButtonSize.sm,
-                  onPressed: widget.onToggleAudio,
-                  tooltip: widget.audioOn
-                      ? l10n.rigAudioMute
-                      : l10n.rigAudioListen,
-                ),
-              if (widget.onToggleMicrophone != null)
-                CcIconButton(
-                  icon: widget.microphoneOn ? AppIcons.mic : AppIcons.micOff,
-                  size: CcButtonSize.sm,
-                  onPressed: widget.onToggleMicrophone,
-                  tooltip: l10n.meetingRecordMic,
-                ),
-              CcIconButton(
-                icon: widget.networkRestarting
-                    ? AppIcons.refreshCw
-                    : widget.rig.networkIsUnrestricted
-                    ? AppIcons.shieldOff
-                    : AppIcons.shield,
-                size: CcButtonSize.sm,
-                color: widget.rig.networkIsUnrestricted
-                    ? t.fgWarningPrimary
-                    : null,
-                loading: widget.networkRestarting,
-                onPressed: widget.networkRestarting
-                    ? null
-                    : widget.onNetworkSecurity,
-                tooltip: widget.rig.networkIsUnrestricted
-                    ? l10n.rigNetworkUnrestricted
-                    : l10n.rigNetworkAllowAllHosts,
               ),
             ],
           ),

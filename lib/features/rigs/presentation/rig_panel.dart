@@ -17,6 +17,7 @@ import 'package:control_center/core/infrastructure/audio/audio_input_settings.da
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
 import 'package:control_center/features/rigs/presentation/mjpeg_view.dart';
 import 'package:control_center/features/rigs/presentation/rig_browser_toolbar.dart';
+import 'package:control_center/features/rigs/presentation/rig_device_toolbar.dart';
 import 'package:control_center/features/rigs/presentation/rig_input_surface.dart';
 import 'package:control_center/features/rigs/presentation/rig_microphone_sender.dart';
 import 'package:control_center/features/rigs/presentation/rig_panel_chrome.dart';
@@ -215,7 +216,14 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                 if (scale != 1) 'device_scale_factor': scale,
               },
             )
-            .catchError((_) => (text: '', isError: true)),
+            .catchError(
+              (_) => (
+                text: '',
+                isError: true,
+                imageBase64: null,
+                imageMediaType: null,
+              ),
+            ),
       );
     });
   }
@@ -379,6 +387,10 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                   ? toggleMicrophone
                   : null,
             ),
+          if ((rig.surfaceKind == RigSurface.mobile ||
+                  rig.surfaceKind == RigSurface.ios) &&
+              rig.isLive)
+            RigDeviceToolbar(workspaceId: widget.workspaceId, rig: rig),
           if (audioOn && rig.isLive)
             RigAudioPlayer(
               url: MediaProxyScope.rigAudioUrlOf(

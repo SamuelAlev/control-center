@@ -41,6 +41,7 @@ class CcRenderContext {
     this.footnotes = const [],
     this.renderBlocks,
     this.renderInlines,
+    this.renderInlineSpans,
   });
 
   /// The active stylesheet.
@@ -87,6 +88,14 @@ class CcRenderContext {
   final Widget Function(List<CcInlineNode> nodes, TextStyle? baseStyle)?
   renderInlines;
 
+  /// Renders nested inlines as spans so a custom inline can wrap children
+  /// inside a [TextSpan] (background highlights that wrap with the sentence).
+  final List<InlineSpan> Function(
+    List<CcInlineNode> nodes,
+    TextStyle? baseStyle,
+  )?
+  renderInlineSpans;
+
   /// A copy with the given fields replaced.
   CcRenderContext copyWith({
     CcMarkdownStyle? style,
@@ -102,6 +111,8 @@ class CcRenderContext {
     List<CcFootnoteDef>? footnotes,
     Widget Function(List<CcBlockNode>)? renderBlocks,
     Widget Function(List<CcInlineNode>, TextStyle?)? renderInlines,
+    List<InlineSpan> Function(List<CcInlineNode>, TextStyle?)?
+    renderInlineSpans,
   }) {
     return CcRenderContext(
       style: style ?? this.style,
@@ -118,6 +129,7 @@ class CcRenderContext {
       footnotes: footnotes ?? this.footnotes,
       renderBlocks: renderBlocks ?? this.renderBlocks,
       renderInlines: renderInlines ?? this.renderInlines,
+      renderInlineSpans: renderInlineSpans ?? this.renderInlineSpans,
     );
   }
 }

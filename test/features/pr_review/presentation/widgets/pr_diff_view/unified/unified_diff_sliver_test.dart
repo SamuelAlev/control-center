@@ -6,6 +6,7 @@ import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_v
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/pr_diff_document.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_config.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/unified_diff_sliver.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -395,8 +396,8 @@ void main() {
     );
 
     testWidgets(
-        'slot children track live document offsets when a parse moves files '
-        '(host only eagerly parses the opening file)',
+      'slot children track live document offsets when a parse moves files '
+      '(host only eagerly parses the opening file)',
       (tester) async {
         final doc = PrDiffDocument(lineHeight: 20, headerHeight: 32)
           ..setFiles([file('a.dart'), file('b.dart')]);
@@ -479,5 +480,143 @@ void main() {
         expect(geometryMoved, greaterThan(0));
       },
     );
+  });
+
+  // ── Pinned header owns the pointer ───────────────────────────────
+
+  group('pinned header blocks selection of rows underneath', () {
+    setUpAll(() => DiffWorkerPool.debugForceInline = true);
+    tearDownAll(() => DiffWorkerPool.debugForceInline = false);
+
+    const headerHeight = 32.0;
+    const lineHeight = 20.0;
+
+    String longPatch() {
+      final buf = StringBuffer('@@ -1,80 +1,80 @@\n');
+      for (var i = 1; i <= 80; i++) {
+        buf.writeln(' line $i');
+      }
+      return buf.toString();
+    }
+
+    const paintConfig = UnifiedDiffPaintConfig(
+      brightness: Brightness.light,
+      baseStyle: TextStyle(fontSize: 13),
+      gutterBgColor: Color(0xFFF0F0F0),
+      gutterBorderColor: Color(0xFFDDDDDD),
+      expandGapBgColor: Color(0xFFEEEEEE),
+      expandGapBorderColor: Color(0xFFCCCCCC),
+      expandGapTextColor: Color(0xFF666666),
+      commentHighlightColor: Color(0x1A0000FF),
+      commentHighlightActiveColor: Color(0x330000FF),
+      revision: 0,
+    );
+
+    Future<RenderUnifiedDiffSliver> pumpScrolled(WidgetTester tester) async {
+      final doc =
+          PrDiffDocument(lineHeight: lineHeight, headerHeight: headerHeight)
+            ..setFiles([
+              PrFile(
+                filename: 'lib/a.dart',
+                status: PrFileStatus.modified,
+                additions: 0,
+                deletions: 0,
+                patch: longPatch(),
+              ),
+            ]);
+      final store = DiffStructureStore(document: doc, maxTokenFiles: 8);
+      final slots = [
+        DiffSlot(
+          kind: DiffSlotKind.header,
+          key: 'hdr:a',
+          fileIndex: 0,
+          offset: 0,
+          height: headerHeight,
+        ),
+      ];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CustomScrollView(
+            slivers: [
+              UnifiedDiffSliver(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => SizedBox(
+                    key: ValueKey(slots[i].key),
+                    height: slots[i].height,
+                  ),
+                  childCount: slots.length,
+                ),
+                document: doc,
+                store: store,
+                config: paintConfig,
+                slots: slots,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final scrollable = tester.state<ScrollableState>(find.byType(Scrollable));
+      // Deep enough that several code rows sit under the docked header.
+      scrollable.position.jumpTo(200);
+      await tester.pump();
+
+      return tester.renderObject<RenderUnifiedDiffSliver>(
+        find.byType(UnifiedDiffSliver),
+      );
+    }
+
+    testWidgets('code under the docked header is not a hit target', (
+      tester,
+    ) async {
+      final sliver = await pumpScrolled(tester);
+
+      expect(sliver.stickyHeaderPinned, isTrue);
+      expect(sliver.coversStickyHeader(headerHeight / 2), isTrue);
+      expect(sliver.codeRowAt(headerHeight / 2), isNull);
+      expect(sliver.cellAt(headerHeight / 2, 200), isNull);
+      expect(sliver.displayRowAt(headerHeight / 2), isNull);
+
+      // Just below the bar is still a real code row, and the sliver
+      // itself still claims the pointer there (selection / gutter tap).
+      expect(sliver.coversStickyHeader(headerHeight + 4), isFalse);
+      expect(sliver.codeRowAt(headerHeight + 4), isNotNull);
+      expect(sliver.cellAt(headerHeight + 4, 200), isNotNull);
+      expect(
+        sliver.hitTestSelf(
+          mainAxisPosition: headerHeight + 4,
+          crossAxisPosition: 200,
+        ),
+        isTrue,
+      );
+      expect(
+        sliver.hitTestSelf(
+          mainAxisPosition: headerHeight / 2,
+          crossAxisPosition: 200,
+        ),
+        isFalse,
+      );
+    });
+
+    testWidgets('a mouse drag that starts on the header does not select', (
+      tester,
+    ) async {
+      final sliver = await pumpScrolled(tester);
+      final origin = tester.getTopLeft(find.byType(CustomScrollView));
+
+      final gesture = await tester.startGesture(
+        origin + const Offset(200, headerHeight / 2),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      await gesture.moveBy(const Offset(0, 48));
+      await tester.pump();
+      await gesture.up();
+      await tester.pump();
+
+      expect(sliver.hasSelection, isFalse);
+    });
   });
 }

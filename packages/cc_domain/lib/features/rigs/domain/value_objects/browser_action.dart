@@ -59,7 +59,8 @@ sealed class BrowserAction extends RigAction {
         'Missing or invalid argument: action (expected one of navigate, '
         'reload, click, fill, type, key, scroll, mouse_move, drag, '
         'left_mouse_down, left_mouse_up, extract, screenshot, set_viewport, '
-        'history, wait_for, clipboard_read, clipboard_write)',
+        'history, wait_for, clipboard_read, clipboard_write, '
+        'permission_respond)',
       );
     }
     switch (verb) {
@@ -282,6 +283,22 @@ sealed class BrowserAction extends RigAction {
           );
         }
         return RigActionParsed(BrowserClipboardWrite(text));
+      case 'permission_respond':
+        final requestId = rigOptString(args, 'request_id');
+        if (requestId == null || requestId.isEmpty) {
+          return const RigActionInvalid(
+            'Missing or invalid argument: request_id',
+          );
+        }
+        final allow = args['allow'];
+        if (allow is! bool) {
+          return const RigActionInvalid(
+            'Missing or invalid argument: allow (expected true or false)',
+          );
+        }
+        return RigActionParsed(
+          BrowserPermissionRespond(requestId: requestId, allow: allow),
+        );
       default:
         return RigActionInvalid('Unknown browser action: "$verb"');
     }
@@ -798,4 +815,37 @@ class BrowserClipboardWrite extends BrowserAction {
 
   @override
   String get summary => 'Put ${text.length} characters on the clipboard';
+}
+
+/// Answer a site permission the enclosed page is waiting on.
+///
+/// The guest cannot show its own doorhanger. The shield flyout is the
+/// prompt; this verb is how Allow / Block reaches the interceptor that
+/// parked the page's promise.
+class BrowserPermissionRespond extends BrowserAction {
+  /// Creates a [BrowserPermissionRespond].
+  const BrowserPermissionRespond({
+    required this.requestId,
+    required this.allow,
+  });
+
+  /// The interceptor's request id.
+  final String requestId;
+
+  /// Whether the human allowed the capability.
+  final bool allow;
+
+  @override
+  String get verb => 'permission_respond';
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'action': verb,
+    'request_id': requestId,
+    'allow': allow,
+  };
+
+  @override
+  String get summary =>
+      allow ? 'Allowed a site permission' : 'Blocked a site permission';
 }

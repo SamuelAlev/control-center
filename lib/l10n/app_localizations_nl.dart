@@ -268,6 +268,26 @@ class AppLocalizationsNl extends AppLocalizations {
   String get rigStopMachine => 'Machine stoppen';
 
   @override
+  String get rigHomeButton => 'Home';
+
+  @override
+  String get rigRotateClockwise => 'Draai met de klok mee';
+
+  @override
+  String get rigRotateCounterclockwise => 'Draai tegen de klok in';
+
+  @override
+  String get rigTakeScreenshot => 'Maak een schermafbeelding';
+
+  @override
+  String get rigScreenshotSaved => 'Schermafbeelding opgeslagen';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Kon de schermafbeelding niet opslaan: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Deze server kan dit soort machine niet draaien.';
 
@@ -524,6 +544,40 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'luistert niet';
+
+  @override
+  String get rigPortsTooltipHost => 'Poorten open in deze terminal';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Er luistert nog niets in deze terminal. Start een server en die verschijnt hier.';
+
+  @override
+  String get rigPortsAddHintHost => 'Poort om te mappen (bijv. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Lokale poort (optioneel)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port in de browser (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'browser (VM) niet gekoppeld';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port op Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android niet gekoppeld';
 
   @override
   String rigImagesMissing(int count) {
@@ -14042,6 +14096,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dit is serverbeheer. De demo geeft je een wegwerpwerkruimte en verder niets.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipelines kunnen hier niet draaien. Een bezoeker die een bash-stap kan schrijven en starten — handmatig of via een gebeurtenistrigger — voert code uit op deze host.';
+
+  @override
   String get settingsBackupRestore => 'Back-up en herstel';
 
   @override
@@ -14390,6 +14448,48 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Alle hosts toestaan';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Sitemachtigingen';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Sitemachtigingen en netwerk';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Nog geen site heeft om een machtiging gevraagd';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin wil $permission gebruiken';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Blokkeren';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Camera';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Microfoon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Meldingen';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Locatie';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Permanente opslag';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Klembord';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Schermopname';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Alle netwerkhosts toestaan?';

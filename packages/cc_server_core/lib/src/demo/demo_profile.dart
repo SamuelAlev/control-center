@@ -354,26 +354,22 @@ class DemoProfile {
     'review_studio.compute',
     'review_studio.approveVisual',
     'review_studio.setContractDecision',
-    'review_hub.start',
+    // review_hub.start starts the pr_review pipeline (processSpawn). Denied.
     // Plans, orchestrations, pipelines, playbooks.
-    'plan.approve',
     'plan.updateStatus',
     'plan.estimate',
     'plan.delete',
     'orchestration.insert',
     'orchestration.update',
-    'orchestration.approve',
-    'orchestration.approveNodes',
     'orchestration.cancel',
-    'orchestration.continueNode',
     'orchestration.saveRevision',
     'playbook.save',
     'playbook.delete',
-    'playbook.run',
-    'pipeline.start',
-    'pipeline.cancel',
-    'pipeline.retry',
-    'pipeline.killStep',
+    // Pipeline run-row mutations are database-only history for the seeded
+    // showcase. Start/retry/kill, template upsert and trigger writes are
+    // refused below: a visitor who can author a `bash.script` node and run
+    // it — or attach a TicketAssigned trigger — is executing code on the
+    // public host.
     'pipeline_run.insertRun',
     'pipeline_run.updateRun',
     'pipeline_run.updateRunState',
@@ -383,12 +379,8 @@ class DemoProfile {
     'pipeline_run.restartStepRun',
     'pipeline_run.deleteStepRun',
     'pipeline_run.incrementCost',
-    'pipeline_template.upsert',
     'pipeline_template.deleteById',
-    'pipeline_trigger.insert',
-    'pipeline_trigger.update',
     'pipeline_trigger.deleteById',
-    'pipeline_trigger.markFired',
     'workProduct.restoreRevision',
     // Meetings. The demo seeds finished meetings with transcripts, speakers,
     // decisions and action items; these are the edits a visitor can make to
@@ -480,6 +472,28 @@ class DemoProfile {
     'pr.ensureSpace',
     // Process control on the host.
     'agents.killProcesses',
+    // Pipeline execution. A visitor can otherwise upsert a template whose
+    // body is `bash.script`, start it by hand, or attach an event/cron/
+    // webhook trigger that fires `engine.start` in-process — which is
+    // `Process.start('bash', …)` on this host. Playbook run and plan/
+    // orchestration approve are the same engine reached by another door.
+    // `review_hub.start` fans the `pr_review` pipeline. The bash body is
+    // registered but refused on a demo (see `enableBashScript`); this list
+    // is the name-level belt so a wiring mistake cannot re-admit the ops.
+    'pipeline.start',
+    'pipeline.cancel',
+    'pipeline.retry',
+    'pipeline.killStep',
+    'pipeline_template.upsert',
+    'pipeline_trigger.insert',
+    'pipeline_trigger.update',
+    'pipeline_trigger.markFired',
+    'playbook.run',
+    'orchestration.approve',
+    'orchestration.approveNodes',
+    'orchestration.continueNode',
+    'plan.approve',
+    'review_hub.start',
     // Repo wiring: the demo has no repos row at all.
     'messaging.setSpaceRepos',
     // ── Families whose READS the demo needs, so they cannot be denied by
@@ -722,6 +736,7 @@ class DemoProfile {
     'review_studio.watchVisualDiffs',
     'rig.watchPorts',
     'rig.watchSessions',
+    'terminal.watchPorts',
     'server_settings.watch',
     'space_read.watchUserLastReadAt',
     'sync.watch',

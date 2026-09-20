@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/plan_tab.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/bubble_shared.dart';
 import 'package:control_center/features/plan_studio/providers/plan_studio_providers.dart';
@@ -221,7 +222,8 @@ class _RowState extends ConsumerState<_Row> {
         onPressed: _open,
         child: Text(l10n.planOpenInStudio),
       ),
-      if (plan.status == PlanDocumentStatus.proposed)
+      if (plan.status == PlanDocumentStatus.proposed &&
+          !ref.watch(isDemoServerProvider))
         CcButton(
           size: CcButtonSize.sm,
           loading: _busy,

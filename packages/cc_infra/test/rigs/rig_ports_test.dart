@@ -5,6 +5,27 @@ import 'package:cc_infra/src/rigs/rig_ports.dart';
 import 'package:test/test.dart';
 
 void main() {
+  group('guestReverseTunnelListen', () {
+    test('IPv4 binds 127.0.0.1; IPv6 binds [::1]', () {
+      expect(
+        guestReverseTunnelListen(5173, ipv6: false),
+        'TCP4-LISTEN:5173,bind=127.0.0.1,reuseaddr,reuseport,nodelay',
+      );
+      expect(
+        guestReverseTunnelListen(5173, ipv6: true),
+        'TCP6-LISTEN:5173,bind=[::1],reuseaddr,reuseport,nodelay',
+      );
+      expect(guestReverseTunnelArgv(5173, ipv6: false), [
+        'sh',
+        '-c',
+        r'exec "$(command -v socat)" STDIO "$1"',
+        'socat',
+        'TCP4-LISTEN:5173,bind=127.0.0.1,reuseaddr,reuseport,nodelay',
+      ]);
+      expect(kBrowserReverseTunnelSlots, 128);
+    });
+  });
+
   group('parsePortDiscoveryOutput', () {
     test('parses port, pid and process from the discovery lines', () {
       // 0BB8 = 3000, 1F90 = 8080.
@@ -171,6 +192,37 @@ void main() {
       expect(bridge.lanPort, isNotNull);
       expect(bridge.lanPort, isNot(lanPort));
     });
+
+    test('startDirect splices to a host port with no mux preamble', () async {
+      final origin = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final saw = Completer<String>();
+      origin.listen((socket) {
+        socket.listen((chunk) {
+          if (!saw.isCompleted) {
+            saw.complete(String.fromCharCodes(chunk));
+          }
+        });
+      });
+      addTearDown(origin.close);
+
+      final bridge = await HostPortBridge.startDirect(
+        preferredHostPort: 0,
+        targetHostPort: origin.port,
+      );
+      addTearDown(bridge.close);
+
+      final client = await Socket.connect(
+        InternetAddress.loopbackIPv4,
+        bridge.hostPort,
+      );
+      client.add('GET / HTTP/1.1\r\n\r\n'.codeUnits);
+      expect(
+        await saw.future.timeout(const Duration(seconds: 5)),
+        startsWith('GET /'),
+        reason: 'A host-shell remap must not send a mux preamble line',
+      );
+      await client.close();
+    });
   });
 
   group('RigDomainRouter', () {
@@ -201,17 +253,9 @@ void main() {
         await mux.close();
       });
 
-      final client = await Socket.connect(
-        InternetAddress.loopbackIPv4,
-        port,
-      );
-      client.add(
-        'GET /health HTTP/1.1\r\nHost: myapp.test\r\n\r\n'.codeUnits,
-      );
-      expect(
-        await preamble.future.timeout(const Duration(seconds: 5)),
-        '3000',
-      );
+      final client = await Socket.connect(InternetAddress.loopbackIPv4, port);
+      client.add('GET /health HTTP/1.1\r\nHost: myapp.test\r\n\r\n'.codeUnits);
+      expect(await preamble.future.timeout(const Duration(seconds: 5)), '3000');
       await client.close();
     });
 
@@ -220,10 +264,7 @@ void main() {
       final port = await router.start();
       addTearDown(router.dispose);
 
-      final client = await Socket.connect(
-        InternetAddress.loopbackIPv4,
-        port,
-      );
+      final client = await Socket.connect(InternetAddress.loopbackIPv4, port);
       final reply = Completer<String>();
       final buffer = <int>[];
       client.listen((chunk) {
@@ -236,6 +277,40 @@ void main() {
       expect(
         await reply.future.timeout(const Duration(seconds: 5)),
         contains('502'),
+      );
+      await client.close();
+    });
+
+    test('dials a host-shell bind with no mux preamble', () async {
+      final origin = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+      final saw = Completer<String>();
+      origin.listen((socket) {
+        socket.listen((chunk) {
+          if (!saw.isCompleted) {
+            saw.complete(String.fromCharCodes(chunk));
+          }
+          socket.add(
+            'HTTP/1.1 200 OK\r\ncontent-length: 2\r\n\r\nok'.codeUnits,
+          );
+        });
+      });
+      addTearDown(origin.close);
+
+      final router = RigDomainRouter(
+        muxPortOf: (_) => null,
+        hostPortOf: (id, guest) =>
+            id == 'shell-a' && guest == 5173 ? origin.port : null,
+      );
+      final port = await router.start();
+      router.setRoute('vite.test', rigId: 'shell-a', guestPort: 5173);
+      addTearDown(router.dispose);
+
+      final client = await Socket.connect(InternetAddress.loopbackIPv4, port);
+      client.add('GET / HTTP/1.1\r\nHost: vite.test\r\n\r\n'.codeUnits);
+      expect(
+        await saw.future.timeout(const Duration(seconds: 5)),
+        startsWith('GET /'),
+        reason: 'A host-shell domain must not send a mux preamble line',
       );
       await client.close();
     });

@@ -56,6 +56,17 @@ Two things the null ports do *not* cover, closed separately:
 - **The on-device model downloads** (~700 MB: embedding + diarization + speech)
   are the largest outbound transfer the server can make. Skipped in demo.
 
+**Pipeline execution is refused, not merely hidden.** A visitor who can upsert
+a template whose body is `bash.script` and start it — by hand, by attaching an
+event trigger, or through plan/orchestration approve — is executing code on
+this host. The engine port, trigger dispatcher, cron scheduler, step-resume
+listeners and `resumeAll` are all off; the bash body is registered as a refuse
+that never `Process.start`; and the names (`pipeline.start`,
+`pipeline_template.upsert`, `pipeline_trigger.insert`, `playbook.run`,
+`orchestration.approve`, `plan.approve`, `review_hub.start`, …) sit on the
+denylist with `processSpawn` so a wiring mistake cannot re-admit them.
+`demo_visitor_e2e_test.dart` asserts each answers `opUnknown`.
+
 **Layer 2 — `DemoProfile`**, a default-deny name allowlist rebuilt into the
 registry. It is a *name* allowlist rather than an `ActionClass` denylist for a
 measured reason: the catalog declares 548 ops, 326 mutating, and `terminal.spawn`

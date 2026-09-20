@@ -199,6 +199,23 @@ void main() {
       'workspace.import',
       'repos.add',
       'skills.install',
+      // Pipeline host-exec: upsert a bash node, start it by hand, or attach
+      // an event trigger. Plan/orchestration approve and review hub are
+      // the same engine through another door.
+      'pipeline.start',
+      'pipeline.cancel',
+      'pipeline.retry',
+      'pipeline.killStep',
+      'pipeline_template.upsert',
+      'pipeline_trigger.insert',
+      'pipeline_trigger.update',
+      'pipeline_trigger.markFired',
+      'playbook.run',
+      'orchestration.approve',
+      'orchestration.approveNodes',
+      'orchestration.continueNode',
+      'plan.approve',
+      'review_hub.start',
     ]) {
       final kind = ops[name];
       if (kind == null) {
@@ -239,6 +256,47 @@ void main() {
         ),
       ),
       isTrue,
+    );
+  });
+
+  test('an allowed mutation never declares a forbidden ActionClass', () {
+    // The class net only helps if an allowed name that later grows, say,
+    // processSpawn is also dropped from the allowlist. `review_hub.start`
+    // sat allowed while declaring processSpawn until this existed.
+    final leaking = <String>[];
+    for (final file in _catalogSources()) {
+      final source = file.readAsStringSync();
+      for (final chunk in source.split('RepoOp(').skip(1)) {
+        final handlerAt = chunk.indexOf('handler:');
+        final head = handlerAt >= 0 ? chunk.substring(0, handlerAt) : chunk;
+        final name = RegExp(r"name:\s*'([^']+)'").firstMatch(head)?.group(1);
+        if (name == null || !profile.allowedMutations.contains(name)) {
+          continue;
+        }
+        final classesMatch = RegExp(
+          r'actionClasses:\s*const\s*\{([^}]*)\}',
+        ).firstMatch(head);
+        if (classesMatch == null) {
+          continue;
+        }
+        final classes = RegExp(r'ActionClass\.(\w+)')
+            .allMatches(classesMatch.group(1)!)
+            .map((m) => m.group(1)!)
+            .toSet();
+        if (classes.any(
+          (c) => DemoProfile.forbiddenClasses.any((f) => f.name == c),
+        )) {
+          leaking.add('$name declares $classes');
+        }
+      }
+    }
+    expect(
+      leaking..sort(),
+      isEmpty,
+      reason:
+          'These allowed mutations declare a DemoProfile.forbiddenClasses '
+          'member, so the class net would refuse them even if the name '
+          'stayed allowed. Move each to defaultDeniedMutations.',
     );
   });
 

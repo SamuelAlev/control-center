@@ -119,6 +119,19 @@
   "rigStartIosHint": "یک شبیه‌ساز موقت iOS روی Mac سرور ایجاد می‌کند. با بسته‌شدن محیط آزمایش حذف می‌شود؛ دسترسی به شبکه ایزوله نیست.",
   "rigTechnicalDetails": "جزئیات فنی",
   "rigStopMachine": "توقف ماشین",
+  "rigHomeButton": "خانه",
+  "rigRotateClockwise": "چرخش ساعت‌گرد",
+  "rigRotateCounterclockwise": "چرخش پادساعت‌گرد",
+  "rigTakeScreenshot": "گرفتن نماگرفت",
+  "rigScreenshotSaved": "نماگرفت ذخیره شد",
+  "rigScreenshotSaveFailed": "نماگرفت ذخیره نشد: ⁨{error}⁩",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "این سرور نمی‌تواند این نوع ماشین را میزبانی کند.",
   "rigTabNeedsConversation": "اول یک گفتگو باز کنید — ماشین به یک گفتگو تعلق دارد تا شما و عامل‌هایتان یک صفحه را ببینید.",
   "ideMenuSectionTools": "ابزارها",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "دامنه برای مرورگر (VM)، مثلاً ⁨myapp.test⁩ — آنجا در دسترس است، نه روی میزبان",
   "rigPortsProcessUnknown": "فرایند ناشناخته",
   "rigPortsInactive": "گوش نمی‌دهد",
+  "rigPortsTooltipHost": "پورت‌های باز در این پایانه",
+  "rigPortsEmptyHost": "هنوز چیزی در این پایانه گوش نمی‌دهد. یک سرور راه‌اندازی کنید تا اینجا ظاهر شود.",
+  "rigPortsAddHintHost": "پورت برای نگاشت (مثلاً 5173)",
+  "rigPortsLocalPortHint": "پورت محلی (اختیاری)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} در مرورگر (ماشین مجازی)",
+  "rigPortsDestBrowserUnreachable": "مرورگر (ماشین مجازی) متصل نیست",
+  "rigPortsDestAndroid": "localhost:{port} در اندروید",
+  "rigPortsDestAndroidUnreachable": "اندروید متصل نیست",
   "rigImagesMissing": "{count, plural, =1{1 تصویر پایه هنوز باید دانلود شود} other{{count} تصویر پایه هنوز باید دانلود شوند}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "ورود یکپارچه پیکربندی سرور است. دمو به‌جای آن شما را به‌عنوان مهمان موقت وارد می‌کند.",
   "demoUnavailableAudio": "ضبط و دیکته به گرفتن صدا و مدل گفتار روی میزبان نیاز دارند. دمو هیچ‌کدام را ندارد، پس جلساتش رونوشت بدون پخش‌اند.",
   "demoUnavailableServerAdmin": "این مدیریت سرور است. دمو به هر بازدیدکننده فضای کاری دورریختنی خودش را می‌دهد و چیزی فراتر از آن نه.",
+  "demoUnavailablePipelines": "خط‌لوله‌ها اینجا اجرا نمی‌شوند. بازدیدکننده‌ای که بتواند یک گام bash بنویسد و آن را — دستی یا از طریق یک محرک رویداد — شروع کند، در حال اجرای کد روی این میزبان است.",
   "settingsBackupRestore": "پشتیبان و بازیابی",
   "settingsBackupRestoreDescription": "اسنپ‌شات همهٔ پایگاه‌های دادهٔ این سرور، به‌علاوهٔ خروجی، ورود و حذف یک فضای کاری.",
   "backupSnapshotsLabel": "اسنپ‌شات نصب",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "عنوان یا شماره pull request دیگری را امتحان کنید",
   "rigNetworkUnrestricted": "شبکه بدون محدودیت",
   "rigNetworkAllowAllHosts": "اجازه به همه میزبان‌ها",
+  "rigBrowserPermissionsTitle": "مجوزهای سایت",
+  "rigBrowserPermissionsTooltip": "مجوزهای سایت و شبکه",
+  "rigBrowserPermissionEmpty": "هنوز هیچ سایتی مجوزی نخواسته است",
+  "rigBrowserPermissionPrompt": "{origin} می‌خواهد از {permission} استفاده کند",
+  "rigBrowserPermissionBlock": "مسدود کردن",
+  "rigBrowserPermissionCamera": "دوربین",
+  "rigBrowserPermissionMicrophone": "میکروفون",
+  "rigBrowserPermissionNotifications": "اعلان‌ها",
+  "rigBrowserPermissionGeolocation": "موقعیت",
+  "rigBrowserPermissionPersistentStorage": "ذخیره‌سازی پایدار",
+  "rigBrowserPermissionClipboard": "کلیپ‌بورد",
+  "rigBrowserPermissionDisplayCapture": "ضبط صفحه",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "همه میزبان‌های شبکه مجاز باشند؟",
   "rigNetworkBypassBody": "این کار محیط ایزوله را دوباره راه‌اندازی می‌کند و کار ثبت‌نشده داخل آن را کنار می‌گذارد. پس از آن، مهمان تا زمان بسته شدن می‌تواند به هر میزبان شبکه دسترسی داشته باشد.",
   "rigNetworkRestartUnrestricted": "راه‌اندازی مجدد بدون محدودیت",

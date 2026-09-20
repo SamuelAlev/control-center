@@ -179,7 +179,7 @@ host-controlled channels: one pre-created inbound multiplexer that refuses to
 dial anything the guest is not actually listening on, and reverse tunnels the
 host holds open for guest-initiated connections. Dev-domain HTTPS terminates
 at the server using a locally minted authority whose keys never enter any
-guest. The mechanics are in [Forward ports from an enclosed
+guest. The mechanics are in [Forward ports from a
 terminal](/manual/guides/vm-ports/).
 
 ## Machines are bounded by construction
@@ -199,8 +199,11 @@ A rig cannot become a pet:
 
 First boots pull the machine's pinned image; the server then caches a
 pre-extracted copy in the background, so every later machine of that kind
-boots in seconds and an enclosed terminal comes up with its tooling already
-installed.
+boots in seconds and an enclosed terminal comes up with a GitHub-hosted
+runner's kind of CLI baseline already installed — compilers, Python, `jq`,
+archive tools — not a language toolcache or Docker. The Computer image
+bakes that same CLI baseline in at build time, next to XFCE and the
+browsers.
 
 ## Three browsers, not one
 

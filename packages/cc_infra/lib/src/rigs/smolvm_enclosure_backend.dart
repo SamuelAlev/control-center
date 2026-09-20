@@ -25,10 +25,10 @@ import 'package:path/path.dart' as p;
 ///
 /// Ubuntu 24.04 — the same userland the old qcow2 exec image booted, so the
 /// enclosed terminal keeps `apt` and a glibc baseline. The stock image ships
-/// neither git nor curl; [kSmolvmExecInit] installs them on first start (the
-/// machine's overlay persists them afterwards). The digest is the Docker Hub
-/// index digest, so one pin serves both arm64 and x64 hosts; smolvm resolves
-/// it through its default registry.
+/// neither git nor curl; [smolvmExecInit] installs a GitHub-runner-style
+/// CLI toolset on first start (the machine's overlay persists it afterwards).
+/// The digest is the Docker Hub index digest, so one pin serves both arm64
+/// and x64 hosts; smolvm resolves it through its default registry.
 const String kSmolvmExecImage =
     'ubuntu:24.04@sha256:008173c23f95b170204355c12626cb5a965d779a7e1283b09e9cffbb1bf33ca3';
 
@@ -156,19 +156,151 @@ const String kSmolvmRigLabel = 'cc-rig';
 /// The owner label value this backend writes and sweeps.
 const String kSmolvmOwnerValue = 'control-center';
 
+/// Pack-cache revision for the exec toolset.
+///
+/// The default image pin does not change when this list does, so the variant
+/// is what stops a pack warmed with only git/curl/socat from serving a
+/// machine that is supposed to have a compiler. Bump it when
+/// [kSmolvmExecPackages] changes in a way that must rebuild existing packs.
+const String kSmolvmExecPackVariant = 'tools-v1';
+
+/// Apt packages warmed into every exec (terminal) guest.
+///
+/// Modeled on GitHub-hosted `ubuntu-24.04` runners' apt toolset (vital,
+/// common and cmd packages in actions/runner-images) plus git/socat the
+/// enclosure itself needs, python3 so `python-is-python3` has a target, and
+/// cmake/ninja-build/zstd which the runner image ships outside apt. The
+/// desktop qcow2 (`COMMON_PACKAGES` in `scripts/rigs/build_image.sh`) ships
+/// the same names — a Computer tab and a terminal tab should not disagree
+/// about what "a basic toolchain" means.
+///
+/// Not included, on purpose: language toolcaches (Node, Go, Java, Ruby,
+/// .NET), Docker (needs a nested daemon the microVM does not run), GUI and
+/// daemon packages (`xvfb`, `sphinxsearch`, `haveged`), Canonical
+/// phone-home (`pollinate`), the `ssh` metapackage (it would install a
+/// server; `openssh-client` is enough), and names Ubuntu 24.04 will not
+/// install (`netcat` is virtual — we use `netcat-openbsd`; `p7zip-rar`
+/// lives in multiverse).
+const List<String> kSmolvmExecPackages = [
+  'acl',
+  'aria2',
+  'autoconf',
+  'automake',
+  'binutils',
+  'bison',
+  'brotli',
+  'bzip2',
+  'ca-certificates',
+  'cmake',
+  'curl',
+  'dnsutils',
+  'dpkg-dev',
+  'fakeroot',
+  'file',
+  'flex',
+  'g++',
+  'gcc',
+  'git',
+  'git-lfs',
+  'gnupg',
+  'iproute2',
+  'iputils-ping',
+  'jq',
+  'less',
+  'libffi-dev',
+  'libicu-dev',
+  'libsqlite3-dev',
+  'libssl-dev',
+  'libtool',
+  'libyaml-dev',
+  'locales',
+  'lsof',
+  'lz4',
+  'm4',
+  'make',
+  'nano',
+  'net-tools',
+  'netcat-openbsd',
+  'ninja-build',
+  'openssh-client',
+  'p7zip-full',
+  'parallel',
+  'patch',
+  'patchelf',
+  'pigz',
+  'pkg-config',
+  'procps',
+  'python-is-python3',
+  'python3',
+  'python3-pip',
+  'python3-venv',
+  'rsync',
+  'shellcheck',
+  'socat',
+  'sqlite3',
+  'strace',
+  'sudo',
+  'swig',
+  'tar',
+  'time',
+  'tree',
+  'tzdata',
+  'unzip',
+  'wget',
+  'xz-utils',
+  'zip',
+  'zlib1g-dev',
+  'zstd',
+];
+
+/// Binaries the enclosure itself needs. A custom image that already ships
+/// these and has no apt is left alone — that is the documented contract.
+const List<String> kSmolvmExecCoreBinaries = ['git', 'curl', 'socat'];
+
+/// Representative binaries of [kSmolvmExecPackages]. The warm-pack probe
+/// checks these so a half-installed template is never cached, and a
+/// Debian/Ubuntu guest missing them retries apt rather than skipping on git
+/// alone.
+const List<String> kSmolvmExecToolBinaries = [
+  'gcc',
+  'python3',
+  'jq',
+  'wget',
+  'unzip',
+  'make',
+  'rsync',
+];
+
+String _smolvmBinariesPresent(Iterable<String> binaries) =>
+    binaries.map((binary) => 'command -v $binary >/dev/null 2>&1').join(' && ');
+
 /// The init command every exec machine runs on every start.
 ///
-/// Idempotent by construction: the `command -v` gate makes a warm start a
-/// no-op, and the machine's persistent overlay keeps the packages across
-/// restarts. apt needs the Ubuntu mirrors, which the exec allowlist
-/// (`execRigEgressAllowlist`) already carries. socat is what the port mux and
-/// the reverse tunnels (`rig_ports.dart`) run on, so it installs beside git.
-const String kSmolvmExecInit =
-    'mkdir -p $kSmolvmGuestWorkdir && '
-    '(command -v git >/dev/null 2>&1 && command -v curl >/dev/null 2>&1 && '
-    'command -v socat >/dev/null 2>&1 || '
-    '(apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install '
-    '-y -qq --no-install-recommends git curl socat ca-certificates))';
+/// Idempotent by construction: a guest that already has the toolset (or a
+/// non-apt custom image that already has git/curl/socat) is a no-op, and
+/// the machine's persistent overlay keeps the packages across restarts. apt
+/// needs the Ubuntu mirrors, which the exec allowlist
+/// (`execRigEgressAllowlist`) already carries. socat is what the port mux
+/// and the reverse tunnels (`rig_ports.dart`) run on, so it installs
+/// beside git.
+String smolvmExecInit() {
+  final core = _smolvmBinariesPresent(kSmolvmExecCoreBinaries);
+  final tools = _smolvmBinariesPresent([
+    ...kSmolvmExecCoreBinaries,
+    ...kSmolvmExecToolBinaries,
+  ]);
+  return 'mkdir -p $kSmolvmGuestWorkdir && '
+      '(($tools) || '
+      '(! command -v apt-get >/dev/null 2>&1 && ($core)) || '
+      '(apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install '
+      '-y -qq --no-install-recommends ${kSmolvmExecPackages.join(' ')}))';
+}
+
+/// Probe that a warmed exec template actually received the toolset.
+String smolvmExecWarmProbe() => _smolvmBinariesPresent([
+  ...kSmolvmExecCoreBinaries,
+  ...kSmolvmExecToolBinaries,
+]);
 
 /// The git credential helper installed into every exec guest.
 ///
@@ -250,13 +382,19 @@ String smolvmPackFileName(String image, {String variant = ''}) =>
     '${sha256.convert(utf8.encode('$image$variant')).toString().substring(0, 16)}'
     '.smolmachine';
 
-/// The pack VARIANT a browser machine warms into.
+/// The pack VARIANT a machine warms into.
 ///
-/// The engine differentiates packages sharing the Debian base. The audio
-/// revision invalidates packs created before PulseAudio and ffmpeg were part
-/// of every browser surface.
+/// For an exec machine this is the toolset revision: bumping
+/// [kSmolvmExecPackVariant] is what stops a pack warmed with only
+/// git/curl/socat from serving a machine that is supposed to have a
+/// compiler. For a browser machine the engine differentiates packages
+/// sharing the Debian base, and the audio revision invalidates packs
+/// created before PulseAudio and ffmpeg were part of every browser surface.
 String smolvmPackVariantFor(RigSpec spec) {
-  if (spec.isExec || spec.surface != RigSurface.browser) {
+  if (spec.isExec) {
+    return kSmolvmExecPackVariant;
+  }
+  if (spec.surface != RigSurface.browser) {
     return '';
   }
   return 'audio-v1-${spec.browserEngine.wire}';
@@ -344,19 +482,16 @@ List<String> buildSmolvmBrowserWorkload(
       '--no-sandbox '
       '--disable-dev-shm-usage '
       '--no-first-run '
-      // Headless Chromium cannot present a permission bubble. This grants
-      // pages access to the virtual `ccinput` source only; host microphone
-      // bytes still flow solely while the operator enables the app control.
+      // Headless has no permission bubble or capture hardware.
       '--use-fake-ui-for-media-stream '
-      // Dev domains resolve to guest loopback WITHOUT DNS: the egress
-      // filter's DNS gate cannot answer for `myapp.test`, and `.test` is
-      // reserved for exactly this (RFC 2606). `*.localhost` is already
-      // loopback per spec; stating it keeps the two dev TLDs symmetrical.
-      // The loopback connect then lands on the reverse-tunnel listeners the
-      // ports service plants (`rig_ports.dart`) — port 80 of which is the
-      // Host-header domain router. No space after the comma: Chromium's rule
-      // parser trims, but keeping it tight avoids any parser ambiguity.
-      '"--host-resolver-rules=MAP *.test 127.0.0.1,MAP *.localhost 127.0.0.1" '
+      '--use-fake-device-for-media-stream '
+      '--autoplay-policy=no-user-gesture-required '
+      // `localhost` is special-cased in Chromium's resolver: MAP *.localhost
+      // does not match the bare name, and MAP localhost is not always
+      // honored either. Disable IPv6 so getaddrinfo cannot prefer `::1`
+      // over the IPv4 reverse tunnel. MAP the exact name as a second belt.
+      '--disable-ipv6 '
+      '"--host-resolver-rules=MAP localhost 127.0.0.1,MAP *.test 127.0.0.1,MAP *.localhost 127.0.0.1" '
       // HTTPS for the dev domains. The image ships no certificate tooling and
       // has no egress to fetch any, so the host's dev CA cannot be installed
       // into a guest trust store; instead the browser pins the SPKI hash of
@@ -400,19 +535,14 @@ String _writeHomePageCommand(
 ///
 ///  * **`mkdir -p` the profile.** Firefox does not create a `--profile`
 ///    directory that does not exist. It does not complain either: it falls
-///    back to a default profile and — the part that matters — never starts
-///    its remote agent at all. Nothing listens on the debug port, the rig
-///    times out on readiness, and the only symptom is silence. This one line
-///    is the difference between a working Firefox rig and one that never
-///    boots.
+///    back to a default profile and never starts its remote agent at all.
+///    Nothing listens, the rig times out, and the only symptom is silence.
 ///  * **The socat relay.** The remote agent binds guest loopback and Firefox
-///    has no flag to change that (`--remote-debugging-port=0.0.0.0:9333` is
-///    parsed as invalid and falls back to a loopback default). The relay on
-///    the guest NIC is the only address a host `-p` forward can reach.
+///    has no flag to change that. The relay on the guest NIC is the only
+///    address a host `-p` forward can reach.
 ///  * **`--remote-allow-hosts`.** Firefox validates the `Host` header. The
-///    entries are host NAMES; the port is checked separately and always
-///    against the agent's own, which is why the client sends the guest-side
-///    port rather than the one it dialled.
+///    entries are host NAMES; the port is checked separately against the
+///    agent's own, which is why the client sends the guest-side port.
 ///
 /// `exec` keeps Firefox the workload's main process: if the browser exits the
 /// machine stops and the rig is reported dead, instead of wedging behind a
@@ -426,7 +556,15 @@ List<String> buildSmolvmFirefoxWorkload(
       '$kSmolvmBrowserAudioSetup; '
       '${_writeHomePageCommand(RigBrowserEngine.firefox, homeTheme)}; '
       'mkdir -p /tmp/cc-profile; '
-      'echo \'user_pref("media.navigator.permission.disabled", true);\' '
+      'echo \'user_pref("media.navigator.permission.disabled", true); '
+      'user_pref("media.navigator.streams.fake", true); '
+      'user_pref("permissions.default.microphone", 1); '
+      'user_pref("permissions.default.camera", 1); '
+      'user_pref("permissions.default.desktop-notification", 1); '
+      'user_pref("dom.storageManager.prompt.testing", true); '
+      'user_pref("dom.storageManager.prompt.testing.allow", true); '
+      'user_pref("media.autoplay.default", 0); '
+      'user_pref("network.dns.disableIPv6", true);\' '
       '> /tmp/cc-profile/user.js; '
       'socat TCP4-LISTEN:$kBrowserRigGuestPort,fork '
       'TCP4:127.0.0.1:$endpoint & '
@@ -707,7 +845,7 @@ List<String> buildSmolvmCreateArgs(SmolvmLaunchPlan plan) {
     // lane. Firefox and WebKit install their engine and audio packages.
     if (isExec) ...[
       '--init',
-      kSmolvmExecInit,
+      smolvmExecInit(),
     ] else ...[
       '--init',
       smolvmBrowserInitFor(plan.engine),
@@ -1100,6 +1238,8 @@ class SmolvmEnclosureBackend {
       onProgress?.call(
         usePack
             ? 'Starting the microVM (cached image)'
+            : isExec
+            ? 'Starting the microVM (pulling the image and installing tools)'
             : 'Starting the microVM (the first boot pulls its image)',
       );
       // The FIRST start pulls the image, so this carries the cold-pull
@@ -1120,9 +1260,11 @@ class SmolvmEnclosureBackend {
             binary,
             image,
             variant: packVariant,
-            warmInit: isExec ? kSmolvmExecInit : smolvmBrowserInitFor(engine),
+            warmInit: isExec ? smolvmExecInit() : smolvmBrowserInitFor(engine),
             warmMirrors: isExec ? kExecRigAptMirrors : kBrowserRigAptMirrors,
-            warmProbe: isExec ? _execWarmProbe : _browserWarmProbe(engine),
+            warmProbe: isExec
+                ? smolvmExecWarmProbe()
+                : _browserWarmProbe(engine),
           ),
         );
       }
@@ -1300,12 +1442,6 @@ class SmolvmEnclosureBackend {
   String packPathFor(String image, {String variant = ''}) =>
       p.join(_packsDir, smolvmPackFileName(image, variant: variant));
 
-  /// The warm-probe for an exec template: the three binaries its init
-  /// installs.
-  static const String _execWarmProbe =
-      'command -v git >/dev/null && command -v curl >/dev/null && '
-      'command -v socat >/dev/null';
-
   /// The warm-probe for a browser template, or null when the engine boots a
   /// baked image and warms nothing.
   ///
@@ -1339,11 +1475,11 @@ class SmolvmEnclosureBackend {
   ///  * The BROWSER image packs directly — it is fully baked, nothing runs
   ///    at boot, so the pack only skips the per-machine layer flatten.
   ///  * The EXEC image packs a WARMED throwaway template: a pristine machine
-  ///    is booted, its init installs git/curl/socat into the overlay, and
-  ///    THAT machine is snapshotted. Boots from it take ~9s against ~21s
-  ///    (the apt install inside every fresh machine's first start was the
-  ///    other half of the cost, and it also made first-start depend on the
-  ///    Ubuntu mirrors being reachable). The template carries NO secrets, NO
+  ///    is booted, its init installs the GitHub-runner-style toolset into
+  ///    the overlay, and THAT machine is snapshotted. Boots from it take
+  ///    seconds against a first start that would otherwise apt-install a
+  ///    compiler and friends on every machine (and depend on the Ubuntu
+  ///    mirrors being reachable). The template carries NO secrets, NO
   ///    worktree, no per-rig state — it never gets any: no broker secret, no
   ///    port forwards, nothing synced in — so the snapshot is safe to share
   ///    across every later rig and conversation.
@@ -1436,7 +1572,7 @@ class SmolvmEnclosureBackend {
   /// verifies with [probe] that the warm actually took, and returns the
   /// STOPPED machine's name ready to snapshot — or null on any failure.
   ///
-  /// Used for both kinds of warm start: the exec image's git/curl/socat and a
+  /// Used for both kinds of warm start: the exec image's toolset and a
   /// browser engine's own packages. The template carries NO secrets, NO
   /// worktree and no per-rig state — it never gets any: no broker secret, no
   /// port forwards, nothing synced in — so the snapshot is safe to share
@@ -1533,7 +1669,10 @@ class SmolvmEnclosureBackend {
       return;
     }
     final wanted = {
-      smolvmPackFileName(kSmolvmExecImage),
+      smolvmPackFileName(
+        kSmolvmExecImage,
+        variant: smolvmPackVariantFor(RigSpec.exec(conversationId: '_pack')),
+      ),
       for (final engine in RigBrowserEngine.values)
         smolvmPackFileName(
           smolvmBrowserImageFor(engine),

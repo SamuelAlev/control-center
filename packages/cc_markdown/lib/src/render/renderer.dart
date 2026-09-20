@@ -642,11 +642,19 @@ class _RichInlineTextState extends State<_RichInlineText> {
 
   List<InlineSpan> _buildSpans(List<CcInlineNode> nodes, TextStyle? base) {
     final style = widget.renderer.style;
-    final ctx = widget.context;
+    final ctx = widget.context.copyWith(
+      renderInlineSpans: (children, childBase) =>
+          _buildSpans(children, childBase ?? base),
+    );
     final spans = <InlineSpan>[];
     for (final node in nodes) {
       final override = widget.renderer.builders.builderFor(node.nodeType);
       if (override != null && override.canBuild(node)) {
+        final span = override.buildSpan(node, base, style, ctx, context);
+        if (span != null) {
+          spans.add(span);
+          continue;
+        }
         spans.add(
           WidgetSpan(
             alignment: override.placeholderAlignment,

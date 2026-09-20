@@ -264,6 +264,26 @@ class AppLocalizationsFa extends AppLocalizations {
   String get rigStopMachine => 'توقف ماشین';
 
   @override
+  String get rigHomeButton => 'خانه';
+
+  @override
+  String get rigRotateClockwise => 'چرخش ساعت‌گرد';
+
+  @override
+  String get rigRotateCounterclockwise => 'چرخش پادساعت‌گرد';
+
+  @override
+  String get rigTakeScreenshot => 'گرفتن نماگرفت';
+
+  @override
+  String get rigScreenshotSaved => 'نماگرفت ذخیره شد';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'نماگرفت ذخیره نشد: ⁨$error⁩';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'این سرور نمی‌تواند این نوع ماشین را میزبانی کند.';
 
@@ -517,6 +537,40 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'گوش نمی‌دهد';
+
+  @override
+  String get rigPortsTooltipHost => 'پورت‌های باز در این پایانه';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'هنوز چیزی در این پایانه گوش نمی‌دهد. یک سرور راه‌اندازی کنید تا اینجا ظاهر شود.';
+
+  @override
+  String get rigPortsAddHintHost => 'پورت برای نگاشت (مثلاً 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'پورت محلی (اختیاری)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port در مرورگر (ماشین مجازی)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'مرورگر (ماشین مجازی) متصل نیست';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port در اندروید';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'اندروید متصل نیست';
 
   @override
   String rigImagesMissing(int count) {
@@ -13944,6 +13998,10 @@ class AppLocalizationsFa extends AppLocalizations {
       'این مدیریت سرور است. دمو به هر بازدیدکننده فضای کاری دورریختنی خودش را می‌دهد و چیزی فراتر از آن نه.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'خط‌لوله‌ها اینجا اجرا نمی‌شوند. بازدیدکننده‌ای که بتواند یک گام bash بنویسد و آن را — دستی یا از طریق یک محرک رویداد — شروع کند، در حال اجرای کد روی این میزبان است.';
+
+  @override
   String get settingsBackupRestore => 'پشتیبان و بازیابی';
 
   @override
@@ -14287,6 +14345,47 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'اجازه به همه میزبان‌ها';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'مجوزهای سایت';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'مجوزهای سایت و شبکه';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'هنوز هیچ سایتی مجوزی نخواسته است';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin می‌خواهد از $permission استفاده کند';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'مسدود کردن';
+
+  @override
+  String get rigBrowserPermissionCamera => 'دوربین';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'میکروفون';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'اعلان‌ها';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'موقعیت';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'ذخیره‌سازی پایدار';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'کلیپ‌بورد';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'ضبط صفحه';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'همه میزبان‌های شبکه مجاز باشند؟';

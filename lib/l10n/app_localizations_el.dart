@@ -273,6 +273,26 @@ class AppLocalizationsEl extends AppLocalizations {
   String get rigStopMachine => 'Διακοπή της μηχανής';
 
   @override
+  String get rigHomeButton => 'Αρχική';
+
+  @override
+  String get rigRotateClockwise => 'Περιστροφή δεξιόστροφα';
+
+  @override
+  String get rigRotateCounterclockwise => 'Περιστροφή αριστερόστροφα';
+
+  @override
+  String get rigTakeScreenshot => 'Λήψη στιγμιότυπου';
+
+  @override
+  String get rigScreenshotSaved => 'Το στιγμιότυπο αποθηκεύτηκε';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Δεν ήταν δυνατή η αποθήκευση του στιγμιότυπου: ⁨$error⁩';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Αυτός ο διακομιστής δεν μπορεί να φιλοξενήσει αυτό το είδος μηχανής.';
 
@@ -532,6 +552,41 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'δεν ακούει';
+
+  @override
+  String get rigPortsTooltipHost => 'Θύρες ανοιχτές σε αυτό το τερματικό';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Τίποτα δεν ακούει ακόμα σε αυτό το τερματικό. Ξεκίνα έναν διακομιστή και εμφανίζεται εδώ.';
+
+  @override
+  String get rigPortsAddHintHost => 'Θύρα για αντιστοίχιση (π.χ. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Τοπική θύρα (προαιρετικό)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port στο πρόγραμμα περιήγησης (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable =>
+      'πρόγραμμα περιήγησης (VM) μη συνδεδεμένο';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port στο Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android μη συνδεδεμένο';
 
   @override
   String rigImagesMissing(int count) {
@@ -14122,6 +14177,10 @@ class AppLocalizationsEl extends AppLocalizations {
       'Αυτή είναι διαχείριση διακομιστή. Το demo δίνει σε κάθε επισκέπτη τον δικό του αναλώσιμο χώρο εργασίας και τίποτα πέρα από αυτόν.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Οι διοχετεύσεις δεν μπορούν να εκτελεστούν εδώ. Ένας επισκέπτης που μπορεί να γράψει ένα βήμα bash και να το ξεκινήσει — χειροκίνητα ή μέσω ενεργοποιητή συμβάντος — εκτελεί κώδικα σε αυτόν τον κεντρικό υπολογιστή.';
+
+  @override
   String get settingsBackupRestore => 'Αντίγραφο ασφαλείας και επαναφορά';
 
   @override
@@ -14475,6 +14534,48 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get rigNetworkAllowAllHosts =>
       'Να επιτρέπονται όλοι οι κεντρικοί υπολογιστές';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Άδειες ιστότοπου';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Άδειες ιστότοπου και δίκτυο';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Κανένας ιστότοπος δεν έχει ζητήσει άδεια ακόμα';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return 'Ο $origin θέλει να χρησιμοποιήσει $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Αποκλεισμός';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Κάμερα';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Μικρόφωνο';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Ειδοποιήσεις';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Τοποθεσία';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Μόνιμη αποθήκευση';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Πρόχειρο';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Καταγραφή οθόνης';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle =>

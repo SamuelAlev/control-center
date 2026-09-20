@@ -3,6 +3,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/utils/app_log.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/providers/pipeline_providers.dart';
 import 'package:control_center/features/repos/providers/repo_index_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
@@ -39,7 +40,7 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
   bool _starting = false;
 
   Future<void> _start() async {
-    if (_starting) {
+    if (_starting || ref.read(isDemoServerProvider)) {
       return;
     }
     setState(() => _starting = true);
@@ -98,6 +99,9 @@ class _RepoIndexButtonState extends ConsumerState<RepoIndexButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(isDemoServerProvider)) {
+      return const SizedBox.shrink();
+    }
     final l10n = AppLocalizations.of(context);
     final tokens = context.ds;
 

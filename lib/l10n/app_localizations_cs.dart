@@ -270,6 +270,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get rigStopMachine => 'Zastavit stroj';
 
   @override
+  String get rigHomeButton => 'Plocha';
+
+  @override
+  String get rigRotateClockwise => 'Otočit po směru hodin';
+
+  @override
+  String get rigRotateCounterclockwise => 'Otočit proti směru hodin';
+
+  @override
+  String get rigTakeScreenshot => 'Pořídit snímek obrazovky';
+
+  @override
+  String get rigScreenshotSaved => 'Snímek obrazovky uložen';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Snímek obrazovky se nepodařilo uložit: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Tento server nemůže hostovat tento druh stroje.';
 
@@ -526,6 +546,40 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'nenaslouchá';
+
+  @override
+  String get rigPortsTooltipHost => 'Porty otevřené v tomto terminálu';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'V tomto terminálu zatím nic nenaslouchá. Spusťte server a objeví se tu.';
+
+  @override
+  String get rigPortsAddHintHost => 'Port k namapování (např. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Místní port (volitelné)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port v prohlížeči (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'prohlížeč (VM) není připojen';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port na Androidu';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android není připojen';
 
   @override
   String rigImagesMissing(int count) {
@@ -14157,6 +14211,10 @@ class AppLocalizationsCs extends AppLocalizations {
       'Tohle je správa serveru. Demo dá každému návštěvníkovi vlastní jednorázový pracovní prostor a nic mimo něj.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipeline zde nelze spouštět. Návštěvník, který dokáže napsat krok bash a spustit ho — ručně nebo přes spouštěč události — spouští kód na tomto hostiteli.';
+
+  @override
   String get settingsBackupRestore => 'Záloha a obnovení';
 
   @override
@@ -14504,6 +14562,48 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Povolit všechny hostitele';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Oprávnění webu';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Oprávnění webu a síť';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Zatím žádný web nepožádal o oprávnění';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin chce použít $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Blokovat';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Kameru';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Mikrofon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Oznámení';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Polohu';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Trvalé úložiště';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Schránku';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Snímek obrazovky';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Povolit všechny síťové hostitele?';

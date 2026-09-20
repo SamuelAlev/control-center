@@ -16,8 +16,8 @@ sealed class MobileAction extends RigAction {
     if (verb == null) {
       return const RigActionInvalid(
         'Missing or invalid argument: action (expected one of tap, swipe, '
-        'type, key, screenshot, ui_dump, install_apk, start_app, stop_app, '
-        'clear_app_data, uninstall_app, open_url, shell)',
+        'type, key, rotate, screenshot, ui_dump, install_apk, start_app, '
+        'stop_app, clear_app_data, uninstall_app, open_url, shell)',
       );
     }
     switch (verb) {
@@ -72,8 +72,21 @@ sealed class MobileAction extends RigAction {
           );
         }
         return RigActionParsed(MobileKey(resolved));
+      case 'rotate':
+        final parsed = _parseRotate(args);
+        if (parsed == null) {
+          return const RigActionInvalid(
+            'Missing or invalid argument: direction (expected clockwise or '
+            'counterclockwise)',
+          );
+        }
+        return RigActionParsed(MobileRotate(parsed));
       case 'screenshot':
-        return const RigActionParsed(MobileScreenshot());
+        return RigActionParsed(
+          MobileScreenshot(
+            fullResolution: rigOptBool(args, 'full_resolution') ?? false,
+          ),
+        );
       case 'ui_dump':
         return const RigActionParsed(MobileUiDump());
       case 'install_apk':
@@ -156,6 +169,14 @@ sealed class MobileAction extends RigAction {
     }
     final parsed = Uri.tryParse(value);
     return parsed != null && parsed.scheme.isNotEmpty ? value : null;
+  }
+
+  static RigRotateDirection? _parseRotate(Map<String, dynamic> args) {
+    final raw = rigOptString(args, 'direction');
+    if (raw == null) {
+      return RigRotateDirection.clockwise;
+    }
+    return RigRotateDirection.fromWire(raw);
   }
 
   static List<String>? _parseArgv(Map<String, dynamic> args) {
@@ -317,10 +338,40 @@ class MobileKey extends MobileAction {
   String get summary => 'Pressed $keycode';
 }
 
+/// Rotate the device 90 degrees.
+class MobileRotate extends MobileAction {
+  /// Creates a [MobileRotate].
+  const MobileRotate([this.direction = RigRotateDirection.clockwise]);
+
+  /// Which way to turn the device.
+  final RigRotateDirection direction;
+
+  @override
+  String get verb => 'rotate';
+
+  @override
+  Map<String, dynamic> toJson() => {
+    'action': verb,
+    'direction': direction.wire,
+  };
+
+  @override
+  String get summary => direction == RigRotateDirection.clockwise
+      ? 'Rotated clockwise'
+      : 'Rotated counterclockwise';
+}
+
 /// Capture the screen.
 class MobileScreenshot extends MobileAction {
   /// Creates a [MobileScreenshot].
-  const MobileScreenshot();
+  const MobileScreenshot({this.fullResolution = false});
+
+  /// When true, return the native PNG instead of the downscaled agent JPEG.
+  ///
+  /// The human toolbar uses this so a Simulator-style screenshot is the
+  /// device's own pixels. Agent turns keep the default: a frame over the
+  /// agent ceiling is a token tax on every look.
+  final bool fullResolution;
 
   @override
   String get verb => 'screenshot';
@@ -329,7 +380,10 @@ class MobileScreenshot extends MobileAction {
   bool get mutatesGuest => false;
 
   @override
-  Map<String, dynamic> toJson() => {'action': verb};
+  Map<String, dynamic> toJson() => {
+    'action': verb,
+    if (fullResolution) 'full_resolution': true,
+  };
 
   @override
   String get summary => 'Took a screenshot';

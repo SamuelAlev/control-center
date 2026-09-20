@@ -272,6 +272,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get rigStopMachine => 'Oprește mașina';
 
   @override
+  String get rigHomeButton => 'Ecran principal';
+
+  @override
+  String get rigRotateClockwise => 'Rotește în sens orar';
+
+  @override
+  String get rigRotateCounterclockwise => 'Rotește în sens antiorar';
+
+  @override
+  String get rigTakeScreenshot => 'Fă o captură de ecran';
+
+  @override
+  String get rigScreenshotSaved => 'Captura de ecran a fost salvată';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Nu s-a putut salva captura de ecran: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Acest server nu poate găzdui acest tip de mașină.';
 
@@ -530,6 +550,40 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'nu ascultă';
+
+  @override
+  String get rigPortsTooltipHost => 'Porturi deschise în acest terminal';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Nimic nu ascultă încă în acest terminal. Pornește un server și apare aici.';
+
+  @override
+  String get rigPortsAddHintHost => 'Port de mapat (ex. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Port local (opțional)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port în browser (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'browser (VM) neatașat';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port pe Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android neatașat';
 
   @override
   String rigImagesMissing(int count) {
@@ -14143,6 +14197,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Asta e administrare de server. Demo-ul dă fiecărui vizitator propriul spațiu de lucru de unică folosință și nimic dincolo de el.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipeline-urile nu pot rula aici. Un vizitator care poate scrie un pas bash și îl poate porni — manual sau printr-un declanșator de eveniment — execută cod pe acest gazdă.';
+
+  @override
   String get settingsBackupRestore => 'Backup și restaurare';
 
   @override
@@ -14495,6 +14553,49 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Permite toate gazdele';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Permisiuni ale site-ului';
+
+  @override
+  String get rigBrowserPermissionsTooltip =>
+      'Permisiuni ale site-ului și rețea';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Niciun site nu a cerut încă o permisiune';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin vrea să folosească $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Blochează';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Cameră';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Microfon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Notificări';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Locație';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Stocare persistentă';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Clipboard';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Captură de ecran';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Permiți toate gazdele din rețea?';

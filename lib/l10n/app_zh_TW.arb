@@ -119,6 +119,19 @@
   "rigStartIosHint": "在伺服器 Mac 上建立一個用完即棄的 iOS 模擬器。測試環境關閉時會將其刪除；網路存取未隔離。",
   "rigTechnicalDetails": "技術詳情",
   "rigStopMachine": "停止機器",
+  "rigHomeButton": "主畫面",
+  "rigRotateClockwise": "順時針旋轉",
+  "rigRotateCounterclockwise": "逆時針旋轉",
+  "rigTakeScreenshot": "擷取螢幕",
+  "rigScreenshotSaved": "已儲存螢幕截圖",
+  "rigScreenshotSaveFailed": "無法儲存螢幕截圖：{error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "此伺服器無法託管這類機器。",
   "rigTabNeedsConversation": "請先開啟對話 — 機器隸屬於單一對話，這樣你和代理才會看到同一畫面。",
   "ideMenuSectionTools": "工具",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "瀏覽器 (VM) 的網域，例如 myapp.test — 可在該處連線，而非主機上",
   "rigPortsProcessUnknown": "未知處理程序",
   "rigPortsInactive": "未在監聽",
+  "rigPortsTooltipHost": "此終端機中開啟的連接埠",
+  "rigPortsEmptyHost": "此終端機中還沒有程式在監聽。啟動伺服器後會出現在這裡。",
+  "rigPortsAddHintHost": "要對應的連接埠（例如 5173）",
+  "rigPortsLocalPortHint": "本機連接埠（選填）",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port}（瀏覽器虛擬機器）",
+  "rigPortsDestBrowserUnreachable": "瀏覽器（虛擬機器）未連線",
+  "rigPortsDestAndroid": "localhost:{port}（Android）",
+  "rigPortsDestAndroidUnreachable": "Android 未連線",
   "rigImagesMissing": "{count, plural, =1{還有 1 個基礎映像待下載} other{還有 {count} 個基礎映像待下載}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "單一登入屬於伺服器設定。示範會改讓你以臨時訪客身分登入。",
   "demoUnavailableAudio": "錄音與聽寫需要主機上的音訊擷取與語音模型。示範兩者皆未提供，因此其會議是只有逐字稿、沒有播放。",
   "demoUnavailableServerAdmin": "這是伺服器管理。示範只給每位訪客一個用完即丟的工作區，除此之外什麼都沒有。",
+  "demoUnavailablePipelines": "此處無法執行管線。訪客若能撰寫 bash 步驟並以手動或事件觸發方式啟動，就是在此主機上執行程式碼。",
   "settingsBackupRestore": "備份與還原",
   "settingsBackupRestoreDescription": "此伺服器上所有資料庫的快照，以及單一工作區的匯出、匯入與刪除。",
   "backupSnapshotsLabel": "安裝快照",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "請嘗試其他標題或提取要求編號",
   "rigNetworkUnrestricted": "網路不受限制",
   "rigNetworkAllowAllHosts": "允許所有主機",
+  "rigBrowserPermissionsTitle": "網站權限",
+  "rigBrowserPermissionsTooltip": "網站權限與網路",
+  "rigBrowserPermissionEmpty": "還沒有網站要求過權限",
+  "rigBrowserPermissionPrompt": "{origin} 想要使用{permission}",
+  "rigBrowserPermissionBlock": "封鎖",
+  "rigBrowserPermissionCamera": "相機",
+  "rigBrowserPermissionMicrophone": "麥克風",
+  "rigBrowserPermissionNotifications": "通知",
+  "rigBrowserPermissionGeolocation": "位置",
+  "rigBrowserPermissionPersistentStorage": "持久儲存",
+  "rigBrowserPermissionClipboard": "剪貼簿",
+  "rigBrowserPermissionDisplayCapture": "螢幕擷取",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "允許存取所有網路主機？",
   "rigNetworkBypassBody": "這會重新啟動隔離環境，並捨棄其中尚未提交的工作。之後，客體系統在關閉前可以存取任何網路主機。",
   "rigNetworkRestartUnrestricted": "以不受限模式重新啟動",

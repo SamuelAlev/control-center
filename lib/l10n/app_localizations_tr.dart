@@ -268,6 +268,26 @@ class AppLocalizationsTr extends AppLocalizations {
   String get rigStopMachine => 'Makineyi durdur';
 
   @override
+  String get rigHomeButton => 'Ana ekran';
+
+  @override
+  String get rigRotateClockwise => 'Saat yönünde döndür';
+
+  @override
+  String get rigRotateCounterclockwise => 'Saat yönünün tersine döndür';
+
+  @override
+  String get rigTakeScreenshot => 'Ekran görüntüsü al';
+
+  @override
+  String get rigScreenshotSaved => 'Ekran görüntüsü kaydedildi';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Ekran görüntüsü kaydedilemedi: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Bu sunucu bu tür bir makine barındıramaz.';
 
@@ -522,6 +542,40 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'dinlemiyor';
+
+  @override
+  String get rigPortsTooltipHost => 'Bu terminalde açık bağlantı noktaları';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Bu terminalde henüz dinleyen yok. Bir sunucu başlatın, burada görünür.';
+
+  @override
+  String get rigPortsAddHintHost => 'Eşlenecek bağlantı noktası (ör. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Yerel bağlantı noktası (isteğe bağlı)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port tarayıcıda (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'tarayıcı (VM) bağlı değil';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port Android\'de';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android bağlı değil';
 
   @override
   String rigImagesMissing(int count) {
@@ -13995,6 +14049,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu sunucu yönetimidir. Demo her ziyaretçiye kendi tek kullanımlık çalışma alanını verir, ötesinde bir şey vermez.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'İş hatları burada çalıştırılamaz. Bir bash adımı yazıp — elle veya bir olay tetikleyicisiyle — başlatabilen bir ziyaretçi bu makinede kod çalıştırıyor demektir.';
+
+  @override
   String get settingsBackupRestore => 'Yedekleme ve geri yükleme';
 
   @override
@@ -14342,6 +14400,47 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Tüm ana bilgisayarlara izin ver';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Site izinleri';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Site izinleri ve ağ';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'Henüz hiçbir site izin istemedi';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin şunu kullanmak istiyor: $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Engelle';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Kamera';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Mikrofon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Bildirimler';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Konum';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Kalıcı depolama';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Pano';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Ekran yakalama';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle =>

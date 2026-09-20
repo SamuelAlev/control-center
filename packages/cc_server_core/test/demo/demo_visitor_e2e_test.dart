@@ -366,6 +366,25 @@ void main() {
         'workspace.export',
         'workspace.import',
         'mcp.callTool',
+        // Pipeline host-exec. `pipeline.start` is absent because the engine
+        // port is null; template upsert / trigger writes are refused by
+        // name even though those ops are always built. A visitor who can
+        // author a `bash.script` node and start it — by hand or via an
+        // event trigger — is executing code on this host.
+        'pipeline.start',
+        'pipeline.cancel',
+        'pipeline.retry',
+        'pipeline.killStep',
+        'pipeline_template.upsert',
+        'pipeline_trigger.insert',
+        'pipeline_trigger.update',
+        'pipeline_trigger.markFired',
+        'playbook.run',
+        'orchestration.approve',
+        'orchestration.approveNodes',
+        'orchestration.continueNode',
+        'plan.approve',
+        'review_hub.start',
       ]) {
         await expectLater(
           client.call(op, const {}),

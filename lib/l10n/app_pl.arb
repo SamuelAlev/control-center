@@ -119,6 +119,19 @@
   "rigStartIosHint": "Tworzy tymczasowy symulator iOS na serwerowym Macu. Jest usuwany po zamknięciu środowiska testowego; dostęp do sieci nie jest odizolowany.",
   "rigTechnicalDetails": "Szczegóły techniczne",
   "rigStopMachine": "Zatrzymaj maszynę",
+  "rigHomeButton": "Ekran główny",
+  "rigRotateClockwise": "Obróć w prawo",
+  "rigRotateCounterclockwise": "Obróć w lewo",
+  "rigTakeScreenshot": "Zrób zrzut ekranu",
+  "rigScreenshotSaved": "Zrzut ekranu zapisany",
+  "rigScreenshotSaveFailed": "Nie udało się zapisać zrzutu ekranu: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Ten serwer nie może hostować tego rodzaju maszyny.",
   "rigTabNeedsConversation": "Najpierw otwórz rozmowę — maszyna należy do rozmowy, dzięki czemu Ty i Twoi agenci widzicie ten sam ekran.",
   "ideMenuSectionTools": "Narzędzia",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domena przeglądarki (VM), np. myapp.test — osiągalna tam, nie na hoście",
   "rigPortsProcessUnknown": "nieznany proces",
   "rigPortsInactive": "nie nasłuchuje",
+  "rigPortsTooltipHost": "Porty otwarte w tym terminalu",
+  "rigPortsEmptyHost": "W tym terminalu nic jeszcze nie nasłuchuje. Uruchom serwer, a pojawi się tutaj.",
+  "rigPortsAddHintHost": "Port do zmapowania (np. 5173)",
+  "rigPortsLocalPortHint": "Port lokalny (opcjonalnie)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} w przeglądarce (VM)",
+  "rigPortsDestBrowserUnreachable": "przeglądarka (VM) niepodłączona",
+  "rigPortsDestAndroid": "localhost:{port} na Androidzie",
+  "rigPortsDestAndroidUnreachable": "Android niepodłączony",
   "rigImagesMissing": "{count, plural, one{{count} obraz podstawowy jeszcze do pobrania} few{{count} obrazy podstawowe jeszcze do pobrania} many{{count} obrazów podstawowych jeszcze do pobrania} other{{count} obrazu podstawowego jeszcze do pobrania}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Logowanie jednokrotne to konfiguracja serwera. Demo loguje Cię zamiast tego jako tymczasowego gościa.",
   "demoUnavailableAudio": "Nagrywanie i dyktowanie wymagają przechwytywania dźwięku i modelu mowy na hoście. Demo nie dostarcza ani jednego, ani drugiego, więc jego spotkania to transkrypcje bez odtwarzania.",
   "demoUnavailableServerAdmin": "To administracja serwerem. Demo daje każdemu odwiedzającemu własny jednorazowy obszar roboczy i nic ponadto.",
+  "demoUnavailablePipelines": "Potoki nie mogą tu działać. Odwiedzający, który potrafi napisać krok bash i uruchomić go — ręcznie albo przez wyzwalacz zdarzenia — wykonuje kod na tym hoście.",
   "settingsBackupRestore": "Kopia zapasowa i przywracanie",
   "settingsBackupRestoreDescription": "Migawki każdej bazy danych na tym serwerze, plus eksport, import i usuwanie pojedynczego obszaru roboczego.",
   "backupSnapshotsLabel": "Migawki instalacji",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Spróbuj użyć innego tytułu lub numeru pull requesta",
   "rigNetworkUnrestricted": "Sieć bez ograniczeń",
   "rigNetworkAllowAllHosts": "Zezwól na wszystkie hosty",
+  "rigBrowserPermissionsTitle": "Uprawnienia witryny",
+  "rigBrowserPermissionsTooltip": "Uprawnienia witryny i sieć",
+  "rigBrowserPermissionEmpty": "Żadna witryna nie poprosiła jeszcze o uprawnienie",
+  "rigBrowserPermissionPrompt": "{origin} chce użyć: {permission}",
+  "rigBrowserPermissionBlock": "Zablokuj",
+  "rigBrowserPermissionCamera": "Aparat",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Powiadomienia",
+  "rigBrowserPermissionGeolocation": "Lokalizacja",
+  "rigBrowserPermissionPersistentStorage": "Trwały magazyn",
+  "rigBrowserPermissionClipboard": "Schowek",
+  "rigBrowserPermissionDisplayCapture": "Przechwytywanie ekranu",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Zezwolić na wszystkie hosty sieciowe?",
   "rigNetworkBypassBody": "Spowoduje to ponowne uruchomienie odizolowanego środowiska i odrzucenie niezatwierdzonej pracy w jego wnętrzu. System gościa będzie wtedy mógł łączyć się z dowolnym hostem sieciowym aż do zamknięcia.",
   "rigNetworkRestartUnrestricted": "Uruchom ponownie bez ograniczeń",

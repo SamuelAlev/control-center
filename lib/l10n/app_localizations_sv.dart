@@ -270,6 +270,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get rigStopMachine => 'Stoppa maskinen';
 
   @override
+  String get rigHomeButton => 'Hem';
+
+  @override
+  String get rigRotateClockwise => 'Rotera medurs';
+
+  @override
+  String get rigRotateCounterclockwise => 'Rotera moturs';
+
+  @override
+  String get rigTakeScreenshot => 'Ta en skärmbild';
+
+  @override
+  String get rigScreenshotSaved => 'Skärmbilden har sparats';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Kunde inte spara skärmbilden: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Den här servern kan inte köra den här typen av maskin.';
 
@@ -527,6 +547,40 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'lyssnar inte';
+
+  @override
+  String get rigPortsTooltipHost => 'Portar öppna i den här terminalen';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Inget lyssnar i den här terminalen ännu. Starta en server så visas den här.';
+
+  @override
+  String get rigPortsAddHintHost => 'Port att mappa (t.ex. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Lokal port (valfritt)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port i webbläsaren (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'webbläsare (VM) inte ansluten';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port på Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android inte ansluten';
 
   @override
   String rigImagesMissing(int count) {
@@ -14005,6 +14059,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det här är serveradministration. Demon ger varje besökare en egen tillfällig arbetsyta och ingenting bortom den.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipelines kan inte köras här. En besökare som kan skriva ett bash-steg och starta det — för hand eller via en händelsetrigger — kör kod på den här värden.';
+
+  @override
   String get settingsBackupRestore => 'Säkerhetskopiering och återställning';
 
   @override
@@ -14351,6 +14409,49 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Tillåt alla värdar';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Webbplatsbehörigheter';
+
+  @override
+  String get rigBrowserPermissionsTooltip =>
+      'Webbplatsbehörigheter och nätverk';
+
+  @override
+  String get rigBrowserPermissionEmpty =>
+      'Ingen webbplats har bett om en behörighet än';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin vill använda $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Blockera';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Kamera';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Mikrofon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Aviseringar';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Plats';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Beständig lagring';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Urklipp';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Skärminspelning';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Vill du tillåta alla nätverksvärdar?';

@@ -30,6 +30,20 @@ abstract class CcNodeBuilder {
   /// the box's vertical center.
   PlaceholderAlignment get placeholderAlignment => PlaceholderAlignment.middle;
 
+  /// Optional span-level rendering for inline nodes.
+  ///
+  /// Returning a span embeds it in the paragraph's single `Text.rich` instead
+  /// of wrapping [build] in a [WidgetSpan]. Use this when the highlight must
+  /// wrap with the surrounding sentence (a [WidgetSpan] is an unbreakable
+  /// box). [build] remains the fallback and the required contract.
+  InlineSpan? buildSpan(
+    CcNode node,
+    TextStyle? base,
+    CcMarkdownStyle style,
+    CcRenderContext context,
+    BuildContext buildContext,
+  ) => null;
+
   /// Builds the widget for [node].
   Widget build(CcNode node, CcMarkdownStyle style, CcRenderContext context);
 }

@@ -98,6 +98,23 @@ void main() {
       expect(f.spawner.started.single.args, contains('sys.boot_completed'));
     });
 
+    test('user rotation reads wm then locks the next quarter-turn', () async {
+      final f = _client(
+        answer: (args) {
+          if (args.contains('user-rotation') && !args.contains('lock')) {
+            return _out('User rotation: 0\n');
+          }
+          return _out('');
+        },
+      );
+      expect(await f.client.userRotation(), 0);
+      await f.client.setUserRotation(1);
+      expect(
+        f.spawner.started.last.args,
+        containsAll(['wm', 'user-rotation', 'lock', '1']),
+      );
+    });
+
     test(
       'a disconnected device is named, not left as a raw adb error',
       () async {
@@ -529,6 +546,47 @@ void main() {
       final summary = AdbClient.summarizeHierarchy(xml);
       expect(summary, contains('a <b> c > d'));
       expect(summary, contains('@(5,5)'));
+    });
+  });
+
+  group('reverse', () {
+    test('plants tcp:device to tcp:host against the pinned serial', () async {
+      final f = _client(answer: (_) => _out(''));
+      await f.client.reverse(devicePort: 5173, hostPort: 49152);
+      expect(f.spawner.started.single.args, [
+        '-s',
+        _serial,
+        'reverse',
+        'tcp:5173',
+        'tcp:49152',
+      ]);
+    });
+
+    test('removeReverse and removeAllReverses carry the serial first', () async {
+      final f = _client(answer: (_) => _out(''));
+      await f.client.removeReverse(5173);
+      await f.client.removeAllReverses();
+      expect(f.spawner.started[0].args, [
+        '-s',
+        _serial,
+        'reverse',
+        '--remove',
+        'tcp:5173',
+      ]);
+      expect(f.spawner.started[1].args, [
+        '-s',
+        _serial,
+        'reverse',
+        '--remove-all',
+      ]);
+    });
+
+    test('refuses a port outside 1–65535', () async {
+      final f = _client(answer: (_) => _out(''));
+      await expectLater(
+        f.client.reverse(devicePort: 0, hostPort: 80),
+        throwsA(isA<AdbException>()),
+      );
     });
   });
 }

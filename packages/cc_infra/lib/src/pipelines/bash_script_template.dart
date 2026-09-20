@@ -37,8 +37,16 @@ void registerBashScriptBody(
   required CredentialsRepository credentialsRepository,
   required StepProcessRegistry stepProcessRegistry,
   required Future<String> Function(String pipelineRunId) runDirPath,
+  // Fail-closed on a public demo: the body is still registered (an unknown
+  // key would look like a wiring bug) but it never renders or spawns.
+  bool execute = true,
 }) {
   registry.registerBody(BuiltInBodyKeys.bashScript, (ctx) async {
+    if (!execute) {
+      return StepResult.failed(
+        'bashScript: execution is disabled on this host',
+      );
+    }
     final def = await templateRepository.getById(
       ctx.workspaceId,
       ctx.templateId,

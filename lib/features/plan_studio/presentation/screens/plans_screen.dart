@@ -4,6 +4,7 @@ import 'package:cc_domain/features/plan_studio/domain/entities/plan_document.dar
 import 'package:cc_domain/features/plan_studio/domain/entities/playbook.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/orchestration/providers/orchestration_providers.dart';
 import 'package:control_center/features/plan_studio/presentation/widgets/playbook_run_dialog.dart';
 import 'package:control_center/features/plan_studio/providers/plan_studio_providers.dart';
@@ -301,12 +302,13 @@ class _PlaybookCard extends ConsumerWidget {
                     .deletePlaybook(playbook.id),
               ),
               const SizedBox(width: 4),
-              CcButton(
-                size: CcButtonSize.sm,
-                icon: AppIcons.play,
-                onPressed: () => _run(context, ref),
-                child: Text(l10n.planPlaybookRun),
-              ),
+              if (!ref.watch(isDemoServerProvider))
+                CcButton(
+                  size: CcButtonSize.sm,
+                  icon: AppIcons.play,
+                  onPressed: () => _run(context, ref),
+                  child: Text(l10n.planPlaybookRun),
+                ),
             ],
           ),
         ),

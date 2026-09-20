@@ -260,6 +260,26 @@ class AppLocalizationsJa extends AppLocalizations {
   String get rigStopMachine => 'マシンを停止';
 
   @override
+  String get rigHomeButton => 'ホーム';
+
+  @override
+  String get rigRotateClockwise => '右に回転';
+
+  @override
+  String get rigRotateCounterclockwise => '左に回転';
+
+  @override
+  String get rigTakeScreenshot => 'スクリーンショットを撮る';
+
+  @override
+  String get rigScreenshotSaved => 'スクリーンショットを保存しました';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'スクリーンショットを保存できませんでした: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable => 'このサーバーではこの種類のマシンをホストできません。';
 
   @override
@@ -511,6 +531,39 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get rigPortsInactive => '未リッスン';
+
+  @override
+  String get rigPortsTooltipHost => 'このターミナルで開いているポート';
+
+  @override
+  String get rigPortsEmptyHost => 'このターミナルではまだ何も待ち受けていません。サーバーを起動するとここに表示されます。';
+
+  @override
+  String get rigPortsAddHintHost => '割り当てるポート（例: 5173）';
+
+  @override
+  String get rigPortsLocalPortHint => 'ローカルポート（任意）';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port（ブラウザ VM）';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'ブラウザ（VM）未接続';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port（Android）';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android 未接続';
 
   @override
   String rigImagesMissing(int count) {
@@ -13694,6 +13747,10 @@ class AppLocalizationsJa extends AppLocalizations {
       'これはサーバー管理です。デモは各訪問者に使い捨てのワークスペースだけを与え、それ以上は何もありません。';
 
   @override
+  String get demoUnavailablePipelines =>
+      'パイプラインはここでは実行できません。bash ステップを書いて手動またはイベントトリガーで開始できる訪問者は、このホスト上でコードを実行しています。';
+
+  @override
   String get settingsBackupRestore => 'バックアップと復元';
 
   @override
@@ -14034,6 +14091,47 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'すべてのホストを許可';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'サイトの許可';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'サイトの許可とネットワーク';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'まだ許可を求めたサイトはありません';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin が $permission の使用を求めています';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'ブロック';
+
+  @override
+  String get rigBrowserPermissionCamera => 'カメラ';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'マイク';
+
+  @override
+  String get rigBrowserPermissionNotifications => '通知';
+
+  @override
+  String get rigBrowserPermissionGeolocation => '位置情報';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => '永続ストレージ';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'クリップボード';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => '画面キャプチャ';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'すべてのネットワークホストを許可しますか？';

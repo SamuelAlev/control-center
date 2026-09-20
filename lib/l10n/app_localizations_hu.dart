@@ -271,6 +271,26 @@ class AppLocalizationsHu extends AppLocalizations {
   String get rigStopMachine => 'Gép leállítása';
 
   @override
+  String get rigHomeButton => 'Kezdőképernyő';
+
+  @override
+  String get rigRotateClockwise => 'Forgatás óramutató szerint';
+
+  @override
+  String get rigRotateCounterclockwise => 'Forgatás óramutatóval ellentétesen';
+
+  @override
+  String get rigTakeScreenshot => 'Képernyőkép készítése';
+
+  @override
+  String get rigScreenshotSaved => 'Képernyőkép mentve';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'A képernyőképet nem sikerült menteni: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Ez a szerver nem tud ilyen gépet futtatni.';
 
@@ -525,6 +545,40 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'nem figyel';
+
+  @override
+  String get rigPortsTooltipHost => 'Nyitott portok ebben a terminálban';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Ebben a terminálban még semmi sem figyel. Indíts egy szervert, és itt megjelenik.';
+
+  @override
+  String get rigPortsAddHintHost => 'Leképezendő port (pl. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Helyi port (nem kötelező)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port a böngészőben (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'böngésző (VM) nincs csatolva';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port Androidon';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android nincs csatolva';
 
   @override
   String rigImagesMissing(int count) {
@@ -14050,6 +14104,10 @@ class AppLocalizationsHu extends AppLocalizations {
       'Ez szerveradminisztráció. A demo minden látogatónak saját eldobható munkaterületet ad, és semmit azon túl.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'A folyamatok itt nem futhatnak. Egy látogató, aki bash lépést írhat és elindíthatja — kézzel vagy eseményindítóval — kódot futtat ezen a gazdagépen.';
+
+  @override
   String get settingsBackupRestore => 'Biztonsági mentés és visszaállítás';
 
   @override
@@ -14399,6 +14457,47 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Minden gazdagép engedélyezése';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Webhelyengedélyek';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Webhelyengedélyek és hálózat';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'Még egy webhely sem kért engedélyt';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return 'A(z) $origin a következőt szeretné használni: $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Tiltás';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Kamera';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Mikrofon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Értesítések';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Helymeghatározás';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Állandó tárhely';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Vágólap';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Képernyőfelvétel';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle =>

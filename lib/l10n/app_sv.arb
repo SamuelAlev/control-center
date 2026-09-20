@@ -119,6 +119,19 @@
   "rigStartIosHint": "Skapar en tillfällig iOS-simulator på serverns Mac. Den tas bort när testmiljön stängs; nätverksåtkomsten är inte isolerad.",
   "rigTechnicalDetails": "Tekniska detaljer",
   "rigStopMachine": "Stoppa maskinen",
+  "rigHomeButton": "Hem",
+  "rigRotateClockwise": "Rotera medurs",
+  "rigRotateCounterclockwise": "Rotera moturs",
+  "rigTakeScreenshot": "Ta en skärmbild",
+  "rigScreenshotSaved": "Skärmbilden har sparats",
+  "rigScreenshotSaveFailed": "Kunde inte spara skärmbilden: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Den här servern kan inte köra den här typen av maskin.",
   "rigTabNeedsConversation": "Öppna ett samtal först – en maskin hör till ett, så att du och dina agenter tittar på samma skärm.",
   "ideMenuSectionTools": "Verktyg",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domän för Webbläsare (VM), t.ex. myapp.test – nåbar där, inte på värden",
   "rigPortsProcessUnknown": "okänd process",
   "rigPortsInactive": "lyssnar inte",
+  "rigPortsTooltipHost": "Portar öppna i den här terminalen",
+  "rigPortsEmptyHost": "Inget lyssnar i den här terminalen ännu. Starta en server så visas den här.",
+  "rigPortsAddHintHost": "Port att mappa (t.ex. 5173)",
+  "rigPortsLocalPortHint": "Lokal port (valfritt)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} i webbläsaren (VM)",
+  "rigPortsDestBrowserUnreachable": "webbläsare (VM) inte ansluten",
+  "rigPortsDestAndroid": "localhost:{port} på Android",
+  "rigPortsDestAndroidUnreachable": "Android inte ansluten",
   "rigImagesMissing": "{count, plural, one{1 basavbildning kvar att hämta} other{{count} basavbildningar kvar att hämta}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Enkel inloggning är serverkonfiguration. Demon loggar in dig som en tillfällig gäst i stället.",
   "demoUnavailableAudio": "Inspelning och diktering behöver ljudupptagning och en talmodell på värden. Demon skeppar ingetdera, så dess möten är utskrifter utan uppspelning.",
   "demoUnavailableServerAdmin": "Det här är serveradministration. Demon ger varje besökare en egen tillfällig arbetsyta och ingenting bortom den.",
+  "demoUnavailablePipelines": "Pipelines kan inte köras här. En besökare som kan skriva ett bash-steg och starta det — för hand eller via en händelsetrigger — kör kod på den här värden.",
   "settingsBackupRestore": "Säkerhetskopiering och återställning",
   "settingsBackupRestoreDescription": "Ögonblicksbilder av varje databas på den här servern, plus export, import och borttagning för en enskild arbetsyta.",
   "backupSnapshotsLabel": "Installationsögonblicksbilder",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Prova en annan titel eller ett annat pull request-nummer",
   "rigNetworkUnrestricted": "Nätverk utan begränsningar",
   "rigNetworkAllowAllHosts": "Tillåt alla värdar",
+  "rigBrowserPermissionsTitle": "Webbplatsbehörigheter",
+  "rigBrowserPermissionsTooltip": "Webbplatsbehörigheter och nätverk",
+  "rigBrowserPermissionEmpty": "Ingen webbplats har bett om en behörighet än",
+  "rigBrowserPermissionPrompt": "{origin} vill använda {permission}",
+  "rigBrowserPermissionBlock": "Blockera",
+  "rigBrowserPermissionCamera": "Kamera",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Aviseringar",
+  "rigBrowserPermissionGeolocation": "Plats",
+  "rigBrowserPermissionPersistentStorage": "Beständig lagring",
+  "rigBrowserPermissionClipboard": "Urklipp",
+  "rigBrowserPermissionDisplayCapture": "Skärminspelning",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Vill du tillåta alla nätverksvärdar?",
   "rigNetworkBypassBody": "Detta startar om den isolerade miljön och tar bort arbete som inte har checkats in. Gästen kan därefter nå alla nätverksvärdar tills miljön stängs.",
   "rigNetworkRestartUnrestricted": "Starta om utan begränsningar",

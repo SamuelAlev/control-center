@@ -28,14 +28,14 @@
 //    in the guest is LISTENING on it (loop prevention — see below) and splices
 //    to `127.0.0.1:<port>`. One pre-created forward serves every future port.
 //
-//  * GUEST → HOST: a REVERSE TUNNEL over `machine exec -i` stdio. The host
-//    holds a small pool of exec channels, each running
-//    `socat STDIO TCP-LISTEN:<port>,bind=127.0.0.1,reuseaddr,reuseport` in
-//    the guest; when a guest process connects and sends its first bytes, the
-//    host dials the real target and splices. This is also what makes the git
-//    credential broker reachable from inside an exec rig at all — the
-//    "loopback maps to the host" assumption the credential helper shipped
-//    with is simply not true under a filtered NIC.
+//  * GUEST → HOST: a REVERSE TUNNEL over `machine exec -i` stdio. A browser
+//    page-load often opens many TCP connections against one
+//    guest port; those ride ONE multiplexed exec (`cc-revtun` in
+//    reverse_mux.dart) rather than one exec per connection. Chromium/Firefox
+//    resolve `localhost` to `::1` first; the mux binds both `127.0.0.1` and
+//    `[::1]`. The git credential broker stays on a single one-shot socat
+//    (helpers dial `127.0.0.1`); a filtered NIC still cannot reach host
+//    loopback on its own, which is why this lane exists at all.
 //
 // The listener check in the mux dialer is not cosmetic: without it, a host
 // bridge on `127.0.0.1:3000` whose guest server just died would dial the
@@ -47,6 +47,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/rigs/reverse_mux.dart';
 import 'package:meta/meta.dart';
 
 /// The fixed in-guest TCP port the port mux listens on.
@@ -252,7 +253,7 @@ class RigPortForward {
   };
 }
 
-/// Everything the ports panel renders for one rig.
+/// Everything the ports panel renders for one rig or host-shell session.
 class RigPortsSnapshot {
   /// Creates a [RigPortsSnapshot].
   const RigPortsSnapshot({
@@ -260,9 +261,11 @@ class RigPortsSnapshot {
     required this.autoForward,
     required this.ports,
     this.tlsEnabled = false,
+    this.browserReachable = false,
+    this.androidReachable = false,
   });
 
-  /// The rig.
+  /// The rig, or the host-shell session id.
   final String rigId;
 
   /// Whether newly discovered guest ports are forwarded automatically.
@@ -273,6 +276,14 @@ class RigPortsSnapshot {
   /// rather than promising a scheme the router cannot answer.
   final bool tlsEnabled;
 
+  /// Whether a Browser (VM) in the same space is attached, so `localhost`
+  /// inside that guest reaches these ports.
+  final bool browserReachable;
+
+  /// Whether an Android rig in the same space is attached, so `localhost`
+  /// inside the emulator reaches these ports via `adb reverse`.
+  final bool androidReachable;
+
   /// Current forwards, ascending by guest port.
   final List<RigPortForward> ports;
 
@@ -281,6 +292,8 @@ class RigPortsSnapshot {
     'rig_id': rigId,
     'auto_forward': autoForward,
     'tls_enabled': tlsEnabled,
+    'browser_reachable': browserReachable,
+    'android_reachable': androidReachable,
     'ports': [for (final p in ports) p.toWire()],
   };
 }
@@ -336,7 +349,8 @@ void spliceSockets(Socket a, Socket b) {
 class HostPortBridge {
   HostPortBridge._({
     required this.guestPort,
-    required this.muxHostPort,
+    this.muxHostPort,
+    this.directTargetPort,
     required ServerSocket loopback,
   }) : _loopback = loopback {
     _accept(loopback, isLan: false);
@@ -348,17 +362,7 @@ class HostPortBridge {
     required int guestPort,
     required int muxHostPort,
   }) async {
-    ServerSocket loopback;
-    try {
-      loopback = await ServerSocket.bind(
-        InternetAddress.loopbackIPv4,
-        guestPort,
-      );
-    } on SocketException {
-      // The user's own host service (or another rig's bridge) holds it. An
-      // ephemeral port still works — the panel shows the real number.
-      loopback = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
-    }
+    final loopback = await _bindLoopback(guestPort);
     return HostPortBridge._(
       guestPort: guestPort,
       muxHostPort: muxHostPort,
@@ -366,11 +370,40 @@ class HostPortBridge {
     );
   }
 
-  /// The guest port this bridge serves.
+  /// Opens a loopback listener that splices to another HOST port, with no
+  /// mux preamble — host-shell remapping (`5173 → 8080`) and nothing else.
+  static Future<HostPortBridge> startDirect({
+    required int preferredHostPort,
+    required int targetHostPort,
+  }) async {
+    final loopback = await _bindLoopback(preferredHostPort);
+    return HostPortBridge._(
+      guestPort: preferredHostPort,
+      directTargetPort: targetHostPort,
+      loopback: loopback,
+    );
+  }
+
+  static Future<ServerSocket> _bindLoopback(int preferred) async {
+    try {
+      return await ServerSocket.bind(InternetAddress.loopbackIPv4, preferred);
+    } on SocketException {
+      // The user's own host service (or another rig's bridge) holds it. An
+      // ephemeral port still works — the panel shows the real number.
+      return ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    }
+  }
+
+  /// The guest port this bridge serves (mux mode), or the preferred bind
+  /// (direct mode).
   final int guestPort;
 
-  /// The host loopback port the rig's mux was forwarded to.
-  final int muxHostPort;
+  /// The host loopback port the rig's mux was forwarded to. Null in direct
+  /// mode.
+  final int? muxHostPort;
+
+  /// Host loopback port to splice to, with no mux preamble. Null in mux mode.
+  final int? directTargetPort;
 
   final ServerSocket _loopback;
   ServerSocket? _lan;
@@ -414,11 +447,16 @@ class HostPortBridge {
   }
 
   Future<void> _relay(Socket client) async {
+    final target = muxHostPort ?? directTargetPort;
+    if (target == null) {
+      client.destroy();
+      return;
+    }
     final Socket upstream;
     try {
       upstream = await Socket.connect(
         InternetAddress.loopbackIPv4,
-        muxHostPort,
+        target,
         timeout: const Duration(seconds: 5),
       );
     } on Object {
@@ -426,8 +464,12 @@ class HostPortBridge {
       client.destroy();
       return;
     }
-    // The mux preamble: which guest port this connection is for.
-    upstream.add(utf8.encode('$guestPort\n'));
+    // The mux preamble: which guest port this connection is for. Direct
+    // mode is already on the host — no preamble, or the process would
+    // read a "5173\n" line as the start of its HTTP request.
+    if (muxHostPort != null) {
+      upstream.add(utf8.encode('$guestPort\n'));
+    }
     spliceSockets(client, upstream);
   }
 
@@ -444,18 +486,104 @@ class HostPortBridge {
   }
 }
 
+/// A LAN-only splice onto an existing host loopback listener.
+///
+/// Host-shell same-number mapping does not own a [HostPortBridge] (the
+/// process is already bound on loopback), but the user can still share it
+/// on the LAN: this binds `0.0.0.0:<ephemeral>` and forwards to
+/// `127.0.0.1:<targetHostPort>` with no mux preamble.
+class HostLanRelay {
+  HostLanRelay._(this._targetHostPort, this._lan) {
+    _lan.listen(
+      (client) => unawaited(_relay(client)),
+      onError: (_) {},
+      cancelOnError: false,
+    );
+  }
+
+  /// Opens the LAN listener.
+  static Future<HostLanRelay> start({required int targetHostPort}) async {
+    final lan = await ServerSocket.bind(InternetAddress.anyIPv4, 0);
+    return HostLanRelay._(targetHostPort, lan);
+  }
+
+  final int _targetHostPort;
+  final ServerSocket _lan;
+  bool _closed = false;
+
+  /// The LAN port this relay answers on.
+  int get lanPort => _lan.port;
+
+  Future<void> _relay(Socket client) async {
+    final Socket upstream;
+    try {
+      upstream = await Socket.connect(
+        InternetAddress.loopbackIPv4,
+        _targetHostPort,
+        timeout: const Duration(seconds: 5),
+      );
+    } on Object {
+      client.destroy();
+      return;
+    }
+    spliceSockets(client, upstream);
+  }
+
+  /// Closes the LAN listener. Idempotent.
+  Future<void> close() async {
+    if (_closed) {
+      return;
+    }
+    _closed = true;
+    await _lan.close();
+  }
+}
+
 /// Starts one guest-side reverse-tunnel channel: an interactive process whose
 /// stdio is wired to an in-guest listener.
 typedef GuestChannelStart = Future<Process> Function(List<String> guestArgv);
 
+/// Concurrent TCP streams one Browser (VM) reverse mux will accept.
+///
+/// Used to be one `machine exec` per connection. Four of those refused the
+/// rest of a page's fetches (white page); sixteen still respawned an exec on
+/// every keep-alive miss. The mux carries this many streams over one exec.
+const kBrowserReverseTunnelSlots = 128;
+
+/// socat listen address for one reverse-tunnel slot.
+///
+/// IPv4 and IPv6 are separate listeners. Chromium and Firefox resolve
+/// `localhost` to `::1` first; a `bind=127.0.0.1` listener then fails as
+/// connection-refused rather than falling back to IPv4.
+String guestReverseTunnelListen(int port, {required bool ipv6}) {
+  // TCP4-LISTEN matches the DevTools relay in the same guest. Plain
+  // `TCP-LISTEN` is PF_UNSPEC and has failed to bind IPv4 on Debian.
+  // `reuseport` is what lets every slot share the port; without it only
+  // one connection is accepted at a time, the document loads, and every
+  // parallel module/HMR fetch is connection-refused — a white page.
+  if (ipv6) {
+    return 'TCP6-LISTEN:$port,bind=[::1],reuseaddr,reuseport,nodelay';
+  }
+  return 'TCP4-LISTEN:$port,bind=127.0.0.1,reuseaddr,reuseport,nodelay';
+}
+
+/// Guest argv for one reverse-tunnel slot: a login-less shell so `socat` is
+/// found on PATH, then stdio spliced to a one-shot listen.
+List<String> guestReverseTunnelArgv(int port, {required bool ipv6}) => [
+  'sh',
+  '-c',
+  r'exec "$(command -v socat)" STDIO "$1"',
+  'socat',
+  guestReverseTunnelListen(port, ipv6: ipv6),
+];
+
 /// A guest-loopback listener whose connections are served by the HOST.
 ///
 /// The only guest→host lane that exists under a filtered NIC (see the file
-/// header). Each slot is one `machine exec -i` running a one-shot socat
-/// listener; the first bytes a guest client sends wake the slot, the host
-/// dials the real target and splices, and the slot respawns for the next
-/// connection. [slots] bounds concurrency — a browser bursts a handful of
-/// parallel fetches, a credential helper never needs more than one.
+/// header). [slots] `<= 1` is the credential-broker path: one one-shot
+/// socat. Anything larger (the Browser (VM)) is one multiplexed exec that
+/// accepts up to [slots] TCP streams, so a burst of fetches is not one
+/// process spawn per connection.
 class GuestReverseTunnel {
   /// Creates a [GuestReverseTunnel].
   GuestReverseTunnel({
@@ -463,13 +591,17 @@ class GuestReverseTunnel {
     required this._startChannel,
     required this._dialTarget,
     this.slots = 2,
+    this.ensureMux,
   });
 
   /// The guest loopback port to listen on.
   final int guestPort;
 
-  /// How many connections can be in flight at once.
+  /// Max in-flight TCP streams (mux) or exec slots (one-shot).
   final int slots;
+
+  /// Installs `cc-revtun` in the guest before the mux exec starts.
+  final Future<void> Function()? ensureMux;
 
   final GuestChannelStart _startChannel;
   final Future<Socket?> Function() _dialTarget;
@@ -477,30 +609,90 @@ class GuestReverseTunnel {
   final List<Process> _channels = [];
   bool _stopped = false;
 
-  /// Arms every slot.
+  /// Arms the listener. One-shot socat when [slots] is 1; otherwise the
+  /// multiplexed reverse mux.
   void start() {
-    for (var i = 0; i < slots; i++) {
-      unawaited(_runSlot());
+    if (slots <= 1) {
+      unawaited(_runSlot(ipv6: false));
+      return;
+    }
+    unawaited(_runMux());
+  }
+
+  Future<void> _runMux() async {
+    var consecutiveFailures = 0;
+    while (!_stopped) {
+      Process? process;
+      ReverseMuxHost? host;
+      var sawTraffic = false;
+      try {
+        await ensureMux?.call();
+        if (_stopped) {
+          return;
+        }
+        process = await _startChannel(
+          guestReverseMuxArgv(guestPort, maxStreams: slots),
+        );
+        _channels.add(process);
+        host = ReverseMuxHost(
+          stdin: process.stdin,
+          stdout: process.stdout,
+          stderr: process.stderr,
+          dialTarget: _dialTarget,
+          onTraffic: () => sawTraffic = true,
+        );
+        unawaited(
+          process.exitCode.then((_) {
+            host?.close();
+          }),
+        );
+        await host.done;
+        sawTraffic = sawTraffic || host.sawTraffic;
+      } on Object catch (e) {
+        if (!_stopped) {
+          CcInfraLog.debug('rig/ports: reverse-mux :$guestPort failed: $e');
+        }
+      } finally {
+        host?.close();
+        if (process != null) {
+          _channels.remove(process);
+          process.kill(ProcessSignal.sigkill);
+        }
+      }
+      if (_stopped) {
+        return;
+      }
+      if (sawTraffic) {
+        consecutiveFailures = 0;
+      } else {
+        consecutiveFailures++;
+        final delay = consecutiveFailures.clamp(1, 10);
+        await Future<void>.delayed(Duration(seconds: delay));
+      }
     }
   }
 
-  Future<void> _runSlot() async {
+  Future<void> _runSlot({required bool ipv6}) async {
     var consecutiveFailures = 0;
     while (!_stopped) {
       Process? process;
       var sawTraffic = false;
       try {
-        process = await _startChannel([
-          'socat',
-          'STDIO',
-          // reuseport lets every slot share the port; the kernel picks one
-          // listener per connection. One-shot (no fork): the connection's
-          // bytes must reach THIS channel's stdio, and a fork would strand
-          // children with nowhere to send.
-          'TCP-LISTEN:$guestPort,bind=127.0.0.1,reuseaddr,reuseport',
-        ]);
+        process = await _startChannel(
+          guestReverseTunnelArgv(guestPort, ipv6: ipv6),
+        );
         _channels.add(process);
-        unawaited(process.stderr.drain<void>());
+        unawaited(
+          process.stderr.transform(const Utf8Decoder()).forEach((line) {
+            final text = line.trim();
+            if (text.isNotEmpty && !_stopped) {
+              CcInfraLog.warning(
+                'rig/ports: reverse-tunnel :$guestPort '
+                '${ipv6 ? 'IPv6' : 'IPv4'} stderr: $text',
+              );
+            }
+          }),
+        );
         Socket? upstream;
         final done = Completer<void>();
         late StreamSubscription<List<int>> sub;
@@ -631,10 +823,19 @@ String? hostHeaderOf(List<int> head) {
 /// dev server. Nothing here terminates TLS — this is a dev convenience for
 /// plain HTTP, which is what dev servers speak.
 class RigDomainRouter {
-  /// Creates a [RigDomainRouter]. [_muxPortOf] resolves a rig's mux forward.
-  RigDomainRouter({required this._muxPortOf});
+  /// Creates a [RigDomainRouter].
+  ///
+  /// [_muxPortOf] resolves an exec rig's mux forward. [_hostPortOf] resolves
+  /// a host-shell source's published host port when there is no mux — the
+  /// domain then dials that loopback address with no preamble.
+  RigDomainRouter({
+    required int? Function(String sourceId) muxPortOf,
+    int? Function(String sourceId, int guestPort)? hostPortOf,
+  }) : _muxPortOf = muxPortOf,
+       _hostPortOf = hostPortOf;
 
-  final int? Function(String rigId) _muxPortOf;
+  final int? Function(String sourceId) _muxPortOf;
+  final int? Function(String sourceId, int guestPort)? _hostPortOf;
   final Map<String, ({String rigId, int guestPort})> _routes = {};
   ServerSocket? _server;
   SecureServerSocket? _tlsServer;
@@ -755,7 +956,10 @@ class RigDomainRouter {
     final host = hostHeaderOf(head);
     final target = host == null ? null : _routes[host];
     final muxPort = target == null ? null : _muxPortOf(target.rigId);
-    if (target == null || muxPort == null) {
+    final hostPort = (target == null || muxPort != null)
+        ? null
+        : _hostPortOf?.call(target.rigId, target.guestPort);
+    if (target == null || (muxPort == null && hostPort == null)) {
       try {
         client.add(
           utf8.encode('HTTP/1.1 502 Bad Gateway\r\ncontent-length: 0\r\n\r\n'),
@@ -773,7 +977,7 @@ class RigDomainRouter {
     try {
       upstream = await Socket.connect(
         InternetAddress.loopbackIPv4,
-        muxPort,
+        muxPort ?? hostPort!,
         timeout: const Duration(seconds: 5),
       );
     } on Object {
@@ -782,10 +986,11 @@ class RigDomainRouter {
       return;
     }
     unawaited(upstream.done.catchError((_) {}));
-    upstream
-      ..add(utf8.encode('${target.guestPort}\n'))
-      // Replay what was consumed while sniffing the Host header.
-      ..add(head);
+    if (muxPort != null) {
+      upstream.add(utf8.encode('${target.guestPort}\n'));
+    }
+    // Replay what was consumed while sniffing the Host header.
+    upstream.add(head);
     // Hand the rest of the client stream over.
     sub
       ..onData((chunk) {

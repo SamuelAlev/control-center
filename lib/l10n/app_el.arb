@@ -119,6 +119,19 @@
   "rigStartIosHint": "Δημιουργεί έναν προσωρινό προσομοιωτή iOS στον Mac του διακομιστή. Διαγράφεται όταν κλείσει το περιβάλλον δοκιμών· η πρόσβαση στο δίκτυο δεν είναι απομονωμένη.",
   "rigTechnicalDetails": "Τεχνικές λεπτομέρειες",
   "rigStopMachine": "Διακοπή της μηχανής",
+  "rigHomeButton": "Αρχική",
+  "rigRotateClockwise": "Περιστροφή δεξιόστροφα",
+  "rigRotateCounterclockwise": "Περιστροφή αριστερόστροφα",
+  "rigTakeScreenshot": "Λήψη στιγμιότυπου",
+  "rigScreenshotSaved": "Το στιγμιότυπο αποθηκεύτηκε",
+  "rigScreenshotSaveFailed": "Δεν ήταν δυνατή η αποθήκευση του στιγμιότυπου: ⁨{error}⁩",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Αυτός ο διακομιστής δεν μπορεί να φιλοξενήσει αυτό το είδος μηχανής.",
   "rigTabNeedsConversation": "Ανοίξτε πρώτα μια συνομιλία — μια μηχανή ανήκει σε μία, ώστε εσείς και οι πράκτορες να βλέπετε την ίδια οθόνη.",
   "ideMenuSectionTools": "Εργαλεία",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Τομέας για τον περιηγητή (VM), π.χ. ⁨myapp.test⁩ — προσβάσιμος εκεί, όχι στον κεντρικό",
   "rigPortsProcessUnknown": "άγνωστη διεργασία",
   "rigPortsInactive": "δεν ακούει",
+  "rigPortsTooltipHost": "Θύρες ανοιχτές σε αυτό το τερματικό",
+  "rigPortsEmptyHost": "Τίποτα δεν ακούει ακόμα σε αυτό το τερματικό. Ξεκίνα έναν διακομιστή και εμφανίζεται εδώ.",
+  "rigPortsAddHintHost": "Θύρα για αντιστοίχιση (π.χ. 5173)",
+  "rigPortsLocalPortHint": "Τοπική θύρα (προαιρετικό)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} στο πρόγραμμα περιήγησης (VM)",
+  "rigPortsDestBrowserUnreachable": "πρόγραμμα περιήγησης (VM) μη συνδεδεμένο",
+  "rigPortsDestAndroid": "localhost:{port} στο Android",
+  "rigPortsDestAndroidUnreachable": "Android μη συνδεδεμένο",
   "rigImagesMissing": "{count, plural, one{1 βασική εικόνα ακόμη προς λήψη} other{{count} βασικές εικόνες ακόμη προς λήψη}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Η ενιαία σύνδεση είναι ρύθμιση διακομιστή. Το demo σας συνδέει ως προσωρινό επισκέπτη αντ' αυτού.",
   "demoUnavailableAudio": "Η ηχογράφηση και η υπαγόρευση χρειάζονται σύλληψη ήχου και μοντέλο ομιλίας στον κεντρικό υπολογιστή. Το demo δεν στέλνει κανένα από τα δύο, οπότε οι συσκέψεις του είναι απομαγνητοφωνήσεις χωρίς αναπαραγωγή.",
   "demoUnavailableServerAdmin": "Αυτή είναι διαχείριση διακομιστή. Το demo δίνει σε κάθε επισκέπτη τον δικό του αναλώσιμο χώρο εργασίας και τίποτα πέρα από αυτόν.",
+  "demoUnavailablePipelines": "Οι διοχετεύσεις δεν μπορούν να εκτελεστούν εδώ. Ένας επισκέπτης που μπορεί να γράψει ένα βήμα bash και να το ξεκινήσει — χειροκίνητα ή μέσω ενεργοποιητή συμβάντος — εκτελεί κώδικα σε αυτόν τον κεντρικό υπολογιστή.",
   "settingsBackupRestore": "Αντίγραφο ασφαλείας και επαναφορά",
   "settingsBackupRestoreDescription": "Στιγμιότυπα κάθε βάσης δεδομένων σε αυτόν τον διακομιστή, συν εξαγωγή, εισαγωγή και διαγραφή για έναν χώρο εργασίας.",
   "backupSnapshotsLabel": "Στιγμιότυπα εγκατάστασης",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Δοκιμάστε άλλον τίτλο ή αριθμό pull request",
   "rigNetworkUnrestricted": "Δίκτυο χωρίς περιορισμούς",
   "rigNetworkAllowAllHosts": "Να επιτρέπονται όλοι οι κεντρικοί υπολογιστές",
+  "rigBrowserPermissionsTitle": "Άδειες ιστότοπου",
+  "rigBrowserPermissionsTooltip": "Άδειες ιστότοπου και δίκτυο",
+  "rigBrowserPermissionEmpty": "Κανένας ιστότοπος δεν έχει ζητήσει άδεια ακόμα",
+  "rigBrowserPermissionPrompt": "Ο {origin} θέλει να χρησιμοποιήσει {permission}",
+  "rigBrowserPermissionBlock": "Αποκλεισμός",
+  "rigBrowserPermissionCamera": "Κάμερα",
+  "rigBrowserPermissionMicrophone": "Μικρόφωνο",
+  "rigBrowserPermissionNotifications": "Ειδοποιήσεις",
+  "rigBrowserPermissionGeolocation": "Τοποθεσία",
+  "rigBrowserPermissionPersistentStorage": "Μόνιμη αποθήκευση",
+  "rigBrowserPermissionClipboard": "Πρόχειρο",
+  "rigBrowserPermissionDisplayCapture": "Καταγραφή οθόνης",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Να επιτραπεί κάθε κεντρικός υπολογιστής δικτύου;",
   "rigNetworkBypassBody": "Αυτό επανεκκινεί το απομονωμένο περιβάλλον και απορρίπτει τις μη καταχωρισμένες αλλαγές μέσα σε αυτό. Στη συνέχεια, το φιλοξενούμενο σύστημα θα μπορεί να συνδέεται σε κάθε κεντρικό υπολογιστή δικτύου μέχρι να κλείσει.",
   "rigNetworkRestartUnrestricted": "Επανεκκίνηση χωρίς περιορισμούς",

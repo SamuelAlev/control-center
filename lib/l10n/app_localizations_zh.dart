@@ -255,6 +255,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rigStopMachine => '停止机器';
 
   @override
+  String get rigHomeButton => '主屏幕';
+
+  @override
+  String get rigRotateClockwise => '顺时针旋转';
+
+  @override
+  String get rigRotateCounterclockwise => '逆时针旋转';
+
+  @override
+  String get rigTakeScreenshot => '截取屏幕';
+
+  @override
+  String get rigScreenshotSaved => '截图已保存';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return '无法保存截图：$error';
+  }
+
+  @override
   String get rigSurfaceUnavailable => '此服务器无法承载这类机器。';
 
   @override
@@ -500,6 +520,39 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rigPortsInactive => '未监听';
+
+  @override
+  String get rigPortsTooltipHost => '此终端中打开的端口';
+
+  @override
+  String get rigPortsEmptyHost => '此终端中还没有进程在监听。启动服务器后会出现在这里。';
+
+  @override
+  String get rigPortsAddHintHost => '要映射的端口（例如 5173）';
+
+  @override
+  String get rigPortsLocalPortHint => '本地端口（可选）';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port（浏览器虚拟机）';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => '浏览器（虚拟机）未连接';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port（Android）';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android 未连接';
 
   @override
   String rigImagesMissing(int count) {
@@ -13528,6 +13581,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get demoUnavailableServerAdmin => '这是服务器管理。演示为每位访客提供一个一次性工作区，仅此而已。';
 
   @override
+  String get demoUnavailablePipelines =>
+      '此处无法运行流水线。访客若能编写 bash 步骤并以手动或事件触发方式启动，就是在此主机上执行代码。';
+
+  @override
   String get settingsBackupRestore => '备份与恢复';
 
   @override
@@ -13866,6 +13923,47 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => '允许所有主机';
+
+  @override
+  String get rigBrowserPermissionsTitle => '网站权限';
+
+  @override
+  String get rigBrowserPermissionsTooltip => '网站权限和网络';
+
+  @override
+  String get rigBrowserPermissionEmpty => '还没有网站请求过权限';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin 想要使用$permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => '阻止';
+
+  @override
+  String get rigBrowserPermissionCamera => '相机';
+
+  @override
+  String get rigBrowserPermissionMicrophone => '麦克风';
+
+  @override
+  String get rigBrowserPermissionNotifications => '通知';
+
+  @override
+  String get rigBrowserPermissionGeolocation => '位置';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => '持久存储';
+
+  @override
+  String get rigBrowserPermissionClipboard => '剪贴板';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => '屏幕捕获';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => '允许访问所有网络主机？';
@@ -14339,6 +14437,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get rigStopMachine => '停止機器';
 
   @override
+  String get rigHomeButton => '主畫面';
+
+  @override
+  String get rigRotateClockwise => '順時針旋轉';
+
+  @override
+  String get rigRotateCounterclockwise => '逆時針旋轉';
+
+  @override
+  String get rigTakeScreenshot => '擷取螢幕';
+
+  @override
+  String get rigScreenshotSaved => '已儲存螢幕截圖';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return '無法儲存螢幕截圖：$error';
+  }
+
+  @override
   String get rigSurfaceUnavailable => '此伺服器無法託管這類機器。';
 
   @override
@@ -14582,6 +14700,39 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rigPortsInactive => '未在監聽';
+
+  @override
+  String get rigPortsTooltipHost => '此終端機中開啟的連接埠';
+
+  @override
+  String get rigPortsEmptyHost => '此終端機中還沒有程式在監聽。啟動伺服器後會出現在這裡。';
+
+  @override
+  String get rigPortsAddHintHost => '要對應的連接埠（例如 5173）';
+
+  @override
+  String get rigPortsLocalPortHint => '本機連接埠（選填）';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port（瀏覽器虛擬機器）';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => '瀏覽器（虛擬機器）未連線';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port（Android）';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android 未連線';
 
   @override
   String rigImagesMissing(int count) {
@@ -27615,6 +27766,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '這是伺服器管理。示範只給每位訪客一個用完即丟的工作區，除此之外什麼都沒有。';
 
   @override
+  String get demoUnavailablePipelines =>
+      '此處無法執行管線。訪客若能撰寫 bash 步驟並以手動或事件觸發方式啟動，就是在此主機上執行程式碼。';
+
+  @override
   String get settingsBackupRestore => '備份與還原';
 
   @override
@@ -27953,6 +28108,47 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get rigNetworkAllowAllHosts => '允許所有主機';
+
+  @override
+  String get rigBrowserPermissionsTitle => '網站權限';
+
+  @override
+  String get rigBrowserPermissionsTooltip => '網站權限與網路';
+
+  @override
+  String get rigBrowserPermissionEmpty => '還沒有網站要求過權限';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin 想要使用$permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => '封鎖';
+
+  @override
+  String get rigBrowserPermissionCamera => '相機';
+
+  @override
+  String get rigBrowserPermissionMicrophone => '麥克風';
+
+  @override
+  String get rigBrowserPermissionNotifications => '通知';
+
+  @override
+  String get rigBrowserPermissionGeolocation => '位置';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => '持久儲存';
+
+  @override
+  String get rigBrowserPermissionClipboard => '剪貼簿';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => '螢幕擷取';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => '允許存取所有網路主機？';

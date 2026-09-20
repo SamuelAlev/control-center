@@ -322,6 +322,37 @@ void main() {
       );
       expect(wait.timeout.inMilliseconds, lessThanOrEqualTo(30000));
     });
+
+    test('permission_respond needs a request id and a boolean', () {
+      expect(
+        invalid(BrowserAction.parse({'action': 'permission_respond'})),
+        contains('request_id'),
+      );
+      expect(
+        invalid(
+          BrowserAction.parse({
+            'action': 'permission_respond',
+            'request_id': '1',
+          }),
+        ),
+        contains('allow'),
+      );
+      final respond = parsed<BrowserPermissionRespond>(
+        BrowserAction.parse({
+          'action': 'permission_respond',
+          'request_id': '7',
+          'allow': false,
+        }),
+      );
+      expect(respond.requestId, '7');
+      expect(respond.allow, isFalse);
+      expect(respond.mutatesGuest, isTrue);
+      expect(respond.toJson(), {
+        'action': 'permission_respond',
+        'request_id': '7',
+        'allow': false,
+      });
+    });
   });
 
   group('mobile actions', () {
@@ -346,6 +377,32 @@ void main() {
       );
       expect(message, contains('wiggle'));
       expect(message, contains('back'));
+    });
+
+    test('rotate defaults to clockwise and rejects an unknown direction', () {
+      expect(
+        parsed<MobileRotate>(MobileAction.parse({'action': 'rotate'})),
+        const MobileRotate(),
+      );
+      expect(
+        parsed<MobileRotate>(
+          MobileAction.parse({
+            'action': 'rotate',
+            'direction': 'counterclockwise',
+          }),
+        ).direction,
+        RigRotateDirection.counterclockwise,
+      );
+      expect(
+        invalid(MobileAction.parse({'action': 'rotate', 'direction': 'flip'})),
+        contains('clockwise'),
+      );
+      expect(
+        parsed<MobileScreenshot>(
+          MobileAction.parse({'action': 'screenshot', 'full_resolution': true}),
+        ).fullResolution,
+        isTrue,
+      );
     });
 
     test('a malformed package name is refused', () {
@@ -510,6 +567,23 @@ void main() {
         'unlock',
       );
       expect(
+        parsed<IosRotate>(IosAction.parse({'action': 'rotate'})).direction,
+        RigRotateDirection.clockwise,
+      );
+      expect(
+        parsed<IosRotate>(
+          IosAction.parse({
+            'action': 'rotate',
+            'direction': 'counterclockwise',
+          }),
+        ).direction,
+        RigRotateDirection.counterclockwise,
+      );
+      expect(
+        IosAction.parse({'action': 'rotate', 'direction': 'flip'}),
+        isA<RigActionInvalid>(),
+      );
+      expect(
         IosAction.parse({'action': 'key', 'key': 'home'}),
         isA<RigActionInvalid>(),
       );
@@ -517,6 +591,12 @@ void main() {
 
     test('observations do not mutate while app actions do', () {
       expect(const IosScreenshot().mutatesGuest, isFalse);
+      expect(
+        parsed<IosScreenshot>(
+          IosAction.parse({'action': 'screenshot', 'full_resolution': true}),
+        ).fullResolution,
+        isTrue,
+      );
       expect(const IosUiDump().mutatesGuest, isFalse);
       expect(const IosInstallApp('/tmp/App.app').mutatesGuest, isTrue);
       expect(const IosStartApp('com.example.app').mutatesGuest, isTrue);

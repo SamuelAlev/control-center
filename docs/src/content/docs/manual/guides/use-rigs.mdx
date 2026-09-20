@@ -21,7 +21,7 @@ surfaces need host setup:
 |---|---|---|
 | **Terminal (VM)** | A microVM booting a pinned Ubuntu image | None — the image is fetched automatically on first use |
 | **Browser (VM)** | A microVM booting a pinned Debian image with Chromium, Firefox or WebKit installed on first use | None — same |
-| **Computer (VM)** | QEMU with a Linux desktop image | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
+| **Computer (VM)** | QEMU with a Linux desktop image that ships Chromium, Firefox, WebKit and a GitHub-hosted-runner CLI baseline | Install QEMU (`brew install qemu`), then **Import** a desktop image under **Settings → Server → Rigs** |
 | **Android** | Google's Android emulator | Install the Android SDK, create an AVD and start it (below) |
 | **iOS Simulator** | CoreSimulator on the server Mac | Install Xcode and the requested iOS runtime, then install the automation bridge under **Settings → Server → Rigs** |
 
@@ -63,7 +63,7 @@ automation store. No simulator boots during setup.
 Machines live as **tabs**, next to the chat and the diff — in a space or on a
 PR page, in the same `+` menu, under **Machines**:
 
-- **Computer** — a Linux desktop
+- **Computer** — a Linux desktop with Chromium, Firefox and WebKit
 - **Chromium**, **Firefox** or **WebKit** — a browser
 - **Android** — the running Android emulator
 - **iOS Simulator** — a disposable simulator created for this conversation
@@ -213,7 +213,7 @@ port is forwarded to `localhost:3000` on your machine, reachable at
 `localhost:3000` inside the Browser (VM), shareable on your network, and
 nameable as `https://myapp.test`. The whole flow — auto-forwarding, LAN
 sharing, dev domains with HTTPS — is its own guide:
-[Forward ports from an enclosed terminal](/manual/guides/vm-ports/).
+[Forward ports from a terminal](/manual/guides/vm-ports/).
 
 ## Custom images
 
@@ -231,8 +231,11 @@ What an image must provide:
 
 - **Terminal (VM)** — a Linux image with `bash`. It also needs `git`, `curl`
   and `socat` — either preinstalled, or installable on first start (any
-  Debian/Ubuntu-based image works: they are installed automatically). Guest
-  port `7911` is reserved for the port forwarder.
+  Debian/Ubuntu-based image works: they are installed automatically, along
+  with a GitHub-hosted-runner-style CLI toolset: compilers, Python 3, `jq`,
+  archive tools, `rsync`. Language runtimes like Node/Go/Java and Docker
+  are not preinstalled). Guest port `7911` is reserved for the port
+  forwarder.
 - **Browser (VM)** — a Debian/Ubuntu image with `bash` and `socat`, plus a
   `chromium` binary. The server starts Chromium itself as
   `chromium --headless=new` and relays DevTools from guest `9223` onto
@@ -289,7 +292,7 @@ Rigs**.
 
 - [Rigs and enclosures](/manual/concepts/rigs/) — the model behind all of
   this: why VMs, the two display lanes, the credential broker, the lifecycle
-- [Forward ports from an enclosed terminal](/manual/guides/vm-ports/) — reach
+- [Forward ports from a terminal](/manual/guides/vm-ports/) — reach
   a dev server from anywhere it matters
 - [Rigs reference](/manual/reference/rigs/) — every surface, verb, port and
   default in one place

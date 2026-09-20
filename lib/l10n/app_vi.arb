@@ -119,6 +119,19 @@
   "rigStartIosHint": "Tạo một Trình mô phỏng iOS tạm thời trên máy Mac của máy chủ. Trình mô phỏng sẽ bị xóa khi môi trường kiểm thử đóng; quyền truy cập mạng không được cô lập.",
   "rigTechnicalDetails": "Chi tiết kỹ thuật",
   "rigStopMachine": "Dừng máy",
+  "rigHomeButton": "Màn hình chính",
+  "rigRotateClockwise": "Xoay theo chiều kim đồng hồ",
+  "rigRotateCounterclockwise": "Xoay ngược chiều kim đồng hồ",
+  "rigTakeScreenshot": "Chụp màn hình",
+  "rigScreenshotSaved": "Đã lưu ảnh chụp màn hình",
+  "rigScreenshotSaveFailed": "Không thể lưu ảnh chụp màn hình: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Máy chủ này không thể chạy loại máy này.",
   "rigTabNeedsConversation": "Hãy mở cuộc hội thoại trước — máy thuộc về một cuộc hội thoại, nên bạn và các agent nhìn cùng một màn hình.",
   "ideMenuSectionTools": "Công cụ",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Tên miền cho Browser (VM), vd. myapp.test — truy cập được ở đó, không phải trên host",
   "rigPortsProcessUnknown": "tiến trình không xác định",
   "rigPortsInactive": "không lắng nghe",
+  "rigPortsTooltipHost": "Các cổng đang mở trong terminal này",
+  "rigPortsEmptyHost": "Chưa có gì đang lắng nghe trong terminal này. Hãy khởi động máy chủ và nó sẽ hiện ở đây.",
+  "rigPortsAddHintHost": "Cổng cần ánh xạ (vd. 5173)",
+  "rigPortsLocalPortHint": "Cổng cục bộ (tuỳ chọn)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} trong trình duyệt (VM)",
+  "rigPortsDestBrowserUnreachable": "trình duyệt (VM) chưa gắn",
+  "rigPortsDestAndroid": "localhost:{port} trên Android",
+  "rigPortsDestAndroidUnreachable": "Android chưa gắn",
   "rigImagesMissing": "{count, plural, =1{Còn 1 image gốc chưa tải} other{Còn {count} image gốc chưa tải}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Đăng nhập một lần là cấu hình máy chủ. Bản demo đăng nhập bạn như khách tạm thời.",
   "demoUnavailableAudio": "Ghi âm và đọc chính tả cần thu âm và mô hình giọng nói trên máy chủ. Bản demo không có cả hai, nên cuộc họp chỉ là bản ghi lời, không phát lại.",
   "demoUnavailableServerAdmin": "Đây là quản trị máy chủ. Bản demo cấp cho mỗi khách một không gian làm việc dùng một lần và không gì hơn.",
+  "demoUnavailablePipelines": "Pipeline không thể chạy ở đây. Khách có thể viết bước bash rồi chạy thủ công hoặc qua trình kích hoạt sự kiện là đang thực thi mã trên máy chủ này.",
   "settingsBackupRestore": "Sao lưu và khôi phục",
   "settingsBackupRestoreDescription": "Ảnh chụp mọi cơ sở dữ liệu trên máy chủ này, cộng xuất, nhập và xóa cho một không gian làm việc.",
   "backupSnapshotsLabel": "Ảnh chụp cài đặt",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Thử tiêu đề hoặc số pull request khác",
   "rigNetworkUnrestricted": "Mạng không bị hạn chế",
   "rigNetworkAllowAllHosts": "Cho phép mọi máy chủ",
+  "rigBrowserPermissionsTitle": "Quyền của trang",
+  "rigBrowserPermissionsTooltip": "Quyền của trang và mạng",
+  "rigBrowserPermissionEmpty": "Chưa có trang nào xin quyền",
+  "rigBrowserPermissionPrompt": "{origin} muốn dùng {permission}",
+  "rigBrowserPermissionBlock": "Chặn",
+  "rigBrowserPermissionCamera": "Máy ảnh",
+  "rigBrowserPermissionMicrophone": "Micro",
+  "rigBrowserPermissionNotifications": "Thông báo",
+  "rigBrowserPermissionGeolocation": "Vị trí",
+  "rigBrowserPermissionPersistentStorage": "Bộ nhớ bền vững",
+  "rigBrowserPermissionClipboard": "Bảng tạm",
+  "rigBrowserPermissionDisplayCapture": "Quay màn hình",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Cho phép mọi máy chủ mạng?",
   "rigNetworkBypassBody": "Thao tác này sẽ khởi động lại môi trường cách ly và hủy phần việc chưa commit bên trong. Sau đó, hệ thống khách có thể truy cập mọi máy chủ mạng cho đến khi bị đóng.",
   "rigNetworkRestartUnrestricted": "Khởi động lại không hạn chế",

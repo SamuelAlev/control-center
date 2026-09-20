@@ -260,6 +260,26 @@ class AppLocalizationsKo extends AppLocalizations {
   String get rigStopMachine => '머신 중지';
 
   @override
+  String get rigHomeButton => '홈';
+
+  @override
+  String get rigRotateClockwise => '시계 방향으로 회전';
+
+  @override
+  String get rigRotateCounterclockwise => '시계 반대 방향으로 회전';
+
+  @override
+  String get rigTakeScreenshot => '스크린샷 찍기';
+
+  @override
+  String get rigScreenshotSaved => '스크린샷이 저장됨';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return '스크린샷을 저장할 수 없음: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable => '이 서버는 이 종류의 머신을 호스팅할 수 없습니다.';
 
   @override
@@ -512,6 +532,40 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get rigPortsInactive => '수신 중 아님';
+
+  @override
+  String get rigPortsTooltipHost => '이 터미널에서 열린 포트';
+
+  @override
+  String get rigPortsEmptyHost =>
+      '이 터미널에서 아직 수신 중인 것이 없습니다. 서버를 시작하면 여기에 나타납니다.';
+
+  @override
+  String get rigPortsAddHintHost => '매핑할 포트(예: 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => '로컬 포트(선택)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port (브라우저 VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => '브라우저(VM) 연결 안 됨';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port (Android)';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android 연결 안 됨';
 
   @override
   String rigImagesMissing(int count) {
@@ -13689,6 +13743,10 @@ class AppLocalizationsKo extends AppLocalizations {
       '서버 관리 기능입니다. 데모는 방문객마다 일회용 워크스페이스만 제공하며 그 이상은 없습니다.';
 
   @override
+  String get demoUnavailablePipelines =>
+      '파이프라인은 여기서 실행할 수 없습니다. bash 단계를 작성하고 수동으로 또는 이벤트 트리거로 시작할 수 있는 방문자는 이 호스트에서 코드를 실행하는 것입니다.';
+
+  @override
   String get settingsBackupRestore => '백업 및 복원';
 
   @override
@@ -14028,6 +14086,47 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => '모든 호스트 허용';
+
+  @override
+  String get rigBrowserPermissionsTitle => '사이트 권한';
+
+  @override
+  String get rigBrowserPermissionsTooltip => '사이트 권한 및 네트워크';
+
+  @override
+  String get rigBrowserPermissionEmpty => '아직 권한을 요청한 사이트가 없습니다';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin에서 $permission 사용을 요청합니다';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => '차단';
+
+  @override
+  String get rigBrowserPermissionCamera => '카메라';
+
+  @override
+  String get rigBrowserPermissionMicrophone => '마이크';
+
+  @override
+  String get rigBrowserPermissionNotifications => '알림';
+
+  @override
+  String get rigBrowserPermissionGeolocation => '위치';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => '영구 저장소';
+
+  @override
+  String get rigBrowserPermissionClipboard => '클립보드';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => '화면 캡처';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => '모든 네트워크 호스트를 허용할까요?';

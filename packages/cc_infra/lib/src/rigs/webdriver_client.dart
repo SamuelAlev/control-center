@@ -27,9 +27,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_url.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
+import 'package:cc_infra/src/rigs/browser_permission_host.dart';
+import 'package:cc_infra/src/rigs/browser_permission_probe.dart';
+import 'package:cc_infra/src/rigs/browser_permission_script.dart';
 
 /// A WebDriver command came back as an error.
 class WebDriverException extends BrowserEngineException {
@@ -46,7 +50,8 @@ class WebDriverException extends BrowserEngineException {
 }
 
 /// Drives one WebKit window over classic W3C WebDriver.
-class WebDriverClient extends ScriptedBrowserEngineClient {
+class WebDriverClient extends ScriptedBrowserEngineClient
+    with BrowserPermissionHost {
   WebDriverClient._({
     required this._http,
     required this.host,
@@ -67,6 +72,7 @@ class WebDriverClient extends ScriptedBrowserEngineClient {
       StreamController<BrowserPageEvent>.broadcast();
 
   Timer? _watch;
+  Timer? _permWatch;
   bool _closed = false;
   String _lastUrl = '';
 
@@ -269,8 +275,14 @@ class WebDriverClient extends ScriptedBrowserEngineClient {
 
   // ── The slow lane that stands in for events ─────────────────────────────
 
+  static const Duration _permInterval = Duration(milliseconds: 400);
+
   void _startWatch() {
     _watch = Timer.periodic(_watchInterval, (_) => unawaited(_tick()));
+    _permWatch = Timer.periodic(
+      _permInterval,
+      (_) => unawaited(_drainPermissions()),
+    );
   }
 
   Future<void> _tick() async {
@@ -283,13 +295,16 @@ class WebDriverClient extends ScriptedBrowserEngineClient {
         '/url',
         timeout: const Duration(seconds: 8),
       );
-      if (url is String && url.isNotEmpty && url != _lastUrl) {
-        _lastUrl = url;
-        // Reached without a command of ours — a link, a redirect, a script.
-        // It is a new history entry as far as anything here can tell.
-        _historyIndex += 1;
-        _historyLength = _historyIndex + 1;
-        _emit(BrowserPageUrlChanged(url));
+      if (url is String && url.isNotEmpty) {
+        final visible = visibleBrowserUrl(url);
+        if (visible.isNotEmpty && visible != _lastUrl) {
+          _lastUrl = visible;
+          // Reached without a command of ours — a link, a redirect, a script.
+          // It is a new history entry as far as anything here can tell.
+          _historyIndex += 1;
+          _historyLength = _historyIndex + 1;
+          _emit(BrowserPageUrlChanged(visible));
+        }
       }
       final drained = await evaluateJson(_consoleDrainScript);
       if (drained is Map && drained['lines'] is List) {
@@ -316,17 +331,57 @@ class WebDriverClient extends ScriptedBrowserEngineClient {
   Future<void> _afterNavigation() async {
     try {
       await evaluateJson(_consoleHookScript);
+      await evaluateJson(kBrowserPermissionInstallScript);
+      await _drainPermissions();
       final url = await _call('GET', '/url');
       if (url is String && url.isNotEmpty) {
-        _lastUrl = url;
-        _emit(BrowserPageUrlChanged(url));
+        final visible = visibleBrowserUrl(url);
+        if (visible.isNotEmpty) {
+          _lastUrl = visible;
+          _emit(BrowserPageUrlChanged(visible));
+        }
       }
     } on Object {
       // Best effort: the URL is published again by the next tick.
     }
   }
 
-  // ── The scripted primitives ─────────────────────────────────────────────
+  Future<void> _drainPermissions() async {
+    if (_closed) {
+      return;
+    }
+    try {
+      final drained = await evaluateJson(kBrowserPermissionDrainScript);
+      if (drained is! Map) {
+        return;
+      }
+      final items = drained['items'];
+      if (items is! List) {
+        return;
+      }
+      for (final item in items) {
+        final probe = BrowserPermissionProbe.parse(item);
+        if (probe != null) {
+          emitPermissionProbe(probe);
+        }
+      }
+    } on Object {
+      // Best effort, same as a URL tick.
+    }
+  }
+
+  @override
+  Future<void> installPermissionInterceptor() async {
+    await evaluateJson(kBrowserPermissionInstallScript);
+  }
+
+  @override
+  Future<void> resolvePermissionProbe(
+    BrowserPermissionProbe probe, {
+    required bool allow,
+  }) async {
+    await evaluateJson(browserPermissionResolveScript(probe.id, allow: allow));
+  }
 
   @override
   Future<Object?> evaluateJson(String expression) async {
@@ -432,7 +487,7 @@ class WebDriverClient extends ScriptedBrowserEngineClient {
   Future<BrowserNavigationState> navigationState() async {
     final url = await _call('GET', '/url');
     return (
-      url: url is String ? url : '',
+      url: url is String ? visibleBrowserUrl(url) : '',
       canGoBack: _historyIndex > 0,
       canGoForward: _historyIndex < _historyLength - 1,
     );
@@ -577,6 +632,9 @@ class WebDriverClient extends ScriptedBrowserEngineClient {
     _closed = true;
     _watch?.cancel();
     _watch = null;
+    _permWatch?.cancel();
+    _permWatch = null;
+    closePermissionHost();
     try {
       await _request(
         _http,

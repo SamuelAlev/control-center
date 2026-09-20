@@ -195,3 +195,18 @@ final rigPortsProvider =
           .watch(rigRepositoryProvider)
           .watchPorts(key.workspaceId, key.rigId),
     );
+
+/// Live forwarded ports for one host-shell PTY session in a space.
+final terminalPortsProvider =
+    StreamProvider.family<
+      RigPortsView,
+      ({String workspaceId, String sessionId, String spaceId})
+    >(
+      (ref, key) => ref
+          .watch(rigRepositoryProvider)
+          .watchTerminalPorts(
+            key.workspaceId,
+            key.sessionId,
+            spaceId: key.spaceId,
+          ),
+    );

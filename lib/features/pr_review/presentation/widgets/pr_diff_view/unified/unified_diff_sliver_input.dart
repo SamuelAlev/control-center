@@ -51,6 +51,9 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
   /// Resolves the `(file, displayLine, displayColumn)` cell at viewport
   /// position `(mainAxisPosition, crossAxisPosition)`.
   (int, int, int)? cellAt(double mainAxisPosition, double crossAxisPosition) {
+    if (coversStickyHeader(mainAxisPosition)) {
+      return null;
+    }
     final double scrollPos = constraints.scrollOffset + mainAxisPosition;
     if (scrollPos < 0 || _document.totalExtent <= 0) {
       return null;
@@ -130,6 +133,9 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
   /// Resolves the context/addition/deletion code row at [mainAxisPosition],
   /// or null if that Y isn't on a code row.
   (int, int)? codeRowAt(double mainAxisPosition) {
+    if (coversStickyHeader(mainAxisPosition)) {
+      return null;
+    }
     final double scrollPos = constraints.scrollOffset + mainAxisPosition;
     if (scrollPos < 0 || scrollPos >= _document.totalExtent) {
       return null;
@@ -163,6 +169,9 @@ extension UnifiedDiffSliverInput on RenderUnifiedDiffSliver {
   /// `(fileIndex, displayLine)` for the code row at [mainAxisPosition], or null
   /// when the position is not over one.
   (int, int)? displayRowAt(double mainAxisPosition) {
+    if (coversStickyHeader(mainAxisPosition)) {
+      return null;
+    }
     final double scrollPos = constraints.scrollOffset + mainAxisPosition;
     if (scrollPos < 0 || scrollPos >= _document.totalExtent) {
       return null;

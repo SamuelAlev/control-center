@@ -119,6 +119,19 @@
   "rigStartIosHint": "Mencipta Simulator iOS sementara pada Mac pelayan. Simulator dipadamkan apabila rig ditutup; akses rangkaian tidak diasingkan.",
   "rigTechnicalDetails": "Butiran teknikal",
   "rigStopMachine": "Hentikan mesin",
+  "rigHomeButton": "Laman utama",
+  "rigRotateClockwise": "Putar ikut jam",
+  "rigRotateCounterclockwise": "Putar lawan jam",
+  "rigTakeScreenshot": "Ambil tangkapan skrin",
+  "rigScreenshotSaved": "Tangkapan skrin disimpan",
+  "rigScreenshotSaveFailed": "Tidak dapat menyimpan tangkapan skrin: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Pelayan ini tidak dapat mengehos jenis mesin ini.",
   "rigTabNeedsConversation": "Buka perbualan dahulu — mesin milik satu perbualan, supaya anda dan ejen melihat skrin yang sama.",
   "ideMenuSectionTools": "Alat",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domain untuk Penyemak imbas (VM), cth. myapp.test — boleh dicapai di sana, bukan pada hos",
   "rigPortsProcessUnknown": "proses tidak diketahui",
   "rigPortsInactive": "tidak mendengar",
+  "rigPortsTooltipHost": "Port terbuka dalam terminal ini",
+  "rigPortsEmptyHost": "Tiada yang mendengar dalam terminal ini lagi. Mulakan pelayan dan ia muncul di sini.",
+  "rigPortsAddHintHost": "Port untuk dipetakan (cth. 5173)",
+  "rigPortsLocalPortHint": "Port setempat (pilihan)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} dalam pelayar (VM)",
+  "rigPortsDestBrowserUnreachable": "pelayar (VM) tidak dilampirkan",
+  "rigPortsDestAndroid": "localhost:{port} pada Android",
+  "rigPortsDestAndroidUnreachable": "Android tidak dilampirkan",
   "rigImagesMissing": "{count, plural, =1{1 imej asas masih perlu dimuat turun} other{{count} imej asas masih perlu dimuat turun}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Daftar masuk tunggal ialah konfigurasi pelayan. Demo log masuk anda sebagai tetamu sementara sebaliknya.",
   "demoUnavailableAudio": "Rakaman dan dikte memerlukan tangkapan audio dan model pertuturan pada hos. Demo tidak menghantar keduanya, jadi mesyuaratnya ialah transkrip tanpa main balik.",
   "demoUnavailableServerAdmin": "Ini ialah pentadbiran pelayan. Demo memberi setiap pelawat ruang kerja pakai buang sendiri dan tiada apa di luarnya.",
+  "demoUnavailablePipelines": "Pipeline tidak boleh dijalankan di sini. Pelawat yang boleh menulis langkah bash dan memulakannya — secara manual atau melalui pencetus peristiwa — sedang melaksanakan kod pada hos ini.",
   "settingsBackupRestore": "Sandaran & pulih",
   "settingsBackupRestoreDescription": "Snapshot setiap pangkalan data pada pelayan ini, serta eksport, import dan padam untuk satu ruang kerja.",
   "backupSnapshotsLabel": "Snapshot pemasangan",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Cuba tajuk atau nombor permintaan tarik yang lain",
   "rigNetworkUnrestricted": "Rangkaian tanpa sekatan",
   "rigNetworkAllowAllHosts": "Benarkan semua hos",
+  "rigBrowserPermissionsTitle": "Kebenaran tapak",
+  "rigBrowserPermissionsTooltip": "Kebenaran tapak dan rangkaian",
+  "rigBrowserPermissionEmpty": "Tiada tapak meminta kebenaran lagi",
+  "rigBrowserPermissionPrompt": "{origin} mahu menggunakan {permission}",
+  "rigBrowserPermissionBlock": "Sekat",
+  "rigBrowserPermissionCamera": "Kamera",
+  "rigBrowserPermissionMicrophone": "Mikrofon",
+  "rigBrowserPermissionNotifications": "Pemberitahuan",
+  "rigBrowserPermissionGeolocation": "Lokasi",
+  "rigBrowserPermissionPersistentStorage": "Storan kekal",
+  "rigBrowserPermissionClipboard": "Papan keratan",
+  "rigBrowserPermissionDisplayCapture": "Tangkapan skrin",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Benarkan setiap hos rangkaian?",
   "rigNetworkBypassBody": "Tindakan ini memulakan semula persekitaran terasing dan membuang kerja yang belum dikomit di dalamnya. Selepas itu, sistem tetamu boleh mencapai mana-mana hos rangkaian sehingga ia ditutup.",
   "rigNetworkRestartUnrestricted": "Mulakan semula tanpa sekatan",

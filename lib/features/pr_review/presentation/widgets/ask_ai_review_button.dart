@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_run_providers.dart';
 import 'package:control_center/features/settings/providers/workspace_settings_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -75,6 +76,9 @@ class _AskAiReviewButtonState extends ConsumerState<AskAiReviewButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (ref.watch(isDemoServerProvider)) {
+      return const SizedBox.shrink();
+    }
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final workspaceLevel = ref.watch(workspaceReviewLevelProvider);

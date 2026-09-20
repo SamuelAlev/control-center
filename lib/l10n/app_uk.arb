@@ -119,6 +119,19 @@
   "rigStartIosHint": "Створює тимчасовий симулятор iOS на сервері Mac. Він видаляється після закриття тестового середовища; доступ до мережі не ізольовано.",
   "rigTechnicalDetails": "Технічні деталі",
   "rigStopMachine": "Зупинити машину",
+  "rigHomeButton": "Додому",
+  "rigRotateClockwise": "Повернути за годинниковою стрілкою",
+  "rigRotateCounterclockwise": "Повернути проти годинникової стрілки",
+  "rigTakeScreenshot": "Зробити знімок екрана",
+  "rigScreenshotSaved": "Знімок екрана збережено",
+  "rigScreenshotSaveFailed": "Не вдалося зберегти знімок екрана: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Цей сервер не може розмістити такий тип машини.",
   "rigTabNeedsConversation": "Спочатку відкрийте розмову — машина належить до неї, тож ви з агентами бачите той самий екран.",
   "ideMenuSectionTools": "Інструменти",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Домен для браузера (VM), напр. myapp.test — доступний там, не на хості",
   "rigPortsProcessUnknown": "невідомий процес",
   "rigPortsInactive": "не слухає",
+  "rigPortsTooltipHost": "Порти, відкриті в цьому терміналі",
+  "rigPortsEmptyHost": "У цьому терміналі ще ніхто не слухає. Запустіть сервер — він з’явиться тут.",
+  "rigPortsAddHintHost": "Порт для зіставлення (напр. 5173)",
+  "rigPortsLocalPortHint": "Локальний порт (необов’язково)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} у браузері (ВМ)",
+  "rigPortsDestBrowserUnreachable": "браузер (ВМ) не підключено",
+  "rigPortsDestAndroid": "localhost:{port} на Android",
+  "rigPortsDestAndroidUnreachable": "Android не підключено",
   "rigImagesMissing": "{count, plural, one{{count} базовий образ ще потрібно завантажити} few{{count} базові образи ще потрібно завантажити} many{{count} базових образів ще потрібно завантажити} other{{count} базових образів ще потрібно завантажити}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Єдиний вхід — це конфігурація сервера. Демо натомість входить як тимчасовий гість.",
   "demoUnavailableAudio": "Запис і диктування потребують захоплення звуку та моделі мовлення на хості. Демо не має ні того, ні того, тож зустрічі — це транскрипти без відтворення.",
   "demoUnavailableServerAdmin": "Це адміністрування сервера. Демо дає кожному відвідувачу власний одноразовий робочий простір і нічого більше.",
+  "demoUnavailablePipelines": "Конвеєри тут не запускаються. Відвідувач, який може написати крок bash і запустити його — вручну або через тригер події — виконує код на цьому хості.",
   "settingsBackupRestore": "Резервні копії та відновлення",
   "settingsBackupRestoreDescription": "Знімки всіх баз даних на цьому сервері, а також експорт, імпорт і видалення для одного робочого простору.",
   "backupSnapshotsLabel": "Знімки інсталяції",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Спробуйте іншу назву або номер запиту на злиття",
   "rigNetworkUnrestricted": "Мережа без обмежень",
   "rigNetworkAllowAllHosts": "Дозволити всі вузли",
+  "rigBrowserPermissionsTitle": "Дозволи сайту",
+  "rigBrowserPermissionsTooltip": "Дозволи сайту та мережа",
+  "rigBrowserPermissionEmpty": "Жоден сайт ще не запитував дозвіл",
+  "rigBrowserPermissionPrompt": "{origin} хоче використати {permission}",
+  "rigBrowserPermissionBlock": "Заблокувати",
+  "rigBrowserPermissionCamera": "Камера",
+  "rigBrowserPermissionMicrophone": "Мікрофон",
+  "rigBrowserPermissionNotifications": "Сповіщення",
+  "rigBrowserPermissionGeolocation": "Розташування",
+  "rigBrowserPermissionPersistentStorage": "Постійне сховище",
+  "rigBrowserPermissionClipboard": "Буфер обміну",
+  "rigBrowserPermissionDisplayCapture": "Захоплення екрана",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Дозволити всі мережеві вузли?",
   "rigNetworkBypassBody": "Ізольоване середовище буде перезапущено, а незакомічену роботу всередині нього буде видалено. Після цього гостьова система зможе звертатися до будь-яких мережевих вузлів, доки її не закриють.",
   "rigNetworkRestartUnrestricted": "Перезапустити без обмежень",

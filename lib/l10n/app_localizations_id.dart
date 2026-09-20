@@ -265,6 +265,26 @@ class AppLocalizationsId extends AppLocalizations {
   String get rigStopMachine => 'Hentikan mesin';
 
   @override
+  String get rigHomeButton => 'Beranda';
+
+  @override
+  String get rigRotateClockwise => 'Putar searah jarum jam';
+
+  @override
+  String get rigRotateCounterclockwise => 'Putar berlawanan jarum jam';
+
+  @override
+  String get rigTakeScreenshot => 'Ambil tangkapan layar';
+
+  @override
+  String get rigScreenshotSaved => 'Tangkapan layar disimpan';
+
+  @override
+  String rigScreenshotSaveFailed(String error) {
+    return 'Tidak dapat menyimpan tangkapan layar: $error';
+  }
+
+  @override
   String get rigSurfaceUnavailable =>
       'Server ini tidak dapat menampung jenis mesin ini.';
 
@@ -519,6 +539,40 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get rigPortsInactive => 'tidak mendengarkan';
+
+  @override
+  String get rigPortsTooltipHost => 'Port yang terbuka di terminal ini';
+
+  @override
+  String get rigPortsEmptyHost =>
+      'Belum ada yang mendengarkan di terminal ini. Mulai server dan ia muncul di sini.';
+
+  @override
+  String get rigPortsAddHintHost => 'Port yang dipetakan (mis. 5173)';
+
+  @override
+  String get rigPortsLocalPortHint => 'Port lokal (opsional)';
+
+  @override
+  String rigPortsDestDesktop(int port) {
+    return 'localhost:$port';
+  }
+
+  @override
+  String rigPortsDestBrowser(int port) {
+    return 'localhost:$port di browser (VM)';
+  }
+
+  @override
+  String get rigPortsDestBrowserUnreachable => 'browser (VM) tidak terpasang';
+
+  @override
+  String rigPortsDestAndroid(int port) {
+    return 'localhost:$port di Android';
+  }
+
+  @override
+  String get rigPortsDestAndroidUnreachable => 'Android tidak terpasang';
 
   @override
   String rigImagesMissing(int count) {
@@ -14010,6 +14064,10 @@ class AppLocalizationsId extends AppLocalizations {
       'Ini administrasi server. Demo memberi setiap pengunjung ruang kerja sekali pakai sendiri, dan tidak lebih dari itu.';
 
   @override
+  String get demoUnavailablePipelines =>
+      'Pipeline tidak dapat dijalankan di sini. Pengunjung yang dapat menulis langkah bash dan menjalankannya — secara manual atau melalui pemicu peristiwa — sedang mengeksekusi kode di host ini.';
+
+  @override
   String get settingsBackupRestore => 'Cadangan & pemulihan';
 
   @override
@@ -14359,6 +14417,47 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get rigNetworkAllowAllHosts => 'Izinkan semua host';
+
+  @override
+  String get rigBrowserPermissionsTitle => 'Izin situs';
+
+  @override
+  String get rigBrowserPermissionsTooltip => 'Izin situs dan jaringan';
+
+  @override
+  String get rigBrowserPermissionEmpty => 'Belum ada situs yang meminta izin';
+
+  @override
+  String rigBrowserPermissionPrompt(String origin, String permission) {
+    return '$origin ingin menggunakan $permission';
+  }
+
+  @override
+  String get rigBrowserPermissionBlock => 'Blokir';
+
+  @override
+  String get rigBrowserPermissionCamera => 'Kamera';
+
+  @override
+  String get rigBrowserPermissionMicrophone => 'Mikrofon';
+
+  @override
+  String get rigBrowserPermissionNotifications => 'Notifikasi';
+
+  @override
+  String get rigBrowserPermissionGeolocation => 'Lokasi';
+
+  @override
+  String get rigBrowserPermissionPersistentStorage => 'Penyimpanan persisten';
+
+  @override
+  String get rigBrowserPermissionClipboard => 'Papan klip';
+
+  @override
+  String get rigBrowserPermissionDisplayCapture => 'Tangkapan layar';
+
+  @override
+  String get rigBrowserPermissionMidi => 'MIDI';
 
   @override
   String get rigNetworkBypassTitle => 'Izinkan setiap host jaringan?';

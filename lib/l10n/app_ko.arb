@@ -119,6 +119,19 @@
   "rigStartIosHint": "서버의 Mac에 일회용 iOS Simulator를 생성합니다. 테스트 환경을 닫으면 삭제되며 네트워크 액세스는 격리되지 않습니다.",
   "rigTechnicalDetails": "기술 세부 정보",
   "rigStopMachine": "머신 중지",
+  "rigHomeButton": "홈",
+  "rigRotateClockwise": "시계 방향으로 회전",
+  "rigRotateCounterclockwise": "시계 반대 방향으로 회전",
+  "rigTakeScreenshot": "스크린샷 찍기",
+  "rigScreenshotSaved": "스크린샷이 저장됨",
+  "rigScreenshotSaveFailed": "스크린샷을 저장할 수 없음: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "이 서버는 이 종류의 머신을 호스팅할 수 없습니다.",
   "rigTabNeedsConversation": "먼저 대화를 여세요 — 머신은 하나의 대화에 속하므로 사용자와 에이전트가 같은 화면을 보게 됩니다.",
   "ideMenuSectionTools": "도구",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "브라우저(VM)용 도메인, 예: myapp.test — 거기서는 접근 가능하고 호스트에서는 불가",
   "rigPortsProcessUnknown": "알 수 없는 프로세스",
   "rigPortsInactive": "수신 중 아님",
+  "rigPortsTooltipHost": "이 터미널에서 열린 포트",
+  "rigPortsEmptyHost": "이 터미널에서 아직 수신 중인 것이 없습니다. 서버를 시작하면 여기에 나타납니다.",
+  "rigPortsAddHintHost": "매핑할 포트(예: 5173)",
+  "rigPortsLocalPortHint": "로컬 포트(선택)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} (브라우저 VM)",
+  "rigPortsDestBrowserUnreachable": "브라우저(VM) 연결 안 됨",
+  "rigPortsDestAndroid": "localhost:{port} (Android)",
+  "rigPortsDestAndroidUnreachable": "Android 연결 안 됨",
   "rigImagesMissing": "{count, plural, =1{베이스 이미지 1개 다운로드 필요} other{베이스 이미지 {count}개 다운로드 필요}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "싱글 사인온은 서버 설정입니다. 데모에서는 임시 게스트로 로그인합니다.",
   "demoUnavailableAudio": "녹음과 받아쓰기는 호스트의 오디오 캡처와 음성 모델이 필요합니다. 데모에는 둘 다 없어 회의는 재생 없이 기록만 있습니다.",
   "demoUnavailableServerAdmin": "서버 관리 기능입니다. 데모는 방문객마다 일회용 워크스페이스만 제공하며 그 이상은 없습니다.",
+  "demoUnavailablePipelines": "파이프라인은 여기서 실행할 수 없습니다. bash 단계를 작성하고 수동으로 또는 이벤트 트리거로 시작할 수 있는 방문자는 이 호스트에서 코드를 실행하는 것입니다.",
   "settingsBackupRestore": "백업 및 복원",
   "settingsBackupRestoreDescription": "이 서버의 모든 데이터베이스 스냅샷과, 워크스페이스 하나의 내보내기·가져오기·삭제입니다.",
   "backupSnapshotsLabel": "설치 스냅샷",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "다른 제목이나 풀 리퀘스트 번호를 입력해 보세요",
   "rigNetworkUnrestricted": "제한 없는 네트워크",
   "rigNetworkAllowAllHosts": "모든 호스트 허용",
+  "rigBrowserPermissionsTitle": "사이트 권한",
+  "rigBrowserPermissionsTooltip": "사이트 권한 및 네트워크",
+  "rigBrowserPermissionEmpty": "아직 권한을 요청한 사이트가 없습니다",
+  "rigBrowserPermissionPrompt": "{origin}에서 {permission} 사용을 요청합니다",
+  "rigBrowserPermissionBlock": "차단",
+  "rigBrowserPermissionCamera": "카메라",
+  "rigBrowserPermissionMicrophone": "마이크",
+  "rigBrowserPermissionNotifications": "알림",
+  "rigBrowserPermissionGeolocation": "위치",
+  "rigBrowserPermissionPersistentStorage": "영구 저장소",
+  "rigBrowserPermissionClipboard": "클립보드",
+  "rigBrowserPermissionDisplayCapture": "화면 캡처",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "모든 네트워크 호스트를 허용할까요?",
   "rigNetworkBypassBody": "격리 환경을 다시 시작하고 내부의 커밋되지 않은 작업을 삭제합니다. 이후 게스트는 닫힐 때까지 모든 네트워크 호스트에 접근할 수 있습니다.",
   "rigNetworkRestartUnrestricted": "제한 없이 다시 시작",

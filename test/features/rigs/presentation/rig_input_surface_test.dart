@@ -26,13 +26,21 @@ class _RecordingRepository extends RemoteRigRepository {
   final actions = <Map<String, dynamic>>[];
 
   @override
-  Future<({bool isError, String text})> act({
+  Future<
+    ({String text, bool isError, String? imageBase64, String? imageMediaType})
+  >
+  act({
     required String workspaceId,
     required String rigId,
     required Map<String, dynamic> action,
   }) async {
     actions.add(Map<String, dynamic>.from(action));
-    return (text: 'ok', isError: false);
+    return (
+      text: 'ok',
+      isError: false,
+      imageBase64: null,
+      imageMediaType: null,
+    );
   }
 }
 

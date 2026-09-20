@@ -4,6 +4,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/step_label.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
+import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_canvas.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_formatting.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_run_history_menu.dart';
@@ -108,9 +109,11 @@ class _PipelineRunDetailScreenState
                   fallback: failed.stepId,
                 ),
           failedReason: failed?.errorMessage ?? run.errorMessage,
-          onRetry: () => ref
-              .read(pipelineEngineProvider)
-              .retry(run.workspaceId, widget.runId),
+          onRetry: ref.watch(isDemoServerProvider)
+              ? null
+              : () => ref
+                    .read(pipelineEngineProvider)
+                    .retry(run.workspaceId, widget.runId),
           onDelete: () => _deleteRun(run),
         ),
         if (ordered.isNotEmpty)
@@ -216,7 +219,7 @@ class _RunMetaStrip extends StatelessWidget {
     required this.l10n,
     required this.failedStepLabel,
     required this.failedReason,
-    required this.onRetry,
+    this.onRetry,
     required this.onDelete,
   });
 
@@ -227,7 +230,7 @@ class _RunMetaStrip extends StatelessWidget {
   final AppLocalizations l10n;
   final String? failedStepLabel;
   final String? failedReason;
-  final VoidCallback onRetry;
+  final VoidCallback? onRetry;
   final VoidCallback onDelete;
 
   @override
@@ -334,7 +337,7 @@ class _RunMetaStrip extends StatelessWidget {
                   ),
                 ),
               ),
-              if (canRetry) ...[
+              if (canRetry && onRetry != null) ...[
                 AppSpacing.hGapSm,
                 CcButton(
                   onPressed: onRetry,

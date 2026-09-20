@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/pr_review/presentation/utils/markdown_preview_diff.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view/unified/markdown_diff_annotation.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/markdown/styled_markdown_body.dart';
 import 'package:flutter/widgets.dart';
@@ -46,6 +49,8 @@ class MarkdownPreviewBody extends StatefulWidget {
     required this.fetch,
     required this.cachedContent,
     required this.onLoaded,
+    this.patch = '',
+    this.status = PrFileStatus.modified,
   });
 
   /// File path to render (the new/HEAD side).
@@ -59,6 +64,12 @@ class MarkdownPreviewBody extends StatefulWidget {
 
   /// Called with freshly-fetched content so the view can cache it.
   final ValueChanged<String> onLoaded;
+
+  /// Unified diff of this file. Empty skips rich-diff annotation.
+  final String patch;
+
+  /// File status. Added files render without an all-green wash.
+  final PrFileStatus status;
 
   @override
   State<MarkdownPreviewBody> createState() => _MarkdownPreviewBodyState();
@@ -112,6 +123,21 @@ class _MarkdownPreviewBodyState extends State<MarkdownPreviewBody> {
     }
   }
 
+  String _previewMarkdown(String content) {
+    var rendered = content;
+    if (widget.status != PrFileStatus.added && widget.patch.isNotEmpty) {
+      try {
+        rendered = annotateMarkdownPreview(
+          headContent: content,
+          patch: widget.patch,
+        );
+      } catch (_) {
+        rendered = content;
+      }
+    }
+    return withRenderableFrontmatter(rendered);
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.ds;
@@ -124,7 +150,11 @@ class _MarkdownPreviewBodyState extends State<MarkdownPreviewBody> {
           constraints: const BoxConstraints(maxWidth: 900),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: StyledMarkdownBody(data: withRenderableFrontmatter(content)),
+            child: StyledMarkdownBody(
+              data: _previewMarkdown(content),
+              plugins: markdownPreviewDiffPlugins,
+              builders: markdownPreviewDiffBuilders,
+            ),
           ),
         ),
       );

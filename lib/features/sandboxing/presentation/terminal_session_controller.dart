@@ -157,6 +157,12 @@ class TerminalSessionController extends ChangeNotifier {
   /// cannot get wrong.
   String? get backend => _backend;
 
+  /// The server-side PTY session id, once the shell has booted.
+  ///
+  /// Distinct from [TerminalSession.sessionId], which is the client tab id.
+  /// Host-shell ports are keyed on this.
+  String? get ptySessionId => _sessionId;
+
   /// The last reported effective title ('' = none).
   String get title => _reportedTitle;
 

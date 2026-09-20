@@ -3165,6 +3165,7 @@ Future<CcServer> runCcServer({
         return const <String>[];
       }
     },
+    hostShellPorts: demo != null ? null : rigService.ports,
   );
 
   // ── Enclosure (rig) tools ──
@@ -3637,6 +3638,10 @@ Future<CcServer> runCcServer({
     voiceProfileRepository: voiceProfileRepository,
     diarizationModelManager: diarizationModelManager,
     diarizationService: diarizationService,
+    // Public demo: a visitor who can author `bash.script` and start it is
+    // executing code on this host. The body stays registered so a seeded
+    // graph does not fail "unknown body"; it never `Process.start`.
+    enableBashScript: demo == null,
   );
 
   // ── Orchestration approve/cancel ──
@@ -4666,6 +4671,11 @@ Future<CcServer> runCcServer({
             repo: repo,
             prNumber: prNumber,
           );
+    if (demo != null) {
+      throw const ValidationException(
+        'Pipeline execution is disabled on this host.',
+      );
+    }
     final run = await pipeline.engine.start(
       'pr_review',
       workspaceId: workspaceId,
@@ -5931,13 +5941,20 @@ Future<CcServer> runCcServer({
     // bound workspace; reached through the `/proxy/vscode/<sid>/` reverse proxy.
     // demo: no editor proxy.
     codeServer: demo != null ? null : codeServerSessions,
-    // Pipelines + orchestration run headless: the engine drives the relocated
-    // dispatch stack, so `pipeline.*` + `orchestration.approve/cancel` are LIVE.
-    // (Pipelines using the deferred indexCode/cleanupRepos/meeting bodies still
-    // fail with unknown-body until those are wired — see buildServerPipelineExecutor.)
-    pipelineEngine: pipeline.engine,
-    approveOrchestration: (workspaceId, orchestrationId) => approveOrchestration
-        .approve(workspaceId: workspaceId, orchestrationId: orchestrationId),
+    // Pipelines + orchestration run headless on a real host: the engine
+    // drives the relocated dispatch stack, so `pipeline.*` +
+    // `orchestration.approve/cancel` are LIVE.
+    // demo: the engine is never exposed. A visitor who can upsert a
+    // `bash.script` node and start it — by hand, via an event trigger, or
+    // through plan/orchestration approve — is executing code on this host.
+    // `orchestration.cancel` stays as a stop valve.
+    pipelineEngine: demo != null ? null : pipeline.engine,
+    approveOrchestration: demo != null
+        ? null
+        : (workspaceId, orchestrationId) => approveOrchestration.approve(
+            workspaceId: workspaceId,
+            orchestrationId: orchestrationId,
+          ),
     cancelOrchestration: (workspaceId, orchestrationId) => cancelOrchestration
         .cancel(workspaceId: workspaceId, orchestrationId: orchestrationId),
     // Plan Studio (PRD 17): revisions, partial approval, plan documents,
@@ -5951,66 +5968,81 @@ Future<CcServer> runCcServer({
     // was complete server-side and unreachable, so a published artifact could
     // not be rendered). Read-only ops — artifacts are written by the MCP tools.
     workProductRepository: workProductRepo,
-    approveOrchestrationScoped: (workspaceId, orchestrationId, nodeKeys) =>
-        approveOrchestration.approve(
-          workspaceId: workspaceId,
-          orchestrationId: orchestrationId,
-          approvedNodeKeys: nodeKeys,
-        ),
-    approveOrchestrationNodes: (workspaceId, orchestrationId, nodeKeys) =>
-        approveOrchestration.approveNodes(
-          workspaceId: workspaceId,
-          orchestrationId: orchestrationId,
-          nodeKeys: nodeKeys,
-        ),
+    approveOrchestrationScoped: demo != null
+        ? null
+        : (workspaceId, orchestrationId, nodeKeys) =>
+              approveOrchestration.approve(
+                workspaceId: workspaceId,
+                orchestrationId: orchestrationId,
+                approvedNodeKeys: nodeKeys,
+              ),
+    approveOrchestrationNodes: demo != null
+        ? null
+        : (workspaceId, orchestrationId, nodeKeys) =>
+              approveOrchestration.approveNodes(
+                workspaceId: workspaceId,
+                orchestrationId: orchestrationId,
+                nodeKeys: nodeKeys,
+              ),
     planDivergenceMarkers: planDriftService.markers,
-    continuePlanNode: (workspaceId, orchestrationId, nodeKey) async {
-      final o = await orchestrationRepository.getById(
-        workspaceId,
-        orchestrationId,
-      );
-      final runId = o?.pipelineRunId;
-      if (o == null || runId == null) {
-        throw const NotFoundException(
-          'Orchestration not found or not executing',
-        );
-      }
-      await planDriftService.markResumed(workspaceId, orchestrationId, nodeKey);
-      await pipeline.engine.resumeStep(
-        pipelineRunId: runId,
-        stepId: 'sub_$nodeKey',
-      );
-    },
+    continuePlanNode: demo != null
+        ? null
+        : (workspaceId, orchestrationId, nodeKey) async {
+            final o = await orchestrationRepository.getById(
+              workspaceId,
+              orchestrationId,
+            );
+            final runId = o?.pipelineRunId;
+            if (o == null || runId == null) {
+              throw const NotFoundException(
+                'Orchestration not found or not executing',
+              );
+            }
+            await planDriftService.markResumed(
+              workspaceId,
+              orchestrationId,
+              nodeKey,
+            );
+            await pipeline.engine.resumeStep(
+              pipelineRunId: runId,
+              stepId: 'sub_$nodeKey',
+            );
+          },
     estimateOrchestration: planEstimateService.estimateOrchestration,
     estimatePlanDocument: planEstimateService.estimatePlanDocument,
-    approvePlanDocument: planDocumentApproval.approve,
-    runPlaybook:
-        ({
-          required String workspaceId,
-          required String ticketId,
-          required String playbookId,
-          required Map<String, String> args,
-          String? userId,
-        }) async {
-          // Reuse the MCP tool's single code path (instantiate → validate →
-          // propose). The op adapts its CallResult back to a repo-op payload.
-          final result =
-              await RunPlaybookTool(
-                playbooks: playbookRepository,
-                propose: proposeOrchestrationTool,
-              ).run({
-                'workspace_id': workspaceId,
-                'ticket_id': ticketId,
-                'playbook_id': playbookId,
-                'args': args,
-              });
-          final text = result.content.isEmpty ? '' : result.content.first.text;
-          if (result.isError) {
-            throw ValidationException(text);
-          }
-          final decoded = jsonDecode(text);
-          return decoded is Map<String, dynamic> ? decoded : {'result': text};
-        },
+    approvePlanDocument: demo != null ? null : planDocumentApproval.approve,
+    runPlaybook: demo != null
+        ? null
+        : ({
+            required String workspaceId,
+            required String ticketId,
+            required String playbookId,
+            required Map<String, String> args,
+            String? userId,
+          }) async {
+            // Reuse the MCP tool's single code path (instantiate → validate →
+            // propose). The op adapts its CallResult back to a repo-op payload.
+            final result =
+                await RunPlaybookTool(
+                  playbooks: playbookRepository,
+                  propose: proposeOrchestrationTool,
+                ).run({
+                  'workspace_id': workspaceId,
+                  'ticket_id': ticketId,
+                  'playbook_id': playbookId,
+                  'args': args,
+                });
+            final text = result.content.isEmpty
+                ? ''
+                : result.content.first.text;
+            if (result.isError) {
+              throw ValidationException(text);
+            }
+            final decoded = jsonDecode(text);
+            return decoded is Map<String, dynamic>
+                ? decoded
+                : {'result': text};
+          },
     // Review Studio (PRD 18): live cohorts / contract / visual / axis reads +
     // decision gates and the compute + blast-radius closures (host owns the
     // code graph + git + PR fetch).
@@ -6047,7 +6079,7 @@ Future<CcServer> runCcServer({
     // are a wire contract with connected clients and the `start_ai_review`
     // tool, and renaming an op buys nothing a comment cannot say.
     reviewFindingStatus: reviewFindingStatusService,
-    reviewHubStart: startPrReview,
+    reviewHubStart: demo != null ? null : startPrReview,
     publishReview:
         ({
           required String workspaceId,
@@ -7213,7 +7245,13 @@ Future<CcServer> runCcServer({
     eventBus: eventBus,
     engine: pipeline.engine,
     triggerRepository: pipelineTriggerRepository,
-  )..start();
+  );
+  // demo: never subscribe. Seeded `ticket_to_pr` has an enabled
+  // TicketAssigned trigger; `tickets.assign` is allowed, and without this
+  // gate assigning a ticket would `engine.start` a bash-bearing pipeline.
+  if (demo == null) {
+    pipelineTriggerDispatcher.start();
+  }
   // Time-based triggers: ticks every minute, fires due cron/interval schedules
   // (CatchUpLatestOnly) and records each fire in the cron_executions ledger so
   // a restart mid-slot never double-starts a run. Evaluated in UTC.
@@ -7221,12 +7259,18 @@ Future<CcServer> runCcServer({
     triggerRepository: pipelineTriggerRepository,
     engine: pipeline.engine,
     ledger: CronExecutionLedgerImpl(workspaceDbs),
-  )..start();
+  );
+  if (demo == null) {
+    pipelineScheduler.start();
+  }
   final subPipelineResumeListener = SubPipelineResumeListener(
     eventBus: eventBus,
     engine: pipeline.engine,
     repository: pipelineRunRepository,
-  )..start();
+  );
+  if (demo == null) {
+    subPipelineResumeListener.start();
+  }
   // Bound the growth of append-only audit/log tables (activity_log,
   // webhook_deliveries, cron_executions) plus finished runs' activity
   // transcripts: daily prune past a generous per-table window.
@@ -7291,7 +7335,10 @@ Future<CcServer> runCcServer({
     // declared scope under `stopAndAsk` HOLDS here until the operator
     // resumes it via `orchestration.continueNode`.
     driftGate: planDriftService.evaluate,
-  )..start();
+  );
+  if (demo == null) {
+    pipelineStepResumeListener.start();
+  }
   final agentRunTaskCompleter = AgentRunTaskCompleter(
     eventBus: eventBus,
     runLogRepository: agentRunLogRepository,
@@ -7350,7 +7397,9 @@ Future<CcServer> runCcServer({
           );
         },
       );
-      await pipeline.engine.resumeAll();
+      if (demo == null) {
+        await pipeline.engine.resumeAll();
+      }
     } on Object catch (e, st) {
       CcHostLog.error('cc_server: pipeline resumeAll failed: $e', e, st);
     }

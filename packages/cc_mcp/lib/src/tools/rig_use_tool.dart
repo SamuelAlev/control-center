@@ -471,6 +471,7 @@ class BrowserUseTool extends RigUseTool {
         'wait_for',
         'clipboard_read',
         'clipboard_write',
+        'permission_respond',
       ],
       'description': 'The action to perform.',
     },
@@ -535,6 +536,15 @@ class BrowserUseTool extends RigUseTool {
       'description': 'History steps; negative goes back.',
     },
     'timeout_ms': {'type': 'integer', 'description': 'wait_for timeout.'},
+    'request_id': {
+      'type': 'string',
+      'description': 'Site permission request the shield flyout is answering.',
+    },
+    'allow': {
+      'type': 'boolean',
+      'description':
+          'Whether to allow the site permission (permission_respond).',
+    },
   };
 }
 
@@ -579,6 +589,7 @@ class MobileUseTool extends RigUseTool {
         'swipe',
         'type',
         'key',
+        'rotate',
         'screenshot',
         'ui_dump',
         'install_apk',
@@ -622,6 +633,12 @@ class MobileUseTool extends RigUseTool {
       'description':
           'back, home, recents, enter, delete, tab, escape, volume_up, '
           'volume_down, power, or an explicit KEYCODE_* name.',
+    },
+    'direction': {
+      'type': 'string',
+      'enum': ['clockwise', 'counterclockwise'],
+      'description':
+          'Which way to turn the device for rotate. Defaults to clockwise.',
     },
     'path': {
       'type': 'string',
@@ -695,6 +712,7 @@ class IosUseTool extends RigUseTool {
         'home',
         'lock',
         'unlock',
+        'rotate',
         'screenshot',
         'ui_dump',
         'install_app',
@@ -739,6 +757,12 @@ class IosUseTool extends RigUseTool {
       'description':
           'enter, backspace, tab, escape, arrow_up, arrow_down, arrow_left, '
           'arrow_right, or one printable character.',
+    },
+    'direction': {
+      'type': 'string',
+      'enum': ['clockwise', 'counterclockwise'],
+      'description':
+          'Which way to turn the simulator for rotate. Defaults to clockwise.',
     },
     'modifiers': {
       'type': 'array',

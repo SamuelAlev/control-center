@@ -42,6 +42,11 @@ enum DemoCapability {
 
   /// Server administration — backup/export, pairing, membership.
   serverAdmin,
+
+  /// Pipeline execution — start, retry, template upsert, event triggers.
+  /// A visitor who can author a bash step and run it is executing code
+  /// on the public host.
+  pipelines,
 }
 
 /// The honest notice a demo shows where a capability has been removed.
@@ -82,6 +87,7 @@ class DemoUnavailable extends StatelessWidget {
       DemoCapability.sso => l10n.demoUnavailableSso,
       DemoCapability.audio => l10n.demoUnavailableAudio,
       DemoCapability.serverAdmin => l10n.demoUnavailableServerAdmin,
+      DemoCapability.pipelines => l10n.demoUnavailablePipelines,
     };
 
     if (compact) {

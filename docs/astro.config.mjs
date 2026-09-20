@@ -339,7 +339,7 @@ export default defineConfig({
                   slug: "manual/guides/use-rigs",
                 },
                 {
-                  label: "Forward ports from an enclosed terminal",
+                  label: "Forward ports from a terminal",
                   slug: "manual/guides/vm-ports",
                 },
               ],

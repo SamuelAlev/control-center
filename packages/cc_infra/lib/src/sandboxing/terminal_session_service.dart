@@ -10,6 +10,7 @@ import 'package:cc_domain/features/sandboxing/domain/terminal_command_buffer.dar
 import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_infra/src/rigs/rig_port_service.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/terminal_foreground_title.dart';
 import 'package:cc_natives/cc_natives.dart' show Pty;
@@ -260,6 +261,7 @@ class _Session {
     required this.sandboxSessionId,
     required this.backend,
     required this.pty,
+    this.spaceId,
   }) : _foreground = TerminalForegroundTracker(shellPid: pty.pid) {
     _ptyOut = pty.output.listen(
       _output.add,
@@ -291,6 +293,11 @@ class _Session {
   final SandboxBackend backend;
   final Pty pty;
   final TerminalCommandBuffer commands = TerminalCommandBuffer();
+
+  /// Conversation (space) this shell was opened in, when the client named
+  /// one. Host-shell ports publish into Browser (VM) / Android only when
+  /// this is non-null; a missing space never broadcasts.
+  final String? spaceId;
 
   /// Releases the VM pin this session holds, if it runs in one. Called exactly
   /// once, on teardown.
@@ -380,6 +387,7 @@ class TerminalSessionService implements TerminalSessionPort {
     this._defaultBackend = SandboxBackend.none,
     this._vmShell,
     this._guestRoots,
+    this._hostShellPorts,
   }) : _fs = filesystem;
 
   final SandboxManager _manager;
@@ -387,6 +395,7 @@ class TerminalSessionService implements TerminalSessionPort {
   final SandboxBackend _defaultBackend;
   final TerminalVmShellResolver? _vmShell;
   final TerminalGuestRootsResolver? _guestRoots;
+  final RigPortsService? _hostShellPorts;
 
   final Map<String, _Session> _sessions = {};
   int _counter = 0;
@@ -482,7 +491,16 @@ class TerminalSessionService implements TerminalSessionPort {
       sandboxSessionId: '$terminalSandboxSessionPrefix$sessionId',
       backend: resolvedBackend,
       pty: pty,
+      spaceId: spaceId == null || spaceId.isEmpty ? null : spaceId,
     )..releaseVm = vmShell?.release;
+    if (resolvedBackend != SandboxBackend.microvm) {
+      _hostShellPorts?.attachHostShell(
+        sessionId: sessionId,
+        workspaceId: workspaceId,
+        conversationId: spaceId,
+        rootPid: pty.pid,
+      );
+    }
     return sessionId;
   }
 
@@ -564,6 +582,7 @@ class TerminalSessionService implements TerminalSessionPort {
       return;
     }
     _sessions.remove(sessionId);
+    await _hostShellPorts?.detach(sessionId);
     await session.dispose();
     try {
       await _manager.disposeSession(session.sandboxSessionId);
@@ -575,12 +594,13 @@ class TerminalSessionService implements TerminalSessionPort {
 
   /// Tears down every live session (host shutdown).
   Future<void> disposeAll() async {
-    final sessions = _sessions.values.toList();
+    final sessions = Map<String, _Session>.from(_sessions);
     _sessions.clear();
-    for (final s in sessions) {
-      await s.dispose();
+    for (final entry in sessions.entries) {
+      await _hostShellPorts?.detach(entry.key);
+      await entry.value.dispose();
       try {
-        await _manager.disposeSession(s.sandboxSessionId);
+        await _manager.disposeSession(entry.value.sandboxSessionId);
       } catch (_) {}
     }
   }

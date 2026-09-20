@@ -205,7 +205,13 @@ class WdaClient {
 
   /// Types literal text through WDA's focused-element route.
   Future<void> typeText(String text) async {
-    await _valueRequest('POST', '/wda/keys', body: {'value': [text]});
+    await _valueRequest(
+      'POST',
+      '/wda/keys',
+      body: {
+        'value': [text],
+      },
+    );
   }
 
   /// Returns to the simulator home screen.
@@ -223,6 +229,27 @@ class WdaClient {
     await _valueRequest('POST', '/wda/unlock', body: const {});
   }
 
+  /// The current interface orientation, as WebDriverAgent names it.
+  Future<String> orientation() async {
+    final value = await _valueRequest('GET', '/orientation');
+    if (value is String && value.isNotEmpty) {
+      return value;
+    }
+    throw const WdaException(
+      code: 'invalid response',
+      message: 'WebDriverAgent returned no orientation.',
+    );
+  }
+
+  /// Sets the interface orientation to a WebDriverAgent orientation name.
+  Future<void> setOrientation(String orientation) async {
+    await _valueRequest(
+      'POST',
+      '/orientation',
+      body: {'orientation': orientation},
+    );
+  }
+
   /// Launches an installed bundle id.
   Future<void> launchApp(String bundleId) async {
     await _valueRequest(
@@ -233,8 +260,7 @@ class WdaClient {
   }
 
   /// Reads the native accessibility hierarchy as JSON.
-  Future<Object?> source() async =>
-      _valueRequest('GET', '/source?format=json');
+  Future<Object?> source() async => _valueRequest('GET', '/source?format=json');
 
   /// Captures a full-resolution PNG.
   Future<Uint8List> screenshot() async {
@@ -379,15 +405,16 @@ class WdaClient {
         request.contentLength = 0;
       }
       final response = await request.close().timeout(requestTimeout);
-      final bytes = await _readBounded(response, responseLimit, uri)
-          .timeout(requestTimeout);
+      final bytes = await _readBounded(
+        response,
+        responseLimit,
+        uri,
+      ).timeout(requestTimeout);
       final decoded = await _decodeJson(bytes);
       final value = decoded['value'];
       if (response.statusCode < 200 || response.statusCode >= 300) {
         final error = value is Map ? value['error'] as String? : null;
-        final message = value is Map
-            ? value['message'] as String?
-            : null;
+        final message = value is Map ? value['message'] as String? : null;
         throw WdaException(
           code: error,
           statusCode: response.statusCode,
@@ -434,7 +461,8 @@ class WdaClient {
       throw WdaException(
         code: 'response too large',
         statusCode: response.statusCode,
-        message: 'WebDriverAgent response exceeded $limit bytes at ${uri.path}.',
+        message:
+            'WebDriverAgent response exceeded $limit bytes at ${uri.path}.',
       );
     }
     final builder = BytesBuilder(copy: false);

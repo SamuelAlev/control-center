@@ -127,6 +127,19 @@
   "rigStartIosHint": "สร้าง iOS Simulator ชั่วคราวบน Mac ของเซิร์ฟเวอร์ โดยจะถูกลบเมื่อปิดสภาพแวดล้อมการทดสอบ และการเข้าถึงเครือข่ายไม่ได้แยกออกจากกัน",
   "rigTechnicalDetails": "รายละเอียดทางเทคนิค",
   "rigStopMachine": "หยุดเครื่อง",
+  "rigHomeButton": "หน้าหลัก",
+  "rigRotateClockwise": "หมุนตามเข็มนาฬิกา",
+  "rigRotateCounterclockwise": "หมุนทวนเข็มนาฬิกา",
+  "rigTakeScreenshot": "ถ่ายภาพหน้าจอ",
+  "rigScreenshotSaved": "บันทึกภาพหน้าจอแล้ว",
+  "rigScreenshotSaveFailed": "บันทึกภาพหน้าจอไม่ได้: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "เซิร์ฟเวอร์นี้โฮสต์เครื่องชนิดนี้ไม่ได้",
   "rigTabNeedsConversation": "เปิดการสนทนาก่อน — เครื่องสังกัดการสนทนาหนึ่งรายการ เพื่อให้คุณกับเอเจนต์ดูหน้าจอเดียวกัน",
   "ideMenuSectionTools": "เครื่องมือ",
@@ -253,6 +266,23 @@
   "rigPortsDomainHint": "โดเมนสำหรับ Browser (VM) เช่น myapp.test — เข้าถึงได้ที่นั่น ไม่ใช่บนโฮสต์",
   "rigPortsProcessUnknown": "โพรเซสที่ไม่ทราบ",
   "rigPortsInactive": "ไม่ได้ฟัง",
+  "rigPortsTooltipHost": "พอร์ตที่เปิดในเทอร์มินัลนี้",
+  "rigPortsEmptyHost": "ยังไม่มีอะไรกำลังฟังในเทอร์มินัลนี้ เริ่มเซิร์ฟเวอร์แล้วจะปรากฏที่นี่",
+  "rigPortsAddHintHost": "พอร์ตที่จะแมป (เช่น 5173)",
+  "rigPortsLocalPortHint": "พอร์ตภายในเครื่อง (ไม่บังคับ)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} ในเบราว์เซอร์ (VM)",
+  "rigPortsDestBrowserUnreachable": "เบราว์เซอร์ (VM) ยังไม่เชื่อมต่อ",
+  "rigPortsDestAndroid": "localhost:{port} บน Android",
+  "rigPortsDestAndroidUnreachable": "Android ยังไม่เชื่อมต่อ",
   "rigImagesMissing": "{count, plural, =1{ยังต้องดาวน์โหลดอิมเมจฐาน 1 รายการ} other{ยังต้องดาวน์โหลดอิมเมจฐาน {count} รายการ}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8702,6 +8732,7 @@
   "demoUnavailableSso": "การลงชื่อเข้าใช้ครั้งเดียวเป็นการตั้งค่าเซิร์ฟเวอร์ เดโมลงชื่อเข้าใช้คุณเป็นแขกชั่วคราวแทน",
   "demoUnavailableAudio": "การบันทึกและการป้อนด้วยเสียงต้องจับเสียงและโมเดลพูดบนโฮสต์ เดโมไม่มีทั้งสองอย่าง ดังนั้นการประชุมเป็นทรานสคริปต์โดยไม่มีการเล่น",
   "demoUnavailableServerAdmin": "นี่คือการดูแลเซิร์ฟเวอร์ เดโมให้ผู้เข้าชมทุกคนมีเวิร์กสเปซทิ้งได้ของตัวเองและไม่มีอะไรเกินนั้น",
+  "demoUnavailablePipelines": "ไม่สามารถรันไปป์ไลน์ที่นี่ได้ ผู้เยี่ยมชมที่เขียนสเต็ป bash แล้วเริ่มได้ — ด้วยมือหรือผ่านทริกเกอร์เหตุการณ์ — คือการรันโค้ดบนโฮสต์นี้",
   "settingsBackupRestore": "สำรองและกู้คืน",
   "settingsBackupRestoreDescription": "สแนปช็อตของทุกฐานข้อมูลบนเซิร์ฟเวอร์นี้ พร้อมส่งออก นำเข้า และลบเวิร์กสเปซเดียว",
   "backupSnapshotsLabel": "สแนปช็อตการติดตั้ง",
@@ -8941,6 +8972,19 @@
   "noProfilePrsMatchSearchHint": "ลองใช้ชื่อหรือหมายเลข Pull Request อื่น",
   "rigNetworkUnrestricted": "เครือข่ายไม่มีข้อจำกัด",
   "rigNetworkAllowAllHosts": "อนุญาตโฮสต์ทั้งหมด",
+  "rigBrowserPermissionsTitle": "สิทธิ์ของไซต์",
+  "rigBrowserPermissionsTooltip": "สิทธิ์ของไซต์และเครือข่าย",
+  "rigBrowserPermissionEmpty": "ยังไม่มีไซต์ใดขอสิทธิ์",
+  "rigBrowserPermissionPrompt": "{origin} ต้องการใช้ {permission}",
+  "rigBrowserPermissionBlock": "บล็อก",
+  "rigBrowserPermissionCamera": "กล้อง",
+  "rigBrowserPermissionMicrophone": "ไมโครโฟน",
+  "rigBrowserPermissionNotifications": "การแจ้งเตือน",
+  "rigBrowserPermissionGeolocation": "ตำแหน่ง",
+  "rigBrowserPermissionPersistentStorage": "ที่เก็บข้อมูลถาวร",
+  "rigBrowserPermissionClipboard": "คลิปบอร์ด",
+  "rigBrowserPermissionDisplayCapture": "การจับภาพหน้าจอ",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "อนุญาตโฮสต์เครือข่ายทั้งหมดหรือไม่",
   "rigNetworkBypassBody": "การดำเนินการนี้จะรีสตาร์ทสภาพแวดล้อมแบบแยกและละทิ้งงานภายในที่ยังไม่ได้คอมมิต จากนั้นระบบเกสต์จะเข้าถึงโฮสต์เครือข่ายใดก็ได้จนกว่าจะปิด",
   "rigNetworkRestartUnrestricted": "รีสตาร์ทโดยไม่มีข้อจำกัด",

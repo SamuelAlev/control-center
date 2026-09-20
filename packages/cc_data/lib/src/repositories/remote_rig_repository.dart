@@ -1,6 +1,7 @@
 import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_permission.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
@@ -252,9 +253,7 @@ class RigBackendView {
         if (i is String) i,
     ],
     version: wire['version'] as String?,
-    setupAction: RigBackendSetupAction.fromWire(
-      wire['setupAction'] as String?,
-    ),
+    setupAction: RigBackendSetupAction.fromWire(wire['setupAction'] as String?),
   );
 
   /// Backend wire id.
@@ -483,7 +482,10 @@ class RemoteRigRepository {
   /// Only meaningful while this user holds control — the server refuses a
   /// mutating action otherwise, which is the take-over lock doing its job
   /// rather than an error to work around.
-  Future<({String text, bool isError})> act({
+  Future<
+    ({String text, bool isError, String? imageBase64, String? imageMediaType})
+  >
+  act({
     required String workspaceId,
     required String rigId,
     required Map<String, dynamic> action,
@@ -501,6 +503,8 @@ class RemoteRigRepository {
     return (
       text: data['text'] as String? ?? '',
       isError: data['is_error'] as bool? ?? false,
+      imageBase64: data['image_base64'] as String?,
+      imageMediaType: data['image_media_type'] as String?,
     );
   }
 
@@ -627,6 +631,90 @@ class RemoteRigRepository {
     'domain': ?domain,
   });
 
+  /// Live forwarded-port snapshots for a host-shell terminal.
+  Stream<RigPortsView> watchTerminalPorts(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+  }) => _client
+      .subscribe('terminal.watchPorts', {
+        'workspace_id': workspaceId,
+        'session_id': sessionId,
+        'space_id': spaceId,
+      })
+      .map(RigPortsView.fromWire);
+
+  /// Turns auto-forwarding on or off for a host-shell session.
+  Future<void> setTerminalPortsAutoForward(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required bool enabled,
+  }) => _client.call('terminal.setPortsAutoForward', {
+    'workspace_id': workspaceId,
+    'session_id': sessionId,
+    'space_id': spaceId,
+    'enabled': enabled,
+  });
+
+  /// Forwards [guestPort] by hand on a host-shell session.
+  Future<void> addTerminalPort(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+    int? hostPort,
+  }) => _client.call('terminal.addPort', {
+    'workspace_id': workspaceId,
+    'session_id': sessionId,
+    'space_id': spaceId,
+    'guest_port': guestPort,
+    'host_port': ?hostPort,
+  });
+
+  /// Removes a host-shell forward.
+  Future<void> removeTerminalPort(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+  }) => _client.call('terminal.removePort', {
+    'workspace_id': workspaceId,
+    'session_id': sessionId,
+    'space_id': spaceId,
+    'guest_port': guestPort,
+  });
+
+  /// Exposes (or unexposes) a host-shell port on the LAN.
+  Future<void> setTerminalPortLan(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+    required bool exposed,
+  }) => _client.call('terminal.setPortLan', {
+    'workspace_id': workspaceId,
+    'session_id': sessionId,
+    'space_id': spaceId,
+    'guest_port': guestPort,
+    'exposed': exposed,
+  });
+
+  /// Assigns (or clears) a host-shell dev domain.
+  Future<void> setTerminalPortDomain(
+    String workspaceId,
+    String sessionId, {
+    required String spaceId,
+    required int guestPort,
+    String? domain,
+  }) => _client.call('terminal.setPortDomain', {
+    'workspace_id': workspaceId,
+    'session_id': sessionId,
+    'space_id': spaceId,
+    'guest_port': guestPort,
+    'domain': ?domain,
+  });
+
   List<RigView> _rigs(Map<String, dynamic> data) => [
     for (final r in (data['rigs'] as List? ?? const []))
       if (r is Map) RigView.fromWire(r.cast<String, dynamic>()),
@@ -641,16 +729,25 @@ class RigBrowserStateView {
     required this.canGoBack,
     required this.canGoForward,
     this.loading = false,
+    this.permissions = const [],
   });
 
   /// Builds a view from the `rig.browserState` wire map.
-  factory RigBrowserStateView.fromWire(Map<String, dynamic> wire) =>
-      RigBrowserStateView(
-        url: wire['url'] as String? ?? '',
-        canGoBack: wire['can_go_back'] as bool? ?? false,
-        canGoForward: wire['can_go_forward'] as bool? ?? false,
-        loading: wire['loading'] as bool? ?? false,
-      );
+  factory RigBrowserStateView.fromWire(Map<String, dynamic> wire) {
+    final raw = wire['permissions'];
+    return RigBrowserStateView(
+      url: wire['url'] as String? ?? '',
+      canGoBack: wire['can_go_back'] as bool? ?? false,
+      canGoForward: wire['can_go_forward'] as bool? ?? false,
+      loading: wire['loading'] as bool? ?? false,
+      permissions: [
+        if (raw is List)
+          for (final e in raw)
+            if (e is Map)
+              BrowserPermissionEntry.fromJson(e.cast<String, dynamic>()),
+      ],
+    );
+  }
 
   /// The current page URL ('' when unknown or not loaded yet).
   final String url;
@@ -664,6 +761,9 @@ class RigBrowserStateView {
   /// Whether the main frame is mid-load — while true the toolbar's reload
   /// button is a stop button.
   final bool loading;
+
+  /// Site permissions asked this session, for the shield flyout.
+  final List<BrowserPermissionEntry> permissions;
 }
 
 /// One forwarded port as the client sees it.
@@ -725,6 +825,8 @@ class RigPortsView {
     required this.autoForward,
     required this.ports,
     this.tlsEnabled = false,
+    this.browserReachable = false,
+    this.androidReachable = false,
   });
 
   /// Builds a view from the `rig.ports` / `rig.watchPorts` wire map.
@@ -732,6 +834,8 @@ class RigPortsView {
     rigId: wire['rig_id'] as String? ?? '',
     autoForward: wire['auto_forward'] as bool? ?? true,
     tlsEnabled: wire['tls_enabled'] as bool? ?? false,
+    browserReachable: wire['browser_reachable'] as bool? ?? false,
+    androidReachable: wire['android_reachable'] as bool? ?? false,
     ports: [
       for (final p in (wire['ports'] as List? ?? const []))
         if (p is Map) RigPortView.fromWire(p.cast<String, dynamic>()),
@@ -748,6 +852,12 @@ class RigPortsView {
   /// which scheme the panel shows in front of a domain — a scheme the server
   /// cannot answer must not be promised.
   final bool tlsEnabled;
+
+  /// Whether an enclosed Browser (VM) in this space is attached.
+  final bool browserReachable;
+
+  /// Whether an Android rig in this space is attached.
+  final bool androidReachable;
 
   /// Current forwards, ascending by guest port.
   final List<RigPortView> ports;

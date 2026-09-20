@@ -119,6 +119,19 @@
   "rigStartIosHint": "Creează un simulator iOS temporar pe computerul Mac al serverului. Acesta este șters când mediul de testare se închide; accesul la rețea nu este izolat.",
   "rigTechnicalDetails": "Detalii tehnice",
   "rigStopMachine": "Oprește mașina",
+  "rigHomeButton": "Ecran principal",
+  "rigRotateClockwise": "Rotește în sens orar",
+  "rigRotateCounterclockwise": "Rotește în sens antiorar",
+  "rigTakeScreenshot": "Fă o captură de ecran",
+  "rigScreenshotSaved": "Captura de ecran a fost salvată",
+  "rigScreenshotSaveFailed": "Nu s-a putut salva captura de ecran: {error}",
+  "@rigScreenshotSaveFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "rigSurfaceUnavailable": "Acest server nu poate găzdui acest tip de mașină.",
   "rigTabNeedsConversation": "Deschide mai întâi o conversație — o mașină aparține uneia, ca tu și agenții tăi să priviți același ecran.",
   "ideMenuSectionTools": "Instrumente",
@@ -245,6 +258,23 @@
   "rigPortsDomainHint": "Domeniu pentru Browser (VM), de ex. myapp.test — accesibil acolo, nu pe gazdă",
   "rigPortsProcessUnknown": "proces necunoscut",
   "rigPortsInactive": "nu ascultă",
+  "rigPortsTooltipHost": "Porturi deschise în acest terminal",
+  "rigPortsEmptyHost": "Nimic nu ascultă încă în acest terminal. Pornește un server și apare aici.",
+  "rigPortsAddHintHost": "Port de mapat (ex. 5173)",
+  "rigPortsLocalPortHint": "Port local (opțional)",
+  "rigPortsDestDesktop": "localhost:{port}",
+  "@rigPortsDestDesktop": {
+    "description": "Desktop loopback address for a forwarded port",
+    "placeholders": {
+      "port": {
+        "type": "int"
+      }
+    }
+  },
+  "rigPortsDestBrowser": "localhost:{port} în browser (VM)",
+  "rigPortsDestBrowserUnreachable": "browser (VM) neatașat",
+  "rigPortsDestAndroid": "localhost:{port} pe Android",
+  "rigPortsDestAndroidUnreachable": "Android neatașat",
   "rigImagesMissing": "{count, plural, one{1 imagine de bază de descărcat} few{# imagini de bază de descărcat} other{# de imagini de bază de descărcat}}",
   "@rigImagesMissing": {
     "description": "Count of base images still needing download for a rig backend",
@@ -8290,6 +8320,7 @@
   "demoUnavailableSso": "Autentificarea unică e configurare de server. Demo-ul te autentifică ca invitat temporar în schimb.",
   "demoUnavailableAudio": "Înregistrarea și dictarea au nevoie de captură audio și de un model de vorbire pe gazdă. Demo-ul nu le include, deci întâlnirile lui sunt transcrieri fără redare.",
   "demoUnavailableServerAdmin": "Asta e administrare de server. Demo-ul dă fiecărui vizitator propriul spațiu de lucru de unică folosință și nimic dincolo de el.",
+  "demoUnavailablePipelines": "Pipeline-urile nu pot rula aici. Un vizitator care poate scrie un pas bash și îl poate porni — manual sau printr-un declanșator de eveniment — execută cod pe acest gazdă.",
   "settingsBackupRestore": "Backup și restaurare",
   "settingsBackupRestoreDescription": "Snapshot-uri ale fiecărei baze de date de pe acest server, plus export, import și ștergere pentru un singur spațiu de lucru.",
   "backupSnapshotsLabel": "Snapshot-uri de instalare",
@@ -8529,6 +8560,19 @@
   "noProfilePrsMatchSearchHint": "Încearcă alt titlu sau număr de pull request",
   "rigNetworkUnrestricted": "Rețea fără restricții",
   "rigNetworkAllowAllHosts": "Permite toate gazdele",
+  "rigBrowserPermissionsTitle": "Permisiuni ale site-ului",
+  "rigBrowserPermissionsTooltip": "Permisiuni ale site-ului și rețea",
+  "rigBrowserPermissionEmpty": "Niciun site nu a cerut încă o permisiune",
+  "rigBrowserPermissionPrompt": "{origin} vrea să folosească {permission}",
+  "rigBrowserPermissionBlock": "Blochează",
+  "rigBrowserPermissionCamera": "Cameră",
+  "rigBrowserPermissionMicrophone": "Microfon",
+  "rigBrowserPermissionNotifications": "Notificări",
+  "rigBrowserPermissionGeolocation": "Locație",
+  "rigBrowserPermissionPersistentStorage": "Stocare persistentă",
+  "rigBrowserPermissionClipboard": "Clipboard",
+  "rigBrowserPermissionDisplayCapture": "Captură de ecran",
+  "rigBrowserPermissionMidi": "MIDI",
   "rigNetworkBypassTitle": "Permiți toate gazdele din rețea?",
   "rigNetworkBypassBody": "Această acțiune repornește mediul izolat și elimină lucrul neconfirmat din interior. Apoi, sistemul invitat va putea accesa orice gazdă din rețea până când este închis.",
   "rigNetworkRestartUnrestricted": "Repornește fără restricții",

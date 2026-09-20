@@ -323,7 +323,7 @@ ROOT_MEMBERS = {
     'folder', 'folderGit', 'folderGit2', 'folderOpen', 'folderTree', 'gauge',
     'gem', 'gitBranch', 'gitCommit', 'gitCommitHorizontal', 'gitCompareArrows', 'gitFork',
     'gitMerge', 'gitPullRequest', 'gitPullRequestArrow', 'gitPullRequestClosed', 'gitPullRequestCreate', 'gitPullRequestDraft',
-    'globe', 'gripVertical', 'hash', 'heading', 'image', 'imageOff',
+    'globe', 'gripVertical', 'hash', 'heading', 'house', 'image', 'imageOff',
     'inbox', 'info', 'italic', 'keyRound', 'keyboard', 'languages',
     'layers', 'layoutDashboard', 'layoutGrid', 'layoutTemplate', 'lightbulb', 'link', 'list',
     'listChecks', 'listFilter', 'listTodo', 'loader', 'loaderCircle', 'lock',

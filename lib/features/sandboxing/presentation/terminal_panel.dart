@@ -489,12 +489,15 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
       listenable: controller,
       builder: (context, _) {
         // The forwarded-ports affordance rides in the terminal's top-right,
-        // VS Code / Cursor style. It renders NOTHING unless this is an
-        // enclosed-VM terminal whose conversation has a live machine with
-        // ports — a host shell never shows it (there is no VM to have ports).
+        // VS Code / Cursor style. Host-shell uses the PTY session; a
+        // Terminal (VM) still resolves the conversation's exec rig.
         final isVmTerminal =
             controller.backend == 'microvm' ||
             controller.session.backend == 'microvm';
+        final ptyId = controller.ptySessionId;
+        final showPorts =
+            controller.session.spaceId.isNotEmpty &&
+            (isVmTerminal || (ptyId != null && ptyId.isNotEmpty));
         return Container(
           decoration: BoxDecoration(color: bg),
           child: Column(
@@ -506,13 +509,14 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
                     Positioned.fill(
                       child: _terminalBody(controller, termTheme, codeFont),
                     ),
-                    if (isVmTerminal && controller.session.spaceId.isNotEmpty)
-                      Positioned(
+                    if (showPorts)
+                      PositionedDirectional(
                         top: 2,
-                        right: 6,
+                        end: 6,
                         child: RigPortsButton(
                           workspaceId: controller.session.workspaceId,
                           conversationId: controller.session.spaceId,
+                          sessionId: isVmTerminal ? null : ptyId,
                         ),
                       ),
                   ],
